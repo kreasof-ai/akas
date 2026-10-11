@@ -193,7 +193,7 @@ hashes are retained and checked against the saved producer source files.
 
 Checkpoints are pinned to LiquidAI/LFM2.5-2.6B-GGUF revision
 `e7caca5d835a3901a8e0d63e94009429bafafdfc`; sizes and SHA256 hashes are verified
-by [download.py](../../benchmarks/lfm2/download.py). Use the prepared Python
+by [download.py](../../../benchmarks/lfm2/download.py). Use the prepared Python
 3.12 producer environment; `--no-sync` preserves separately installed Torch.
 The producer uses TileLang 0.1.14, TVM FFI 0.1.12 and NVRTC 12.9; the independent
 reference uses Torch 2.14.0. NumPy is 2.5.3 and regex is 2026.9.29.

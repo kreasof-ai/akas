@@ -42,7 +42,7 @@ uv run --no-sync python examples/generate.py \
 ```
 
 The synthetic checkpoint checks contracts and execution, and produces meaningless
-text. For real LFM2 checkpoints, use `tools.lfm2.download` and the build tool with
+text. For real LFM2 checkpoints, use `benchmarks.lfm2.download` and the build tool with
 the corresponding context and device target. The retained [model profiles](docs/legacy-inference.md)
 describe supported formats and measured scope.
 
