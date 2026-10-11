@@ -78,7 +78,7 @@ def produce(
             compile_row(
                 key,
                 row,
-                "akas.ops.attention.cuda.kv_fp8",
+                "akas.ops.attention.cuda.quantized",
                 "make_kernel",
                 kind,
                 dict(p, packed_loads=True),

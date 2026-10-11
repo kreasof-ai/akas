@@ -25,7 +25,7 @@ def test_hopper_prefill_attention_preserves_control_bits(
     tmp_path, query_rows, threads, joint, decoded, value_splits
 ):
     import torch, tensor
-    from tensor.compiler.frontend.source import export_source
+    from akas.compilation.source import export_kernel as export_source
     from tensor.compiler.build import build_artifact
     from test_qwen_fp8_kv import quantize
 
@@ -44,12 +44,12 @@ def test_hopper_prefill_attention_preserves_control_bits(
     )
     artifacts = []
     for module, target in [
-        ("attention.cuda.kv_fp8", "sm_90"),
+        ("attention.cuda.quantized", "sm_90"),
         ("attention.cuda.hopper_prefill", "sm_90a"),
     ]:
         schedule = (
             p
-            if module == "attention.cuda.kv_fp8"
+            if module == "attention.cuda.quantized"
             else dict(
                 p,
                 query_rows=query_rows,
@@ -213,7 +213,7 @@ def test_wide_hopper_projections_preserve_control_bits(
     if paired in ("warp", "persistent") and not grouped:
         pytest.skip("expert-only candidate")
     import torch, tensor
-    from tensor.compiler.frontend.source import export_source
+    from akas.compilation.source import export_kernel as export_source
     from tensor.compiler.build import build_artifact
 
     rng = np.random.default_rng(721)
@@ -420,7 +420,7 @@ def test_hopper_query_tiles_preserve_long_window_causality(
     tmp_path, chunk, query_tokens, decoded
 ):
     import tensor, torch
-    from tensor.compiler.frontend.source import export_source
+    from akas.compilation.source import export_kernel as export_source
     from tensor.compiler.build import build_artifact
     from test_qwen_fp8_kv import quantize
 

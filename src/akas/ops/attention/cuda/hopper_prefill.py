@@ -1,19 +1,25 @@
 """Hopper attention with padded MMA operands and 16-key softmax updates."""
 
+from akas.ops.kv_quantization import get
+
 
 def attention(p):
     import tilelang.language as T
+
+    backend = get("fp8").backend("cuda")
+    decode_scalar = backend.decoder()
+    decode_packed = backend.packed_decoder()
     from tensor.compiler.frontend.source import primitive
 
-    slots, chunk = p["slots"], p["chunk"]
+    slots, chunk = (p["slots"], p["chunk"])
     rows = slots * chunk
-    d, cap = 256, p["capacity"]
-    qrows, kvrows, stride = p.get("query_rows", 128), 32, 16
+    d, cap = (256, p["capacity"])
+    qrows, kvrows, stride = (p.get("query_rows", 128), 32, 16)
     threads = p.get("threads", 256)
     joint = p.get("joint_kv", False)
     decoded = p.get("decoded_kv", False)
     value_splits = p.get("value_splits", 1)
-    if value_splits not in (1, 2) or (value_splits != 1 and not decoded):
+    if value_splits not in (1, 2) or (value_splits != 1 and (not decoded)):
         raise ValueError("split value dimensions require decoded KV")
     vd = d // value_splits
     cache_dtype = "bfloat16" if decoded else "uint8"
@@ -39,11 +45,11 @@ def attention(p):
                 key = T.alloc_shared((kvrows, d), "bfloat16")
                 value = T.alloc_shared((kvrows, vd), "bfloat16")
                 prob = T.alloc_shared((qrows, kvrows), "bfloat16")
-                if packed and not decoded:
-                    encoded = T.alloc_shared((16, d), "float8_e4m3fn")
+                if packed and (not decoded):
+                    encoded = T.alloc_shared((16, d), backend.PACKED_DTYPE)
                     scales = T.alloc_shared((16, 2), "float32")
                     if joint:
-                        value_encoded = T.alloc_shared((16, d), "float8_e4m3fn")
+                        value_encoded = T.alloc_shared((16, d), backend.PACKED_DTYPE)
                         value_scales = T.alloc_shared((16, 2), "float32")
                 scores = T.alloc_fragment((qrows, kvrows), "float32")
                 result = T.alloc_fragment((qrows, vd), "float32")
@@ -56,8 +62,6 @@ def attention(p):
                 T.clear(normalizer)
                 T.fill(maximum, -T.infinity("float32"))
                 if joint or decoded:
-                    # The padded half never participates in a softmax update.
-                    # Initialize it once instead of rewriting it for every KV block.
                     for i, j in T.Parallel(16, d):
                         key[i + 16, j] = 0
                     for i, j in T.Parallel(16, vd):
@@ -69,7 +73,6 @@ def attention(p):
                         q[slot * chunk + T.min(local, chunk - 1), head * 8 + i % 8, j],
                         0,
                     )
-                # Causality bounds the read to the last query in this tile.
                 count = positions[slot] + T.min(
                     lengths[slot], tile * token_rows + token_rows
                 )
@@ -88,8 +91,8 @@ def attention(p):
                         )
                     elif packed:
                         start = step * stride
-                        keys = T.view(kc, dtype="float8_e4m3fn")
-                        values = T.view(vc, dtype="float8_e4m3fn")
+                        keys = T.view(kc, dtype=backend.PACKED_DTYPE)
+                        values = T.view(vc, dtype=backend.PACKED_DTYPE)
                         T.copy(keys[slot, head, start : start + 16, 0:d], encoded)
                         T.copy(ks[slot, head, start : start + 16, 0:2], scales)
                         if joint:
@@ -105,23 +108,16 @@ def attention(p):
                                 key[i, j] = 0
                                 value[i, j] = 0
                                 if start + i < count:
-                                    key[i, j] = (
-                                        T.cast(encoded[i, j], "float32")
-                                        * scales[i, j // 128]
-                                    )
-                                    value[i, j] = (
-                                        T.cast(value_encoded[i, j], "float32")
-                                        * value_scales[i, j // 128]
+                                    key[i, j] = decode_packed(encoded, scales, i, j)
+                                    value[i, j] = decode_packed(
+                                        value_encoded, value_scales, i, j
                                     )
                         else:
                             T.sync_threads()
                             for i, j in T.Parallel(16, d):
                                 key[i, j] = 0
                                 if start + i < count:
-                                    key[i, j] = (
-                                        T.cast(encoded[i, j], "float32")
-                                        * scales[i, j // 128]
-                                    )
+                                    key[i, j] = decode_packed(encoded, scales, i, j)
                                 key[i + 16, j] = 0
                             T.sync_threads()
                             T.copy(values[slot, head, start : start + 16, 0:d], encoded)
@@ -130,10 +126,7 @@ def attention(p):
                             for i, j in T.Parallel(16, d):
                                 value[i, j] = 0
                                 if start + i < count:
-                                    value[i, j] = (
-                                        T.cast(encoded[i, j], "float32")
-                                        * scales[i, j // 128]
-                                    )
+                                    value[i, j] = decode_packed(encoded, scales, i, j)
                                 value[i + 16, j] = 0
                         T.sync_threads()
                     else:
@@ -141,28 +134,16 @@ def attention(p):
                             index = step * stride + i
                             key[i, j] = T.if_then_else(
                                 (i < stride) & (index < count),
-                                T.call_extern(
-                                    "float32",
-                                    "tensor_decode_e4m3",
-                                    T.cast(
-                                        kc[slot, head, T.min(index, cap - 1), j],
-                                        "uint32",
-                                    ),
-                                )
-                                * ks[slot, head, T.min(index, cap - 1), j // 128],
+                                decode_scalar(
+                                    kc, ks, slot, head, T.min(index, cap - 1), j
+                                ),
                                 0,
                             )
                             value[i, j] = T.if_then_else(
                                 (i < stride) & (index < count),
-                                T.call_extern(
-                                    "float32",
-                                    "tensor_decode_e4m3",
-                                    T.cast(
-                                        vc[slot, head, T.min(index, cap - 1), j],
-                                        "uint32",
-                                    ),
-                                )
-                                * vs[slot, head, T.min(index, cap - 1), j // 128],
+                                decode_scalar(
+                                    vc, vs, slot, head, T.min(index, cap - 1), j
+                                ),
                                 0,
                             )
                     T.sync_threads()

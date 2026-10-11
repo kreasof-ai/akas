@@ -6,6 +6,8 @@ length throughput claim requires the optimized prefill and independent oracle
 qualification, not just a successful decode microbenchmark."""
 
 from __future__ import annotations
+
+from akas.ops.kv_quantization import validate as validate_kv_dtype
 import ctypes as ct
 from dataclasses import asdict
 import json
@@ -51,8 +53,7 @@ class BlockFP8Binding(Executor):
             value["splits"],
         )
         self.kv_dtype = value.get("kv_dtype", "bfloat16")
-        if self.kv_dtype not in ("bfloat16", "fp8"):
-            raise ValueError("unsupported KV cache precision")
+        validate_kv_dtype(self.kv_dtype)
         if (
             self.slots not in (1, 2, 4, 8, 16, 32, 64)
             or not 1 <= self.context <= self.config.context_limit
@@ -138,9 +139,9 @@ class BlockFP8Binding(Executor):
             or value.get("target") != self.device.info["arch"]
             or (value["slots"], value["context"], value["splits"])
             != (self.slots, self.context, self.splits)
-            or value.get("kv_dtype", "bfloat16") not in ("bfloat16", "fp8")
         ):
             raise ValueError("replacement cache profile configuration/source mismatch")
+        validate_kv_dtype(value.get("kv_dtype", "bfloat16"))
         had_graph = self.graph is not None
         if self.graph:
             self.graph.close()

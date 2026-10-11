@@ -1,5 +1,6 @@
 """Decoder block operations for explicit packed, FP8 and BF16 execution contracts."""
 
+from akas.ops.kv_quantization import is_quantized
 from akas.ops.schedules.packed_parameters import QUANT_ATTENTION
 from akas.ops.schedules.packed_parameters import SUBGROUP_PROFILES
 
@@ -24,7 +25,11 @@ def fp8_decode_attention(ctx, block):
         ctx.buffers["active"],
         ctx.buffers["attq_normal"],
     )
-    kv = dict(kv_dtype="fp8") if ctx.executor.kv_dtype == "fp8" else {}
+    kv = (
+        dict(kv_dtype=ctx.executor.kv_dtype)
+        if is_quantized(ctx.executor.kv_dtype)
+        else {}
+    )
     ctx.emit(
         "attention_kv",
         dict(p, **kv),
@@ -68,7 +73,7 @@ def fp8_prefill_attention(ctx, block):
     for name, dest in (("q", "attq"), ("k", "attk"), ("v", "attv")):
         ctx.fp8(prefix + name + "_proj", "normal", dest)
     kc, vc, *scales = ctx.model.states[block.index]
-    kv = dict(kv_dtype="fp8") if ctx.model.kv_dtype == "fp8" else {}
+    kv = dict(kv_dtype=ctx.model.kv_dtype) if is_quantized(ctx.model.kv_dtype) else {}
     cache = dict(ks=scales[0], vs=scales[1]) if scales else {}
     p = dict(
         r=ctx.rows,

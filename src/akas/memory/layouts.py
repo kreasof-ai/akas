@@ -2,6 +2,7 @@
 
 from akas.memory.state import BufferSpec
 from akas.memory.state import allocate_states
+from akas.ops.kv_quantization import get, is_quantized
 
 
 def hybrid_state_specs(
@@ -15,8 +16,7 @@ def hybrid_state_specs(
     flat=False,
 ):
     """Describe persistent state; the request owns prefix and slot resets."""
-    if kv_dtype not in ("float16", "bfloat16", "fp8"):
-        raise ValueError("unsupported hybrid KV dtype")
+    quantized = is_quantized(kv_dtype)
     states = {}
     for layer, kind in enumerate(config.layers):
         values = states[layer] = []
@@ -43,19 +43,23 @@ def hybrid_state_specs(
                 if flat
                 else shape
             )
-            for _ in range(2):
+            if quantized:
                 if zero_cache:
-                    if kv_dtype != "float16":
-                        raise ValueError("zeroed flat cache profile requires FP16")
-                    values.append(BufferSpec(cache_shape, "float16", zero=True))
-                    continue
-                values.append(
-                    BufferSpec(cache_shape, "uint8" if kv_dtype == "fp8" else kv_dtype)
-                )
-            if kv_dtype == "fp8":
-                scales = shape[:-1] + ((config.head_dim + 127) // 128,)
+                    raise ValueError("zeroed flat cache profile requires FP16")
+                specs = get(kv_dtype).pair_layout(shape)
+                if flat:
+                    from math import prod
+
+                    specs = tuple(
+                        BufferSpec((prod(spec.shape),), spec.dtype) if i < 2 else spec
+                        for i, spec in enumerate(specs)
+                    )
+                values.extend(specs)
+            else:
                 for _ in range(2):
-                    values.append(BufferSpec(scales, "float32"))
+                    if zero_cache and kv_dtype != "float16":
+                        raise ValueError("zeroed flat cache profile requires FP16")
+                    values.append(BufferSpec(cache_shape, kv_dtype, zero=zero_cache))
         else:
             raise ValueError(f"unsupported hybrid layer: {kind}")
     return states

@@ -185,3 +185,7 @@ executor remain the next performance implementation, described in the
 The subsequent [executor merge](../executor-merge/README.md) maps these destinations
 to the shared executor and numerical bindings. This ledger records the earlier
 migration; the later ledger records the current ownership.
+
+KV conversion was subsequently extracted into operation-owned codecs. The
+[KV quantization audit](../kv-quantization/README.md) maps the former
+`attention/cuda/kv_fp8.py` target to its attention and codec successors.

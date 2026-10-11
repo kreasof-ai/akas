@@ -1,9 +1,14 @@
 """Split-context FP8 attention reusing KV across speculative query rows."""
 
+from akas.ops.kv_quantization import get
+
 
 def partial(p):
     import tilelang.language as T
 
+    backend = get("fp8").backend("cuda")
+    decode_scalar = backend.decoder()
+    decode_packed = backend.packed_decoder()
     r, chunk, cap, splits, d = (
         p["slots"],
         p["chunk"],
@@ -36,7 +41,7 @@ def partial(p):
             value = T.alloc_shared((tile_rows, d), "bfloat16")
             prob = T.alloc_shared((query_rows, tile_rows), "bfloat16")
             if packed:
-                encoded = T.alloc_shared((tile_rows, d), "float8_e4m3fn")
+                encoded = T.alloc_shared((tile_rows, d), backend.PACKED_DTYPE)
                 scales = T.alloc_shared((tile_rows, 2), "float32")
             scores = T.alloc_fragment((query_rows, tile_rows), "float32")
             result = T.alloc_fragment((query_rows, d), "float32")
@@ -61,8 +66,8 @@ def partial(p):
                     if packed:
                         start = (part * tiles + tile) * tile_rows
                         if start < cap:
-                            keys = T.view(kc, dtype="float8_e4m3fn")
-                            values = T.view(vc, dtype="float8_e4m3fn")
+                            keys = T.view(kc, dtype=backend.PACKED_DTYPE)
+                            values = T.view(vc, dtype=backend.PACKED_DTYPE)
                             T.copy(
                                 keys[slot, head, start : start + tile_rows, 0:d],
                                 encoded,
@@ -73,8 +78,7 @@ def partial(p):
                             for i, j in T.Parallel(tile_rows, d):
                                 key[i, j] = T.if_then_else(
                                     start + i < count,
-                                    T.cast(encoded[i, j], "float32")
-                                    * scales[i, j // 128],
+                                    decode_packed(encoded, scales, i, j),
                                     0,
                                 )
                             T.copy(
@@ -87,8 +91,7 @@ def partial(p):
                             for i, j in T.Parallel(tile_rows, d):
                                 value[i, j] = T.if_then_else(
                                     start + i < count,
-                                    T.cast(encoded[i, j], "float32")
-                                    * scales[i, j // 128],
+                                    decode_packed(encoded, scales, i, j),
                                     0,
                                 )
                         else:
@@ -99,26 +102,16 @@ def partial(p):
                             pos = (part * tiles + tile) * tile_rows + i
                             key[i, j] = T.if_then_else(
                                 pos < count,
-                                T.call_extern(
-                                    "float32",
-                                    "tensor_decode_e4m3",
-                                    T.cast(
-                                        kc[slot, head, T.min(pos, cap - 1), j], "uint32"
-                                    ),
-                                )
-                                * ks[slot, head, T.min(pos, cap - 1), j // 128],
+                                decode_scalar(
+                                    kc, ks, slot, head, T.min(pos, cap - 1), j
+                                ),
                                 0,
                             )
                             value[i, j] = T.if_then_else(
                                 pos < count,
-                                T.call_extern(
-                                    "float32",
-                                    "tensor_decode_e4m3",
-                                    T.cast(
-                                        vc[slot, head, T.min(pos, cap - 1), j], "uint32"
-                                    ),
-                                )
-                                * vs[slot, head, T.min(pos, cap - 1), j // 128],
+                                decode_scalar(
+                                    vc, vs, slot, head, T.min(pos, cap - 1), j
+                                ),
                                 0,
                             )
                     T.gemm(query, key, scores, transpose_B=True, clear_accum=True)
@@ -130,7 +123,7 @@ def partial(p):
                                 (part * tiles + tile) * tile_rows + j
                                 <= positions[slot] + i // 8
                             ),
-                            scores[i, j] * d**-0.5,
+                            scores[i, j] * d ** (-0.5),
                             -T.infinity("float32"),
                         )
                     T.reduce_max(scores, maximum, dim=1, clear=False)
@@ -165,7 +158,7 @@ def partial(p):
 def merge(p):
     import tilelang.language as T
 
-    r, chunk, splits, d = p["slots"], p["chunk"], p.get("splits", 16), 256
+    r, chunk, splits, d = (p["slots"], p["chunk"], p.get("splits", 16), 256)
     rows = r * chunk
 
     @T.prim_func
@@ -189,7 +182,7 @@ def merge(p):
                             slot // chunk,
                             head // 8,
                             part,
-                            (slot % chunk) * 8 + head % 8,
+                            slot % chunk * 8 + head % 8,
                             0,
                         ],
                     )
@@ -202,7 +195,7 @@ def merge(p):
                                 slot // chunk,
                                 head // 8,
                                 part,
-                                (slot % chunk) * 8 + head % 8,
+                                slot % chunk * 8 + head % 8,
                                 0,
                             ]
                             - maximum
@@ -212,7 +205,7 @@ def merge(p):
                                 slot // chunk,
                                 head // 8,
                                 part,
-                                (slot % chunk) * 8 + head % 8,
+                                slot % chunk * 8 + head % 8,
                                 j,
                             ]
                             * factor
@@ -222,7 +215,7 @@ def merge(p):
                                 slot // chunk,
                                 head // 8,
                                 part,
-                                (slot % chunk) * 8 + head % 8,
+                                slot % chunk * 8 + head % 8,
                                 1,
                             ]
                             * factor
@@ -231,8 +224,6 @@ def merge(p):
                         T.cast(projection[slot, head * 512 + d + j], "bfloat16"),
                         "float32",
                     )
-                    # The attention output is BF16 before its gate, as in
-                    # prefill and the checkpoint's BF16 inference path.
                     value = T.cast(
                         T.cast(numerator / denominator, "bfloat16"), "float32"
                     )

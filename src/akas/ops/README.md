@@ -10,6 +10,7 @@ supported. Factories import TileLang only when constructing a kernel.
 | `linear` | Packed, BF16 and FP8 projections; shared fused projection implementations |
 | `ffn`, `moe` | Dense/packed FFN, activations, routed and shared experts |
 | `normalization`, `residual` | RMS, residual normalization and addition |
+| `kv_quantization` | Independent KV formats, storage metadata, encode/decode and provider codecs |
 | `quantization`, `reductions` | Storage decoders, conversion, scratch validity and reductions |
 | `vocabulary`, `sequence` | Embedding/head/token selection and row/position control |
 | `mtp`, `speculation` | Draft joining and device control for speculative rounds |
@@ -27,3 +28,7 @@ prequantized prefill have different operand contracts; packed weights retain
 their recorded quantization type; split projections retain reduction order.
 The fixed-slot FP8 profile's supported geometry is explicitly validated in
 `execution/bindings/block_fp8/geometry.py`.
+
+[KV quantization](kv_quantization/README.md) owns cache representations separately
+from weight quantization and attention. Add a format module and its provider codec;
+shared allocation and compatible attention calls resolve the named format.

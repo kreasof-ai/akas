@@ -1,9 +1,13 @@
 """Block-scaled E4M3 KV with indirect ownership and split causal attention."""
 
+from akas.ops.kv_quantization import get
+
 
 def make_kernel(kind, p):
     import tilelang.language as T
 
+    backend = get("fp8").backend("cuda")
+    decode_packed = backend.packed_decoder()
     slots, chunk, pool = (p[name] for name in ("slots", "chunk", "pool"))
     rows = slots * chunk
     heads, kh, d, cap, eps = (
@@ -12,6 +16,7 @@ def make_kernel(kind, p):
     projection = 2 * heads * d + 2 * kh * d
     if kind == "attention_qkv":
         theta = p["theta"]
+        encode_pair = backend.writer(d, value_offset=2 * heads * d + kh * d)
 
         @T.prim_func
         def kernel(
@@ -77,84 +82,18 @@ def make_kernel(kind, p):
                         for j in T.Parallel(d):
                             q[row, head, j] = rotated[j]
                     else:
-                        key_abs = T.alloc_fragment((2, 128), "float32")
-                        value_abs = T.alloc_fragment((2, 128), "float32")
-                        key_max = T.alloc_fragment((2,), "float32")
-                        value_max = T.alloc_fragment((2,), "float32")
-                        key_scale = T.alloc_shared((2,), "float32")
-                        value_scale = T.alloc_shared((2,), "float32")
-                        for block, j in T.Parallel(2, 128):
-                            key_abs[block, j] = T.abs(
-                                T.cast(rotated[block * 128 + j], "float32")
-                            )
-                            value_abs[block, j] = T.abs(
-                                T.cast(
-                                    T.cast(
-                                        proj[
-                                            row,
-                                            2 * heads * d
-                                            + kh * d
-                                            + (head - heads) * d
-                                            + block * 128
-                                            + j,
-                                        ],
-                                        "bfloat16",
-                                    ),
-                                    "float32",
-                                )
-                            )
-                        T.reduce_max(key_abs, key_max, dim=1)
-                        T.reduce_max(value_abs, value_max, dim=1)
-                        for block in T.Parallel(2):
-                            key_scale[block] = (
-                                T.max(key_max[block], T.float32(1e-12)) / 448
-                            )
-                            value_scale[block] = (
-                                T.max(value_max[block], T.float32(1e-12)) / 448
-                            )
-                            ks[
-                                mapping[row // chunk],
-                                head - heads,
-                                positions[row],
-                                block,
-                            ] = key_scale[block]
-                            vs[
-                                mapping[row // chunk],
-                                head - heads,
-                                positions[row],
-                                block,
-                            ] = value_scale[block]
-                        T.sync_threads()
-                        for j in T.Parallel(d):
-                            key = T.cast(rotated[j], "float32") / key_scale[j // 128]
-                            value = (
-                                T.cast(
-                                    T.cast(
-                                        proj[
-                                            row,
-                                            2 * heads * d
-                                            + kh * d
-                                            + (head - heads) * d
-                                            + j,
-                                        ],
-                                        "bfloat16",
-                                    ),
-                                    "float32",
-                                )
-                                / value_scale[j // 128]
-                            )
-                            kc[
-                                mapping[row // chunk], head - heads, positions[row], j
-                            ] = T.cast(
-                                T.call_extern("uint32", "tensor_encode_e4m3", key),
-                                "uint8",
-                            )
-                            vc[
-                                mapping[row // chunk], head - heads, positions[row], j
-                            ] = T.cast(
-                                T.call_extern("uint32", "tensor_encode_e4m3", value),
-                                "uint8",
-                            )
+                        encode_pair(
+                            rotated,
+                            proj,
+                            row,
+                            head - heads,
+                            mapping[row // chunk],
+                            positions[row],
+                            kc,
+                            vc,
+                            ks,
+                            vs,
+                        )
 
         return kernel
     group = heads // kh
@@ -189,7 +128,7 @@ def make_kernel(kind, p):
                 query = T.alloc_shared((qm, d), "bfloat16")
                 key = T.alloc_shared((64, d), "bfloat16")
                 value = T.alloc_shared((64, d), "bfloat16")
-                encoded = T.alloc_shared((64, d), "float8_e4m3fn")
+                encoded = T.alloc_shared((64, d), backend.PACKED_DTYPE)
                 scales = T.alloc_shared((64, 2), "float32")
                 prob = T.alloc_shared((qm, 64), "bfloat16")
                 scores = T.alloc_fragment((qm, 64), "float32")
@@ -224,15 +163,14 @@ def make_kernel(kind, p):
                     for tile in T.serial(tiles):
                         start = (part * tiles + tile) * 64
                         if start < cap:
-                            keys = T.view(kc, dtype="float8_e4m3fn")
-                            values = T.view(vc, dtype="float8_e4m3fn")
+                            keys = T.view(kc, dtype=backend.PACKED_DTYPE)
+                            values = T.view(vc, dtype=backend.PACKED_DTYPE)
                             T.copy(keys[request, head, start : start + 64, :], encoded)
                             T.copy(ks[request, head, start : start + 64, :], scales)
                             for i, j in T.Parallel(64, d):
                                 key[i, j] = T.if_then_else(
                                     start + i < count,
-                                    T.cast(encoded[i, j], "float32")
-                                    * scales[i, j // 128],
+                                    decode_packed(encoded, scales, i, j),
                                     0,
                                 )
                             T.copy(
@@ -242,8 +180,7 @@ def make_kernel(kind, p):
                             for i, j in T.Parallel(64, d):
                                 value[i, j] = T.if_then_else(
                                     start + i < count,
-                                    T.cast(encoded[i, j], "float32")
-                                    * scales[i, j // 128],
+                                    decode_packed(encoded, scales, i, j),
                                     0,
                                 )
                         else:
@@ -258,7 +195,7 @@ def make_kernel(kind, p):
                                     start + j
                                     <= positions[batch] + qblock * qt + i // group
                                 ),
-                                scores[i, j] * d**-0.5,
+                                scores[i, j] * d ** (-0.5),
                                 -T.infinity("float32"),
                             )
                         T.reduce_max(scores, maximum, dim=1, clear=False)

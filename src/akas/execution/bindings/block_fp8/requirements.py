@@ -1,12 +1,13 @@
 """Logical Qwen kernel requirements shared by producers and executors."""
 
+from akas.ops.kv_quantization import is_quantized, validate as validate_kv_dtype
+
 from akas.artifacts.kernels import identity
 
 
 def requirements(config, slots, capacity, *, splits=16, kv_dtype="bfloat16"):
-    if kv_dtype not in ("bfloat16", "fp8"):
-        raise ValueError("unsupported KV cache precision")
-    kv = dict(kv_dtype="fp8") if kv_dtype == "fp8" else {}
+    validate_kv_dtype(kv_dtype)
+    kv = dict(kv_dtype=kv_dtype) if is_quantized(kv_dtype) else {}
     records = {}
 
     def add(kind, **p):

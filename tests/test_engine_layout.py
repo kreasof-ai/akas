@@ -42,6 +42,21 @@ def test_extracted_arithmetic_matches_pre_migration_baseline(record):
             if isinstance(n, ast.If) and ast.unparse(n.test) == record["selector"]
         )
     # Module paths may change; arithmetic, signatures, layouts and reduction order may not.
+    if (
+        record["target"]
+        in {
+            "src/akas/ops/attention/cuda/quantized.py",
+            "src/akas/ops/attention/cuda/fp8.py",
+            "src/akas/ops/attention/cuda/split.py",
+            "src/akas/ops/attention/cuda/workspace.py",
+            "src/akas/ops/attention/cuda/hopper.py",
+            "src/akas/ops/attention/cuda/hopper_prefill.py",
+        }
+        and record["selector"] != "merge"
+    ):
+        from kv_extraction import restore
+
+        node = restore(node)
     node = WithoutImports().visit(copy.deepcopy(node))
     observed = hashlib.sha256(
         ast.dump(node, include_attributes=False).encode()
@@ -56,7 +71,12 @@ def test_state_estimate_matches_allocated_specifications(precision):
     from akas.memory.estimates import state_bytes
     from tensor.runtime.dtypes import dtype
 
-    config = Qwen35Config(layers=("linear_attention", "full_attention"), context_limit=4096, epsilon=1e-6, rope_theta=10000)
+    config = Qwen35Config(
+        layers=("linear_attention", "full_attention"),
+        context_limit=4096,
+        epsilon=1e-6,
+        rope_theta=10000,
+    )
     estimate = state_bytes(config, slots=3, context=257, kv_dtype=precision)
     specs = hybrid_state_specs(config, 3, estimate["capacity"], kv_dtype=precision)
     assert sum(estimate[k] for k in ("kv", "recurrent", "convolution")) == sum(

@@ -1,5 +1,7 @@
 """Compile chunked prefill artifacts without a consumer inference framework."""
 
+from akas.ops.kv_quantization import get, is_quantized, validate as validate_kv_dtype
+
 from pathlib import Path
 from akas.compilation.build import build
 from akas.compilation.plan import Bundle
@@ -22,7 +24,11 @@ def plan(
     packed_kv=False,
     target="sm_89",
 ):
-    if kv_dtype not in ("bfloat16", "fp8") or (packed_kv and kv_dtype != "fp8"):
+    validate_kv_dtype(kv_dtype)
+    if packed_kv and (
+        not is_quantized(kv_dtype)
+        or not getattr(get(kv_dtype).backend("cuda"), "PACKED_DTYPE", None)
+    ):
         raise ValueError("packed FP8 KV requires the FP8 cache profile")
     c = checkpoint
     validate(c.config)
@@ -42,7 +48,7 @@ def plan(
                     (
                         "tensor.compiler.frontend.source",
                         "tensor.compiler.cuda.lowering",
-                        "akas.ops.attention.cuda.kv_fp8",
+                        "akas.ops.attention.cuda.quantized",
                         "akas.ops.normalization.kernels",
                     ),
                 ),
@@ -63,8 +69,8 @@ def plan(
     )
     for kind in ("attention", "attention_kv"):
         p = dict(slots=slots, chunk=chunk, capacity=context)
-        if kv_dtype == "fp8":
-            p["kv_dtype"] = "fp8"
+        if is_quantized(kv_dtype):
+            p["kv_dtype"] = kv_dtype
         if kind == "attention_kv":
             p.update(eps=c.config.epsilon, theta=c.config.rope_theta)
         schedule = (

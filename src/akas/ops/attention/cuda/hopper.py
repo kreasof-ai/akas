@@ -1,8 +1,14 @@
 """Bounded Hopper query tiles for long speculative verification windows."""
 
+from akas.ops.kv_quantization import get
+
 
 def partial(p):
     import tilelang.language as T
+
+    backend = get("fp8").backend("cuda")
+    decode_scalar = backend.decoder()
+    decode_packed = backend.packed_decoder()
     from tensor.compiler.frontend.source import primitive
 
     r, chunk, cap, splits, d = (
@@ -16,9 +22,6 @@ def partial(p):
     packed = p.get("packed_loads", False)
     decoded = p.get("decoded_kv", False)
     tile_rows = p.get("key_rows", 64)
-    # A pooled verifier can retain the parent's MMA geometry even when its
-    # logical window is shorter. Masked query rows preserve the same reduction
-    # order without allocating the parent's output or recurrent snapshots.
     query_tokens = p.get("query_tokens", 8)
     if not p.get("pad_queries", False):
         query_tokens = min(chunk, query_tokens)
@@ -58,8 +61,8 @@ def partial(p):
             key = T.alloc_shared((tile_rows, d), "bfloat16")
             value = T.alloc_shared((tile_rows, d), "bfloat16")
             prob = T.alloc_shared((query_rows, tile_rows), "bfloat16")
-            if packed and not decoded:
-                encoded = T.alloc_shared((tile_rows, d), "float8_e4m3fn")
+            if packed and (not decoded):
+                encoded = T.alloc_shared((tile_rows, d), backend.PACKED_DTYPE)
                 scales = T.alloc_shared((tile_rows, 2), "float32")
             scores = T.alloc_fragment((query_rows, tile_rows), "float32")
             result = T.alloc_fragment((query_rows, d), "float32")
@@ -73,7 +76,7 @@ def partial(p):
             T.fill(maximum, -T.infinity("float32"))
             for i, j in T.Parallel(query_rows, d):
                 query[i, j] = T.if_then_else(
-                    (query_tile * query_tokens + i // 8) < lengths[slot],
+                    query_tile * query_tokens + i // 8 < lengths[slot],
                     q[
                         slot * chunk
                         + T.min(query_tile * query_tokens + i // 8, chunk - 1),
@@ -101,8 +104,8 @@ def partial(p):
                     elif packed:
                         start = (part * tiles + tile) * tile_rows
                         if start < cap:
-                            keys = T.view(kc, dtype="float8_e4m3fn")
-                            values = T.view(vc, dtype="float8_e4m3fn")
+                            keys = T.view(kc, dtype=backend.PACKED_DTYPE)
+                            values = T.view(vc, dtype=backend.PACKED_DTYPE)
                             T.copy(
                                 keys[slot, head, start : start + tile_rows, 0:d],
                                 encoded,
@@ -113,8 +116,7 @@ def partial(p):
                             for i, j in T.Parallel(tile_rows, d):
                                 key[i, j] = T.if_then_else(
                                     start + i < count,
-                                    T.cast(encoded[i, j], "float32")
-                                    * scales[i, j // 128],
+                                    decode_packed(encoded, scales, i, j),
                                     0,
                                 )
                             T.copy(
@@ -127,8 +129,7 @@ def partial(p):
                             for i, j in T.Parallel(tile_rows, d):
                                 value[i, j] = T.if_then_else(
                                     start + i < count,
-                                    T.cast(encoded[i, j], "float32")
-                                    * scales[i, j // 128],
+                                    decode_packed(encoded, scales, i, j),
                                     0,
                                 )
                         else:
@@ -139,26 +140,16 @@ def partial(p):
                             pos = (part * tiles + tile) * tile_rows + i
                             key[i, j] = T.if_then_else(
                                 pos < count,
-                                T.call_extern(
-                                    "float32",
-                                    "tensor_decode_e4m3",
-                                    T.cast(
-                                        kc[slot, head, T.min(pos, cap - 1), j], "uint32"
-                                    ),
-                                )
-                                * ks[slot, head, T.min(pos, cap - 1), j // 128],
+                                decode_scalar(
+                                    kc, ks, slot, head, T.min(pos, cap - 1), j
+                                ),
                                 0,
                             )
                             value[i, j] = T.if_then_else(
                                 pos < count,
-                                T.call_extern(
-                                    "float32",
-                                    "tensor_decode_e4m3",
-                                    T.cast(
-                                        vc[slot, head, T.min(pos, cap - 1), j], "uint32"
-                                    ),
-                                )
-                                * vs[slot, head, T.min(pos, cap - 1), j // 128],
+                                decode_scalar(
+                                    vc, vs, slot, head, T.min(pos, cap - 1), j
+                                ),
                                 0,
                             )
                     T.gemm(
@@ -177,7 +168,7 @@ def partial(p):
                                 (part * tiles + tile) * tile_rows + j
                                 <= positions[slot] + query_tile * query_tokens + i // 8
                             ),
-                            scores[i, j] * d**-0.5,
+                            scores[i, j] * d ** (-0.5),
                             -T.infinity("float32"),
                         )
                     T.reduce_max(scores, maximum, dim=1, clear=False)

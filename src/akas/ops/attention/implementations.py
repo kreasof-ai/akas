@@ -1,28 +1,29 @@
 """Compatible kernels and search spaces owned by this operation."""
 
 from akas.ops.registry import variants
+from akas.ops.kv_quantization import is_quantized
 
 
-def fp8_cache(p):
-    return p.get("kv_dtype") == "fp8"
+def quantized_cache(p):
+    return is_quantized(p.get("kv_dtype", "bfloat16"))
 
 
 IMPLEMENTATIONS = (
     *variants(
         ("attention", "attention_kv"),
-        "attention.cuda.kv_fp8",
+        "attention.cuda.quantized",
         "block-fp8",
         phase="prefill",
         priority=30,
-        accepts=fp8_cache,
+        accepts=quantized_cache,
     ),
     *variants(
-        ("attention_merge", "attention_partial", "attention_kv", "attention_q"),
-        "attention.cuda.kv_fp8",
+        ("attention_partial", "attention_kv"),
+        "attention.cuda.quantized",
         "block-fp8",
         phase="decode",
         priority=30,
-        accepts=fp8_cache,
+        accepts=quantized_cache,
     ),
     *variants(
         ("attention_partial", "attention_grouped", "attention_merge"),

@@ -1,10 +1,15 @@
 """Decode authoritative FP8 KV once per attention call into BF16 scratch."""
 
+from akas.ops.kv_quantization import get
+
 
 def decode(p):
     import tilelang.language as T
 
-    slots, cap = p["slots"], p["capacity"]
+    backend = get("fp8").backend("cuda")
+    decode_scalar = backend.decoder()
+    decode_packed = backend.packed_decoder()
+    slots, cap = (p["slots"], p["capacity"])
     d = 256
     block = 128
     if cap % block:
@@ -28,12 +33,12 @@ def decode(p):
         ):
             count = positions[slot] + lengths[slot]
             if lengths[slot] > 0 and tile * block < count:
-                ek = T.alloc_shared((block, d), "float8_e4m3fn")
-                ev = T.alloc_shared((block, d), "float8_e4m3fn")
+                ek = T.alloc_shared((block, d), backend.PACKED_DTYPE)
+                ev = T.alloc_shared((block, d), backend.PACKED_DTYPE)
                 sk = T.alloc_shared((block, 2), "float32")
                 sv = T.alloc_shared((block, 2), "float32")
-                keys = T.view(kc, dtype="float8_e4m3fn")
-                values = T.view(vc, dtype="float8_e4m3fn")
+                keys = T.view(kc, dtype=backend.PACKED_DTYPE)
+                values = T.view(vc, dtype=backend.PACKED_DTYPE)
                 T.copy(keys[slot, head, tile * block : tile * block + block, 0:d], ek)
                 T.copy(values[slot, head, tile * block : tile * block + block, 0:d], ev)
                 T.copy(ks[slot, head, tile * block : tile * block + block, 0:2], sk)
@@ -43,11 +48,11 @@ def decode(p):
                     decoded_k[slot, head, tile * block + i, j] = 0
                     decoded_v[slot, head, tile * block + i, j] = 0
                     if tile * block + i < count:
-                        decoded_k[slot, head, tile * block + i, j] = (
-                            T.cast(ek[i, j], "float32") * sk[i, j // 128]
+                        decoded_k[slot, head, tile * block + i, j] = decode_packed(
+                            ek, sk, i, j
                         )
-                        decoded_v[slot, head, tile * block + i, j] = (
-                            T.cast(ev[i, j], "float32") * sv[i, j // 128]
+                        decoded_v[slot, head, tile * block + i, j] = decode_packed(
+                            ev, sv, i, j
                         )
 
     return kernel
