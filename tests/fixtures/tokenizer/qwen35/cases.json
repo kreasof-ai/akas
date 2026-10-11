@@ -1,0 +1,295 @@
+{
+  "source": "Qwen/Qwen3.5-0.8B tokenizer.json, same tokenizer rules as Qwen3.5-35B-A3B-FP8; excerpt retains all bytes and merge paths for these cases",
+  "cases": [
+    {
+      "text": "",
+      "ids": [],
+      "literal_ids": [],
+      "decoded": "",
+      "skip_special": ""
+    },
+    {
+      "text": "Hello, 世界! café\n\n123456789",
+      "ids": [
+        9419,
+        11,
+        220,
+        96748,
+        0,
+        50203,
+        271,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24
+      ],
+      "literal_ids": [
+        9419,
+        11,
+        220,
+        96748,
+        0,
+        50203,
+        271,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24
+      ],
+      "decoded": "Hello, 世界! café\n\n123456789",
+      "skip_special": "Hello, 世界! café\n\n123456789"
+    },
+    {
+      "text": "It's raining—don't forget.",
+      "ids": [
+        2064,
+        579,
+        80381,
+        2218,
+        14572,
+        914,
+        10351,
+        13
+      ],
+      "literal_ids": [
+        2064,
+        579,
+        80381,
+        2218,
+        14572,
+        914,
+        10351,
+        13
+      ],
+      "decoded": "It's raining—don't forget.",
+      "skip_special": "It's raining—don't forget."
+    },
+    {
+      "text": "  \t\r\n",
+      "ids": [
+        256,
+        4326
+      ],
+      "literal_ids": [
+        256,
+        4326
+      ],
+      "decoded": "  \t\r\n",
+      "skip_special": "  \t\r\n"
+    },
+    {
+      "text": "é Å Å ﬁ",
+      "ids": [
+        933,
+        76533,
+        76533,
+        31422,
+        68337
+      ],
+      "literal_ids": [
+        933,
+        76533,
+        76533,
+        31422,
+        68337
+      ],
+      "decoded": "é Å Å ﬁ",
+      "skip_special": "é Å Å ﬁ"
+    },
+    {
+      "text": "<|im_start|>user\nhello<|im_end|>\n<|im_start|>assistant\n",
+      "ids": [
+        248045,
+        846,
+        198,
+        14556,
+        248046,
+        198,
+        248045,
+        74455,
+        198
+      ],
+      "literal_ids": [
+        27,
+        91,
+        316,
+        4747,
+        91,
+        29,
+        846,
+        198,
+        14556,
+        27,
+        91,
+        316,
+        6018,
+        91,
+        29,
+        198,
+        27,
+        91,
+        316,
+        4747,
+        91,
+        29,
+        74455,
+        198
+      ],
+      "decoded": "<|im_start|>user\nhello<|im_end|>\n<|im_start|>assistant\n",
+      "skip_special": "user\nhello\nassistant\n"
+    },
+    {
+      "text": "<think> test </think>",
+      "ids": [
+        248068,
+        1228,
+        220,
+        248069
+      ],
+      "literal_ids": [
+        248068,
+        1228,
+        220,
+        248069
+      ],
+      "decoded": "<think> test </think>",
+      "skip_special": "<think> test </think>"
+    },
+    {
+      "text": "<tool_call>{\"x\":1}</tool_call>",
+      "ids": [
+        248058,
+        4754,
+        87,
+        763,
+        16,
+        92,
+        248059
+      ],
+      "literal_ids": [
+        248058,
+        4754,
+        87,
+        763,
+        16,
+        92,
+        248059
+      ],
+      "decoded": "<tool_call>{\"x\":1}</tool_call>",
+      "skip_special": "<tool_call>{\"x\":1}</tool_call>"
+    },
+    {
+      "text": "😀👩‍💻🇯🇵👨‍👩‍👦",
+      "ids": [
+        169706,
+        9008,
+        239,
+        102,
+        373,
+        235,
+        88995,
+        119,
+        9008,
+        229,
+        107,
+        9008,
+        229,
+        113,
+        9008,
+        239,
+        101,
+        373,
+        235,
+        9008,
+        239,
+        102,
+        373,
+        235,
+        9008,
+        239,
+        99
+      ],
+      "literal_ids": [
+        169706,
+        9008,
+        239,
+        102,
+        373,
+        235,
+        88995,
+        119,
+        9008,
+        229,
+        107,
+        9008,
+        229,
+        113,
+        9008,
+        239,
+        101,
+        373,
+        235,
+        9008,
+        239,
+        102,
+        373,
+        235,
+        9008,
+        239,
+        99
+      ],
+      "decoded": "😀👩‍💻🇯🇵👨‍👩‍👦",
+      "skip_special": "😀👩‍💻🇯🇵👨‍👩‍👦"
+    },
+    {
+      "text": "abc\u0000def",
+      "ids": [
+        13290,
+        188,
+        727
+      ],
+      "literal_ids": [
+        13290,
+        188,
+        727
+      ],
+      "decoded": "abc\u0000def",
+      "skip_special": "abc\u0000def"
+    },
+    {
+      "text": "नमस्ते مرحبا שלום",
+      "ids": [
+        58069,
+        84237,
+        150104,
+        153348,
+        164422,
+        150027,
+        151009,
+        173924
+      ],
+      "literal_ids": [
+        58069,
+        84237,
+        150104,
+        153348,
+        164422,
+        150027,
+        151009,
+        173924
+      ],
+      "decoded": "नमस्ते مرحبا שלום",
+      "skip_special": "नमस्ते مرحبا שלום"
+    }
+  ]
+}

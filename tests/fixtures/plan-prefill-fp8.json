@@ -1,0 +1,3081 @@
+[
+  [
+    "controls",
+    {
+      "arguments": [],
+      "bindings": {
+        "active": {
+          "buffer": "prefill:flat_active",
+          "dtype": "int32",
+          "shape": [
+            8
+          ]
+        },
+        "flat_position": {
+          "buffer": "prefill:flat_positions",
+          "dtype": "int32",
+          "shape": [
+            8
+          ]
+        },
+        "lengths": {
+          "buffer": "prefill:lengths",
+          "dtype": "int32",
+          "shape": [
+            2
+          ]
+        },
+        "position": {
+          "buffer": "decode:positions",
+          "dtype": "int32",
+          "shape": [
+            2
+          ]
+        }
+      },
+      "parameters": {
+        "chunk": 4,
+        "slots": 2
+      }
+    },
+    null
+  ],
+  [
+    "embedding",
+    {
+      "arguments": [],
+      "bindings": {
+        "ids": {
+          "buffer": "prefill:tokens",
+          "dtype": "int32",
+          "shape": [
+            8
+          ]
+        },
+        "out": {
+          "buffer": "prefill:residual",
+          "dtype": "bfloat16",
+          "shape": [
+            8,
+            2048
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.embed_tokens.weight",
+          "dtype": "float32",
+          "shape": [
+            248320,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "c": 2048,
+        "r": 8,
+        "vocab": 248320
+      }
+    },
+    null
+  ],
+  [
+    "rms",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "prefill:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            8,
+            2048
+          ]
+        },
+        "residual": {
+          "buffer": "prefill:residual",
+          "dtype": "bfloat16",
+          "shape": [
+            8,
+            2048
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.0.input_layernorm.weight",
+          "dtype": "float32",
+          "shape": [
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "c": 2048,
+        "eps": 1e-06,
+        "r": 8
+      }
+    },
+    null
+  ],
+  [
+    "quantize",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "prefill:quantized_normal",
+          "dtype": "uint8",
+          "shape": [
+            8,
+            2048
+          ]
+        },
+        "scales": {
+          "buffer": "prefill:scales_normal",
+          "dtype": "float32",
+          "shape": [
+            8,
+            16
+          ]
+        },
+        "x": {
+          "buffer": "prefill:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            8,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "k": 2048,
+        "r": 8
+      }
+    },
+    null
+  ],
+  [
+    "fp8_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "activation_scales": {
+          "buffer": "prefill:scales_normal",
+          "dtype": "float32",
+          "shape": [
+            8,
+            16
+          ]
+        },
+        "out": {
+          "buffer": "prefill:qkv",
+          "dtype": "float32",
+          "shape": [
+            8,
+            8192
+          ]
+        },
+        "scales": {
+          "buffer": "model.language_model.layers.0.linear_attn.in_proj_qkv.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            64,
+            16
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.0.linear_attn.in_proj_qkv.weight",
+          "dtype": "float32",
+          "shape": [
+            8192,
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "prefill:quantized_normal",
+          "dtype": "uint8",
+          "shape": [
+            8,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "k": 2048,
+        "o": 8192,
+        "r": 8
+      }
+    },
+    null
+  ],
+  [
+    "fp8_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "activation_scales": {
+          "buffer": "prefill:scales_normal",
+          "dtype": "float32",
+          "shape": [
+            8,
+            16
+          ]
+        },
+        "out": {
+          "buffer": "prefill:z",
+          "dtype": "float32",
+          "shape": [
+            8,
+            4096
+          ]
+        },
+        "scales": {
+          "buffer": "model.language_model.layers.0.linear_attn.in_proj_z.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            32,
+            16
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.0.linear_attn.in_proj_z.weight",
+          "dtype": "float32",
+          "shape": [
+            4096,
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "prefill:quantized_normal",
+          "dtype": "uint8",
+          "shape": [
+            8,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "k": 2048,
+        "o": 4096,
+        "r": 8
+      }
+    },
+    null
+  ],
+  [
+    "bf16_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "prefill:a",
+          "dtype": "float32",
+          "shape": [
+            8,
+            32
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.0.linear_attn.in_proj_a.weight",
+          "dtype": "float32",
+          "shape": [
+            32,
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "prefill:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            8,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "k": 2048,
+        "o": 32,
+        "r": 8
+      }
+    },
+    null
+  ],
+  [
+    "bf16_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "prefill:b",
+          "dtype": "float32",
+          "shape": [
+            8,
+            32
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.0.linear_attn.in_proj_b.weight",
+          "dtype": "float32",
+          "shape": [
+            32,
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "prefill:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            8,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "k": 2048,
+        "o": 32,
+        "r": 8
+      }
+    },
+    null
+  ],
+  [
+    "gdn_conv",
+    {
+      "arguments": [],
+      "bindings": {
+        "lengths": {
+          "buffer": "prefill:lengths",
+          "dtype": "int32",
+          "shape": [
+            2
+          ]
+        },
+        "out": {
+          "buffer": "prefill:conv",
+          "dtype": "float32",
+          "shape": [
+            8,
+            8192
+          ]
+        },
+        "state": {
+          "buffer": "state:0:1",
+          "dtype": "float32",
+          "shape": [
+            2,
+            8192,
+            3
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.0.linear_attn.conv1d.weight",
+          "dtype": "float32",
+          "shape": [
+            8192,
+            1,
+            4
+          ]
+        },
+        "x": {
+          "buffer": "prefill:qkv",
+          "dtype": "float32",
+          "shape": [
+            8,
+            8192
+          ]
+        }
+      },
+      "parameters": {
+        "chunk": 4,
+        "slots": 2
+      }
+    },
+    null
+  ],
+  [
+    "gdn_prepare",
+    {
+      "arguments": [],
+      "bindings": {
+        "A": {
+          "buffer": "model.language_model.layers.0.linear_attn.A_log",
+          "dtype": "float32",
+          "shape": [
+            32
+          ]
+        },
+        "a": {
+          "buffer": "prefill:a",
+          "dtype": "float32",
+          "shape": [
+            8,
+            32
+          ]
+        },
+        "b": {
+          "buffer": "prefill:b",
+          "dtype": "float32",
+          "shape": [
+            8,
+            32
+          ]
+        },
+        "beta": {
+          "buffer": "prefill:gdn_beta",
+          "dtype": "float32",
+          "shape": [
+            8,
+            32
+          ]
+        },
+        "dt": {
+          "buffer": "model.language_model.layers.0.linear_attn.dt_bias",
+          "dtype": "float32",
+          "shape": [
+            32
+          ]
+        },
+        "g": {
+          "buffer": "prefill:gdn_decay",
+          "dtype": "float32",
+          "shape": [
+            8,
+            32
+          ]
+        },
+        "k": {
+          "buffer": "prefill:gdn_k",
+          "dtype": "float32",
+          "shape": [
+            8,
+            32,
+            128
+          ]
+        },
+        "q": {
+          "buffer": "prefill:gdn_q",
+          "dtype": "float32",
+          "shape": [
+            8,
+            32,
+            128
+          ]
+        },
+        "qkv": {
+          "buffer": "prefill:conv",
+          "dtype": "float32",
+          "shape": [
+            8,
+            8192
+          ]
+        },
+        "v": {
+          "buffer": "prefill:gdn_v",
+          "dtype": "float32",
+          "shape": [
+            8,
+            32,
+            128
+          ]
+        }
+      },
+      "parameters": {
+        "r": 8
+      }
+    },
+    null
+  ],
+  [
+    "gdn_scan",
+    {
+      "arguments": [],
+      "bindings": {
+        "beta": {
+          "buffer": "prefill:gdn_beta",
+          "dtype": "float32",
+          "shape": [
+            8,
+            32
+          ]
+        },
+        "g": {
+          "buffer": "prefill:gdn_decay",
+          "dtype": "float32",
+          "shape": [
+            8,
+            32
+          ]
+        },
+        "k": {
+          "buffer": "prefill:gdn_k",
+          "dtype": "float32",
+          "shape": [
+            8,
+            32,
+            128
+          ]
+        },
+        "lengths": {
+          "buffer": "prefill:lengths",
+          "dtype": "int32",
+          "shape": [
+            2
+          ]
+        },
+        "out": {
+          "buffer": "prefill:gdn_out",
+          "dtype": "float32",
+          "shape": [
+            8,
+            32,
+            128
+          ]
+        },
+        "q": {
+          "buffer": "prefill:gdn_q",
+          "dtype": "float32",
+          "shape": [
+            8,
+            32,
+            128
+          ]
+        },
+        "state": {
+          "buffer": "state:0:0",
+          "dtype": "float32",
+          "shape": [
+            2,
+            32,
+            128,
+            128
+          ]
+        },
+        "v": {
+          "buffer": "prefill:gdn_v",
+          "dtype": "float32",
+          "shape": [
+            8,
+            32,
+            128
+          ]
+        }
+      },
+      "parameters": {
+        "chunk": 4,
+        "slots": 2
+      }
+    },
+    null
+  ],
+  [
+    "gdn_norm",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "prefill:gdn_normal",
+          "dtype": "bfloat16",
+          "shape": [
+            8,
+            4096
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.0.linear_attn.norm.weight",
+          "dtype": "float32",
+          "shape": [
+            128
+          ]
+        },
+        "x": {
+          "buffer": "prefill:gdn_out",
+          "dtype": "float32",
+          "shape": [
+            8,
+            32,
+            128
+          ]
+        },
+        "z": {
+          "buffer": "prefill:z",
+          "dtype": "float32",
+          "shape": [
+            8,
+            4096
+          ]
+        }
+      },
+      "parameters": {
+        "eps": 1e-06,
+        "r": 8
+      }
+    },
+    null
+  ],
+  [
+    "quantize",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "prefill:quantized_gdn_normal",
+          "dtype": "uint8",
+          "shape": [
+            8,
+            4096
+          ]
+        },
+        "scales": {
+          "buffer": "prefill:scales_gdn_normal",
+          "dtype": "float32",
+          "shape": [
+            8,
+            32
+          ]
+        },
+        "x": {
+          "buffer": "prefill:gdn_normal",
+          "dtype": "bfloat16",
+          "shape": [
+            8,
+            4096
+          ]
+        }
+      },
+      "parameters": {
+        "k": 4096,
+        "r": 8
+      }
+    },
+    null
+  ],
+  [
+    "fp8_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "activation_scales": {
+          "buffer": "prefill:scales_gdn_normal",
+          "dtype": "float32",
+          "shape": [
+            8,
+            32
+          ]
+        },
+        "out": {
+          "buffer": "prefill:mixed",
+          "dtype": "float32",
+          "shape": [
+            8,
+            2048
+          ]
+        },
+        "scales": {
+          "buffer": "model.language_model.layers.0.linear_attn.out_proj.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            16,
+            32
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.0.linear_attn.out_proj.weight",
+          "dtype": "float32",
+          "shape": [
+            2048,
+            4096
+          ]
+        },
+        "x": {
+          "buffer": "prefill:quantized_gdn_normal",
+          "dtype": "uint8",
+          "shape": [
+            8,
+            4096
+          ]
+        }
+      },
+      "parameters": {
+        "k": 4096,
+        "o": 2048,
+        "r": 8
+      }
+    },
+    null
+  ],
+  [
+    "add_rms",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "prefill:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            8,
+            2048
+          ]
+        },
+        "residual": {
+          "buffer": "prefill:residual",
+          "dtype": "bfloat16",
+          "shape": [
+            8,
+            2048
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.0.post_attention_layernorm.weight",
+          "dtype": "float32",
+          "shape": [
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "prefill:mixed",
+          "dtype": "float32",
+          "shape": [
+            8,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "c": 2048,
+        "eps": 1e-06,
+        "r": 8
+      }
+    },
+    null
+  ],
+  [
+    "bf16_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "prefill:router",
+          "dtype": "float32",
+          "shape": [
+            8,
+            256
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.0.mlp.gate.weight",
+          "dtype": "float32",
+          "shape": [
+            256,
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "prefill:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            8,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "k": 2048,
+        "o": 256,
+        "r": 8
+      }
+    },
+    null
+  ],
+  [
+    "bf16_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "prefill:shared_gate",
+          "dtype": "float32",
+          "shape": [
+            8,
+            1
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.0.mlp.shared_expert_gate.weight",
+          "dtype": "float32",
+          "shape": [
+            1,
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "prefill:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            8,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "k": 2048,
+        "o": 1,
+        "r": 8
+      }
+    },
+    null
+  ],
+  [
+    "router",
+    {
+      "arguments": [],
+      "bindings": {
+        "ids": {
+          "buffer": "prefill:ids",
+          "dtype": "int32",
+          "shape": [
+            8,
+            8
+          ]
+        },
+        "logits": {
+          "buffer": "prefill:router",
+          "dtype": "float32",
+          "shape": [
+            8,
+            256
+          ]
+        },
+        "weights": {
+          "buffer": "prefill:router_weights",
+          "dtype": "float32",
+          "shape": [
+            8,
+            8
+          ]
+        }
+      },
+      "parameters": {
+        "experts": 256,
+        "r": 8,
+        "top": 8
+      }
+    },
+    null
+  ],
+  [
+    "expert_routes",
+    {
+      "arguments": [],
+      "bindings": {
+        "active": {
+          "buffer": "prefill:flat_active",
+          "dtype": "int32",
+          "shape": [
+            8
+          ]
+        },
+        "counts": {
+          "buffer": "prefill:counts",
+          "dtype": "int32",
+          "shape": [
+            256
+          ]
+        },
+        "ids": {
+          "buffer": "prefill:ids",
+          "dtype": "int32",
+          "shape": [
+            8,
+            8
+          ]
+        },
+        "routes": {
+          "buffer": "prefill:routes",
+          "dtype": "int32",
+          "shape": [
+            256,
+            8
+          ]
+        }
+      },
+      "parameters": {
+        "chunk": 4,
+        "slots": 2
+      }
+    },
+    null
+  ],
+  [
+    "quantize",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "prefill:quantized_normal",
+          "dtype": "uint8",
+          "shape": [
+            8,
+            2048
+          ]
+        },
+        "scales": {
+          "buffer": "prefill:scales_normal",
+          "dtype": "float32",
+          "shape": [
+            8,
+            16
+          ]
+        },
+        "x": {
+          "buffer": "prefill:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            8,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "k": 2048,
+        "r": 8
+      }
+    },
+    null
+  ],
+  [
+    "fp8_experts",
+    {
+      "arguments": [],
+      "bindings": {
+        "activation_scales": {
+          "buffer": "prefill:scales_normal",
+          "dtype": "float32",
+          "shape": [
+            8,
+            16
+          ]
+        },
+        "counts": {
+          "buffer": "prefill:counts",
+          "dtype": "int32",
+          "shape": [
+            256
+          ]
+        },
+        "out": {
+          "buffer": "prefill:expert_g",
+          "dtype": "float32",
+          "shape": [
+            8,
+            8,
+            512
+          ]
+        },
+        "routes": {
+          "buffer": "prefill:routes",
+          "dtype": "int32",
+          "shape": [
+            256,
+            8
+          ]
+        },
+        "scales": {
+          "buffer": "model.language_model.layers.0.mlp.experts.gate_proj.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            256,
+            4,
+            16
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.0.mlp.experts.gate_proj.weight",
+          "dtype": "float32",
+          "shape": [
+            256,
+            512,
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "prefill:quantized_normal",
+          "dtype": "uint8",
+          "shape": [
+            8,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "experts": 256,
+        "k": 2048,
+        "o": 512,
+        "r": 8,
+        "routed_input": false,
+        "top": 8
+      }
+    },
+    null
+  ],
+  [
+    "fp8_experts",
+    {
+      "arguments": [],
+      "bindings": {
+        "activation_scales": {
+          "buffer": "prefill:scales_normal",
+          "dtype": "float32",
+          "shape": [
+            8,
+            16
+          ]
+        },
+        "counts": {
+          "buffer": "prefill:counts",
+          "dtype": "int32",
+          "shape": [
+            256
+          ]
+        },
+        "out": {
+          "buffer": "prefill:expert_u",
+          "dtype": "float32",
+          "shape": [
+            8,
+            8,
+            512
+          ]
+        },
+        "routes": {
+          "buffer": "prefill:routes",
+          "dtype": "int32",
+          "shape": [
+            256,
+            8
+          ]
+        },
+        "scales": {
+          "buffer": "model.language_model.layers.0.mlp.experts.up_proj.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            256,
+            4,
+            16
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.0.mlp.experts.up_proj.weight",
+          "dtype": "float32",
+          "shape": [
+            256,
+            512,
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "prefill:quantized_normal",
+          "dtype": "uint8",
+          "shape": [
+            8,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "experts": 256,
+        "k": 2048,
+        "o": 512,
+        "r": 8,
+        "routed_input": false,
+        "top": 8
+      }
+    },
+    null
+  ],
+  [
+    "swiglu_experts",
+    {
+      "arguments": [],
+      "bindings": {
+        "g": {
+          "buffer": "prefill:expert_g",
+          "dtype": "float32",
+          "shape": [
+            8,
+            8,
+            512
+          ]
+        },
+        "out": {
+          "buffer": "prefill:expert_activation",
+          "dtype": "bfloat16",
+          "shape": [
+            8,
+            8,
+            512
+          ]
+        },
+        "u": {
+          "buffer": "prefill:expert_u",
+          "dtype": "float32",
+          "shape": [
+            8,
+            8,
+            512
+          ]
+        }
+      },
+      "parameters": {
+        "c": 512,
+        "r": 8,
+        "top": 8
+      }
+    },
+    null
+  ],
+  [
+    "quantize",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "prefill:quantized_expert_activation",
+          "dtype": "uint8",
+          "shape": [
+            8,
+            8,
+            512
+          ]
+        },
+        "scales": {
+          "buffer": "prefill:scales_expert_activation",
+          "dtype": "float32",
+          "shape": [
+            8,
+            8,
+            4
+          ]
+        },
+        "x": {
+          "buffer": "prefill:expert_activation",
+          "dtype": "bfloat16",
+          "shape": [
+            8,
+            8,
+            512
+          ]
+        }
+      },
+      "parameters": {
+        "k": 512,
+        "r": 8,
+        "top": 8
+      }
+    },
+    null
+  ],
+  [
+    "fp8_experts",
+    {
+      "arguments": [],
+      "bindings": {
+        "activation_scales": {
+          "buffer": "prefill:scales_expert_activation",
+          "dtype": "float32",
+          "shape": [
+            8,
+            8,
+            4
+          ]
+        },
+        "counts": {
+          "buffer": "prefill:counts",
+          "dtype": "int32",
+          "shape": [
+            256
+          ]
+        },
+        "out": {
+          "buffer": "prefill:expert_out",
+          "dtype": "float32",
+          "shape": [
+            8,
+            8,
+            2048
+          ]
+        },
+        "routes": {
+          "buffer": "prefill:routes",
+          "dtype": "int32",
+          "shape": [
+            256,
+            8
+          ]
+        },
+        "scales": {
+          "buffer": "model.language_model.layers.0.mlp.experts.down_proj.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            256,
+            16,
+            4
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.0.mlp.experts.down_proj.weight",
+          "dtype": "float32",
+          "shape": [
+            256,
+            2048,
+            512
+          ]
+        },
+        "x": {
+          "buffer": "prefill:quantized_expert_activation",
+          "dtype": "uint8",
+          "shape": [
+            8,
+            8,
+            512
+          ]
+        }
+      },
+      "parameters": {
+        "experts": 256,
+        "k": 512,
+        "o": 2048,
+        "r": 8,
+        "routed_input": true,
+        "top": 8
+      }
+    },
+    null
+  ],
+  [
+    "fp8_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "activation_scales": {
+          "buffer": "prefill:scales_normal",
+          "dtype": "float32",
+          "shape": [
+            8,
+            16
+          ]
+        },
+        "out": {
+          "buffer": "prefill:shared_g",
+          "dtype": "float32",
+          "shape": [
+            8,
+            512
+          ]
+        },
+        "scales": {
+          "buffer": "model.language_model.layers.0.mlp.shared_expert.gate_proj.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            4,
+            16
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.0.mlp.shared_expert.gate_proj.weight",
+          "dtype": "float32",
+          "shape": [
+            512,
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "prefill:quantized_normal",
+          "dtype": "uint8",
+          "shape": [
+            8,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "k": 2048,
+        "o": 512,
+        "r": 8
+      }
+    },
+    null
+  ],
+  [
+    "fp8_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "activation_scales": {
+          "buffer": "prefill:scales_normal",
+          "dtype": "float32",
+          "shape": [
+            8,
+            16
+          ]
+        },
+        "out": {
+          "buffer": "prefill:shared_u",
+          "dtype": "float32",
+          "shape": [
+            8,
+            512
+          ]
+        },
+        "scales": {
+          "buffer": "model.language_model.layers.0.mlp.shared_expert.up_proj.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            4,
+            16
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.0.mlp.shared_expert.up_proj.weight",
+          "dtype": "float32",
+          "shape": [
+            512,
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "prefill:quantized_normal",
+          "dtype": "uint8",
+          "shape": [
+            8,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "k": 2048,
+        "o": 512,
+        "r": 8
+      }
+    },
+    null
+  ],
+  [
+    "swiglu",
+    {
+      "arguments": [],
+      "bindings": {
+        "g": {
+          "buffer": "prefill:shared_g",
+          "dtype": "float32",
+          "shape": [
+            8,
+            512
+          ]
+        },
+        "out": {
+          "buffer": "prefill:shared_activation",
+          "dtype": "bfloat16",
+          "shape": [
+            8,
+            512
+          ]
+        },
+        "u": {
+          "buffer": "prefill:shared_u",
+          "dtype": "float32",
+          "shape": [
+            8,
+            512
+          ]
+        }
+      },
+      "parameters": {
+        "c": 512,
+        "r": 8
+      }
+    },
+    null
+  ],
+  [
+    "quantize",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "prefill:quantized_shared_activation",
+          "dtype": "uint8",
+          "shape": [
+            8,
+            512
+          ]
+        },
+        "scales": {
+          "buffer": "prefill:scales_shared_activation",
+          "dtype": "float32",
+          "shape": [
+            8,
+            4
+          ]
+        },
+        "x": {
+          "buffer": "prefill:shared_activation",
+          "dtype": "bfloat16",
+          "shape": [
+            8,
+            512
+          ]
+        }
+      },
+      "parameters": {
+        "k": 512,
+        "r": 8
+      }
+    },
+    null
+  ],
+  [
+    "fp8_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "activation_scales": {
+          "buffer": "prefill:scales_shared_activation",
+          "dtype": "float32",
+          "shape": [
+            8,
+            4
+          ]
+        },
+        "out": {
+          "buffer": "prefill:shared_out",
+          "dtype": "float32",
+          "shape": [
+            8,
+            2048
+          ]
+        },
+        "scales": {
+          "buffer": "model.language_model.layers.0.mlp.shared_expert.down_proj.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            16,
+            4
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.0.mlp.shared_expert.down_proj.weight",
+          "dtype": "float32",
+          "shape": [
+            2048,
+            512
+          ]
+        },
+        "x": {
+          "buffer": "prefill:quantized_shared_activation",
+          "dtype": "uint8",
+          "shape": [
+            8,
+            512
+          ]
+        }
+      },
+      "parameters": {
+        "k": 512,
+        "o": 2048,
+        "r": 8
+      }
+    },
+    null
+  ],
+  [
+    "moe_combine",
+    {
+      "arguments": [],
+      "bindings": {
+        "experts": {
+          "buffer": "prefill:expert_out",
+          "dtype": "float32",
+          "shape": [
+            8,
+            8,
+            2048
+          ]
+        },
+        "gate": {
+          "buffer": "prefill:shared_gate",
+          "dtype": "float32",
+          "shape": [
+            8,
+            1
+          ]
+        },
+        "out": {
+          "buffer": "prefill:ffn",
+          "dtype": "float32",
+          "shape": [
+            8,
+            2048
+          ]
+        },
+        "shared": {
+          "buffer": "prefill:shared_out",
+          "dtype": "float32",
+          "shape": [
+            8,
+            2048
+          ]
+        },
+        "weights": {
+          "buffer": "prefill:router_weights",
+          "dtype": "float32",
+          "shape": [
+            8,
+            8
+          ]
+        }
+      },
+      "parameters": {
+        "c": 2048,
+        "r": 8,
+        "top": 8
+      }
+    },
+    null
+  ],
+  [
+    "add_rms",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "prefill:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            8,
+            2048
+          ]
+        },
+        "residual": {
+          "buffer": "prefill:residual",
+          "dtype": "bfloat16",
+          "shape": [
+            8,
+            2048
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.1.input_layernorm.weight",
+          "dtype": "float32",
+          "shape": [
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "prefill:ffn",
+          "dtype": "float32",
+          "shape": [
+            8,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "c": 2048,
+        "eps": 1e-06,
+        "r": 8
+      }
+    },
+    null
+  ],
+  [
+    "quantize",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "prefill:quantized_normal",
+          "dtype": "uint8",
+          "shape": [
+            8,
+            2048
+          ]
+        },
+        "scales": {
+          "buffer": "prefill:scales_normal",
+          "dtype": "float32",
+          "shape": [
+            8,
+            16
+          ]
+        },
+        "x": {
+          "buffer": "prefill:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            8,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "k": 2048,
+        "r": 8
+      }
+    },
+    null
+  ],
+  [
+    "fp8_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "activation_scales": {
+          "buffer": "prefill:scales_normal",
+          "dtype": "float32",
+          "shape": [
+            8,
+            16
+          ]
+        },
+        "out": {
+          "buffer": "prefill:attq",
+          "dtype": "float32",
+          "shape": [
+            8,
+            8192
+          ]
+        },
+        "scales": {
+          "buffer": "model.language_model.layers.1.self_attn.q_proj.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            64,
+            16
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.1.self_attn.q_proj.weight",
+          "dtype": "float32",
+          "shape": [
+            8192,
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "prefill:quantized_normal",
+          "dtype": "uint8",
+          "shape": [
+            8,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "k": 2048,
+        "o": 8192,
+        "r": 8
+      }
+    },
+    null
+  ],
+  [
+    "fp8_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "activation_scales": {
+          "buffer": "prefill:scales_normal",
+          "dtype": "float32",
+          "shape": [
+            8,
+            16
+          ]
+        },
+        "out": {
+          "buffer": "prefill:attk",
+          "dtype": "float32",
+          "shape": [
+            8,
+            512
+          ]
+        },
+        "scales": {
+          "buffer": "model.language_model.layers.1.self_attn.k_proj.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            4,
+            16
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.1.self_attn.k_proj.weight",
+          "dtype": "float32",
+          "shape": [
+            512,
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "prefill:quantized_normal",
+          "dtype": "uint8",
+          "shape": [
+            8,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "k": 2048,
+        "o": 512,
+        "r": 8
+      }
+    },
+    null
+  ],
+  [
+    "fp8_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "activation_scales": {
+          "buffer": "prefill:scales_normal",
+          "dtype": "float32",
+          "shape": [
+            8,
+            16
+          ]
+        },
+        "out": {
+          "buffer": "prefill:attv",
+          "dtype": "float32",
+          "shape": [
+            8,
+            512
+          ]
+        },
+        "scales": {
+          "buffer": "model.language_model.layers.1.self_attn.v_proj.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            4,
+            16
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.1.self_attn.v_proj.weight",
+          "dtype": "float32",
+          "shape": [
+            512,
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "prefill:quantized_normal",
+          "dtype": "uint8",
+          "shape": [
+            8,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "k": 2048,
+        "o": 512,
+        "r": 8
+      }
+    },
+    null
+  ],
+  [
+    "attention_q",
+    {
+      "arguments": [],
+      "bindings": {
+        "active": {
+          "buffer": "prefill:flat_active",
+          "dtype": "int32",
+          "shape": [
+            8
+          ]
+        },
+        "positions": {
+          "buffer": "prefill:flat_positions",
+          "dtype": "int32",
+          "shape": [
+            8
+          ]
+        },
+        "projection": {
+          "buffer": "prefill:attq",
+          "dtype": "float32",
+          "shape": [
+            8,
+            8192
+          ]
+        },
+        "q": {
+          "buffer": "prefill:attq_normal",
+          "dtype": "bfloat16",
+          "shape": [
+            8,
+            16,
+            256
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.1.self_attn.q_norm.weight",
+          "dtype": "float32",
+          "shape": [
+            256
+          ]
+        }
+      },
+      "parameters": {
+        "capacity": 64,
+        "eps": 1e-06,
+        "r": 8,
+        "theta": 1000000.0
+      }
+    },
+    null
+  ],
+  [
+    "attention_kv",
+    {
+      "arguments": [],
+      "bindings": {
+        "active": {
+          "buffer": "prefill:flat_active",
+          "dtype": "int32",
+          "shape": [
+            8
+          ]
+        },
+        "kc": {
+          "buffer": "state:1:0",
+          "dtype": "uint8",
+          "shape": [
+            2,
+            2,
+            64,
+            256
+          ]
+        },
+        "ks": {
+          "buffer": "state:1:2",
+          "dtype": "float32",
+          "shape": [
+            2,
+            2,
+            64,
+            2
+          ]
+        },
+        "positions": {
+          "buffer": "prefill:flat_positions",
+          "dtype": "int32",
+          "shape": [
+            8
+          ]
+        },
+        "projection": {
+          "buffer": "prefill:attk",
+          "dtype": "float32",
+          "shape": [
+            8,
+            512
+          ]
+        },
+        "values": {
+          "buffer": "prefill:attv",
+          "dtype": "float32",
+          "shape": [
+            8,
+            512
+          ]
+        },
+        "vc": {
+          "buffer": "state:1:1",
+          "dtype": "uint8",
+          "shape": [
+            2,
+            2,
+            64,
+            256
+          ]
+        },
+        "vs": {
+          "buffer": "state:1:3",
+          "dtype": "float32",
+          "shape": [
+            2,
+            2,
+            64,
+            2
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.1.self_attn.k_norm.weight",
+          "dtype": "float32",
+          "shape": [
+            256
+          ]
+        }
+      },
+      "parameters": {
+        "capacity": 64,
+        "chunk": 4,
+        "eps": 1e-06,
+        "kv_dtype": "fp8",
+        "slots": 2,
+        "theta": 1000000.0
+      }
+    },
+    null
+  ],
+  [
+    "attention",
+    {
+      "arguments": [],
+      "bindings": {
+        "kc": {
+          "buffer": "state:1:0",
+          "dtype": "uint8",
+          "shape": [
+            2,
+            2,
+            64,
+            256
+          ]
+        },
+        "ks": {
+          "buffer": "state:1:2",
+          "dtype": "float32",
+          "shape": [
+            2,
+            2,
+            64,
+            2
+          ]
+        },
+        "lengths": {
+          "buffer": "prefill:lengths",
+          "dtype": "int32",
+          "shape": [
+            2
+          ]
+        },
+        "out": {
+          "buffer": "prefill:att_out",
+          "dtype": "bfloat16",
+          "shape": [
+            8,
+            4096
+          ]
+        },
+        "positions": {
+          "buffer": "decode:positions",
+          "dtype": "int32",
+          "shape": [
+            2
+          ]
+        },
+        "projection": {
+          "buffer": "prefill:attq",
+          "dtype": "float32",
+          "shape": [
+            8,
+            8192
+          ]
+        },
+        "q": {
+          "buffer": "prefill:attq_normal",
+          "dtype": "bfloat16",
+          "shape": [
+            8,
+            16,
+            256
+          ]
+        },
+        "vc": {
+          "buffer": "state:1:1",
+          "dtype": "uint8",
+          "shape": [
+            2,
+            2,
+            64,
+            256
+          ]
+        },
+        "vs": {
+          "buffer": "state:1:3",
+          "dtype": "float32",
+          "shape": [
+            2,
+            2,
+            64,
+            2
+          ]
+        }
+      },
+      "parameters": {
+        "capacity": 64,
+        "chunk": 4,
+        "kv_dtype": "fp8",
+        "slots": 2
+      }
+    },
+    null
+  ],
+  [
+    "quantize",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "prefill:quantized_att_out",
+          "dtype": "uint8",
+          "shape": [
+            8,
+            4096
+          ]
+        },
+        "scales": {
+          "buffer": "prefill:scales_att_out",
+          "dtype": "float32",
+          "shape": [
+            8,
+            32
+          ]
+        },
+        "x": {
+          "buffer": "prefill:att_out",
+          "dtype": "bfloat16",
+          "shape": [
+            8,
+            4096
+          ]
+        }
+      },
+      "parameters": {
+        "k": 4096,
+        "r": 8
+      }
+    },
+    null
+  ],
+  [
+    "fp8_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "activation_scales": {
+          "buffer": "prefill:scales_att_out",
+          "dtype": "float32",
+          "shape": [
+            8,
+            32
+          ]
+        },
+        "out": {
+          "buffer": "prefill:mixed",
+          "dtype": "float32",
+          "shape": [
+            8,
+            2048
+          ]
+        },
+        "scales": {
+          "buffer": "model.language_model.layers.1.self_attn.o_proj.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            16,
+            32
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.1.self_attn.o_proj.weight",
+          "dtype": "float32",
+          "shape": [
+            2048,
+            4096
+          ]
+        },
+        "x": {
+          "buffer": "prefill:quantized_att_out",
+          "dtype": "uint8",
+          "shape": [
+            8,
+            4096
+          ]
+        }
+      },
+      "parameters": {
+        "k": 4096,
+        "o": 2048,
+        "r": 8
+      }
+    },
+    null
+  ],
+  [
+    "add_rms",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "prefill:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            8,
+            2048
+          ]
+        },
+        "residual": {
+          "buffer": "prefill:residual",
+          "dtype": "bfloat16",
+          "shape": [
+            8,
+            2048
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.1.post_attention_layernorm.weight",
+          "dtype": "float32",
+          "shape": [
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "prefill:mixed",
+          "dtype": "float32",
+          "shape": [
+            8,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "c": 2048,
+        "eps": 1e-06,
+        "r": 8
+      }
+    },
+    null
+  ],
+  [
+    "bf16_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "prefill:router",
+          "dtype": "float32",
+          "shape": [
+            8,
+            256
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.1.mlp.gate.weight",
+          "dtype": "float32",
+          "shape": [
+            256,
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "prefill:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            8,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "k": 2048,
+        "o": 256,
+        "r": 8
+      }
+    },
+    null
+  ],
+  [
+    "bf16_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "prefill:shared_gate",
+          "dtype": "float32",
+          "shape": [
+            8,
+            1
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.1.mlp.shared_expert_gate.weight",
+          "dtype": "float32",
+          "shape": [
+            1,
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "prefill:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            8,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "k": 2048,
+        "o": 1,
+        "r": 8
+      }
+    },
+    null
+  ],
+  [
+    "router",
+    {
+      "arguments": [],
+      "bindings": {
+        "ids": {
+          "buffer": "prefill:ids",
+          "dtype": "int32",
+          "shape": [
+            8,
+            8
+          ]
+        },
+        "logits": {
+          "buffer": "prefill:router",
+          "dtype": "float32",
+          "shape": [
+            8,
+            256
+          ]
+        },
+        "weights": {
+          "buffer": "prefill:router_weights",
+          "dtype": "float32",
+          "shape": [
+            8,
+            8
+          ]
+        }
+      },
+      "parameters": {
+        "experts": 256,
+        "r": 8,
+        "top": 8
+      }
+    },
+    null
+  ],
+  [
+    "expert_routes",
+    {
+      "arguments": [],
+      "bindings": {
+        "active": {
+          "buffer": "prefill:flat_active",
+          "dtype": "int32",
+          "shape": [
+            8
+          ]
+        },
+        "counts": {
+          "buffer": "prefill:counts",
+          "dtype": "int32",
+          "shape": [
+            256
+          ]
+        },
+        "ids": {
+          "buffer": "prefill:ids",
+          "dtype": "int32",
+          "shape": [
+            8,
+            8
+          ]
+        },
+        "routes": {
+          "buffer": "prefill:routes",
+          "dtype": "int32",
+          "shape": [
+            256,
+            8
+          ]
+        }
+      },
+      "parameters": {
+        "chunk": 4,
+        "slots": 2
+      }
+    },
+    null
+  ],
+  [
+    "quantize",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "prefill:quantized_normal",
+          "dtype": "uint8",
+          "shape": [
+            8,
+            2048
+          ]
+        },
+        "scales": {
+          "buffer": "prefill:scales_normal",
+          "dtype": "float32",
+          "shape": [
+            8,
+            16
+          ]
+        },
+        "x": {
+          "buffer": "prefill:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            8,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "k": 2048,
+        "r": 8
+      }
+    },
+    null
+  ],
+  [
+    "fp8_experts",
+    {
+      "arguments": [],
+      "bindings": {
+        "activation_scales": {
+          "buffer": "prefill:scales_normal",
+          "dtype": "float32",
+          "shape": [
+            8,
+            16
+          ]
+        },
+        "counts": {
+          "buffer": "prefill:counts",
+          "dtype": "int32",
+          "shape": [
+            256
+          ]
+        },
+        "out": {
+          "buffer": "prefill:expert_g",
+          "dtype": "float32",
+          "shape": [
+            8,
+            8,
+            512
+          ]
+        },
+        "routes": {
+          "buffer": "prefill:routes",
+          "dtype": "int32",
+          "shape": [
+            256,
+            8
+          ]
+        },
+        "scales": {
+          "buffer": "model.language_model.layers.1.mlp.experts.gate_proj.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            256,
+            4,
+            16
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.1.mlp.experts.gate_proj.weight",
+          "dtype": "float32",
+          "shape": [
+            256,
+            512,
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "prefill:quantized_normal",
+          "dtype": "uint8",
+          "shape": [
+            8,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "experts": 256,
+        "k": 2048,
+        "o": 512,
+        "r": 8,
+        "routed_input": false,
+        "top": 8
+      }
+    },
+    null
+  ],
+  [
+    "fp8_experts",
+    {
+      "arguments": [],
+      "bindings": {
+        "activation_scales": {
+          "buffer": "prefill:scales_normal",
+          "dtype": "float32",
+          "shape": [
+            8,
+            16
+          ]
+        },
+        "counts": {
+          "buffer": "prefill:counts",
+          "dtype": "int32",
+          "shape": [
+            256
+          ]
+        },
+        "out": {
+          "buffer": "prefill:expert_u",
+          "dtype": "float32",
+          "shape": [
+            8,
+            8,
+            512
+          ]
+        },
+        "routes": {
+          "buffer": "prefill:routes",
+          "dtype": "int32",
+          "shape": [
+            256,
+            8
+          ]
+        },
+        "scales": {
+          "buffer": "model.language_model.layers.1.mlp.experts.up_proj.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            256,
+            4,
+            16
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.1.mlp.experts.up_proj.weight",
+          "dtype": "float32",
+          "shape": [
+            256,
+            512,
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "prefill:quantized_normal",
+          "dtype": "uint8",
+          "shape": [
+            8,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "experts": 256,
+        "k": 2048,
+        "o": 512,
+        "r": 8,
+        "routed_input": false,
+        "top": 8
+      }
+    },
+    null
+  ],
+  [
+    "swiglu_experts",
+    {
+      "arguments": [],
+      "bindings": {
+        "g": {
+          "buffer": "prefill:expert_g",
+          "dtype": "float32",
+          "shape": [
+            8,
+            8,
+            512
+          ]
+        },
+        "out": {
+          "buffer": "prefill:expert_activation",
+          "dtype": "bfloat16",
+          "shape": [
+            8,
+            8,
+            512
+          ]
+        },
+        "u": {
+          "buffer": "prefill:expert_u",
+          "dtype": "float32",
+          "shape": [
+            8,
+            8,
+            512
+          ]
+        }
+      },
+      "parameters": {
+        "c": 512,
+        "r": 8,
+        "top": 8
+      }
+    },
+    null
+  ],
+  [
+    "quantize",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "prefill:quantized_expert_activation",
+          "dtype": "uint8",
+          "shape": [
+            8,
+            8,
+            512
+          ]
+        },
+        "scales": {
+          "buffer": "prefill:scales_expert_activation",
+          "dtype": "float32",
+          "shape": [
+            8,
+            8,
+            4
+          ]
+        },
+        "x": {
+          "buffer": "prefill:expert_activation",
+          "dtype": "bfloat16",
+          "shape": [
+            8,
+            8,
+            512
+          ]
+        }
+      },
+      "parameters": {
+        "k": 512,
+        "r": 8,
+        "top": 8
+      }
+    },
+    null
+  ],
+  [
+    "fp8_experts",
+    {
+      "arguments": [],
+      "bindings": {
+        "activation_scales": {
+          "buffer": "prefill:scales_expert_activation",
+          "dtype": "float32",
+          "shape": [
+            8,
+            8,
+            4
+          ]
+        },
+        "counts": {
+          "buffer": "prefill:counts",
+          "dtype": "int32",
+          "shape": [
+            256
+          ]
+        },
+        "out": {
+          "buffer": "prefill:expert_out",
+          "dtype": "float32",
+          "shape": [
+            8,
+            8,
+            2048
+          ]
+        },
+        "routes": {
+          "buffer": "prefill:routes",
+          "dtype": "int32",
+          "shape": [
+            256,
+            8
+          ]
+        },
+        "scales": {
+          "buffer": "model.language_model.layers.1.mlp.experts.down_proj.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            256,
+            16,
+            4
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.1.mlp.experts.down_proj.weight",
+          "dtype": "float32",
+          "shape": [
+            256,
+            2048,
+            512
+          ]
+        },
+        "x": {
+          "buffer": "prefill:quantized_expert_activation",
+          "dtype": "uint8",
+          "shape": [
+            8,
+            8,
+            512
+          ]
+        }
+      },
+      "parameters": {
+        "experts": 256,
+        "k": 512,
+        "o": 2048,
+        "r": 8,
+        "routed_input": true,
+        "top": 8
+      }
+    },
+    null
+  ],
+  [
+    "fp8_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "activation_scales": {
+          "buffer": "prefill:scales_normal",
+          "dtype": "float32",
+          "shape": [
+            8,
+            16
+          ]
+        },
+        "out": {
+          "buffer": "prefill:shared_g",
+          "dtype": "float32",
+          "shape": [
+            8,
+            512
+          ]
+        },
+        "scales": {
+          "buffer": "model.language_model.layers.1.mlp.shared_expert.gate_proj.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            4,
+            16
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.1.mlp.shared_expert.gate_proj.weight",
+          "dtype": "float32",
+          "shape": [
+            512,
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "prefill:quantized_normal",
+          "dtype": "uint8",
+          "shape": [
+            8,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "k": 2048,
+        "o": 512,
+        "r": 8
+      }
+    },
+    null
+  ],
+  [
+    "fp8_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "activation_scales": {
+          "buffer": "prefill:scales_normal",
+          "dtype": "float32",
+          "shape": [
+            8,
+            16
+          ]
+        },
+        "out": {
+          "buffer": "prefill:shared_u",
+          "dtype": "float32",
+          "shape": [
+            8,
+            512
+          ]
+        },
+        "scales": {
+          "buffer": "model.language_model.layers.1.mlp.shared_expert.up_proj.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            4,
+            16
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.1.mlp.shared_expert.up_proj.weight",
+          "dtype": "float32",
+          "shape": [
+            512,
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "prefill:quantized_normal",
+          "dtype": "uint8",
+          "shape": [
+            8,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "k": 2048,
+        "o": 512,
+        "r": 8
+      }
+    },
+    null
+  ],
+  [
+    "swiglu",
+    {
+      "arguments": [],
+      "bindings": {
+        "g": {
+          "buffer": "prefill:shared_g",
+          "dtype": "float32",
+          "shape": [
+            8,
+            512
+          ]
+        },
+        "out": {
+          "buffer": "prefill:shared_activation",
+          "dtype": "bfloat16",
+          "shape": [
+            8,
+            512
+          ]
+        },
+        "u": {
+          "buffer": "prefill:shared_u",
+          "dtype": "float32",
+          "shape": [
+            8,
+            512
+          ]
+        }
+      },
+      "parameters": {
+        "c": 512,
+        "r": 8
+      }
+    },
+    null
+  ],
+  [
+    "quantize",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "prefill:quantized_shared_activation",
+          "dtype": "uint8",
+          "shape": [
+            8,
+            512
+          ]
+        },
+        "scales": {
+          "buffer": "prefill:scales_shared_activation",
+          "dtype": "float32",
+          "shape": [
+            8,
+            4
+          ]
+        },
+        "x": {
+          "buffer": "prefill:shared_activation",
+          "dtype": "bfloat16",
+          "shape": [
+            8,
+            512
+          ]
+        }
+      },
+      "parameters": {
+        "k": 512,
+        "r": 8
+      }
+    },
+    null
+  ],
+  [
+    "fp8_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "activation_scales": {
+          "buffer": "prefill:scales_shared_activation",
+          "dtype": "float32",
+          "shape": [
+            8,
+            4
+          ]
+        },
+        "out": {
+          "buffer": "prefill:shared_out",
+          "dtype": "float32",
+          "shape": [
+            8,
+            2048
+          ]
+        },
+        "scales": {
+          "buffer": "model.language_model.layers.1.mlp.shared_expert.down_proj.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            16,
+            4
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.1.mlp.shared_expert.down_proj.weight",
+          "dtype": "float32",
+          "shape": [
+            2048,
+            512
+          ]
+        },
+        "x": {
+          "buffer": "prefill:quantized_shared_activation",
+          "dtype": "uint8",
+          "shape": [
+            8,
+            512
+          ]
+        }
+      },
+      "parameters": {
+        "k": 512,
+        "o": 2048,
+        "r": 8
+      }
+    },
+    null
+  ],
+  [
+    "moe_combine",
+    {
+      "arguments": [],
+      "bindings": {
+        "experts": {
+          "buffer": "prefill:expert_out",
+          "dtype": "float32",
+          "shape": [
+            8,
+            8,
+            2048
+          ]
+        },
+        "gate": {
+          "buffer": "prefill:shared_gate",
+          "dtype": "float32",
+          "shape": [
+            8,
+            1
+          ]
+        },
+        "out": {
+          "buffer": "prefill:ffn",
+          "dtype": "float32",
+          "shape": [
+            8,
+            2048
+          ]
+        },
+        "shared": {
+          "buffer": "prefill:shared_out",
+          "dtype": "float32",
+          "shape": [
+            8,
+            2048
+          ]
+        },
+        "weights": {
+          "buffer": "prefill:router_weights",
+          "dtype": "float32",
+          "shape": [
+            8,
+            8
+          ]
+        }
+      },
+      "parameters": {
+        "c": 2048,
+        "r": 8,
+        "top": 8
+      }
+    },
+    null
+  ],
+  [
+    "add_rms",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "prefill:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            8,
+            2048
+          ]
+        },
+        "residual": {
+          "buffer": "prefill:residual",
+          "dtype": "bfloat16",
+          "shape": [
+            8,
+            2048
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.norm.weight",
+          "dtype": "float32",
+          "shape": [
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "prefill:ffn",
+          "dtype": "float32",
+          "shape": [
+            8,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "c": 2048,
+        "eps": 1e-06,
+        "r": 8
+      }
+    },
+    null
+  ],
+  [
+    "last_rows",
+    {
+      "arguments": [],
+      "bindings": {
+        "lengths": {
+          "buffer": "prefill:lengths",
+          "dtype": "int32",
+          "shape": [
+            2
+          ]
+        },
+        "out": {
+          "buffer": "decode:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "prefill:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            8,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "chunk": 4,
+        "slots": 2,
+        "width": 2048
+      }
+    },
+    null
+  ],
+  [
+    "head",
+    {}
+  ],
+  [
+    "argmax",
+    {}
+  ],
+  [
+    "advance",
+    {
+      "arguments": [],
+      "bindings": {
+        "active": {
+          "buffer": "decode:active",
+          "dtype": "int32",
+          "shape": [
+            2
+          ]
+        },
+        "lengths": {
+          "buffer": "prefill:lengths",
+          "dtype": "int32",
+          "shape": [
+            2
+          ]
+        },
+        "position": {
+          "buffer": "decode:positions",
+          "dtype": "int32",
+          "shape": [
+            2
+          ]
+        }
+      },
+      "parameters": {
+        "chunk": 4,
+        "slots": 2
+      }
+    },
+    null
+  ]
+]

@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "akas"
+version = "0.1.0"
+description = "Readable inference engine and model adapters built on Tensor"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.12,<3.13"
+dependencies = ["tensor-workspace==0.1.0", "regex==2026.9.29"]
+
+[project.optional-dependencies]
+compiler = ["tensor-workspace[compiler]==0.1.0"]
+webgpu = ["tensor-workspace[webgpu]==0.1.0"]
+serving = ["aiohttp>=3.14,<4"]
+reference = ["torch>=2.8", "transformers>=4.57,<6"]
+cloud = ["modal>=1,<2", "huggingface-hub>=0.36,<2"]
+
+[project.urls]
+Repository = "https://github.com/kreasof-ai/akas"
+Documentation = "https://github.com/kreasof-ai/akas/blob/main/README.md"
+Issues = "https://github.com/kreasof-ai/akas/issues"
+
+[project.scripts]
+akas = "akas.cli:main"
+
+[tool.setuptools.package-data]
+"akas.compilation.profiles" = ["data/*.json"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[dependency-groups]
+dev = ["pytest>=8", "aiohttp>=3.14,<4", "matplotlib>=3.10,<4"]
+
+[tool.uv.sources]
+tensor-workspace = { git = "https://github.com/kreasof-ai/tensor", rev = "96f423b" }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [".", "src"]
+addopts = "-q"

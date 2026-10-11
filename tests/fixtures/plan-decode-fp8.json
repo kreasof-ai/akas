@@ -1,0 +1,2580 @@
+[
+  [
+    "embedding",
+    {
+      "arguments": [
+        {
+          "buffer": "decode:tokens",
+          "dtype": "int32",
+          "shape": [
+            2
+          ]
+        },
+        {
+          "buffer": "model.language_model.embed_tokens.weight",
+          "dtype": "float32",
+          "shape": [
+            248320,
+            2048
+          ]
+        },
+        {
+          "buffer": "decode:residual",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            2048
+          ]
+        }
+      ],
+      "bindings": {},
+      "parameters": {
+        "c": 2048,
+        "r": 2,
+        "vocab": 248320
+      }
+    },
+    null
+  ],
+  [
+    "rms",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "decode:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            2048
+          ]
+        },
+        "residual": {
+          "buffer": "decode:residual",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            2048
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.0.input_layernorm.weight",
+          "dtype": "float32",
+          "shape": [
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "c": 2048,
+        "eps": 1e-06,
+        "r": 2
+      }
+    },
+    [
+      0,
+      "input"
+    ]
+  ],
+  [
+    "fp8_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "decode:qkv",
+          "dtype": "float32",
+          "shape": [
+            2,
+            8192
+          ]
+        },
+        "scales": {
+          "buffer": "model.language_model.layers.0.linear_attn.in_proj_qkv.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            64,
+            16
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.0.linear_attn.in_proj_qkv.weight",
+          "dtype": "float32",
+          "shape": [
+            8192,
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "decode:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "k": 2048,
+        "o": 8192,
+        "r": 2
+      }
+    },
+    null
+  ],
+  [
+    "fp8_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "decode:z",
+          "dtype": "float32",
+          "shape": [
+            2,
+            4096
+          ]
+        },
+        "scales": {
+          "buffer": "model.language_model.layers.0.linear_attn.in_proj_z.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            32,
+            16
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.0.linear_attn.in_proj_z.weight",
+          "dtype": "float32",
+          "shape": [
+            4096,
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "decode:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "k": 2048,
+        "o": 4096,
+        "r": 2
+      }
+    },
+    null
+  ],
+  [
+    "bf16_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "decode:a",
+          "dtype": "float32",
+          "shape": [
+            2,
+            32
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.0.linear_attn.in_proj_a.weight",
+          "dtype": "float32",
+          "shape": [
+            32,
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "decode:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "k": 2048,
+        "o": 32,
+        "r": 2
+      }
+    },
+    null
+  ],
+  [
+    "bf16_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "decode:b",
+          "dtype": "float32",
+          "shape": [
+            2,
+            32
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.0.linear_attn.in_proj_b.weight",
+          "dtype": "float32",
+          "shape": [
+            32,
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "decode:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "k": 2048,
+        "o": 32,
+        "r": 2
+      }
+    },
+    null
+  ],
+  [
+    "gdn_conv",
+    {
+      "arguments": [
+        {
+          "buffer": "decode:qkv",
+          "dtype": "float32",
+          "shape": [
+            2,
+            8192
+          ]
+        },
+        {
+          "buffer": "model.language_model.layers.0.linear_attn.conv1d.weight",
+          "dtype": "float32",
+          "shape": [
+            8192,
+            1,
+            4
+          ]
+        },
+        {
+          "buffer": "decode:active",
+          "dtype": "int32",
+          "shape": [
+            2
+          ]
+        },
+        {
+          "buffer": "state:0:1",
+          "dtype": "float32",
+          "shape": [
+            2,
+            8192,
+            3
+          ]
+        },
+        {
+          "buffer": "decode:conv",
+          "dtype": "float32",
+          "shape": [
+            2,
+            8192
+          ]
+        }
+      ],
+      "bindings": {},
+      "parameters": {
+        "r": 2
+      }
+    },
+    null
+  ],
+  [
+    "gdn_prepare",
+    {
+      "arguments": [
+        {
+          "buffer": "decode:conv",
+          "dtype": "float32",
+          "shape": [
+            2,
+            8192
+          ]
+        },
+        {
+          "buffer": "decode:a",
+          "dtype": "float32",
+          "shape": [
+            2,
+            32
+          ]
+        },
+        {
+          "buffer": "decode:b",
+          "dtype": "float32",
+          "shape": [
+            2,
+            32
+          ]
+        },
+        {
+          "buffer": "model.language_model.layers.0.linear_attn.dt_bias",
+          "dtype": "float32",
+          "shape": [
+            32
+          ]
+        },
+        {
+          "buffer": "model.language_model.layers.0.linear_attn.A_log",
+          "dtype": "float32",
+          "shape": [
+            32
+          ]
+        },
+        {
+          "buffer": "decode:gdn_q",
+          "dtype": "float32",
+          "shape": [
+            2,
+            32,
+            128
+          ]
+        },
+        {
+          "buffer": "decode:gdn_k",
+          "dtype": "float32",
+          "shape": [
+            2,
+            32,
+            128
+          ]
+        },
+        {
+          "buffer": "decode:gdn_v",
+          "dtype": "float32",
+          "shape": [
+            2,
+            32,
+            128
+          ]
+        },
+        {
+          "buffer": "decode:gdn_decay",
+          "dtype": "float32",
+          "shape": [
+            2,
+            32
+          ]
+        },
+        {
+          "buffer": "decode:gdn_beta",
+          "dtype": "float32",
+          "shape": [
+            2,
+            32
+          ]
+        }
+      ],
+      "bindings": {},
+      "parameters": {
+        "r": 2
+      }
+    },
+    null
+  ],
+  [
+    "gdn_recurrent",
+    {
+      "arguments": [
+        {
+          "buffer": "decode:gdn_q",
+          "dtype": "float32",
+          "shape": [
+            2,
+            32,
+            128
+          ]
+        },
+        {
+          "buffer": "decode:gdn_k",
+          "dtype": "float32",
+          "shape": [
+            2,
+            32,
+            128
+          ]
+        },
+        {
+          "buffer": "decode:gdn_v",
+          "dtype": "float32",
+          "shape": [
+            2,
+            32,
+            128
+          ]
+        },
+        {
+          "buffer": "decode:gdn_decay",
+          "dtype": "float32",
+          "shape": [
+            2,
+            32
+          ]
+        },
+        {
+          "buffer": "decode:gdn_beta",
+          "dtype": "float32",
+          "shape": [
+            2,
+            32
+          ]
+        },
+        {
+          "buffer": "decode:active",
+          "dtype": "int32",
+          "shape": [
+            2
+          ]
+        },
+        {
+          "buffer": "state:0:0",
+          "dtype": "float32",
+          "shape": [
+            2,
+            32,
+            128,
+            128
+          ]
+        },
+        {
+          "buffer": "decode:gdn_out",
+          "dtype": "float32",
+          "shape": [
+            2,
+            32,
+            128
+          ]
+        }
+      ],
+      "bindings": {},
+      "parameters": {
+        "heads": 32,
+        "key": 128,
+        "slots": 2,
+        "value": 128
+      }
+    },
+    null
+  ],
+  [
+    "gdn_norm",
+    {
+      "arguments": [
+        {
+          "buffer": "decode:gdn_out",
+          "dtype": "float32",
+          "shape": [
+            2,
+            32,
+            128
+          ]
+        },
+        {
+          "buffer": "decode:z",
+          "dtype": "float32",
+          "shape": [
+            2,
+            4096
+          ]
+        },
+        {
+          "buffer": "model.language_model.layers.0.linear_attn.norm.weight",
+          "dtype": "float32",
+          "shape": [
+            128
+          ]
+        },
+        {
+          "buffer": "decode:gdn_normal",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            4096
+          ]
+        }
+      ],
+      "bindings": {},
+      "parameters": {
+        "eps": 1e-06,
+        "r": 2
+      }
+    },
+    null
+  ],
+  [
+    "fp8_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "decode:mixed",
+          "dtype": "float32",
+          "shape": [
+            2,
+            2048
+          ]
+        },
+        "scales": {
+          "buffer": "model.language_model.layers.0.linear_attn.out_proj.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            16,
+            32
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.0.linear_attn.out_proj.weight",
+          "dtype": "float32",
+          "shape": [
+            2048,
+            4096
+          ]
+        },
+        "x": {
+          "buffer": "decode:gdn_normal",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            4096
+          ]
+        }
+      },
+      "parameters": {
+        "k": 4096,
+        "o": 2048,
+        "r": 2
+      }
+    },
+    null
+  ],
+  [
+    "add_rms",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "decode:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            2048
+          ]
+        },
+        "residual": {
+          "buffer": "decode:residual",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            2048
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.0.post_attention_layernorm.weight",
+          "dtype": "float32",
+          "shape": [
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "decode:mixed",
+          "dtype": "float32",
+          "shape": [
+            2,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "c": 2048,
+        "eps": 1e-06,
+        "r": 2
+      }
+    },
+    [
+      0,
+      "post_attention"
+    ]
+  ],
+  [
+    "bf16_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "decode:router",
+          "dtype": "float32",
+          "shape": [
+            2,
+            256
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.0.mlp.gate.weight",
+          "dtype": "float32",
+          "shape": [
+            256,
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "decode:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "k": 2048,
+        "o": 256,
+        "r": 2
+      }
+    },
+    null
+  ],
+  [
+    "bf16_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "decode:shared_gate",
+          "dtype": "float32",
+          "shape": [
+            2,
+            1
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.0.mlp.shared_expert_gate.weight",
+          "dtype": "float32",
+          "shape": [
+            1,
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "decode:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "k": 2048,
+        "o": 1,
+        "r": 2
+      }
+    },
+    null
+  ],
+  [
+    "router",
+    {
+      "arguments": [
+        {
+          "buffer": "decode:router",
+          "dtype": "float32",
+          "shape": [
+            2,
+            256
+          ]
+        },
+        {
+          "buffer": "decode:ids",
+          "dtype": "int32",
+          "shape": [
+            2,
+            8
+          ]
+        },
+        {
+          "buffer": "decode:router_weights",
+          "dtype": "float32",
+          "shape": [
+            2,
+            8
+          ]
+        }
+      ],
+      "bindings": {},
+      "parameters": {
+        "experts": 256,
+        "r": 2,
+        "top": 8
+      }
+    },
+    null
+  ],
+  [
+    "moe_groups",
+    {
+      "arguments": [
+        {
+          "buffer": "decode:ids",
+          "dtype": "int32",
+          "shape": [
+            2,
+            8
+          ]
+        },
+        {
+          "buffer": "decode:experts",
+          "dtype": "int32",
+          "shape": [
+            16
+          ]
+        },
+        {
+          "buffer": "decode:routes",
+          "dtype": "int32",
+          "shape": [
+            16,
+            2
+          ]
+        }
+      ],
+      "bindings": {},
+      "parameters": {
+        "r": 2,
+        "top": 8
+      }
+    },
+    null
+  ],
+  [
+    "fp8_experts",
+    {
+      "arguments": [
+        {
+          "buffer": "decode:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            2048
+          ]
+        },
+        {
+          "buffer": "model.language_model.layers.0.mlp.experts.gate_proj.weight",
+          "dtype": "float32",
+          "shape": [
+            256,
+            512,
+            2048
+          ]
+        },
+        {
+          "buffer": "model.language_model.layers.0.mlp.experts.gate_proj.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            256,
+            4,
+            16
+          ]
+        },
+        {
+          "buffer": "decode:experts",
+          "dtype": "int32",
+          "shape": [
+            16
+          ]
+        },
+        {
+          "buffer": "decode:routes",
+          "dtype": "int32",
+          "shape": [
+            16,
+            2
+          ]
+        },
+        {
+          "buffer": "decode:expert_g",
+          "dtype": "float32",
+          "shape": [
+            2,
+            8,
+            512
+          ]
+        }
+      ],
+      "bindings": {},
+      "parameters": {
+        "experts": 256,
+        "k": 2048,
+        "o": 512,
+        "r": 2,
+        "routed_input": false,
+        "top": 8
+      }
+    },
+    null
+  ],
+  [
+    "fp8_experts",
+    {
+      "arguments": [
+        {
+          "buffer": "decode:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            2048
+          ]
+        },
+        {
+          "buffer": "model.language_model.layers.0.mlp.experts.up_proj.weight",
+          "dtype": "float32",
+          "shape": [
+            256,
+            512,
+            2048
+          ]
+        },
+        {
+          "buffer": "model.language_model.layers.0.mlp.experts.up_proj.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            256,
+            4,
+            16
+          ]
+        },
+        {
+          "buffer": "decode:experts",
+          "dtype": "int32",
+          "shape": [
+            16
+          ]
+        },
+        {
+          "buffer": "decode:routes",
+          "dtype": "int32",
+          "shape": [
+            16,
+            2
+          ]
+        },
+        {
+          "buffer": "decode:expert_u",
+          "dtype": "float32",
+          "shape": [
+            2,
+            8,
+            512
+          ]
+        }
+      ],
+      "bindings": {},
+      "parameters": {
+        "experts": 256,
+        "k": 2048,
+        "o": 512,
+        "r": 2,
+        "routed_input": false,
+        "top": 8
+      }
+    },
+    null
+  ],
+  [
+    "swiglu_experts",
+    {
+      "arguments": [
+        {
+          "buffer": "decode:expert_g",
+          "dtype": "float32",
+          "shape": [
+            2,
+            8,
+            512
+          ]
+        },
+        {
+          "buffer": "decode:expert_u",
+          "dtype": "float32",
+          "shape": [
+            2,
+            8,
+            512
+          ]
+        },
+        {
+          "buffer": "decode:expert_activation",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            8,
+            512
+          ]
+        }
+      ],
+      "bindings": {},
+      "parameters": {
+        "c": 512,
+        "r": 2,
+        "top": 8
+      }
+    },
+    null
+  ],
+  [
+    "fp8_experts",
+    {
+      "arguments": [
+        {
+          "buffer": "decode:expert_activation",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            8,
+            512
+          ]
+        },
+        {
+          "buffer": "model.language_model.layers.0.mlp.experts.down_proj.weight",
+          "dtype": "float32",
+          "shape": [
+            256,
+            2048,
+            512
+          ]
+        },
+        {
+          "buffer": "model.language_model.layers.0.mlp.experts.down_proj.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            256,
+            16,
+            4
+          ]
+        },
+        {
+          "buffer": "decode:experts",
+          "dtype": "int32",
+          "shape": [
+            16
+          ]
+        },
+        {
+          "buffer": "decode:routes",
+          "dtype": "int32",
+          "shape": [
+            16,
+            2
+          ]
+        },
+        {
+          "buffer": "decode:expert_out",
+          "dtype": "float32",
+          "shape": [
+            2,
+            8,
+            2048
+          ]
+        }
+      ],
+      "bindings": {},
+      "parameters": {
+        "experts": 256,
+        "k": 512,
+        "o": 2048,
+        "r": 2,
+        "routed_input": true,
+        "top": 8
+      }
+    },
+    null
+  ],
+  [
+    "fp8_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "decode:shared_g",
+          "dtype": "float32",
+          "shape": [
+            2,
+            512
+          ]
+        },
+        "scales": {
+          "buffer": "model.language_model.layers.0.mlp.shared_expert.gate_proj.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            4,
+            16
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.0.mlp.shared_expert.gate_proj.weight",
+          "dtype": "float32",
+          "shape": [
+            512,
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "decode:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "k": 2048,
+        "o": 512,
+        "r": 2
+      }
+    },
+    null
+  ],
+  [
+    "fp8_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "decode:shared_u",
+          "dtype": "float32",
+          "shape": [
+            2,
+            512
+          ]
+        },
+        "scales": {
+          "buffer": "model.language_model.layers.0.mlp.shared_expert.up_proj.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            4,
+            16
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.0.mlp.shared_expert.up_proj.weight",
+          "dtype": "float32",
+          "shape": [
+            512,
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "decode:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "k": 2048,
+        "o": 512,
+        "r": 2
+      }
+    },
+    null
+  ],
+  [
+    "swiglu",
+    {
+      "arguments": [
+        {
+          "buffer": "decode:shared_g",
+          "dtype": "float32",
+          "shape": [
+            2,
+            512
+          ]
+        },
+        {
+          "buffer": "decode:shared_u",
+          "dtype": "float32",
+          "shape": [
+            2,
+            512
+          ]
+        },
+        {
+          "buffer": "decode:shared_activation",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            512
+          ]
+        }
+      ],
+      "bindings": {},
+      "parameters": {
+        "c": 512,
+        "r": 2
+      }
+    },
+    null
+  ],
+  [
+    "fp8_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "decode:shared_out",
+          "dtype": "float32",
+          "shape": [
+            2,
+            2048
+          ]
+        },
+        "scales": {
+          "buffer": "model.language_model.layers.0.mlp.shared_expert.down_proj.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            16,
+            4
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.0.mlp.shared_expert.down_proj.weight",
+          "dtype": "float32",
+          "shape": [
+            2048,
+            512
+          ]
+        },
+        "x": {
+          "buffer": "decode:shared_activation",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            512
+          ]
+        }
+      },
+      "parameters": {
+        "k": 512,
+        "o": 2048,
+        "r": 2
+      }
+    },
+    null
+  ],
+  [
+    "moe_combine",
+    {
+      "arguments": [
+        {
+          "buffer": "decode:expert_out",
+          "dtype": "float32",
+          "shape": [
+            2,
+            8,
+            2048
+          ]
+        },
+        {
+          "buffer": "decode:router_weights",
+          "dtype": "float32",
+          "shape": [
+            2,
+            8
+          ]
+        },
+        {
+          "buffer": "decode:shared_out",
+          "dtype": "float32",
+          "shape": [
+            2,
+            2048
+          ]
+        },
+        {
+          "buffer": "decode:shared_gate",
+          "dtype": "float32",
+          "shape": [
+            2,
+            1
+          ]
+        },
+        {
+          "buffer": "decode:ffn",
+          "dtype": "float32",
+          "shape": [
+            2,
+            2048
+          ]
+        }
+      ],
+      "bindings": {},
+      "parameters": {
+        "c": 2048,
+        "r": 2,
+        "top": 8
+      }
+    },
+    [
+      0,
+      "mlp"
+    ]
+  ],
+  [
+    "add_rms",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "decode:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            2048
+          ]
+        },
+        "residual": {
+          "buffer": "decode:residual",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            2048
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.1.input_layernorm.weight",
+          "dtype": "float32",
+          "shape": [
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "decode:ffn",
+          "dtype": "float32",
+          "shape": [
+            2,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "c": 2048,
+        "eps": 1e-06,
+        "r": 2
+      }
+    },
+    [
+      1,
+      "input"
+    ]
+  ],
+  [
+    "fp8_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "decode:attq",
+          "dtype": "float32",
+          "shape": [
+            2,
+            8192
+          ]
+        },
+        "scales": {
+          "buffer": "model.language_model.layers.1.self_attn.q_proj.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            64,
+            16
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.1.self_attn.q_proj.weight",
+          "dtype": "float32",
+          "shape": [
+            8192,
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "decode:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "k": 2048,
+        "o": 8192,
+        "r": 2
+      }
+    },
+    null
+  ],
+  [
+    "fp8_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "decode:attk",
+          "dtype": "float32",
+          "shape": [
+            2,
+            512
+          ]
+        },
+        "scales": {
+          "buffer": "model.language_model.layers.1.self_attn.k_proj.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            4,
+            16
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.1.self_attn.k_proj.weight",
+          "dtype": "float32",
+          "shape": [
+            512,
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "decode:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "k": 2048,
+        "o": 512,
+        "r": 2
+      }
+    },
+    null
+  ],
+  [
+    "fp8_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "decode:attv",
+          "dtype": "float32",
+          "shape": [
+            2,
+            512
+          ]
+        },
+        "scales": {
+          "buffer": "model.language_model.layers.1.self_attn.v_proj.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            4,
+            16
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.1.self_attn.v_proj.weight",
+          "dtype": "float32",
+          "shape": [
+            512,
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "decode:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "k": 2048,
+        "o": 512,
+        "r": 2
+      }
+    },
+    null
+  ],
+  [
+    "attention_q",
+    {
+      "arguments": [
+        {
+          "buffer": "decode:attq",
+          "dtype": "float32",
+          "shape": [
+            2,
+            8192
+          ]
+        },
+        {
+          "buffer": "model.language_model.layers.1.self_attn.q_norm.weight",
+          "dtype": "float32",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "buffer": "decode:positions",
+          "dtype": "int32",
+          "shape": [
+            2
+          ]
+        },
+        {
+          "buffer": "decode:active",
+          "dtype": "int32",
+          "shape": [
+            2
+          ]
+        },
+        {
+          "buffer": "decode:attq_normal",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            16,
+            256
+          ]
+        }
+      ],
+      "bindings": {},
+      "parameters": {
+        "capacity": 64,
+        "eps": 1e-06,
+        "r": 2,
+        "theta": 1000000.0
+      }
+    },
+    null
+  ],
+  [
+    "attention_kv",
+    {
+      "arguments": [
+        {
+          "buffer": "decode:attk",
+          "dtype": "float32",
+          "shape": [
+            2,
+            512
+          ]
+        },
+        {
+          "buffer": "decode:attv",
+          "dtype": "float32",
+          "shape": [
+            2,
+            512
+          ]
+        },
+        {
+          "buffer": "model.language_model.layers.1.self_attn.k_norm.weight",
+          "dtype": "float32",
+          "shape": [
+            256
+          ]
+        },
+        {
+          "buffer": "decode:positions",
+          "dtype": "int32",
+          "shape": [
+            2
+          ]
+        },
+        {
+          "buffer": "decode:active",
+          "dtype": "int32",
+          "shape": [
+            2
+          ]
+        },
+        {
+          "buffer": "state:1:0",
+          "dtype": "uint8",
+          "shape": [
+            2,
+            2,
+            64,
+            256
+          ]
+        },
+        {
+          "buffer": "state:1:1",
+          "dtype": "uint8",
+          "shape": [
+            2,
+            2,
+            64,
+            256
+          ]
+        },
+        {
+          "buffer": "state:1:2",
+          "dtype": "float32",
+          "shape": [
+            2,
+            2,
+            64,
+            2
+          ]
+        },
+        {
+          "buffer": "state:1:3",
+          "dtype": "float32",
+          "shape": [
+            2,
+            2,
+            64,
+            2
+          ]
+        }
+      ],
+      "bindings": {},
+      "parameters": {
+        "capacity": 64,
+        "eps": 1e-06,
+        "kv_dtype": "fp8",
+        "r": 2,
+        "theta": 1000000.0
+      }
+    },
+    null
+  ],
+  [
+    "attention_partial",
+    {
+      "arguments": [
+        {
+          "buffer": "decode:attq_normal",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            16,
+            256
+          ]
+        },
+        {
+          "buffer": "state:1:0",
+          "dtype": "uint8",
+          "shape": [
+            2,
+            2,
+            64,
+            256
+          ]
+        },
+        {
+          "buffer": "state:1:1",
+          "dtype": "uint8",
+          "shape": [
+            2,
+            2,
+            64,
+            256
+          ]
+        },
+        {
+          "buffer": "state:1:2",
+          "dtype": "float32",
+          "shape": [
+            2,
+            2,
+            64,
+            2
+          ]
+        },
+        {
+          "buffer": "state:1:3",
+          "dtype": "float32",
+          "shape": [
+            2,
+            2,
+            64,
+            2
+          ]
+        },
+        {
+          "buffer": "decode:positions",
+          "dtype": "int32",
+          "shape": [
+            2
+          ]
+        },
+        {
+          "buffer": "decode:active",
+          "dtype": "int32",
+          "shape": [
+            2
+          ]
+        },
+        {
+          "buffer": "decode:att_parts",
+          "dtype": "float32",
+          "shape": [
+            2,
+            2,
+            16,
+            8,
+            256
+          ]
+        },
+        {
+          "buffer": "decode:att_stats",
+          "dtype": "float32",
+          "shape": [
+            2,
+            2,
+            16,
+            8,
+            2
+          ]
+        }
+      ],
+      "bindings": {},
+      "parameters": {
+        "capacity": 64,
+        "kv_dtype": "fp8",
+        "r": 2,
+        "splits": 16
+      }
+    },
+    null
+  ],
+  [
+    "attention_merge",
+    {
+      "arguments": [
+        {
+          "buffer": "decode:att_parts",
+          "dtype": "float32",
+          "shape": [
+            2,
+            2,
+            16,
+            8,
+            256
+          ]
+        },
+        {
+          "buffer": "decode:att_stats",
+          "dtype": "float32",
+          "shape": [
+            2,
+            2,
+            16,
+            8,
+            2
+          ]
+        },
+        {
+          "buffer": "decode:attq",
+          "dtype": "float32",
+          "shape": [
+            2,
+            8192
+          ]
+        },
+        {
+          "buffer": "decode:active",
+          "dtype": "int32",
+          "shape": [
+            2
+          ]
+        },
+        {
+          "buffer": "decode:att_out",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            4096
+          ]
+        }
+      ],
+      "bindings": {},
+      "parameters": {
+        "r": 2,
+        "splits": 16
+      }
+    },
+    null
+  ],
+  [
+    "fp8_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "decode:mixed",
+          "dtype": "float32",
+          "shape": [
+            2,
+            2048
+          ]
+        },
+        "scales": {
+          "buffer": "model.language_model.layers.1.self_attn.o_proj.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            16,
+            32
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.1.self_attn.o_proj.weight",
+          "dtype": "float32",
+          "shape": [
+            2048,
+            4096
+          ]
+        },
+        "x": {
+          "buffer": "decode:att_out",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            4096
+          ]
+        }
+      },
+      "parameters": {
+        "k": 4096,
+        "o": 2048,
+        "r": 2
+      }
+    },
+    null
+  ],
+  [
+    "add_rms",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "decode:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            2048
+          ]
+        },
+        "residual": {
+          "buffer": "decode:residual",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            2048
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.1.post_attention_layernorm.weight",
+          "dtype": "float32",
+          "shape": [
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "decode:mixed",
+          "dtype": "float32",
+          "shape": [
+            2,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "c": 2048,
+        "eps": 1e-06,
+        "r": 2
+      }
+    },
+    [
+      1,
+      "post_attention"
+    ]
+  ],
+  [
+    "bf16_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "decode:router",
+          "dtype": "float32",
+          "shape": [
+            2,
+            256
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.1.mlp.gate.weight",
+          "dtype": "float32",
+          "shape": [
+            256,
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "decode:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "k": 2048,
+        "o": 256,
+        "r": 2
+      }
+    },
+    null
+  ],
+  [
+    "bf16_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "decode:shared_gate",
+          "dtype": "float32",
+          "shape": [
+            2,
+            1
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.1.mlp.shared_expert_gate.weight",
+          "dtype": "float32",
+          "shape": [
+            1,
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "decode:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "k": 2048,
+        "o": 1,
+        "r": 2
+      }
+    },
+    null
+  ],
+  [
+    "router",
+    {
+      "arguments": [
+        {
+          "buffer": "decode:router",
+          "dtype": "float32",
+          "shape": [
+            2,
+            256
+          ]
+        },
+        {
+          "buffer": "decode:ids",
+          "dtype": "int32",
+          "shape": [
+            2,
+            8
+          ]
+        },
+        {
+          "buffer": "decode:router_weights",
+          "dtype": "float32",
+          "shape": [
+            2,
+            8
+          ]
+        }
+      ],
+      "bindings": {},
+      "parameters": {
+        "experts": 256,
+        "r": 2,
+        "top": 8
+      }
+    },
+    null
+  ],
+  [
+    "moe_groups",
+    {
+      "arguments": [
+        {
+          "buffer": "decode:ids",
+          "dtype": "int32",
+          "shape": [
+            2,
+            8
+          ]
+        },
+        {
+          "buffer": "decode:experts",
+          "dtype": "int32",
+          "shape": [
+            16
+          ]
+        },
+        {
+          "buffer": "decode:routes",
+          "dtype": "int32",
+          "shape": [
+            16,
+            2
+          ]
+        }
+      ],
+      "bindings": {},
+      "parameters": {
+        "r": 2,
+        "top": 8
+      }
+    },
+    null
+  ],
+  [
+    "fp8_experts",
+    {
+      "arguments": [
+        {
+          "buffer": "decode:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            2048
+          ]
+        },
+        {
+          "buffer": "model.language_model.layers.1.mlp.experts.gate_proj.weight",
+          "dtype": "float32",
+          "shape": [
+            256,
+            512,
+            2048
+          ]
+        },
+        {
+          "buffer": "model.language_model.layers.1.mlp.experts.gate_proj.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            256,
+            4,
+            16
+          ]
+        },
+        {
+          "buffer": "decode:experts",
+          "dtype": "int32",
+          "shape": [
+            16
+          ]
+        },
+        {
+          "buffer": "decode:routes",
+          "dtype": "int32",
+          "shape": [
+            16,
+            2
+          ]
+        },
+        {
+          "buffer": "decode:expert_g",
+          "dtype": "float32",
+          "shape": [
+            2,
+            8,
+            512
+          ]
+        }
+      ],
+      "bindings": {},
+      "parameters": {
+        "experts": 256,
+        "k": 2048,
+        "o": 512,
+        "r": 2,
+        "routed_input": false,
+        "top": 8
+      }
+    },
+    null
+  ],
+  [
+    "fp8_experts",
+    {
+      "arguments": [
+        {
+          "buffer": "decode:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            2048
+          ]
+        },
+        {
+          "buffer": "model.language_model.layers.1.mlp.experts.up_proj.weight",
+          "dtype": "float32",
+          "shape": [
+            256,
+            512,
+            2048
+          ]
+        },
+        {
+          "buffer": "model.language_model.layers.1.mlp.experts.up_proj.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            256,
+            4,
+            16
+          ]
+        },
+        {
+          "buffer": "decode:experts",
+          "dtype": "int32",
+          "shape": [
+            16
+          ]
+        },
+        {
+          "buffer": "decode:routes",
+          "dtype": "int32",
+          "shape": [
+            16,
+            2
+          ]
+        },
+        {
+          "buffer": "decode:expert_u",
+          "dtype": "float32",
+          "shape": [
+            2,
+            8,
+            512
+          ]
+        }
+      ],
+      "bindings": {},
+      "parameters": {
+        "experts": 256,
+        "k": 2048,
+        "o": 512,
+        "r": 2,
+        "routed_input": false,
+        "top": 8
+      }
+    },
+    null
+  ],
+  [
+    "swiglu_experts",
+    {
+      "arguments": [
+        {
+          "buffer": "decode:expert_g",
+          "dtype": "float32",
+          "shape": [
+            2,
+            8,
+            512
+          ]
+        },
+        {
+          "buffer": "decode:expert_u",
+          "dtype": "float32",
+          "shape": [
+            2,
+            8,
+            512
+          ]
+        },
+        {
+          "buffer": "decode:expert_activation",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            8,
+            512
+          ]
+        }
+      ],
+      "bindings": {},
+      "parameters": {
+        "c": 512,
+        "r": 2,
+        "top": 8
+      }
+    },
+    null
+  ],
+  [
+    "fp8_experts",
+    {
+      "arguments": [
+        {
+          "buffer": "decode:expert_activation",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            8,
+            512
+          ]
+        },
+        {
+          "buffer": "model.language_model.layers.1.mlp.experts.down_proj.weight",
+          "dtype": "float32",
+          "shape": [
+            256,
+            2048,
+            512
+          ]
+        },
+        {
+          "buffer": "model.language_model.layers.1.mlp.experts.down_proj.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            256,
+            16,
+            4
+          ]
+        },
+        {
+          "buffer": "decode:experts",
+          "dtype": "int32",
+          "shape": [
+            16
+          ]
+        },
+        {
+          "buffer": "decode:routes",
+          "dtype": "int32",
+          "shape": [
+            16,
+            2
+          ]
+        },
+        {
+          "buffer": "decode:expert_out",
+          "dtype": "float32",
+          "shape": [
+            2,
+            8,
+            2048
+          ]
+        }
+      ],
+      "bindings": {},
+      "parameters": {
+        "experts": 256,
+        "k": 512,
+        "o": 2048,
+        "r": 2,
+        "routed_input": true,
+        "top": 8
+      }
+    },
+    null
+  ],
+  [
+    "fp8_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "decode:shared_g",
+          "dtype": "float32",
+          "shape": [
+            2,
+            512
+          ]
+        },
+        "scales": {
+          "buffer": "model.language_model.layers.1.mlp.shared_expert.gate_proj.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            4,
+            16
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.1.mlp.shared_expert.gate_proj.weight",
+          "dtype": "float32",
+          "shape": [
+            512,
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "decode:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "k": 2048,
+        "o": 512,
+        "r": 2
+      }
+    },
+    null
+  ],
+  [
+    "fp8_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "decode:shared_u",
+          "dtype": "float32",
+          "shape": [
+            2,
+            512
+          ]
+        },
+        "scales": {
+          "buffer": "model.language_model.layers.1.mlp.shared_expert.up_proj.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            4,
+            16
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.1.mlp.shared_expert.up_proj.weight",
+          "dtype": "float32",
+          "shape": [
+            512,
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "decode:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "k": 2048,
+        "o": 512,
+        "r": 2
+      }
+    },
+    null
+  ],
+  [
+    "swiglu",
+    {
+      "arguments": [
+        {
+          "buffer": "decode:shared_g",
+          "dtype": "float32",
+          "shape": [
+            2,
+            512
+          ]
+        },
+        {
+          "buffer": "decode:shared_u",
+          "dtype": "float32",
+          "shape": [
+            2,
+            512
+          ]
+        },
+        {
+          "buffer": "decode:shared_activation",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            512
+          ]
+        }
+      ],
+      "bindings": {},
+      "parameters": {
+        "c": 512,
+        "r": 2
+      }
+    },
+    null
+  ],
+  [
+    "fp8_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "decode:shared_out",
+          "dtype": "float32",
+          "shape": [
+            2,
+            2048
+          ]
+        },
+        "scales": {
+          "buffer": "model.language_model.layers.1.mlp.shared_expert.down_proj.weight_scale_inv",
+          "dtype": "float32",
+          "shape": [
+            16,
+            4
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.layers.1.mlp.shared_expert.down_proj.weight",
+          "dtype": "float32",
+          "shape": [
+            2048,
+            512
+          ]
+        },
+        "x": {
+          "buffer": "decode:shared_activation",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            512
+          ]
+        }
+      },
+      "parameters": {
+        "k": 512,
+        "o": 2048,
+        "r": 2
+      }
+    },
+    null
+  ],
+  [
+    "moe_combine",
+    {
+      "arguments": [
+        {
+          "buffer": "decode:expert_out",
+          "dtype": "float32",
+          "shape": [
+            2,
+            8,
+            2048
+          ]
+        },
+        {
+          "buffer": "decode:router_weights",
+          "dtype": "float32",
+          "shape": [
+            2,
+            8
+          ]
+        },
+        {
+          "buffer": "decode:shared_out",
+          "dtype": "float32",
+          "shape": [
+            2,
+            2048
+          ]
+        },
+        {
+          "buffer": "decode:shared_gate",
+          "dtype": "float32",
+          "shape": [
+            2,
+            1
+          ]
+        },
+        {
+          "buffer": "decode:ffn",
+          "dtype": "float32",
+          "shape": [
+            2,
+            2048
+          ]
+        }
+      ],
+      "bindings": {},
+      "parameters": {
+        "c": 2048,
+        "r": 2,
+        "top": 8
+      }
+    },
+    [
+      1,
+      "mlp"
+    ]
+  ],
+  [
+    "add_rms",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "decode:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            2048
+          ]
+        },
+        "residual": {
+          "buffer": "decode:residual",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            2048
+          ]
+        },
+        "w": {
+          "buffer": "model.language_model.norm.weight",
+          "dtype": "float32",
+          "shape": [
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "decode:ffn",
+          "dtype": "float32",
+          "shape": [
+            2,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "c": 2048,
+        "eps": 1e-06,
+        "r": 2
+      }
+    },
+    [
+      40,
+      "final"
+    ]
+  ],
+  [
+    "bf16_linear",
+    {
+      "arguments": [],
+      "bindings": {
+        "out": {
+          "buffer": "decode:logits",
+          "dtype": "float32",
+          "shape": [
+            2,
+            248320
+          ]
+        },
+        "w": {
+          "buffer": "lm_head.weight",
+          "dtype": "float32",
+          "shape": [
+            248320,
+            2048
+          ]
+        },
+        "x": {
+          "buffer": "decode:normal",
+          "dtype": "bfloat16",
+          "shape": [
+            2,
+            2048
+          ]
+        }
+      },
+      "parameters": {
+        "k": 2048,
+        "o": 248320,
+        "r": 2
+      }
+    },
+    null
+  ],
+  [
+    "argmax",
+    {
+      "arguments": [
+        {
+          "buffer": "decode:logits",
+          "dtype": "float32",
+          "shape": [
+            2,
+            248320
+          ]
+        },
+        {
+          "buffer": "decode:tokens",
+          "dtype": "int32",
+          "shape": [
+            2
+          ]
+        },
+        {
+          "buffer": "decode:positions",
+          "dtype": "int32",
+          "shape": [
+            2
+          ]
+        },
+        {
+          "buffer": "decode:active",
+          "dtype": "int32",
+          "shape": [
+            2
+          ]
+        }
+      ],
+      "bindings": {},
+      "parameters": {
+        "r": 2,
+        "vocab": 248320
+      }
+    },
+    null
+  ]
+]
