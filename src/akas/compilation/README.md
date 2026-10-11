@@ -54,5 +54,11 @@ limits. Existing schema names retain compatibility with runtime bundle readers.
 
 `source.py` replaces per-kernel source wrappers. It binds source cache identities
 to the extracted operation bodies and shared profile metadata. Kernel requirements live with `execution/bindings/`; measured schedules live with
-operations. `factories/` contains compiler-only operation routing. Runtime consumers
+operations. `operations.py` resolves operation-owned registrations into source declarations.
+`factories/` retains compatibility entry points. Runtime consumers
 can validate requirements without importing this compilation package.
+
+New compositions use `forward.py`, with requirements derived from actual calls.
+`tuning.py` qualifies operation-owned beam candidates across representative
+workloads and produces target-bound profiles. See [model composition](../planning/README.md)
+for the three-file model, compilation, execution and tuning contracts.

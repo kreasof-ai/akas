@@ -35,6 +35,7 @@ def backbone_hashes():
             "artifacts.kernels",
             "artifacts.fingerprints",
             "execution",
+            "planning",
             "tensor",
             "memory",
             "models.blocks",

@@ -7,6 +7,7 @@ from akas.compilation.build import build
 from akas.compilation.plan import Bundle
 from akas.compilation.plan import Kernel
 from akas.compilation.plan import Source
+from akas.compilation.operations import source
 
 from akas.execution.bindings.bf16.requirements import requirements
 
@@ -15,18 +16,6 @@ DEPENDENCIES = (
     "tensor.compiler.cuda.lowering",
     "akas.ops.normalization.kernels",
 )
-
-
-def _factory(kind):
-    if kind in ("embedding", "rms", "add_rms", "argmax"):
-        return "akas.compilation.factories.block_fp8", "decode_factory"
-    if kind in ("head_linear", "head_argmax"):
-        return "akas.ops.vocabulary.cuda.fused_head", "make_kernel"
-    if kind in ("mtp_join", "mtp_cast"):
-        return "akas.ops.mtp.cuda", "make_kernel"
-    if kind in ("split_linear", "split_merge"):
-        return "akas.ops.linear.cuda.split", "make_kernel"
-    return "akas.compilation.factories.bf16", "batch_factory"
 
 
 def plan(
@@ -48,7 +37,13 @@ def plan(
             key,
             kind,
             parameters,
-            Source(*_factory(kind), (kind, parameters), DEPENDENCIES),
+            source(
+                kind,
+                parameters,
+                contract="bf16",
+                target=target,
+                dependencies=DEPENDENCIES,
+            ),
         )
         for key, (kind, parameters) in requirements(
             config, slots, chunk, pool, context, verify=verify, draft=draft

@@ -2,7 +2,7 @@
 
 Each model family has three files. `config.py` describes architecture and supported
 checkpoint variants. `weights.py` validates tensor inventories and declares raw
-storage and projection layouts. `model.py` declares decoder blocks and selects an
+storage and projection layouts. `model.py` declares decoder blocks and selects a
 numerical binding. Package initializers contain no implementation.
 
 ```text
@@ -50,3 +50,8 @@ layouts interchangeable.
 
 Start with `lfm2/model.py` or `qwen35/model.py`, follow `DecoderBlock.compose`, then
 read the corresponding execution path. Public `akas` entry points remain available.
+
+For a new composition that uses existing operation ABIs, start with
+[the three-file example](../../../examples/models/residual/) and
+[the shared forward-plan contract](../planning/README.md). Its compiler and runtime
+derive their work from the same calls, without another model-specific recipe.

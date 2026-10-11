@@ -23,3 +23,8 @@ The public LFM2 default-request API and Qwen direct-forward helpers are retained
 Scheduled execution uses the shared executor, including the generic handle binding.
 The compiler remains optional. This merge does not change compiled batch/chunk
 geometries or introduce dynamic kernels.
+
+`forward.py` consumes the compiler-free `planning.ForwardPlan` metadata. It binds
+checksummed kernels, owns scratch/state and graph resources, and borrows supplied
+weights/input/output buffers. New model compositions can use it directly; existing
+numerical bindings retain their specialized request-state semantics.

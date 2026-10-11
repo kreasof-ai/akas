@@ -6,7 +6,7 @@ from akas.execution.bindings.block_fp8.requirements import requirements
 from akas.compilation.build import build
 from akas.compilation.plan import Bundle
 from akas.compilation.plan import Kernel
-from akas.compilation.plan import Source
+from akas.compilation.operations import source
 from akas.execution.bindings.block_fp8.geometry import validate
 
 
@@ -28,27 +28,19 @@ def plan(
     for key, (kind, parameters) in requirements(
         config, slots, context, splits=splits, kv_dtype=kv_dtype
     ).items():
-        source = Source(
-            "akas.compilation.factories.block_fp8",
-            "decode_factory",
-            (kind, parameters),
-            export=True,
+        selected = source(
+            kind,
+            parameters,
+            contract="block-fp8",
+            phase="decode",
+            target=target,
+            dependencies=(
+                "tensor.compiler.frontend.source",
+                "tensor.compiler.cuda.lowering",
+                "akas.ops.normalization.kernels",
+            ),
         )
-        if kind == "fp8_linear" and slots > 8:
-            source = Source(
-                "akas.ops.linear.cuda.block_fp8",
-                "make_kernel",
-                (
-                    "fp8_linear_mma",
-                    dict(parameters, block_m=16, columns=64, threads=128),
-                ),
-                (
-                    "tensor.compiler.frontend.source",
-                    "tensor.compiler.cuda.lowering",
-                    "akas.ops.normalization.kernels",
-                ),
-            )
-        kernels.append(Kernel(key, kind, parameters, source))
+        kernels.append(Kernel(key, kind, parameters, selected))
     return Bundle(
         dict(
             schema="tensor.qwen35-batch.v1",

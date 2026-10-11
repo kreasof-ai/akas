@@ -47,10 +47,16 @@ jobs:
           import importlib.abc, sys
           class Guard(importlib.abc.MetaPathFinder):
               def find_spec(self, fullname, path=None, target=None):
-                  if fullname.split('.')[0] in {'torch', 'tilelang', 'tvm', 'tvm_ffi', 'triton'}:
+                  if fullname.startswith(('akas.compilation', 'tensor.compiler')) or fullname.split('.')[0] in {'torch', 'tilelang', 'tvm', 'tvm_ffi', 'triton'}:
                       raise ImportError(fullname)
           sys.meta_path.insert(0, Guard())
           from akas import Engine, LFM2, Qwen35Batch
+          from akas.execution.forward import Forward
+          from akas.planning import ForwardPlan
+          plan = ForwardPlan(contract='packed')
+          value = plan.buffer('x', (256,), 'float32')
+          plan('add', dict(c=256), value, value, value)
+          assert len(ForwardPlan.from_metadata(plan.metadata()).requirements()) == 1
           from akas.artifacts.fingerprints import packed_hashes as implementation_hashes
           import json
           from pathlib import Path

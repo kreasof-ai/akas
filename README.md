@@ -6,6 +6,10 @@ Tensor owns the compiler, artifact format, buffers, device execution and GPU gra
 The runtime needs only AKAS, Tensor, NumPy and regex. Compiler and reference frameworks
 are optional producer dependencies.
 
+New model authors can start with the [three-file example](examples/models/residual/)
+and [shared forward-plan guide](src/akas/planning/README.md). Operation registrations
+own provider/hardware choices; the same plan drives compilation and runtime binding.
+
 ## Install
 
 Use Python 3.12. The lockfile pins Tensor to a published Git revision; there is no

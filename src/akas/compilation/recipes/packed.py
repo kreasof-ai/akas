@@ -9,7 +9,7 @@ from akas.execution.bindings.packed.requirements import requirements
 from akas.compilation.build import build
 from akas.compilation.plan import Bundle
 from akas.compilation.plan import Kernel
-from akas.compilation.plan import Source
+from akas.compilation.operations import source
 from akas.ops.schedules.packed_selection import valid_rows
 from akas.ops.schedules.packed_parameters import CUDA_PROFILES
 
@@ -58,20 +58,17 @@ def plan(
         and cuda_profile == "optimized"
         and target == "sm_86"
     ):
-        schedule_profile = (
-            Path(__file__).resolve().parent / "data/cuda-sm86.json"
-        )
+        schedule_profile = Path(__file__).resolve().parent / "data/cuda-sm86.json"
     if schedule_profile is not None:
         from tensor.compiler.search import ScheduleProfile
 
         selected = ScheduleProfile(json.loads(Path(schedule_profile).read_text()))
         selected.select("", {}, provider=provider, target=target)
-    module = "akas.compilation.factories.packed"
-    factory = "packed_baseline_factory"
-    if provider == "cuda" and cuda_profile == "optimized":
-        factory = "packed_cuda_factory"
-    elif provider == "webgpu":
-        factory = "packed_webgpu_factory"
+    contract = (
+        "packed-baseline"
+        if provider == "cuda" and cuda_profile != "optimized"
+        else "packed"
+    )
     kernels = []
     for key, (kind, parameters) in wanted.items():
         schedule = (
@@ -84,8 +81,12 @@ def plan(
                 key,
                 kind,
                 parameters,
-                Source(
-                    module, factory, (kind, {**parameters, **schedule}), export=True
+                source(
+                    kind,
+                    {**parameters, **schedule},
+                    contract=contract,
+                    provider=provider,
+                    target=target,
                 ),
                 schedule=schedule,
             )

@@ -56,6 +56,12 @@ class KernelPlan:
             raise TypeError("operation arguments must be positional or named")
         if self.parameters is not None:
             parameters = self.parameters(kind, parameters)
+        from akas.planning.forward import ForwardPlan
+        if isinstance(self.plan, ForwardPlan):
+            self.plan(kind, parameters, *arguments, label=label, **bindings)
+            if self.on_write is not None and "out" in bindings:
+                self.on_write(bindings["out"])
+            return
         kernel = self.kernels[self.identity(kind, parameters)]
         if bindings:
             arguments = tuple(
