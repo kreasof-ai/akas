@@ -133,8 +133,10 @@ in [the compilation map](src/akas/compilation/README.md). Then read
 feed-forward, normalization and quantized scratch reuse. Models declare block order,
 weight roles and numerical constraints. [The model reading map](src/akas/models/README.md)
 shows how the three-file definitions connect to shared execution. See
-[architecture and extension boundaries](docs/architecture.md) and
-[the migration map](docs/migration.md).
+[architecture and extension boundaries](docs/architecture.md).
+
+The historical [Tensor LLM migration record](docs/research/tensor-llm-migration.md)
+is retained with the research reports.
 
 Kernel and serving-profile beam searches call Tensor's `tensor.compiler.search`;
 AKAS owns model-specific candidates and measurements. See
