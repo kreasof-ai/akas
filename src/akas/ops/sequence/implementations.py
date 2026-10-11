@@ -36,3 +36,8 @@ IMPLEMENTATIONS = (
         required=("slots", "chunk"),
     ),
 )
+
+IMPLEMENTATIONS += tuple(
+    item for provider in ("cuda", "webgpu")
+    for item in variants(('advance', 'next_tokens'), "sequence.reference", "reference", provider=provider)
+)

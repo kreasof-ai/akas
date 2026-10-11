@@ -14,3 +14,8 @@ IMPLEMENTATIONS = (
         ("swiglu", "swiglu_experts"), "ffn.cuda.decode", "block-fp8", phase="decode"
     ),
 )
+
+IMPLEMENTATIONS += tuple(
+    item for provider in ("cuda", "webgpu")
+    for item in variants(('swiglu',), "ffn.reference", "reference", provider=provider)
+)

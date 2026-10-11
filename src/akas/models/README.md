@@ -55,3 +55,10 @@ For a new composition that uses existing operation ABIs, start with
 [the three-file example](../../../examples/models/residual/) and
 [the shared forward-plan contract](../planning/README.md). Its compiler and runtime
 derive their work from the same calls, without another model-specific recipe.
+
+LFM2 also provides the [complete reference example](../../../examples/lfm2/README.md):
+GGUF/safetensors loading, one shared token-step composition for CUDA/WebGPU,
+FP16/FP32/FP8 KV, batched masked state, and shared performance reports. The
+reference runtime owns lifecycle/submission, while `model.py` owns only the
+operation graph. Large matrices use row partitions from `checkpoints/partition.py`
+so their bindings fit portable limits without changing the architecture.

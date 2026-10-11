@@ -27,3 +27,8 @@ IMPLEMENTATIONS = (
     *variants(("embedding", "argmax"), "vocabulary.cuda.decode", "bf16"),
     *variants(("head_linear", "head_argmax"), "vocabulary.cuda.fused_head", "bf16"),
 )
+
+IMPLEMENTATIONS += tuple(
+    item for provider in ("cuda", "webgpu")
+    for item in variants(('embedding', 'argmax'), "vocabulary.reference", "reference", provider=provider)
+)

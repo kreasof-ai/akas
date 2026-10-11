@@ -116,3 +116,52 @@ def test_empty_special_token_set_and_gpt2_gguf_rules():
     assert tokenizer.encode("ab") == [2]
     assert tokenizer.encode("ab", parse_special=True) == [2]
     assert tokenizer.decode([2]) == "ab"
+
+
+def test_sequence_decoder_and_bos_template_with_identity_normalized_added_token(
+    tmp_path,
+):
+    data = {
+        "model": {
+            "type": "BPE",
+            "vocab": {"a": 0, "b": 1, "<bos>": 2, "python": 3, "Ġ": 4},
+            "merges": [],
+        },
+        "normalizer": None,
+        "pre_tokenizer": {
+            "type": "ByteLevel",
+            "add_prefix_space": False,
+            "use_regex": True,
+        },
+        "decoder": {"type": "Sequence", "decoders": [{"type": "ByteLevel"}]},
+        "post_processor": {
+            "type": "Sequence",
+            "processors": [
+                {"type": "ByteLevel"},
+                {
+                    "type": "TemplateProcessing",
+                    "single": [
+                        {"SpecialToken": {"id": "<bos>", "type_id": 0}},
+                        {"Sequence": {"id": "A", "type_id": 0}},
+                    ],
+                    "special_tokens": {"<bos>": {"ids": [2], "tokens": ["<bos>"]}},
+                },
+            ],
+        },
+        "added_tokens": [
+            {"id": 2, "content": "<bos>", "special": True, "normalized": False},
+            {"id": 3, "content": "python", "special": False, "normalized": True},
+        ],
+    }
+    (tmp_path / "tokenizer.json").write_text(json.dumps(data))
+    (tmp_path / "tokenizer_config.json").write_text(
+        json.dumps({"bos_token": "<bos>", "add_bos_token": False})
+    )
+    tokenizer = Tokenizer.from_pretrained(tmp_path)
+    assert tokenizer.encode("python ab") == [2, 3, 4, 0, 1]
+    assert tokenizer.encode("python ab", add_bos=False) == [3, 4, 0, 1]
+    assert tokenizer.decode([2, 3, 4, 0, 1]) == "<bos>python ab"
+    data["post_processor"]["processors"][1]["special_tokens"]["<bos>"]["ids"] = [99]
+    (tmp_path / "tokenizer.json").write_text(json.dumps(data))
+    with pytest.raises(TokenizerError, match="BOS"):
+        Tokenizer.from_pretrained(tmp_path)

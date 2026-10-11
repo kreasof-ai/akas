@@ -10,7 +10,12 @@ from types import MappingProxyType
 
 import numpy as np
 
-STORAGE = {"F8_E4M3": ("uint8", 1), "BF16": ("uint16", 2), "F32": ("float32", 4)}
+STORAGE = {
+    "F8_E4M3": ("uint8", 1),
+    "BF16": ("uint16", 2),
+    "F32": ("float32", 4),
+    "F16": ("float16", 2),
+}
 
 
 def _object(pairs):
@@ -135,3 +140,65 @@ def upload_bits(device, raw, dtype):
     except BaseException:
         buffer.release()
         raise
+
+
+def tensor_index(directory):
+    """Discover a sharded index or one local safetensors file."""
+    directory = Path(directory)
+    index = directory / "model.safetensors.index.json"
+    if index.is_file():
+        result = json_document(index.read_text())["weight_map"]
+        if not isinstance(result, dict):
+            raise ValueError("invalid checkpoint weight map")
+        return result
+    shards = sorted(directory.glob("*.safetensors"))
+    if len(shards) != 1:
+        raise ValueError(
+            "checkpoint requires an index or exactly one safetensors shard"
+        )
+    with shards[0].open("rb") as stream:
+        raw = stream.read(8)
+        if len(raw) != 8:
+            raise ValueError("truncated safetensors header")
+        size = struct.unpack("<Q", raw)[0]
+        if not 2 <= size <= min(shards[0].stat().st_size - 8, 100_000_000):
+            raise ValueError("invalid safetensors header length")
+        header = json_document(stream.read(size))
+    return {name: shards[0].name for name in header if name != "__metadata__"}
+
+
+def inspect_float_tensors(directory, index, shapes):
+    """Inspect F32/F16/BF16 model tensors using the common extent validator."""
+    dtypes = {}
+    for filename in set(index[name] for name in shapes if name in index):
+        shard = (Path(directory) / filename).resolve()
+        if shard.parent != Path(directory).resolve():
+            raise ValueError(
+                "checkpoint shard must be a local file within its directory"
+            )
+        with shard.open("rb") as stream:
+            raw = stream.read(8)
+            if len(raw) != 8:
+                raise ValueError("truncated safetensors header")
+            length = struct.unpack("<Q", raw)[0]
+            if not 2 <= length <= min(shard.stat().st_size - 8, 100_000_000):
+                raise ValueError("invalid safetensors header length")
+            header = json_document(stream.read(length))
+        for name in shapes:
+            if name in header:
+                dtype = header[name].get("dtype")
+                if dtype not in ("F32", "F16", "BF16"):
+                    raise ValueError(
+                        f"unsupported floating checkpoint dtype: {name}: {dtype}"
+                    )
+                dtypes[name] = dtype
+    if dtypes.keys() != shapes.keys():
+        raise ValueError("incomplete floating checkpoint tensor contract")
+    return inspect_tensors(directory, index, shapes, dtypes)
+
+
+def read_float_tensor(info):
+    bits = read_tensor(info)
+    if info.dtype == "BF16":
+        return (bits.astype("uint32") << 16).view("float32")
+    return bits.astype("float32")

@@ -1,0 +1,41 @@
+{
+  "model": "LiquidAI/LFM2-350M",
+  "revision": "f37d3f5c8c5484bc01dad379a595cf4c68c4e70e",
+  "checkpoint": "safetensors BF16 converted to reference F32",
+  "provider": {
+    "ordinal": 0,
+    "name": "NVIDIA L40S",
+    "arch": "sm_89",
+    "provider": "cuda"
+  },
+  "kv_dtype": "float32",
+  "reference": "Transformers eager F32, TF32 disabled",
+  "relative_rms": 4.386114653698314e-07,
+  "argmax": [
+    1334,
+    1334
+  ],
+  "generation": [
+    {
+      "prompt_tokens": [
+        1,
+        1098,
+        5706,
+        803,
+        4481,
+        856
+      ],
+      "generated_tokens": [
+        1334,
+        542,
+        518,
+        5242,
+        708,
+        543,
+        518,
+        26969
+      ],
+      "text": ":\nA) Paris\nB) Lyon"
+    }
+  ]
+}

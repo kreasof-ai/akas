@@ -11,4 +11,19 @@ def layout(shape):
     return Storage(BufferSpec(shape, "uint8"), (BufferSpec(scales, "float32"),))
 
 
-FORMAT = Format("fp8", layout, (("cuda", "akas.ops.kv_quantization.cuda.fp8"),))
+def webgpu_layout(shape):
+    original = layout(shape)
+    return Storage(
+        BufferSpec((*shape[:-1], (shape[-1] + 3) // 4), "uint32"), original.metadata
+    )
+
+
+FORMAT = Format(
+    "fp8",
+    layout,
+    (
+        ("cuda", "akas.ops.kv_quantization.cuda.fp8"),
+        ("webgpu", "akas.ops.kv_quantization.webgpu.fp8"),
+    ),
+    layouts=(("webgpu", webgpu_layout),),
+)

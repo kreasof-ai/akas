@@ -28,12 +28,14 @@ class Forward:
                 if spec.role == "state":
                     import numpy as np
 
-                    value = device.from_numpy(
-                        np.zeros(
-                            spec.shape,
-                            dtype="float32" if spec.dtype == "bfloat16" else spec.dtype,
-                        ),
-                        dtype=spec.dtype,
+                    host = np.zeros(
+                        spec.shape,
+                        dtype="float32" if spec.dtype == "bfloat16" else spec.dtype,
+                    )
+                    value = (
+                        device.from_numpy(host, dtype=spec.dtype)
+                        if spec.dtype == "bfloat16"
+                        else device.from_numpy(host)
                     )
                 else:
                     value = device.empty(spec.shape, spec.dtype)

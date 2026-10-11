@@ -73,6 +73,8 @@ def main():
         help="JSON options for the checkpoint reader",
     )
     compile_command.set_defaults(run=_compile)
+    from akas.benchmarking.cli import arguments
+    arguments(commands.add_parser("bench", help="reproducible native prefill/decode performance matrix"), _factory)
     args = parser.parse_args()
     args.run(args)
 

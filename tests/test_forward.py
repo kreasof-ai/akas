@@ -477,3 +477,14 @@ def test_new_model_compiles_to_webgpu_without_device(tmp_path, monkeypatch, rows
         artifact, _ = read_artifact(tmp_path / row["path"])
         assert artifact["provider"] == "webgpu"
         assert artifact["target"] == "webgpu-portable-v1"
+
+
+def test_webgpu_prepared_capture_accepts_labeled_forward_calls():
+    from akas.tensor.executor import capture
+
+    device = SimpleNamespace(
+        info={"provider": "webgpu"}, prepare_plan=lambda calls: calls
+    )
+    labeled = [("kernel", "bound-call", "layer-label")]
+    assert capture(device, labeled, resources=()) == [("kernel", "bound-call")]
+    assert labeled[0][2] == "layer-label"

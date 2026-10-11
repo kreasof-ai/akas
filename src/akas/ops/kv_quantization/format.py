@@ -18,13 +18,15 @@ class Format:
     layout: Callable[[tuple[int, ...]], Storage]
     providers: tuple[tuple[str, str], ...] = ()
 
-    def storage(self, shape):
+    layouts: tuple[tuple[str, Callable], ...] = ()
+
+    def storage(self, shape, *, provider=None):
         shape = tuple(shape)
         if len(shape) < 2 or any(type(d) is not int or d <= 0 for d in shape):
             raise ValueError(
                 "KV storage requires positive dimensions including channels"
             )
-        return self.layout(shape)
+        return dict(self.layouts).get(provider, self.layout)(shape)
 
     def pair_layout(self, shape):
         storage = self.storage(shape)

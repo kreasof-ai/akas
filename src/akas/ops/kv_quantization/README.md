@@ -43,3 +43,11 @@ and one/three KV heads; FP8 encoding currently requires channels divisible by
 128. The fixed Qwen attention geometry and other providers' codec support are
 separate work. Choosing another codec does not make an incompatible attention
 layout valid automatically.
+
+The LFM reference path adds portable `reference_writer` / `reference_decoder`
+helpers over F32 projections, including 64-channel partial blocks. A descriptor
+may provide a `layouts` mapping, selected by `storage(shape, provider=...)`. FP8
+on WebGPU packs four payload bytes per `uint32`; scales retain logical block
+shape. CUDA reference payloads use bytes. The original optimized CUDA writer
+still has its qualified multiple-of-128 channel contract. Backend availability
+does not make an existing attention ABI compatible with a new provider.

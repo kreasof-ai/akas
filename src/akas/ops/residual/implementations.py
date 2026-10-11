@@ -14,3 +14,8 @@ IMPLEMENTATIONS = (
         priority=0,
     ),
 )
+
+IMPLEMENTATIONS += tuple(
+    item for provider in ("cuda", "webgpu")
+    for item in variants(('add',), "residual.reference", "reference", provider=provider)
+)

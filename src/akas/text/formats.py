@@ -124,16 +124,54 @@ def from_file(path):
             raise TokenizerError("unsupported byte-level split rules")
     else:
         raise TokenizerError("unsupported byte-level pre-tokenizer")
-    if data.get("decoder", {}).get("type") != "ByteLevel":
+    decoder = data.get("decoder") or {}
+    if decoder.get("type") == "Sequence":
+        decoders = decoder.get("decoders", [])
+        if len(decoders) != 1:
+            raise TokenizerError("requires one byte-level decoder")
+        decoder = decoders[0]
+    if decoder.get("type") != "ByteLevel":
         raise TokenizerError("requires a byte-level decoder")
     post = data.get("post_processor")
-    if post is not None and post.get("type") != "ByteLevel":
-        raise TokenizerError("unsupported tokenizer post-processor")
+    processors = (
+        post.get("processors", [])
+        if post and post.get("type") == "Sequence"
+        else [post]
+        if post
+        else []
+    )
+    template_bos = None
+    template_id = None
+    templates = 0
+    for processor in processors:
+        if processor.get("type") == "ByteLevel":
+            continue  # offset-only transformation; token IDs are unchanged
+        if processor.get("type") != "TemplateProcessing":
+            raise TokenizerError("unsupported tokenizer post-processor")
+        templates += 1
+        single = processor.get("single", [])
+        sequence = {"Sequence": {"id": "A", "type_id": 0}}
+        if single == [sequence]:
+            continue
+        if len(single) != 2 or single[1] != sequence or "SpecialToken" not in single[0]:
+            raise TokenizerError("unsupported single-sequence token template")
+        prefix = single[0]["SpecialToken"]
+        template_bos = prefix.get("id")
+        entry = processor.get("special_tokens", {}).get(template_bos, {})
+        if (
+            prefix.get("type_id") != 0
+            or entry.get("tokens") != [template_bos]
+            or len(entry.get("ids", [])) != 1
+        ):
+            raise TokenizerError("unsupported BOS token template")
+        template_id = entry["ids"][0]
+    if templates > 1:
+        raise TokenizerError("multiple tokenizer templates are unsupported")
     added, special = {}, {}
     vocab = dict(model["vocab"])
     for token in data.get("added_tokens", []):
-        if any(
-            token.get(key) for key in ("single_word", "lstrip", "rstrip", "normalized")
+        if any(token.get(key) for key in ("single_word", "lstrip", "rstrip")) or (
+            token.get("normalized") and normalization is not None
         ):
             raise TokenizerError(
                 "unsupported added-token boundary or normalization rules"
@@ -153,6 +191,11 @@ def from_file(path):
             raise TokenizerError(f"{name} is absent from vocabulary")
         return vocab.get(text)
 
+    bos = token_id("bos_token")
+    if template_bos is not None and (
+        vocab.get(template_bos) != bos or template_id != bos
+    ):
+        raise TokenizerError("BOS template disagrees with tokenizer configuration")
     return Rules(
         vocab=vocab,
         merges=_merges(model["merges"]),
@@ -162,8 +205,8 @@ def from_file(path):
         add_prefix_space=byte.get("add_prefix_space", False),
         added=added,
         special=special,
-        bos=token_id("bos_token"),
+        bos=bos,
         eos=token_id("eos_token"),
-        add_bos=config.get("add_bos_token", False),
+        add_bos=template_bos is not None or config.get("add_bos_token", False),
         chat_template=config.get("chat_template"),
     )

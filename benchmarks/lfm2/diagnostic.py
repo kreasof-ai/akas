@@ -15,7 +15,7 @@ def string(text):
     return struct.pack("<Q", len(data)) + data
 
 
-def fixture(path):
+def fixture(path, *, context=384):
     c, f, d, v = 256, 512, 64, 288
     values = list(range(33, 127)) + list(range(161, 173)) + list(range(174, 256))
     chars = values.copy()
@@ -41,7 +41,7 @@ def fixture(path):
         "lfm2.shortconv.l_cache": 3,
         "lfm2.attention.layer_norm_rms_epsilon": 1e-6,
         "lfm2.rope.freq_base": 10000000.0,
-        "lfm2.context_length": 384,
+        "lfm2.context_length": context,
         "tokenizer.ggml.model": "gpt2",
         "tokenizer.ggml.pre": "lfm2",
         "tokenizer.ggml.tokens": tokens,
@@ -145,5 +145,6 @@ def fixture(path):
 if __name__ == "__main__":
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--out", type=Path, required=True)
+    p.add_argument("--context",type=int,default=384)
     args = p.parse_args()
-    fixture(args.out)
+    fixture(args.out,context=args.context)

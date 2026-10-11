@@ -52,3 +52,24 @@ IMPLEMENTATIONS = (
     ),
     *variants(("split_linear", "split_merge"), "linear.cuda.split", "bf16"),
 )
+
+IMPLEMENTATIONS += tuple(
+    item
+    for provider in ("cuda", "webgpu")
+    for item in variants(
+        ("linear",),
+        "linear.reference",
+        "reference",
+        provider=provider,
+        space=(("threads", (32, 64, 128, 256)),),
+    )
+)
+
+IMPLEMENTATIONS += variants(
+    ("linear",),
+    "linear.webgpu.reference",
+    "reference",
+    provider="webgpu",
+    priority=20,
+    space=(("threads", (32, 64, 128, 256)),),
+)

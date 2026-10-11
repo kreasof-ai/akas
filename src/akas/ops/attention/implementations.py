@@ -66,3 +66,8 @@ IMPLEMENTATIONS = (
         required=("slots", "chunk"),
     ),
 )
+
+IMPLEMENTATIONS += tuple(
+    item for provider in ("cuda", "webgpu")
+    for item in variants(("rope", "cache_write", "attention"), "attention.reference", "reference", provider=provider)
+)

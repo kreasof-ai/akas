@@ -168,3 +168,7 @@ failures. Paged caches, token beam search and distributed execution are future
 extensions. Moving code does not qualify a new numerical or performance profile.
 Bundles fingerprint their implementations and must be rebuilt after migration.
 Historical reports and frozen sources retain their original identities.
+
+For a complete model reference, see [LFM2](examples/lfm2/README.md).
+Use [`akas bench`](docs/guides/performance-harness.md) for repeated native
+prefill/decode measurements, short/long context matrices, and matched baselines.

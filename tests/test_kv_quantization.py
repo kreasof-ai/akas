@@ -73,8 +73,8 @@ def test_unquantized_storage_stays_separate_and_missing_provider_fails():
     assert not is_quantized("bfloat16")
     assert not is_quantized("float16")
     assert is_quantized("fp8")
-    with pytest.raises(ValueError, match="does not support webgpu"):
-        get("fp8").backend("webgpu")
+    with pytest.raises(ValueError, match="does not support metal"):
+        get("fp8").backend("metal")
 
 
 GPU = pytest.mark.skipif(

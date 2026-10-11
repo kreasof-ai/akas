@@ -1,6 +1,8 @@
 """LFM2 architecture dimensions and supported GGUF geometry."""
 
 from dataclasses import dataclass
+import math
+from akas.checkpoints.gguf import GGUFError
 
 
 @dataclass(frozen=True)
@@ -21,12 +23,76 @@ class Config:
         return self.width // self.heads
 
     @classmethod
+    def from_huggingface(cls, data):
+        if data.get("model_type") != "lfm2":
+            raise ValueError("requires LFM2 config.json")
+        width = data["hidden_size"]
+        ff = data.get("intermediate_size", data.get("block_ff_dim"))
+        if data.get("block_auto_adjust_ff_dim", False):
+            ff = int(2 * ff / 3)
+            multiplier = data.get("block_ffn_dim_multiplier")
+            if multiplier is not None:
+                multiple = data.get("block_multiple_of", 256)
+                ff = math.ceil(int(multiplier * ff) / multiple) * multiple
+        count = data["num_hidden_layers"]
+        indices = data.get("full_attn_idxs")
+        layers = data.get("layer_types")
+        if layers is None:
+            if not isinstance(indices, list) or any(
+                type(i) is not int or not 0 <= i < count for i in indices
+            ):
+                raise ValueError("invalid LFM2 attention layer indices")
+            layers = ["attention" if i in indices else "conv" for i in range(count)]
+        layers = tuple("attention" if x == "full_attention" else x for x in layers)
+        rope = data.get("rope_parameters") or {}
+        if rope.get("rope_type", "default") != "default" or data.get("rope_scaling"):
+            raise ValueError("reference path requires default RoPE")
+        config = cls(
+            width,
+            ff,
+            data["num_attention_heads"],
+            data["num_key_value_heads"],
+            layers,
+            data["vocab_size"],
+            data.get("conv_L_cache", 3),
+            data.get("norm_eps", 1e-5),
+            rope.get("rope_theta", data.get("rope_theta", 1000000.0)),
+            data.get("max_position_embeddings", 128000),
+        )
+        if (
+            len(layers) != count
+            or not layers
+            or set(layers) - {"attention", "conv"}
+            or any(
+                type(x) is not int or x <= 0
+                for x in (
+                    width,
+                    ff,
+                    config.heads,
+                    config.kv_heads,
+                    config.vocab,
+                    config.max_context,
+                )
+            )
+            or width % config.heads
+            or config.heads % config.kv_heads
+            or config.head_dim != 64
+            or config.conv != 3
+            or ff % 32
+            or config.vocab % 4
+            or not all(
+                math.isfinite(x) and x > 0 for x in (config.epsilon, config.theta)
+            )
+            or data.get("conv_bias", False)
+            or not data.get("block_use_swiglu", True)
+            or not data.get("use_pos_enc", True)
+        ):
+            raise ValueError("unsupported LFM2 reference configuration")
+        return config
+
+    @classmethod
     def from_gguf(cls, gguf):
         return parse_config(gguf)
-
-
-import math
-from akas.checkpoints.gguf import GGUFError
 
 
 def parse_config(gguf):

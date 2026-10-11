@@ -43,3 +43,8 @@ IMPLEMENTATIONS = (
     ),
     *variants(("rms", "add_rms"), "normalization.cuda.decode", "bf16"),
 )
+
+IMPLEMENTATIONS += tuple(
+    item for provider in ("cuda", "webgpu")
+    for item in variants(('rms',), "normalization.reference", "reference", provider=provider)
+)

@@ -17,7 +17,7 @@ def submit(device, calls, *, after_launch=None):
 
 def capture(device, calls, *, resources):
     if device.info.get("provider", "cuda") == "webgpu":
-        return device.prepare_plan(calls)
+        return device.prepare_plan([(entry[0], entry[1]) for entry in calls])
     from tensor.providers.cuda.graph import CudaGraph
 
     return CudaGraph(device, lambda: submit(device, calls), resources=resources)
