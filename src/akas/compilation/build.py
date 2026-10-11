@@ -55,7 +55,11 @@ def build_artifact(source, destination, *, target, provider="cuda", cache_dir=No
         target=target,
         compiler="nvrtc" if provider == "cuda" else "wgsl",
         cache_dir=cache_dir,
-        nvrtc_home=os.environ.get("TENSOR_NVRTC_HOME", "build/nvrtc-12.9"),
+        nvrtc_home=(
+            os.environ.get("TENSOR_NVRTC_HOME", "build/nvrtc-12.9")
+            if provider == "cuda"
+            else None
+        ),
     )
 
 

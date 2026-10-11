@@ -8,11 +8,12 @@ def plan(
     forward,
     *,
     provider="cuda",
-    target="sm_89",
+    target=None,
     filename="forward.json",
     schedules=None,
     catalog=None,
 ):
+    target = target or ("sm_89" if provider == "cuda" else "webgpu-portable-v1")
     kernels = []
     for key, (kind, parameters) in forward.requirements().items():
         schedule = (

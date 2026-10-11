@@ -435,3 +435,45 @@ def test_tuning_qualifies_using_workload_geometry():
         budget=1,
     )
     assert result.implementation == "large_only"
+
+
+@pytest.mark.parametrize(
+    "provider,compiler,nvrtc",
+    [("cuda", "nvrtc", "/cuda-only"), ("webgpu", "wgsl", None)],
+)
+def test_provider_build_does_not_leak_cuda_options(
+    tmp_path, monkeypatch, provider, compiler, nvrtc
+):
+    import tensor
+    from akas.compilation.build import build_artifact
+
+    monkeypatch.setenv("TENSOR_NVRTC_HOME", "/cuda-only")
+    monkeypatch.setattr(tensor, "build", lambda *args, **kwargs: kwargs)
+    options = build_artifact(
+        tmp_path / "source.py",
+        tmp_path / "result.tbin",
+        target="test",
+        provider=provider,
+    )
+    assert options["compiler"] == compiler
+    assert options["nvrtc_home"] == nvrtc
+
+
+def test_forward_provider_has_correct_default_target():
+    assert (
+        compile_plan(compose(Config()), provider="webgpu").target
+        == "webgpu-portable-v1"
+    )
+
+
+@pytest.mark.parametrize("rows", [1, 4])
+def test_new_model_compiles_to_webgpu_without_device(tmp_path, monkeypatch, rows):
+    from akas.compilation.forward import produce
+    from tensor.artifacts.format import read_artifact
+
+    monkeypatch.setenv("TENSOR_NVRTC_HOME", "/cuda-option-must-not-reach-webgpu")
+    manifest = produce(compose(Config(), rows=rows), tmp_path, provider="webgpu")
+    for row in manifest["kernels"].values():
+        artifact, _ = read_artifact(tmp_path / row["path"])
+        assert artifact["provider"] == "webgpu"
+        assert artifact["target"] == "webgpu-portable-v1"

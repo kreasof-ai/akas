@@ -20,7 +20,10 @@ changes to model-specific compilation or execution code.
 
 Validation includes the complete CPU suite and frozen arithmetic, existing LFM2
 request isolation on CUDA, Qwen kernel/speculation checks, and residual-model CUDA
-execution at one/four rows with direct and captured execution. CUDA beam search
+execution at one/four rows with direct and captured execution, plus GPU-free
+WebGPU builds of the same model at both row counts. The shared builder now passes
+NVRTC options only to CUDA; WebGPU source/artifact compilation is checked with a
+CUDA-only environment setting present. WebGPU execution itself was not measured. CUDA beam search
 compiles/checks/times both workloads, persists a target-bound profile and rebuilds
 from it. Synthetic scoring tests reject incorrect candidates and small-batch
 wins that severely regress larger batches. New-operation discovery, hardware
