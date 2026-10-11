@@ -20,7 +20,7 @@ def measure():
     from pathlib import Path
     import numpy as np
     import tensor, torch
-    from tensor.compiler.entry import export_source
+    from tensor.compiler.frontend.source import export_source
     from akas.compilation.build import build_artifact
     from benchmarks.qwen35.kernel_timing import time_calls
 
@@ -47,7 +47,7 @@ def measure():
                 "akas.kernels." + module,
                 factory,
                 p,
-                dependencies=("tensor.compiler.entry", "akas.kernels.elementwise"),
+                dependencies=('tensor.compiler.frontend.source', "akas.kernels.elementwise"),
             )
         )
         artifact.unlink(missing_ok=True)

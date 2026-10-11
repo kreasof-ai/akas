@@ -10,21 +10,15 @@ from akas.compilation.plan import Bundle, Kernel, Source
 
 
 def _compiler_identity(provider):
-    module = (
-        "tensor.compiler.cuda_lowering"
-        if provider == "cuda"
-        else "tensor.compiler.webgpu_lowering"
-    )
-    values = {
-        "lowering_sha256": hashlib.sha256(
-            Path(find_spec(module).origin).read_bytes()
-        ).hexdigest()
+    if provider == "cuda":
+        path = Path(find_spec("tensor.compiler.cuda.lowering").origin)
+        return {"lowering_sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+    from tensor.compiler.webgpu.identity import lowering_hash
+    producer = Path(find_spec("tensor.compiler.webgpu.build").origin)
+    return {
+        "lowering_sha256": lowering_hash(),
+        "producer_sha256": hashlib.sha256(producer.read_bytes()).hexdigest(),
     }
-    if provider == "webgpu":
-        values["producer_sha256"] = hashlib.sha256(
-            Path(find_spec("tensor.compiler.webgpu").origin).read_bytes()
-        ).hexdigest()
-    return values
 
 
 def needs_build(source, destination, text, target, *, provider="cuda"):
@@ -152,6 +146,6 @@ def build(bundle: Bundle, out, *, progress=None):
 
 def export_source(module, factory, *args, dependencies=()):
     """Lazy entry serializer for measured operation overlays."""
-    from tensor.compiler.entry import export_source as export
+    from tensor.compiler.frontend.source import export_source as export
 
     return export(module, factory, *args, dependencies=dependencies)

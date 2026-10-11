@@ -32,7 +32,7 @@ def test_algorithms_have_ir_loops_and_only_typed_hardware_externs(
 ):
     pytest.importorskip("tilelang")
     import tvm
-    from tensor.artifacts.portable import export_spec
+    from tensor.compiler.frontend.portable import export_spec
     from akas.kernels.packed.cuda import source
 
     path = tmp_path / "kernel.py"

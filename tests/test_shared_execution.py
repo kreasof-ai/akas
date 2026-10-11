@@ -59,13 +59,13 @@ def test_derived_plan_and_labels_preserve_submission_order():
 
 @pytest.mark.parametrize("provider", ["cuda", "webgpu"])
 def test_capture_uses_shared_order_and_borrows_resources(monkeypatch, provider):
-    import tensor.providers.cuda_graph
+    import tensor.providers.cuda.graph
 
     class Graph:
         def __init__(self, device, callback, *, resources):
             self.callback, self.resources = callback, resources
 
-    monkeypatch.setattr(tensor.providers.cuda_graph, "CudaGraph", Graph)
+    monkeypatch.setattr(tensor.providers.cuda.graph, "CudaGraph", Graph)
     device = Device(provider)
     kernel, resource = Kernel(), object()
     plan = ExecutionPlan(device)
@@ -209,7 +209,7 @@ def test_shared_operator_change_invalidates_producer_source(
 ):
     import importlib
     from pathlib import Path
-    from tensor.compiler import entry
+    from tensor.compiler.frontend import source as entry
 
     original = entry.find_spec
     helper = tmp_path / "elementwise.py"

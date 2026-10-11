@@ -19,7 +19,7 @@ import time
 import numpy as np
 import wgpu
 from wgpu.backends.wgpu_native.extras import write_timestamp
-from tensor.providers.webgpu import Device
+from tensor.providers.webgpu.device import Device
 from akas import LFM2
 
 

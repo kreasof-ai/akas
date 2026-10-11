@@ -8,12 +8,12 @@ import argparse, hashlib, json, statistics, time
 from pathlib import Path
 import numpy as np
 import tensor, wgpu
-from tensor.providers.webgpu import Device
+from tensor.providers.webgpu.device import Device
 from tensor.runtime.abi import BoundCall
 from tensor.artifacts.format import read_artifact
-from tensor.compiler.webgpu_lowering import partitioned_matmul_schedule
+from tensor.compiler.webgpu.schedules.partitioned import partitioned_matmul_schedule
 from tensor.compiler.search import ScheduleSearch
-from tensor.compiler.webgpu_schedules import SPACES, coupled_moves
+from tensor.compiler.webgpu.schedules.search_space import SPACES, coupled_moves
 from akas import GGUF
 from benchmarks.lfm2.text_helpers import emit, round_half
 from akas.kernels.packed.webgpu import source

@@ -4,17 +4,8 @@ These microbenchmarks do not substitute for the unchanged C8 client replay.
 """
 
 import modal
-from benchmarks.qwen35.modal_h200 import (
-    image,
-    volume,
-    app as base_app,
-    prepare as prepare_base,
-)
-from benchmarks.qwen35.modal_hopper_long import (
-    app as serving_app,
-    prepare_long,
-    prepare_dense_tiles,
-)
+from benchmarks.qwen35.modal_h200 import image, volume, app as base_app, prepare as prepare_base
+from benchmarks.qwen35.modal_hopper_long import app as serving_app, prepare_long, prepare_dense_tiles
 from benchmarks.qwen35.modal_compact import measure_compact, prepare_compact
 
 app = modal.App("tensor-qwen35-h200-bandwidth")
@@ -39,7 +30,7 @@ SCHEDULES = [
 def prepare_micro():
     import hashlib, json, os
     from pathlib import Path
-    from tensor.compiler.entry import export_source
+    from tensor.compiler.frontend.source import export_source
     from akas.compilation.build import build_artifact
 
     os.chdir("/workspace")
@@ -69,7 +60,7 @@ def prepare_micro():
                 "akas.kernels.attention.hopper_prefill_attention",
                 "attention",
                 schedule,
-                dependencies=("tensor.compiler.entry", "akas.kernels.elementwise"),
+                dependencies=('tensor.compiler.frontend.source', "akas.kernels.elementwise"),
             )
         )
         artifact = entry.with_suffix(".tbin")
@@ -264,7 +255,7 @@ def main(out: str = "build/qwen35-h200-bandwidth"):
 def prepare_decoded_micro(prepared):
     import hashlib, json, os
     from pathlib import Path
-    from tensor.compiler.entry import export_source
+    from tensor.compiler.frontend.source import export_source
     from akas.compilation.build import build_artifact
 
     os.chdir("/workspace")
@@ -358,7 +349,7 @@ def prepare_decoded_micro(prepared):
                 "akas.kernels." + module,
                 factory,
                 schedule,
-                dependencies=("tensor.compiler.entry", "akas.kernels.elementwise"),
+                dependencies=('tensor.compiler.frontend.source', "akas.kernels.elementwise"),
             )
         )
         build_artifact(entry, artifact, target="sm_90a")
@@ -400,7 +391,7 @@ def prepare_selected(prepared, query_rows=128, threads=256, joint=True):
     """Replace only prefill attention, retaining the measured projection kernels."""
     import hashlib, json, os, shutil
     from pathlib import Path
-    from tensor.compiler.entry import export_source
+    from tensor.compiler.frontend.source import export_source
     from tensor.artifacts.format import read_artifact
     from akas.compilation.build import build_artifact
 
@@ -459,7 +450,7 @@ def prepare_selected(prepared, query_rows=128, threads=256, joint=True):
                 "akas.kernels.attention.hopper_prefill_attention",
                 "attention",
                 dict(old["parameters"], **schedule),
-                dependencies=("tensor.compiler.entry", "akas.kernels.elementwise"),
+                dependencies=('tensor.compiler.frontend.source', "akas.kernels.elementwise"),
             )
         )
         destination.unlink(missing_ok=True)

@@ -3,7 +3,7 @@
 
 def tile_map_kernel(p):
     import tilelang.language as T
-    from tensor.compiler.entry import primitive
+    from tensor.compiler.frontend.source import primitive
 
     rows, m = p["rows"], p["block_m"]
     experts, top = 256, 8

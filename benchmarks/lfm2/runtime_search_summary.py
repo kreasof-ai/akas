@@ -28,7 +28,7 @@ def run(root, out):
         or recheck["status"] != "passed"
         or fusion["status"] != "finished"
     ):
-        raise ValueError("requires completed, validated experiments")
+        raise ValueError("requires completed, validated research")
     if any(
         bundle["implementation"] != implementation_hashes("webgpu")
         for bundle in final["bundles"].values()
@@ -41,7 +41,7 @@ def run(root, out):
         "src/akas/kernels/packed/webgpu.py",
         "src/tensor/compiler/webgpu_lowering.py",
         "src/tensor/compiler/search.py",
-        "src/tensor/compiler/webgpu_schedules.py",
+        "src/tensor/compiler/webgpu/schedules/search_space.py",
         "tests/providers/test_webgpu.py",
         "tests/providers/test_webgpu_lowering.py",
         "tests/compiler/test_webgpu_decode_schedule.py",
@@ -68,7 +68,7 @@ def run(root, out):
     for module, path in [
         ("akas.execution.packed.model", "model.py"),
         ("akas.kernels.packed.webgpu", "webgpu_kernels.py"),
-        ("tensor.providers.webgpu", "webgpu.py"),
+        ('tensor.providers.webgpu.adapter', 'tensor.providers.webgpu.buffer', 'tensor.providers.webgpu.device', 'tensor.providers.webgpu.plan', "webgpu.py"),
     ]:
         if (
             snapshots[path]["sha256"]

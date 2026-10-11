@@ -52,8 +52,8 @@ def mma_bundle(
                     kind + ("_mma_prequantized" if prequantized else "_mma"),
                     newp,
                     dependencies=(
-                        "tensor.compiler.entry",
-                        "tensor.compiler.cuda_lowering",
+                        'tensor.compiler.frontend.source',
+                        'tensor.compiler.cuda.lowering',
                         "akas.kernels.elementwise",
                     ),
                 )
@@ -83,8 +83,8 @@ def mma_bundle(
                             "quantize_kernel",
                             qp,
                             dependencies=(
-                                "tensor.compiler.entry",
-                                "tensor.compiler.cuda_lowering",
+                                'tensor.compiler.frontend.source',
+                                'tensor.compiler.cuda.lowering',
                                 "akas.kernels.elementwise",
                             ),
                         )
@@ -106,7 +106,7 @@ def mma_bundle(
                         "merge_kernel",
                         mergep,
                         dependencies=(
-                            "tensor.compiler.entry",
+                            'tensor.compiler.frontend.source',
                             "akas.kernels.elementwise",
                         ),
                     )

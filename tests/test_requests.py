@@ -223,7 +223,7 @@ def test_failed_graph_capture_does_not_release_shared_resources(
     fixture_bundle, monkeypatch
 ):
     import tensor
-    import tensor.providers.cuda_graph as module
+    import tensor.providers.cuda.graph as module
 
     model_path, bundle = fixture_bundle
     with (

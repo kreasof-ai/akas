@@ -57,7 +57,7 @@ def create_engine(args, config, device):
 
 
 def qualify(args, config):
-    from tensor.providers.cuda import Device
+    from tensor.providers.cuda.device import Device
     from benchmarks.qwen35.dense_speculation import execute
     from akas.models.qwen35.model import DenseEngine
 
@@ -127,7 +127,7 @@ def measured_calls(device, calls, metadata, resources):
     These mutate scratch/request state without advancing host positions. They
     cannot be used as serving throughput or as output/state qualification.
     """
-    from tensor.providers.cuda_graph import CudaGraph
+    from tensor.providers.cuda.graph import CudaGraph
 
     recorder = device.driver.lib.cuEventRecordWithFlags
     recorder.argtypes = [ct.c_void_p, ct.c_void_p, ct.c_uint]
@@ -178,7 +178,7 @@ def measured_calls(device, calls, metadata, resources):
 
 
 def profile_gpu(args, config):
-    from tensor.providers.cuda import Device
+    from tensor.providers.cuda.device import Device
     from akas.scheduling.scheduler import Request
 
     references = json.loads(Path(args.references).read_text())

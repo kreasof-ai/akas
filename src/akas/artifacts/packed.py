@@ -7,17 +7,8 @@ from pathlib import Path
 from akas.models.lfm2.config import Config
 from akas.kernels.packed.ggml import identity
 from akas.kernels.packed.cuda import CUDA_PROFILES
-from akas.execution.profiles.packed import (
-    Q16_PREFILL,
-    SUBGROUP_PROFILES,
-    WEBGPU_PROFILES,
-)
-from akas.execution.profiles.selection import (
-    paired_ffn,
-    prefill_tail_rows,
-    projection_tile,
-    webgpu_parameters,
-)
+from akas.execution.profiles.packed import Q16_PREFILL, SUBGROUP_PROFILES, WEBGPU_PROFILES
+from akas.execution.profiles.selection import paired_ffn, prefill_tail_rows, projection_tile, webgpu_parameters
 
 
 def requirements(
@@ -229,14 +220,14 @@ def implementation_hashes(provider="cuda"):
     import tensor.runtime.abi
     import tensor.runtime.signature
     import tensor.providers.cuda
-    import tensor.providers.cuda_graph
+    import tensor.providers.cuda.graph
     import tensor.artifacts.format
 
     modules = (
         tensor.runtime.abi,
         tensor.runtime.signature,
         tensor.providers.cuda,
-        tensor.providers.cuda_graph,
+        tensor.providers.cuda.graph,
         tensor.artifacts.format,
     )
     names = (
@@ -279,13 +270,13 @@ def implementation_hashes(provider="cuda"):
         names += ("akas.kernels.packed.cuda",)
     if provider == "webgpu":
         import tensor.providers.webgpu
-        import tensor.providers.webgpu_contract
+        import tensor.artifacts.webgpu
 
         modules = (
             tensor.runtime.abi,
             tensor.runtime.signature,
             tensor.providers.webgpu,
-            tensor.providers.webgpu_contract,
+            tensor.artifacts.webgpu,
             tensor.artifacts.format,
         )
         names += ("akas.kernels.packed.webgpu",)
@@ -293,13 +284,25 @@ def implementation_hashes(provider="cuda"):
         module.__name__: hashlib.sha256(Path(module.__file__).read_bytes()).hexdigest()
         for module in modules
     }
+    names += (
+        "tensor.runtime.buffer", "tensor.runtime.executable", "tensor.runtime.session",
+        "tensor.runtime.event", "tensor.runtime.errors", "tensor.runtime.dtypes",
+        "tensor.runtime.dlpack",
+    )
+    if provider == "cuda":
+        names += ("tensor.providers.cuda.device", "tensor.providers.cuda.driver")
+    else:
+        names += (
+            "tensor.providers.webgpu.device", "tensor.providers.webgpu.adapter",
+            "tensor.providers.webgpu.buffer", "tensor.providers.webgpu.plan",
+        )
     for name in names:
         result[name] = hashlib.sha256(
             Path(find_spec(name).origin).read_bytes()
         ).hexdigest()
     if provider == "webgpu":
         native = (
-            Path(tensor.providers.webgpu.__file__).parents[1]
+            Path(find_spec("tensor").origin).parent
             / "native"
             / "webgpu_plan.c"
         )

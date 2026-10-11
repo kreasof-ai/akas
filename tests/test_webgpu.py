@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_explicit_half_rounding_ties_subnormals_and_random_values(tmp_path):
-    from tensor.compiler.entry import export_source
+    from tensor.compiler.frontend.source import export_source
 
     rng = np.random.default_rng(342)
     x = np.concatenate(
@@ -388,7 +388,7 @@ def test_decode_residual_projection_matches_separate_add(tmp_path, encoding, sub
 
 
 def test_native_half_unpack_all_bit_patterns(tmp_path):
-    from tensor.compiler.entry import export_source
+    from tensor.compiler.frontend.source import export_source
 
     n = 65536
     path = tmp_path / "half.py"

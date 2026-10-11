@@ -8,7 +8,7 @@ import ctypes as ct
 import hashlib, json, time
 from pathlib import Path
 import numpy as np
-from tensor.compiler.entry import export_source
+from tensor.compiler.frontend.source import export_source
 from tensor.compiler.build import build_artifact
 from tensor.compiler.search import ScheduleSearch
 from akas.tensor.graph import CudaGraph
@@ -156,8 +156,8 @@ def search(model, out, *, candidates=12, width=4):
                     kind + "_mma_prequantized",
                     cp,
                     dependencies=(
-                        "tensor.compiler.entry",
-                        "tensor.compiler.cuda_lowering",
+                        'tensor.compiler.frontend.source',
+                        'tensor.compiler.cuda.lowering',
                         "akas.kernels.elementwise",
                     ),
                 )
@@ -204,7 +204,7 @@ def search(model, out, *, candidates=12, width=4):
                         "merge_kernel",
                         mp,
                         dependencies=(
-                            "tensor.compiler.entry",
+                            'tensor.compiler.frontend.source',
                             "akas.kernels.elementwise",
                         ),
                     )

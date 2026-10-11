@@ -105,7 +105,7 @@ def produce(
                     "akas.kernels.moe.hopper_experts",
                     "expert_kernel",
                     schedule,
-                    dependencies=("tensor.compiler.entry", "akas.kernels.elementwise"),
+                    dependencies=('tensor.compiler.frontend.source', "akas.kernels.elementwise"),
                 )
             )
         elif (
@@ -136,7 +136,7 @@ def produce(
                         in ("bf16-pairs", "bf16-async", "bf16-pipeline"),
                         async_mma=expert_mma in ("bf16-async", "bf16-pipeline"),
                     ),
-                    dependencies=("tensor.compiler.entry", "akas.kernels.elementwise"),
+                    dependencies=('tensor.compiler.frontend.source', "akas.kernels.elementwise"),
                 )
             )
         elif hopper_attention and record["kind"] == "attention":
@@ -147,7 +147,7 @@ def produce(
                     "akas.kernels.attention.hopper_prefill_attention",
                     "attention",
                     dict(record["parameters"], packed_loads=True),
-                    dependencies=("tensor.compiler.entry", "akas.kernels.elementwise"),
+                    dependencies=('tensor.compiler.frontend.source', "akas.kernels.elementwise"),
                 )
             )
         else:

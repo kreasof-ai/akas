@@ -1,4 +1,4 @@
-"""Source-text helpers for historical benchmark experiments only.
+"""Source-text helpers for historical benchmark research only.
 
 Production packages define kernels in TileLang DSL. These helpers retain the
 independent text controls used by FP16 and packed-load research experiments.

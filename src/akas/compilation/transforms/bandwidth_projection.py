@@ -62,7 +62,7 @@ def prefill(prepared, out, columns=64, packed_widen=False):
                 factory,
                 schedule,
                 dependencies=(
-                    "tensor.compiler.entry",
+                    'tensor.compiler.frontend.source',
                     "akas.kernels.linear.fp8_operand",
                     "akas.kernels.elementwise",
                 ),
@@ -120,7 +120,7 @@ def dense_verification(source, out, columns=64, packed_widen=False):
                 "make_kernel",
                 schedule,
                 dependencies=(
-                    "tensor.compiler.entry",
+                    'tensor.compiler.frontend.source',
                     "akas.kernels.linear.fp8_operand",
                     "akas.kernels.elementwise",
                 ),

@@ -155,7 +155,7 @@ def test_large_logical_dense_projection_preserves_independent_rows(tmp_path, row
 )
 def test_padded_short_attention_preserves_parent_accumulation(tmp_path):
     import tensor, torch
-    from tensor.compiler.entry import export_source
+    from tensor.compiler.frontend.source import export_source
     from tensor.compiler.build import build_artifact
     from test_qwen_fp8_kv import quantize
 
@@ -190,7 +190,7 @@ def test_padded_short_attention_preserves_parent_accumulation(tmp_path):
                     packed_loads=True,
                     decoded_kv=decoded,
                 ),
-                dependencies=("tensor.compiler.entry",),
+                dependencies=('tensor.compiler.frontend.source',),
             )
         )
         build_artifact(

@@ -37,8 +37,8 @@ def plan(
                     dict(parameters, block_m=16, columns=64, threads=128),
                 ),
                 (
-                    "tensor.compiler.entry",
-                    "tensor.compiler.cuda_lowering",
+                    'tensor.compiler.frontend.source',
+                    'tensor.compiler.cuda.lowering',
                     "akas.kernels.elementwise",
                 ),
             )

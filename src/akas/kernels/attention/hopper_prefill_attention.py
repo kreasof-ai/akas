@@ -3,7 +3,7 @@
 
 def attention(p):
     import tilelang.language as T
-    from tensor.compiler.entry import primitive
+    from tensor.compiler.frontend.source import primitive
 
     slots, chunk = p["slots"], p["chunk"]
     rows = slots * chunk

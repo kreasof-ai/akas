@@ -38,7 +38,7 @@ def test_profiles_preserve_original_kernel_sources_and_specializations(
             dict(module=module, factory=factory, args=args, dependencies=dependencies)
         )
 
-    monkeypatch.setattr("tensor.compiler.entry.export_source", trace)
+    monkeypatch.setattr("tensor.compiler.frontend.source.export_source", trace)
     module = importlib.import_module(case["profile"])
     if case["profile"].endswith("packed"):
         checkpoint = packed_checkpoint
@@ -56,7 +56,29 @@ def test_profiles_preserve_original_kernel_sources_and_specializations(
         )
         for k in plan.kernels
     ]
-    assert actual == case["kernels"]
+    # The frozen fixture retains the old dependency names. Only migrate those
+    # names here; factory bodies, kernel selection and specializations stay exact.
+    expected = json.loads(json.dumps(case["kernels"]))
+    renamed = {
+        "tensor.compiler.entry": "tensor.compiler.frontend.source",
+        "tensor.compiler.cuda_lowering": "tensor.compiler.cuda.lowering",
+    }
+    schedules = (
+        "gemv", "outer_product", "packed_integer", "packed_outer_product",
+        "partitioned", "register_matmul", "registers",
+    )
+    for record in expected:
+        if not isinstance(record["source"], dict):
+            continue
+        dependencies = record["source"]["dependencies"]
+        migrated = []
+        for name in dependencies:
+            if name == "tensor.compiler.webgpu_templates":
+                migrated.extend("tensor.compiler.webgpu.schedules." + x for x in schedules)
+            else:
+                migrated.append(renamed.get(name, name))
+        record["source"]["dependencies"] = migrated
+    assert actual == expected
 
 
 def test_batched_profile_reuses_different_widths_and_vocabularies():

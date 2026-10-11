@@ -17,7 +17,7 @@ app = modal.App("tensor-qwen35-h200-expert-search")
 def prepare_candidates():
     import hashlib, json, os
     from pathlib import Path
-    from tensor.compiler.entry import export_source
+    from tensor.compiler.frontend.source import export_source
     from akas.compilation.build import build_artifact
 
     os.chdir("/workspace")
@@ -44,7 +44,7 @@ def prepare_candidates():
                 module,
                 factory,
                 p,
-                dependencies=("tensor.compiler.entry", "akas.kernels.elementwise"),
+                dependencies=('tensor.compiler.frontend.source', "akas.kernels.elementwise"),
             )
         )
         artifact = entry.with_suffix(".tbin")

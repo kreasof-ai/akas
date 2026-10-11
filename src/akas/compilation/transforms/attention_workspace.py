@@ -48,7 +48,7 @@ def _compile(out, original, old, module, schedule, **settings):
                 "akas.kernels." + producer,
                 factory,
                 p,
-                dependencies=("tensor.compiler.entry", "akas.kernels.elementwise"),
+                dependencies=('tensor.compiler.frontend.source', "akas.kernels.elementwise"),
             )
         )
         artifact.unlink(missing_ok=True)

@@ -3,7 +3,7 @@
 
 def make_kernel(kind, p):
     import tilelang.language as T
-    from tensor.compiler.entry import primitive
+    from tensor.compiler.frontend.source import primitive
 
     if p.get("kv_dtype") == "fp8":
         from akas.kernels.attention.fp8_kv import make_kernel as fp8_kv
@@ -350,7 +350,7 @@ def make_kernel(kind, p):
 
 def expert_kernel(p):
     import tilelang.language as T
-    from tensor.compiler.entry import primitive
+    from tensor.compiler.frontend.source import primitive
 
     rows, k, o = p["rows"], p["k"], p["o"]
     n, top, experts = p.get("columns", 64), 8, 256

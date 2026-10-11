@@ -111,7 +111,7 @@ def weight_decoder(kind, depth, *, packed_words=False):
 
 
 def source(kind, parameters):
-    from tensor.compiler.entry import export_source
+    from tensor.compiler.frontend.source import export_source
 
     return export_source(
         __name__,
@@ -122,7 +122,7 @@ def source(kind, parameters):
             "akas.kernels.elementwise",
             "akas.kernels.packed.ggml",
             "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
+            'tensor.compiler.frontend.source',
         ),
     )
 

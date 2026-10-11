@@ -12,7 +12,7 @@ import pytest
 @pytest.mark.parametrize("chunk", [64, 128])
 def test_recompute_matches_every_frozen_prefix(tmp_path, chunk):
     import tensor
-    from tensor.compiler.entry import export_source
+    from tensor.compiler.frontend.source import export_source
     from tensor.compiler.build import build_artifact
 
     s, c = 3, chunk
@@ -46,7 +46,7 @@ def test_recompute_matches_every_frozen_prefix(tmp_path, chunk):
                 "akas.kernels." + module,
                 factory,
                 *args,
-                dependencies=("tensor.compiler.entry",),
+                dependencies=('tensor.compiler.frontend.source',),
             )
         )
         build_artifact(
@@ -143,7 +143,7 @@ def test_recompute_matches_every_frozen_prefix(tmp_path, chunk):
 )
 def test_c64_input_copy_at_int32_bitcount_boundary(tmp_path):
     import tensor
-    from tensor.compiler.entry import export_source
+    from tensor.compiler.frontend.source import export_source
     from tensor.compiler.build import build_artifact
     from tensor.runtime.dtypes import encode_bfloat16, decode_bfloat16
 
@@ -154,7 +154,7 @@ def test_c64_input_copy_at_int32_bitcount_boundary(tmp_path):
             "akas.kernels.recurrent.recompute",
             "save_conv",
             dict(slots=64, chunk=128),
-            dependencies=("tensor.compiler.entry",),
+            dependencies=('tensor.compiler.frontend.source',),
         )
     )
     build_artifact(
@@ -185,7 +185,7 @@ def test_c64_input_copy_at_int32_bitcount_boundary(tmp_path):
 )
 def test_c64_short_snapshot_restore_without_flat_bitcount_view(tmp_path):
     import tensor
-    from tensor.compiler.entry import export_source
+    from tensor.compiler.frontend.source import export_source
     from tensor.compiler.build import build_artifact
 
     source = tmp_path / "restore.py"
@@ -195,7 +195,7 @@ def test_c64_short_snapshot_restore_without_flat_bitcount_view(tmp_path):
             "akas.kernels.recurrent.hopper_restore",
             "restore_kernel",
             dict(slots=64, chunk=4, shape=[32, 128, 128]),
-            dependencies=("tensor.compiler.entry",),
+            dependencies=('tensor.compiler.frontend.source',),
         )
     )
     build_artifact(

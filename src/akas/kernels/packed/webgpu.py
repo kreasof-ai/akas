@@ -7,7 +7,7 @@ from akas.kernels.packed.ggml import weight_storage
 
 
 def source(kind, parameters):
-    from tensor.compiler.entry import export_source
+    from tensor.compiler.frontend.source import export_source
 
     return export_source(
         __name__,
@@ -18,8 +18,8 @@ def source(kind, parameters):
             "akas.kernels.elementwise",
             "akas.kernels.packed.ggml",
             "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates",
+            'tensor.compiler.frontend.source',
+            'tensor.compiler.webgpu.schedules.gemv', 'tensor.compiler.webgpu.schedules.outer_product', 'tensor.compiler.webgpu.schedules.packed_integer', 'tensor.compiler.webgpu.schedules.packed_outer_product', 'tensor.compiler.webgpu.schedules.partitioned', 'tensor.compiler.webgpu.schedules.register_matmul', 'tensor.compiler.webgpu.schedules.registers',
         ),
     )
 
@@ -163,7 +163,7 @@ def projection_epilogue(kind):
 
 def projection_abi(kind, p, algorithm):
     import tilelang.language as T
-    from tensor.compiler.entry import primitive
+    from tensor.compiler.frontend.source import primitive
 
     r, k, o, q = p.get("r", 1), p["k"], p["o"], p["type"]
     count, dtype = weight_storage(q, k * o, packed_words=True)
@@ -189,9 +189,9 @@ def projection_abi(kind, p, algorithm):
 
 def prefill_kernel(kind, p):
     import tilelang.language as T
-    from tensor.compiler.webgpu_templates import register_matmul
-    from tensor.compiler.webgpu_templates import partitioned_matmul
-    from tensor.compiler.webgpu_templates import outer_product_matmul
+    from tensor.compiler.webgpu.schedules.register_matmul import register_matmul
+    from tensor.compiler.webgpu.schedules.partitioned import partitioned_matmul
+    from tensor.compiler.webgpu.schedules.outer_product import outer_product_matmul
 
     r, k, o, q = (p[n] for n in ("r", "k", "o", "type"))
     parts = 2 if kind == "ffn" else 1
@@ -265,9 +265,9 @@ def prefill_kernel(kind, p):
 
 def decode_kernel(kind, p):
     import tilelang.language as T
-    from tensor.compiler.webgpu_templates import registers
-    from tensor.compiler.webgpu_templates import shared_buffers
-    from tensor.compiler.webgpu_templates import streamed_gemv
+    from tensor.compiler.webgpu.schedules.registers import registers
+    from tensor.compiler.webgpu.schedules.registers import shared_buffers
+    from tensor.compiler.webgpu.schedules.gemv import streamed_gemv
 
     k, o, q = p["k"], p["o"], p["type"]
     parts = 2 if kind == "ffn" else 1
@@ -613,7 +613,7 @@ def decode_kernel(kind, p):
 
 def quantize_kernel(kind, p):
     import tilelang.language as T
-    from tensor.compiler.entry import primitive
+    from tensor.compiler.frontend.source import primitive
 
     r, k = (p.get("r", 1) if kind == "quantize_q16" else 1), p["k"]
     if k % 32:
@@ -808,8 +808,8 @@ def quantize_kernel(kind, p):
 
 def integer_prefill_kernel(kind, p):
     import tilelang.language as T
-    from tensor.compiler.entry import primitive
-    from tensor.compiler.webgpu_templates import packed_integer_matmul
+    from tensor.compiler.frontend.source import primitive
+    from tensor.compiler.webgpu.schedules.packed_integer import packed_integer_matmul
 
     r, k, o = p.get("r", 1), p["k"], p["o"]
     parts = 2 if kind == "ffn_q16" else 1
@@ -942,7 +942,7 @@ def segmented_reduce(lanes):
 
 def rms_kernel(kind, p):
     import tilelang.language as T
-    from tensor.compiler.entry import primitive
+    from tensor.compiler.frontend.source import primitive
 
     r, c, eps = p.get("r", 1), p["c"], p["eps"]
     threads, fused = rms_width(c), kind == "add_rms"
@@ -1008,7 +1008,7 @@ def rms_kernel(kind, p):
 
 def normalization_kernel(kind, p):
     import tilelang.language as T
-    from tensor.compiler.entry import primitive
+    from tensor.compiler.frontend.source import primitive
 
     r, h, kh, d, cap = p.get("r", 1), p["h"], p["kh"], p["d"], p["cap"]
     query = kind == "qnorm"
@@ -1152,7 +1152,7 @@ def attention_scores_kernel(p):
 
 def attention_kernel(p):
     import tilelang.language as T
-    from tensor.compiler.entry import primitive
+    from tensor.compiler.frontend.source import primitive
 
     r, h, kh, d, cap = p.get("r", 1), p["h"], p["kh"], p["d"], p["cap"]
     partitioned = r == 1 and p.get("attention_schedule") == "partitioned_values"

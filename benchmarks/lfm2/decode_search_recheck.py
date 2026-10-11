@@ -8,7 +8,7 @@ import argparse, hashlib, json, statistics, time
 from pathlib import Path
 import numpy as np
 import tensor
-from tensor.providers.webgpu import Device
+from tensor.providers.webgpu.device import Device
 from tensor.artifacts.format import read_artifact
 from akas import GGUF
 from akas.execution.profiles.packed import DECODE_GEMV

@@ -6,7 +6,7 @@ import hashlib
 import urllib.request
 
 REVISION = "96f423b5867027fbd0ecaf4f7863854ff3109851"
-URL = f"https://raw.githubusercontent.com/kreasof-ai/tensor/{REVISION}/tools/bootstrap_nvrtc.py"
+URL = f"https://raw.githubusercontent.com/kreasof-ai/tensor/{REVISION}/tools/bootstrap/bootstrap_nvrtc.py"
 
 
 def main():

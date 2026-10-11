@@ -8,8 +8,8 @@ from akas.compilation.plan import Bundle, Kernel, Source
 from akas.kernels.linear.split_linear import schedule
 
 DEPENDENCIES = (
-    "tensor.compiler.entry",
-    "tensor.compiler.cuda_lowering",
+    'tensor.compiler.frontend.source',
+    'tensor.compiler.cuda.lowering',
     "akas.kernels.elementwise",
 )
 

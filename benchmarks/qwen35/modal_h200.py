@@ -42,7 +42,7 @@ base_image = (
         "pytest==9.1.1",
     )
     .add_local_file(
-        ROOT / "tools/bootstrap_nvrtc.py", "/tmp/bootstrap_nvrtc.py", copy=True
+        ROOT / "tools/bootstrap/bootstrap_nvrtc.py", "/tmp/bootstrap_nvrtc.py", copy=True
     )
     .run_commands("python /tmp/bootstrap_nvrtc.py --out /opt/tensor-nvrtc")
     .env(

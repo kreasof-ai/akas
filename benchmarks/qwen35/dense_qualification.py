@@ -50,7 +50,7 @@ def qualify(
     *,
     capacities=(1, 2, 4, 8, 16, 32, 64, 128, 256),
 ):
-    from tensor.providers.cuda import Device
+    from tensor.providers.cuda.device import Device
     from akas.models.qwen35.model import DenseEngine
 
     references = json.loads(Path(references).read_text())

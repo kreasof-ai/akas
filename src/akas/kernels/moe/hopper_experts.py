@@ -7,7 +7,7 @@ primitive and same-state full-model checks before serving benchmarks.
 
 def expert_kernel(p):
     import tilelang.language as T
-    from tensor.compiler.entry import primitive
+    from tensor.compiler.frontend.source import primitive
 
     rows, k, o = p["rows"], p["k"], p["o"]
     n, top, experts = p.get("columns", 64), 8, 256

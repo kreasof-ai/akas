@@ -3,7 +3,7 @@
 
 def make_kernel(kind, p):
     import tilelang.language as T
-    from tensor.compiler.entry import primitive
+    from tensor.compiler.frontend.source import primitive
 
     r, c = p["r"], p["c"]
     if kind == "mtp_join":

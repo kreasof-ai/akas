@@ -50,8 +50,8 @@ def produce(
                 factory,
                 *args,
                 dependencies=(
-                    "tensor.compiler.entry",
-                    "tensor.compiler.cuda_lowering",
+                    'tensor.compiler.frontend.source',
+                    'tensor.compiler.cuda.lowering',
                     "akas.kernels.elementwise",
                 ),
             )
@@ -106,7 +106,7 @@ def produce(
                     "akas.kernels.linear.matmul",
                     "merge_kernel",
                     dict(r=slots, top=8, o=p["o"], partitions=parts),
-                    dependencies=("tensor.compiler.entry", "akas.kernels.elementwise"),
+                    dependencies=('tensor.compiler.frontend.source', "akas.kernels.elementwise"),
                 )
             )
             build_artifact(entry, artifact, target=target)

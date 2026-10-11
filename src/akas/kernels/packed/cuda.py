@@ -17,7 +17,7 @@ CUDA_GROUPED_THRESHOLD = 4096
 
 
 def source(kind, parameters):
-    from tensor.compiler.entry import export_source
+    from tensor.compiler.frontend.source import export_source
 
     return export_source(
         __name__,
@@ -28,13 +28,13 @@ def source(kind, parameters):
             "akas.kernels.elementwise",
             "akas.kernels.packed.ggml",
             "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
+            'tensor.compiler.frontend.source',
         ),
     )
 
 
 def gemv_source(kind, parameters):
-    from tensor.compiler.entry import export_source
+    from tensor.compiler.frontend.source import export_source
 
     return export_source(
         __name__,
@@ -45,13 +45,13 @@ def gemv_source(kind, parameters):
             "akas.kernels.elementwise",
             "akas.kernels.packed.ggml",
             "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
+            'tensor.compiler.frontend.source',
         ),
     )
 
 
 def prefill_source(kind, parameters):
-    from tensor.compiler.entry import export_source
+    from tensor.compiler.frontend.source import export_source
 
     return export_source(
         __name__,
@@ -62,13 +62,13 @@ def prefill_source(kind, parameters):
             "akas.kernels.elementwise",
             "akas.kernels.packed.ggml",
             "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
+            'tensor.compiler.frontend.source',
         ),
     )
 
 
 def fused_source(kind, parameters):
-    from tensor.compiler.entry import export_source
+    from tensor.compiler.frontend.source import export_source
 
     return export_source(
         __name__,
@@ -79,7 +79,7 @@ def fused_source(kind, parameters):
             "akas.kernels.elementwise",
             "akas.kernels.packed.ggml",
             "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
+            'tensor.compiler.frontend.source',
         ),
     )
 
@@ -251,7 +251,7 @@ def packed_dot(q, k, row_bytes, width=4):
 def projection_abi(kind, p, algorithm):
     """Select the fused operator ABI without generating Python signatures."""
     import tilelang.language as T
-    from tensor.compiler.entry import primitive
+    from tensor.compiler.frontend.source import primitive
 
     r, k, o, q = (p[n] for n in ("r", "k", "o", "type"))
     count, dtype = weight_storage(q, k * o)
@@ -563,7 +563,7 @@ def fused_kernel(kind, p):
 
 def warp_partial_kernel(p, splits):
     import tilelang.language as T
-    from tensor.compiler.entry import primitive
+    from tensor.compiler.frontend.source import primitive
 
     h, kh, d, cap = (p[n] for n in ("h", "kh", "d", "cap"))
     if d != 64 or type(splits) is not int or splits < 1:
@@ -656,7 +656,7 @@ def warp_partial_kernel(p, splits):
 
 
 def warp_partial_source(p, splits):
-    from tensor.compiler.entry import export_source
+    from tensor.compiler.frontend.source import export_source
 
     return export_source(
         __name__,
@@ -667,14 +667,14 @@ def warp_partial_source(p, splits):
             "akas.kernels.elementwise",
             "akas.kernels.packed.ggml",
             "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
+            'tensor.compiler.frontend.source',
         ),
     )
 
 
 def grouped_kernel(p, stage=32, warps=2):
     import tilelang.language as T
-    from tensor.compiler.entry import primitive
+    from tensor.compiler.frontend.source import primitive
 
     h, kh, d, cap, splits = (p[n] for n in ("h", "kh", "d", "cap", "splits"))
     group = h // kh
@@ -799,7 +799,7 @@ def grouped_kernel(p, stage=32, warps=2):
 
 
 def grouped_source(p, stage=32, warps=2):
-    from tensor.compiler.entry import export_source
+    from tensor.compiler.frontend.source import export_source
 
     return export_source(
         __name__,
@@ -811,14 +811,14 @@ def grouped_source(p, stage=32, warps=2):
             "akas.kernels.elementwise",
             "akas.kernels.packed.ggml",
             "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
+            'tensor.compiler.frontend.source',
         ),
     )
 
 
 def merge_kernel(p, splits):
     import tilelang.language as T
-    from tensor.compiler.entry import primitive
+    from tensor.compiler.frontend.source import primitive
 
     h, d = (p["h"], p["d"])
     stride = d + 2
@@ -855,7 +855,7 @@ def merge_kernel(p, splits):
 
 
 def merge_source(p, splits):
-    from tensor.compiler.entry import export_source
+    from tensor.compiler.frontend.source import export_source
 
     return export_source(
         __name__,
@@ -866,7 +866,7 @@ def merge_source(p, splits):
             "akas.kernels.elementwise",
             "akas.kernels.packed.ggml",
             "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
+            'tensor.compiler.frontend.source',
         ),
     )
 
@@ -874,7 +874,7 @@ def merge_source(p, splits):
 def normalization_kernel(kind, p):
     import math
     import tilelang.language as T
-    from tensor.compiler.entry import primitive
+    from tensor.compiler.frontend.source import primitive
 
     r, h, kh, d, cap = (p[n] for n in ("r", "h", "kh", "d", "cap"))
     heads = h if kind == "qnorm" else kh

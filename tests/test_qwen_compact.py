@@ -11,7 +11,7 @@ import pytest
 )
 def test_compact_tiles_cover_every_route_once(tmp_path):
     import tensor
-    from tensor.compiler.entry import export_source
+    from tensor.compiler.frontend.source import export_source
     from tensor.compiler.build import build_artifact
 
     rows, m = 4096, 64
@@ -22,7 +22,7 @@ def test_compact_tiles_cover_every_route_once(tmp_path):
             "akas.kernels.moe.compact_experts",
             "tile_map_kernel",
             dict(rows=rows, block_m=m),
-            dependencies=("tensor.compiler.entry",),
+            dependencies=('tensor.compiler.frontend.source',),
         )
     )
     build_artifact(
@@ -68,7 +68,7 @@ def test_compact_tiles_cover_every_route_once(tmp_path):
 def test_compact_experts_match_original_with_shuffled_routes(tmp_path, routed):
     import torch
     import tensor
-    from tensor.compiler.entry import export_source
+    from tensor.compiler.frontend.source import export_source
     from tensor.compiler.build import build_artifact
 
     torch.set_num_threads(1)
@@ -128,7 +128,7 @@ def test_compact_experts_match_original_with_shuffled_routes(tmp_path, routed):
                 "akas.kernels." + module,
                 factory,
                 p,
-                dependencies=("tensor.compiler.entry",),
+                dependencies=('tensor.compiler.frontend.source',),
             )
         )
         build_artifact(

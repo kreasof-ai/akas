@@ -117,7 +117,7 @@ def run(search_root, recheck_root, native_root, json_out, native_default_root=No
     source_paths = [
         "src/tensor/compiler/webgpu_lowering.py",
         "src/tensor/compiler/search.py",
-        "src/tensor/compiler/webgpu_schedules.py",
+        "src/tensor/compiler/webgpu/schedules/search_space.py",
         "src/akas/kernels/packed/webgpu.py",
         "benchmarks/lfm2/tensor_projection_search.py",
         "benchmarks/lfm2/projection_search_recheck.py",

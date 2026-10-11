@@ -7,13 +7,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from akas.compilation.profiles.hybrid import (
-    decode,
-    prefill,
-    draft,
-    draft_prefill,
-    verification,
-)
+from akas.compilation.profiles.hybrid import decode, prefill, draft, draft_prefill, verification
 from akas.models.qwen35.config import Qwen35Config
 
 
@@ -45,7 +39,7 @@ def declarations(monkeypatch):
     def read(path):
         return json.loads(Path(path).read_text()), None
 
-    monkeypatch.setattr("tensor.compiler.entry.export_source", export)
+    monkeypatch.setattr("tensor.compiler.frontend.source.export_source", export)
     monkeypatch.setattr("tensor.build", compile)
     monkeypatch.setattr(pipeline, "needs_build", lambda *args, **options: True)
     for name in ("hopper", "attention_workspace"):
@@ -102,15 +96,7 @@ def test_draft_and_verification_reuse_target_kernels(
 def test_attention_projection_and_hopper_overlays_share_build_pipeline(
     tmp_path, checkpoint, declarations
 ):
-    from akas.compilation.transforms import (
-        compact_experts,
-        hopper,
-        hopper_verification,
-        split_attention,
-        split_linear,
-        attention_workspace,
-        bandwidth_projection,
-    )
+    from akas.compilation.transforms import compact_experts, hopper, hopper_verification, split_attention, split_linear, attention_workspace, bandwidth_projection
 
     prefix = prefill.produce(
         checkpoint,

@@ -38,8 +38,8 @@ def plan(
                     factory,
                     args,
                     (
-                        "tensor.compiler.entry",
-                        "tensor.compiler.cuda_lowering",
+                        'tensor.compiler.frontend.source',
+                        'tensor.compiler.cuda.lowering',
                         "akas.kernels.attention.fp8_kv",
                         "akas.kernels.elementwise",
                     ),

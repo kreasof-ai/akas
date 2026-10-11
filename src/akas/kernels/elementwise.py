@@ -3,7 +3,7 @@
 
 def rms_kernel(p):
     import tilelang.language as T
-    from tensor.compiler.entry import primitive
+    from tensor.compiler.frontend.source import primitive
 
     r, c, eps = p["r"], p["c"], p["eps"]
     flat = p.get("flat", False)
@@ -99,7 +99,7 @@ def rms_kernel(p):
 
 def swiglu_kernel(p):
     import tilelang.language as T
-    from tensor.compiler.entry import primitive
+    from tensor.compiler.frontend.source import primitive
 
     r, c = p["r"], p["c"]
     flat, packed = p.get("flat", False), p.get("packed", False)

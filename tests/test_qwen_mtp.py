@@ -12,7 +12,7 @@ def test_mtp_join_and_cast_match_independent_bf16_reference(tmp_path):
     import tensor
     import torch
     from tensor.compiler.build import build_artifact
-    from tensor.compiler.entry import export_source
+    from tensor.compiler.frontend.source import export_source
 
     torch.set_num_threads(1)
     r, c, eps = 8, 2048, 1e-6
@@ -47,7 +47,7 @@ def test_mtp_join_and_cast_match_independent_bf16_reference(tmp_path):
                 "make_kernel",
                 kind,
                 p,
-                dependencies=("tensor.compiler.entry",),
+                dependencies=('tensor.compiler.frontend.source',),
             )
         )
         artifact = entry.with_suffix(".tbin")

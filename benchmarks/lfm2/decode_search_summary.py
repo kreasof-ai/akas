@@ -31,7 +31,7 @@ def run(root, out):
         "src/akas/kernels/packed/webgpu.py",
         "src/tensor/compiler/webgpu_lowering.py",
         "src/tensor/compiler/search.py",
-        "src/tensor/compiler/webgpu_schedules.py",
+        "src/tensor/compiler/webgpu/schedules/search_space.py",
         "src/akas/compilation/profiles/packed.py",
         "benchmarks/lfm2/webgpu_profile.py",
         "benchmarks/lfm2/decode_kernel_search.py",

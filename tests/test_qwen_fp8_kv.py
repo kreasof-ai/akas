@@ -10,7 +10,7 @@ GPU = pytest.mark.skipif(
 
 
 def build(tmp_path, kind, p):
-    from tensor.compiler.entry import export_source
+    from tensor.compiler.frontend.source import export_source
     from tensor.compiler.build import build_artifact
 
     entry = tmp_path / (kind + "-" + str(p.get("kv_dtype", "bfloat16")) + ".py")
@@ -21,8 +21,8 @@ def build(tmp_path, kind, p):
             kind,
             p,
             dependencies=(
-                "tensor.compiler.entry",
-                "tensor.compiler.cuda_lowering",
+                'tensor.compiler.frontend.source',
+                'tensor.compiler.cuda.lowering',
                 "akas.kernels.attention.fp8_kv",
             ),
         )

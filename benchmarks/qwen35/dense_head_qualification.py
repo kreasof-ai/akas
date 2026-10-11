@@ -7,7 +7,7 @@ from pathlib import Path
 
 import numpy as np
 
-from tensor.providers.cuda import Device
+from tensor.providers.cuda.device import Device
 from akas.artifacts.kernels import identity
 from akas.models.qwen35.weights import DenseCheckpoint
 from akas.kernels.linear.split_linear import schedule

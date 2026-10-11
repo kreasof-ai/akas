@@ -10,7 +10,7 @@ import argparse, hashlib, json, statistics, time
 from pathlib import Path
 import numpy as np
 import tensor, wgpu
-from tensor.providers.webgpu import Device
+from tensor.providers.webgpu.device import Device
 from tensor.compiler.search import ScheduleSearch
 from akas import GGUF
 from akas.kernels.packed.webgpu import source

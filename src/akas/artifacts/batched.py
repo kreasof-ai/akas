@@ -18,36 +18,7 @@ def implementation():
         "akas.execution.batched.draft",
     ]
     modules.extend(
-        (
-            "akas.generation.batched_mtp",
-            "akas.execution.batched.speculative_graph",
-            "akas.memory.recurrent_journal",
-            "akas.tensor.executor",
-            "akas.tensor.graph",
-            "akas.artifacts.kernels",
-            "akas.checkpoints.safetensors",
-            "akas.memory.state",
-            "akas.ops.hybrid_state",
-            "akas.ops.decoder",
-            "akas.ops.attention",
-            "akas.ops.gdn",
-            "akas.ops.shortconv",
-            "akas.ops.ffn",
-            "akas.checkpoints.upload",
-            "akas.ops.linear",
-            "akas.ops.decoder",
-            "akas.ops.normalization",
-            "akas.ops.quantization",
-            "akas.execution.plan",
-            "akas.kernels.elementwise",
-            "akas.kernels.hybrid.hybrid_batch",
-            "akas.kernels.linear.split_linear",
-            "akas.kernels.linear.head",
-            "akas.kernels.recurrent.recurrent",
-            "akas.kernels.speculation.speculation",
-            "akas.kernels.hybrid.hybrid",
-            "akas.kernels.speculation.mtp",
-        )
+        ('akas.generation.batched_mtp', 'akas.execution.batched.speculative_graph', 'akas.memory.recurrent_journal', 'akas.tensor.executor', 'akas.tensor.graph', 'akas.artifacts.kernels', 'akas.checkpoints.safetensors', 'akas.memory.state', 'akas.ops.hybrid_state', 'akas.ops.decoder', 'akas.ops.attention', 'akas.ops.gdn', 'akas.ops.shortconv', 'akas.ops.ffn', 'akas.checkpoints.upload', 'akas.ops.linear', 'akas.ops.normalization', 'akas.ops.quantization', 'akas.execution.plan', 'akas.kernels.elementwise', 'akas.kernels.hybrid.hybrid_batch', 'akas.kernels.linear.split_linear', 'akas.kernels.linear.head', 'akas.kernels.recurrent.recurrent', 'akas.kernels.speculation.speculation', 'akas.kernels.hybrid.hybrid', 'akas.kernels.speculation.mtp',)
     )
     return {
         name: hashlib.sha256(

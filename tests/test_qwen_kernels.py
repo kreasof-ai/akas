@@ -30,7 +30,7 @@ def build(tmp_path, kind, p):
 
 def build_mma(tmp_path, factory, *args):
     from tensor.compiler.build import build_artifact
-    from tensor.compiler.entry import export_source
+    from tensor.compiler.frontend.source import export_source
 
     entry = tmp_path / (factory + str(len(list(tmp_path.glob("*.py")))) + ".py")
     entry.write_text(
@@ -38,7 +38,7 @@ def build_mma(tmp_path, factory, *args):
             "akas.kernels.linear.matmul",
             factory,
             *args,
-            dependencies=("tensor.compiler.entry", "tensor.compiler.cuda_lowering"),
+            dependencies=('tensor.compiler.frontend.source', "tensor.compiler.cuda.lowering"),
         )
     )
     artifact = entry.with_suffix(".tbin")

@@ -37,10 +37,10 @@ def test_decoder_plan_preserves_complete_operation_contract(
         "batch": "akas.execution.batched.plan",
     }
     module = importlib.import_module(paths[phase])
-    import tensor.runtime
+    import tensor.runtime.buffer
 
     monkeypatch.setattr(
-        tensor.runtime,
+        tensor.runtime.buffer,
         "Buffer",
         lambda device, pointer, shape, dtype, owner: Buffer(
             "view:" + owner.name, shape, dtype

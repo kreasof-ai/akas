@@ -15,7 +15,7 @@ import tensor
 from akas.tensor.graph import CudaGraph
 from tensor.compiler.tuning import measure_cuda
 from tensor.compiler.search import ScheduleSearch, ScheduleProfile
-from tensor.compiler.cuda_schedules import projection_space, projection_legal
+from tensor.compiler.cuda.schedules import projection_space, projection_legal
 from tensor.artifacts.format import read_artifact
 from akas import GGUF
 from akas.kernels.packed.cuda import gemv_source
@@ -81,8 +81,8 @@ def search(
         for name in (
             "benchmarks/lfm2/cuda_format_search.py",
             "src/tensor/compiler/search.py",
-            "src/tensor/compiler/cuda_schedules.py",
-            "src/tensor/compiler/cuda_lowering.py",
+            "src/tensor/compiler/cuda/schedules.py",
+            "src/tensor/compiler/cuda/lowering.py",
             "src/akas/kernels/packed/cuda.py",
         )
     }

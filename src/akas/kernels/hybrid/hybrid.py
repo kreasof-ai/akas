@@ -8,7 +8,7 @@ from akas.kernels.elementwise import swiglu_kernel
 
 
 def source(kind, parameters):
-    from tensor.compiler.entry import export_source
+    from tensor.compiler.frontend.source import export_source
 
     return export_source(
         __name__,
@@ -17,8 +17,8 @@ def source(kind, parameters):
         parameters,
         dependencies=(
             "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
+            'tensor.compiler.frontend.source',
+            'tensor.compiler.cuda.lowering',
             "akas.kernels.attention.fp8_kv",
         ),
     )
@@ -66,7 +66,7 @@ def make_kernel(kind, p):
         r, k, o, top, e = (p[n] for n in ("r", "k", "o", "top", "experts"))
         columns, threads = p.get("columns", 4), p.get("threads", 128)
         routed = p.get("routed_input", False)
-        from tensor.compiler.entry import primitive
+        from tensor.compiler.frontend.source import primitive
 
         arguments = [
             ("x", (r, top, k) if routed else (r, k), "bfloat16"),
@@ -423,7 +423,7 @@ def make_kernel(kind, p):
     if kind in ("attention_q", "attention_kv"):
         r, d, eps, cap = p["r"], 256, p["eps"], p["capacity"]
         theta = p["theta"]
-        from tensor.compiler.entry import primitive
+        from tensor.compiler.frontend.source import primitive
 
         qkind = kind == "attention_q"
         heads = 16 if qkind else 2

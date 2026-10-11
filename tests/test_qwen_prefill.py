@@ -11,7 +11,7 @@ GPU = pytest.mark.skipif(
 
 
 def build(tmp_path, kind, p):
-    from tensor.compiler.entry import export_source
+    from tensor.compiler.frontend.source import export_source
     from tensor.compiler.build import build_artifact
 
     entry = tmp_path / (kind + ".py")
@@ -22,7 +22,7 @@ def build(tmp_path, kind, p):
             "make_kernel",
             kind,
             p,
-            dependencies=("tensor.compiler.entry",),
+            dependencies=('tensor.compiler.frontend.source',),
         )
     )
     build_artifact(
@@ -235,7 +235,7 @@ def test_decode_attention_merge_rounds_before_gate(tmp_path):
 @pytest.mark.parametrize("routed", [False, True])
 def test_large_expert_tiles_preserve_hot_experts_and_tail_rows(tmp_path, routed):
     import torch, tensor
-    from tensor.compiler.entry import export_source
+    from tensor.compiler.frontend.source import export_source
     from tensor.compiler.build import build_artifact
 
     torch.set_num_threads(1)
@@ -275,7 +275,7 @@ def test_large_expert_tiles_preserve_hot_experts_and_tail_rows(tmp_path, routed)
             "akas.kernels.hybrid.hybrid_prefill",
             "expert_kernel",
             dict(rows=rows, k=k, o=o, routed_input=routed, block_m=64, threads=256),
-            dependencies=("tensor.compiler.entry",),
+            dependencies=('tensor.compiler.frontend.source',),
         )
     )
     build_artifact(

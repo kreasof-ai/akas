@@ -10,18 +10,13 @@ import argparse, hashlib, json, statistics, time
 from pathlib import Path
 import numpy as np
 import tensor
-from tensor.providers.webgpu import Device
+from tensor.providers.webgpu.device import Device
 from akas import GGUF
 from akas.execution.profiles.selection import webgpu_parameters
 from akas.execution.profiles.selection import projection_tile
 from akas.kernels.packed.webgpu import source
-from tensor.compiler.webgpu_lowering import outer_product_matmul_schedule
-from benchmarks.lfm2.tensor_projection_search import (
-    TimestampAdapter,
-    bind,
-    oracle,
-    check,
-)
+from tensor.compiler.webgpu.schedules.outer_product import outer_product_matmul_schedule
+from benchmarks.lfm2.tensor_projection_search import TimestampAdapter, bind, oracle, check
 from benchmarks.lfm2.decode_fusion_search import PlanTimer
 
 

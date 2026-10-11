@@ -13,7 +13,7 @@ from pathlib import Path
 import numpy as np
 import tensor
 from tensor.compiler.search import ScheduleSearch
-from tensor.compiler.cuda_schedules import ATTENTION_SPACES
+from tensor.compiler.cuda.schedules import ATTENTION_SPACES
 from akas.tensor.graph import CudaGraph
 from tensor.compiler.tuning import measure_cuda
 from akas.kernels.packed.cuda import warp_partial_source
@@ -36,8 +36,8 @@ def search(out, max_candidates=7):
         for name in (
             "benchmarks/lfm2/cuda_attention_search.py",
             "src/tensor/compiler/search.py",
-            "src/tensor/compiler/cuda_schedules.py",
-            "src/tensor/compiler/cuda_lowering.py",
+            "src/tensor/compiler/cuda/schedules.py",
+            "src/tensor/compiler/cuda/lowering.py",
             "src/akas/kernels/packed/cuda.py",
         )
     }

@@ -10,7 +10,7 @@ from pathlib import Path
 
 import numpy as np
 
-from tensor.compiler.entry import export_source
+from tensor.compiler.frontend.source import export_source
 from akas.artifacts.kernels import identity
 from akas.models.qwen35.weights import DenseCheckpoint
 from akas.compilation.build import needs_build
@@ -123,8 +123,8 @@ def prepare(directory, *, extended=False):
             row["factory"],
             *args,
             dependencies=(
-                "tensor.compiler.entry",
-                "tensor.compiler.cuda_lowering",
+                'tensor.compiler.frontend.source',
+                'tensor.compiler.cuda.lowering',
                 "akas.kernels.elementwise",
             ),
         )
@@ -145,7 +145,7 @@ def prepare(directory, *, extended=False):
 
 
 def measure(checkpoint, directory):
-    from tensor.providers.cuda import Device
+    from tensor.providers.cuda.device import Device
     from akas.tensor.graph import CudaGraph
     from tensor.runtime.abi import BoundCall
 

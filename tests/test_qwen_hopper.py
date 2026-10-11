@@ -25,7 +25,7 @@ def test_hopper_prefill_attention_preserves_control_bits(
     tmp_path, query_rows, threads, joint, decoded, value_splits
 ):
     import torch, tensor
-    from tensor.compiler.entry import export_source
+    from tensor.compiler.frontend.source import export_source
     from tensor.compiler.build import build_artifact
     from test_qwen_fp8_kv import quantize
 
@@ -63,7 +63,7 @@ def test_hopper_prefill_attention_preserves_control_bits(
                 "akas.kernels." + module,
                 "attention",
                 schedule,
-                dependencies=("tensor.compiler.entry",),
+                dependencies=('tensor.compiler.frontend.source',),
             )
         )
         build_artifact(
@@ -82,7 +82,7 @@ def test_hopper_prefill_attention_preserves_control_bits(
                 "akas.kernels.attention.attention_workspace",
                 "decode",
                 dict(slots=s, capacity=cap),
-                dependencies=("tensor.compiler.entry",),
+                dependencies=('tensor.compiler.frontend.source',),
             )
         )
         build_artifact(
@@ -208,7 +208,7 @@ def test_wide_hopper_projections_preserve_control_bits(
     if paired in ("warp", "persistent") and not grouped:
         pytest.skip("expert-only candidate")
     import torch, tensor
-    from tensor.compiler.entry import export_source
+    from tensor.compiler.frontend.source import export_source
     from tensor.compiler.build import build_artifact
 
     rng = np.random.default_rng(721)
@@ -329,7 +329,7 @@ def test_wide_hopper_projections_preserve_control_bits(
                 factory,
                 *args,
                 dependencies=(
-                    "tensor.compiler.entry",
+                    'tensor.compiler.frontend.source',
                     "akas.kernels.linear.fp8_operand",
                 ),
             )
@@ -415,7 +415,7 @@ def test_hopper_query_tiles_preserve_long_window_causality(
     tmp_path, chunk, query_tokens, decoded
 ):
     import tensor, torch
-    from tensor.compiler.entry import export_source
+    from tensor.compiler.frontend.source import export_source
     from tensor.compiler.build import build_artifact
     from test_qwen_fp8_kv import quantize
 
@@ -475,7 +475,7 @@ def test_hopper_query_tiles_preserve_long_window_causality(
                     query_tokens=query_tokens,
                     decoded_kv=decoded if kind == "partial" else False,
                 ),
-                dependencies=("tensor.compiler.entry",),
+                dependencies=('tensor.compiler.frontend.source',),
             )
         )
         build_artifact(
@@ -510,7 +510,7 @@ def test_hopper_query_tiles_preserve_long_window_causality(
                     "akas.kernels." + module,
                     factory,
                     schedule,
-                    dependencies=("tensor.compiler.entry",),
+                    dependencies=('tensor.compiler.frontend.source',),
                 )
             )
             build_artifact(

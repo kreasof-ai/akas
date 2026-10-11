@@ -66,7 +66,7 @@ def run(
                 __file__,
                 "benchmarks/lfm2/vulkan_reference.py",
                 "src/tensor/compiler/webgpu_lowering.py",
-                "src/tensor/compiler/webgpu.py",
+                "src/tensor/compiler/webgpu/build.py",
                 "src/akas/execution/packed/model.py",
                 "src/akas/kernels/packed/webgpu.py",
                 "src/akas/compilation/profiles/packed.py",

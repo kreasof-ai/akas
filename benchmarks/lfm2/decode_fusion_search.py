@@ -9,14 +9,9 @@ from pathlib import Path
 import numpy as np
 import tensor
 from wgpu.backends.wgpu_native.extras import write_timestamp
-from tensor.providers.webgpu import Device
+from tensor.providers.webgpu.device import Device
 from akas.kernels.packed.webgpu import source
-from benchmarks.lfm2.tensor_projection_search import (
-    TimestampAdapter,
-    Timer,
-    bind,
-    check,
-)
+from benchmarks.lfm2.tensor_projection_search import TimestampAdapter, Timer, bind, check
 
 
 class PlanTimer(Timer):

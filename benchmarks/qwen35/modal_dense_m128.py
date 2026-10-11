@@ -19,7 +19,7 @@ app.include(replay_app)
 def prepare(prepared):
     import hashlib, json, os, shutil
     from pathlib import Path
-    from tensor.compiler.entry import export_source
+    from tensor.compiler.frontend.source import export_source
     from akas.compilation.build import build_artifact
 
     os.chdir("/workspace")
@@ -67,7 +67,7 @@ def prepare(prepared):
                 "akas.kernels.linear.hopper_dense",
                 "make_kernel",
                 schedule,
-                dependencies=("tensor.compiler.entry", "akas.kernels.elementwise"),
+                dependencies=('tensor.compiler.frontend.source', "akas.kernels.elementwise"),
             )
         )
         artifact.unlink()

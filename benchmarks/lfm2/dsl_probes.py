@@ -53,7 +53,7 @@ def kernel_with_subgroup_size(kind, parameters, size):
 
 
 def subgroup_source(kind, parameters, size):
-    from tensor.compiler.entry import export_source
+    from tensor.compiler.frontend.source import export_source
 
     return export_source(
         __name__,
@@ -65,8 +65,8 @@ def subgroup_source(kind, parameters, size):
             "akas.kernels.packed.ggml",
             "akas.checkpoints.gguf",
             "akas.kernels.packed.webgpu",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates",
+            'tensor.compiler.frontend.source',
+            'tensor.compiler.webgpu.schedules.gemv', 'tensor.compiler.webgpu.schedules.outer_product', 'tensor.compiler.webgpu.schedules.packed_integer', 'tensor.compiler.webgpu.schedules.packed_outer_product', 'tensor.compiler.webgpu.schedules.partitioned', 'tensor.compiler.webgpu.schedules.register_matmul', 'tensor.compiler.webgpu.schedules.registers',
             "akas.kernels.elementwise",
         ),
     )

@@ -3,7 +3,7 @@
 import os
 import numpy as np
 import pytest
-from tensor.compiler.webgpu_lowering import packed_integer_matmul_schedule
+from tensor.compiler.webgpu.schedules.packed_integer import packed_integer_matmul_schedule
 
 
 @pytest.mark.parametrize(

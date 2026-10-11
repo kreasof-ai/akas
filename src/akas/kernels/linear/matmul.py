@@ -3,7 +3,7 @@
 
 def make_kernel(kind, p):
     import tilelang.language as T
-    from tensor.compiler.entry import primitive
+    from tensor.compiler.frontend.source import primitive
 
     r, k, o = p["r"], p["k"], p["o"]
     n = p.get("columns", 64)
@@ -325,7 +325,7 @@ def make_kernel(kind, p):
 
 def quantize_kernel(p):
     import tilelang.language as T
-    from tensor.compiler.entry import primitive
+    from tensor.compiler.frontend.source import primitive
 
     r, k, top = p["r"], p["k"], p.get("top")
     rows = r * (top or 1)
@@ -374,7 +374,7 @@ def quantize_kernel(p):
 
 def merge_kernel(p):
     import tilelang.language as T
-    from tensor.compiler.entry import primitive
+    from tensor.compiler.frontend.source import primitive
 
     r, o, parts = p["r"], p["o"], p["partitions"]
     top = p.get("top")
@@ -407,7 +407,7 @@ def merge_kernel(p):
 
 def bf16_kernel(p):
     import tilelang.language as T
-    from tensor.compiler.entry import primitive
+    from tensor.compiler.frontend.source import primitive
 
     r, k, o = p["r"], p["k"], p["o"]
     m, n, depth = 16, 32, 64
@@ -446,7 +446,7 @@ def bf16_kernel(p):
 def bf16_decode_kernel(p):
     """Parallel full-depth reductions for the small unquantized projections."""
     import tilelang.language as T
-    from tensor.compiler.entry import primitive
+    from tensor.compiler.frontend.source import primitive
 
     r, k, o = p["r"], p["k"], p["o"]
 
@@ -476,7 +476,7 @@ def bf16_decode_kernel(p):
 def bf16_head_kernel(p):
     """Vector-loaded BF16 tensor-core projection for the large vocabulary head."""
     import tilelang.language as T
-    from tensor.compiler.entry import primitive
+    from tensor.compiler.frontend.source import primitive
 
     r, k, o = p["r"], p["k"], p["o"]
     m = 16

@@ -53,7 +53,7 @@ def implementation_hashes():
     import akas.ops.hybrid_state as common_state
     import akas.execution.plan as common_plan
     import tensor.providers.cuda
-    import tensor.providers.cuda_graph
+    import tensor.providers.cuda.graph
     import tensor.runtime.abi
     import akas.artifacts.kernels as common_artifacts
     import akas.checkpoints.safetensors as common_checkpoint
@@ -76,7 +76,7 @@ def implementation_hashes():
         decode_projections,
         fp8_kv,
         tensor.providers.cuda,
-        tensor.providers.cuda_graph,
+        tensor.providers.cuda.graph,
         tensor.runtime.abi,
     )
     result = {
@@ -87,6 +87,8 @@ def implementation_hashes():
     from importlib.util import find_spec
 
     for name in (
+        "tensor.providers.cuda.device",
+        "tensor.providers.cuda.driver",
         "akas.execution.hybrid.model",
         "akas.execution.hybrid.workspace",
         "akas.models.qwen35.model",

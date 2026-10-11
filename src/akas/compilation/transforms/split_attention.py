@@ -57,7 +57,7 @@ def produce(
             module,
             factory,
             schedule,
-            dependencies=("tensor.compiler.entry", "akas.kernels.elementwise"),
+            dependencies=('tensor.compiler.frontend.source', "akas.kernels.elementwise"),
         )
         if needs_build(entry, artifact, source, target):
             entry.write_text(source)

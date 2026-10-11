@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 import statistics
 
-from tensor.providers.cuda import Device
+from tensor.providers.cuda.device import Device
 from akas.tensor.graph import CudaGraph
 from akas.models.qwen35.model import DenseEngine
 

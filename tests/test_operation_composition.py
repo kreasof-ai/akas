@@ -105,10 +105,10 @@ def test_quantized_scratch_reuses_reads_and_invalidates_all_overwritten_aliases(
 
 
 def test_single_split_borrows_output_and_multi_split_emits_merge(monkeypatch):
-    import tensor.runtime
+    import tensor.runtime.buffer
 
     monkeypatch.setattr(
-        tensor.runtime,
+        tensor.runtime.buffer,
         "Buffer",
         lambda device, pointer, shape, dtype, owner: SimpleNamespace(
             pointer=pointer, shape=shape, dtype=dtype, owner=owner

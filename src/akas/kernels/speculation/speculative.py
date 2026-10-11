@@ -143,7 +143,7 @@ def make_kernel(kind, p):
 def head_kernel(p):
     """Vector-loaded BF16 tensor-core projection for the large vocabulary head."""
     import tilelang.language as T
-    from tensor.compiler.entry import primitive
+    from tensor.compiler.frontend.source import primitive
 
     r, k, o = p["r"], p["k"], p["o"]
     m = p.get("block_m", 32)

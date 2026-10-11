@@ -8,17 +8,11 @@ import argparse, json, statistics
 from pathlib import Path
 import numpy as np
 import tensor
-from tensor.providers.webgpu import Device
+from tensor.providers.webgpu.device import Device
 from akas import GGUF
 from akas.execution.profiles.selection import webgpu_parameters
 from akas.kernels.packed.webgpu import source
-from benchmarks.lfm2.tensor_projection_search import (
-    TimestampAdapter,
-    Timer,
-    bind,
-    oracle,
-    check,
-)
+from benchmarks.lfm2.tensor_projection_search import TimestampAdapter, Timer, bind, oracle, check
 
 
 def run(model, out):

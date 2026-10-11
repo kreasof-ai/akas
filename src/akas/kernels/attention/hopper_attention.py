@@ -3,7 +3,7 @@
 
 def partial(p):
     import tilelang.language as T
-    from tensor.compiler.entry import primitive
+    from tensor.compiler.frontend.source import primitive
 
     r, chunk, cap, splits, d = (
         p["slots"],
