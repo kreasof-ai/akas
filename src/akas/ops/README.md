@@ -19,9 +19,9 @@ binds calls and borrows buffers and kernels. `memory/layouts.py` describes
 persistent state. Execution owns graph lifetimes, state advancement, commit and
 repair; generation owns prompt, termination and acceptance policy.
 
-`profiles/*/factories.py` routes opcodes to these implementations without embedding
+`compilation/factories/` routes opcodes to these implementations without embedding
 arithmetic. Numerical differences remain explicit: native FP8 decode and
 prequantized prefill have different operand contracts; packed weights retain
 their recorded quantization type; split projections retain reduction order.
 The fixed-slot FP8 profile's supported geometry is explicitly validated in
-`profiles/fixed_slots/geometry.py`.
+`execution/bindings/block_fp8/geometry.py`.

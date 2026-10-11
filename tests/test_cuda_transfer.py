@@ -13,8 +13,8 @@ GPU = pytest.mark.skipif(
 
 
 def test_cuda_profile_rows_are_explicit():
-    from akas.profiles.independent.selection import valid_rows
-    from akas.profiles.independent.requirements import requirements
+    from akas.ops.schedules.packed_selection import valid_rows
+    from akas.execution.bindings.packed.requirements import requirements
     from test_contracts import fixture
 
     assert valid_rows("cuda", (1, 128), "default")

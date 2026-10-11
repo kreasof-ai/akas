@@ -7,11 +7,11 @@ from types import SimpleNamespace
 
 import pytest
 
-from akas.compilation.profiles.fixed_slots import decode as decode
-from akas.compilation.profiles.fixed_slots import prefill as prefill
-from akas.compilation.profiles.fixed_slots import draft as draft
-from akas.compilation.profiles.fixed_slots import draft_prefill as draft_prefill
-from akas.compilation.profiles.fixed_slots import verification as verification
+from akas.compilation.recipes.block_fp8 import decode as decode
+from akas.compilation.recipes.block_fp8 import prefill as prefill
+from akas.compilation.recipes.block_fp8 import draft as draft
+from akas.compilation.recipes.block_fp8 import draft_prefill as draft_prefill
+from akas.compilation.recipes.block_fp8 import verification as verification
 from akas.models.qwen35.config import Qwen35Config
 
 

@@ -41,7 +41,7 @@ def micro_attention(out, *, implementation="warp"):
     generator = warp_partial_source if implementation == "warp" else partial_source
     serial = compile_source(
         source(
-            "akas.profiles.independent.factories",
+            "akas.compilation.factories.packed",
             "packed_baseline_factory",
             "attention",
             p,

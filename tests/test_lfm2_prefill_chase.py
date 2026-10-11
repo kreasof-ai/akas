@@ -3,8 +3,8 @@
 import os
 import numpy as np
 import pytest
-from akas.profiles.independent.selection import valid_rows
-from akas.profiles.independent.selection import webgpu_parameters
+from akas.ops.schedules.packed_selection import valid_rows
+from akas.ops.schedules.packed_selection import webgpu_parameters
 
 
 @pytest.mark.parametrize("chunk", [32, 64, 128])
@@ -197,7 +197,7 @@ def test_mixed_activation_outer_product_fusion_and_tails(tmp_path, kind, layout,
     path = tmp_path / "outer.py"
     artifact = path.with_suffix(".tbin")
     path.write_text(
-        source("akas.profiles.independent.factories", "packed_webgpu_factory", kind, p)
+        source("akas.compilation.factories.packed", "packed_webgpu_factory", kind, p)
     )
     tensor.build(path, artifact, provider="webgpu")
     rng = np.random.default_rng(903)
@@ -290,7 +290,7 @@ def test_short_half_fma_chains_against_explicit_rounding(
     )
     path = tmp_path / "half.py"
     path.write_text(
-        source("akas.profiles.independent.factories", "packed_webgpu_factory", kind, p)
+        source("akas.compilation.factories.packed", "packed_webgpu_factory", kind, p)
     )
     artifact = path.with_suffix(".tbin")
     tensor.build(path, artifact, provider="webgpu")
@@ -318,7 +318,7 @@ def test_parallel_prefill_rms_matches_independent_reduction(tmp_path):
     path = tmp_path / "rms.py"
     path.write_text(
         source(
-            "akas.profiles.independent.factories",
+            "akas.compilation.factories.packed",
             "packed_webgpu_factory",
             "rms",
             dict(r=r, c=c, eps=1e-5, sg=True, parallel_rows=True),
@@ -414,7 +414,7 @@ def test_packed_outer_product_rounding_fusion_and_output_tail(
     path = tmp_path / "packed.py"
     artifact = path.with_suffix(".tbin")
     path.write_text(
-        source("akas.profiles.independent.factories", "packed_webgpu_factory", kind, p)
+        source("akas.compilation.factories.packed", "packed_webgpu_factory", kind, p)
     )
     tensor.build(path, artifact, provider="webgpu")
     with tensor.Device(provider="webgpu") as device:

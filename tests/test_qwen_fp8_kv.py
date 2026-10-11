@@ -16,7 +16,7 @@ def build(tmp_path, kind, p):
     entry = tmp_path / (kind + "-" + str(p.get("kv_dtype", "bfloat16")) + ".py")
     entry.write_text(
         export_source(
-            "akas.profiles.fixed_slots.factories",
+            "akas.compilation.factories.block_fp8",
             "decode_factory",
             kind,
             p,

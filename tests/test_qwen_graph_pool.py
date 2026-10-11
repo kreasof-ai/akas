@@ -3,8 +3,8 @@
 from types import SimpleNamespace
 import numpy as np
 import pytest
-from akas.execution.fixed_slots.pools import VerifierPool
-from akas.execution.fixed_slots.pools import RepairPool
+from akas.execution.bindings.block_fp8.pools import VerifierPool
+from akas.execution.bindings.block_fp8.pools import RepairPool
 
 
 class Context:

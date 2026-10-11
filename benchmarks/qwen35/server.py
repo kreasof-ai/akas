@@ -172,7 +172,7 @@ class NativeServer:
         from akas import Qwen35Prefill
         from akas import Qwen35Verifier
         from akas import Qwen35Speculative
-        from akas.execution.fixed_slots.draft import Qwen35MTPPrefill
+        from akas.execution.bindings.block_fp8.draft import Qwen35MTPPrefill
         from benchmarks.qwen35.spec_run import make_speculative_pair
 
         model = self.model
@@ -191,19 +191,19 @@ class NativeServer:
                 if self.prefill.closed:
                     self.prefill = Qwen35Prefill(model, config["prefill_bundle"])
                     if config.get("compact_experts"):
-                        from akas.execution.fixed_slots.optimizations.compact_prefill import (
+                        from akas.execution.bindings.block_fp8.optimizations.compact_prefill import (
                             install,
                         )
 
                         install(self.prefill, config["prefill_bundle"])
                     if config.get("hopper_bundle"):
-                        from akas.execution.fixed_slots.optimizations.hopper import (
+                        from akas.execution.bindings.block_fp8.optimizations.hopper import (
                             install as install_hopper,
                         )
 
                         install_hopper(self.prefill, config["hopper_bundle"])
                     if config.get("attention_workspace_bundle"):
-                        from akas.execution.fixed_slots.optimizations.attention_workspace import (
+                        from akas.execution.bindings.block_fp8.optimizations.attention_workspace import (
                             install as install_workspace,
                         )
 
@@ -545,19 +545,19 @@ def main():
         resident_pair = None
         try:
             if a.compact_experts:
-                from akas.execution.fixed_slots.optimizations.compact_prefill import (
+                from akas.execution.bindings.block_fp8.optimizations.compact_prefill import (
                     install,
                 )
 
                 install(prefill, a.prefill_bundle)
             if a.hopper_bundle:
-                from akas.execution.fixed_slots.optimizations.hopper import (
+                from akas.execution.bindings.block_fp8.optimizations.hopper import (
                     install as install_hopper,
                 )
 
                 install_hopper(prefill, a.hopper_bundle)
             if a.attention_workspace_bundle:
-                from akas.execution.fixed_slots.optimizations.attention_workspace import (
+                from akas.execution.bindings.block_fp8.optimizations.attention_workspace import (
                     install as install_workspace,
                 )
 

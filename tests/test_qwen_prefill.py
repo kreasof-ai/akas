@@ -18,7 +18,7 @@ def build(tmp_path, kind, p):
     artifact = entry.with_suffix(".tbin")
     entry.write_text(
         export_source(
-            "akas.profiles.fixed_slots.factories",
+            "akas.compilation.factories.block_fp8",
             "prefill_factory",
             kind,
             p,
@@ -215,7 +215,7 @@ def test_decode_attention_merge_rounds_before_gate(tmp_path):
     artifact = entry.with_suffix(".tbin")
     entry.write_text(
         source(
-            "akas.profiles.fixed_slots.factories",
+            "akas.compilation.factories.block_fp8",
             "decode_factory",
             "attention_merge",
             dict(r=slots, splits=splits),

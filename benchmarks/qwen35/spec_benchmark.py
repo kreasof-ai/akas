@@ -110,7 +110,7 @@ def run(
     pending = model.buffers["tokens"].to_numpy()
     generated = np.full(slots, 1 if initial_output else 0, "int32")
     streams = [[int(pending[s])] if initial_output else [] for s in range(slots)]
-    from akas.execution.fixed_slots.speculative import Qwen35Speculative
+    from akas.execution.bindings.block_fp8.speculative import Qwen35Speculative
 
     engine = Qwen35Speculative(
         model,

@@ -10,7 +10,7 @@ from pathlib import Path
 import shutil
 from akas.artifacts.kernels import identity
 from akas.artifacts.fingerprints import (
-    fixed_slots_hashes as implementation_hashes,
+    block_fp8_hashes as implementation_hashes,
 )
 
 import hashlib

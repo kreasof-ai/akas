@@ -13,8 +13,8 @@ import numpy as np
 import tensor
 from tensor.providers.webgpu.device import Device
 from akas import GGUF
-from akas.profiles.independent.selection import webgpu_parameters
-from akas.profiles.independent.selection import projection_tile
+from akas.ops.schedules.packed_selection import webgpu_parameters
+from akas.ops.schedules.packed_selection import projection_tile
 from akas.compilation.source import export_kernel as source
 from tensor.compiler.webgpu.schedules.outer_product import outer_product_matmul_schedule
 from benchmarks.lfm2.tensor_projection_search import (
@@ -439,8 +439,8 @@ def run(
         for p in (
             __file__,
             "src/tensor/compiler/webgpu_lowering.py",
-            *('src/akas/compilation/source.py', 'src/akas/ops/attention/webgpu/packed.py', 'src/akas/ops/linear/webgpu/packed.py', 'src/akas/ops/normalization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/storage.py', 'src/akas/ops/reductions/webgpu.py', 'src/akas/ops/sequence/webgpu/packed.py', 'src/akas/ops/vocabulary/webgpu/packed.py', 'src/akas/profiles/independent/factories.py'),
-            'src/akas/execution/independent/resident.py',
+            *('src/akas/compilation/source.py', 'src/akas/ops/attention/webgpu/packed.py', 'src/akas/ops/linear/webgpu/packed.py', 'src/akas/ops/normalization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/storage.py', 'src/akas/ops/reductions/webgpu.py', 'src/akas/ops/sequence/webgpu/packed.py', 'src/akas/ops/vocabulary/webgpu/packed.py', 'src/akas/compilation/factories/packed.py'),
+            'src/akas/execution/bindings/packed/resources.py',
         )
     }
     report = dict(
@@ -582,7 +582,7 @@ def run(
                             path = out / f"{kind}-{r}-{k}-{o}-{i}.py"
                             path.write_text(
                                 source(
-                                    "akas.profiles.independent.factories",
+                                    "akas.compilation.factories.packed",
                                     "packed_webgpu_factory",
                                     kind,
                                     p,

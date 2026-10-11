@@ -27,14 +27,14 @@ image = base_image.add_local_file(
 def prepare(slots):
     import hashlib, json, os, time
     from akas.compilation.transforms.decode_profile import produce as decoder
-    from akas.compilation.profiles.fixed_slots.prefill import produce as prefill
+    from akas.compilation.recipes.block_fp8.prefill import produce as prefill
     from akas.compilation.transforms.compact_experts import produce as compact
     from akas.compilation.transforms.hopper import produce as hopper
-    from akas.compilation.profiles.fixed_slots.draft import produce as mtp
-    from akas.compilation.profiles.fixed_slots.draft_prefill import (
+    from akas.compilation.recipes.block_fp8.draft import produce as mtp
+    from akas.compilation.recipes.block_fp8.draft_prefill import (
         produce as mtp_prefill,
     )
-    from akas.compilation.profiles.fixed_slots.verification import produce as verifier
+    from akas.compilation.recipes.block_fp8.verification import produce as verifier
     from akas.compilation.transforms.split_attention import produce as attention
     from akas.compilation.transforms.split_linear import produce as linear
     from akas.compilation.transforms.hopper_verification import produce as experts
@@ -191,15 +191,15 @@ def prepare_main(out: str = "build/qwen35-h200-akbar-scaling"):
 def prepare_short(prepared):
     """Add a four-position fallback without changing the large verifier."""
     import hashlib, json, os, shutil, time
-    from akas.compilation.profiles.fixed_slots.prefill import produce as prefill
-    from akas.compilation.profiles.fixed_slots.verification import produce as verifier
+    from akas.compilation.recipes.block_fp8.prefill import produce as prefill
+    from akas.compilation.recipes.block_fp8.verification import produce as verifier
     from akas.compilation.transforms.split_attention import produce as attention
     from akas.compilation.transforms.split_linear import produce as linear
     from akas.compilation.transforms.hopper_verification import produce as experts
     from akas.compilation.transforms.hopper_verification import produce_dense
-    from akas.compilation.profiles.fixed_slots.draft_prefill import produce as repair
+    from akas.compilation.recipes.block_fp8.draft_prefill import produce as repair
     from akas.artifacts.fingerprints import (
-        fixed_slots_hashes as implementation_hashes,
+        block_fp8_hashes as implementation_hashes,
     )
 
     os.chdir("/workspace")

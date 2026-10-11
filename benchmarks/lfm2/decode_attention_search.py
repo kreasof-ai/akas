@@ -65,7 +65,7 @@ def run(out):
             artifact = path.with_suffix(".tbin")
             path.write_text(
                 source(
-                    "akas.profiles.independent.factories",
+                    "akas.compilation.factories.packed",
                     "packed_webgpu_factory",
                     "attention",
                     p,

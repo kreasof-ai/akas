@@ -135,12 +135,12 @@ def prepare():
         return json.loads(ready.read_text())
     root.mkdir(parents=True, exist_ok=True)
     from akas.compilation.transforms.decode_profile import produce as decoder
-    from akas.compilation.profiles.fixed_slots.prefill import produce as prefill
-    from akas.compilation.profiles.fixed_slots.draft import produce as mtp
-    from akas.compilation.profiles.fixed_slots.draft_prefill import (
+    from akas.compilation.recipes.block_fp8.prefill import produce as prefill
+    from akas.compilation.recipes.block_fp8.draft import produce as mtp
+    from akas.compilation.recipes.block_fp8.draft_prefill import (
         produce as mtp_prefill,
     )
-    from akas.compilation.profiles.fixed_slots.verification import produce as verify
+    from akas.compilation.recipes.block_fp8.verification import produce as verify
     from akas.compilation.transforms.split_attention import produce as attention
     from akas.compilation.transforms.split_linear import produce as linear
 
@@ -282,7 +282,7 @@ def measure(prepared, run_id):
         from akas import Qwen35Batch
         from akas import Qwen35MTP
         from akas import Qwen35Prefill
-        from akas.execution.fixed_slots.draft import Qwen35MTPPrefill
+        from akas.execution.bindings.block_fp8.draft import Qwen35MTPPrefill
         from benchmarks.qwen35.spec_benchmark import initialize
         from benchmarks.qwen35.spec_quality import run as quality
 

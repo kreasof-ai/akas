@@ -39,7 +39,7 @@ def search(out, max_candidates=7):
             "src/tensor/compiler/search.py",
             "src/tensor/compiler/cuda/schedules.py",
             "src/tensor/compiler/cuda/lowering.py",
-            *('src/akas/compilation/source.py', 'src/akas/ops/attention/cuda/packed.py', 'src/akas/ops/linear/cuda/packed.py', 'src/akas/ops/normalization/cuda/packed.py', 'src/akas/ops/quantization/cuda/ggml.py', 'src/akas/ops/sequence/cuda/packed.py', 'src/akas/ops/vocabulary/cuda/packed.py', 'src/akas/profiles/independent/factories.py', 'src/akas/profiles/independent/parameters.py'),
+            *('src/akas/compilation/source.py', 'src/akas/ops/attention/cuda/packed.py', 'src/akas/ops/linear/cuda/packed.py', 'src/akas/ops/normalization/cuda/packed.py', 'src/akas/ops/quantization/cuda/ggml.py', 'src/akas/ops/sequence/cuda/packed.py', 'src/akas/ops/vocabulary/cuda/packed.py', 'src/akas/compilation/factories/packed.py', 'src/akas/ops/schedules/packed_parameters.py'),
         )
     }
     p = dict(h=32, kh=8, d=64, cap=8576, splits=16)

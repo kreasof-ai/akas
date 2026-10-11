@@ -11,10 +11,10 @@ import argparse, hashlib, json, subprocess
 from pathlib import Path
 import numpy as np
 from tensor.artifacts.format import read_artifact
-from akas.artifacts.fingerprints import independent_hashes as implementation_hashes
-from akas.profiles.independent.parameters import QUANT_DECODE
-from akas.profiles.independent.parameters import QUANT_PREFILL
-from akas.profiles.independent.parameters import QUANT_ATTENTION
+from akas.artifacts.fingerprints import packed_hashes as implementation_hashes
+from akas.ops.schedules.packed_parameters import QUANT_DECODE
+from akas.ops.schedules.packed_parameters import QUANT_PREFILL
+from akas.ops.schedules.packed_parameters import QUANT_ATTENTION
 
 
 def digest(path):
@@ -116,8 +116,8 @@ def run(root, reference, out):
             p: dict(sha256=digest(p), text=source_path(p).read_text())
             for p in (
                 __file__,
-                'src/akas/execution/independent/resident.py',
-                *('src/akas/compilation/source.py', 'src/akas/ops/attention/webgpu/packed.py', 'src/akas/ops/linear/webgpu/packed.py', 'src/akas/ops/normalization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/storage.py', 'src/akas/ops/reductions/webgpu.py', 'src/akas/ops/sequence/webgpu/packed.py', 'src/akas/ops/vocabulary/webgpu/packed.py', 'src/akas/profiles/independent/factories.py'),
+                'src/akas/execution/bindings/packed/resources.py',
+                *('src/akas/compilation/source.py', 'src/akas/ops/attention/webgpu/packed.py', 'src/akas/ops/linear/webgpu/packed.py', 'src/akas/ops/normalization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/storage.py', 'src/akas/ops/reductions/webgpu.py', 'src/akas/ops/sequence/webgpu/packed.py', 'src/akas/ops/vocabulary/webgpu/packed.py', 'src/akas/compilation/factories/packed.py'),
                 "src/tensor/compiler/webgpu_lowering.py",
                 "benchmarks/lfm2/prefill_chase_search.py",
                 "src/tensor/providers/webgpu.py",

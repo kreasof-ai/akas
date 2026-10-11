@@ -10,8 +10,8 @@ import hashlib, json
 from pathlib import Path
 from akas.compilation.build import export_source
 from akas.compilation.build import build_artifact
-from akas.artifacts.fingerprints import fixed_slots_hashes as implementation_hashes
-from akas.compilation.profiles.fixed_slots.decode import produce as produce_base
+from akas.artifacts.fingerprints import block_fp8_hashes as implementation_hashes
+from akas.compilation.recipes.block_fp8.decode import produce as produce_base
 from akas.compilation.transforms.projections import mma_bundle
 
 

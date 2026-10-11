@@ -38,7 +38,7 @@ def test_algorithms_have_ir_loops_and_only_typed_hardware_externs(
     path = tmp_path / "kernel.py"
     path.write_text(
         source(
-            "akas.profiles.independent.factories",
+            "akas.compilation.factories.packed",
             "packed_cuda_factory",
             kind,
             parameters,

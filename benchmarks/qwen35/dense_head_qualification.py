@@ -10,7 +10,7 @@ import numpy as np
 from tensor.providers.cuda.device import Device
 from akas.artifacts.kernels import identity
 from akas.models.qwen35.weights import DenseCheckpoint
-from akas.profiles.compact_batch.parameters import schedule
+from akas.ops.linear.schedule import schedule
 
 
 def qualify(checkpoint, bundle, out, counts):

@@ -9,8 +9,8 @@ same declarations for every model, checks source/provider/target/compiler identi
 records artifact checksums and publishes a completed manifest atomically.
 `bundles.py` copies checked artifacts when deriving a new execution bundle.
 
-Profile modules are `profiles/independent.py`, `profiles/compact_batch.py` and
-`profiles/fixed_slots/`. Existing CLI profile names remain compatible:
+Compilation recipes are `recipes/packed.py`, `recipes/bf16.py` and
+`recipes/block_fp8/`. Existing CLI profile names remain compatible:
 
 | Profile | Inputs and responsibility |
 | --- | --- |
@@ -37,8 +37,8 @@ akas compile --definition akas.models.qwen35.model:DenseEngine \
   --config '{"slots":8,"chunk":32,"context":4096,"target":"sm_89"}'
 ```
 
-Python callers can pass a loaded checkpoint to `profiles.packed.plan()` or
-`profiles.batched.plan()`, inspect the result, then call `build.build()`.
+Python callers can pass a loaded checkpoint to `recipes.packed.plan()` or
+`recipes.bf16.plan()`, inspect the result, then call `build.build()`.
 `compile_checkpoint()` loads through a supplied definition and invokes the selected
 profile. Checkpoint reader options, such as a draft branch, are supplied separately.
 
@@ -47,12 +47,12 @@ specializations over existing bundles. Kernel source factories remain in
 `akas.ops`; candidate measurements and searches remain in `benchmarks`.
 
 Fixed-layout FP8 kernels currently support one explicit geometry, checked in
-`akas.profiles.fixed_slots.geometry`. A different width or state layout needs a compatible
+`akas.execution.bindings.block_fp8.geometry`. A different width or state layout needs a compatible
 kernel/profile implementation; compilation never substitutes another model's
 geometry silently. Measured device specializations retain their qualification
 limits. Existing schema names retain compatibility with runtime bundle readers.
 
 `source.py` replaces per-kernel source wrappers. It binds source cache identities
-to the extracted operation bodies and shared profile metadata. Shared requirement
-and schedule descriptions live in `akas.profiles`; runtime consumers can read
-them without importing this compilation package.
+to the extracted operation bodies and shared profile metadata. Kernel requirements live with `execution/bindings/`; measured schedules live with
+operations. `factories/` contains compiler-only operation routing. Runtime consumers
+can validate requirements without importing this compilation package.

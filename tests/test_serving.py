@@ -241,7 +241,7 @@ def test_startup_failure_closes_factory_resources():
 
 
 def test_speculative_adapter_exposes_target_limits_for_engine_submission(monkeypatch):
-    import akas.execution.compact_batch.speculative as mtp
+    import akas.execution.bindings.bf16.speculative as mtp
 
     closed = []
     target = SimpleNamespace(

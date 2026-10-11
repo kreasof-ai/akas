@@ -42,7 +42,7 @@ def program(r, k, o, config):
         tm, tn, bk = (p.pop(a) for a in ("tile_m", "tile_n", "tile_k"))
         # Producer helper now honors explicit thread counts for staged schedules.
         return source(
-            "akas.profiles.independent.factories",
+            "akas.compilation.factories.packed",
             "packed_webgpu_factory",
             "linear",
             dict(r=r, k=k, o=o, type=1, tile=(tm, tn, bk), **p),

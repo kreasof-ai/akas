@@ -1,7 +1,7 @@
 """Qwen3.5 architecture; select MoE/FP8 or dense/BF16 execution explicitly."""
 
-from akas.execution.fixed_slots.resident import FixedSlotModel
-from akas.execution.compact_batch.resident import BatchedModel
+from akas.execution.bindings.block_fp8.resources import BlockFP8Binding
+from akas.execution.bindings.bf16.resources import BF16Binding
 from akas.models.qwen35.weights import Qwen35Checkpoint
 from akas.models.qwen35.weights import DenseCheckpoint
 from akas.models.qwen35.config import Qwen35Config
@@ -36,11 +36,11 @@ def architecture(config, checkpoint):
     )
 
 
-class Qwen35Batch(FixedSlotModel):
+class Qwen35Batch(BlockFP8Binding):
     checkpoint_type = Qwen35Checkpoint
     definition = staticmethod(architecture)
 
 
-class DenseEngine(BatchedModel):
+class DenseEngine(BF16Binding):
     checkpoint_type = DenseCheckpoint
     definition = staticmethod(architecture)

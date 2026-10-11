@@ -33,7 +33,7 @@ def current_source(kind, p):
             else fused_source("akas.ops.linear.cuda.packed", "fused_kernel", kind, p)
         )
     return baseline_source(
-        "akas.profiles.independent.factories", "packed_baseline_factory", kind, p
+        "akas.compilation.factories.packed", "packed_baseline_factory", kind, p
     )
 
 
@@ -90,7 +90,7 @@ def search(
             "src/tensor/compiler/search.py",
             "src/tensor/compiler/cuda/schedules.py",
             "src/tensor/compiler/cuda/lowering.py",
-            *('src/akas/compilation/source.py', 'src/akas/ops/attention/cuda/packed.py', 'src/akas/ops/linear/cuda/packed.py', 'src/akas/ops/normalization/cuda/packed.py', 'src/akas/ops/quantization/cuda/ggml.py', 'src/akas/ops/sequence/cuda/packed.py', 'src/akas/ops/vocabulary/cuda/packed.py', 'src/akas/profiles/independent/factories.py', 'src/akas/profiles/independent/parameters.py'),
+            *('src/akas/compilation/source.py', 'src/akas/ops/attention/cuda/packed.py', 'src/akas/ops/linear/cuda/packed.py', 'src/akas/ops/normalization/cuda/packed.py', 'src/akas/ops/quantization/cuda/ggml.py', 'src/akas/ops/sequence/cuda/packed.py', 'src/akas/ops/vocabulary/cuda/packed.py', 'src/akas/compilation/factories/packed.py', 'src/akas/ops/schedules/packed_parameters.py'),
         )
     }
     cases = []

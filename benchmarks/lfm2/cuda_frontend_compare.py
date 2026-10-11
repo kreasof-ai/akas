@@ -44,7 +44,7 @@ def audit(bundle):
             manifest["source_sha256"]
             == hashlib.sha256(
                 source(
-                    "akas.profiles.independent.factories",
+                    "akas.compilation.factories.packed",
                     "packed_cuda_factory",
                     kind,
                     {**p, **schedule},

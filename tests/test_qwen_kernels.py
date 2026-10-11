@@ -17,7 +17,7 @@ def build(tmp_path, kind, p):
 
     entry = tmp_path / (kind + ".py")
     entry.write_text(
-        source("akas.profiles.fixed_slots.factories", "decode_factory", kind, p)
+        source("akas.compilation.factories.block_fp8", "decode_factory", kind, p)
     )
     artifact = tmp_path / (kind + ".tbin")
     build_artifact(

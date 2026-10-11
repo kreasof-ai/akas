@@ -81,8 +81,8 @@ class Guard(importlib.abc.MetaPathFinder):
             raise ImportError(name)
 sys.meta_path.insert(0, Guard())
 from akas import Engine, LFM2, Qwen35Batch
-from akas.artifacts.fingerprints import independent_hashes, fixed_slots_hashes, compact_batch_hashes
-for identity in (independent_hashes, fixed_slots_hashes, compact_batch_hashes):
+from akas.artifacts.fingerprints import packed_hashes, block_fp8_hashes, bf16_hashes
+for identity in (packed_hashes, block_fp8_hashes, bf16_hashes):
     assert 'akas.ops.attention.cuda.decode' in identity()
 assert not any(name.startswith('akas.ops.') and '.cuda.' in name for name in sys.modules)
 """,

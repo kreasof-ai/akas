@@ -20,7 +20,7 @@ def prepare(prepared):
     import hashlib, json, os, shutil
     from pathlib import Path
     from akas.artifacts.fingerprints import (
-        fixed_slots_hashes as implementation_hashes,
+        block_fp8_hashes as implementation_hashes,
     )
     from akas.compilation.transforms.split_attention import produce as attention
     from akas.compilation.transforms.hopper_verification import produce_dense

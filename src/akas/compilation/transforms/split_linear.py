@@ -11,7 +11,7 @@ from pathlib import Path
 import shutil
 from akas.artifacts.kernels import identity
 from akas.artifacts.fingerprints import (
-    fixed_slots_hashes as implementation_hashes,
+    block_fp8_hashes as implementation_hashes,
 )
 
 
@@ -151,7 +151,7 @@ def produce(
         key = add(
             "fixed_routes",
             p,
-            "akas.profiles.fixed_slots.factories",
+            "akas.compilation.factories.block_fp8",
             "decode_factory",
             "moe_groups",
             p,

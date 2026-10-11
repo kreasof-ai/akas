@@ -28,9 +28,9 @@ def allocation_plan(prepared):
     """Execute allocation shapes on a counting device; no GPU storage is created."""
     from akas.models.qwen35.weights import Qwen35Checkpoint
     from akas.models.qwen35.model import Qwen35Batch
-    from akas.execution.fixed_slots.prefill import Qwen35Prefill
-    from akas.execution.fixed_slots.repair import Qwen35RecomputeVerifier
-    from akas.execution.fixed_slots.verify import Qwen35Verifier
+    from akas.execution.bindings.block_fp8.prefill import Qwen35Prefill
+    from akas.execution.bindings.block_fp8.repair import Qwen35RecomputeVerifier
+    from akas.execution.bindings.block_fp8.verify import Qwen35Verifier
 
     sizes = {"float32": 4, "int32": 4, "bfloat16": 2, "uint8": 1}
 
@@ -154,11 +154,11 @@ def allocation_plan(prepared):
 
 def install_prefill(model, prepared):
     from akas import Qwen35Prefill
-    from akas.execution.fixed_slots.optimizations.compact_prefill import (
+    from akas.execution.bindings.block_fp8.optimizations.compact_prefill import (
         install as compact,
     )
-    from akas.execution.fixed_slots.optimizations.hopper import install as hopper
-    from akas.execution.fixed_slots.optimizations.attention_workspace import (
+    from akas.execution.bindings.block_fp8.optimizations.hopper import install as hopper
+    from akas.execution.bindings.block_fp8.optimizations.attention_workspace import (
         install as workspace,
     )
 

@@ -11,8 +11,8 @@ import tensor
 from tensor.providers.webgpu.device import Device
 from tensor.artifacts.format import read_artifact
 from akas import GGUF
-from akas.profiles.independent.parameters import DECODE_GEMV
-from akas.profiles.independent.parameters import DECODE_GEMV_COMMON
+from akas.ops.schedules.packed_parameters import DECODE_GEMV
+from akas.ops.schedules.packed_parameters import DECODE_GEMV_COMMON
 from benchmarks.lfm2.tensor_projection_search import TimestampAdapter, bind, check
 from benchmarks.lfm2.decode_kernel_search import TrafficTimer
 

@@ -11,7 +11,7 @@ import argparse, hashlib, json, subprocess
 from pathlib import Path
 import numpy as np
 from tensor.artifacts.format import read_artifact
-from akas.artifacts.fingerprints import independent_hashes as implementation_hashes
+from akas.artifacts.fingerprints import packed_hashes as implementation_hashes
 
 
 def run(root, out):
@@ -38,8 +38,8 @@ def run(root, out):
     sources = {}
     paths = [
         "src/tensor/providers/webgpu.py",
-        'src/akas/execution/independent/resident.py',
-        *('src/akas/compilation/source.py', 'src/akas/ops/attention/webgpu/packed.py', 'src/akas/ops/linear/webgpu/packed.py', 'src/akas/ops/normalization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/storage.py', 'src/akas/ops/reductions/webgpu.py', 'src/akas/ops/sequence/webgpu/packed.py', 'src/akas/ops/vocabulary/webgpu/packed.py', 'src/akas/profiles/independent/factories.py'),
+        'src/akas/execution/bindings/packed/resources.py',
+        *('src/akas/compilation/source.py', 'src/akas/ops/attention/webgpu/packed.py', 'src/akas/ops/linear/webgpu/packed.py', 'src/akas/ops/normalization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/storage.py', 'src/akas/ops/reductions/webgpu.py', 'src/akas/ops/sequence/webgpu/packed.py', 'src/akas/ops/vocabulary/webgpu/packed.py', 'src/akas/compilation/factories/packed.py'),
         "src/tensor/compiler/webgpu_lowering.py",
         "src/tensor/compiler/search.py",
         "src/tensor/compiler/webgpu/schedules/search_space.py",
@@ -53,7 +53,7 @@ def run(root, out):
         "benchmarks/lfm2/decode_kernel_search.py",
         "benchmarks/lfm2/decode_search_recheck.py",
         "benchmarks/lfm2/decode_search_compare.py",
-        'src/akas/compilation/profiles/independent.py',
+        'src/akas/compilation/recipes/packed.py',
     ]
     for p in paths:
         sources[p] = dict(
@@ -67,8 +67,8 @@ def run(root, out):
         for p in (root / "runtime-sources").glob("*.py")
     }
     for module, path in [
-        ("akas.execution.independent.resident", "model.py"),
-        ("akas.profiles.independent.factories", "webgpu_kernels.py"),
+        ("akas.execution.bindings.packed.resources", "model.py"),
+        ("akas.compilation.factories.packed", "webgpu_kernels.py"),
         (
             "tensor.providers.webgpu.adapter",
             "tensor.providers.webgpu.buffer",

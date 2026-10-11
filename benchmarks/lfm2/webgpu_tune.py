@@ -46,7 +46,7 @@ def run(model, out):
             path = out / f"{name}-{tile[0]}-{tile[1]}-{tile[2]}.py"
             artifact = path.with_suffix(".tbin")
             text = source(
-                "akas.profiles.independent.factories",
+                "akas.compilation.factories.packed",
                 "packed_webgpu_factory",
                 "linear",
                 p,

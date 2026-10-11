@@ -86,7 +86,7 @@ def cases(*, extended=False):
                 parameters=dict(
                     slots=rows, chunk=1, pool=256, heads=16, d=128, tile=tile
                 ),
-                module="akas.profiles.compact_batch.factories",
+                module="akas.compilation.factories.bf16",
                 factory="make_kernel",
             )
 

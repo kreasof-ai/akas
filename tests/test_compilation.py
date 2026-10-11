@@ -44,10 +44,10 @@ def test_profiles_preserve_original_kernel_sources_and_specializations(
 
     monkeypatch.setattr("tensor.compiler.frontend.source.export_source", trace)
     module = importlib.import_module(case["profile"])
-    if case["profile"].endswith("independent"):
+    if case["profile"].endswith("packed"):
         checkpoint = packed_checkpoint
     else:
-        cls = DenseConfig if case["profile"].endswith("compact_batch") else Qwen35Config
+        cls = DenseConfig if case["profile"].endswith("bf16") else Qwen35Config
         values = {**case["config"], "layers": tuple(case["config"]["layers"])}
         checkpoint = SimpleNamespace(config=cls(**values))
     plan = module.plan(checkpoint, **case["options"])
@@ -73,8 +73,8 @@ def test_profiles_preserve_original_kernel_sources_and_specializations(
 
 
 def test_batched_profile_reuses_different_widths_and_vocabularies():
-    from akas.compilation.profiles.compact_batch import plan
-    from akas.compilation.profiles.compact_batch import recurrent_plan
+    from akas.compilation.recipes.bf16 import plan
+    from akas.compilation.recipes.bf16 import recurrent_plan
 
     config = DenseConfig(
         width=512,
@@ -108,7 +108,7 @@ def test_batched_profile_reuses_different_widths_and_vocabularies():
 
 
 def test_fixed_layout_profile_rejects_incompatible_geometry():
-    from akas.compilation.profiles.fixed_slots.decode import plan
+    from akas.compilation.recipes.block_fp8.decode import plan
 
     config = Qwen35Config(("full_attention",), 1024, 1e-6, 10000)
     with pytest.raises(ValueError, match="width=2048"):

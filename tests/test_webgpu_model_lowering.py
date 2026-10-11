@@ -38,7 +38,7 @@ def test_streamed_gemv_fused_tail_and_f32_activation_contract(
         shared_input=shared_input,
     )
     text = source(
-        "akas.profiles.independent.factories", "packed_webgpu_factory", "ffn", p
+        "akas.compilation.factories.packed", "packed_webgpu_factory", "ffn", p
     )
     if force_fallback:
         from benchmarks.lfm2.dsl_probes import subgroup_source
@@ -73,7 +73,7 @@ def test_fused_attention_active_tail_and_qk_fallback(tmp_path, force_fallback):
 
     h, kh, d, cap = 4, 2, 64, 96
     text = source(
-        "akas.profiles.independent.factories",
+        "akas.compilation.factories.packed",
         "packed_webgpu_factory",
         "attention",
         dict(

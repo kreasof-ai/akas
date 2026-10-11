@@ -22,18 +22,18 @@ def test_recompute_matches_every_frozen_prefix(tmp_path, chunk):
     for name, module, factory, args in (
         (
             "control_scan",
-            "akas.profiles.fixed_slots.factories",
+            "akas.compilation.factories.block_fp8",
             "verification_factory",
             ("gdn_scan", dict(slots=s, chunk=c)),
         ),
-        ("scan", "akas.profiles.fixed_slots.factories", "prefill_factory", ("gdn_scan", dict(slots=s, chunk=c))),
+        ("scan", "akas.compilation.factories.block_fp8", "prefill_factory", ("gdn_scan", dict(slots=s, chunk=c))),
         (
             "control_conv",
-            "akas.profiles.fixed_slots.factories",
+            "akas.compilation.factories.block_fp8",
             "verification_factory",
             ("gdn_conv", dict(slots=s, chunk=c)),
         ),
-        ("conv", "akas.profiles.fixed_slots.factories", "prefill_factory", ("gdn_conv", dict(slots=s, chunk=c))),
+        ("conv", "akas.compilation.factories.block_fp8", "prefill_factory", ("gdn_conv", dict(slots=s, chunk=c))),
         *(
             (name, "akas.ops.gdn.cuda.recompute", name, (dict(slots=s, chunk=c),))
             for name in ("save_scan", "save_conv", "restore_scan", "restore_conv")

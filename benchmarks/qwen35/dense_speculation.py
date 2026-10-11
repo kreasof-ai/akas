@@ -9,7 +9,7 @@ from tensor.providers.cuda.device import Device
 from akas.models.qwen35.model import DenseEngine
 from akas.scheduling.scheduler import Request
 from akas.scheduling.scheduler import Scheduler
-from akas.execution.compact_batch.speculative import SpeculativeEngine
+from akas.execution.bindings.bf16.speculative import SpeculativeEngine
 from benchmarks.qwen35.dense_qualification import snapshot
 
 

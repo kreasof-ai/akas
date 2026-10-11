@@ -10,7 +10,7 @@ import numpy as np
 import tensor
 from tensor.providers.webgpu.device import Device
 from akas import GGUF
-from akas.profiles.independent.selection import webgpu_parameters
+from akas.ops.schedules.packed_selection import webgpu_parameters
 from akas.compilation.source import export_kernel as source
 from benchmarks.lfm2.tensor_projection_search import (
     TimestampAdapter,
@@ -51,7 +51,7 @@ def run(model, out):
             artifact = path.with_suffix(".tbin")
             path.write_text(
                 source(
-                    "akas.profiles.independent.factories",
+                    "akas.compilation.factories.packed",
                     "packed_webgpu_factory",
                     "ffn",
                     p,

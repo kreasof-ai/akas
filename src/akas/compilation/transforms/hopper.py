@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 from tensor.artifacts.format import read_artifact
 from akas.artifacts.fingerprints import (
-    fixed_slots_hashes as implementation_hashes,
+    block_fp8_hashes as implementation_hashes,
 )
 from akas.compilation.build import build_artifact
 

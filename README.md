@@ -104,20 +104,19 @@ chat formatting remains a separate bounded ChatML helper.
 src/akas/
 ├── engine.py, config.py, requests.py
 ├── scheduling/          # Admission and prefill/decode policy
-├── execution/           # Resident resources, handles/batches, plans and graphs
+├── execution/           # One request/batch executor and numerical bindings
 ├── memory/              # Allocate explicit state layouts; clean up failures
 ├── generation/          # Prompt/termination, acceptance and output lookup
 ├── models/              # Three files per family: config, weights and composition
 ├── ops/                 # Composition and kernels grouped by mathematical operation
-├── profiles/            # Shared requirements, schedules and producer routing
 ├── tensor/              # ABI binding, provider submission and graph handles
-├── compilation/         # Shared offline build pipeline and execution profiles
+├── compilation/         # Offline recipes, factory routing and shared builds
 ├── checkpoints/         # GGUF and safetensors storage readers
 ├── artifacts/           # Integrity, loading and shared fingerprints
 ├── text/                # Tokenization and chat formatting
 └── serving/             # HTTP transport over any Engine
 
-tools/                   # Dependency setup and checkpoint downloads
+tools/                   # General dependency setup
 examples/                # Small caller-side examples
 benchmarks/              # Tuning, workloads, profiles, reference checks and replay
 tests/                   # CPU contracts and opt-in hardware checks
@@ -125,7 +124,7 @@ docs/                    # Architecture and retained research
 ```
 
 Start with [the engine](src/akas/engine.py), [the scheduler](src/akas/scheduling/scheduler.py),
-and [the execution plan](src/akas/execution/plan.py). Offline builds are described
+and [the shared executor](src/akas/execution/executor.py). Offline builds are described
 in [the compilation map](src/akas/compilation/README.md). Then read
 [LFM2 composition](src/akas/models/lfm2/model.py) or
 [Qwen composition](src/akas/models/qwen35/model.py).

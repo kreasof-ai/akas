@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 import numpy as np
-from akas.execution.independent.greedy import advance_greedy
+from akas.execution.bindings.packed.greedy import advance_greedy
 
 
 def generate_greedy(self, prompt, *, max_tokens=128, chat=True, gpu_greedy=True):

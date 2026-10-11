@@ -14,8 +14,8 @@ import tensor
 from tensor.providers.webgpu.device import Device
 from akas import GGUF
 from akas.checkpoints.gguf import prepack_q4_0
-from akas.profiles.independent.selection import webgpu_parameters
-from akas.profiles.independent.selection import projection_tile
+from akas.ops.schedules.packed_selection import webgpu_parameters
+from akas.ops.schedules.packed_selection import projection_tile
 from akas.compilation.source import export_kernel as source
 from benchmarks.lfm2.tensor_projection_search import TimestampAdapter, bind, check
 from benchmarks.lfm2.decode_fusion_search import PlanTimer
@@ -153,7 +153,7 @@ def run(
             for p in (
                 __file__,
                 "src/tensor/compiler/webgpu_lowering.py",
-                *('src/akas/compilation/source.py', 'src/akas/ops/attention/webgpu/packed.py', 'src/akas/ops/linear/webgpu/packed.py', 'src/akas/ops/normalization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/storage.py', 'src/akas/ops/reductions/webgpu.py', 'src/akas/ops/sequence/webgpu/packed.py', 'src/akas/ops/vocabulary/webgpu/packed.py', 'src/akas/profiles/independent/factories.py'),
+                *('src/akas/compilation/source.py', 'src/akas/ops/attention/webgpu/packed.py', 'src/akas/ops/linear/webgpu/packed.py', 'src/akas/ops/normalization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/storage.py', 'src/akas/ops/reductions/webgpu.py', 'src/akas/ops/sequence/webgpu/packed.py', 'src/akas/ops/vocabulary/webgpu/packed.py', 'src/akas/compilation/factories/packed.py'),
                 "src/akas/checkpoints/gguf.py",
             )
         },
@@ -205,7 +205,7 @@ def run(
                 qp = out / f"quant-{r}-{k}.py"
                 qa = qp.with_suffix(".tbin")
                 text = source(
-                    "akas.profiles.independent.factories",
+                    "akas.compilation.factories.packed",
                     "packed_webgpu_factory",
                     "quantize_q16",
                     dict(r=r, k=k, sg=quantize_subgroup, fixed_residual=fixed_residual),
@@ -228,7 +228,7 @@ def run(
                     sa = sp.with_suffix(".tbin")
                     sp.write_text(
                         source(
-                            "akas.profiles.independent.factories",
+                            "akas.compilation.factories.packed",
                             "packed_webgpu_factory",
                             "swiglu",
                             dict(r=r, c=o),
@@ -345,7 +345,7 @@ def run(
                             path.write_text(
                                 source(
                                     (
-                                        "akas.profiles.independent.factories",
+                                        "akas.compilation.factories.packed",
                                         "packed_webgpu_factory",
                                         "linear_q16"
                                         if p.get("split_ffn")

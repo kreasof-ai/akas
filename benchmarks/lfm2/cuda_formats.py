@@ -41,7 +41,7 @@ def compile_templates(out):
     for kind, parameters in specs:
         artifact = compile_source(
             source(
-                "akas.profiles.independent.factories",
+                "akas.compilation.factories.packed",
                 "packed_cuda_factory",
                 kind,
                 parameters,

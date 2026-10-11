@@ -75,7 +75,7 @@ def test_two_component_projection_fields_and_precision(
         path = tmp_path / (name + ".py")
         path.write_text(
             source(
-                "akas.profiles.independent.factories",
+                "akas.compilation.factories.packed",
                 "packed_webgpu_factory",
                 name,
                 dict(

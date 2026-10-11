@@ -11,7 +11,7 @@ from akas.compilation.build import needs_build
 from akas.compilation.build import export_source
 from akas.artifacts.kernels import identity
 from akas.artifacts.fingerprints import (
-    fixed_slots_hashes as implementation_hashes,
+    block_fp8_hashes as implementation_hashes,
 )
 
 

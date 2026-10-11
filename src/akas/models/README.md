@@ -3,7 +3,7 @@
 Each model family has three files. `config.py` describes architecture and supported
 checkpoint variants. `weights.py` validates tensor inventories and declares raw
 storage and projection layouts. `model.py` declares decoder blocks and selects an
-execution contract. Package initializers contain no implementation.
+numerical binding. Package initializers contain no implementation.
 
 ```text
 models/
@@ -31,18 +31,18 @@ Those live in shared components:
 | --- | --- |
 | Decoder block composition and mathematics | `models/blocks.py`, `ops/{attention,gdn,convolution,ffn,moe}/` |
 | Linear, RMS/residual norm and quantization reuse | `ops/{linear,normalization,quantization}/` |
-| Packed-weight independent handles | `execution/independent/` |
-| Block-FP8 fixed-slot decode/prefill | `execution/fixed_slots/` |
-| BF16 compact batches over persistent slots | `execution/compact_batch/` |
-| Plan rewrites and numerical profiles | `execution/fixed_slots/optimizations/`, `profiles/` |
-| Persistent state allocation and recurrent journals | `memory/`, `execution/compact_batch/journal.py` |
+| Request admission, validation, prefill, decode and teardown | `execution/executor.py` |
+| Packed, block-FP8 and BF16 buffer/kernel bindings | `execution/bindings/` |
+| Plan rewrites | `execution/bindings/block_fp8/optimizations/` |
+| Measured operation schedules | `ops/schedules/`, `ops/linear/schedule.py` |
+| Persistent state allocation and recurrent journals | `memory/`, `execution/bindings/bf16/journal.py` |
 | Bit-preserving upload and raw storage readers | `checkpoints/` |
 | Bundle coverage, loading and integrity | `artifacts/` |
 | Prompt, termination, acceptance and output lookup | `generation/` |
 | Device stepping and MTP orchestration | `execution/` |
-| Admission, work budgets and independent-handle adapter | `scheduling/` |
+| Queue admission and work budgets | `scheduling/` |
 
-Executors receive checkpoint and architecture definitions from the model classes.
+Numerical bindings receive checkpoint and architecture definitions from the model classes.
 Decoder blocks dispatch to operation implementations appropriate to their numerical
 contract. The current packed, block-FP8 and BF16 paths retain their existing geometry,
 precision and qualification limits; adding a model does not make incompatible kernel

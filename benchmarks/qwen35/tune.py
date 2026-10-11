@@ -2,4 +2,4 @@
 
 from akas.compilation.transforms.projections import mma_bundle
 from akas.compilation.transforms.projections import selected_bundle
-from akas.execution.fixed_slots.optimizations.linear_projections import replace
+from akas.execution.bindings.block_fp8.optimizations.linear_projections import replace

@@ -1,7 +1,7 @@
 """Decoder block operations for explicit packed, FP8 and BF16 execution contracts."""
 
-from akas.profiles.independent.parameters import QUANT_ATTENTION
-from akas.profiles.independent.parameters import SUBGROUP_PROFILES
+from akas.ops.schedules.packed_parameters import QUANT_ATTENTION
+from akas.ops.schedules.packed_parameters import SUBGROUP_PROFILES
 
 
 def fp8_decode_attention(ctx, block):

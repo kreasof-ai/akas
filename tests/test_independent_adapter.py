@@ -6,7 +6,7 @@ from types import SimpleNamespace
 import pytest
 
 from akas import Engine, EngineConfig
-from akas.scheduling.independent import IndependentAdapter
+from akas.execution.handles import HandleExecutor
 
 
 class Handle:
@@ -100,13 +100,13 @@ def test_independent_handles_schedule_complete_cancel_and_reuse_without_provider
 def test_capacity_validation_does_not_take_model_ownership(capacity):
     model = Counter()
     with pytest.raises(ValueError, match="capacity"):
-        IndependentAdapter(model, capacity=capacity)
+        HandleExecutor(model, capacity=capacity)
     assert not model.closed and not model.children
 
 
 def test_capacity_and_failed_child_reset_leave_no_orphan_handle():
     model = Counter()
-    adapter = IndependentAdapter(model, capacity=2)
+    adapter = HandleExecutor(model, capacity=2)
     assert adapter.admit() == 0
     model.fail_child = True
     with pytest.raises(RuntimeError, match="reset failure"):

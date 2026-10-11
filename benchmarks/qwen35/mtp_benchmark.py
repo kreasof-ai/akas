@@ -10,7 +10,7 @@ import tensor
 from akas import Qwen35Batch
 from akas import Qwen35MTP
 from akas import Qwen35Prefill
-from akas.execution.fixed_slots.draft import Qwen35MTPPrefill
+from akas.execution.bindings.block_fp8.draft import Qwen35MTPPrefill
 from benchmarks.qwen35.mtp_calibrate import calibrate_long
 from benchmarks.qwen35.mtp_chain import measure
 

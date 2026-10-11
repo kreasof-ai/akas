@@ -118,7 +118,7 @@ def run(out, heads=16, kv_heads=8, depth=64, capacity=576, include_current=False
         scorepath = out / "scores.py"
         scorepath.write_text(
             source(
-                "akas.profiles.independent.factories",
+                "akas.compilation.factories.packed",
                 "packed_webgpu_factory",
                 "attention_scores",
                 dict(r=1, h=h, kh=kh, d=d, cap=cap, sg=True),
@@ -147,7 +147,7 @@ def run(out, heads=16, kv_heads=8, depth=64, capacity=576, include_current=False
             path = out / (spec["name"] + ".py")
             path.write_text(
                 source(
-                    "akas.profiles.independent.factories",
+                    "akas.compilation.factories.packed",
                     "packed_webgpu_factory",
                     "attention",
                     p,

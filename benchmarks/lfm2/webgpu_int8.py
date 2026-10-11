@@ -25,7 +25,7 @@ def run(model, bundle, evidence, out):
         path = out / (kind + ".py")
         artifact = path.with_suffix(".tbin")
         text = source(
-            "akas.profiles.independent.factories", "packed_webgpu_factory", kind, p
+            "akas.compilation.factories.packed", "packed_webgpu_factory", kind, p
         )
         if path.exists() and path.read_text() != text:
             artifact.unlink(missing_ok=True)

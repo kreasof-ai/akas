@@ -25,7 +25,7 @@ def half_conversion_kernel(n, unpack=False):
 def kernel_with_subgroup_size(kind, parameters, size):
     """Exercise the actual small-subgroup branch, without editing Python source."""
     import tvm
-    from akas.profiles.independent.factories import packed_webgpu_factory as make_kernel
+    from akas.compilation.factories.packed import packed_webgpu_factory as make_kernel
 
     ir = tvm.tirx
     kernel = make_kernel(kind, parameters)
@@ -62,9 +62,9 @@ def subgroup_source(kind, parameters, size):
         parameters,
         size,
         dependencies=(
-            "akas.profiles.independent.factories",
+            "akas.compilation.factories.packed",
             "akas.checkpoints.gguf",
-            "akas.profiles.independent.factories",
+            "akas.compilation.factories.packed",
             "tensor.compiler.frontend.source",
             "tensor.compiler.webgpu.schedules.gemv",
             "tensor.compiler.webgpu.schedules.outer_product",

@@ -2,7 +2,7 @@
 
 Factories are producer-only; consumers execute Tensor artifacts."""
 
-from akas.profiles.independent.factories import (
+from akas.compilation.factories.packed import (
     packed_baseline_factory as baseline_kernel,
 )
 from akas.ops.quantization.ggml import weight_decoder

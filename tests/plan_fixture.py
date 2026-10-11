@@ -111,7 +111,7 @@ def _record(module, phase, *, fp8=False, verify=False, draft=False, fused=False)
             device=Device(),
         )
         model.architecture = architecture(config, None)
-        from akas.execution.fixed_slots.workspace import allocate_workspace
+        from akas.execution.bindings.block_fp8.workspace import allocate_workspace
 
         allocate_workspace(model)
         label(model.buffers, "decode:")
@@ -123,7 +123,7 @@ def _record(module, phase, *, fp8=False, verify=False, draft=False, fused=False)
                 state.name = f"state:{index}:{offset}"
         if phase == "decode":
             return normalize(module.build_decode_plan(model))
-        from akas.execution.fixed_slots.prefill import Qwen35Prefill
+        from akas.execution.bindings.block_fp8.prefill import Qwen35Prefill
 
         model.plan = [("head", {}, None), ("argmax", {}, None)]
         executor = SimpleNamespace(
@@ -175,7 +175,7 @@ def _record(module, phase, *, fp8=False, verify=False, draft=False, fused=False)
         device=Device(),
         commit_calls=Plan(),
     )
-    from akas.execution.compact_batch.workspace import allocate_workspace
+    from akas.execution.bindings.bf16.workspace import allocate_workspace
 
     allocate_workspace(batch)
     label(batch.buffers, "batch:")

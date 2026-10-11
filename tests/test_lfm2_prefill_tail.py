@@ -51,7 +51,7 @@ def test_two_width_three_convolutions_preserve_final_output_and_histories():
 
 def test_tail_specialization_requires_the_measured_shape_and_suffix():
     from types import SimpleNamespace
-    from akas.profiles.independent.selection import prefill_tail_rows
+    from akas.ops.schedules.packed_selection import prefill_tail_rows
 
     cfg = SimpleNamespace(
         width=2048, ff=10752, layers=("conv", "attention", "conv", "conv")
@@ -111,7 +111,7 @@ def test_tail_extraction_partial_chunks_and_position_controls(tmp_path, provider
     path = tmp_path / "tail.py"
     path.write_text(
         source(
-            "akas.profiles.independent.factories",
+            "akas.compilation.factories.packed",
             factory,
             "prefill_tail",
             dict(r=r, c=c, t=t),
@@ -176,7 +176,7 @@ def test_attention_tail_uses_absolute_positions_and_all_stored_keys(tmp_path, pr
         path = tmp_path / f"attention-{rows}.py"
         path.write_text(
             source(
-                "akas.profiles.independent.factories",
+                "akas.compilation.factories.packed",
                 factory,
                 "attention",
                 dict(r=rows, h=h, kh=kh, d=d, cap=cap, sg=True),

@@ -283,14 +283,14 @@ def query_main(
 def prepare_long(prepared, chunk, prefix_mma="mma-experts"):
     import hashlib, json, os
     from pathlib import Path
-    from akas.compilation.profiles.fixed_slots.prefill import produce as prefill
-    from akas.compilation.profiles.fixed_slots.verification import produce as verify
+    from akas.compilation.recipes.block_fp8.prefill import produce as prefill
+    from akas.compilation.recipes.block_fp8.verification import produce as verify
     from akas.compilation.transforms.split_attention import produce as attention
     from akas.compilation.transforms.split_linear import produce as linear
     from akas.compilation.transforms.hopper_verification import (
         produce as compact_verify,
     )
-    from akas.compilation.profiles.fixed_slots.draft_prefill import produce as repair
+    from akas.compilation.recipes.block_fp8.draft_prefill import produce as repair
 
     os.chdir("/workspace")
     volume.reload()

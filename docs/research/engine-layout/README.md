@@ -181,3 +181,7 @@ This migration preserves shape-specialized execution. Dynamic kernel variants,
 beam search across workload ranges, runtime selection and a possible native
 executor remain the next performance implementation, described in the
 [engine architecture](../../architecture.md#compiled-runtime-direction).
+
+The subsequent [executor merge](../executor-merge/README.md) maps these destinations
+to the shared executor and numerical bindings. This ledger records the earlier
+migration; the later ledger records the current ownership.

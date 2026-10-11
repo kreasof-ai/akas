@@ -1,7 +1,7 @@
 """Decoder block operations for explicit packed, FP8 and BF16 execution contracts."""
 
-from akas.profiles.independent.selection import paired_ffn
-from akas.profiles.independent.selection import projection_tile
+from akas.ops.schedules.packed_selection import paired_ffn
+from akas.ops.schedules.packed_selection import projection_tile
 
 
 def bf16_batch_ffn(ctx, block):

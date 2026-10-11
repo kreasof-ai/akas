@@ -7,7 +7,7 @@ def operation_modules():
     root = Path(__file__).resolve().parents[1]
     return tuple(
         "akas." + str(path.relative_to(root).with_suffix("")).replace("/", ".")
-        for folder in ("ops", "profiles")
+        for folder in ("ops", "execution/bindings", "compilation/factories")
         for path in sorted((root / folder).rglob("*.py"))
         if path.name != "__init__.py"
     )

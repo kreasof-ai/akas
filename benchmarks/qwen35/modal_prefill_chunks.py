@@ -21,10 +21,10 @@ app.include(replay_app)
 def prepare(prepared, chunk):
     import hashlib, json, os
     from pathlib import Path
-    from akas.compilation.profiles.fixed_slots.prefill import produce as prefill
+    from akas.compilation.recipes.block_fp8.prefill import produce as prefill
     from akas.compilation.transforms.compact_experts import produce as compact
     from akas.compilation.transforms.hopper import produce as hopper
-    from akas.compilation.profiles.fixed_slots.draft_prefill import produce as mtp
+    from akas.compilation.recipes.block_fp8.draft_prefill import produce as mtp
     from akas.compilation.transforms.attention_workspace import produce as workspace
 
     os.chdir("/workspace")

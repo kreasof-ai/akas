@@ -105,7 +105,7 @@ def test_recurrent_snapshots_restore_every_rejection_depth(tmp_path, chunk):
         else:
             entry.write_text(
                 export_source(
-                    "akas.profiles.fixed_slots.factories",
+                    "akas.compilation.factories.block_fp8",
                     "verification_factory",
                     kind,
                     p,
@@ -174,7 +174,7 @@ def test_convolution_history_restore_keeps_only_accepted_inputs(tmp_path):
         out = entry.with_suffix(".tbin")
         entry.write_text(
             export_source(
-                "akas.profiles.fixed_slots.factories",
+                "akas.compilation.factories.block_fp8",
                 "verification_factory",
                 kind,
                 p,

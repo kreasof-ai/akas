@@ -51,7 +51,7 @@ jobs:
                       raise ImportError(fullname)
           sys.meta_path.insert(0, Guard())
           from akas import Engine, LFM2, Qwen35Batch
-          from akas.artifacts.fingerprints import independent_hashes as implementation_hashes
+          from akas.artifacts.fingerprints import packed_hashes as implementation_hashes
           import json
           from pathlib import Path
           assert json.loads(Path('build/diagnostic/inference.json').read_text())['implementation'] == implementation_hashes()

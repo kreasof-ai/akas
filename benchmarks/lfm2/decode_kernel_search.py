@@ -15,8 +15,8 @@ from tensor.providers.webgpu.device import Device
 from tensor.compiler.search import ScheduleSearch
 from akas import GGUF
 from akas.compilation.source import export_kernel as source
-from akas.profiles.independent.parameters import DECODE_GEMV
-from akas.profiles.independent.parameters import DECODE_GEMV_COMMON
+from akas.ops.schedules.packed_parameters import DECODE_GEMV
+from akas.ops.schedules.packed_parameters import DECODE_GEMV_COMMON
 from benchmarks.lfm2.tensor_projection_search import TimestampAdapter, bind, check
 from wgpu.backends.wgpu_native.extras import write_timestamp
 
@@ -161,7 +161,7 @@ def run(model, out, minutes, extended=False):
             artifact = path.with_suffix(".tbin")
             path.write_text(
                 source(
-                    "akas.profiles.independent.factories",
+                    "akas.compilation.factories.packed",
                     "packed_webgpu_factory",
                     "linear",
                     dict(r=1, k=k, o=o, type=1, sg=True),
@@ -266,7 +266,7 @@ def run(model, out, minutes, extended=False):
                     artifact = path.with_suffix(".tbin")
                     path.write_text(
                         source(
-                            "akas.profiles.independent.factories",
+                            "akas.compilation.factories.packed",
                             "packed_webgpu_factory",
                             kind,
                             p,

@@ -70,7 +70,7 @@ def qwen35_dense(
         engine = None
         try:
             if mtp:
-                from akas.execution.compact_batch.speculative import SpeculativeEngine
+                from akas.execution.bindings.bf16.speculative import SpeculativeEngine
 
                 model = SpeculativeEngine(
                     target,

@@ -191,10 +191,10 @@ def test_shared_kernel_preserves_each_existing_adapter_abi(
     pytest.importorskip("tilelang")
     family = "packed" if module in ("ggml", "cuda") else "hybrid"
     factories = {
-        "ggml": ("akas.profiles.independent.factories", "packed_baseline_factory"),
-        "cuda": ("akas.profiles.independent.factories", "packed_cuda_factory"),
-        "hybrid": ("akas.profiles.fixed_slots.factories", "decode_factory"),
-        "hybrid_batch": ("akas.profiles.compact_batch.factories", "batch_factory"),
+        "ggml": ("akas.compilation.factories.packed", "packed_baseline_factory"),
+        "cuda": ("akas.compilation.factories.packed", "packed_cuda_factory"),
+        "hybrid": ("akas.compilation.factories.block_fp8", "decode_factory"),
+        "hybrid_batch": ("akas.compilation.factories.bf16", "batch_factory"),
     }
     owner, name = factories[module]
     factory = getattr(importlib.import_module(owner), name)
@@ -237,9 +237,9 @@ def test_shared_operator_change_invalidates_producer_source(
     from akas.compilation.source import export_kernel
 
     owner = (
-        "akas.profiles.fixed_slots.factories"
+        "akas.compilation.factories.block_fp8"
         if module == "hybrid"
-        else "akas.profiles.independent.factories"
+        else "akas.compilation.factories.packed"
     )
     name = {
         "hybrid": "decode_factory",

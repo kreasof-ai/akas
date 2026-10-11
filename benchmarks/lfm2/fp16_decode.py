@@ -41,7 +41,7 @@ def linear_source(parameters, mode):
         raise ValueError("unknown FP16 decode experiment")
     if mode == "fp32":
         return source(
-            "akas.profiles.independent.factories",
+            "akas.compilation.factories.packed",
             "packed_baseline_factory",
             "linear",
             parameters,

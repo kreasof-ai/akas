@@ -34,20 +34,19 @@ def backbone_hashes():
         _modules(
             "artifacts.kernels",
             "artifacts.fingerprints",
-            "execution.plan",
+            "execution",
             "tensor",
             "memory",
             "models.blocks",
             "ops",
-            "profiles",
             "checkpoints.upload",
         )
     )
 
 
-def _contract_hashes(contract, *, provider="cuda"):
+def _binding_hashes(binding, *, provider="cuda"):
     names = _modules(
-        "execution." + contract, "models", "checkpoints", "generation", "text"
+        "execution.bindings." + binding, "models", "checkpoints", "generation", "text"
     )
     names.update(
         "tensor.runtime." + name
@@ -85,16 +84,16 @@ def _contract_hashes(contract, *, provider="cuda"):
     return result
 
 
-def independent_hashes(provider="cuda"):
-    return _contract_hashes("independent", provider=provider)
+def packed_hashes(provider="cuda"):
+    return _binding_hashes("packed", provider=provider)
 
 
-def fixed_slots_hashes():
-    return _contract_hashes("fixed_slots")
+def block_fp8_hashes():
+    return _binding_hashes("block_fp8")
 
 
-def compact_batch_hashes():
-    return _contract_hashes("compact_batch")
+def bf16_hashes():
+    return _binding_hashes("bf16")
 
 
 def validate_implementation(manifest, expected):

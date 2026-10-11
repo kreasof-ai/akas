@@ -37,7 +37,7 @@ def consume(model, bundle, reference, out):
     import numpy as np
     import tensor
     from akas import LFM2
-    from akas.artifacts.fingerprints import independent_hashes as implementation_hashes
+    from akas.artifacts.fingerprints import packed_hashes as implementation_hashes
 
     fixture = json.loads((reference / "validation.json").read_text())
     assert fixture["status"] == "passed" and digest(model) == fixture["model_sha256"]

@@ -11,7 +11,7 @@ flowchart LR
     Blocks --> Operations[Attention / GDN / convolution / FFN]
     Operations --> Plan[Ordered kernel plan]
     Caller[Local caller or HTTP adapter] --> Scheduler[Request scheduler]
-    Scheduler --> Execution[Independent / fixed-slot / compact-batch executor]
+    Scheduler --> Execution[Shared request and batch executor]
     Execution --> Plan
     Execution --> State[Request state and scratch]
     Plan --> Tensor[Tensor binding and device execution]
@@ -31,18 +31,23 @@ and reduction operations have the same ownership. CUDA and WebGPU variants exist
 only where implemented. [The operation map](../src/akas/ops/README.md) gives the
 reading path.
 
-Packed LFM2 has independent handles with serialized shared scratch. Block-FP8
-MoE uses a fixed-slot resident batch plus chunk executors. Dense BF16 uses compact
-execution batches over persistent request slots. These contracts live in
-`execution/independent/`, `execution/fixed_slots/`, and `execution/compact_batch/`. Checkpoint types
-and block definitions are injected by model entry points. Numerical differences
-remain explicit; these paths do not silently change precision or rounding.
+`execution/executor.py` owns the common request-slot lifecycle, batch validation,
+prefill and decode interface, owner-thread checks and resource teardown. Every
+scheduled forward uses persistent slot IDs; numerical bindings choose how those
+slots map to kernel rows.
 
-`execution/fixed_slots/optimizations/` installs checked replacements for that
-execution contract. `profiles/` owns shared requirements and schedule metadata;
-its lazy factory routers contain no kernel arithmetic. `execution/plan.py` resolves kernels, applies
-profile parameters, orders calls and binds named arguments. `tensor/executor.py`
-submits and captures those calls using Tensor.
+`execution/bindings/` contains packed-weight, block-FP8 and BF16 buffer bindings.
+Packed handles execute selected sequences serially; block-FP8 kernels retain
+fixed row IDs and mask inactive rows; BF16 kernels map selected slots into dense
+execution rows. These are kernel layout constraints underneath one executor,
+not separate request engines. Precision, rounding and compiled geometry remain
+explicit. Existing direct LFM2 request handles and Qwen forward helpers remain
+available for benchmarks and compatibility.
+
+Bindings own their kernel requirements and workspace layouts. Operation schedules
+live in `ops/schedules/` and `ops/linear/schedule.py`; compiler-only factory routing
+lives in `compilation/factories/`. `execution/plan.py` resolves kernels and binds
+ordered calls, while `tensor/executor.py` submits or captures them using Tensor.
 
 ## Ownership
 
@@ -55,17 +60,18 @@ submits and captures those calls using Tensor.
 | Scheduler | Queues, admission and work budgets | Engine lifetime |
 | Transport | Connections, events and cancellation signals | Client connection |
 
-Plans borrow resources. Request slots remain distinct from compact execution rows.
-`scheduling/independent.py` adapts the `IndependentModel` request contract, without
-loading checkpoints or selecting provider kernels. Model factories load resources;
-request `next_token()` methods select the appropriate greedy execution/readback.
-Execution and resource destruction stay on the owner thread. Submission and
-cancellation use thread-safe queues/signals.
+Plans borrow resources. Request slots remain distinct from execution row IDs.
+The common executor owns occupied slots, positions and pending verification.
+Each binding supplies state reset, release cleanup and forward hooks; the handle
+binding adapts any `IndependentModel`, without loading checkpoints or selecting
+provider kernels. Model factories supply checkpoint and architecture definitions.
+Submission and cancellation use thread-safe queues/signals; execution and resource
+destruction stay on the owner thread.
 
 `memory/state.py` allocates explicit buffer specifications and releases partial
 allocations on failure. `memory/layouts.py` derives buffer specifications from geometry; both allocation
 and byte estimates use these specifications, including FP8 KV scales.
-`execution/compact_batch/journal.py` owns deferred recurrent execution. Speculative
+`execution/bindings/bf16/journal.py` owns deferred recurrent execution. Speculative
 verification commits or restores state at the accepted prefix for each request.
 
 `checkpoints/` implements GGUF/safetensors reading and bit-preserving transfer.
@@ -74,8 +80,8 @@ own transfer barriers and allocation cleanup. `artifacts/` implements kernel
 coverage, integrity, loading and implementation identities.
 
 `generation/` owns prompt/termination policy, acceptance and output lookup.
-Provider submission lives in `execution/independent/greedy.py`; MTP orchestration
-lives in each executor's `speculative.py`, alongside commit and repair. The retained
+Provider submission lives in `execution/bindings/packed/greedy.py`; MTP orchestration
+lives in the numerical bindings' `speculative.py`, alongside commit and repair. The retained
 paths have different commit semantics, represented explicitly. `serving/` handles
 transport over any `Engine`. Caller-owned factories provide devices, model adapters,
 tokenizers and metadata; LFM2 and Qwen dense examples use the same HTTP routes.
@@ -88,7 +94,7 @@ its experimental lifecycle and qualification limits.
 ## Extension and qualification
 
 Add a model by declaring its configuration, checkpoint layout and decoder blocks.
-Reuse an execution contract when geometry, state layout, precision and updates match.
+Reuse the common executor and select compatible numerical bindings.
 Add an operation/profile variant when those numerical contracts differ. A model
 should not implement its own device launch loop or graph-resource lifecycle.
 
@@ -104,11 +110,11 @@ plan parity and local CUDA checks do not qualify Hopper or WebGPU profiles.
 ## Offline compilation
 
 `compilation/build.py` handles source reuse, CUDA/WGSL builds and atomic manifests.
-Execution profiles accept loaded checkpoints and declare kernel specializations;
-models do not supply custom producers. Profiles select geometry
+Compilation recipes accept loaded checkpoints and declare kernel specializations;
+models do not supply custom producers. Recipes select geometry
 and produce artifacts for the corresponding execution contracts. See
 [the compilation map](../src/akas/compilation/README.md). Kernel and serving searches live in
-`benchmarks/`; setup and downloads live in `tools/`. Producer dependencies do not
+`benchmarks/`; general setup lives in `tools/`, and model-specific downloads live with benchmarks. Producer dependencies do not
 enter installed runtime imports.
 
 Bundles fingerprint model definitions, shared operations, execution, transfer and
@@ -117,7 +123,7 @@ reports and frozen source identities remain unchanged.
 
 ## Compiled runtime direction
 
-The ownership migration preserves the existing numerical implementations and
+The merged executor preserves the existing numerical implementations and
 shape-specialized bundles. It does not yet remove compilation by batch/chunk
 geometry or introduce adaptive runtime dispatch.
 
