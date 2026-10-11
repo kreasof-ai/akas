@@ -19,11 +19,24 @@ jobs:
       - run: uv run --no-sync python -m benchmarks.lfm2.diagnostic --out build/diagnostic.gguf
       - run: uv run --no-sync python -m akas compile --definition akas.models.lfm2.model:LFM2 --checkpoint build/diagnostic.gguf --profile packed --out build/diagnostic --config '{"context":384,"target":"sm_86"}'
       - run: uv build --out-dir build/wheels
-      - name: Build the pinned Tensor dependency wheel
-        shell: bash
+      - name: Read the pinned Tensor revision
+        id: tensor
         run: |
-          tensor_project=$(uv run --no-sync python -c 'from pathlib import Path; import tensor; print(Path(tensor.__file__).resolve().parents[2])')
-          uv build --wheel --out-dir build/wheels "$tensor_project"
+          python - <<'PYTHON'
+          import os, tomllib
+          from pathlib import Path
+          project = tomllib.loads(Path("pyproject.toml").read_text())
+          revision = project["tool"]["uv"]["sources"]["tensor-workspace"]["rev"]
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write(f"revision={revision}\n")
+          PYTHON
+      - uses: actions/checkout@v7.0.1
+        with:
+          repository: kreasof-ai/tensor
+          ref: ${{ steps.tensor.outputs.revision }}
+          path: build/tensor-source
+      - name: Build the pinned Tensor dependency wheel
+        run: uv build --wheel --out-dir build/wheels build/tensor-source
       - name: Inspect with a compiler-free consumer
         shell: bash
         run: |

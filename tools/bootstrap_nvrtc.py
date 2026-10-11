@@ -5,7 +5,7 @@ from pathlib import Path
 import hashlib
 import urllib.request
 
-REVISION = "96f423b5867027fbd0ecaf4f7863854ff3109851"
+REVISION = "d2bba09a0aca0ab6252ece4d983e57172e59c874"
 URL = f"https://raw.githubusercontent.com/kreasof-ai/tensor/{REVISION}/tools/bootstrap/bootstrap_nvrtc.py"
 
 
