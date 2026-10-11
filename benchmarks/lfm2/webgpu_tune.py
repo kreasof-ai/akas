@@ -11,7 +11,7 @@ import tensor
 from tensor.runtime.abi import BoundCall
 from akas import GGUF
 from akas.checkpoints.gguf import dequantize
-from akas.kernels.packed.webgpu import source
+from akas.compilation.source import export_kernel as source
 
 
 def run(model, out):
@@ -45,7 +45,12 @@ def run(model, out):
             p = dict(r=32, k=k, o=o, type=info.type, tile=tile)
             path = out / f"{name}-{tile[0]}-{tile[1]}-{tile[2]}.py"
             artifact = path.with_suffix(".tbin")
-            text = source("linear", p)
+            text = source(
+                "akas.profiles.independent.factories",
+                "packed_webgpu_factory",
+                "linear",
+                p,
+            )
             if path.exists() and path.read_text() != text:
                 artifact.unlink(missing_ok=True)
             path.write_text(text)

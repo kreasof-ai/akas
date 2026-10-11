@@ -25,8 +25,8 @@ def test_webgpu_diagnostic_profile_constructs_tirx(profile, tmp_path):
     import tvm
     from benchmarks.lfm2.diagnostic import fixture
     from akas import GGUF
-    from akas.artifacts.packed import requirements
-    from akas.kernels.packed.webgpu import make_kernel
+    from akas.profiles.independent.requirements import requirements
+    from akas.profiles.independent.factories import packed_webgpu_factory as make_kernel
 
     path = tmp_path / "model.gguf"
     fixture(path)
@@ -51,9 +51,9 @@ class Guard(importlib.abc.MetaPathFinder):
   if name.split('.')[0] in {'tilelang','tvm','tvm_ffi','torch','triton'} or name.startswith('tensor.compiler'):
    raise ImportError(name)
 sys.meta_path.insert(0, Guard())
-from akas.kernels.packed.ggml import make_kernel, identity
-from akas.kernels.packed.cuda import CUDA_PROFILES, make_kernel
-from akas.kernels.packed.webgpu import make_kernel
+from akas.profiles.independent.factories import packed_baseline_factory, packed_cuda_factory, packed_webgpu_factory
+from akas.profiles.independent.parameters import CUDA_PROFILES
+from akas.artifacts.kernels import identity
 assert len(identity('linear', {'k':256})) == 24
 """,
         ],

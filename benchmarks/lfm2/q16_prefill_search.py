@@ -1,6 +1,7 @@
 """Oracle-gated packed integer prefill search including two-component preparation."""
 
-from akas.compilation.paths import source_path, tensor_source
+from akas.compilation.paths import source_path
+from akas.compilation.paths import tensor_source
 
 from pathlib import Path as _Path
 import sys as _sys
@@ -13,9 +14,9 @@ import tensor
 from tensor.providers.webgpu.device import Device
 from akas import GGUF
 from akas.checkpoints.gguf import prepack_q4_0
-from akas.execution.profiles.selection import webgpu_parameters
-from akas.execution.profiles.selection import projection_tile
-from akas.kernels.packed.webgpu import source
+from akas.profiles.independent.selection import webgpu_parameters
+from akas.profiles.independent.selection import projection_tile
+from akas.compilation.source import export_kernel as source
 from benchmarks.lfm2.tensor_projection_search import TimestampAdapter, bind, check
 from benchmarks.lfm2.decode_fusion_search import PlanTimer
 
@@ -152,20 +153,20 @@ def run(
             for p in (
                 __file__,
                 "src/tensor/compiler/webgpu_lowering.py",
-                "src/akas/kernels/packed/webgpu.py",
+                *('src/akas/compilation/source.py', 'src/akas/ops/attention/webgpu/packed.py', 'src/akas/ops/linear/webgpu/packed.py', 'src/akas/ops/normalization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/storage.py', 'src/akas/ops/reductions/webgpu.py', 'src/akas/ops/sequence/webgpu/packed.py', 'src/akas/ops/vocabulary/webgpu/packed.py', 'src/akas/profiles/independent/factories.py'),
                 "src/akas/checkpoints/gguf.py",
             )
         },
         protocol="Native packed Q4_0 weights. Current control uses nearest-even F16 operands/F32 accumulation. Integer candidates use two Q8 activation planes after nearest-even half rounding and exact decoded F32 weights, F32 output accumulation. Both checked against their independent float64 arithmetic oracle; activation reconstruction separately bounded. All matrices streamed with distinct outputs, quantizer dispatched before EVERY integer projection, included in timing. 100ms warmup, 7 two-plan samples; control/best3 fresh rotating replay after 3 warmups; every selected weight checked at 3 held-out scales. Timestamp 10ns.",
     )
     if prepacked:
-        report[
-            "protocol"
-        ] += " Integer candidates use an aligned signed-byte derived cache (36 bytes per Q4_0 block), doubling matrix storage while preserving values; control retains native 18-byte blocks."
+        report["protocol"] += (
+            " Integer candidates use an aligned signed-byte derived cache (36 bytes per Q4_0 block), doubling matrix storage while preserving values; control retains native 18-byte blocks."
+        )
     if fixed_residual:
-        report[
-            "protocol"
-        ] += " Low-component scale is high scale /254, allowing an integer combination before conversion to F32."
+        report["protocol"] += (
+            " Low-component scale is high scale /254, allowing an integer combination before conversion to F32."
+        )
     started = time.perf_counter()
 
     def save():
@@ -204,6 +205,8 @@ def run(
                 qp = out / f"quant-{r}-{k}.py"
                 qa = qp.with_suffix(".tbin")
                 text = source(
+                    "akas.profiles.independent.factories",
+                    "packed_webgpu_factory",
                     "quantize_q16",
                     dict(r=r, k=k, sg=quantize_subgroup, fixed_residual=fixed_residual),
                 )
@@ -223,7 +226,14 @@ def run(
                     ]
                     sp = out / f"swiglu-{r}-{o}.py"
                     sa = sp.with_suffix(".tbin")
-                    sp.write_text(source("swiglu", dict(r=r, c=o)))
+                    sp.write_text(
+                        source(
+                            "akas.profiles.independent.factories",
+                            "packed_webgpu_factory",
+                            "swiglu",
+                            dict(r=r, c=o),
+                        )
+                    )
                     if not sa.exists():
                         tensor.build(sp, sa, provider="webgpu", cache_dir=out / "cache")
                     swiglu = device.load(sa)
@@ -335,9 +345,13 @@ def run(
                             path.write_text(
                                 source(
                                     (
+                                        "akas.profiles.independent.factories",
+                                        "packed_webgpu_factory",
                                         "linear_q16"
                                         if p.get("split_ffn")
-                                        else kind + "_q16" if integer else kind
+                                        else kind + "_q16"
+                                        if integer
+                                        else kind,
                                     ),
                                     p,
                                 )

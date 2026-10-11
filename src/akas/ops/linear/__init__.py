@@ -1,0 +1,1 @@
+"""Shared linear implementation."""

@@ -19,7 +19,7 @@ NATIVE = pytest.mark.skipif(
 def test_streamed_gemv_fused_tail_and_f32_activation_contract(
     tmp_path, force_fallback, shared_input, depth, unroll, accumulators
 ):
-    from akas.kernels.packed.webgpu import source
+    from akas.compilation.source import export_kernel as source
 
     p = dict(
         r=1,
@@ -37,7 +37,9 @@ def test_streamed_gemv_fused_tail_and_f32_activation_contract(
         k_layout="striped",
         shared_input=shared_input,
     )
-    text = source("ffn", p)
+    text = source(
+        "akas.profiles.independent.factories", "packed_webgpu_factory", "ffn", p
+    )
     if force_fallback:
         from benchmarks.lfm2.dsl_probes import subgroup_source
 
@@ -67,10 +69,12 @@ def test_streamed_gemv_fused_tail_and_f32_activation_contract(
 @NATIVE
 @pytest.mark.parametrize("force_fallback", [False, True])
 def test_fused_attention_active_tail_and_qk_fallback(tmp_path, force_fallback):
-    from akas.kernels.packed.webgpu import source
+    from akas.compilation.source import export_kernel as source
 
     h, kh, d, cap = 4, 2, 64, 96
     text = source(
+        "akas.profiles.independent.factories",
+        "packed_webgpu_factory",
         "attention",
         dict(
             r=1,

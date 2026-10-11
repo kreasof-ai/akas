@@ -2,7 +2,8 @@
 
 from akas.models.qwen35.weights import Qwen35Checkpoint as _CompilationQwen35Checkpoint
 
-from akas.compilation.paths import source_path, tensor_source
+from akas.compilation.paths import source_path
+from akas.compilation.paths import tensor_source
 
 from pathlib import Path
 import modal
@@ -26,12 +27,14 @@ image = base_image.add_local_file(
 def prepare(slots):
     import hashlib, json, os, time
     from akas.compilation.transforms.decode_profile import produce as decoder
-    from akas.compilation.profiles.hybrid.prefill import produce as prefill
+    from akas.compilation.profiles.fixed_slots.prefill import produce as prefill
     from akas.compilation.transforms.compact_experts import produce as compact
     from akas.compilation.transforms.hopper import produce as hopper
-    from akas.compilation.profiles.hybrid.draft import produce as mtp
-    from akas.compilation.profiles.hybrid.draft_prefill import produce as mtp_prefill
-    from akas.compilation.profiles.hybrid.verification import produce as verifier
+    from akas.compilation.profiles.fixed_slots.draft import produce as mtp
+    from akas.compilation.profiles.fixed_slots.draft_prefill import (
+        produce as mtp_prefill,
+    )
+    from akas.compilation.profiles.fixed_slots.verification import produce as verifier
     from akas.compilation.transforms.split_attention import produce as attention
     from akas.compilation.transforms.split_linear import produce as linear
     from akas.compilation.transforms.hopper_verification import produce as experts
@@ -75,7 +78,11 @@ def prepare(slots):
         kv_dtype="fp8",
         target="sm_90",
     )
-    paths["draft"] = mtp(_CompilationQwen35Checkpoint(checkpoint, branch="mtp"), paths["decoder"], root / "mtp")
+    paths["draft"] = mtp(
+        _CompilationQwen35Checkpoint(checkpoint, branch="mtp"),
+        paths["decoder"],
+        root / "mtp",
+    )
     original = prefill(
         _CompilationQwen35Checkpoint(checkpoint),
         root / "prefill",
@@ -91,7 +98,11 @@ def prepare(slots):
     wide = hopper(
         selected, root / "hopper", expert_mma="bf16-pairs", hopper_attention=True
     )
-    paths["draft_prefill"] = mtp_prefill(_CompilationQwen35Checkpoint(checkpoint, branch="mtp"), original, root / "mtp-prefill")
+    paths["draft_prefill"] = mtp_prefill(
+        _CompilationQwen35Checkpoint(checkpoint, branch="mtp"),
+        original,
+        root / "mtp-prefill",
+    )
     raw = prefill(
         _CompilationQwen35Checkpoint(checkpoint),
         root / "prefill-verify",
@@ -121,7 +132,9 @@ def prepare(slots):
     manifest["attention_workspace"] = "attention-workspace"
     (control / "prefill.json").write_text(json.dumps(manifest, indent=2) + "\n")
     paths["verify"] = recompute(control, root / "verify")
-    repair = mtp_prefill(_CompilationQwen35Checkpoint(checkpoint, branch="mtp"), raw, root / "repair")
+    repair = mtp_prefill(
+        _CompilationQwen35Checkpoint(checkpoint, branch="mtp"), raw, root / "repair"
+    )
     paths["repair"] = attention(
         repair,
         root / "repair-attention",
@@ -178,14 +191,16 @@ def prepare_main(out: str = "build/qwen35-h200-akbar-scaling"):
 def prepare_short(prepared):
     """Add a four-position fallback without changing the large verifier."""
     import hashlib, json, os, shutil, time
-    from akas.compilation.profiles.hybrid.prefill import produce as prefill
-    from akas.compilation.profiles.hybrid.verification import produce as verifier
+    from akas.compilation.profiles.fixed_slots.prefill import produce as prefill
+    from akas.compilation.profiles.fixed_slots.verification import produce as verifier
     from akas.compilation.transforms.split_attention import produce as attention
     from akas.compilation.transforms.split_linear import produce as linear
     from akas.compilation.transforms.hopper_verification import produce as experts
     from akas.compilation.transforms.hopper_verification import produce_dense
-    from akas.compilation.profiles.hybrid.draft_prefill import produce as repair
-    from akas.execution.hybrid.verification_pool import implementation_hashes
+    from akas.compilation.profiles.fixed_slots.draft_prefill import produce as repair
+    from akas.artifacts.fingerprints import (
+        fixed_slots_hashes as implementation_hashes,
+    )
 
     os.chdir("/workspace")
     volume.reload()
@@ -236,7 +251,11 @@ def prepare_short(prepared):
     small = linear(small, root / "linear4", expert_block_m=32)
     small = experts(small, root / "experts4", block_m=64, columns=128, paired=False)
     produce_dense(small, selected / "profiles/4/verify")
-    draft = repair(_CompilationQwen35Checkpoint(prepared["base"]["checkpoint"], branch="mtp"), raw, root / "repair4")
+    draft = repair(
+        _CompilationQwen35Checkpoint(prepared["base"]["checkpoint"], branch="mtp"),
+        raw,
+        root / "repair4",
+    )
     attention(
         draft,
         selected / "profiles/4/repair",

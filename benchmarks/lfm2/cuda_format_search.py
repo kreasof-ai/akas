@@ -1,6 +1,7 @@
 """Bounded CUDA projection search with checkpoint weights and independent math."""
 
-from akas.compilation.paths import source_path, tensor_source
+from akas.compilation.paths import source_path
+from akas.compilation.paths import tensor_source
 
 from pathlib import Path as _Path
 import sys as _sys
@@ -18,16 +19,22 @@ from tensor.compiler.search import ScheduleSearch, ScheduleProfile
 from tensor.compiler.cuda.schedules import projection_space, projection_legal
 from tensor.artifacts.format import read_artifact
 from akas import GGUF
-from akas.kernels.packed.cuda import gemv_source
-from akas.kernels.packed.cuda import fused_source
-from akas.kernels.packed.cuda import prefill_source
-from akas.kernels.packed.ggml import source as baseline_source
+from akas.compilation.source import export_kernel as gemv_source
+from akas.compilation.source import export_kernel as fused_source
+from akas.compilation.source import export_kernel as prefill_source
+from akas.compilation.source import export_kernel as baseline_source
 
 
 def current_source(kind, p):
     if kind in ("linear", "linear_add", "ffn"):
-        return gemv_source(kind, p) if p["r"] == 1 else fused_source(kind, p)
-    return baseline_source(kind, p)
+        return (
+            gemv_source("akas.ops.linear.cuda.packed", "gemv_kernel", kind, p)
+            if p["r"] == 1
+            else fused_source("akas.ops.linear.cuda.packed", "fused_kernel", kind, p)
+        )
+    return baseline_source(
+        "akas.profiles.independent.factories", "packed_baseline_factory", kind, p
+    )
 
 
 def compile_source(text, out):
@@ -83,7 +90,7 @@ def search(
             "src/tensor/compiler/search.py",
             "src/tensor/compiler/cuda/schedules.py",
             "src/tensor/compiler/cuda/lowering.py",
-            "src/akas/kernels/packed/cuda.py",
+            *('src/akas/compilation/source.py', 'src/akas/ops/attention/cuda/packed.py', 'src/akas/ops/linear/cuda/packed.py', 'src/akas/ops/normalization/cuda/packed.py', 'src/akas/ops/quantization/cuda/ggml.py', 'src/akas/ops/sequence/cuda/packed.py', 'src/akas/ops/vocabulary/cuda/packed.py', 'src/akas/profiles/independent/factories.py', 'src/akas/profiles/independent/parameters.py'),
         )
     }
     cases = []
@@ -161,9 +168,12 @@ def search(
                 def candidates():
                     yield "before", (None, current_source(kind, parameters))
                     if phase == "decode" and kind == "ffn" and q == 1:
-                        yield "separate", (
-                            dict(paired=False),
-                            current_source("linear", parameters),
+                        yield (
+                            "separate",
+                            (
+                                dict(paired=False),
+                                current_source("linear", parameters),
+                            ),
                         )
                     for index in range(max_candidates):
                         try:
@@ -179,7 +189,9 @@ def search(
                             },
                         }
                         text = (
-                            prefill_source(kind, p)
+                            prefill_source(
+                                "akas.ops.linear.cuda.packed", "prefill_kernel", kind, p
+                            )
                             if phase == "prefill"
                             else current_source(kind, p)
                         )

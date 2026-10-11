@@ -12,7 +12,10 @@ import unicodedata
 import regex
 
 from akas.text import chat
-from akas.text.formats import Rules, TokenizerError, from_file, from_gguf
+from akas.text.formats import Rules
+from akas.text.formats import TokenizerError
+from akas.text.formats import from_file
+from akas.text.formats import from_gguf
 
 
 def _byte_alphabet():
@@ -36,7 +39,9 @@ class Tokenizer:
         rules = (
             source
             if isinstance(source, Rules)
-            else from_gguf(source) if isinstance(source, Mapping) else from_file(source)
+            else from_gguf(source)
+            if isinstance(source, Mapping)
+            else from_file(source)
         )
         self.rules = rules
         self.ids = dict(rules.vocab)

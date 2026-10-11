@@ -43,11 +43,11 @@ def test_mtp_join_and_cast_match_independent_bf16_reference(tmp_path):
         entry = tmp_path / (kind + ".py")
         entry.write_text(
             export_source(
-                "akas.kernels.speculation.mtp",
+                "akas.ops.mtp.cuda",
                 "make_kernel",
                 kind,
                 p,
-                dependencies=('tensor.compiler.frontend.source',),
+                dependencies=("tensor.compiler.frontend.source",),
             )
         )
         artifact = entry.with_suffix(".tbin")

@@ -21,10 +21,10 @@ app.include(replay_app)
 def prepare(prepared, chunk):
     import hashlib, json, os
     from pathlib import Path
-    from akas.compilation.profiles.hybrid.prefill import produce as prefill
+    from akas.compilation.profiles.fixed_slots.prefill import produce as prefill
     from akas.compilation.transforms.compact_experts import produce as compact
     from akas.compilation.transforms.hopper import produce as hopper
-    from akas.compilation.profiles.hybrid.draft_prefill import produce as mtp
+    from akas.compilation.profiles.fixed_slots.draft_prefill import produce as mtp
     from akas.compilation.transforms.attention_workspace import produce as workspace
 
     os.chdir("/workspace")
@@ -61,7 +61,13 @@ def prepare(prepared, chunk):
         selected, root / "hopper", expert_mma="bf16-pairs", hopper_attention=True
     )
     paths = dict(prepared["base"]["paths"])
-    paths["draft_prefill"] = str(mtp(_CompilationQwen35Checkpoint(checkpoint, branch="mtp"), original, root / "draft-prefill"))
+    paths["draft_prefill"] = str(
+        mtp(
+            _CompilationQwen35Checkpoint(checkpoint, branch="mtp"),
+            original,
+            root / "draft-prefill",
+        )
+    )
     result = dict(
         prepared,
         base=dict(prepared["base"], paths=paths),

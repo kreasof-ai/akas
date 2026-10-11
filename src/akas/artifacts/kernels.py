@@ -5,34 +5,6 @@ import json
 from pathlib import Path
 
 
-def backbone_hashes():
-    """Bind every runtime component to the shared execution/state/operators."""
-    from importlib.util import find_spec
-
-    names = (
-        __name__,
-        "akas.execution.plan",
-        "akas.tensor.executor",
-        "akas.tensor.graph",
-        "akas.memory.state",
-        "akas.ops.hybrid_state",
-        "akas.ops.decoder",
-        "akas.ops.attention",
-        "akas.ops.gdn",
-        "akas.ops.shortconv",
-        "akas.ops.ffn",
-        "akas.checkpoints.upload",
-        "akas.ops.linear",
-        "akas.ops.normalization",
-        "akas.ops.quantization",
-        "akas.kernels.elementwise",
-    )
-    return {
-        name: hashlib.sha256(Path(find_spec(name).origin).read_bytes()).hexdigest()
-        for name in names
-    }
-
-
 def identity(kind, parameters):
     return hashlib.sha256(
         json.dumps([kind, parameters], sort_keys=True).encode()

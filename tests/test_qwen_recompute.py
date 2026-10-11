@@ -22,20 +22,20 @@ def test_recompute_matches_every_frozen_prefix(tmp_path, chunk):
     for name, module, factory, args in (
         (
             "control_scan",
-            "speculative",
-            "make_kernel",
+            "akas.profiles.fixed_slots.factories",
+            "verification_factory",
             ("gdn_scan", dict(slots=s, chunk=c)),
         ),
-        ("scan", "prefill", "make_kernel", ("gdn_scan", dict(slots=s, chunk=c))),
+        ("scan", "akas.profiles.fixed_slots.factories", "prefill_factory", ("gdn_scan", dict(slots=s, chunk=c))),
         (
             "control_conv",
-            "speculative",
-            "make_kernel",
+            "akas.profiles.fixed_slots.factories",
+            "verification_factory",
             ("gdn_conv", dict(slots=s, chunk=c)),
         ),
-        ("conv", "prefill", "make_kernel", ("gdn_conv", dict(slots=s, chunk=c))),
+        ("conv", "akas.profiles.fixed_slots.factories", "prefill_factory", ("gdn_conv", dict(slots=s, chunk=c))),
         *(
-            (name, "recompute", name, (dict(slots=s, chunk=c),))
+            (name, "akas.ops.gdn.cuda.recompute", name, (dict(slots=s, chunk=c),))
             for name in ("save_scan", "save_conv", "restore_scan", "restore_conv")
         ),
     ):
@@ -43,10 +43,10 @@ def test_recompute_matches_every_frozen_prefix(tmp_path, chunk):
         artifact = entry.with_suffix(".tbin")
         entry.write_text(
             export_source(
-                "akas.kernels." + module,
+                module,
                 factory,
                 *args,
-                dependencies=('tensor.compiler.frontend.source',),
+                dependencies=("tensor.compiler.frontend.source",),
             )
         )
         build_artifact(
@@ -151,10 +151,10 @@ def test_c64_input_copy_at_int32_bitcount_boundary(tmp_path):
     artifact = source.with_suffix(".tbin")
     source.write_text(
         export_source(
-            "akas.kernels.recurrent.recompute",
+            "akas.ops.gdn.cuda.recompute",
             "save_conv",
             dict(slots=64, chunk=128),
-            dependencies=('tensor.compiler.frontend.source',),
+            dependencies=("tensor.compiler.frontend.source",),
         )
     )
     build_artifact(
@@ -192,10 +192,10 @@ def test_c64_short_snapshot_restore_without_flat_bitcount_view(tmp_path):
     artifact = source.with_suffix(".tbin")
     source.write_text(
         export_source(
-            "akas.kernels.recurrent.hopper_restore",
+            "akas.ops.gdn.cuda.hopper_restore",
             "restore_kernel",
             dict(slots=64, chunk=4, shape=[32, 128, 128]),
-            dependencies=('tensor.compiler.frontend.source',),
+            dependencies=("tensor.compiler.frontend.source",),
         )
     )
     build_artifact(

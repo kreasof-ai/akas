@@ -9,7 +9,8 @@ same declarations for every model, checks source/provider/target/compiler identi
 records artifact checksums and publishes a completed manifest atomically.
 `bundles.py` copies checked artifacts when deriving a new execution bundle.
 
-Profiles describe execution contracts, not model families:
+Profile modules are `profiles/independent.py`, `profiles/compact_batch.py` and
+`profiles/fixed_slots/`. Existing CLI profile names remain compatible:
 
 | Profile | Inputs and responsibility |
 | --- | --- |
@@ -43,10 +44,15 @@ profile. Checkpoint reader options, such as a draft branch, are supplied separat
 
 `transforms/` selects reusable attention, projection, expert, recurrent and device
 specializations over existing bundles. Kernel source factories remain in
-`akas.kernels`; candidate measurements and searches remain in `benchmarks`.
+`akas.ops`; candidate measurements and searches remain in `benchmarks`.
 
 Fixed-layout FP8 kernels currently support one explicit geometry, checked in
-`profiles/hybrid/geometry.py`. A different width or state layout needs a compatible
+`akas.profiles.fixed_slots.geometry`. A different width or state layout needs a compatible
 kernel/profile implementation; compilation never substitutes another model's
 geometry silently. Measured device specializations retain their qualification
 limits. Existing schema names retain compatibility with runtime bundle readers.
+
+`source.py` replaces per-kernel source wrappers. It binds source cache identities
+to the extracted operation bodies and shared profile metadata. Shared requirement
+and schedule descriptions live in `akas.profiles`; runtime consumers can read
+them without importing this compilation package.

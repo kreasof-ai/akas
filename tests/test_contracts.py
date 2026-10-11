@@ -5,7 +5,8 @@ import numpy as np
 import pytest
 from akas.models.lfm2.config import Config
 from akas.checkpoints.gguf import GGUFError
-from akas.text.tokenizer import Tokenizer, TokenizerError
+from akas.text.tokenizer import Tokenizer
+from akas.text.tokenizer import TokenizerError
 
 
 def tokenizer(template=None):

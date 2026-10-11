@@ -76,17 +76,17 @@ def cases(*, extended=False):
                     family=family,
                     kind="split_linear",
                     parameters=p,
-                    module="akas.kernels.linear.split_linear",
+                    module="akas.ops.linear.cuda.split",
                     factory="make_kernel",
                 )
-        for tile in (() if extended else (8, 16, 32, 64)):
+        for tile in () if extended else (8, 16, 32, 64):
             yield dict(
                 family="gdn",
                 kind="gdn_scan",
                 parameters=dict(
                     slots=rows, chunk=1, pool=256, heads=16, d=128, tile=tile
                 ),
-                module="akas.kernels.hybrid.hybrid_batch",
+                module="akas.profiles.compact_batch.factories",
                 factory="make_kernel",
             )
 
@@ -123,9 +123,9 @@ def prepare(directory, *, extended=False):
             row["factory"],
             *args,
             dependencies=(
-                'tensor.compiler.frontend.source',
-                'tensor.compiler.cuda.lowering',
-                "akas.kernels.elementwise",
+                "tensor.compiler.frontend.source",
+                "tensor.compiler.cuda.lowering",
+                "akas.ops.normalization.kernels",
             ),
         )
         entry = directory / (key + ".py")

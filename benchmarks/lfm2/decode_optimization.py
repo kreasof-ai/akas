@@ -16,7 +16,7 @@ import tensor
 from tensor.artifacts.format import read_artifact
 from tensor.runtime.abi import BoundCall
 from akas import LFM2
-from akas.kernels.packed.ggml import source
+from akas.compilation.source import export_kernel as source
 from benchmarks.lfm2.text_helpers import emit, reference_attention_source
 from benchmarks.lfm2.fp16_decode import linear_source, HALF2
 
@@ -81,32 +81,36 @@ def pipelined_source(p, *, async_load=True):
     copy_expression = (
         f"__pipeline_memcpy_async(stage[slot]+i*{vector}, w+row*{row_bytes}+tile*{packed}+offset, {vector});"
         if async_load
-        else f'*reinterpret_cast<{"uint4" if vector==16 else "unsigned int"}*>(stage[slot]+i*{vector}) = *reinterpret_cast<const {"uint4" if vector==16 else "unsigned int"}*>(w+row*{row_bytes}+tile*{packed}+offset);'
+        else f"*reinterpret_cast<{'uint4' if vector == 16 else 'unsigned int'}*>(stage[slot]+i*{vector}) = *reinterpret_cast<const {'uint4' if vector == 16 else 'unsigned int'}*>(w+row*{row_bytes}+tile*{packed}+offset);"
     )
-    prelude = HALF2 + "\n#include <cuda_pipeline_primitives.h>\n" + UNPACK + f"""
+    prelude = (
+        HALF2
+        + "\n#include <cuda_pipeline_primitives.h>\n"
+        + UNPACK
+        + f"""
 __device__ __forceinline__ void packed_pipeline(const float* x,const unsigned char* w,float* out) {{
-    __shared__ __align__(16) unsigned char stage[2][{4*packed}];
+    __shared__ __align__(16) unsigned char stage[2][{4 * packed}];
     const int tid=threadIdx.x, lane=tid%32, local_row=tid/32;
     const int row=blockIdx.x*4+local_row;
     float sum=0;
-    for(int tile=0;tile<{k//512};++tile) {{
+    for(int tile=0;tile<{k // 512};++tile) {{
         // Prime tile zero, then initiate the next load before consuming this tile.
         if(tile==0) {{
             const int slot=0;
-            for(int i=tid;i<{4*packed//vector};i+=128) {{
-                int row=blockIdx.x*4+i/({packed//vector});int offset=i%({packed//vector})*{vector};
+            for(int i=tid;i<{4 * packed // vector};i+=128) {{
+                int row=blockIdx.x*4+i/({packed // vector});int offset=i%({packed // vector})*{vector};
                 if(row<{o}) {{ {copy_expression} }}
             }}
-            {'__pipeline_commit(); __pipeline_wait_prior(0);' if async_load else ''}
+            {"__pipeline_commit(); __pipeline_wait_prior(0);" if async_load else ""}
             __syncthreads();
         }}
-        if(tile+1<{k//512}) {{
+        if(tile+1<{k // 512}) {{
             const int slot=(tile+1)%2;
-            for(int i=tid;i<{4*packed//vector};i+=128) {{
-                int row=blockIdx.x*4+i/({packed//vector});int offset=i%({packed//vector})*{vector};
-                if(row<{o}) {{ {copy_expression.replace('tile*','(tile+1)*')} }}
+            for(int i=tid;i<{4 * packed // vector};i+=128) {{
+                int row=blockIdx.x*4+i/({packed // vector});int offset=i%({packed // vector})*{vector};
+                if(row<{o}) {{ {copy_expression.replace("tile*", "(tile+1)*")} }}
             }}
-            {'__pipeline_commit();' if async_load else ''}
+            {"__pipeline_commit();" if async_load else ""}
         }}
         if(row<{o}) {{
             const unsigned char* bytes=stage[tile%2]+local_row*{packed};
@@ -118,13 +122,14 @@ __device__ __forceinline__ void packed_pipeline(const float* x,const unsigned ch
                 sum+=tensor_half2_dot(x[tile*512+j],x[tile*512+j+1],a,b);
             }}
         }}
-        {'__pipeline_wait_prior(0);' if async_load else ''}
+        {"__pipeline_wait_prior(0);" if async_load else ""}
         __syncthreads();
     }}
     for(int offset=16;offset>0;offset/=2) sum+=__shfl_down_sync(0xffffffff,sum,offset);
     if(lane==0 && row<{o}) out[row]=sum;
 }}
 """
+    )
     return emit(
         [("x", k, "float32"), ("w", o * row_bytes, "uint8"), ("out", o, "float32")],
         f"""with T.Kernel(T.ceildiv({o},4),threads=128,prelude={prelude!r}) as bx:
@@ -153,11 +158,11 @@ def prefetch_source(p, ahead=8):
         + "\n}\n"
     )
     text = text.replace(repr(HALF2), repr(prelude))
-    marker = f"        for tile in T.serial({p['k']//64}):\n"
-    insertion = f"""            if (tile % {max(block//64,1)} == 0) & (tile + {ahead} < {p['k']//64}):
+    marker = f"        for tile in T.serial({p['k'] // 64}):\n"
+    insertion = f"""            if (tile % {max(block // 64, 1)} == 0) & (tile + {ahead} < {p["k"] // 64}):
                 for row, lane in T.Parallel(4,32):
-                    if (lane == 0) & (bx * 4 + row < {p['o']}):
-                        T.evaluate(T.call_extern("void", "prefetch_packed", T.address_of(w[((bx * 4 + row) * {p['k']} + (tile + {ahead}) * 64) // {block} * {size}])))
+                    if (lane == 0) & (bx * 4 + row < {p["o"]}):
+                        T.evaluate(T.call_extern("void", "prefetch_packed", T.address_of(w[((bx * 4 + row) * {p["k"]} + (tile + {ahead}) * 64) // {block} * {size}])))
 """
     if marker not in text:
         raise ValueError("half2 loop template changed")
@@ -182,7 +187,7 @@ def partial_source(p, splits):
         "out[head * " + str(d) + " + j] = result[j] / normalizer[0]",
         f"parts[(head * {splits} + split) * {stride} + j] = result[j]",
     )
-    body += f"\nparts[(head * {splits} + split) * {stride} + {d}] = maximum[0]\nparts[(head * {splits} + split) * {stride} + {d+1}] = normalizer[0]"
+    body += f"\nparts[(head * {splits} + split) * {stride} + {d}] = maximum[0]\nparts[(head * {splits} + split) * {stride} + {d + 1}] = normalizer[0]"
     return emit(
         [
             ("q", h * d, "float32"),
@@ -203,7 +208,9 @@ def warp_partial_source(p, splits):
     if d != 64:
         raise ValueError("warp decode requires head dimension 64")
     stride = d + 2
-    prelude = HALF2 + f"""
+    prelude = (
+        HALF2
+        + f"""
 __device__ __forceinline__ void warp_attention(const float* q,const void* kptr,const void* vptr,float* parts,const int* pos) {{
     __shared__ float maxima[4], sums[4], values[4][64];
     const __half* kc=reinterpret_cast<const __half*>(kptr);
@@ -212,7 +219,7 @@ __device__ __forceinline__ void warp_attention(const float* q,const void* kptr,c
     const int head=blockIdx.x, split=blockIdx.y, length=pos[0]+1;
     const int chunk=(length+{splits}-1)/{splits};
     const int begin=split*chunk, end=min(begin+chunk,length);
-    const int kvhead=head/{h//kh};
+    const int kvhead=head/{h // kh};
     const float q0=q[head*64+lane], q1=q[head*64+lane+32];
     float maximum=-__int_as_float(0x7f800000), normalizer=0, a0=0, a1=0;
     for(int token=begin+warp;token<end;token+=4) {{
@@ -242,6 +249,7 @@ __device__ __forceinline__ void warp_attention(const float* q,const void* kptr,c
     }}
 }}
 """
+    )
     return emit(
         [
             ("q", h * d, "float32"),
@@ -271,7 +279,7 @@ def merge_source(p, splits):
         maxima[i] = parts[(head * {splits} + i) * {stride} + {d}]
     T.reduce_max(maxima, maximum, dim=0)
     for i in T.Parallel({splits}):
-        sums[i] = parts[(head * {splits} + i) * {stride} + {d+1}] * T.exp(maxima[i] - maximum[0])
+        sums[i] = parts[(head * {splits} + i) * {stride} + {d + 1}] * T.exp(maxima[i] - maximum[0])
     T.reduce_sum(sums, normalizer, dim=0)
     for i, j in T.Parallel({splits}, {d}):
         products[i, j] = parts[(head * {splits} + i) * {stride} + j] * T.exp(maxima[i] - maximum[0])

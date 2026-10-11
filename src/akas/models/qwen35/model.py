@@ -1,10 +1,12 @@
 """Qwen3.5 architecture; select MoE/FP8 or dense/BF16 execution explicitly."""
 
-from akas.execution.hybrid.model import FixedSlotModel
-from akas.execution.batched.model import BatchedModel
-from akas.models.qwen35.weights import Qwen35Checkpoint, DenseCheckpoint
+from akas.execution.fixed_slots.resident import FixedSlotModel
+from akas.execution.compact_batch.resident import BatchedModel
+from akas.models.qwen35.weights import Qwen35Checkpoint
+from akas.models.qwen35.weights import DenseCheckpoint
 from akas.models.qwen35.config import Qwen35Config
-from akas.ops.decoder import DecoderArchitecture, DecoderBlock
+from akas.models.blocks import DecoderArchitecture
+from akas.models.blocks import DecoderBlock
 
 
 def architecture(config, checkpoint):

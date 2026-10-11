@@ -1,6 +1,7 @@
 """Discover CUDA decode attention schedules against independent float64 math."""
 
-from akas.compilation.paths import source_path, tensor_source
+from akas.compilation.paths import source_path
+from akas.compilation.paths import tensor_source
 
 from pathlib import Path as _Path
 import sys as _sys
@@ -16,9 +17,9 @@ from tensor.compiler.search import ScheduleSearch
 from tensor.compiler.cuda.schedules import ATTENTION_SPACES
 from akas.tensor.graph import CudaGraph
 from tensor.compiler.tuning import measure_cuda
-from akas.kernels.packed.cuda import warp_partial_source
-from akas.kernels.packed.cuda import merge_source
-from akas.kernels.packed.cuda import grouped_source
+from akas.compilation.source import export_kernel as warp_partial_source
+from akas.compilation.source import export_kernel as merge_source
+from akas.compilation.source import export_kernel as grouped_source
 from benchmarks.lfm2.cuda_format_search import compile_source
 
 
@@ -38,7 +39,7 @@ def search(out, max_candidates=7):
             "src/tensor/compiler/search.py",
             "src/tensor/compiler/cuda/schedules.py",
             "src/tensor/compiler/cuda/lowering.py",
-            "src/akas/kernels/packed/cuda.py",
+            *('src/akas/compilation/source.py', 'src/akas/ops/attention/cuda/packed.py', 'src/akas/ops/linear/cuda/packed.py', 'src/akas/ops/normalization/cuda/packed.py', 'src/akas/ops/quantization/cuda/ggml.py', 'src/akas/ops/sequence/cuda/packed.py', 'src/akas/ops/vocabulary/cuda/packed.py', 'src/akas/profiles/independent/factories.py', 'src/akas/profiles/independent/parameters.py'),
         )
     }
     p = dict(h=32, kh=8, d=64, cap=8576, splits=16)
@@ -46,7 +47,10 @@ def search(out, max_candidates=7):
     q = rng.normal(size=(32, 64)).astype(np.float32)
     k = rng.normal(size=(8576, 8, 64)).astype(np.float16)
     v = rng.normal(size=k.shape).astype(np.float16)
-    mergepath = compile_source(merge_source(p, 16), out / "kernels")
+    mergepath = compile_source(
+        merge_source("akas.ops.attention.cuda.packed", "merge_kernel", p, 16),
+        out / "kernels",
+    )
     observations = []
     with tensor.Device() as device:
         dq, dk, dv = [device.from_numpy(x.ravel()) for x in (q, k, v)]
@@ -85,9 +89,20 @@ def search(out, max_candidates=7):
                 except StopIteration:
                     break
                 text = (
-                    warp_partial_source(p, config["splits"])
+                    warp_partial_source(
+                        "akas.ops.attention.cuda.packed",
+                        "warp_partial_kernel",
+                        p,
+                        config["splits"],
+                    )
                     if config["family"] == "partial"
-                    else grouped_source(p, config["stage"], config["warps"])
+                    else grouped_source(
+                        "akas.ops.attention.cuda.packed",
+                        "grouped_kernel",
+                        p,
+                        config["stage"],
+                        config["warps"],
+                    )
                 )
                 kernel = None
                 name = f"candidate-{index}"

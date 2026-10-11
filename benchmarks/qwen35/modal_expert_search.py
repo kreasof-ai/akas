@@ -22,7 +22,7 @@ def prepare_candidates():
 
     os.chdir("/workspace")
     volume.reload()
-    source = Path("src/akas/kernels/moe/hopper_experts.py")
+    source = Path('src/akas/ops/moe/cuda/hopper.py')
     digest = hashlib.sha256(source.read_bytes()).hexdigest()
     root = Path("/cache/expert-search") / digest[:16]
     root.mkdir(parents=True, exist_ok=True)
@@ -44,7 +44,10 @@ def prepare_candidates():
                 module,
                 factory,
                 p,
-                dependencies=('tensor.compiler.frontend.source', "akas.kernels.elementwise"),
+                dependencies=(
+                    "tensor.compiler.frontend.source",
+                    "akas.ops.normalization.kernels",
+                ),
             )
         )
         artifact = entry.with_suffix(".tbin")
@@ -65,7 +68,7 @@ def prepare_candidates():
         )
         case["control"] = compile(
             f"control-{k}",
-            "akas.kernels.hybrid.hybrid_prefill",
+            "akas.ops.moe.cuda.prefill",
             "expert_kernel",
             p,
             "sm_90",
@@ -74,7 +77,7 @@ def prepare_candidates():
             p.update(schedule)
             artifact = compile(
                 f"candidate-{k}-{index}",
-                "akas.kernels.moe.hopper_experts",
+                "akas.ops.moe.cuda.hopper",
                 "expert_kernel",
                 p,
                 "sm_90a",

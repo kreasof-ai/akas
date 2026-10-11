@@ -1,0 +1,1146 @@
+[
+  {
+    "source": "src/akas/kernels/attention/attention_workspace.py",
+    "unit": "decode",
+    "target": "src/akas/ops/attention/cuda/workspace.py",
+    "kind": "definition",
+    "selector": "decode",
+    "sha256": "6be9d6d331342979bc72734a4d110ea9916c908b835e7ef209ae4864a1d53609"
+  },
+  {
+    "source": "src/akas/kernels/attention/fp8_attention.py",
+    "unit": "make_kernel",
+    "target": "src/akas/ops/attention/cuda/fp8.py",
+    "kind": "definition",
+    "selector": "make_kernel",
+    "sha256": "1eb1fb9c6c4967b1623cce3c952190bbd12b6478135a79aaa90b3547e69a8084"
+  },
+  {
+    "source": "src/akas/kernels/attention/fp8_kv.py",
+    "unit": "make_kernel",
+    "target": "src/akas/ops/attention/cuda/kv_fp8.py",
+    "kind": "definition",
+    "selector": "make_kernel",
+    "sha256": "5e23a1df1ee3a173bce0b95ec29a0ed0b8ec58985662e799686acc90c2f43f7f"
+  },
+  {
+    "source": "src/akas/kernels/attention/fp8_kv.py",
+    "unit": "write",
+    "target": "src/akas/ops/attention/cuda/kv_fp8.py",
+    "kind": "definition",
+    "selector": "write",
+    "sha256": "a4120578052d1b31cc8f0c10be7f7c55e87412d3f3570d525413cb1fe10b2110"
+  },
+  {
+    "source": "src/akas/kernels/attention/fp8_kv.py",
+    "unit": "partial",
+    "target": "src/akas/ops/attention/cuda/kv_fp8.py",
+    "kind": "definition",
+    "selector": "partial",
+    "sha256": "018309b307d9053c28dd1fbffb4da1a06efb61267abca5f4f4c01aa4f0b943f2"
+  },
+  {
+    "source": "src/akas/kernels/attention/fp8_kv.py",
+    "unit": "attention",
+    "target": "src/akas/ops/attention/cuda/kv_fp8.py",
+    "kind": "definition",
+    "selector": "attention",
+    "sha256": "be620f86a5c70eeeb7bbc372cded3c2f63365617cb792e0c74055e24599444f7"
+  },
+  {
+    "source": "src/akas/kernels/attention/hopper_attention.py",
+    "unit": "partial",
+    "target": "src/akas/ops/attention/cuda/hopper.py",
+    "kind": "definition",
+    "selector": "partial",
+    "sha256": "4c661492ce3f2360092449052b3555e107709e8b90404f1cae2c462ebce85062"
+  },
+  {
+    "source": "src/akas/kernels/attention/hopper_prefill_attention.py",
+    "unit": "attention",
+    "target": "src/akas/ops/attention/cuda/hopper_prefill.py",
+    "kind": "definition",
+    "selector": "attention",
+    "sha256": "ef0ce6ed52bb70d1b181471a687f4f4a8885fa13d0e9ff8cf4311391af23a048"
+  },
+  {
+    "source": "src/akas/kernels/attention/speculative_attention.py",
+    "unit": "partial",
+    "target": "src/akas/ops/attention/cuda/split.py",
+    "kind": "definition",
+    "selector": "partial",
+    "sha256": "72540754664c5b7ebf58c628dcb9a84e31c72d79b7a2cfec02065e34c7d20ed1"
+  },
+  {
+    "source": "src/akas/kernels/attention/speculative_attention.py",
+    "unit": "merge",
+    "target": "src/akas/ops/attention/cuda/split.py",
+    "kind": "definition",
+    "selector": "merge",
+    "sha256": "79461769d35cf80d239dcf795cbcaeea43d1b276081e44ea55661616f5b9f124"
+  },
+  {
+    "source": "src/akas/kernels/elementwise.py",
+    "unit": "rms_kernel",
+    "target": "src/akas/ops/normalization/kernels.py",
+    "kind": "definition",
+    "selector": "rms_kernel",
+    "sha256": "931358bb4b417ecbbaddb12ffe6702d3a528fe522780001f5e3b64c5b28f05a0"
+  },
+  {
+    "source": "src/akas/kernels/elementwise.py",
+    "unit": "swiglu_kernel",
+    "target": "src/akas/ops/ffn/activation.py",
+    "kind": "definition",
+    "selector": "swiglu_kernel",
+    "sha256": "458c7bb57cab1338c8c780308446f27924a8d07d0e04bb85fbaf51af54fdb733"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid.py",
+    "unit": "make_kernel:kind == 'moe_groups'",
+    "target": "src/akas/ops/moe/cuda/decode.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'moe_groups'",
+    "sha256": "aacc22e602101148d013d781c952a7151189fe05f9769c32f675f25e77c18a75"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid.py",
+    "unit": "make_kernel:kind == 'fp8_experts'",
+    "target": "src/akas/ops/moe/cuda/decode.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'fp8_experts'",
+    "sha256": "2e11187bf873678322d1d96237248f09cecda66289eef49657f598f4e1dbbaed"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid.py",
+    "unit": "make_kernel:kind == 'bf16_linear'",
+    "target": "src/akas/ops/linear/cuda/decode.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'bf16_linear'",
+    "sha256": "033ea70ae124d9f1196500373627876c46dc52140d42a420055ab1deda7f9747"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid.py",
+    "unit": "make_kernel:kind == 'embedding'",
+    "target": "src/akas/ops/vocabulary/cuda/decode.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'embedding'",
+    "sha256": "8c58f0d68d872b51b13b5c9a50b98607f464f8ee8e55d50d962d7873be005d3c"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid.py",
+    "unit": "make_kernel:kind in ('rms', 'add_rms')",
+    "target": "src/akas/ops/normalization/cuda/decode.py",
+    "kind": "opcode-branch",
+    "selector": "kind in ('rms', 'add_rms')",
+    "sha256": "d8e7a4221aaf85dff1078f37871da8ab9b4dcf6224b0bf5ad3c81d69d492bac8"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid.py",
+    "unit": "make_kernel:kind == 'router'",
+    "target": "src/akas/ops/moe/cuda/decode.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'router'",
+    "sha256": "68f42ac2e6b25ee6cc92c0f748fb370e8b9eb691e7984dc4b59773d9f7a6f9da"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid.py",
+    "unit": "make_kernel:kind == 'swiglu'",
+    "target": "src/akas/ops/ffn/cuda/decode.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'swiglu'",
+    "sha256": "3346a2f0120f3299b524346a876c5400d855d61083939305009d54662aaf3c0e"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid.py",
+    "unit": "make_kernel:kind == 'swiglu_experts'",
+    "target": "src/akas/ops/ffn/cuda/decode.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'swiglu_experts'",
+    "sha256": "4676cca9317fea4ffabdc3ffb2623fbdb4af65786ca2dc4a5bc9c045665022b8"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid.py",
+    "unit": "make_kernel:kind == 'moe_combine'",
+    "target": "src/akas/ops/moe/cuda/decode.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'moe_combine'",
+    "sha256": "f1650e4de0511ed1d854bc5ec905495141e9d20893ff726ad3fd11e82a719292"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid.py",
+    "unit": "make_kernel:kind == 'gdn_conv'",
+    "target": "src/akas/ops/gdn/cuda/decode.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'gdn_conv'",
+    "sha256": "aec45870de1fe4cb22eb64def8953d84414fa93c69f6c44c4f778425e0a0f934"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid.py",
+    "unit": "make_kernel:kind == 'gdn_prepare'",
+    "target": "src/akas/ops/gdn/cuda/decode.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'gdn_prepare'",
+    "sha256": "8fbf083224502ad0b08f7dc73242f68f9f8e0ed4f2ee5f4935878556922c1338"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid.py",
+    "unit": "make_kernel:kind == 'gdn_norm'",
+    "target": "src/akas/ops/gdn/cuda/decode.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'gdn_norm'",
+    "sha256": "7b77c9b9e5cd543b9ae27669ca5f5ca6752c0e4195b431fc820db44023902bd7"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid.py",
+    "unit": "make_kernel:kind in ('attention_q', 'attention_kv')",
+    "target": "src/akas/ops/attention/cuda/decode.py",
+    "kind": "opcode-branch",
+    "selector": "kind in ('attention_q', 'attention_kv')",
+    "sha256": "69ba15c57de9b7b7c3d1566e5307325a671a865a0be3c78f6a17401c6b4860b8"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid.py",
+    "unit": "make_kernel:kind == 'attention_partial'",
+    "target": "src/akas/ops/attention/cuda/decode.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'attention_partial'",
+    "sha256": "d58201d39a939720f757daaaa99d943fe8c5dab1f6ca629c41fc64263247d495"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid.py",
+    "unit": "make_kernel:kind == 'attention_merge'",
+    "target": "src/akas/ops/attention/cuda/decode.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'attention_merge'",
+    "sha256": "14d2d8e0544045add23eb2d29fdfa62b0e58113ae5d801e7f8eacb82ce3a3683"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid.py",
+    "unit": "make_kernel:kind == 'argmax'",
+    "target": "src/akas/ops/vocabulary/cuda/decode.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'argmax'",
+    "sha256": "5e4d20e6d88cf7a08ea87c78c657b080573c898b92a86106dde05e963f0a05ed"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid.py",
+    "unit": "make_kernel:kind == 'e4m3_decode'",
+    "target": "src/akas/ops/quantization/cuda/decode.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'e4m3_decode'",
+    "sha256": "c9cd4c6dba73a25f38409952285deb971dd46d76387b072472fe54ae042eb7e9"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid.py",
+    "unit": "make_kernel:kind == 'fp8_linear'",
+    "target": "src/akas/ops/linear/cuda/decode.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'fp8_linear'",
+    "sha256": "f9d8b0ccd213c0d235d8b20b1dfea5001a120750c946260724989d5e9c6d72f6"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid.py",
+    "unit": "make_kernel:kind == 'gdn_recurrent'",
+    "target": "src/akas/ops/gdn/cuda/decode.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'gdn_recurrent'",
+    "sha256": "b3aec91e8bd368deac2332e47504fbfce6a36fa0e01eaa2aa0d29cfd45c9f99b"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid_batch.py",
+    "unit": "make_kernel:kind == 'linear'",
+    "target": "src/akas/ops/linear/cuda/bf16_batch.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'linear'",
+    "sha256": "13ba52013825ca5923e978b866c3fddb7de2652a8cbf48225e3890c5dfbb4601"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid_batch.py",
+    "unit": "make_kernel:kind == 'gemv'",
+    "target": "src/akas/ops/linear/cuda/bf16_batch.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'gemv'",
+    "sha256": "c83f23438223312ac0d3b34917d827f26b9216111f91f58a1ed52d04ed75ec04"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid_batch.py",
+    "unit": "make_kernel:kind == 'gather_hidden'",
+    "target": "src/akas/ops/sequence/cuda/bf16_batch.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'gather_hidden'",
+    "sha256": "f8e5f13dc1e5ceafd72b8284dc67d634ef430694beae34cdd9d33310e08ed6ca"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid_batch.py",
+    "unit": "make_kernel:kind == 'store_hidden'",
+    "target": "src/akas/ops/sequence/cuda/bf16_batch.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'store_hidden'",
+    "sha256": "0fb2f623c2a251c87be5b8f61abb4ed379ddb735c464f9a162e282e9cc8474ad"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid_batch.py",
+    "unit": "make_kernel:kind == 'controls'",
+    "target": "src/akas/ops/sequence/cuda/bf16_batch.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'controls'",
+    "sha256": "a547ba177c1a808685aa1fc6753394e770286e8d66750874d987a903b988675e"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid_batch.py",
+    "unit": "make_kernel:kind == 'gdn_conv'",
+    "target": "src/akas/ops/gdn/cuda/bf16_batch.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'gdn_conv'",
+    "sha256": "33579bbbbd70acbec69b321d0ca9639d540892eb27fd2f620dc8abaafb84661b"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid_batch.py",
+    "unit": "make_kernel:kind == 'gdn_prepare'",
+    "target": "src/akas/ops/gdn/cuda/bf16_batch.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'gdn_prepare'",
+    "sha256": "9974d14dfe0e78000c7faec22dcaf22f78395684992a93c40f38fec682b09990"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid_batch.py",
+    "unit": "make_kernel:kind == 'gdn_scan'",
+    "target": "src/akas/ops/gdn/cuda/bf16_batch.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'gdn_scan'",
+    "sha256": "a2898625f1cae8748f9dfca4d30549e340ce86825fbcc6c03ec0c9fd6edb45bf"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid_batch.py",
+    "unit": "make_kernel:kind == 'gdn_norm'",
+    "target": "src/akas/ops/gdn/cuda/bf16_batch.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'gdn_norm'",
+    "sha256": "5507bf5fb5b8d11b2e1251e4ed1966d33ef636d2b6264c87a27468e044434e2e"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid_batch.py",
+    "unit": "make_kernel:kind == 'swiglu'",
+    "target": "src/akas/ops/ffn/cuda/bf16_batch.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'swiglu'",
+    "sha256": "3126960a7c697bf4c2313e342e02bb4ba6db2d3a2706114c7fb927c2f86f8db3"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid_batch.py",
+    "unit": "make_kernel:kind == 'last_rows'",
+    "target": "src/akas/ops/sequence/cuda/bf16_batch.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'last_rows'",
+    "sha256": "4fc24ed8c69eadad2c5ced3965c7629e0837ca82967adcbf0b221deb0a1405b6"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid_batch.py",
+    "unit": "make_kernel:kind == 'attention_qkv'",
+    "target": "src/akas/ops/attention/cuda/bf16_batch.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'attention_qkv'",
+    "sha256": "b8c27532726ef2aebdc24abaac2ec2a2c2fdb2a7e4b4312fd3fa38d85c8723ce"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid_batch.py",
+    "unit": "make_kernel:kind == 'attention'",
+    "target": "src/akas/ops/attention/cuda/bf16_batch.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'attention'",
+    "sha256": "5959e07202e3d6bc51a1e2251d120180b4334402ff9569c9048e3c6dc697b660"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid_prefill.py",
+    "unit": "make_kernel:kind == 'controls'",
+    "target": "src/akas/ops/sequence/cuda/prefill.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'controls'",
+    "sha256": "161daf8984bae88c3ac0b89755d0fee14f9a0ff004bb2694eeddb54aadfb3c53"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid_prefill.py",
+    "unit": "make_kernel:kind == 'gdn_conv'",
+    "target": "src/akas/ops/gdn/cuda/prefill.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'gdn_conv'",
+    "sha256": "991b7f1935fa39e58d0ab09838b84f031c2c37c79e2f5a2534c67f6c91cdb4de"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid_prefill.py",
+    "unit": "make_kernel:kind == 'gdn_scan'",
+    "target": "src/akas/ops/gdn/cuda/prefill.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'gdn_scan'",
+    "sha256": "a7fa21b006543cd928088f52bc609f4d880574d7dafb267c733d83b00c7884cc"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid_prefill.py",
+    "unit": "make_kernel:kind == 'expert_routes'",
+    "target": "src/akas/ops/moe/cuda/prefill.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'expert_routes'",
+    "sha256": "46e33ef73bc64b51c91621c55e35a911386364734939a9a53eed63cadbc5aa83"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid_prefill.py",
+    "unit": "make_kernel:kind == 'last_rows'",
+    "target": "src/akas/ops/sequence/cuda/prefill.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'last_rows'",
+    "sha256": "8b945957239f341aa4b433e4dab67c33c26f5c18b2065f0fbdf315a800310889"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid_prefill.py",
+    "unit": "make_kernel:kind == 'advance'",
+    "target": "src/akas/ops/sequence/cuda/prefill.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'advance'",
+    "sha256": "d7e8b80fc1552d2e06efe91253d5a35c28869a465677dbaf59467a8cd54232fe"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid_prefill.py",
+    "unit": "make_kernel:kind == 'attention_kv'",
+    "target": "src/akas/ops/attention/cuda/prefill.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'attention_kv'",
+    "sha256": "57d0dd21ad7c446538824c44d8820c046d2e0b97a2f4f7dac92caa839ec19e79"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid_prefill.py",
+    "unit": "make_kernel:kind == 'attention'",
+    "target": "src/akas/ops/attention/cuda/prefill.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'attention'",
+    "sha256": "302c09cf639d5fca0c18190c18e7fa759250ee763dbaf9ee9bded24a347b5e1b"
+  },
+  {
+    "source": "src/akas/kernels/hybrid/hybrid_prefill.py",
+    "unit": "expert_kernel",
+    "target": "src/akas/ops/moe/cuda/prefill.py",
+    "kind": "definition",
+    "selector": "expert_kernel",
+    "sha256": "179b2b475541ae45853bf0c90ee98467f9772d269078310a1084cb984347761e"
+  },
+  {
+    "source": "src/akas/kernels/linear/head.py",
+    "unit": "make_kernel",
+    "target": "src/akas/ops/vocabulary/cuda/fused_head.py",
+    "kind": "definition",
+    "selector": "make_kernel",
+    "sha256": "107da80c046bbc30c97e11a7e6f4d4c2bf5f645708ee5cb939e9bb84174cb528"
+  },
+  {
+    "source": "src/akas/kernels/linear/hopper_dense.py",
+    "unit": "make_kernel",
+    "target": "src/akas/ops/linear/cuda/hopper.py",
+    "kind": "definition",
+    "selector": "make_kernel",
+    "sha256": "9ad0524b597d4efb0f058baa3a0a0111bfe22ba8b2490bc186350f3411139ab5"
+  },
+  {
+    "source": "src/akas/kernels/linear/matmul.py",
+    "unit": "make_kernel",
+    "target": "src/akas/ops/linear/cuda/block_fp8.py",
+    "kind": "definition",
+    "selector": "make_kernel",
+    "sha256": "d37875fe20b82f7055ffa0b518128b42578575707563de7fa914814a346df808"
+  },
+  {
+    "source": "src/akas/kernels/linear/matmul.py",
+    "unit": "quantize_kernel",
+    "target": "src/akas/ops/quantization/cuda/block_fp8.py",
+    "kind": "definition",
+    "selector": "quantize_kernel",
+    "sha256": "50c5977f357899e0c39389c4afbd66545027e8ece2f837589badaa14df05dd00"
+  },
+  {
+    "source": "src/akas/kernels/linear/matmul.py",
+    "unit": "merge_kernel",
+    "target": "src/akas/ops/linear/cuda/block_fp8.py",
+    "kind": "definition",
+    "selector": "merge_kernel",
+    "sha256": "ce248ce49a84e1ae7ec538b01d1d9b727d17d9856dc607ebb5035a203e40c7f1"
+  },
+  {
+    "source": "src/akas/kernels/linear/matmul.py",
+    "unit": "bf16_kernel",
+    "target": "src/akas/ops/linear/cuda/block_fp8.py",
+    "kind": "definition",
+    "selector": "bf16_kernel",
+    "sha256": "0b3a9b72cf5aa2bc8a57b823e0145adab7d211cb335d7fc2638b42bc66b36cba"
+  },
+  {
+    "source": "src/akas/kernels/linear/matmul.py",
+    "unit": "bf16_decode_kernel",
+    "target": "src/akas/ops/linear/cuda/block_fp8.py",
+    "kind": "definition",
+    "selector": "bf16_decode_kernel",
+    "sha256": "c511f9edd3de27d0f2c766fd0ee1fa75a2ed44639ffb9156e83725012f02c71a"
+  },
+  {
+    "source": "src/akas/kernels/linear/matmul.py",
+    "unit": "bf16_head_kernel",
+    "target": "src/akas/ops/vocabulary/cuda/bf16.py",
+    "kind": "definition",
+    "selector": "bf16_head_kernel",
+    "sha256": "210fceb39b6e74e117d06c92cdecdcca681efb9324c041df63ea749af096c91c"
+  },
+  {
+    "source": "src/akas/kernels/linear/resident_operands.py",
+    "unit": "widen",
+    "target": "src/akas/ops/quantization/cuda/resident_operands.py",
+    "kind": "definition",
+    "selector": "widen",
+    "sha256": "e27ba3763a259425fee5de7ad5d8d779c85a8eff097006f333a49796899a7658"
+  },
+  {
+    "source": "src/akas/kernels/linear/speculative_linear.py",
+    "unit": "expert_kernel",
+    "target": "src/akas/ops/moe/cuda/split.py",
+    "kind": "definition",
+    "selector": "expert_kernel",
+    "sha256": "57e525d8aff8cb046a184b6b60eee61bbb2a4966e5f17a4fabd94e32eaffc484"
+  },
+  {
+    "source": "src/akas/kernels/linear/split_linear.py",
+    "unit": "schedule",
+    "target": "src/akas/profiles/compact_batch/parameters.py",
+    "kind": "definition",
+    "selector": "schedule",
+    "sha256": "20297fc2c116bd0d926ab52e513555c1219e7c1e8af49f2fb4e8f86e23deab36"
+  },
+  {
+    "source": "src/akas/kernels/linear/split_linear.py",
+    "unit": "make_kernel",
+    "target": "src/akas/ops/linear/cuda/split.py",
+    "kind": "definition",
+    "selector": "make_kernel",
+    "sha256": "64992ceb0dbf42a3045706f5ad9a9a93d2e6bfb3d4d37cb6bb9ae8d52b24a57e"
+  },
+  {
+    "source": "src/akas/kernels/moe/compact_experts.py",
+    "unit": "tile_map_kernel",
+    "target": "src/akas/ops/moe/cuda/compact.py",
+    "kind": "definition",
+    "selector": "tile_map_kernel",
+    "sha256": "cb1bdce2c641ea88ca90cb1abc5eecb25687f80e80c2889bb863307c36bd69fa"
+  },
+  {
+    "source": "src/akas/kernels/moe/hopper_experts.py",
+    "unit": "expert_kernel",
+    "target": "src/akas/ops/moe/cuda/hopper.py",
+    "kind": "definition",
+    "selector": "expert_kernel",
+    "sha256": "109e5f8479107c024ef634a1a5b581c263548c8fabc3e257bde699385fc66b01"
+  },
+  {
+    "source": "src/akas/kernels/packed/cuda.py",
+    "unit": "hardware_loads",
+    "target": "src/akas/ops/quantization/cuda/ggml.py",
+    "kind": "definition",
+    "selector": "hardware_loads",
+    "sha256": "32701f762e354472112c4c496b05e0714c230959d1da1019397268deb3aa98ae"
+  },
+  {
+    "source": "src/akas/kernels/packed/cuda.py",
+    "unit": "packed_dot",
+    "target": "src/akas/ops/quantization/cuda/ggml.py",
+    "kind": "definition",
+    "selector": "packed_dot",
+    "sha256": "b671d00318da51e72c3741c79db8770b82264cf9d69d3a9786c427ee078f7cb3"
+  },
+  {
+    "source": "src/akas/kernels/packed/cuda.py",
+    "unit": "projection_abi",
+    "target": "src/akas/ops/linear/cuda/packed.py",
+    "kind": "definition",
+    "selector": "projection_abi",
+    "sha256": "a547c63edc2126e94997c7982a76eb89c832e7cae2f179732c92ba735f79810b"
+  },
+  {
+    "source": "src/akas/kernels/packed/cuda.py",
+    "unit": "gemv_kernel",
+    "target": "src/akas/ops/linear/cuda/packed.py",
+    "kind": "definition",
+    "selector": "gemv_kernel",
+    "sha256": "d525e9f505ccd3557e34e55747d4d87c0c0bb026c2981ef1da793f874a8e3ea4"
+  },
+  {
+    "source": "src/akas/kernels/packed/cuda.py",
+    "unit": "pair_decoder",
+    "target": "src/akas/ops/quantization/cuda/ggml.py",
+    "kind": "definition",
+    "selector": "pair_decoder",
+    "sha256": "a746a5f721f40458503c6b1599507505c70ac084c14f65124c7a533c6f88e6e0"
+  },
+  {
+    "source": "src/akas/kernels/packed/cuda.py",
+    "unit": "prefill_kernel",
+    "target": "src/akas/ops/linear/cuda/packed.py",
+    "kind": "definition",
+    "selector": "prefill_kernel",
+    "sha256": "8e8d454f699bf6bea283c3e1ee11e204154226a41c43bdea5d1c49c73a9e79f1"
+  },
+  {
+    "source": "src/akas/kernels/packed/cuda.py",
+    "unit": "fused_kernel",
+    "target": "src/akas/ops/linear/cuda/packed.py",
+    "kind": "definition",
+    "selector": "fused_kernel",
+    "sha256": "d9fa64c2d677d959532b8470a7910a42f4ef1bbb50dffe71b72c80459b9e5890"
+  },
+  {
+    "source": "src/akas/kernels/packed/cuda.py",
+    "unit": "warp_partial_kernel",
+    "target": "src/akas/ops/attention/cuda/packed.py",
+    "kind": "definition",
+    "selector": "warp_partial_kernel",
+    "sha256": "b48267fad3cbf6c676f3356bdbc1e10ff10ce6a22bcf06f2f219d606b6f38982"
+  },
+  {
+    "source": "src/akas/kernels/packed/cuda.py",
+    "unit": "grouped_kernel",
+    "target": "src/akas/ops/attention/cuda/packed.py",
+    "kind": "definition",
+    "selector": "grouped_kernel",
+    "sha256": "9bcd679817c07b8ca5c3d7fd29fa95c730f85ee4c1a40b282f3fd7bb6c86aabc"
+  },
+  {
+    "source": "src/akas/kernels/packed/cuda.py",
+    "unit": "merge_kernel",
+    "target": "src/akas/ops/attention/cuda/packed.py",
+    "kind": "definition",
+    "selector": "merge_kernel",
+    "sha256": "ad3cbe53357a1186c2f0df5b9703647ec7ab0dd835a766407a3216d1e037b24c"
+  },
+  {
+    "source": "src/akas/kernels/packed/cuda.py",
+    "unit": "normalization_kernel",
+    "target": "src/akas/ops/normalization/cuda/packed.py",
+    "kind": "definition",
+    "selector": "normalization_kernel",
+    "sha256": "41b870869defad315cb60f3ed62a405dc1a0e7989f12bb1a5352761630965753"
+  },
+  {
+    "source": "src/akas/kernels/packed/cuda.py",
+    "unit": "make_kernel:kind in ('linear', 'linear_add', 'ffn')",
+    "target": "src/akas/ops/linear/cuda/packed.py",
+    "kind": "opcode-branch",
+    "selector": "kind in ('linear', 'linear_add', 'ffn')",
+    "sha256": "302672195fe50fcbf5a5e0ba2eed5c8388b727ff7d6d0ef8c2a869289a4ac08f"
+  },
+  {
+    "source": "src/akas/kernels/packed/cuda.py",
+    "unit": "make_kernel:kind == 'attention_partial'",
+    "target": "src/akas/ops/attention/cuda/packed.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'attention_partial'",
+    "sha256": "658e320bc69eaf847eee079ef31243458277d043d2290ab42b92f2ae5f14f091"
+  },
+  {
+    "source": "src/akas/kernels/packed/cuda.py",
+    "unit": "make_kernel:kind == 'attention_grouped'",
+    "target": "src/akas/ops/attention/cuda/packed.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'attention_grouped'",
+    "sha256": "d889bbda49c3b1474b7d4f0111ed4f40a0f3a36d6ead757e106d96c72d09af25"
+  },
+  {
+    "source": "src/akas/kernels/packed/cuda.py",
+    "unit": "make_kernel:kind == 'attention_merge'",
+    "target": "src/akas/ops/attention/cuda/packed.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'attention_merge'",
+    "sha256": "b26d4b30318440bb74754af3aec5be7b5b120338cf02c4def619fdb66bd0bd05"
+  },
+  {
+    "source": "src/akas/kernels/packed/cuda.py",
+    "unit": "make_kernel:kind in ('qnorm', 'kvnorm')",
+    "target": "src/akas/ops/normalization/cuda/packed.py",
+    "kind": "opcode-branch",
+    "selector": "kind in ('qnorm', 'kvnorm')",
+    "sha256": "62a787291af84dffd79a58e07ec395bf79ce772756bec4f085b0a674484095f6"
+  },
+  {
+    "source": "src/akas/kernels/packed/cuda.py",
+    "unit": "make_kernel:kind == 'argmax'",
+    "target": "src/akas/ops/vocabulary/cuda/packed.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'argmax'",
+    "sha256": "cd74f8624259023d8a405171196b67e477517e9e8c0aee08f48faf249a1a1376"
+  },
+  {
+    "source": "src/akas/kernels/packed/cuda.py",
+    "unit": "make_kernel:kind == 'prefill_tail'",
+    "target": "src/akas/ops/sequence/cuda/packed.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'prefill_tail'",
+    "sha256": "a0fc30bb45432a12003fec286bb04c00783590b21f9886e7c5eb9e634e907a93"
+  },
+  {
+    "source": "src/akas/kernels/packed/cuda.py",
+    "unit": "make_kernel:kind == 'add_rms'",
+    "target": "src/akas/ops/normalization/cuda/packed.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'add_rms'",
+    "sha256": "bb82409625794c8d7ecc72239cebc3f3181e1e922e0839d84df645bd702394d5"
+  },
+  {
+    "source": "src/akas/kernels/packed/ggml.py",
+    "unit": "weight_storage",
+    "target": "src/akas/ops/quantization/ggml.py",
+    "kind": "definition",
+    "selector": "weight_storage",
+    "sha256": "a150f7901e4b221642993eafd154abff761961d5287e3525fb0043067dc363dc"
+  },
+  {
+    "source": "src/akas/kernels/packed/ggml.py",
+    "unit": "weight_decoder",
+    "target": "src/akas/ops/quantization/ggml.py",
+    "kind": "definition",
+    "selector": "weight_decoder",
+    "sha256": "25771cbefa81ae4b7c8703cf81756f39aebeb3b901905a3da41c0f9237f71581"
+  },
+  {
+    "source": "src/akas/kernels/packed/ggml.py",
+    "unit": "make_kernel:kind == 'linear'",
+    "target": "src/akas/ops/linear/cuda/packed_baseline.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'linear'",
+    "sha256": "20317f4d7eb1dbd47fa9c6c0d30c053d71a8ca5c65b0198648eb35388f752c59"
+  },
+  {
+    "source": "src/akas/kernels/packed/ggml.py",
+    "unit": "make_kernel:kind == 'rms'",
+    "target": "src/akas/ops/normalization/cuda/packed_baseline.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'rms'",
+    "sha256": "654776832a9ce4cd098d94d1058530b6bd6ea127ced6a6f45db636a4c27a7063"
+  },
+  {
+    "source": "src/akas/kernels/packed/ggml.py",
+    "unit": "make_kernel:kind == 'swiglu'",
+    "target": "src/akas/ops/ffn/cuda/packed_baseline.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'swiglu'",
+    "sha256": "3d698266ff14067b979cd480c74882530d45c0c8f7cbcda33dcddd14fdcaf2a8"
+  },
+  {
+    "source": "src/akas/kernels/packed/ggml.py",
+    "unit": "make_kernel:kind == 'add'",
+    "target": "src/akas/ops/residual/cuda/packed_baseline.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'add'",
+    "sha256": "3c9fe4aa3fd0fd24d36c2733eadcd1c7deba48583833a52f7caf743e5e5fa0e1"
+  },
+  {
+    "source": "src/akas/kernels/packed/ggml.py",
+    "unit": "make_kernel:kind == 'embedding'",
+    "target": "src/akas/ops/vocabulary/cuda/packed_baseline.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'embedding'",
+    "sha256": "9613bcd5ad84995103d357dcabed2b12d25323a53ac62a0e03706305413a8433"
+  },
+  {
+    "source": "src/akas/kernels/packed/ggml.py",
+    "unit": "make_kernel:kind == 'conv'",
+    "target": "src/akas/ops/convolution/cuda/packed_baseline.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'conv'",
+    "sha256": "6042402faba9c3481406ed82492a0763b9b5fa8a312bb625e544c617748408ec"
+  },
+  {
+    "source": "src/akas/kernels/packed/ggml.py",
+    "unit": "make_kernel:kind == 'qkv'",
+    "target": "src/akas/ops/attention/cuda/packed_baseline.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'qkv'",
+    "sha256": "ad9d0ff1bc1a5689b9901cb014cafaee1da8a65e180fb7a0539f3605a3250a03"
+  },
+  {
+    "source": "src/akas/kernels/packed/ggml.py",
+    "unit": "make_kernel:kind == 'attention'",
+    "target": "src/akas/ops/attention/cuda/packed_baseline.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'attention'",
+    "sha256": "9ecf5d73c79274d88edb6f6af729c6d02797b75cd984114a6ff0d4b95635547f"
+  },
+  {
+    "source": "src/akas/kernels/packed/ggml.py",
+    "unit": "make_kernel:kind == 'last'",
+    "target": "src/akas/ops/sequence/cuda/packed_baseline.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'last'",
+    "sha256": "373c624565bb3706234f683c9e94dd940147ee4880f41ca4d71cc339819c3409"
+  },
+  {
+    "source": "src/akas/kernels/packed/ggml.py",
+    "unit": "make_kernel:kind == 'advance'",
+    "target": "src/akas/ops/sequence/cuda/packed_baseline.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'advance'",
+    "sha256": "089dd552b6589482921af4594791d5c784170b833ce40cb440036c07acbe050d"
+  },
+  {
+    "source": "src/akas/kernels/packed/ggml.py",
+    "unit": "argmax_kernel",
+    "target": "src/akas/ops/vocabulary/cuda/argmax.py",
+    "kind": "definition",
+    "selector": "argmax_kernel",
+    "sha256": "73a99c637114c03e3ba7a5ed66f1ea48c9a2ee777836f25a0998ed87440edda2"
+  },
+  {
+    "source": "src/akas/kernels/packed/webgpu.py",
+    "unit": "half_bits",
+    "target": "src/akas/ops/quantization/webgpu/storage.py",
+    "kind": "definition",
+    "selector": "half_bits",
+    "sha256": "0c787a49b66bba659b56f70b93c85b21e414b14f87b37e95eb6f49b52a03b8ea"
+  },
+  {
+    "source": "src/akas/kernels/packed/webgpu.py",
+    "unit": "packed_loads",
+    "target": "src/akas/ops/quantization/webgpu/storage.py",
+    "kind": "definition",
+    "selector": "packed_loads",
+    "sha256": "a3c38628aa8c03953a6f3b541d6ae5a3ce918b94b90fe1c9635a51ee3f1f43f0"
+  },
+  {
+    "source": "src/akas/kernels/packed/webgpu.py",
+    "unit": "round_half",
+    "target": "src/akas/ops/quantization/webgpu/storage.py",
+    "kind": "definition",
+    "selector": "round_half",
+    "sha256": "6e9764ea8bbc8da62b1038033ec88fb045c08422b82c095c8e54453aee350b0b"
+  },
+  {
+    "source": "src/akas/kernels/packed/webgpu.py",
+    "unit": "tree_reduce",
+    "target": "src/akas/ops/reductions/webgpu.py",
+    "kind": "definition",
+    "selector": "tree_reduce",
+    "sha256": "751622e34d5ef39eb39a6fe925d1bc24e10805b5117daddd110344e24279b81c"
+  },
+  {
+    "source": "src/akas/kernels/packed/webgpu.py",
+    "unit": "subgroup_reduce",
+    "target": "src/akas/ops/reductions/webgpu.py",
+    "kind": "definition",
+    "selector": "subgroup_reduce",
+    "sha256": "34a68eb96a93217331d0234afe299f618eba9a1dc50c4fa741b996f2ed979930"
+  },
+  {
+    "source": "src/akas/kernels/packed/webgpu.py",
+    "unit": "rms_width",
+    "target": "src/akas/ops/normalization/webgpu/packed.py",
+    "kind": "definition",
+    "selector": "rms_width",
+    "sha256": "2330393b5bfd1a1819648128627289234c9c8c0fd8cf1373ce365e4a510b9e29"
+  },
+  {
+    "source": "src/akas/kernels/packed/webgpu.py",
+    "unit": "projection_epilogue",
+    "target": "src/akas/ops/linear/webgpu/packed.py",
+    "kind": "definition",
+    "selector": "projection_epilogue",
+    "sha256": "da643399ed48d8d3a67e4f8ab67a97875f7cd5672ab57ef648aa12e122ef9556"
+  },
+  {
+    "source": "src/akas/kernels/packed/webgpu.py",
+    "unit": "projection_abi",
+    "target": "src/akas/ops/linear/webgpu/packed.py",
+    "kind": "definition",
+    "selector": "projection_abi",
+    "sha256": "a6e496352ea156092c455fc86d53a60f4bfc5e0a23d3f0750642c8e2c8c20e38"
+  },
+  {
+    "source": "src/akas/kernels/packed/webgpu.py",
+    "unit": "prefill_kernel",
+    "target": "src/akas/ops/linear/webgpu/packed.py",
+    "kind": "definition",
+    "selector": "prefill_kernel",
+    "sha256": "cbaa7e954427b2c34f449c748f57c05d029534e683a22e299a0de4f9fc27e462"
+  },
+  {
+    "source": "src/akas/kernels/packed/webgpu.py",
+    "unit": "decode_kernel",
+    "target": "src/akas/ops/linear/webgpu/packed.py",
+    "kind": "definition",
+    "selector": "decode_kernel",
+    "sha256": "7b17c5dcd92a8f278c9ec6363846054408ab48266a863af4ba58da91058fe620"
+  },
+  {
+    "source": "src/akas/kernels/packed/webgpu.py",
+    "unit": "quantize_kernel",
+    "target": "src/akas/ops/quantization/webgpu/storage.py",
+    "kind": "definition",
+    "selector": "quantize_kernel",
+    "sha256": "27d9c0c35ac9eaff4f552f6d5c0afaed82df9c238b3cef80d889696e15314a9d"
+  },
+  {
+    "source": "src/akas/kernels/packed/webgpu.py",
+    "unit": "integer_prefill_kernel",
+    "target": "src/akas/ops/linear/webgpu/packed.py",
+    "kind": "definition",
+    "selector": "integer_prefill_kernel",
+    "sha256": "4ca8c4874e9f7a0234d329f6253e756c614bc8fbad84d50b0f55fa8ee31f4f21"
+  },
+  {
+    "source": "src/akas/kernels/packed/webgpu.py",
+    "unit": "q8_kernel",
+    "target": "src/akas/ops/linear/webgpu/packed.py",
+    "kind": "definition",
+    "selector": "q8_kernel",
+    "sha256": "e5906ff72684f754f41982023315fcb59a3d9c973713ac02af65efefd3ef57a2"
+  },
+  {
+    "source": "src/akas/kernels/packed/webgpu.py",
+    "unit": "segmented_reduce",
+    "target": "src/akas/ops/reductions/webgpu.py",
+    "kind": "definition",
+    "selector": "segmented_reduce",
+    "sha256": "313ead08682997d696ac41497493f2073a099c01a2f1585342afcf70cc30c61f"
+  },
+  {
+    "source": "src/akas/kernels/packed/webgpu.py",
+    "unit": "rms_kernel",
+    "target": "src/akas/ops/normalization/webgpu/packed.py",
+    "kind": "definition",
+    "selector": "rms_kernel",
+    "sha256": "dca973c99492ccf78f681e77da7c19aa8fa92ed87cc8c9e197d1fa77791ee097"
+  },
+  {
+    "source": "src/akas/kernels/packed/webgpu.py",
+    "unit": "normalization_kernel",
+    "target": "src/akas/ops/normalization/webgpu/packed.py",
+    "kind": "definition",
+    "selector": "normalization_kernel",
+    "sha256": "b50048f09f01f2b98935a4ad9d4e5ef859f361fe2e5592f2115c259169072228"
+  },
+  {
+    "source": "src/akas/kernels/packed/webgpu.py",
+    "unit": "score_shuffle",
+    "target": "src/akas/ops/attention/webgpu/packed.py",
+    "kind": "definition",
+    "selector": "score_shuffle",
+    "sha256": "062ca6f4fc454ab8b56a86a4f254379963f3ccbf20ffd8c75615dd716514b9dc"
+  },
+  {
+    "source": "src/akas/kernels/packed/webgpu.py",
+    "unit": "attention_scores_kernel",
+    "target": "src/akas/ops/attention/webgpu/packed.py",
+    "kind": "definition",
+    "selector": "attention_scores_kernel",
+    "sha256": "cdaa58726dcff2893d1a3a4e966387cc78564abcdaca9474abbe9360037df637"
+  },
+  {
+    "source": "src/akas/kernels/packed/webgpu.py",
+    "unit": "attention_kernel",
+    "target": "src/akas/ops/attention/webgpu/packed.py",
+    "kind": "definition",
+    "selector": "attention_kernel",
+    "sha256": "855682c36a6c3a0699cbb575f4ef13374bd85c28341fe745f73bdc071bf2d521"
+  },
+  {
+    "source": "src/akas/kernels/packed/webgpu.py",
+    "unit": "make_kernel:kind in ('linear', 'ffn') and p.get('q16')",
+    "target": "src/akas/ops/linear/webgpu/packed.py",
+    "kind": "opcode-branch",
+    "selector": "kind in ('linear', 'ffn') and p.get('q16')",
+    "sha256": "897921c9b12f7c8493ad9df1ae4a170bebeebd922a05207e3bb0e81fbb258ca2"
+  },
+  {
+    "source": "src/akas/kernels/packed/webgpu.py",
+    "unit": "make_kernel:kind in ('linear_q16', 'ffn_q16')",
+    "target": "src/akas/ops/linear/webgpu/packed.py",
+    "kind": "opcode-branch",
+    "selector": "kind in ('linear_q16', 'ffn_q16')",
+    "sha256": "2f02abac2f4f59a578c371c5de0b8642f931c1ebe061189031e223c6d20ffa6e"
+  },
+  {
+    "source": "src/akas/kernels/packed/webgpu.py",
+    "unit": "make_kernel:kind in ('linear', 'ffn', 'linear_add')",
+    "target": "src/akas/ops/linear/webgpu/packed.py",
+    "kind": "opcode-branch",
+    "selector": "kind in ('linear', 'ffn', 'linear_add')",
+    "sha256": "55089b61eb05b94088bb3e9557d1d477cc78bd2fb22cddccc3e3570b23a5ba3c"
+  },
+  {
+    "source": "src/akas/kernels/packed/webgpu.py",
+    "unit": "make_kernel:kind in ('quantize_q8', 'quantize_q16')",
+    "target": "src/akas/ops/quantization/webgpu/packed.py",
+    "kind": "opcode-branch",
+    "selector": "kind in ('quantize_q8', 'quantize_q16')",
+    "sha256": "b9b026082b5ce4c1bab341f545ad9a619df0a04b62e2b07e519c5549334be2b2"
+  },
+  {
+    "source": "src/akas/kernels/packed/webgpu.py",
+    "unit": "make_kernel:kind == 'linear_q8'",
+    "target": "src/akas/ops/linear/webgpu/packed.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'linear_q8'",
+    "sha256": "f9f7fda47b70e58f4415505a0c058b62ecff9d1791f04cef9c59bcb0c663897e"
+  },
+  {
+    "source": "src/akas/kernels/packed/webgpu.py",
+    "unit": "make_kernel:kind == 'rms' and (r == 1 or p.get('parallel_rows')) or kind == 'add_rms'",
+    "target": "src/akas/ops/normalization/webgpu/packed.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'rms' and (r == 1 or p.get('parallel_rows')) or kind == 'add_rms'",
+    "sha256": "2428ab7ea7b79994e477edaeb4294b3df48753a34c2e80b373bac7c225a4d016"
+  },
+  {
+    "source": "src/akas/kernels/packed/webgpu.py",
+    "unit": "make_kernel:kind in ('qnorm', 'kvnorm')",
+    "target": "src/akas/ops/normalization/webgpu/packed.py",
+    "kind": "opcode-branch",
+    "selector": "kind in ('qnorm', 'kvnorm')",
+    "sha256": "62a787291af84dffd79a58e07ec395bf79ce772756bec4f085b0a674484095f6"
+  },
+  {
+    "source": "src/akas/kernels/packed/webgpu.py",
+    "unit": "make_kernel:kind == 'attention_scores'",
+    "target": "src/akas/ops/attention/webgpu/packed.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'attention_scores'",
+    "sha256": "48e9b79b7063390a25d1b402c1995bf9e4c5fe949153c5dc596aa84dcdf04d89"
+  },
+  {
+    "source": "src/akas/kernels/packed/webgpu.py",
+    "unit": "make_kernel:kind == 'attention'",
+    "target": "src/akas/ops/attention/webgpu/packed.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'attention'",
+    "sha256": "37159dbd15fa6ae0fe1e0063b7f95417bce7fc8e8d3fcada67ef0b6ffb64caf2"
+  },
+  {
+    "source": "src/akas/kernels/packed/webgpu.py",
+    "unit": "make_kernel:kind == 'embedding'",
+    "target": "src/akas/ops/vocabulary/webgpu/packed.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'embedding'",
+    "sha256": "cbb52b1d0d08c8cc126ede4af7c6d71516f22c3869dfd4bd237e4e1dd6eeb48a"
+  },
+  {
+    "source": "src/akas/kernels/packed/webgpu.py",
+    "unit": "make_kernel:kind == 'argmax'",
+    "target": "src/akas/ops/vocabulary/webgpu/packed.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'argmax'",
+    "sha256": "80a94d61d9c746afdf5f99062a6b7a20c5b2286aa01874619b3b4a86a65b25f9"
+  },
+  {
+    "source": "src/akas/kernels/packed/webgpu.py",
+    "unit": "make_kernel:kind == 'prefill_tail'",
+    "target": "src/akas/ops/sequence/webgpu/packed.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'prefill_tail'",
+    "sha256": "e92326b8ba43ffc446861c6ec0426081825dfffc0c8374d808846e4594aacab5"
+  },
+  {
+    "source": "src/akas/kernels/packed/webgpu.py",
+    "unit": "make_kernel:kind == 'qkv'",
+    "target": "src/akas/ops/attention/webgpu/packed.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'qkv'",
+    "sha256": "d0ce9259b7010aa75fe70effe491c93087a543dc52a8cd63e19d1e3401e6d282"
+  },
+  {
+    "source": "src/akas/kernels/recurrent/hopper_restore.py",
+    "unit": "restore_kernel",
+    "target": "src/akas/ops/gdn/cuda/hopper_restore.py",
+    "kind": "definition",
+    "selector": "restore_kernel",
+    "sha256": "3af4acc1e13a664d1f96986d13f26b9b581707a4f40cb482c2db506a966bce6a"
+  },
+  {
+    "source": "src/akas/kernels/recurrent/recompute.py",
+    "unit": "save_scan",
+    "target": "src/akas/ops/gdn/cuda/recompute.py",
+    "kind": "definition",
+    "selector": "save_scan",
+    "sha256": "32d67c5b20337d38208f81da6a46d839fc9a049848c65fdf8ce2fc9e786c6649"
+  },
+  {
+    "source": "src/akas/kernels/recurrent/recompute.py",
+    "unit": "save_conv",
+    "target": "src/akas/ops/gdn/cuda/recompute.py",
+    "kind": "definition",
+    "selector": "save_conv",
+    "sha256": "366092931814a178252acfaf906719cf9ebdcbee02ed0f469d29ee57a1102c79"
+  },
+  {
+    "source": "src/akas/kernels/recurrent/recompute.py",
+    "unit": "restore_scan",
+    "target": "src/akas/ops/gdn/cuda/recompute.py",
+    "kind": "definition",
+    "selector": "restore_scan",
+    "sha256": "5225cbd8f4936c089cdcad80be5e27c9b13ea9e77958bb5ebc6688801d1437f7"
+  },
+  {
+    "source": "src/akas/kernels/recurrent/recompute.py",
+    "unit": "restore_conv",
+    "target": "src/akas/ops/gdn/cuda/recompute.py",
+    "kind": "definition",
+    "selector": "restore_conv",
+    "sha256": "1a363b2e778fcaac47b74214ccd36a2505df7c89095944d8c710aca03904369c"
+  },
+  {
+    "source": "src/akas/kernels/recurrent/recurrent.py",
+    "unit": "make_kernel",
+    "target": "src/akas/ops/gdn/cuda/journal.py",
+    "kind": "definition",
+    "selector": "make_kernel",
+    "sha256": "634edf6b9136ec93176bb50490925c928bc85070885288fc0461e0a57649a4bc"
+  },
+  {
+    "source": "src/akas/kernels/speculation/mtp.py",
+    "unit": "make_kernel",
+    "target": "src/akas/ops/mtp/cuda.py",
+    "kind": "definition",
+    "selector": "make_kernel",
+    "sha256": "314f2141e3a1363ee2f923aa0b15a8f99f29035570b20c4a92536560f424b41d"
+  },
+  {
+    "source": "src/akas/kernels/speculation/speculation.py",
+    "unit": "make_kernel",
+    "target": "src/akas/ops/speculation/cuda.py",
+    "kind": "definition",
+    "selector": "make_kernel",
+    "sha256": "e48f0efe306268c0cd1dd7fed8687f2ccb07986c75f5c1384b156b62fdcabe8b"
+  },
+  {
+    "source": "src/akas/kernels/speculation/speculative.py",
+    "unit": "make_kernel:kind == 'gdn_conv'",
+    "target": "src/akas/ops/gdn/cuda/verification.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'gdn_conv'",
+    "sha256": "e573167cee3da50f67c796a5e9fb03def4b0d25f834a67e56b41ad69a08856b9"
+  },
+  {
+    "source": "src/akas/kernels/speculation/speculative.py",
+    "unit": "make_kernel:kind == 'gdn_scan'",
+    "target": "src/akas/ops/gdn/cuda/verification.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'gdn_scan'",
+    "sha256": "2ab8d0f512d8fd194eb0d4a341cccb5b5476aa8d069cfe92d4abae402d2ab53e"
+  },
+  {
+    "source": "src/akas/kernels/speculation/speculative.py",
+    "unit": "make_kernel:kind == 'restore'",
+    "target": "src/akas/ops/gdn/cuda/verification.py",
+    "kind": "opcode-branch",
+    "selector": "kind == 'restore'",
+    "sha256": "3d1ef2aaf48334dcf1c4cfe292bacde98a42bbc478a286e56ddeb90741f893a6"
+  },
+  {
+    "source": "src/akas/kernels/speculation/speculative.py",
+    "unit": "head_kernel",
+    "target": "src/akas/ops/vocabulary/cuda/speculative.py",
+    "kind": "definition",
+    "selector": "head_kernel",
+    "sha256": "4531485dfbccecc683e8579129c25351673ce198988924c6438f513c4c147cc6"
+  }
+]

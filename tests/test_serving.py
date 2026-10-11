@@ -11,7 +11,8 @@ from aiohttp.test_utils import TestClient, TestServer
 import pytest
 
 from akas import Engine, EngineConfig
-from akas.serving import Service, create_app
+from akas.serving import Service
+from akas.serving import create_app
 
 
 class Model:
@@ -240,7 +241,7 @@ def test_startup_failure_closes_factory_resources():
 
 
 def test_speculative_adapter_exposes_target_limits_for_engine_submission(monkeypatch):
-    import akas.generation.batched_mtp as mtp
+    import akas.execution.compact_batch.speculative as mtp
 
     closed = []
     target = SimpleNamespace(

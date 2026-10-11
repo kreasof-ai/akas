@@ -16,14 +16,14 @@ def build(tmp_path, kind, p):
     entry = tmp_path / (kind + "-" + str(p.get("kv_dtype", "bfloat16")) + ".py")
     entry.write_text(
         export_source(
-            "akas.kernels.hybrid.hybrid",
-            "make_kernel",
+            "akas.profiles.fixed_slots.factories",
+            "decode_factory",
             kind,
             p,
             dependencies=(
-                'tensor.compiler.frontend.source',
-                'tensor.compiler.cuda.lowering',
-                "akas.kernels.attention.fp8_kv",
+                "tensor.compiler.frontend.source",
+                "tensor.compiler.cuda.lowering",
+                "akas.ops.attention.cuda.kv_fp8",
             ),
         )
     )

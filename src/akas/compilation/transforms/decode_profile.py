@@ -10,8 +10,8 @@ import hashlib, json
 from pathlib import Path
 from akas.compilation.build import export_source
 from akas.compilation.build import build_artifact
-from akas.execution.hybrid.model import implementation_hashes
-from akas.compilation.profiles.hybrid.decode import produce as produce_base
+from akas.artifacts.fingerprints import fixed_slots_hashes as implementation_hashes
+from akas.compilation.profiles.fixed_slots.decode import produce as produce_base
 from akas.compilation.transforms.projections import mma_bundle
 
 
@@ -50,9 +50,9 @@ def produce(
                 factory,
                 *args,
                 dependencies=(
-                    'tensor.compiler.frontend.source',
-                    'tensor.compiler.cuda.lowering',
-                    "akas.kernels.elementwise",
+                    "tensor.compiler.frontend.source",
+                    "tensor.compiler.cuda.lowering",
+                    "akas.ops.normalization.kernels",
                 ),
             )
         )
@@ -64,13 +64,13 @@ def produce(
         if kind == "bf16_linear":
             if p["o"] in (1, 32, 256):
                 compile_row(
-                    key, row, "akas.kernels.linear.matmul", "bf16_decode_kernel", p
+                    key, row, "akas.ops.linear.cuda.block_fp8", "bf16_decode_kernel", p
                 )
             else:
                 compile_row(
                     key,
                     row,
-                    "akas.kernels.linear.matmul",
+                    "akas.ops.vocabulary.cuda.bf16",
                     "bf16_head_kernel",
                     dict(p, columns=128, depth=128),
                 )
@@ -78,7 +78,7 @@ def produce(
             compile_row(
                 key,
                 row,
-                "akas.kernels.attention.fp8_kv",
+                "akas.ops.attention.cuda.kv_fp8",
                 "make_kernel",
                 kind,
                 dict(p, packed_loads=True),
@@ -92,7 +92,7 @@ def produce(
             compile_row(
                 key,
                 row,
-                "akas.kernels.linear.matmul",
+                "akas.ops.linear.cuda.block_fp8",
                 "make_kernel",
                 "fp8_experts_mma_prequantized",
                 dict(p, **schedule),
@@ -103,10 +103,13 @@ def produce(
             artifact.unlink()
             entry.write_text(
                 export_source(
-                    "akas.kernels.linear.matmul",
+                    "akas.ops.linear.cuda.block_fp8",
                     "merge_kernel",
                     dict(r=slots, top=8, o=p["o"], partitions=parts),
-                    dependencies=('tensor.compiler.frontend.source', "akas.kernels.elementwise"),
+                    dependencies=(
+                        "tensor.compiler.frontend.source",
+                        "akas.ops.normalization.kernels",
+                    ),
                 )
             )
             build_artifact(entry, artifact, target=target)

@@ -43,10 +43,13 @@ def test_hopper_prefill_attention_preserves_control_bits(
         slots=s, chunk=c, capacity=cap, query_rows=128, key_rows=16, packed_loads=True
     )
     artifacts = []
-    for module, target in [("fp8_kv", "sm_90"), ("hopper_prefill_attention", "sm_90a")]:
+    for module, target in [
+        ("attention.cuda.kv_fp8", "sm_90"),
+        ("attention.cuda.hopper_prefill", "sm_90a"),
+    ]:
         schedule = (
             p
-            if module == "fp8_kv"
+            if module == "attention.cuda.kv_fp8"
             else dict(
                 p,
                 query_rows=query_rows,
@@ -60,10 +63,10 @@ def test_hopper_prefill_attention_preserves_control_bits(
         artifact = entry.with_suffix(".tbin")
         entry.write_text(
             export_source(
-                "akas.kernels." + module,
+                "akas.ops." + module,
                 "attention",
                 schedule,
-                dependencies=('tensor.compiler.frontend.source',),
+                dependencies=("tensor.compiler.frontend.source",),
             )
         )
         build_artifact(
@@ -79,10 +82,10 @@ def test_hopper_prefill_attention_preserves_control_bits(
         artifact = entry.with_suffix(".tbin")
         entry.write_text(
             export_source(
-                "akas.kernels.attention.attention_workspace",
+                "akas.ops.attention.cuda.workspace",
                 "decode",
                 dict(slots=s, capacity=cap),
-                dependencies=('tensor.compiler.frontend.source',),
+                dependencies=("tensor.compiler.frontend.source",),
             )
         )
         build_artifact(
@@ -161,7 +164,9 @@ def tensor_export():return {'kernel':kernel,'outputs':['out']}
 """)
     tensor.build(entry, artifact, compiler="nvrtc")
     (tmp_path / "prefill.json").write_text(
-        json.dumps({"kernels": {"elementwise": {"kind": "elementwise"}}})
+        json.dumps(
+            {"kernels": {"normalization.kernels": {"kind": "normalization.kernels"}}}
+        )
     )
     with tensor.Device() as device:
         kernel = device.load(artifact)
@@ -177,7 +182,7 @@ def tensor_export():return {'kernel':kernel,'outputs':['out']}
         ) as graph:
             executor = SimpleNamespace(
                 device=device,
-                kernels={"elementwise": kernel},
+                kernels={"normalization.kernels": kernel},
                 plan=[(kernel, bound)],
                 graph=graph,
             )
@@ -186,7 +191,7 @@ def tensor_export():return {'kernel':kernel,'outputs':['out']}
             )
             assert (
                 0
-                < result["groups"]["elementwise"]
+                < result["groups"]["normalization.kernels"]
                 <= result["captured_plan_milliseconds"]
             )
             np.testing.assert_array_equal(out.to_numpy(), 2 * np.arange(4096) + 1)
@@ -197,7 +202,7 @@ def tensor_export():return {'kernel':kernel,'outputs':['out']}
     reason="native Hopper projection qualification",
 )
 @pytest.mark.parametrize(
-    "paired", [False, True, "async", "pipeline", "warp", "persistent", "packed"]
+    "paired", [False, True, "async", "pipeline", "warp", "persistent", "quantization"]
 )
 @pytest.mark.parametrize("columns", [64, 128])
 @pytest.mark.parametrize("grouped", [False, True])
@@ -255,7 +260,7 @@ def test_wide_hopper_projections_preserve_control_bits(
             mma_reorder=True,
             async_mma=paired in ("async", "pipeline"),
         )
-    if paired == "packed":
+    if paired == "quantization":
         p.update(packed_widen=True)
     if paired == "pipeline":
         p.update(stages=2, packed_gather=True)
@@ -268,31 +273,31 @@ def test_wide_hopper_projections_preserve_control_bits(
             bf16_mma=paired != "warp",
         )
         control_module, control_factory, control_args = (
-            "speculative_linear",
+            "moe.cuda.split",
             "expert_kernel",
             [dict(p, block_m=32, stages=2)],
         )
         if parts == 1:
             control_module, control_factory, control_args = (
-                "prefill",
+                "moe.cuda.prefill",
                 "expert_kernel",
                 [dict(p, compact=False, columns=64)],
             )
         selected_module, selected_factory, selected_args = (
-            "hopper_experts",
+            "moe.cuda.hopper",
             "expert_kernel",
             [p],
         )
         if paired == "persistent":
             control_module, control_factory, control_args = (
-                "hopper_experts",
+                "moe.cuda.hopper",
                 "expert_kernel",
                 [dict(p)],
             )
             p.update(persistent_tiles=4)
     else:
         control_module, control_factory, control_args = (
-            "matmul",
+            "linear.cuda.block_fp8",
             "make_kernel",
             [
                 "fp8_linear_mma_prequantized",
@@ -300,7 +305,7 @@ def test_wide_hopper_projections_preserve_control_bits(
             ],
         )
         selected_module, selected_factory, selected_args = (
-            "hopper_dense",
+            "linear.cuda.hopper",
             "make_kernel",
             [p],
         )
@@ -325,12 +330,12 @@ def test_wide_hopper_projections_preserve_control_bits(
         artifact = entry.with_suffix(".tbin")
         entry.write_text(
             export_source(
-                "akas.kernels." + module,
+                "akas.ops." + module,
                 factory,
                 *args,
                 dependencies=(
-                    'tensor.compiler.frontend.source',
-                    "akas.kernels.linear.fp8_operand",
+                    "tensor.compiler.frontend.source",
+                    "akas.ops.quantization.cuda.fp8_operand",
                 ),
             )
         )
@@ -395,7 +400,7 @@ def test_wide_hopper_projections_preserve_control_bits(
     os.environ.get("TENSOR_QWEN_CUDA") != "1",
     reason="native Hopper dense Split-K qualification",
 )
-@pytest.mark.parametrize("paired", [True, "async", "packed"])
+@pytest.mark.parametrize("paired", [True, "async", "quantization"])
 @pytest.mark.parametrize("columns", [64, 128])
 def test_hopper_dense_preserves_eight_part_control_bits(tmp_path, paired, columns):
     test_wide_hopper_projections_preserve_control_bits(
@@ -460,9 +465,9 @@ def test_hopper_query_tiles_preserve_long_window_causality(
         entry.write_text(
             export_source(
                 (
-                    "akas.kernels.attention.hopper_attention"
+                    "akas.ops.attention.cuda.hopper"
                     if kind == "partial"
-                    else "akas.kernels.attention.speculative_attention"
+                    else "akas.ops.attention.cuda.split"
                 ),
                 kind,
                 dict(
@@ -475,7 +480,7 @@ def test_hopper_query_tiles_preserve_long_window_causality(
                     query_tokens=query_tokens,
                     decoded_kv=decoded if kind == "partial" else False,
                 ),
-                dependencies=('tensor.compiler.frontend.source',),
+                dependencies=("tensor.compiler.frontend.source",),
             )
         )
         build_artifact(
@@ -488,10 +493,10 @@ def test_hopper_query_tiles_preserve_long_window_causality(
         artifacts.append(out)
     if decoded:
         for name, module, factory, schedule in (
-            ("decode", "attention_workspace", "decode", dict(slots=s, capacity=cap)),
+            ("decode", "attention.cuda.workspace", "decode", dict(slots=s, capacity=cap)),
             (
                 "control",
-                "hopper_attention",
+                "attention.cuda.hopper",
                 "partial",
                 dict(
                     slots=s,
@@ -507,10 +512,10 @@ def test_hopper_query_tiles_preserve_long_window_causality(
             entry = tmp_path / (name + ".py")
             entry.write_text(
                 export_source(
-                    "akas.kernels." + module,
+                    "akas.ops." + module,
                     factory,
                     schedule,
-                    dependencies=('tensor.compiler.frontend.source',),
+                    dependencies=("tensor.compiler.frontend.source",),
                 )
             )
             build_artifact(

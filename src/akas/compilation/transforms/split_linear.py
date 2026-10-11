@@ -1,14 +1,18 @@
 """Add routed and dense small-chunk FP8 Split-K projection candidates."""
 
 from akas.compilation.build import build
-from akas.compilation.plan import Bundle, Kernel, Source
+from akas.compilation.plan import Bundle
+from akas.compilation.plan import Kernel
+from akas.compilation.plan import Source
 
 import hashlib
 import json
 from pathlib import Path
 import shutil
-from akas.artifacts.hybrid import identity
-from akas.execution.optimizations.split_linear import implementation_hashes
+from akas.artifacts.kernels import identity
+from akas.artifacts.fingerprints import (
+    fixed_slots_hashes as implementation_hashes,
+)
 
 
 def produce(
@@ -59,7 +63,7 @@ def produce(
                 matmul=add(
                     "small_bf16",
                     p,
-                    "akas.kernels.linear.matmul",
+                    "akas.ops.linear.cuda.block_fp8",
                     "bf16_decode_kernel",
                     p,
                 )
@@ -78,7 +82,7 @@ def produce(
             matmul = add(
                 "split_experts",
                 selected,
-                "akas.kernels.linear.matmul",
+                "akas.ops.linear.cuda.block_fp8",
                 "make_kernel",
                 "fp8_experts_mma_prequantized",
                 dict(
@@ -94,7 +98,7 @@ def produce(
             matmul = add(
                 "split_experts",
                 selected,
-                "akas.kernels.linear.speculative_linear",
+                "akas.ops.moe.cuda.split",
                 "expert_kernel",
                 dict(
                     rows=p["r"],
@@ -112,7 +116,7 @@ def produce(
             matmul = add(
                 "split_dense",
                 selected,
-                "akas.kernels.linear.matmul",
+                "akas.ops.linear.cuda.block_fp8",
                 "make_kernel",
                 "fp8_linear_mma_prequantized",
                 dict(
@@ -131,7 +135,7 @@ def produce(
         merge = add(
             "split_linear_merge",
             merge_p,
-            "akas.kernels.linear.matmul",
+            "akas.ops.linear.cuda.block_fp8",
             "merge_kernel",
             merge_p,
         )
@@ -147,8 +151,8 @@ def produce(
         key = add(
             "fixed_routes",
             p,
-            "akas.kernels.hybrid.hybrid",
-            "make_kernel",
+            "akas.profiles.fixed_slots.factories",
+            "decode_factory",
             "moe_groups",
             p,
         )

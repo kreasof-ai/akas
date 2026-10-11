@@ -1,0 +1,1 @@
+"""Shared optimizations implementation."""

@@ -17,7 +17,7 @@ import tensor
 from akas import GGUF
 from akas import LFM2
 from akas import Tokenizer
-from akas.artifacts.packed import implementation_hashes
+from akas.artifacts.fingerprints import independent_hashes as implementation_hashes
 
 
 def digest(path):

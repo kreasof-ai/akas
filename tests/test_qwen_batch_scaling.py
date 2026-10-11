@@ -177,7 +177,7 @@ def test_padded_short_attention_preserves_parent_accumulation(tmp_path):
         artifact = entry.with_suffix(".tbin")
         entry.write_text(
             export_source(
-                "akas.kernels.attention.hopper_attention",
+                "akas.ops.attention.cuda.hopper",
                 "partial",
                 dict(
                     slots=slots,
@@ -190,7 +190,7 @@ def test_padded_short_attention_preserves_parent_accumulation(tmp_path):
                     packed_loads=True,
                     decoded_kv=decoded,
                 ),
-                dependencies=('tensor.compiler.frontend.source',),
+                dependencies=("tensor.compiler.frontend.source",),
             )
         )
         build_artifact(

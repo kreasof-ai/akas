@@ -13,8 +13,8 @@ GPU = pytest.mark.skipif(
 
 
 def test_cuda_profile_rows_are_explicit():
-    from akas.execution.profiles.selection import valid_rows
-    from akas.artifacts.packed import requirements
+    from akas.profiles.independent.selection import valid_rows
+    from akas.profiles.independent.requirements import requirements
     from test_contracts import fixture
 
     assert valid_rows("cuda", (1, 128), "default")
@@ -27,7 +27,7 @@ def test_cuda_profile_rows_are_explicit():
 
 def build(kind, parameters, directory, generator=None):
     import tensor
-    from akas.kernels.packed.cuda import source
+    from akas.compilation.source import export_kernel as source
 
     path = directory / (kind + ".py")
     path.write_text((generator or source)(kind, parameters))
@@ -73,13 +73,17 @@ def test_packed_projection_and_epilogues_against_numpy(tmp_path, encoding):
             args = (
                 (dx, dw, dw, out)
                 if kind == "ffn"
-                else (dx, dw, dr, out) if kind == "linear_add" else (dx, dw, out)
+                else (dx, dw, dr, out)
+                if kind == "linear_add"
+                else (dx, dw, out)
             )
             kernel.launch(*args)
             expected = (
                 dot / (1 + np.exp(-dot)) * dot
                 if kind == "ffn"
-                else dot + residual if kind == "linear_add" else dot
+                else dot + residual
+                if kind == "linear_add"
+                else dot
             )
             np.testing.assert_allclose(out.to_numpy(), expected, rtol=2e-5, atol=2e-5)
 
@@ -136,7 +140,7 @@ def test_staged_prefill_pairs_and_padding(tmp_path, encoding, rows, kind):
     import torch
     import tensor
     from akas import GGUF
-    from akas.kernels.packed.cuda import prefill_source
+    from akas.compilation.source import export_kernel as prefill_source
 
     g = GGUF(ROOT / "build/lfm2-diagnostic.gguf")
     k, o = 256, 63

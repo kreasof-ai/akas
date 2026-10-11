@@ -9,8 +9,13 @@ from pathlib import Path
 import numpy as np
 import tensor
 from tensor.providers.webgpu.device import Device
-from akas.kernels.packed.webgpu import source
-from benchmarks.lfm2.tensor_projection_search import TimestampAdapter, Timer, bind, check
+from akas.compilation.source import export_kernel as source
+from benchmarks.lfm2.tensor_projection_search import (
+    TimestampAdapter,
+    Timer,
+    bind,
+    check,
+)
 
 
 def run(out):
@@ -58,7 +63,14 @@ def run(out):
             name = spec["name"]
             path = out / (name + ".py")
             artifact = path.with_suffix(".tbin")
-            path.write_text(source("attention", p))
+            path.write_text(
+                source(
+                    "akas.profiles.independent.factories",
+                    "packed_webgpu_factory",
+                    "attention",
+                    p,
+                )
+            )
             artifact.unlink(missing_ok=True)
             row = {"name": name, "parameters": p, "validation": [], "positions": {}}
             try:

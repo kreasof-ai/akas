@@ -1,6 +1,7 @@
 """Reuse successful physical kernel checks only for identical source and tools."""
 
-from akas.compilation.paths import source_path, tensor_source
+from akas.compilation.paths import source_path
+from akas.compilation.paths import tensor_source
 
 import hashlib
 import json

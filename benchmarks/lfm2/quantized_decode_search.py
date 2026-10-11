@@ -11,7 +11,7 @@ import tensor
 from tensor.providers.webgpu.device import Device
 from akas import GGUF
 from akas.checkpoints.gguf import dequantize
-from akas.kernels.packed.webgpu import source
+from akas.compilation.source import export_kernel as source
 from benchmarks.lfm2.tensor_projection_search import TimestampAdapter, bind, check
 from benchmarks.lfm2.decode_fusion_search import PlanTimer
 
@@ -39,8 +39,9 @@ def candidates(kind, k, o, q):
             for u in (1, 4):
                 if k % (l * 8 * u):
                     continue
-                yield f"l{l}-t{t}-u{u}", dict(
-                    p, gemv_lanes=l, gemv_threads=t, gemv_dot=True, gemv_unroll=u
+                yield (
+                    f"l{l}-t{t}-u{u}",
+                    dict(p, gemv_lanes=l, gemv_threads=t, gemv_dot=True, gemv_unroll=u),
                 )
     else:
         yield "selected-control", dict(p, gemv_threads=64, gemv_unroll=8)
@@ -57,19 +58,23 @@ def candidates(kind, k, o, q):
             ):
                 if k % (256 * u):
                     continue
-                yield f"t{t}-u{u}-a{chains}", dict(
-                    p, gemv_threads=t, gemv_unroll=u, gemv_chains=chains
+                yield (
+                    f"t{t}-u{u}-a{chains}",
+                    dict(p, gemv_threads=t, gemv_unroll=u, gemv_chains=chains),
                 )
         for t in (64, 128, 256):
             for u, chains in ((1, 1), (2, 1), (2, 2), (4, 1), (4, 4), (8, 1)):
                 if k % (256 * u):
                     continue
-                yield f"dot-t{t}-u{u}-a{chains}", dict(
-                    p,
-                    gemv_q6_dot=True,
-                    gemv_threads=t,
-                    gemv_unroll=u,
-                    gemv_chains=chains,
+                yield (
+                    f"dot-t{t}-u{u}-a{chains}",
+                    dict(
+                        p,
+                        gemv_q6_dot=True,
+                        gemv_threads=t,
+                        gemv_unroll=u,
+                        gemv_chains=chains,
+                    ),
                 )
 
 
@@ -122,7 +127,7 @@ def run(model, out, encoding=None):
                 sha256=hashlib.sha256(Path(p).read_bytes()).hexdigest(),
                 text=Path(p).read_text(),
             )
-            for p in (__file__, "src/akas/kernels/packed/webgpu.py")
+            for p in (__file__, *('src/akas/compilation/source.py', 'src/akas/ops/attention/webgpu/packed.py', 'src/akas/ops/linear/webgpu/packed.py', 'src/akas/ops/normalization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/storage.py', 'src/akas/ops/reductions/webgpu.py', 'src/akas/ops/sequence/webgpu/packed.py', 'src/akas/ops/vocabulary/webgpu/packed.py', 'src/akas/profiles/independent/factories.py'))
         },
         protocol="Native packed weights and F32 activations/output, floating dots, no activation quantization. Every matrix in each group streamed with distinct output; 150ms continuous warmup and 7 two-plan GPU timestamp samples. Control and best three independently replayed in rotating order after three warmups; winners checked on every affected weight with three held-out scales. Timestamp period 10ns.",
     )
@@ -171,8 +176,15 @@ def run(model, out, encoding=None):
                     record = dict(label=label, parameters=p)
                     kernel = plan = timer = None
                     try:
-                        path = out / f'{kind}-{k}-{o}-{q}-{len(row["records"])}.py'
-                        path.write_text(source(kind, p))
+                        path = out / f"{kind}-{k}-{o}-{q}-{len(row['records'])}.py"
+                        path.write_text(
+                            source(
+                                "akas.profiles.independent.factories",
+                                "packed_webgpu_factory",
+                                kind,
+                                p,
+                            )
+                        )
                         artifact = path.with_suffix(".tbin")
                         artifact.unlink(missing_ok=True)
                         tensor.build(

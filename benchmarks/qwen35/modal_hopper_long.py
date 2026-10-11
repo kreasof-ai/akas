@@ -24,7 +24,7 @@ def prepare_dense_tiles(prepared, asynchronous=False):
     hashes = {
         str(p): hashlib.sha256(p.read_bytes()).hexdigest()
         for p in (
-            Path("src/akas/kernels/linear/hopper_dense.py"),
+            Path('src/akas/ops/linear/cuda/hopper.py'),
             Path("src/akas/compilation/transforms/hopper_verification.py"),
         )
     }
@@ -99,7 +99,7 @@ def prepare_expert_tiles(
     hashes = {
         str(p): hashlib.sha256(p.read_bytes()).hexdigest()
         for p in (
-            Path("src/akas/kernels/moe/hopper_experts.py"),
+            Path('src/akas/ops/moe/cuda/hopper.py'),
             Path("src/akas/compilation/transforms/hopper_verification.py"),
         )
     }
@@ -201,7 +201,7 @@ def prepare_query_tiles(prepared, query_tokens, key_rows=32, kernel_target="sm_9
     hashes = {
         str(p): hashlib.sha256(p.read_bytes()).hexdigest()
         for p in (
-            Path("src/akas/kernels/attention/hopper_attention.py"),
+            Path('src/akas/ops/attention/cuda/hopper.py'),
             Path("src/akas/compilation/transforms/split_attention.py"),
         )
     }
@@ -283,12 +283,14 @@ def query_main(
 def prepare_long(prepared, chunk, prefix_mma="mma-experts"):
     import hashlib, json, os
     from pathlib import Path
-    from akas.compilation.profiles.hybrid.prefill import produce as prefill
-    from akas.compilation.profiles.hybrid.verification import produce as verify
+    from akas.compilation.profiles.fixed_slots.prefill import produce as prefill
+    from akas.compilation.profiles.fixed_slots.verification import produce as verify
     from akas.compilation.transforms.split_attention import produce as attention
     from akas.compilation.transforms.split_linear import produce as linear
-    from akas.compilation.transforms.hopper_verification import produce as compact_verify
-    from akas.compilation.profiles.hybrid.draft_prefill import produce as repair
+    from akas.compilation.transforms.hopper_verification import (
+        produce as compact_verify,
+    )
+    from akas.compilation.profiles.fixed_slots.draft_prefill import produce as repair
 
     os.chdir("/workspace")
     volume.reload()
@@ -337,7 +339,9 @@ def prepare_long(prepared, chunk, prefix_mma="mma-experts"):
     )
     selected = linear(split, root / "linear", expert_block_m=32)
     paths["verify"] = str(compact_verify(selected, root / "compact"))
-    repaired = repair(_CompilationQwen35Checkpoint(checkpoint, branch="mtp"), small, root / "repair")
+    repaired = repair(
+        _CompilationQwen35Checkpoint(checkpoint, branch="mtp"), small, root / "repair"
+    )
     paths["repair"] = str(
         attention(
             repaired,

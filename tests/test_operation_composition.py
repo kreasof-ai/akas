@@ -4,9 +4,10 @@ from types import SimpleNamespace
 
 from akas.artifacts.kernels import identity
 from akas.execution.plan import KernelPlan
-from akas.ops.linear import linear, split_linear
-from akas.ops.normalization import rms_norm
-from akas.ops.quantization import ActivationCache
+from akas.ops.linear.compose import linear
+from akas.ops.linear.compose import split_linear
+from akas.ops.normalization.compose import rms_norm
+from akas.ops.quantization.cache import ActivationCache
 
 
 class Plan:

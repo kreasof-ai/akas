@@ -20,7 +20,9 @@ def prepare_compact(prepared):
     import os
     from pathlib import Path
     from akas.compilation.transforms.compact_experts import produce
-    from akas.execution.optimizations.compact_prefill import implementation_hashes
+    from akas.artifacts.fingerprints import (
+        fixed_slots_hashes as implementation_hashes,
+    )
 
     os.chdir("/workspace")
     volume.reload()
@@ -72,7 +74,7 @@ def measure_compact(prepared, run_id):
     import tensor
     from akas import Qwen35Batch
     from akas import Qwen35Prefill
-    from akas.execution.optimizations.compact_prefill import install
+    from akas.execution.fixed_slots.optimizations.compact_prefill import install
     from benchmarks.qwen35.whole_tune import Snapshot
     from benchmarks.llm_serving.runner import run as replay
 
@@ -174,11 +176,13 @@ def measure_compact(prepared, run_id):
             compact = Qwen35Prefill(model, prepared["prefill"])
             install(compact, prepared["prefill"])
             if prepared.get("hopper"):
-                from akas.execution.optimizations.hopper import install as install_hopper
+                from akas.execution.fixed_slots.optimizations.hopper import (
+                    install as install_hopper,
+                )
 
                 install_hopper(compact, prepared["hopper"])
             if prepared.get("attention_workspace"):
-                from akas.execution.optimizations.attention_workspace import (
+                from akas.execution.fixed_slots.optimizations.attention_workspace import (
                     install as install_workspace,
                 )
 

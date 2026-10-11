@@ -43,7 +43,7 @@ def prefill(prepared, out, columns=64, packed_widen=False):
             packed_widen=packed_widen,
         )
         if row["kind"] == "compact_fp8_experts":
-            module, factory = "moe.hopper_experts", "expert_kernel"
+            module, factory = "moe.cuda.hopper", "expert_kernel"
             schedule.update(
                 rows=original["slots"] * original["chunk"],
                 k=p["k"],
@@ -53,18 +53,18 @@ def prefill(prepared, out, columns=64, packed_widen=False):
                 bf16_mma=True,
             )
         else:
-            module, factory = "linear.hopper_dense", "make_kernel"
+            module, factory = "linear.cuda.hopper", "make_kernel"
             schedule.update(p)
         entry = destination.with_suffix(".py")
         entry.write_text(
             export_source(
-                "akas.kernels." + module,
+                "akas.ops." + module,
                 factory,
                 schedule,
                 dependencies=(
-                    'tensor.compiler.frontend.source',
-                    "akas.kernels.linear.fp8_operand",
-                    "akas.kernels.elementwise",
+                    "tensor.compiler.frontend.source",
+                    "akas.ops.quantization.cuda.fp8_operand",
+                    "akas.ops.normalization.kernels",
                 ),
             )
         )
@@ -116,13 +116,13 @@ def dense_verification(source, out, columns=64, packed_widen=False):
         entry = destination.with_suffix(".py")
         entry.write_text(
             export_source(
-                "akas.kernels.linear.hopper_dense",
+                "akas.ops.linear.cuda.hopper",
                 "make_kernel",
                 schedule,
                 dependencies=(
-                    'tensor.compiler.frontend.source',
-                    "akas.kernels.linear.fp8_operand",
-                    "akas.kernels.elementwise",
+                    "tensor.compiler.frontend.source",
+                    "akas.ops.quantization.cuda.fp8_operand",
+                    "akas.ops.normalization.kernels",
                 ),
             )
         )

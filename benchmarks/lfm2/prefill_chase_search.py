@@ -1,6 +1,7 @@
 """F16 prefill schedule replay with fused FFNs and complete group weight traffic."""
 
-from akas.compilation.paths import source_path, tensor_source
+from akas.compilation.paths import source_path
+from akas.compilation.paths import tensor_source
 
 from pathlib import Path as _Path
 import sys as _sys
@@ -12,11 +13,16 @@ import numpy as np
 import tensor
 from tensor.providers.webgpu.device import Device
 from akas import GGUF
-from akas.execution.profiles.selection import webgpu_parameters
-from akas.execution.profiles.selection import projection_tile
-from akas.kernels.packed.webgpu import source
+from akas.profiles.independent.selection import webgpu_parameters
+from akas.profiles.independent.selection import projection_tile
+from akas.compilation.source import export_kernel as source
 from tensor.compiler.webgpu.schedules.outer_product import outer_product_matmul_schedule
-from benchmarks.lfm2.tensor_projection_search import TimestampAdapter, bind, oracle, check
+from benchmarks.lfm2.tensor_projection_search import (
+    TimestampAdapter,
+    bind,
+    oracle,
+    check,
+)
 from benchmarks.lfm2.decode_fusion_search import PlanTimer
 
 
@@ -51,10 +57,13 @@ def candidates(
                             "lhs_pad": padding,
                             "rhs_pad": padding,
                         }
-                        yield f"half-layout-{owner}-{group}-{padding}", {
-                            **current,
-                            "outer": config,
-                        }
+                        yield (
+                            f"half-layout-{owner}-{group}-{padding}",
+                            {
+                                **current,
+                                "outer": config,
+                            },
+                        )
             return
         shapes = ((16, 32, 2, 4), (32, 64, 4, 4), (64, 64, 4, 4), (64, 128, 4, 8))
         if wide:
@@ -83,12 +92,15 @@ def candidates(
                         packed_pairs=True,
                         half_accum=True,
                     )
-                    yield f"half-{tm}-{tn}-{tk}-{mm}-{mn}-{unroll}", {
-                        **p,
-                        "sg": True,
-                        "schedule": "outer",
-                        "outer": config,
-                    }
+                    yield (
+                        f"half-{tm}-{tn}-{tk}-{mm}-{mn}-{unroll}",
+                        {
+                            **p,
+                            "sg": True,
+                            "schedule": "outer",
+                            "outer": config,
+                        },
+                    )
         return
     if packed_pairs:
         yield "control", webgpu_parameters(kind, p, "quant_searched")
@@ -120,12 +132,15 @@ def candidates(
                     dot_width=2,
                     packed_pairs=True,
                 )
-                yield f"packed-{tm}-{tn}-{tk}-{mm}-{mn}", {
-                    **p,
-                    "sg": True,
-                    "schedule": "outer",
-                    "outer": config,
-                }
+                yield (
+                    f"packed-{tm}-{tn}-{tk}-{mm}-{mn}",
+                    {
+                        **p,
+                        "sg": True,
+                        "schedule": "outer",
+                        "outer": config,
+                    },
+                )
         return
     if dots:
         current = webgpu_parameters(kind, p, "quant_searched")
@@ -158,23 +173,29 @@ def candidates(
                     if tk * (tm + (2 if kind == "ffn" else 1) * tn) * 2 > 32768:
                         continue
                     outer_product_matmul_schedule(r, k, o, dtype="float16", **config)
-                    yield f"dot{width}-{tm}-{tn}-{tk}-{mm}-{mn}", {
-                        **p,
-                        "sg": True,
-                        "schedule": "outer",
-                        "outer": config,
-                    }
+                    yield (
+                        f"dot{width}-{tm}-{tn}-{tk}-{mm}-{mn}",
+                        {
+                            **p,
+                            "sg": True,
+                            "schedule": "outer",
+                            "outer": config,
+                        },
+                    )
         return
     if cached:
         current = webgpu_parameters(kind, p, "quant_searched")
         yield "control", current
         if current.get("schedule") == "outer":
             for dtype in ("float16", "float32"):
-                yield "cached-current-" + dtype, {
-                    **current,
-                    "type": 1,
-                    "outer_shared_dtype": dtype,
-                }
+                yield (
+                    "cached-current-" + dtype,
+                    {
+                        **current,
+                        "type": 1,
+                        "outer_shared_dtype": dtype,
+                    },
+                )
         for tm, tn, mm, mn in (
             (64, 64, 4, 4),
             (64, 128, 4, 8),
@@ -207,14 +228,17 @@ def candidates(
                     if shared > 32768:
                         continue
                     outer_product_matmul_schedule(r, k, o, dtype=dtype, **config)
-                    yield f"cached-{tm}-{tn}-{tk}-{mm}-{mn}-{dtype}", {
-                        **p,
-                        "type": 1,
-                        "sg": True,
-                        "schedule": "outer",
-                        "outer_shared_dtype": dtype,
-                        "outer": config,
-                    }
+                    yield (
+                        f"cached-{tm}-{tn}-{tk}-{mm}-{mn}-{dtype}",
+                        {
+                            **p,
+                            "type": 1,
+                            "sg": True,
+                            "schedule": "outer",
+                            "outer_shared_dtype": dtype,
+                            "outer": config,
+                        },
+                    )
         return
     if wide:
         current = webgpu_parameters(kind, p, "quant_searched")
@@ -254,24 +278,30 @@ def candidates(
                     if shared > 32768:
                         continue
                     outer_product_matmul_schedule(r, k, o, dtype="float32", **config)
-                    yield f"wide-{tm}-{tn}-{tk}-{mm}-{mn}-{layout}-{ap}", {
-                        **p,
-                        "sg": True,
-                        "schedule": "outer",
-                        "outer_shared_dtype": "float32",
-                        "outer": config,
-                    }
+                    yield (
+                        f"wide-{tm}-{tn}-{tk}-{mm}-{mn}-{layout}-{ap}",
+                        {
+                            **p,
+                            "sg": True,
+                            "schedule": "outer",
+                            "outer_shared_dtype": "float32",
+                            "outer": config,
+                        },
+                    )
         return
     baseline = webgpu_parameters(kind, p, "prefill_chunked")
     yield "control", baseline
     yield "unrolled", webgpu_parameters(kind, p, "prefill_unrolled")
     if baseline.get("schedule") == "partitioned":
         for u in (8, 16):
-            yield "partitioned-u" + str(u), {
-                **baseline,
-                "unroll": u,
-                "explicit_unroll": True,
-            }
+            yield (
+                "partitioned-u" + str(u),
+                {
+                    **baseline,
+                    "unroll": u,
+                    "explicit_unroll": True,
+                },
+            )
     for tm, tn, mm, mn in (
         (16, 32, 2, 4),
         (32, 32, 2, 2),
@@ -300,12 +330,15 @@ def candidates(
             if kind == "ffn" and mm * mn > 32:
                 continue
             outer_product_matmul_schedule(r, k, o, dtype="float16", **config)
-            yield f"outer-{tm}-{tn}-{tk}-{mm}-{mn}", {
-                **p,
-                "sg": True,
-                "schedule": "outer",
-                "outer": config,
-            }
+            yield (
+                f"outer-{tm}-{tn}-{tk}-{mm}-{mn}",
+                {
+                    **p,
+                    "sg": True,
+                    "schedule": "outer",
+                    "outer": config,
+                },
+            )
 
 
 def reference(x, weights):
@@ -406,8 +439,8 @@ def run(
         for p in (
             __file__,
             "src/tensor/compiler/webgpu_lowering.py",
-            "src/akas/kernels/packed/webgpu.py",
-            "src/akas/execution/packed/model.py",
+            *('src/akas/compilation/source.py', 'src/akas/ops/attention/webgpu/packed.py', 'src/akas/ops/linear/webgpu/packed.py', 'src/akas/ops/normalization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/storage.py', 'src/akas/ops/reductions/webgpu.py', 'src/akas/ops/sequence/webgpu/packed.py', 'src/akas/ops/vocabulary/webgpu/packed.py', 'src/akas/profiles/independent/factories.py'),
+            'src/akas/execution/independent/resident.py',
         )
     }
     report = dict(
@@ -425,9 +458,9 @@ def run(
         protocol="Native GGUF weights (F16 or packed), F32 activation ABI and decoded weights rounded nearest-even to F16 operands, F32 accumulation/output, fused gate/up/SwiGLU. All matrices in the shape group streamed per sample with distinct outputs. 100ms warmup, 7 timestamp batches of two complete group plans, normalized per matrix. Every candidate checked against float64, winners checked on all weights and three held-out input scales. Vulkan timestamp period 10ns.",
     )
     if half_accum:
-        report[
-            "protocol"
-        ] += " Half candidates explicitly use short F16 FMA chains (outer.unroll operations per even/odd K chain), then F32 totals. Float64 kernel bounds include half rounding/underflow. Full-model acceptance keeps the original independent NumPy logits gate."
+        report["protocol"] += (
+            " Half candidates explicitly use short F16 FMA chains (outer.unroll operations per even/odd K chain), then F32 totals. Float64 kernel bounds include half rounding/underflow. Full-model acceptance keeps the original independent NumPy logits gate."
+        )
     if prior is not None:
         if (
             prior["status"] != "finished"
@@ -547,7 +580,14 @@ def run(
                         kernel = plan = timer = None
                         try:
                             path = out / f"{kind}-{r}-{k}-{o}-{i}.py"
-                            path.write_text(source(kind, p))
+                            path.write_text(
+                                source(
+                                    "akas.profiles.independent.factories",
+                                    "packed_webgpu_factory",
+                                    kind,
+                                    p,
+                                )
+                            )
                             artifact = path.with_suffix(".tbin")
                             artifact.unlink(missing_ok=True)
                             tensor.build(

@@ -18,11 +18,11 @@ def build(tmp_path, kind, p):
     artifact = entry.with_suffix(".tbin")
     entry.write_text(
         export_source(
-            "akas.kernels.hybrid.hybrid_prefill",
-            "make_kernel",
+            "akas.profiles.fixed_slots.factories",
+            "prefill_factory",
             kind,
             p,
-            dependencies=('tensor.compiler.frontend.source',),
+            dependencies=("tensor.compiler.frontend.source",),
         )
     )
     build_artifact(
@@ -188,7 +188,7 @@ def test_causal_chunk_attention_matches_independent_dense_attention(tmp_path, kv
 @GPU
 def test_decode_attention_merge_rounds_before_gate(tmp_path):
     import tensor, torch
-    from akas.kernels.hybrid.hybrid import source
+    from akas.compilation.source import export_kernel as source
     from tensor.compiler.build import build_artifact
 
     slots, splits = 8, 16
@@ -213,7 +213,14 @@ def test_decode_attention_merge_rounds_before_gate(tmp_path):
     expected = (value * gate.sigmoid()).bfloat16().float().reshape(slots, 4096).numpy()
     entry = tmp_path / "merge.py"
     artifact = entry.with_suffix(".tbin")
-    entry.write_text(source("attention_merge", dict(r=slots, splits=splits)))
+    entry.write_text(
+        source(
+            "akas.profiles.fixed_slots.factories",
+            "decode_factory",
+            "attention_merge",
+            dict(r=slots, splits=splits),
+        )
+    )
     build_artifact(
         entry,
         artifact,
@@ -272,10 +279,10 @@ def test_large_expert_tiles_preserve_hot_experts_and_tail_rows(tmp_path, routed)
     artifact = entry.with_suffix(".tbin")
     entry.write_text(
         export_source(
-            "akas.kernels.hybrid.hybrid_prefill",
+            "akas.ops.moe.cuda.prefill",
             "expert_kernel",
             dict(rows=rows, k=k, o=o, routed_input=routed, block_m=64, threads=256),
-            dependencies=('tensor.compiler.frontend.source',),
+            dependencies=("tensor.compiler.frontend.source",),
         )
     )
     build_artifact(

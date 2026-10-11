@@ -16,7 +16,7 @@ from tensor.compiler.search import ScheduleSearch
 from tensor.compiler.webgpu.schedules.search_space import SPACES, coupled_moves
 from akas import GGUF
 from benchmarks.lfm2.text_helpers import emit, round_half
-from akas.kernels.packed.webgpu import source
+from akas.compilation.source import export_kernel as source
 from wgpu.backends.wgpu_native.extras import write_timestamp
 
 
@@ -41,7 +41,12 @@ def program(r, k, o, config):
     if family == "staged":
         tm, tn, bk = (p.pop(a) for a in ("tile_m", "tile_n", "tile_k"))
         # Producer helper now honors explicit thread counts for staged schedules.
-        return source("linear", dict(r=r, k=k, o=o, type=1, tile=(tm, tn, bk), **p))
+        return source(
+            "akas.profiles.independent.factories",
+            "packed_webgpu_factory",
+            "linear",
+            dict(r=r, k=k, o=o, type=1, tile=(tm, tn, bk), **p),
+        )
     if family == "partitioned_rows":
         p["owner_axis"] = "row"
     lhs = round_half("x[({row}) * " + str(k) + " + ({k})]")
@@ -79,7 +84,7 @@ class Timer:
         )
 
     def sample(self, dispatches=1):
-        decode_projections, group, grid = self.plan.nodes[0]
+        pipeline, group, grid = self.plan.nodes[0]
         gpu = self.device._gpu
         encoder = gpu.create_command_encoder()
         compute = encoder.begin_compute_pass()

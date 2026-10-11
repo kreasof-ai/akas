@@ -50,7 +50,7 @@ def test_real_model_graph_eager_reset_and_capacity(graphs):
 
 def test_manifest_implementation_and_artifact_checksum_rejected(tmp_path):
     manifest = json.loads((BUNDLE / "inference.json").read_text())
-    manifest["implementation"]["akas.execution.packed.model"] = "bad"
+    manifest["implementation"]["akas.execution.independent.resident"] = "bad"
     (tmp_path / "inference.json").write_text(json.dumps(manifest))
     with tensor.Device() as device:
         with pytest.raises(ValueError, match="implementation mismatch"):

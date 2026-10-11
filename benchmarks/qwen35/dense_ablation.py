@@ -40,7 +40,7 @@ def configurations():
 
 def create_engine(args, config, device):
     from akas.models.qwen35.model import DenseEngine
-    from akas.generation.batched_mtp import SpeculativeEngine
+    from akas.execution.compact_batch.speculative import SpeculativeEngine
 
     target = DenseEngine(
         args.checkpoint, args.bundle, device, fused_head=config["fused_head"]

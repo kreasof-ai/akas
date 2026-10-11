@@ -3,7 +3,9 @@
 import os
 import numpy as np
 import pytest
-from tensor.compiler.webgpu.schedules.packed_integer import packed_integer_matmul_schedule
+from tensor.compiler.webgpu.schedules.packed_integer import (
+    packed_integer_matmul_schedule,
+)
 
 
 @pytest.mark.parametrize(
@@ -51,7 +53,7 @@ def test_two_component_projection_fields_and_precision(
     import tensor
     from akas.checkpoints.gguf import dequantize
     from akas.checkpoints.gguf import prepack_q4_0
-    from akas.kernels.packed.webgpu import source
+    from akas.compilation.source import export_kernel as source
 
     r, k, o = 35, 256, 34
     rng = np.random.default_rng(1462)
@@ -73,6 +75,8 @@ def test_two_component_projection_fields_and_precision(
         path = tmp_path / (name + ".py")
         path.write_text(
             source(
+                "akas.profiles.independent.factories",
+                "packed_webgpu_factory",
                 name,
                 dict(
                     r=r,

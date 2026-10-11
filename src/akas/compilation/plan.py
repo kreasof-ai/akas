@@ -10,17 +10,17 @@ class Source:
     factory: str
     args: tuple = ()
     dependencies: tuple[str, ...] = (
-        'tensor.compiler.frontend.source',
-        "akas.kernels.elementwise",
+        "tensor.compiler.frontend.source",
+        "akas.ops.normalization.kernels",
     )
     export: bool = True
 
     def render(self):
         if not self.export:
             return getattr(import_module(self.module), self.factory)(*self.args)
-        from tensor.compiler.frontend.source import export_source
+        from akas.compilation.source import export_kernel
 
-        return export_source(
+        return export_kernel(
             self.module, self.factory, *self.args, dependencies=self.dependencies
         )
 

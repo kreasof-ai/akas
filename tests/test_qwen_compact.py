@@ -19,10 +19,10 @@ def test_compact_tiles_cover_every_route_once(tmp_path):
     artifact = source.with_suffix(".tbin")
     source.write_text(
         export_source(
-            "akas.kernels.moe.compact_experts",
+            "akas.ops.moe.cuda.compact",
             "tile_map_kernel",
             dict(rows=rows, block_m=m),
-            dependencies=('tensor.compiler.frontend.source',),
+            dependencies=("tensor.compiler.frontend.source",),
         )
     )
     build_artifact(
@@ -99,16 +99,16 @@ def test_compact_experts_match_original_with_shuffled_routes(tmp_path, routed):
     scales = rng.uniform(0.01, 0.1, (256, 1, k // 128)).astype("float32")
     artifacts = {}
     for name, module, factory, p in [
-        ("map", "compact_experts", "tile_map_kernel", dict(rows=rows, block_m=64)),
+        ("map", "moe.cuda.compact", "tile_map_kernel", dict(rows=rows, block_m=64)),
         (
             "control",
-            "prefill",
+            "moe.cuda.prefill",
             "expert_kernel",
             dict(rows=rows, k=k, o=o, routed_input=routed, block_m=64, threads=256),
         ),
         (
             "compact",
-            "prefill",
+            "moe.cuda.prefill",
             "expert_kernel",
             dict(
                 rows=rows,
@@ -125,10 +125,10 @@ def test_compact_experts_match_original_with_shuffled_routes(tmp_path, routed):
         artifact = source.with_suffix(".tbin")
         source.write_text(
             export_source(
-                "akas.kernels." + module,
+                "akas.ops." + module,
                 factory,
                 p,
-                dependencies=('tensor.compiler.frontend.source',),
+                dependencies=("tensor.compiler.frontend.source",),
             )
         )
         build_artifact(

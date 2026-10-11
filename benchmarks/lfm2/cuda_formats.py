@@ -17,7 +17,7 @@ BEFORE_COMMIT = "4c6872674756454982af8c87c6a1d77b3fc5ef02"
 def compile_templates(out):
     """Compile every selected 2.6B prefill schedule without a GPU or checkpoint."""
     from benchmarks.lfm2.cuda_format_search import compile_source
-    from akas.kernels.packed.cuda import source
+    from akas.compilation.source import export_kernel as source
 
     profile = json.loads(
         Path(__file__)
@@ -39,7 +39,15 @@ def compile_templates(out):
     )
     records = []
     for kind, parameters in specs:
-        artifact = compile_source(source(kind, parameters), out)
+        artifact = compile_source(
+            source(
+                "akas.profiles.independent.factories",
+                "packed_cuda_factory",
+                kind,
+                parameters,
+            ),
+            out,
+        )
         records.append(dict(kind=kind, parameters=parameters, artifact=artifact.name))
         print("compiled", kind, parameters, flush=True)
     (Path(out) / "coverage.json").write_text(json.dumps(records, indent=2) + "\n")

@@ -6,7 +6,9 @@ import json
 import os
 from pathlib import Path
 
-from akas.compilation.plan import Bundle, Kernel, Source
+from akas.compilation.plan import Bundle
+from akas.compilation.plan import Kernel
+from akas.compilation.plan import Source
 
 
 def _compiler_identity(provider):
@@ -14,6 +16,7 @@ def _compiler_identity(provider):
         path = Path(find_spec("tensor.compiler.cuda.lowering").origin)
         return {"lowering_sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
     from tensor.compiler.webgpu.identity import lowering_hash
+
     producer = Path(find_spec("tensor.compiler.webgpu.build").origin)
     return {
         "lowering_sha256": lowering_hash(),
@@ -146,6 +149,6 @@ def build(bundle: Bundle, out, *, progress=None):
 
 def export_source(module, factory, *args, dependencies=()):
     """Lazy entry serializer for measured operation overlays."""
-    from tensor.compiler.frontend.source import export_source as export
+    from akas.compilation.source import export_kernel as export
 
     return export(module, factory, *args, dependencies=dependencies)

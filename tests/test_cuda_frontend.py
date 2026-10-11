@@ -33,10 +33,17 @@ def test_algorithms_have_ir_loops_and_only_typed_hardware_externs(
     pytest.importorskip("tilelang")
     import tvm
     from tensor.compiler.frontend.portable import export_spec
-    from akas.kernels.packed.cuda import source
+    from akas.compilation.source import export_kernel as source
 
     path = tmp_path / "kernel.py"
-    path.write_text(source(kind, parameters))
+    path.write_text(
+        source(
+            "akas.profiles.independent.factories",
+            "packed_cuda_factory",
+            kind,
+            parameters,
+        )
+    )
     spec = export_spec(path)
     externs = []
     loops = []

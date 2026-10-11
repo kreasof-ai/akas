@@ -27,8 +27,8 @@ def diagnose(prepared, steps=2, capture_layers=True):
     from akas import Qwen35Batch
     from akas import Qwen35Prefill
     from akas import Qwen35Verifier
-    from akas.execution.optimizations.compact_prefill import install
-    from akas.execution.optimizations.hopper import install as hopper
+    from akas.execution.fixed_slots.optimizations.compact_prefill import install
+    from akas.execution.fixed_slots.optimizations.hopper import install as hopper
     from benchmarks.qwen35.whole_tune import Snapshot
     from benchmarks.qwen35.spec_run import install_selected
 

@@ -27,7 +27,7 @@ from benchmarks.lfm2.decode_optimization import (
     OptimizedLFM2,
 )
 from benchmarks.lfm2.fp16_decode import linear_source, metrics
-from akas.kernels.packed.ggml import source
+from akas.compilation.source import export_kernel as source
 
 
 def micro_attention(out, *, implementation="warp"):
@@ -39,7 +39,15 @@ def micro_attention(out, *, implementation="warp"):
     if implementation not in ("warp", "fragment"):
         raise ValueError("unknown attention implementation")
     generator = warp_partial_source if implementation == "warp" else partial_source
-    serial = compile_source(source("attention", p), out / "kernels")
+    serial = compile_source(
+        source(
+            "akas.profiles.independent.factories",
+            "packed_baseline_factory",
+            "attention",
+            p,
+        ),
+        out / "kernels",
+    )
     paths = {
         s: (
             compile_source(generator(p, s), out / "kernels"),

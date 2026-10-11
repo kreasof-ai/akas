@@ -1,6 +1,6 @@
 [
   {
-    "profile": "akas.compilation.profiles.packed",
+    "profile": "akas.compilation.profiles.independent",
     "options": {
       "context": 384,
       "target": "sm_89",
@@ -42,13 +42,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.ggml"
+          "factory": "packed_baseline_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -71,13 +68,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.ggml"
+          "factory": "packed_baseline_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -100,13 +94,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.ggml"
+          "factory": "packed_baseline_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -129,13 +120,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.ggml"
+          "factory": "packed_baseline_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -158,13 +146,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.ggml"
+          "factory": "packed_baseline_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -187,13 +172,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.ggml"
+          "factory": "packed_baseline_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -216,13 +198,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.ggml"
+          "factory": "packed_baseline_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -245,13 +224,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.ggml"
+          "factory": "packed_baseline_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -272,13 +248,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.ggml"
+          "factory": "packed_baseline_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -297,13 +270,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.ggml"
+          "factory": "packed_baseline_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -322,13 +292,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.ggml"
+          "factory": "packed_baseline_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -347,13 +314,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.ggml"
+          "factory": "packed_baseline_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -382,13 +346,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.ggml"
+          "factory": "packed_baseline_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -413,13 +374,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.ggml"
+          "factory": "packed_baseline_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -438,13 +396,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.ggml"
+          "factory": "packed_baseline_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -461,13 +416,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.ggml"
+          "factory": "packed_baseline_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -490,13 +442,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.ggml"
+          "factory": "packed_baseline_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -519,13 +468,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.ggml"
+          "factory": "packed_baseline_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -548,13 +494,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.ggml"
+          "factory": "packed_baseline_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -577,13 +520,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.ggml"
+          "factory": "packed_baseline_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -606,13 +546,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.ggml"
+          "factory": "packed_baseline_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -635,13 +572,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.ggml"
+          "factory": "packed_baseline_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -664,13 +598,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.ggml"
+          "factory": "packed_baseline_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -691,13 +622,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.ggml"
+          "factory": "packed_baseline_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -716,13 +644,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.ggml"
+          "factory": "packed_baseline_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -741,13 +666,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.ggml"
+          "factory": "packed_baseline_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -766,13 +688,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.ggml"
+          "factory": "packed_baseline_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -801,13 +720,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.ggml"
+          "factory": "packed_baseline_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -832,13 +748,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.ggml"
+          "factory": "packed_baseline_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -857,13 +770,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.ggml"
+          "factory": "packed_baseline_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -880,19 +790,16 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.ggml"
+          "factory": "packed_baseline_factory",
+          "module": "akas.profiles.independent.factories"
         }
       }
     ]
   },
   {
-    "profile": "akas.compilation.profiles.packed",
+    "profile": "akas.compilation.profiles.independent",
     "options": {
       "context": 384,
       "target": "sm_89",
@@ -934,13 +841,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.cuda"
+          "factory": "packed_cuda_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -963,13 +867,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.cuda"
+          "factory": "packed_cuda_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -992,13 +893,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.cuda"
+          "factory": "packed_cuda_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -1021,13 +919,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.cuda"
+          "factory": "packed_cuda_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -1050,13 +945,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.cuda"
+          "factory": "packed_cuda_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -1079,13 +971,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.cuda"
+          "factory": "packed_cuda_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -1108,13 +997,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.cuda"
+          "factory": "packed_cuda_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -1137,13 +1023,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.cuda"
+          "factory": "packed_cuda_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -1166,13 +1049,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.cuda"
+          "factory": "packed_cuda_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -1193,13 +1073,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.cuda"
+          "factory": "packed_cuda_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -1220,13 +1097,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.cuda"
+          "factory": "packed_cuda_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -1245,13 +1119,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.cuda"
+          "factory": "packed_cuda_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -1270,13 +1141,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.cuda"
+          "factory": "packed_cuda_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -1295,13 +1163,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.cuda"
+          "factory": "packed_cuda_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -1330,13 +1195,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.cuda"
+          "factory": "packed_cuda_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -1363,13 +1225,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.cuda"
+          "factory": "packed_cuda_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -1390,13 +1249,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.cuda"
+          "factory": "packed_cuda_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -1415,13 +1271,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.cuda"
+          "factory": "packed_cuda_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -1438,13 +1291,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.cuda"
+          "factory": "packed_cuda_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -1467,13 +1317,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.cuda"
+          "factory": "packed_cuda_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -1496,13 +1343,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.cuda"
+          "factory": "packed_cuda_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -1525,13 +1369,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.cuda"
+          "factory": "packed_cuda_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -1554,13 +1395,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.cuda"
+          "factory": "packed_cuda_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -1583,13 +1421,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.cuda"
+          "factory": "packed_cuda_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -1612,13 +1447,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.cuda"
+          "factory": "packed_cuda_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -1641,13 +1473,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.cuda"
+          "factory": "packed_cuda_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -1668,13 +1497,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.cuda"
+          "factory": "packed_cuda_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -1693,13 +1519,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.cuda"
+          "factory": "packed_cuda_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -1718,13 +1541,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.cuda"
+          "factory": "packed_cuda_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -1743,13 +1563,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.cuda"
+          "factory": "packed_cuda_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -1778,13 +1595,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.cuda"
+          "factory": "packed_cuda_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -1809,13 +1623,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.cuda"
+          "factory": "packed_cuda_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -1834,13 +1645,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.cuda"
+          "factory": "packed_cuda_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -1857,13 +1665,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.cuda"
+          "factory": "packed_cuda_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -1880,19 +1685,16 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.cuda"
+          "factory": "packed_cuda_factory",
+          "module": "akas.profiles.independent.factories"
         }
       }
     ]
   },
   {
-    "profile": "akas.compilation.profiles.packed",
+    "profile": "akas.compilation.profiles.independent",
     "options": {
       "context": 384,
       "provider": "webgpu"
@@ -1933,14 +1735,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.webgpu"
+          "factory": "packed_webgpu_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -1963,14 +1761,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.webgpu"
+          "factory": "packed_webgpu_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -1993,14 +1787,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.webgpu"
+          "factory": "packed_webgpu_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -2023,14 +1813,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.webgpu"
+          "factory": "packed_webgpu_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -2053,14 +1839,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.webgpu"
+          "factory": "packed_webgpu_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -2083,14 +1865,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.webgpu"
+          "factory": "packed_webgpu_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -2113,14 +1891,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.webgpu"
+          "factory": "packed_webgpu_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -2143,14 +1917,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.webgpu"
+          "factory": "packed_webgpu_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -2173,14 +1943,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.webgpu"
+          "factory": "packed_webgpu_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -2201,14 +1967,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.webgpu"
+          "factory": "packed_webgpu_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -2229,14 +1991,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.webgpu"
+          "factory": "packed_webgpu_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -2255,14 +2013,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.webgpu"
+          "factory": "packed_webgpu_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -2281,14 +2035,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.webgpu"
+          "factory": "packed_webgpu_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -2307,14 +2057,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.webgpu"
+          "factory": "packed_webgpu_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -2343,14 +2089,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.webgpu"
+          "factory": "packed_webgpu_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -2379,14 +2121,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.webgpu"
+          "factory": "packed_webgpu_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -2411,14 +2149,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.webgpu"
+          "factory": "packed_webgpu_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -2437,14 +2171,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.webgpu"
+          "factory": "packed_webgpu_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -2461,14 +2191,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.webgpu"
+          "factory": "packed_webgpu_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -2491,14 +2217,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.webgpu"
+          "factory": "packed_webgpu_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -2521,14 +2243,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.webgpu"
+          "factory": "packed_webgpu_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -2551,14 +2269,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.webgpu"
+          "factory": "packed_webgpu_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -2581,14 +2295,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.webgpu"
+          "factory": "packed_webgpu_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -2611,14 +2321,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.webgpu"
+          "factory": "packed_webgpu_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -2641,14 +2347,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.webgpu"
+          "factory": "packed_webgpu_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -2671,14 +2373,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.webgpu"
+          "factory": "packed_webgpu_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -2699,14 +2397,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.webgpu"
+          "factory": "packed_webgpu_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -2725,14 +2419,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.webgpu"
+          "factory": "packed_webgpu_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -2751,14 +2441,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.webgpu"
+          "factory": "packed_webgpu_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -2777,14 +2463,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.webgpu"
+          "factory": "packed_webgpu_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -2813,14 +2495,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.webgpu"
+          "factory": "packed_webgpu_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -2849,14 +2527,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.webgpu"
+          "factory": "packed_webgpu_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -2881,14 +2555,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.webgpu"
+          "factory": "packed_webgpu_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -2907,14 +2577,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.webgpu"
+          "factory": "packed_webgpu_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -2931,14 +2597,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.webgpu"
+          "factory": "packed_webgpu_factory",
+          "module": "akas.profiles.independent.factories"
         }
       },
       {
@@ -2955,20 +2617,16 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "akas.kernels.packed.ggml",
-            "akas.checkpoints.gguf",
-            "tensor.compiler.entry",
-            "tensor.compiler.webgpu_templates"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.packed.webgpu"
+          "factory": "packed_webgpu_factory",
+          "module": "akas.profiles.independent.factories"
         }
       }
     ]
   },
   {
-    "profile": "akas.compilation.profiles.hybrid.decode",
+    "profile": "akas.compilation.profiles.fixed_slots.decode",
     "options": {
       "slots": 8
     },
@@ -3052,13 +2710,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -3079,13 +2734,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -3106,13 +2758,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -3133,13 +2782,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -3160,13 +2806,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -3187,13 +2830,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -3214,13 +2854,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -3241,13 +2878,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -3268,13 +2902,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -3295,13 +2926,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -3322,13 +2950,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -3349,13 +2974,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -3376,13 +2998,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -3401,13 +3020,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -3434,13 +3050,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -3467,13 +3080,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -3492,13 +3102,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -3519,13 +3126,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -3546,13 +3150,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -3569,13 +3170,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -3592,13 +3190,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -3621,13 +3216,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -3646,13 +3238,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -3675,13 +3264,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -3704,13 +3290,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -3731,13 +3314,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -3756,13 +3336,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -3781,19 +3358,16 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       }
     ]
   },
   {
-    "profile": "akas.compilation.profiles.hybrid.decode",
+    "profile": "akas.compilation.profiles.fixed_slots.decode",
     "options": {
       "slots": 16,
       "kv_dtype": "fp8"
@@ -3881,12 +3455,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.matmul"
+          "module": "akas.ops.linear.cuda.block_fp8"
         }
       },
       {
@@ -3910,12 +3482,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.matmul"
+          "module": "akas.ops.linear.cuda.block_fp8"
         }
       },
       {
@@ -3939,12 +3509,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.matmul"
+          "module": "akas.ops.linear.cuda.block_fp8"
         }
       },
       {
@@ -3968,12 +3536,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.matmul"
+          "module": "akas.ops.linear.cuda.block_fp8"
         }
       },
       {
@@ -3997,12 +3563,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.matmul"
+          "module": "akas.ops.linear.cuda.block_fp8"
         }
       },
       {
@@ -4023,13 +3587,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -4050,13 +3611,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -4077,13 +3635,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -4104,13 +3659,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -4131,13 +3683,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -4158,13 +3707,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -4185,13 +3731,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -4212,13 +3755,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -4237,13 +3777,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -4270,13 +3807,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -4303,13 +3837,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -4328,13 +3859,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -4355,13 +3883,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -4382,13 +3907,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -4405,13 +3927,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -4428,13 +3947,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -4457,13 +3973,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -4482,13 +3995,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -4511,13 +4021,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -4542,13 +4049,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -4571,13 +4075,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -4596,13 +4097,10 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -4621,19 +4119,16 @@
             }
           ],
           "dependencies": [
-            "akas.kernels.elementwise",
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       }
     ]
   },
   {
-    "profile": "akas.compilation.profiles.hybrid.prefill",
+    "profile": "akas.compilation.profiles.fixed_slots.prefill",
     "options": {
       "slots": 2,
       "chunk": 4
@@ -4716,13 +4211,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_prefill"
+          "factory": "prefill_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -4741,13 +4233,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_prefill"
+          "factory": "prefill_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -4766,13 +4255,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_prefill"
+          "factory": "prefill_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -4791,13 +4277,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_prefill"
+          "factory": "prefill_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -4816,13 +4299,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_prefill"
+          "factory": "prefill_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -4843,13 +4323,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_prefill"
+          "factory": "prefill_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -4870,13 +4347,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_prefill"
+          "factory": "prefill_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -4901,13 +4375,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_prefill"
+          "factory": "prefill_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -4933,13 +4404,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.matmul"
+          "module": "akas.ops.linear.cuda.block_fp8"
         }
       },
       {
@@ -4965,13 +4433,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.matmul"
+          "module": "akas.ops.linear.cuda.block_fp8"
         }
       },
       {
@@ -4997,13 +4462,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.matmul"
+          "module": "akas.ops.linear.cuda.block_fp8"
         }
       },
       {
@@ -5029,13 +4491,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.matmul"
+          "module": "akas.ops.linear.cuda.block_fp8"
         }
       },
       {
@@ -5061,13 +4520,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.matmul"
+          "module": "akas.ops.linear.cuda.block_fp8"
         }
       },
       {
@@ -5087,13 +4543,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "bf16_kernel",
-          "module": "akas.kernels.linear.matmul"
+          "module": "akas.ops.linear.cuda.block_fp8"
         }
       },
       {
@@ -5113,13 +4566,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "bf16_kernel",
-          "module": "akas.kernels.linear.matmul"
+          "module": "akas.ops.linear.cuda.block_fp8"
         }
       },
       {
@@ -5139,13 +4589,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "bf16_kernel",
-          "module": "akas.kernels.linear.matmul"
+          "module": "akas.ops.linear.cuda.block_fp8"
         }
       },
       {
@@ -5166,13 +4613,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -5193,13 +4637,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -5220,13 +4661,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -5247,13 +4685,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -5279,13 +4714,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "expert_kernel",
-          "module": "akas.kernels.hybrid.hybrid_prefill"
+          "module": "akas.ops.moe.cuda.prefill"
         }
       },
       {
@@ -5311,13 +4743,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "expert_kernel",
-          "module": "akas.kernels.hybrid.hybrid_prefill"
+          "module": "akas.ops.moe.cuda.prefill"
         }
       },
       {
@@ -5336,13 +4765,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -5363,13 +4789,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -5390,13 +4813,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -5413,13 +4833,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -5438,13 +4855,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -5467,13 +4881,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -5491,13 +4902,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "quantize_kernel",
-          "module": "akas.kernels.linear.matmul"
+          "module": "akas.ops.quantization.cuda.block_fp8"
         }
       },
       {
@@ -5515,13 +4923,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "quantize_kernel",
-          "module": "akas.kernels.linear.matmul"
+          "module": "akas.ops.quantization.cuda.block_fp8"
         }
       },
       {
@@ -5539,13 +4944,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "quantize_kernel",
-          "module": "akas.kernels.linear.matmul"
+          "module": "akas.ops.quantization.cuda.block_fp8"
         }
       },
       {
@@ -5565,19 +4967,16 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "quantize_kernel",
-          "module": "akas.kernels.linear.matmul"
+          "module": "akas.ops.quantization.cuda.block_fp8"
         }
       }
     ]
   },
   {
-    "profile": "akas.compilation.profiles.hybrid.prefill",
+    "profile": "akas.compilation.profiles.fixed_slots.prefill",
     "options": {
       "slots": 2,
       "chunk": 64,
@@ -5663,13 +5062,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_prefill"
+          "factory": "prefill_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -5688,13 +5084,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_prefill"
+          "factory": "prefill_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -5713,13 +5106,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_prefill"
+          "factory": "prefill_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -5738,13 +5128,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_prefill"
+          "factory": "prefill_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -5763,13 +5150,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_prefill"
+          "factory": "prefill_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -5790,13 +5174,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_prefill"
+          "factory": "prefill_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -5822,13 +5203,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_prefill"
+          "factory": "prefill_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -5855,13 +5233,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_prefill"
+          "factory": "prefill_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -5887,13 +5262,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.matmul"
+          "module": "akas.ops.linear.cuda.block_fp8"
         }
       },
       {
@@ -5919,13 +5291,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.matmul"
+          "module": "akas.ops.linear.cuda.block_fp8"
         }
       },
       {
@@ -5951,13 +5320,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.matmul"
+          "module": "akas.ops.linear.cuda.block_fp8"
         }
       },
       {
@@ -5983,13 +5349,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.matmul"
+          "module": "akas.ops.linear.cuda.block_fp8"
         }
       },
       {
@@ -6015,13 +5378,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.matmul"
+          "module": "akas.ops.linear.cuda.block_fp8"
         }
       },
       {
@@ -6041,13 +5401,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "bf16_kernel",
-          "module": "akas.kernels.linear.matmul"
+          "module": "akas.ops.linear.cuda.block_fp8"
         }
       },
       {
@@ -6067,13 +5424,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "bf16_kernel",
-          "module": "akas.kernels.linear.matmul"
+          "module": "akas.ops.linear.cuda.block_fp8"
         }
       },
       {
@@ -6093,13 +5447,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "bf16_kernel",
-          "module": "akas.kernels.linear.matmul"
+          "module": "akas.ops.linear.cuda.block_fp8"
         }
       },
       {
@@ -6120,13 +5471,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -6147,13 +5495,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -6174,13 +5519,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -6201,13 +5543,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -6233,13 +5572,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "expert_kernel",
-          "module": "akas.kernels.hybrid.hybrid_prefill"
+          "module": "akas.ops.moe.cuda.prefill"
         }
       },
       {
@@ -6265,13 +5601,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "expert_kernel",
-          "module": "akas.kernels.hybrid.hybrid_prefill"
+          "module": "akas.ops.moe.cuda.prefill"
         }
       },
       {
@@ -6290,13 +5623,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -6317,13 +5647,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -6344,13 +5671,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -6367,13 +5691,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -6392,13 +5713,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -6421,13 +5739,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -6445,13 +5760,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "quantize_kernel",
-          "module": "akas.kernels.linear.matmul"
+          "module": "akas.ops.quantization.cuda.block_fp8"
         }
       },
       {
@@ -6469,13 +5781,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "quantize_kernel",
-          "module": "akas.kernels.linear.matmul"
+          "module": "akas.ops.quantization.cuda.block_fp8"
         }
       },
       {
@@ -6493,13 +5802,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "quantize_kernel",
-          "module": "akas.kernels.linear.matmul"
+          "module": "akas.ops.quantization.cuda.block_fp8"
         }
       },
       {
@@ -6519,19 +5825,16 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.attention.fp8_kv",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "quantize_kernel",
-          "module": "akas.kernels.linear.matmul"
+          "module": "akas.ops.quantization.cuda.block_fp8"
         }
       }
     ]
   },
   {
-    "profile": "akas.compilation.profiles.batched",
+    "profile": "akas.compilation.profiles.compact_batch",
     "options": {
       "slots": 2,
       "chunk": 32
@@ -6597,12 +5900,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_batch"
+          "factory": "batch_factory",
+          "module": "akas.profiles.compact_batch.factories"
         }
       },
       {
@@ -6623,12 +5924,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -6649,12 +5948,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -6675,12 +5972,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -6709,12 +6004,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.split_linear"
+          "module": "akas.ops.linear.cuda.split"
         }
       },
       {
@@ -6743,12 +6036,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.split_linear"
+          "module": "akas.ops.linear.cuda.split"
         }
       },
       {
@@ -6773,12 +6064,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_batch"
+          "factory": "batch_factory",
+          "module": "akas.profiles.compact_batch.factories"
         }
       },
       {
@@ -6809,12 +6098,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_batch"
+          "factory": "batch_factory",
+          "module": "akas.profiles.compact_batch.factories"
         }
       },
       {
@@ -6841,12 +6128,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_batch"
+          "factory": "batch_factory",
+          "module": "akas.profiles.compact_batch.factories"
         }
       },
       {
@@ -6877,12 +6162,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_batch"
+          "factory": "batch_factory",
+          "module": "akas.profiles.compact_batch.factories"
         }
       },
       {
@@ -6911,12 +6194,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.split_linear"
+          "module": "akas.ops.linear.cuda.split"
         }
       },
       {
@@ -6945,12 +6226,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.split_linear"
+          "module": "akas.ops.linear.cuda.split"
         }
       },
       {
@@ -6979,12 +6258,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.split_linear"
+          "module": "akas.ops.linear.cuda.split"
         }
       },
       {
@@ -7013,12 +6290,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.split_linear"
+          "module": "akas.ops.linear.cuda.split"
         }
       },
       {
@@ -7051,12 +6326,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_batch"
+          "factory": "batch_factory",
+          "module": "akas.profiles.compact_batch.factories"
         }
       },
       {
@@ -7087,12 +6360,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_batch"
+          "factory": "batch_factory",
+          "module": "akas.profiles.compact_batch.factories"
         }
       },
       {
@@ -7121,12 +6392,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.split_linear"
+          "module": "akas.ops.linear.cuda.split"
         }
       },
       {
@@ -7155,12 +6424,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.split_linear"
+          "module": "akas.ops.linear.cuda.split"
         }
       },
       {
@@ -7183,12 +6450,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_batch"
+          "factory": "batch_factory",
+          "module": "akas.profiles.compact_batch.factories"
         }
       },
       {
@@ -7217,12 +6482,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.split_linear"
+          "module": "akas.ops.linear.cuda.split"
         }
       },
       {
@@ -7251,12 +6514,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.split_linear"
+          "module": "akas.ops.linear.cuda.split"
         }
       },
       {
@@ -7279,12 +6540,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_batch"
+          "factory": "batch_factory",
+          "module": "akas.profiles.compact_batch.factories"
         }
       },
       {
@@ -7313,12 +6572,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.split_linear"
+          "module": "akas.ops.linear.cuda.split"
         }
       },
       {
@@ -7347,12 +6604,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.split_linear"
+          "module": "akas.ops.linear.cuda.split"
         }
       },
       {
@@ -7371,12 +6626,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -7405,12 +6658,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.head"
+          "module": "akas.ops.vocabulary.cuda.fused_head"
         }
       },
       {
@@ -7431,18 +6682,16 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.head"
+          "module": "akas.ops.vocabulary.cuda.fused_head"
         }
       }
     ]
   },
   {
-    "profile": "akas.compilation.profiles.batched",
+    "profile": "akas.compilation.profiles.compact_batch",
     "options": {
       "slots": 2,
       "chunk": 4,
@@ -7509,12 +6758,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_batch"
+          "factory": "batch_factory",
+          "module": "akas.profiles.compact_batch.factories"
         }
       },
       {
@@ -7535,12 +6782,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -7561,12 +6806,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -7587,12 +6830,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -7621,12 +6862,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.split_linear"
+          "module": "akas.ops.linear.cuda.split"
         }
       },
       {
@@ -7655,12 +6894,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.split_linear"
+          "module": "akas.ops.linear.cuda.split"
         }
       },
       {
@@ -7687,12 +6924,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_batch"
+          "factory": "batch_factory",
+          "module": "akas.profiles.compact_batch.factories"
         }
       },
       {
@@ -7723,12 +6958,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_batch"
+          "factory": "batch_factory",
+          "module": "akas.profiles.compact_batch.factories"
         }
       },
       {
@@ -7757,12 +6990,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_batch"
+          "factory": "batch_factory",
+          "module": "akas.profiles.compact_batch.factories"
         }
       },
       {
@@ -7787,12 +7018,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_batch"
+          "factory": "batch_factory",
+          "module": "akas.profiles.compact_batch.factories"
         }
       },
       {
@@ -7819,12 +7048,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_batch"
+          "factory": "batch_factory",
+          "module": "akas.profiles.compact_batch.factories"
         }
       },
       {
@@ -7855,12 +7082,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_batch"
+          "factory": "batch_factory",
+          "module": "akas.profiles.compact_batch.factories"
         }
       },
       {
@@ -7889,12 +7114,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.split_linear"
+          "module": "akas.ops.linear.cuda.split"
         }
       },
       {
@@ -7923,12 +7146,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.split_linear"
+          "module": "akas.ops.linear.cuda.split"
         }
       },
       {
@@ -7957,12 +7178,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.split_linear"
+          "module": "akas.ops.linear.cuda.split"
         }
       },
       {
@@ -7991,12 +7210,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.split_linear"
+          "module": "akas.ops.linear.cuda.split"
         }
       },
       {
@@ -8029,12 +7246,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_batch"
+          "factory": "batch_factory",
+          "module": "akas.profiles.compact_batch.factories"
         }
       },
       {
@@ -8065,12 +7280,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_batch"
+          "factory": "batch_factory",
+          "module": "akas.profiles.compact_batch.factories"
         }
       },
       {
@@ -8099,12 +7312,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.split_linear"
+          "module": "akas.ops.linear.cuda.split"
         }
       },
       {
@@ -8133,12 +7344,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.split_linear"
+          "module": "akas.ops.linear.cuda.split"
         }
       },
       {
@@ -8161,12 +7370,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_batch"
+          "factory": "batch_factory",
+          "module": "akas.profiles.compact_batch.factories"
         }
       },
       {
@@ -8195,12 +7402,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.split_linear"
+          "module": "akas.ops.linear.cuda.split"
         }
       },
       {
@@ -8229,12 +7434,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.split_linear"
+          "module": "akas.ops.linear.cuda.split"
         }
       },
       {
@@ -8257,12 +7460,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_batch"
+          "factory": "batch_factory",
+          "module": "akas.profiles.compact_batch.factories"
         }
       },
       {
@@ -8291,12 +7492,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.split_linear"
+          "module": "akas.ops.linear.cuda.split"
         }
       },
       {
@@ -8325,12 +7524,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.split_linear"
+          "module": "akas.ops.linear.cuda.split"
         }
       },
       {
@@ -8349,12 +7546,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -8383,12 +7578,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.head"
+          "module": "akas.ops.vocabulary.cuda.fused_head"
         }
       },
       {
@@ -8409,18 +7602,16 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.head"
+          "module": "akas.ops.vocabulary.cuda.fused_head"
         }
       }
     ]
   },
   {
-    "profile": "akas.compilation.profiles.batched",
+    "profile": "akas.compilation.profiles.compact_batch",
     "options": {
       "slots": 2,
       "chunk": 4,
@@ -8487,12 +7678,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_batch"
+          "factory": "batch_factory",
+          "module": "akas.profiles.compact_batch.factories"
         }
       },
       {
@@ -8513,12 +7702,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -8539,12 +7726,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -8565,12 +7750,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -8599,12 +7782,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.split_linear"
+          "module": "akas.ops.linear.cuda.split"
         }
       },
       {
@@ -8633,12 +7814,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.split_linear"
+          "module": "akas.ops.linear.cuda.split"
         }
       },
       {
@@ -8663,12 +7842,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_batch"
+          "factory": "batch_factory",
+          "module": "akas.profiles.compact_batch.factories"
         }
       },
       {
@@ -8699,12 +7876,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_batch"
+          "factory": "batch_factory",
+          "module": "akas.profiles.compact_batch.factories"
         }
       },
       {
@@ -8731,12 +7906,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_batch"
+          "factory": "batch_factory",
+          "module": "akas.profiles.compact_batch.factories"
         }
       },
       {
@@ -8767,12 +7940,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_batch"
+          "factory": "batch_factory",
+          "module": "akas.profiles.compact_batch.factories"
         }
       },
       {
@@ -8801,12 +7972,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.split_linear"
+          "module": "akas.ops.linear.cuda.split"
         }
       },
       {
@@ -8835,12 +8004,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.split_linear"
+          "module": "akas.ops.linear.cuda.split"
         }
       },
       {
@@ -8869,12 +8036,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.split_linear"
+          "module": "akas.ops.linear.cuda.split"
         }
       },
       {
@@ -8903,12 +8068,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.split_linear"
+          "module": "akas.ops.linear.cuda.split"
         }
       },
       {
@@ -8941,12 +8104,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_batch"
+          "factory": "batch_factory",
+          "module": "akas.profiles.compact_batch.factories"
         }
       },
       {
@@ -8977,12 +8138,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_batch"
+          "factory": "batch_factory",
+          "module": "akas.profiles.compact_batch.factories"
         }
       },
       {
@@ -9011,12 +8170,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.split_linear"
+          "module": "akas.ops.linear.cuda.split"
         }
       },
       {
@@ -9045,12 +8202,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.split_linear"
+          "module": "akas.ops.linear.cuda.split"
         }
       },
       {
@@ -9073,12 +8228,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_batch"
+          "factory": "batch_factory",
+          "module": "akas.profiles.compact_batch.factories"
         }
       },
       {
@@ -9107,12 +8260,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.split_linear"
+          "module": "akas.ops.linear.cuda.split"
         }
       },
       {
@@ -9141,12 +8292,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.split_linear"
+          "module": "akas.ops.linear.cuda.split"
         }
       },
       {
@@ -9169,12 +8318,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_batch"
+          "factory": "batch_factory",
+          "module": "akas.profiles.compact_batch.factories"
         }
       },
       {
@@ -9203,12 +8350,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.split_linear"
+          "module": "akas.ops.linear.cuda.split"
         }
       },
       {
@@ -9237,12 +8382,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.split_linear"
+          "module": "akas.ops.linear.cuda.split"
         }
       },
       {
@@ -9261,12 +8404,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid"
+          "factory": "decode_factory",
+          "module": "akas.profiles.fixed_slots.factories"
         }
       },
       {
@@ -9295,12 +8436,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.head"
+          "module": "akas.ops.vocabulary.cuda.fused_head"
         }
       },
       {
@@ -9321,12 +8460,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.linear.head"
+          "module": "akas.ops.vocabulary.cuda.fused_head"
         }
       },
       {
@@ -9347,12 +8484,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.speculation.mtp"
+          "module": "akas.ops.mtp.cuda"
         }
       },
       {
@@ -9371,12 +8506,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
           "factory": "make_kernel",
-          "module": "akas.kernels.speculation.mtp"
+          "module": "akas.ops.mtp.cuda"
         }
       },
       {
@@ -9399,12 +8532,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_batch"
+          "factory": "batch_factory",
+          "module": "akas.profiles.compact_batch.factories"
         }
       },
       {
@@ -9427,12 +8558,10 @@
             }
           ],
           "dependencies": [
-            "tensor.compiler.entry",
-            "tensor.compiler.cuda_lowering",
-            "akas.kernels.elementwise"
+            "$shared-operation-closure"
           ],
-          "factory": "make_kernel",
-          "module": "akas.kernels.hybrid.hybrid_batch"
+          "factory": "batch_factory",
+          "module": "akas.profiles.compact_batch.factories"
         }
       }
     ]

@@ -6,7 +6,9 @@ import hashlib, json
 from pathlib import Path
 from tensor.artifacts.format import read_artifact
 from akas.compilation.build import export_source
-from akas.execution.optimizations.attention_workspace import implementation_hashes
+from akas.artifacts.fingerprints import (
+    fixed_slots_hashes as implementation_hashes,
+)
 from akas.compilation.build import build_artifact
 
 
@@ -30,14 +32,14 @@ def _compile(out, original, old, module, schedule, **settings):
     for name, producer, factory, p in (
         (
             "decode",
-            "attention.attention_workspace",
+            "attention.cuda.workspace",
             "decode",
             dict(slots=original["slots"], capacity=original["context"]),
         ),
         (
             "attention",
             module,
-            "partial" if module == "attention.hopper_attention" else "attention",
+            "partial" if module == "attention.cuda.hopper" else "attention",
             schedule,
         ),
     ):
@@ -45,10 +47,13 @@ def _compile(out, original, old, module, schedule, **settings):
         artifact = entry.with_suffix(".tbin")
         entry.write_text(
             export_source(
-                "akas.kernels." + producer,
+                "akas.ops." + producer,
                 factory,
                 p,
-                dependencies=('tensor.compiler.frontend.source', "akas.kernels.elementwise"),
+                dependencies=(
+                    "tensor.compiler.frontend.source",
+                    "akas.ops.normalization.kernels",
+                ),
             )
         )
         artifact.unlink(missing_ok=True)
@@ -86,7 +91,7 @@ def produce(prepared, out, query_rows=128, threads=256, value_splits=1):
         out,
         original,
         old,
-        "attention.hopper_prefill_attention",
+        "attention.cuda.hopper_prefill",
         dict(
             p,
             decoded_kv=True,
@@ -132,7 +137,7 @@ def produce_verification(source, out):
         out,
         original,
         old,
-        "attention.hopper_attention",
+        "attention.cuda.hopper",
         schedule,
         scope="verification",
         key_rows=selected["key_rows"],

@@ -1,6 +1,7 @@
 """Archive the packed-kernel parity experiment and validated final bundles."""
 
-from akas.compilation.paths import source_path, tensor_source
+from akas.compilation.paths import source_path
+from akas.compilation.paths import tensor_source
 
 from pathlib import Path as _Path
 import sys as _sys
@@ -10,10 +11,10 @@ import argparse, hashlib, json, subprocess
 from pathlib import Path
 import numpy as np
 from tensor.artifacts.format import read_artifact
-from akas.artifacts.packed import implementation_hashes
-from akas.execution.profiles.packed import QUANT_DECODE
-from akas.execution.profiles.packed import QUANT_PREFILL
-from akas.execution.profiles.packed import QUANT_ATTENTION
+from akas.artifacts.fingerprints import independent_hashes as implementation_hashes
+from akas.profiles.independent.parameters import QUANT_DECODE
+from akas.profiles.independent.parameters import QUANT_PREFILL
+from akas.profiles.independent.parameters import QUANT_ATTENTION
 
 
 def digest(path):
@@ -115,8 +116,8 @@ def run(root, reference, out):
             p: dict(sha256=digest(p), text=source_path(p).read_text())
             for p in (
                 __file__,
-                "src/akas/execution/packed/model.py",
-                "src/akas/kernels/packed/webgpu.py",
+                'src/akas/execution/independent/resident.py',
+                *('src/akas/compilation/source.py', 'src/akas/ops/attention/webgpu/packed.py', 'src/akas/ops/linear/webgpu/packed.py', 'src/akas/ops/normalization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/storage.py', 'src/akas/ops/reductions/webgpu.py', 'src/akas/ops/sequence/webgpu/packed.py', 'src/akas/ops/vocabulary/webgpu/packed.py', 'src/akas/profiles/independent/factories.py'),
                 "src/tensor/compiler/webgpu_lowering.py",
                 "benchmarks/lfm2/prefill_chase_search.py",
                 "src/tensor/providers/webgpu.py",

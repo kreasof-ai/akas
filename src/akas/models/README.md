@@ -19,7 +19,7 @@ models/
 
 LFM2's definition composes short convolution or attention with a packed SwiGLU
 feed-forward block. Qwen's definition composes GDN or attention with dense or MoE
-feed-forward blocks, selected from its configuration. Both use `ops.DecoderBlock`.
+feed-forward blocks, selected from its configuration. Both use `models.blocks.DecoderBlock`.
 Weight prefixes, normalization names, embedding and output-head bindings are
 explicit architecture data.
 
@@ -29,16 +29,17 @@ Those live in shared components:
 
 | Responsibility | Owner |
 | --- | --- |
-| Decoder block composition and mathematics | `ops/decoder.py`, `attention.py`, `gdn.py`, `shortconv.py`, `ffn.py` |
-| Linear, RMS/residual norm and quantization reuse | `ops/linear.py`, `normalization.py`, `quantization.py` |
-| Packed-weight independent handles | `execution/packed/` |
-| Block-FP8 fixed-slot decode/prefill | `execution/hybrid/` |
-| BF16 compact batches over persistent slots | `execution/batched/` |
-| Plan rewrites and numerical profiles | `execution/optimizations/`, `profiles/` |
-| Persistent state allocation and recurrent journals | `memory/`, `ops/hybrid_state.py` |
+| Decoder block composition and mathematics | `models/blocks.py`, `ops/{attention,gdn,convolution,ffn,moe}/` |
+| Linear, RMS/residual norm and quantization reuse | `ops/{linear,normalization,quantization}/` |
+| Packed-weight independent handles | `execution/independent/` |
+| Block-FP8 fixed-slot decode/prefill | `execution/fixed_slots/` |
+| BF16 compact batches over persistent slots | `execution/compact_batch/` |
+| Plan rewrites and numerical profiles | `execution/fixed_slots/optimizations/`, `profiles/` |
+| Persistent state allocation and recurrent journals | `memory/`, `execution/compact_batch/journal.py` |
 | Bit-preserving upload and raw storage readers | `checkpoints/` |
 | Bundle coverage, loading and integrity | `artifacts/` |
-| Greedy and MTP orchestration | `generation/` |
+| Prompt, termination, acceptance and output lookup | `generation/` |
+| Device stepping and MTP orchestration | `execution/` |
 | Admission, work budgets and independent-handle adapter | `scheduling/` |
 
 Executors receive checkpoint and architecture definitions from the model classes.

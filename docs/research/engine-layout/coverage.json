@@ -1,0 +1,88 @@
+{
+  "status": "implemented and locally verified",
+  "baseline_commit": "a6ed06547ca64ba51ed971a513dace02832ed07f",
+  "core_files": 97,
+  "companion_files": 14,
+  "files": 111,
+  "python_lines": 16614,
+  "ownership_units": 304,
+  "reference_rows": 625,
+  "unassigned_files": 0,
+  "merged_targets": {
+    "src/akas/artifacts/fingerprints.py": [
+      "src/akas/artifacts/batched.py",
+      "src/akas/artifacts/hybrid.py",
+      "src/akas/artifacts/kernels.py",
+      "src/akas/artifacts/packed.py",
+      "src/akas/execution/hybrid/draft.py",
+      "src/akas/execution/hybrid/draft_prefill.py",
+      "src/akas/execution/hybrid/repair.py",
+      "src/akas/execution/hybrid/verification_pool.py",
+      "src/akas/execution/hybrid/verifier.py",
+      "src/akas/execution/optimizations/attention_workspace.py",
+      "src/akas/execution/optimizations/compact_prefill.py",
+      "src/akas/execution/optimizations/hopper.py",
+      "src/akas/execution/optimizations/split_attention.py",
+      "src/akas/execution/optimizations/split_linear.py"
+    ],
+    "src/akas/execution/fixed_slots/draft.py": [
+      "src/akas/execution/hybrid/draft.py",
+      "src/akas/execution/hybrid/draft_prefill.py"
+    ],
+    "src/akas/execution/fixed_slots/prefill.py": [
+      "src/akas/execution/hybrid/prefill.py",
+      "src/akas/execution/hybrid/prefill_plan.py"
+    ],
+    "src/akas/profiles/independent/parameters.py": [
+      "src/akas/execution/profiles/packed.py",
+      "src/akas/kernels/packed/cuda.py"
+    ],
+    "src/akas/ops/__init__.py": [
+      "src/akas/kernels/__init__.py",
+      "src/akas/ops/__init__.py"
+    ],
+    "src/akas/compilation/source.py": [
+      "src/akas/kernels/hybrid/hybrid.py",
+      "src/akas/kernels/packed/cuda.py",
+      "src/akas/kernels/packed/ggml.py",
+      "src/akas/kernels/packed/webgpu.py"
+    ],
+    "src/akas/profiles/fixed_slots/factories.py": [
+      "src/akas/kernels/hybrid/hybrid.py",
+      "src/akas/kernels/hybrid/hybrid_prefill.py",
+      "src/akas/kernels/speculation/speculative.py"
+    ],
+    "src/akas/profiles/independent/factories.py": [
+      "src/akas/kernels/packed/cuda.py",
+      "src/akas/kernels/packed/ggml.py",
+      "src/akas/kernels/packed/webgpu.py"
+    ]
+  },
+  "opcode_note": "Dispatcher line ranges contain the enclosing definition. Opcode rows own branch arithmetic; dispatch rows own routing, fallback and validation only. Imports/comments follow their owners. Shared local preamble must be reproduced at each independent factory with no arithmetic changes.",
+  "core_python_lines": 15686,
+  "manifest_verification": {
+    "source_hashes": "pass",
+    "every_scoped_file_assigned": "pass",
+    "unit_targets_match_file_targets": "pass",
+    "report_links": "pass"
+  },
+  "missing_targets": 0,
+  "leftover_source_files": 0,
+  "arithmetic_units_verified": 143,
+  "source_backup": "/mnt/sagemaker-nvme/akas-engine-layout-baseline",
+  "notes": [
+    "Runtime/extension fingerprint functions merge into three execution-contract identities with a shared source closure; aliases are retained only at import sites.",
+    "The WebGPU quantization helper target is storage.py inside its provider package to avoid a module/package collision.",
+    "BF16 projection schedule and compact requirements moved into shared profiles; both producer and consumer use these metadata owners.",
+    "Shape specialization remains unchanged. Dynamic variants, workload tuning and runtime dispatch require a subsequent numerical/performance implementation."
+  ],
+  "validation": {
+    "cpu_passed": 410,
+    "cpu_skipped": 397,
+    "cuda_request_tests_passed": 28,
+    "qwen_cuda_numerical_tests_passed": 17,
+    "arithmetic_units_verified": 143,
+    "wheel_and_sdist": "rebuilt; profile data and source ownership verified",
+    "standalone_consumer": "matching producer identity, compiler imports blocked, CUDA forward and graph generation passed"
+  }
+}

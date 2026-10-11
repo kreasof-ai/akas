@@ -1,6 +1,7 @@
 """Full-model prefill variants and native chunk-size controls on one GPU."""
 
-from akas.compilation.paths import source_path, tensor_source
+from akas.compilation.paths import source_path
+from akas.compilation.paths import tensor_source
 
 from pathlib import Path as _Path
 import sys as _sys
@@ -67,9 +68,9 @@ def run(
                 "benchmarks/lfm2/vulkan_reference.py",
                 "src/tensor/compiler/webgpu_lowering.py",
                 "src/tensor/compiler/webgpu/build.py",
-                "src/akas/execution/packed/model.py",
-                "src/akas/kernels/packed/webgpu.py",
-                "src/akas/compilation/profiles/packed.py",
+                'src/akas/execution/independent/resident.py',
+                *('src/akas/compilation/source.py', 'src/akas/ops/attention/webgpu/packed.py', 'src/akas/ops/linear/webgpu/packed.py', 'src/akas/ops/normalization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/storage.py', 'src/akas/ops/reductions/webgpu.py', 'src/akas/ops/sequence/webgpu/packed.py', 'src/akas/ops/vocabulary/webgpu/packed.py', 'src/akas/profiles/independent/factories.py'),
+                'src/akas/compilation/profiles/independent.py',
             )
         },
         protocol=dict(

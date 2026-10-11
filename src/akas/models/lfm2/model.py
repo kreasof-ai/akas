@@ -1,8 +1,9 @@
 """LFM2 architecture composed over packed-weight execution."""
 
-from akas.execution.packed.model import PackedModel
+from akas.execution.independent.resident import PackedModel
 from akas.models.lfm2.weights import LFM2Checkpoint
-from akas.ops.decoder import DecoderArchitecture, DecoderBlock
+from akas.models.blocks import DecoderArchitecture
+from akas.models.blocks import DecoderBlock
 
 
 def architecture(config, checkpoint):

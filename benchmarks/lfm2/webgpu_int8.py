@@ -10,7 +10,7 @@ import numpy as np
 import tensor
 from tensor.runtime.abi import BoundCall
 from akas import LFM2
-from akas.kernels.packed.webgpu import source
+from akas.compilation.source import export_kernel as source
 from benchmarks.lfm2.webgpu_run import metrics
 
 
@@ -24,7 +24,9 @@ def run(model, bundle, evidence, out):
     ):
         path = out / (kind + ".py")
         artifact = path.with_suffix(".tbin")
-        text = source(kind, p)
+        text = source(
+            "akas.profiles.independent.factories", "packed_webgpu_factory", kind, p
+        )
         if path.exists() and path.read_text() != text:
             artifact.unlink(missing_ok=True)
         path.write_text(text)

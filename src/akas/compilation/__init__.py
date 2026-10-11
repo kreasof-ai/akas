@@ -3,14 +3,14 @@
 from importlib import import_module
 
 PROFILES = {
-    "packed": ("akas.compilation.profiles.packed", "produce"),
-    "batched": ("akas.compilation.profiles.batched", "produce"),
-    "batched-bank": ("akas.compilation.profiles.batched", "produce_bank"),
-    "hybrid.decode": ("akas.compilation.profiles.hybrid.decode", "produce"),
-    "hybrid.prefill": ("akas.compilation.profiles.hybrid.prefill", "produce"),
-    "hybrid.draft": ("akas.compilation.profiles.hybrid.draft", "produce"),
+    "packed": ("akas.compilation.profiles.independent", "produce"),
+    "batched": ("akas.compilation.profiles.compact_batch", "produce"),
+    "batched-bank": ("akas.compilation.profiles.compact_batch", "produce_bank"),
+    "hybrid.decode": ("akas.compilation.profiles.fixed_slots.decode", "produce"),
+    "hybrid.prefill": ("akas.compilation.profiles.fixed_slots.prefill", "produce"),
+    "hybrid.draft": ("akas.compilation.profiles.fixed_slots.draft", "produce"),
     "hybrid.draft-prefill": (
-        "akas.compilation.profiles.hybrid.draft_prefill",
+        "akas.compilation.profiles.fixed_slots.draft_prefill",
         "produce",
     ),
 }

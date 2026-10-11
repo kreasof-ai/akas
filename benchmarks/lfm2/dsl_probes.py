@@ -3,8 +3,8 @@
 
 def half_conversion_kernel(n, unpack=False):
     import tilelang.language as T
-    from akas.kernels.packed.webgpu import half_bits
-    from akas.kernels.packed.webgpu import round_half
+    from akas.ops.quantization.webgpu.storage import half_bits
+    from akas.ops.quantization.webgpu.storage import round_half
 
     convert = half_bits() if unpack else round_half()
 
@@ -25,7 +25,7 @@ def half_conversion_kernel(n, unpack=False):
 def kernel_with_subgroup_size(kind, parameters, size):
     """Exercise the actual small-subgroup branch, without editing Python source."""
     import tvm
-    from akas.kernels.packed.webgpu import make_kernel
+    from akas.profiles.independent.factories import packed_webgpu_factory as make_kernel
 
     ir = tvm.tirx
     kernel = make_kernel(kind, parameters)
@@ -62,11 +62,17 @@ def subgroup_source(kind, parameters, size):
         parameters,
         size,
         dependencies=(
-            "akas.kernels.packed.ggml",
+            "akas.profiles.independent.factories",
             "akas.checkpoints.gguf",
-            "akas.kernels.packed.webgpu",
-            'tensor.compiler.frontend.source',
-            'tensor.compiler.webgpu.schedules.gemv', 'tensor.compiler.webgpu.schedules.outer_product', 'tensor.compiler.webgpu.schedules.packed_integer', 'tensor.compiler.webgpu.schedules.packed_outer_product', 'tensor.compiler.webgpu.schedules.partitioned', 'tensor.compiler.webgpu.schedules.register_matmul', 'tensor.compiler.webgpu.schedules.registers',
-            "akas.kernels.elementwise",
+            "akas.profiles.independent.factories",
+            "tensor.compiler.frontend.source",
+            "tensor.compiler.webgpu.schedules.gemv",
+            "tensor.compiler.webgpu.schedules.outer_product",
+            "tensor.compiler.webgpu.schedules.packed_integer",
+            "tensor.compiler.webgpu.schedules.packed_outer_product",
+            "tensor.compiler.webgpu.schedules.partitioned",
+            "tensor.compiler.webgpu.schedules.register_matmul",
+            "tensor.compiler.webgpu.schedules.registers",
+            "akas.ops.normalization.kernels",
         ),
     )

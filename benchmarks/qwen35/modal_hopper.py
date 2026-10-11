@@ -1,6 +1,7 @@
 """Qualify Hopper matrix instructions before the unchanged full C8 replay."""
 
-from akas.compilation.paths import source_path, tensor_source
+from akas.compilation.paths import source_path
+from akas.compilation.paths import tensor_source
 
 from benchmarks.qwen35.modal_compact import app, image, volume, measure_compact
 
@@ -28,7 +29,7 @@ def prepare_hopper(
 
     os.chdir("/workspace")
     volume.reload()
-    from akas.execution.hybrid.model import implementation_hashes
+    from akas.artifacts.fingerprints import fixed_slots_hashes as implementation_hashes
 
     decoder = source_path(prepared["base"]["paths"]["decoder"]) / "inference.json"
     if json.loads(decoder.read_text())["implementation"] != implementation_hashes():
@@ -42,10 +43,10 @@ def prepare_hopper(
         source_path("src/tensor/compiler/build.py"),
         source_path("src/tensor/runtime/cuda_target.py"),
         source_path("src/akas/compilation/transforms/hopper.py"),
-        source_path("src/akas/kernels/moe/hopper_experts.py"),
-        source_path("src/akas/kernels/linear/hopper_dense.py"),
-        source_path("src/akas/kernels/attention/hopper_prefill_attention.py"),
-        source_path("src/akas/execution/optimizations/hopper.py"),
+        source_path('src/akas/ops/moe/cuda/hopper.py'),
+        source_path('src/akas/ops/linear/cuda/hopper.py'),
+        source_path('src/akas/ops/attention/cuda/hopper_prefill.py'),
+        source_path('src/akas/artifacts/fingerprints.py'),
     ]
     hashes = {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in sources}
     control = source_path(prepared["prefill"]) / "prefill.json"

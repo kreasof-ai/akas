@@ -1,6 +1,7 @@
 """Archive decode search, independent replay, and accepted model throughput."""
 
-from akas.compilation.paths import source_path, tensor_source
+from akas.compilation.paths import source_path
+from akas.compilation.paths import tensor_source
 
 from pathlib import Path as _Path
 import sys as _sys
@@ -27,12 +28,12 @@ def run(root, out):
         raise ValueError("requires completed and validated measurements")
     profiles = {name: load("profile-" + name + ".json") for name in ("before", "after")}
     source_paths = [
-        "src/akas/execution/packed/model.py",
-        "src/akas/kernels/packed/webgpu.py",
+        'src/akas/execution/independent/resident.py',
+        *('src/akas/compilation/source.py', 'src/akas/ops/attention/webgpu/packed.py', 'src/akas/ops/linear/webgpu/packed.py', 'src/akas/ops/normalization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/storage.py', 'src/akas/ops/reductions/webgpu.py', 'src/akas/ops/sequence/webgpu/packed.py', 'src/akas/ops/vocabulary/webgpu/packed.py', 'src/akas/profiles/independent/factories.py'),
         "src/tensor/compiler/webgpu_lowering.py",
         "src/tensor/compiler/search.py",
         "src/tensor/compiler/webgpu/schedules/search_space.py",
-        "src/akas/compilation/profiles/packed.py",
+        'src/akas/compilation/profiles/independent.py',
         "benchmarks/lfm2/webgpu_profile.py",
         "benchmarks/lfm2/decode_kernel_search.py",
         "benchmarks/lfm2/decode_attention_search.py",
@@ -50,8 +51,8 @@ def run(root, out):
         for p in source_paths
     }
     for key, path in (
-        ("akas.execution.packed.model", source_paths[0]),
-        ("akas.kernels.packed.webgpu", source_paths[1]),
+        ("akas.execution.independent.resident", source_paths[0]),
+        ("akas.profiles.independent.factories", source_paths[1]),
     ):
         if (
             model["bundles"]["searched"]["implementation"][key]

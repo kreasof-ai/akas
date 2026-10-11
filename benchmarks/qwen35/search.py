@@ -108,9 +108,8 @@ def search(model, out, *, candidates=12, width=4):
                 stages=(1, 2),
             )
         }
-        legal = (
-            lambda c: p["k"] % (128 * c["partitions"]) == 0
-            and p["o"] % c["columns"] == 0
+        legal = lambda c: (
+            p["k"] % (128 * c["partitions"]) == 0 and p["o"] % c["columns"] == 0
         )
         explorer = ScheduleSearch(
             [
@@ -151,14 +150,14 @@ def search(model, out, *, candidates=12, width=4):
                 entry = out / (tag + ".py")
                 artifact = entry.with_suffix(".tbin")
                 text = export_source(
-                    "akas.kernels.linear.matmul",
+                    "akas.ops.linear.cuda.block_fp8",
                     "make_kernel",
                     kind + "_mma_prequantized",
                     cp,
                     dependencies=(
-                        'tensor.compiler.frontend.source',
-                        'tensor.compiler.cuda.lowering',
-                        "akas.kernels.elementwise",
+                        "tensor.compiler.frontend.source",
+                        "tensor.compiler.cuda.lowering",
+                        "akas.ops.normalization.kernels",
                     ),
                 )
                 if (
@@ -200,12 +199,12 @@ def search(model, out, *, candidates=12, width=4):
                     me = out / (tag + "-merge.py")
                     ma = me.with_suffix(".tbin")
                     mt = export_source(
-                        "akas.kernels.linear.matmul",
+                        "akas.ops.linear.cuda.block_fp8",
                         "merge_kernel",
                         mp,
                         dependencies=(
-                            'tensor.compiler.frontend.source',
-                            "akas.kernels.elementwise",
+                            "tensor.compiler.frontend.source",
+                            "akas.ops.normalization.kernels",
                         ),
                     )
                     if not ma.is_file() or not me.is_file() or me.read_text() != mt:

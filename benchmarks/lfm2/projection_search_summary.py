@@ -1,6 +1,7 @@
 """Archive the completed searches and independent three-framework measurements."""
 
-from akas.compilation.paths import source_path, tensor_source
+from akas.compilation.paths import source_path
+from akas.compilation.paths import tensor_source
 
 from pathlib import Path as _Path
 import sys as _sys
@@ -118,7 +119,7 @@ def run(search_root, recheck_root, native_root, json_out, native_default_root=No
         "src/tensor/compiler/webgpu_lowering.py",
         "src/tensor/compiler/search.py",
         "src/tensor/compiler/webgpu/schedules/search_space.py",
-        "src/akas/kernels/packed/webgpu.py",
+        *('src/akas/compilation/source.py', 'src/akas/ops/attention/webgpu/packed.py', 'src/akas/ops/linear/webgpu/packed.py', 'src/akas/ops/normalization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/storage.py', 'src/akas/ops/reductions/webgpu.py', 'src/akas/ops/sequence/webgpu/packed.py', 'src/akas/ops/vocabulary/webgpu/packed.py', 'src/akas/profiles/independent/factories.py'),
         "benchmarks/lfm2/tensor_projection_search.py",
         "benchmarks/lfm2/projection_search_recheck.py",
         "benchmarks/lfm2/llama_projection_compare.py",

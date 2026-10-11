@@ -6,7 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from akas.text.formats import Rules, TokenizerError
+from akas.text.formats import Rules
+from akas.text.formats import TokenizerError
 from akas.text.tokenizer import Tokenizer
 
 FIXTURE = Path(__file__).parent / "fixtures/tokenizer/qwen35"

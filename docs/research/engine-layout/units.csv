@@ -1,0 +1,305 @@
+source,unit,kind,start_line,end_line,target,target_symbol
+src/akas/artifacts/__init__.py,package marker and module description,module-header,1,0,src/akas/artifacts/__init__.py,
+src/akas/artifacts/batched.py,implementation,definition,8,28,src/akas/artifacts/fingerprints.py,compact_batch_hashes
+src/akas/artifacts/batched.py,validate_implementation,definition,31,33,src/akas/artifacts/fingerprints.py,validate_implementation
+src/akas/artifacts/hybrid.py,requirements,definition,9,49,src/akas/profiles/fixed_slots/requirements.py,requirements
+src/akas/artifacts/hybrid.py,implementation_hashes,definition,52,104,src/akas/artifacts/fingerprints.py,fixed_slots_hashes
+src/akas/artifacts/kernels.py,backbone_hashes,definition,8,33,src/akas/artifacts/fingerprints.py,backbone_hashes
+src/akas/artifacts/kernels.py,identity,definition,36,39,src/akas/artifacts/kernels.py,identity
+src/akas/artifacts/kernels.py,artifact_path,definition,42,55,src/akas/artifacts/kernels.py,artifact_path
+src/akas/artifacts/kernels.py,load_kernels,definition,58,74,src/akas/artifacts/kernels.py,load_kernels
+src/akas/artifacts/packed.py,requirements,definition,14,216,src/akas/profiles/independent/requirements.py,requirements
+src/akas/artifacts/packed.py,implementation_hashes,definition,219,312,src/akas/artifacts/fingerprints.py,independent_hashes
+src/akas/execution/__init__.py,package marker and module description,module-header,1,0,src/akas/execution/__init__.py,
+src/akas/execution/batched/__init__.py,package marker and module description,module-header,1,0,src/akas/execution/compact_batch/__init__.py,
+src/akas/execution/batched/batch.py,ExecutionBatch,definition,18,210,src/akas/execution/compact_batch/batch.py,ExecutionBatch
+src/akas/execution/batched/draft.py,DenseMTP,definition,12,72,src/akas/execution/compact_batch/draft.py,DenseMTP
+src/akas/execution/batched/model.py,BatchedModel,definition,15,137,src/akas/execution/compact_batch/resident.py,BatchedModel
+src/akas/execution/batched/plan.py,build_plan,definition,13,176,src/akas/execution/compact_batch/plan.py,build_plan
+src/akas/execution/batched/speculative_graph.py,SpeculativeRound,definition,16,234,src/akas/execution/compact_batch/speculative_graph.py,SpeculativeRound
+src/akas/execution/batched/workspace.py,allocate_workspace,definition,7,76,src/akas/execution/compact_batch/workspace.py,allocate_workspace
+src/akas/execution/hybrid/__init__.py,package marker and module description,module-header,1,0,src/akas/execution/fixed_slots/__init__.py,
+src/akas/execution/hybrid/decode_plan.py,build_decode_plan,definition,12,99,src/akas/execution/fixed_slots/decode.py,build_decode_plan
+src/akas/execution/hybrid/draft.py,mtp_implementation_hashes,definition,26,32,src/akas/artifacts/fingerprints.py,fixed_slots_hashes
+src/akas/execution/hybrid/draft.py,Qwen35MTP,definition,35,201,src/akas/execution/fixed_slots/draft.py,Qwen35MTP
+src/akas/execution/hybrid/draft_prefill.py,implementation_hashes,definition,14,20,src/akas/artifacts/fingerprints.py,fixed_slots_hashes
+src/akas/execution/hybrid/draft_prefill.py,Qwen35MTPPrefill,definition,23,87,src/akas/execution/fixed_slots/draft.py,Qwen35MTPPrefill
+src/akas/execution/hybrid/model.py,FixedSlotModel,definition,31,331,src/akas/execution/fixed_slots/resident.py,FixedSlotModel
+src/akas/execution/hybrid/prefill.py,Qwen35Prefill,definition,17,155,src/akas/execution/fixed_slots/prefill.py,Qwen35Prefill
+src/akas/execution/hybrid/prefill_plan.py,build_prefill_plan,definition,11,130,src/akas/execution/fixed_slots/prefill.py,build_prefill_plan
+src/akas/execution/hybrid/repair.py,implementation_hashes,definition,14,22,src/akas/artifacts/fingerprints.py,fixed_slots_hashes
+src/akas/execution/hybrid/repair.py,Qwen35RecomputeVerifier,definition,25,215,src/akas/execution/fixed_slots/repair.py,Qwen35RecomputeVerifier
+src/akas/execution/hybrid/verification_pool.py,implementation_hashes,definition,9,12,src/akas/artifacts/fingerprints.py,fixed_slots_hashes
+src/akas/execution/hybrid/verification_pool.py,VerifierPool,definition,15,108,src/akas/execution/fixed_slots/pools.py,VerifierPool
+src/akas/execution/hybrid/verification_pool.py,RepairPool,definition,111,141,src/akas/execution/fixed_slots/pools.py,RepairPool
+src/akas/execution/hybrid/verifier.py,implementation_hashes,definition,20,31,src/akas/artifacts/fingerprints.py,fixed_slots_hashes
+src/akas/execution/hybrid/verifier.py,Qwen35Verifier,definition,34,210,src/akas/execution/fixed_slots/verify.py,Qwen35Verifier
+src/akas/execution/hybrid/workspace.py,allocate_workspace,definition,6,59,src/akas/execution/fixed_slots/workspace.py,allocate_workspace
+src/akas/execution/optimizations/__init__.py,package marker and module description,module-header,1,0,src/akas/execution/fixed_slots/optimizations/__init__.py,
+src/akas/execution/optimizations/attention_workspace.py,implementation_hashes,definition,14,17,src/akas/artifacts/fingerprints.py,fixed_slots_hashes
+src/akas/execution/optimizations/attention_workspace.py,install,definition,20,88,src/akas/execution/fixed_slots/optimizations/attention_workspace.py,install
+src/akas/execution/optimizations/compact_prefill.py,implementation_hashes,definition,14,25,src/akas/artifacts/fingerprints.py,fixed_slots_hashes
+src/akas/execution/optimizations/compact_prefill.py,install,definition,28,106,src/akas/execution/fixed_slots/optimizations/compact_prefill.py,install
+src/akas/execution/optimizations/decode_projections.py,replace,definition,12,174,src/akas/execution/fixed_slots/optimizations/linear_projections.py,replace
+src/akas/execution/optimizations/hopper.py,implementation_hashes,definition,14,17,src/akas/artifacts/fingerprints.py,fixed_slots_hashes
+src/akas/execution/optimizations/hopper.py,install,definition,20,75,src/akas/execution/fixed_slots/optimizations/hopper.py,install
+src/akas/execution/optimizations/split_attention.py,implementation_hashes,definition,14,24,src/akas/artifacts/fingerprints.py,fixed_slots_hashes
+src/akas/execution/optimizations/split_attention.py,install,definition,27,103,src/akas/execution/fixed_slots/optimizations/split_attention.py,install
+src/akas/execution/optimizations/split_linear.py,implementation_hashes,definition,14,25,src/akas/artifacts/fingerprints.py,fixed_slots_hashes
+src/akas/execution/optimizations/split_linear.py,install,definition,28,126,src/akas/execution/fixed_slots/optimizations/split_linear.py,install
+src/akas/execution/packed/__init__.py,package marker and module description,module-header,1,0,src/akas/execution/independent/__init__.py,
+src/akas/execution/packed/model.py,PackedResources,definition,23,191,src/akas/execution/independent/resident.py,PackedResources
+src/akas/execution/packed/model.py,PackedModel,definition,194,257,src/akas/execution/independent/resident.py,PackedModel
+src/akas/execution/packed/plan.py,build_plan,definition,18,134,src/akas/execution/independent/plan.py,build_plan
+src/akas/execution/packed/request.py,LFM2Request,definition,15,367,src/akas/execution/independent/request.py,LFM2Request
+src/akas/execution/packed/workspace.py,allocate_workspaces,definition,7,95,src/akas/execution/independent/workspace.py,allocate_workspaces
+src/akas/execution/plan.py,call_bindings,definition,6,9,src/akas/execution/plan.py,call_bindings
+src/akas/execution/plan.py,bind_named,definition,12,15,src/akas/execution/plan.py,bind_named
+src/akas/execution/plan.py,ExecutionPlan,definition,18,33,src/akas/execution/plan.py,ExecutionPlan
+src/akas/execution/plan.py,KernelPlan,definition,36,64,src/akas/execution/plan.py,KernelPlan
+src/akas/execution/profiles/__init__.py,package marker and module description,module-header,1,0,src/akas/profiles/independent/__init__.py,
+src/akas/execution/profiles/packed.py,state:5,state,5,13,src/akas/profiles/independent/parameters.py,
+src/akas/execution/profiles/packed.py,state:15,state,15,27,src/akas/profiles/independent/parameters.py,
+src/akas/execution/profiles/packed.py,state:29,state,29,29,src/akas/profiles/independent/parameters.py,
+src/akas/execution/profiles/packed.py,state:31,state,31,41,src/akas/profiles/independent/parameters.py,
+src/akas/execution/profiles/packed.py,state:43,state,43,48,src/akas/profiles/independent/parameters.py,
+src/akas/execution/profiles/packed.py,state:50,state,50,58,src/akas/profiles/independent/parameters.py,
+src/akas/execution/profiles/packed.py,state:60,state,60,68,src/akas/profiles/independent/parameters.py,
+src/akas/execution/profiles/packed.py,state:70,state,70,84,src/akas/profiles/independent/parameters.py,
+src/akas/execution/profiles/packed.py,state:86,state,86,148,src/akas/profiles/independent/parameters.py,
+src/akas/execution/profiles/packed.py,state:150,state,150,164,src/akas/profiles/independent/parameters.py,
+src/akas/execution/profiles/packed.py,state:166,state,166,172,src/akas/profiles/independent/parameters.py,
+src/akas/execution/profiles/packed.py,state:174,state,174,194,src/akas/profiles/independent/parameters.py,
+src/akas/execution/profiles/packed.py,state:196,state,196,196,src/akas/profiles/independent/parameters.py,
+src/akas/execution/profiles/packed.py,state:198,state,198,198,src/akas/profiles/independent/parameters.py,
+src/akas/execution/profiles/packed.py,state:200,state,200,218,src/akas/profiles/independent/parameters.py,
+src/akas/execution/profiles/packed.py,state:220,state,220,227,src/akas/profiles/independent/parameters.py,
+src/akas/execution/profiles/packed.py,state:229,state,229,229,src/akas/profiles/independent/parameters.py,
+src/akas/execution/profiles/packed.py,state:231,state,231,231,src/akas/profiles/independent/parameters.py,
+src/akas/execution/profiles/packed.py,state:233,state,233,254,src/akas/profiles/independent/parameters.py,
+src/akas/execution/profiles/selection.py,prefill_tail_rows,definition,18,47,src/akas/profiles/independent/selection.py,prefill_tail_rows
+src/akas/execution/profiles/selection.py,valid_rows,definition,50,77,src/akas/profiles/independent/selection.py,valid_rows
+src/akas/execution/profiles/selection.py,paired_ffn,definition,80,107,src/akas/profiles/independent/selection.py,paired_ffn
+src/akas/execution/profiles/selection.py,projection_tile,definition,110,111,src/akas/profiles/independent/selection.py,projection_tile
+src/akas/execution/profiles/selection.py,webgpu_parameters,definition,114,225,src/akas/profiles/independent/selection.py,webgpu_parameters
+src/akas/generation/__init__.py,package marker and module description,module-header,1,5,src/akas/generation/__init__.py,
+src/akas/generation/acceptance.py,accepted_prefix,definition,6,31,src/akas/generation/acceptance.py,accepted_prefix
+src/akas/generation/batched_mtp.py,SpeculativeEngine,definition,6,134,src/akas/execution/compact_batch/speculative.py,SpeculativeEngine
+src/akas/generation/greedy.py,"generate_greedy: prompt, limits, stop rules and output",function-block,7,24,src/akas/generation/greedy.py,
+src/akas/generation/greedy.py,generate_greedy: provider submission/readback and position advance,function-block,25,40,src/akas/execution/independent/greedy.py,
+src/akas/generation/greedy.py,generate_greedy: results and host argmax fallback,function-block,41,59,src/akas/generation/greedy.py,
+src/akas/generation/lookup.py,OutputLookup,definition,6,52,src/akas/generation/lookup.py,OutputLookup
+src/akas/generation/mtp.py,Qwen35Speculative,definition,9,146,src/akas/execution/fixed_slots/speculative.py,Qwen35Speculative
+src/akas/kernels/__init__.py,package marker and module description,module-header,1,1,src/akas/ops/__init__.py,
+src/akas/kernels/attention/__init__.py,package marker and module description,module-header,1,0,src/akas/ops/attention/__init__.py,
+src/akas/kernels/attention/attention_workspace.py,decode,definition,4,53,src/akas/ops/attention/cuda/workspace.py,decode
+src/akas/kernels/attention/fp8_attention.py,make_kernel,definition,4,373,src/akas/ops/attention/cuda/fp8.py,make_kernel
+src/akas/kernels/attention/fp8_kv.py,make_kernel,definition,8,15,src/akas/ops/attention/cuda/kv_fp8.py,make_kernel
+src/akas/kernels/attention/fp8_kv.py,write,definition,18,110,src/akas/ops/attention/cuda/kv_fp8.py,write
+src/akas/kernels/attention/fp8_kv.py,partial,definition,113,248,src/akas/ops/attention/cuda/kv_fp8.py,partial
+src/akas/kernels/attention/fp8_kv.py,attention,definition,251,407,src/akas/ops/attention/cuda/kv_fp8.py,attention
+src/akas/kernels/attention/hopper_attention.py,partial,definition,4,224,src/akas/ops/attention/cuda/hopper.py,partial
+src/akas/kernels/attention/hopper_prefill_attention.py,attention,definition,4,247,src/akas/ops/attention/cuda/hopper_prefill.py,attention
+src/akas/kernels/attention/speculative_attention.py,partial,definition,4,162,src/akas/ops/attention/cuda/split.py,partial
+src/akas/kernels/attention/speculative_attention.py,merge,definition,165,243,src/akas/ops/attention/cuda/split.py,merge
+src/akas/kernels/elementwise.py,rms_kernel,definition,4,97,src/akas/ops/normalization/kernels.py,rms_kernel
+src/akas/kernels/elementwise.py,swiglu_kernel,definition,100,160,src/akas/ops/ffn/activation.py,swiglu_kernel
+src/akas/kernels/hybrid/__init__.py,package marker and module description,module-header,1,0,src/akas/profiles/fixed_slots/__init__.py,
+src/akas/kernels/hybrid/hybrid.py,source,definition,10,24,src/akas/compilation/source.py,export_kernel
+src/akas/kernels/hybrid/hybrid.py,"make_kernel: selection, validation, fallback and shared prerequisites",dispatcher,27,841,src/akas/profiles/fixed_slots/factories.py,decode_factory
+src/akas/kernels/hybrid/hybrid.py,make_kernel:kind == 'moe_groups',opcode-branch,35,63,src/akas/ops/moe/cuda/decode.py,operation factory for kind == 'moe_groups'
+src/akas/kernels/hybrid/hybrid.py,make_kernel:kind == 'fp8_experts',opcode-branch,65,161,src/akas/ops/moe/cuda/decode.py,operation factory for kind == 'fp8_experts'
+src/akas/kernels/hybrid/hybrid.py,make_kernel:kind == 'bf16_linear',opcode-branch,163,189,src/akas/ops/linear/cuda/decode.py,operation factory for kind == 'bf16_linear'
+src/akas/kernels/hybrid/hybrid.py,make_kernel:kind == 'embedding',opcode-branch,191,208,src/akas/ops/vocabulary/cuda/decode.py,operation factory for kind == 'embedding'
+src/akas/kernels/hybrid/hybrid.py,"make_kernel:kind in ('rms', 'add_rms')",opcode-branch,210,223,src/akas/ops/normalization/cuda/decode.py,"operation factory for kind in ('rms', 'add_rms')"
+src/akas/kernels/hybrid/hybrid.py,make_kernel:kind == 'router',opcode-branch,225,260,src/akas/ops/moe/cuda/decode.py,operation factory for kind == 'router'
+src/akas/kernels/hybrid/hybrid.py,make_kernel:kind == 'swiglu',opcode-branch,262,263,src/akas/ops/ffn/cuda/decode.py,operation factory for kind == 'swiglu'
+src/akas/kernels/hybrid/hybrid.py,make_kernel:kind == 'swiglu_experts',opcode-branch,265,282,src/akas/ops/ffn/cuda/decode.py,operation factory for kind == 'swiglu_experts'
+src/akas/kernels/hybrid/hybrid.py,make_kernel:kind == 'moe_combine',opcode-branch,284,314,src/akas/ops/moe/cuda/decode.py,operation factory for kind == 'moe_combine'
+src/akas/kernels/hybrid/hybrid.py,make_kernel:kind == 'gdn_conv',opcode-branch,316,343,src/akas/ops/gdn/cuda/decode.py,operation factory for kind == 'gdn_conv'
+src/akas/kernels/hybrid/hybrid.py,make_kernel:kind == 'gdn_prepare',opcode-branch,345,391,src/akas/ops/gdn/cuda/decode.py,operation factory for kind == 'gdn_prepare'
+src/akas/kernels/hybrid/hybrid.py,make_kernel:kind == 'gdn_norm',opcode-branch,393,421,src/akas/ops/gdn/cuda/decode.py,operation factory for kind == 'gdn_norm'
+src/akas/kernels/hybrid/hybrid.py,"make_kernel:kind in ('attention_q', 'attention_kv')",opcode-branch,423,526,src/akas/ops/attention/cuda/decode.py,"operation factory for kind in ('attention_q', 'attention_kv')"
+src/akas/kernels/hybrid/hybrid.py,make_kernel:kind == 'attention_partial',opcode-branch,528,596,src/akas/ops/attention/cuda/decode.py,operation factory for kind == 'attention_partial'
+src/akas/kernels/hybrid/hybrid.py,make_kernel:kind == 'attention_merge',opcode-branch,598,645,src/akas/ops/attention/cuda/decode.py,operation factory for kind == 'attention_merge'
+src/akas/kernels/hybrid/hybrid.py,make_kernel:kind == 'argmax',opcode-branch,647,691,src/akas/ops/vocabulary/cuda/decode.py,operation factory for kind == 'argmax'
+src/akas/kernels/hybrid/hybrid.py,make_kernel:kind == 'e4m3_decode',opcode-branch,693,703,src/akas/ops/quantization/cuda/decode.py,operation factory for kind == 'e4m3_decode'
+src/akas/kernels/hybrid/hybrid.py,make_kernel:kind == 'fp8_linear',opcode-branch,705,772,src/akas/ops/linear/cuda/decode.py,operation factory for kind == 'fp8_linear'
+src/akas/kernels/hybrid/hybrid.py,make_kernel:kind == 'gdn_recurrent',opcode-branch,774,839,src/akas/ops/gdn/cuda/decode.py,operation factory for kind == 'gdn_recurrent'
+src/akas/kernels/hybrid/hybrid_batch.py,"make_kernel: selection, validation, fallback and shared prerequisites",dispatcher,6,577,src/akas/profiles/compact_batch/factories.py,batch_factory
+src/akas/kernels/hybrid/hybrid_batch.py,make_kernel:kind == 'linear',opcode-branch,10,45,src/akas/ops/linear/cuda/bf16_batch.py,operation factory for kind == 'linear'
+src/akas/kernels/hybrid/hybrid_batch.py,make_kernel:kind == 'gemv',opcode-branch,47,73,src/akas/ops/linear/cuda/bf16_batch.py,operation factory for kind == 'gemv'
+src/akas/kernels/hybrid/hybrid_batch.py,make_kernel:kind == 'gather_hidden',opcode-branch,77,94,src/akas/ops/sequence/cuda/bf16_batch.py,operation factory for kind == 'gather_hidden'
+src/akas/kernels/hybrid/hybrid_batch.py,make_kernel:kind == 'store_hidden',opcode-branch,95,112,src/akas/ops/sequence/cuda/bf16_batch.py,operation factory for kind == 'store_hidden'
+src/akas/kernels/hybrid/hybrid_batch.py,make_kernel:kind == 'controls',opcode-branch,113,131,src/akas/ops/sequence/cuda/bf16_batch.py,operation factory for kind == 'controls'
+src/akas/kernels/hybrid/hybrid_batch.py,make_kernel:kind == 'gdn_conv',opcode-branch,133,182,src/akas/ops/gdn/cuda/bf16_batch.py,operation factory for kind == 'gdn_conv'
+src/akas/kernels/hybrid/hybrid_batch.py,make_kernel:kind == 'gdn_prepare',opcode-branch,184,241,src/akas/ops/gdn/cuda/bf16_batch.py,operation factory for kind == 'gdn_prepare'
+src/akas/kernels/hybrid/hybrid_batch.py,make_kernel:kind == 'gdn_scan',opcode-branch,243,300,src/akas/ops/gdn/cuda/bf16_batch.py,operation factory for kind == 'gdn_scan'
+src/akas/kernels/hybrid/hybrid_batch.py,make_kernel:kind == 'gdn_norm',opcode-branch,302,335,src/akas/ops/gdn/cuda/bf16_batch.py,operation factory for kind == 'gdn_norm'
+src/akas/kernels/hybrid/hybrid_batch.py,make_kernel:kind == 'swiglu',opcode-branch,337,340,src/akas/ops/ffn/cuda/bf16_batch.py,operation factory for kind == 'swiglu'
+src/akas/kernels/hybrid/hybrid_batch.py,make_kernel:kind == 'last_rows',opcode-branch,342,361,src/akas/ops/sequence/cuda/bf16_batch.py,operation factory for kind == 'last_rows'
+src/akas/kernels/hybrid/hybrid_batch.py,make_kernel:kind == 'attention_qkv',opcode-branch,363,454,src/akas/ops/attention/cuda/bf16_batch.py,operation factory for kind == 'attention_qkv'
+src/akas/kernels/hybrid/hybrid_batch.py,make_kernel:kind == 'attention',opcode-branch,456,575,src/akas/ops/attention/cuda/bf16_batch.py,operation factory for kind == 'attention'
+src/akas/kernels/hybrid/hybrid_prefill.py,"make_kernel: selection, validation, fallback and shared prerequisites",dispatcher,4,348,src/akas/profiles/fixed_slots/factories.py,prefill_factory
+src/akas/kernels/hybrid/hybrid_prefill.py,make_kernel:kind == 'controls',opcode-branch,14,32,src/akas/ops/sequence/cuda/prefill.py,operation factory for kind == 'controls'
+src/akas/kernels/hybrid/hybrid_prefill.py,make_kernel:kind == 'gdn_conv',opcode-branch,33,74,src/akas/ops/gdn/cuda/prefill.py,operation factory for kind == 'gdn_conv'
+src/akas/kernels/hybrid/hybrid_prefill.py,make_kernel:kind == 'gdn_scan',opcode-branch,75,127,src/akas/ops/gdn/cuda/prefill.py,operation factory for kind == 'gdn_scan'
+src/akas/kernels/hybrid/hybrid_prefill.py,make_kernel:kind == 'expert_routes',opcode-branch,128,158,src/akas/ops/moe/cuda/prefill.py,operation factory for kind == 'expert_routes'
+src/akas/kernels/hybrid/hybrid_prefill.py,make_kernel:kind == 'last_rows',opcode-branch,159,178,src/akas/ops/sequence/cuda/prefill.py,operation factory for kind == 'last_rows'
+src/akas/kernels/hybrid/hybrid_prefill.py,make_kernel:kind == 'advance',opcode-branch,179,194,src/akas/ops/sequence/cuda/prefill.py,operation factory for kind == 'advance'
+src/akas/kernels/hybrid/hybrid_prefill.py,make_kernel:kind == 'attention_kv',opcode-branch,195,246,src/akas/ops/attention/cuda/prefill.py,operation factory for kind == 'attention_kv'
+src/akas/kernels/hybrid/hybrid_prefill.py,make_kernel:kind == 'attention',opcode-branch,247,347,src/akas/ops/attention/cuda/prefill.py,operation factory for kind == 'attention'
+src/akas/kernels/hybrid/hybrid_prefill.py,expert_kernel,definition,351,484,src/akas/ops/moe/cuda/prefill.py,expert_kernel
+src/akas/kernels/linear/__init__.py,package marker and module description,module-header,1,0,src/akas/ops/linear/__init__.py,
+src/akas/kernels/linear/fp8_operand.py,state:3,state,3,9,src/akas/ops/quantization/cuda/fp8_operand.py,
+src/akas/kernels/linear/head.py,make_kernel,definition,4,90,src/akas/ops/vocabulary/cuda/fused_head.py,make_kernel
+src/akas/kernels/linear/hopper_dense.py,make_kernel,definition,4,232,src/akas/ops/linear/cuda/hopper.py,make_kernel
+src/akas/kernels/linear/matmul.py,make_kernel,definition,4,323,src/akas/ops/linear/cuda/block_fp8.py,make_kernel
+src/akas/kernels/linear/matmul.py,quantize_kernel,definition,326,372,src/akas/ops/quantization/cuda/block_fp8.py,quantize_kernel
+src/akas/kernels/linear/matmul.py,merge_kernel,definition,375,405,src/akas/ops/linear/cuda/block_fp8.py,merge_kernel
+src/akas/kernels/linear/matmul.py,bf16_kernel,definition,408,443,src/akas/ops/linear/cuda/block_fp8.py,bf16_kernel
+src/akas/kernels/linear/matmul.py,bf16_decode_kernel,definition,446,473,src/akas/ops/linear/cuda/block_fp8.py,bf16_decode_kernel
+src/akas/kernels/linear/matmul.py,bf16_head_kernel,definition,476,522,src/akas/ops/vocabulary/cuda/bf16.py,bf16_head_kernel
+src/akas/kernels/linear/resident_operands.py,widen,definition,4,30,src/akas/ops/quantization/cuda/resident_operands.py,widen
+src/akas/kernels/linear/speculative_linear.py,expert_kernel,definition,4,99,src/akas/ops/moe/cuda/split.py,expert_kernel
+src/akas/kernels/linear/split_linear.py,schedule,definition,4,11,src/akas/profiles/compact_batch/parameters.py,schedule
+src/akas/kernels/linear/split_linear.py,make_kernel,definition,14,74,src/akas/ops/linear/cuda/split.py,make_kernel
+src/akas/kernels/moe/__init__.py,package marker and module description,module-header,1,0,src/akas/ops/moe/__init__.py,
+src/akas/kernels/moe/compact_experts.py,tile_map_kernel,definition,4,40,src/akas/ops/moe/cuda/compact.py,tile_map_kernel
+src/akas/kernels/moe/hopper_experts.py,expert_kernel,definition,8,405,src/akas/ops/moe/cuda/hopper.py,expert_kernel
+src/akas/kernels/packed/__init__.py,package marker and module description,module-header,1,0,src/akas/ops/quantization/__init__.py,
+src/akas/kernels/packed/cuda.py,state:15,state,15,15,src/akas/profiles/independent/parameters.py,
+src/akas/kernels/packed/cuda.py,state:16,state,16,16,src/akas/profiles/independent/parameters.py,
+src/akas/kernels/packed/cuda.py,source,definition,19,33,src/akas/compilation/source.py,export_kernel
+src/akas/kernels/packed/cuda.py,gemv_source,definition,36,50,src/akas/compilation/source.py,export_kernel
+src/akas/kernels/packed/cuda.py,prefill_source,definition,53,67,src/akas/compilation/source.py,export_kernel
+src/akas/kernels/packed/cuda.py,fused_source,definition,70,84,src/akas/compilation/source.py,export_kernel
+src/akas/kernels/packed/cuda.py,hardware_loads,definition,87,104,src/akas/ops/quantization/cuda/ggml.py,hardware_loads
+src/akas/kernels/packed/cuda.py,packed_dot,definition,107,248,src/akas/ops/quantization/cuda/ggml.py,packed_dot
+src/akas/kernels/packed/cuda.py,projection_abi,definition,251,291,src/akas/ops/linear/cuda/packed.py,projection_abi
+src/akas/kernels/packed/cuda.py,gemv_kernel,definition,294,362,src/akas/ops/linear/cuda/packed.py,gemv_kernel
+src/akas/kernels/packed/cuda.py,pair_decoder,definition,365,431,src/akas/ops/quantization/cuda/ggml.py,pair_decoder
+src/akas/kernels/packed/cuda.py,prefill_kernel,definition,434,503,src/akas/ops/linear/cuda/packed.py,prefill_kernel
+src/akas/kernels/packed/cuda.py,fused_kernel,definition,506,561,src/akas/ops/linear/cuda/packed.py,fused_kernel
+src/akas/kernels/packed/cuda.py,warp_partial_kernel,definition,564,655,src/akas/ops/attention/cuda/packed.py,warp_partial_kernel
+src/akas/kernels/packed/cuda.py,warp_partial_source,definition,658,672,src/akas/compilation/source.py,export_kernel
+src/akas/kernels/packed/cuda.py,grouped_kernel,definition,675,798,src/akas/ops/attention/cuda/packed.py,grouped_kernel
+src/akas/kernels/packed/cuda.py,grouped_source,definition,801,816,src/akas/compilation/source.py,export_kernel
+src/akas/kernels/packed/cuda.py,merge_kernel,definition,819,854,src/akas/ops/attention/cuda/packed.py,merge_kernel
+src/akas/kernels/packed/cuda.py,merge_source,definition,857,871,src/akas/compilation/source.py,export_kernel
+src/akas/kernels/packed/cuda.py,normalization_kernel,definition,874,946,src/akas/ops/normalization/cuda/packed.py,normalization_kernel
+src/akas/kernels/packed/cuda.py,"make_kernel: selection, validation, fallback and shared prerequisites",dispatcher,949,992,src/akas/profiles/independent/factories.py,packed_cuda_factory
+src/akas/kernels/packed/cuda.py,"make_kernel:kind in ('linear', 'linear_add', 'ffn')",opcode-branch,952,955,src/akas/ops/linear/cuda/packed.py,"operation factory for kind in ('linear', 'linear_add', 'ffn')"
+src/akas/kernels/packed/cuda.py,make_kernel:kind == 'attention_partial',opcode-branch,956,957,src/akas/ops/attention/cuda/packed.py,operation factory for kind == 'attention_partial'
+src/akas/kernels/packed/cuda.py,make_kernel:kind == 'attention_grouped',opcode-branch,958,959,src/akas/ops/attention/cuda/packed.py,operation factory for kind == 'attention_grouped'
+src/akas/kernels/packed/cuda.py,make_kernel:kind == 'attention_merge',opcode-branch,960,961,src/akas/ops/attention/cuda/packed.py,operation factory for kind == 'attention_merge'
+src/akas/kernels/packed/cuda.py,"make_kernel:kind in ('qnorm', 'kvnorm')",opcode-branch,962,963,src/akas/ops/normalization/cuda/packed.py,"operation factory for kind in ('qnorm', 'kvnorm')"
+src/akas/kernels/packed/cuda.py,make_kernel:kind == 'argmax',opcode-branch,964,965,src/akas/ops/vocabulary/cuda/packed.py,operation factory for kind == 'argmax'
+src/akas/kernels/packed/cuda.py,make_kernel:kind == 'prefill_tail',opcode-branch,966,989,src/akas/ops/sequence/cuda/packed.py,operation factory for kind == 'prefill_tail'
+src/akas/kernels/packed/cuda.py,make_kernel:kind == 'add_rms',opcode-branch,990,991,src/akas/ops/normalization/cuda/packed.py,operation factory for kind == 'add_rms'
+src/akas/kernels/packed/ggml.py,weight_storage,definition,14,23,src/akas/ops/quantization/ggml.py,weight_storage
+src/akas/kernels/packed/ggml.py,weight_decoder,definition,26,110,src/akas/ops/quantization/ggml.py,weight_decoder
+src/akas/kernels/packed/ggml.py,source,definition,113,127,src/akas/compilation/source.py,export_kernel
+src/akas/kernels/packed/ggml.py,"make_kernel: selection, validation, fallback and shared prerequisites",dispatcher,130,485,src/akas/profiles/independent/factories.py,packed_baseline_factory
+src/akas/kernels/packed/ggml.py,make_kernel:kind == 'linear',opcode-branch,135,190,src/akas/ops/linear/cuda/packed_baseline.py,operation factory for kind == 'linear'
+src/akas/kernels/packed/ggml.py,make_kernel:kind == 'rms',opcode-branch,191,192,src/akas/ops/normalization/cuda/packed_baseline.py,operation factory for kind == 'rms'
+src/akas/kernels/packed/ggml.py,make_kernel:kind == 'swiglu',opcode-branch,193,194,src/akas/ops/ffn/cuda/packed_baseline.py,operation factory for kind == 'swiglu'
+src/akas/kernels/packed/ggml.py,make_kernel:kind == 'add',opcode-branch,195,210,src/akas/ops/residual/cuda/packed_baseline.py,operation factory for kind == 'add'
+src/akas/kernels/packed/ggml.py,make_kernel:kind == 'embedding',opcode-branch,211,229,src/akas/ops/vocabulary/cuda/packed_baseline.py,operation factory for kind == 'embedding'
+src/akas/kernels/packed/ggml.py,make_kernel:kind == 'conv',opcode-branch,230,267,src/akas/ops/convolution/cuda/packed_baseline.py,operation factory for kind == 'conv'
+src/akas/kernels/packed/ggml.py,make_kernel:kind == 'qkv',opcode-branch,268,337,src/akas/ops/attention/cuda/packed_baseline.py,operation factory for kind == 'qkv'
+src/akas/kernels/packed/ggml.py,make_kernel:kind == 'attention',opcode-branch,338,460,src/akas/ops/attention/cuda/packed_baseline.py,operation factory for kind == 'attention'
+src/akas/kernels/packed/ggml.py,make_kernel:kind == 'last',opcode-branch,461,475,src/akas/ops/sequence/cuda/packed_baseline.py,operation factory for kind == 'last'
+src/akas/kernels/packed/ggml.py,make_kernel:kind == 'advance',opcode-branch,476,484,src/akas/ops/sequence/cuda/packed_baseline.py,operation factory for kind == 'advance'
+src/akas/kernels/packed/ggml.py,argmax_kernel,definition,488,531,src/akas/ops/vocabulary/cuda/argmax.py,argmax_kernel
+src/akas/kernels/packed/webgpu.py,source,definition,9,24,src/akas/compilation/source.py,export_kernel
+src/akas/kernels/packed/webgpu.py,half_bits,definition,27,34,src/akas/ops/quantization/webgpu/storage.py,half_bits
+src/akas/kernels/packed/webgpu.py,packed_loads,definition,37,61,src/akas/ops/quantization/webgpu/storage.py,packed_loads
+src/akas/kernels/packed/webgpu.py,round_half,definition,64,90,src/akas/ops/quantization/webgpu/storage.py,round_half
+src/akas/kernels/packed/webgpu.py,tree_reduce,definition,93,109,src/akas/ops/reductions/webgpu.py,tree_reduce
+src/akas/kernels/packed/webgpu.py,subgroup_reduce,definition,112,139,src/akas/ops/reductions/webgpu.py,subgroup_reduce
+src/akas/kernels/packed/webgpu.py,rms_width,definition,142,146,src/akas/ops/normalization/webgpu/packed.py,rms_width
+src/akas/kernels/packed/webgpu.py,projection_epilogue,definition,149,161,src/akas/ops/linear/webgpu/packed.py,projection_epilogue
+src/akas/kernels/packed/webgpu.py,projection_abi,definition,164,187,src/akas/ops/linear/webgpu/packed.py,projection_abi
+src/akas/kernels/packed/webgpu.py,prefill_kernel,definition,190,263,src/akas/ops/linear/webgpu/packed.py,prefill_kernel
+src/akas/kernels/packed/webgpu.py,decode_kernel,definition,266,611,src/akas/ops/linear/webgpu/packed.py,decode_kernel
+src/akas/kernels/packed/webgpu.py,quantize_kernel,definition,614,806,src/akas/ops/quantization/webgpu/storage.py,quantize_kernel
+src/akas/kernels/packed/webgpu.py,integer_prefill_kernel,definition,809,855,src/akas/ops/linear/webgpu/packed.py,integer_prefill_kernel
+src/akas/kernels/packed/webgpu.py,q8_kernel,definition,858,904,src/akas/ops/linear/webgpu/packed.py,q8_kernel
+src/akas/kernels/packed/webgpu.py,segmented_reduce,definition,907,940,src/akas/ops/reductions/webgpu.py,segmented_reduce
+src/akas/kernels/packed/webgpu.py,rms_kernel,definition,943,1006,src/akas/ops/normalization/webgpu/packed.py,rms_kernel
+src/akas/kernels/packed/webgpu.py,normalization_kernel,definition,1009,1083,src/akas/ops/normalization/webgpu/packed.py,normalization_kernel
+src/akas/kernels/packed/webgpu.py,score_shuffle,definition,1086,1099,src/akas/ops/attention/webgpu/packed.py,score_shuffle
+src/akas/kernels/packed/webgpu.py,attention_scores_kernel,definition,1102,1150,src/akas/ops/attention/webgpu/packed.py,attention_scores_kernel
+src/akas/kernels/packed/webgpu.py,attention_kernel,definition,1153,1339,src/akas/ops/attention/webgpu/packed.py,attention_kernel
+src/akas/kernels/packed/webgpu.py,"make_kernel: selection, validation, fallback and shared prerequisites",dispatcher,1342,1415,src/akas/profiles/independent/factories.py,packed_webgpu_factory
+src/akas/kernels/packed/webgpu.py,"make_kernel:kind in ('linear', 'ffn') and p.get('q16')",opcode-branch,1346,1347,src/akas/ops/linear/webgpu/packed.py,"operation factory for kind in ('linear', 'ffn') and p.get('q16')"
+src/akas/kernels/packed/webgpu.py,"make_kernel:kind in ('linear_q16', 'ffn_q16')",opcode-branch,1348,1349,src/akas/ops/linear/webgpu/packed.py,"operation factory for kind in ('linear_q16', 'ffn_q16')"
+src/akas/kernels/packed/webgpu.py,"make_kernel:kind in ('linear', 'ffn', 'linear_add')",opcode-branch,1350,1353,src/akas/ops/linear/webgpu/packed.py,"operation factory for kind in ('linear', 'ffn', 'linear_add')"
+src/akas/kernels/packed/webgpu.py,"make_kernel:kind in ('quantize_q8', 'quantize_q16')",opcode-branch,1354,1355,src/akas/ops/quantization/webgpu/packed.py,"operation factory for kind in ('quantize_q8', 'quantize_q16')"
+src/akas/kernels/packed/webgpu.py,make_kernel:kind == 'linear_q8',opcode-branch,1356,1357,src/akas/ops/linear/webgpu/packed.py,operation factory for kind == 'linear_q8'
+src/akas/kernels/packed/webgpu.py,make_kernel:kind == 'rms' and (r == 1 or p.get('parallel_rows')) or kind == 'add_rms',opcode-branch,1358,1359,src/akas/ops/normalization/webgpu/packed.py,operation factory for kind == 'rms' and (r == 1 or p.get('parallel_rows')) or kind == 'add_rms'
+src/akas/kernels/packed/webgpu.py,"make_kernel:kind in ('qnorm', 'kvnorm')",opcode-branch,1360,1361,src/akas/ops/normalization/webgpu/packed.py,"operation factory for kind in ('qnorm', 'kvnorm')"
+src/akas/kernels/packed/webgpu.py,make_kernel:kind == 'attention_scores',opcode-branch,1362,1363,src/akas/ops/attention/webgpu/packed.py,operation factory for kind == 'attention_scores'
+src/akas/kernels/packed/webgpu.py,make_kernel:kind == 'attention',opcode-branch,1364,1365,src/akas/ops/attention/webgpu/packed.py,operation factory for kind == 'attention'
+src/akas/kernels/packed/webgpu.py,make_kernel:kind == 'embedding',opcode-branch,1366,1383,src/akas/ops/vocabulary/webgpu/packed.py,operation factory for kind == 'embedding'
+src/akas/kernels/packed/webgpu.py,make_kernel:kind == 'argmax',opcode-branch,1384,1388,src/akas/ops/vocabulary/webgpu/packed.py,operation factory for kind == 'argmax'
+src/akas/kernels/packed/webgpu.py,make_kernel:kind == 'prefill_tail',opcode-branch,1389,1412,src/akas/ops/sequence/webgpu/packed.py,operation factory for kind == 'prefill_tail'
+src/akas/kernels/packed/webgpu.py,make_kernel:kind == 'qkv',opcode-branch,1413,1414,src/akas/ops/attention/webgpu/packed.py,operation factory for kind == 'qkv'
+src/akas/kernels/recurrent/__init__.py,package marker and module description,module-header,1,0,src/akas/ops/gdn/__init__.py,
+src/akas/kernels/recurrent/hopper_restore.py,restore_kernel,definition,4,35,src/akas/ops/gdn/cuda/hopper_restore.py,restore_kernel
+src/akas/kernels/recurrent/recompute.py,save_scan,definition,4,56,src/akas/ops/gdn/cuda/recompute.py,save_scan
+src/akas/kernels/recurrent/recompute.py,save_conv,definition,59,89,src/akas/ops/gdn/cuda/recompute.py,save_conv
+src/akas/kernels/recurrent/recompute.py,restore_scan,definition,92,124,src/akas/ops/gdn/cuda/recompute.py,restore_scan
+src/akas/kernels/recurrent/recompute.py,restore_conv,definition,127,155,src/akas/ops/gdn/cuda/recompute.py,restore_conv
+src/akas/kernels/recurrent/recurrent.py,make_kernel,definition,10,226,src/akas/ops/gdn/cuda/journal.py,make_kernel
+src/akas/kernels/speculation/__init__.py,package marker and module description,module-header,1,0,src/akas/ops/speculation/__init__.py,
+src/akas/kernels/speculation/mtp.py,make_kernel,definition,4,57,src/akas/ops/mtp/cuda.py,make_kernel
+src/akas/kernels/speculation/speculation.py,make_kernel,definition,4,164,src/akas/ops/speculation/cuda.py,make_kernel
+src/akas/kernels/speculation/speculative.py,"make_kernel: selection, validation, fallback and shared prerequisites",dispatcher,4,140,src/akas/profiles/fixed_slots/factories.py,verification_factory
+src/akas/kernels/speculation/speculative.py,make_kernel:kind == 'gdn_conv',opcode-branch,9,55,src/akas/ops/gdn/cuda/verification.py,operation factory for kind == 'gdn_conv'
+src/akas/kernels/speculation/speculative.py,make_kernel:kind == 'gdn_scan',opcode-branch,56,116,src/akas/ops/gdn/cuda/verification.py,operation factory for kind == 'gdn_scan'
+src/akas/kernels/speculation/speculative.py,make_kernel:kind == 'restore',opcode-branch,117,139,src/akas/ops/gdn/cuda/verification.py,operation factory for kind == 'restore'
+src/akas/kernels/speculation/speculative.py,head_kernel,definition,143,189,src/akas/ops/vocabulary/cuda/speculative.py,head_kernel
+src/akas/memory/__init__.py,package marker and module description,module-header,1,0,src/akas/memory/__init__.py,
+src/akas/memory/estimates.py,state_bytes,definition,4,37,src/akas/memory/estimates.py,state_bytes
+src/akas/memory/recurrent_journal.py,RecurrentJournal,definition,16,182,src/akas/execution/compact_batch/journal.py,RecurrentJournal
+src/akas/memory/state.py,BufferSpec,definition,8,11,src/akas/memory/state.py,BufferSpec
+src/akas/memory/state.py,allocate_states,definition,14,31,src/akas/memory/state.py,allocate_states
+src/akas/ops/README.md,whole file,whole-file,1,32,src/akas/ops/README.md,
+src/akas/ops/__init__.py,package marker and module description,module-header,1,1,src/akas/ops/__init__.py,
+src/akas/ops/attention.py,fp8_decode_attention,definition,6,62,src/akas/ops/attention/compose.py,fp8_decode_attention
+src/akas/ops/attention.py,fp8_prefill_attention,definition,65,121,src/akas/ops/attention/compose.py,fp8_prefill_attention
+src/akas/ops/attention.py,bf16_batch_attention,definition,124,161,src/akas/ops/attention/compose.py,bf16_batch_attention
+src/akas/ops/attention.py,packed_attention,definition,164,339,src/akas/ops/attention/compose.py,packed_attention
+src/akas/ops/decoder.py,DecoderBlock,definition,7,21,src/akas/models/blocks.py,DecoderBlock
+src/akas/ops/decoder.py,DecoderArchitecture,definition,25,29,src/akas/models/blocks.py,DecoderArchitecture
+src/akas/ops/ffn.py,fp8_decode_moe,definition,6,79,src/akas/ops/moe/compose.py,fp8_decode_moe
+src/akas/ops/ffn.py,fp8_prefill_moe,definition,82,130,src/akas/ops/moe/compose.py,fp8_prefill_moe
+src/akas/ops/ffn.py,bf16_batch_ffn,definition,133,149,src/akas/ops/ffn/compose.py,bf16_batch_ffn
+src/akas/ops/ffn.py,packed_ffn,definition,152,271,src/akas/ops/ffn/compose.py,packed_ffn
+src/akas/ops/gdn.py,fp8_decode_gdn,definition,4,54,src/akas/ops/gdn/compose.py,fp8_decode_gdn
+src/akas/ops/gdn.py,fp8_prefill_gdn,definition,57,105,src/akas/ops/gdn/compose.py,fp8_prefill_gdn
+src/akas/ops/gdn.py,bf16_batch_gdn,definition,108,207,src/akas/ops/gdn/compose.py,bf16_batch_gdn
+src/akas/ops/hybrid_state.py,allocate_hybrid_states,definition,6,61,src/akas/memory/layouts.py,allocate_hybrid_states
+src/akas/ops/linear.py,linear,definition,4,14,src/akas/ops/linear/compose.py,linear
+src/akas/ops/linear.py,packed_linear,definition,17,21,src/akas/ops/linear/compose.py,packed_linear
+src/akas/ops/linear.py,split_linear,definition,24,35,src/akas/ops/linear/compose.py,split_linear
+src/akas/ops/normalization.py,rms_norm,definition,4,24,src/akas/ops/normalization/compose.py,rms_norm
+src/akas/ops/quantization.py,ActivationCache,definition,4,27,src/akas/ops/quantization/cache.py,ActivationCache
+src/akas/ops/shortconv.py,packed_shortconv,definition,4,16,src/akas/ops/convolution/compose.py,packed_shortconv
+src/akas/compilation/profiles/__init__.py,whole profile/resource,whole-file,1,0,src/akas/compilation/profiles/__init__.py,
+src/akas/compilation/profiles/batched.py,whole profile/resource,whole-file,1,287,src/akas/compilation/profiles/compact_batch.py,
+src/akas/compilation/profiles/data/packed-cuda-sm86.json,whole profile/resource,whole-file,1,918,src/akas/profiles/independent/data/cuda-sm86.json,
+src/akas/compilation/profiles/hybrid/__init__.py,whole profile/resource,whole-file,1,0,src/akas/compilation/profiles/fixed_slots/__init__.py,
+src/akas/compilation/profiles/hybrid/decode.py,whole profile/resource,whole-file,1,67,src/akas/compilation/profiles/fixed_slots/decode.py,
+src/akas/compilation/profiles/hybrid/draft.py,whole profile/resource,whole-file,1,81,src/akas/compilation/profiles/fixed_slots/draft.py,
+src/akas/compilation/profiles/hybrid/draft_prefill.py,whole profile/resource,whole-file,1,66,src/akas/compilation/profiles/fixed_slots/draft_prefill.py,
+src/akas/compilation/profiles/hybrid/geometry.py,whole profile/resource,whole-file,1,49,src/akas/profiles/fixed_slots/geometry.py,
+src/akas/compilation/profiles/hybrid/prefill.py,whole profile/resource,whole-file,1,150,src/akas/compilation/profiles/fixed_slots/prefill.py,
+src/akas/compilation/profiles/hybrid/verification.py,whole profile/resource,whole-file,1,117,src/akas/compilation/profiles/fixed_slots/verification.py,
+src/akas/compilation/profiles/packed.py,whole profile/resource,whole-file,1,111,src/akas/compilation/profiles/independent.py,
+src/akas/compilation/README.md,whole configuration/document,whole-file,1,52,src/akas/compilation/README.md,
+pyproject.toml,whole configuration/document,whole-file,1,45,pyproject.toml,
+MANIFEST.in,whole configuration/document,whole-file,1,11,MANIFEST.in,
+src/akas/compilation/profiles/batched.py,requirements,definition,19,91,src/akas/profiles/compact_batch/requirements.py,requirements

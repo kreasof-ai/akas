@@ -10,7 +10,7 @@ from akas.checkpoints.gguf import GGUFError
 def __getattr__(name):
     if name in ("LFM2", "LFM2Request"):
         from akas.models.lfm2.model import LFM2
-        from akas.execution.packed.request import LFM2Request
+        from akas.execution.independent.request import LFM2Request
 
         return {"LFM2": LFM2, "LFM2Request": LFM2Request}[name]
     if name == "Tokenizer":
@@ -22,7 +22,7 @@ def __getattr__(name):
 
         return Qwen35Batch
     if name == "Qwen35Prefill":
-        from akas.execution.hybrid.prefill import Qwen35Prefill
+        from akas.execution.fixed_slots.prefill import Qwen35Prefill
 
         return Qwen35Prefill
     if name == "Qwen35Checkpoint":
@@ -30,15 +30,15 @@ def __getattr__(name):
 
         return Qwen35Checkpoint
     if name == "Qwen35MTP":
-        from akas.execution.hybrid.draft import Qwen35MTP
+        from akas.execution.fixed_slots.draft import Qwen35MTP
 
         return Qwen35MTP
     if name == "Qwen35Verifier":
-        from akas.execution.hybrid.verifier import Qwen35Verifier
+        from akas.execution.fixed_slots.verify import Qwen35Verifier
 
         return Qwen35Verifier
     if name == "Qwen35Speculative":
-        from akas.generation.mtp import Qwen35Speculative
+        from akas.execution.fixed_slots.speculative import Qwen35Speculative
 
         return Qwen35Speculative
     raise AttributeError(name)

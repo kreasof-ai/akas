@@ -1,15 +1,17 @@
 """Qwen checkpoint inventory, raw storage constraints and projection layouts."""
 
 from __future__ import annotations
-from akas.checkpoints.upload import upload_shards, upload_concatenated
+from akas.checkpoints.upload import upload_shards
+from akas.checkpoints.upload import upload_concatenated
 from akas.models.qwen35.config import Qwen35Config
 from collections import Counter
-import math
 from pathlib import Path
-from akas.checkpoints.safetensors import TensorInfo
 from akas.checkpoints.safetensors import inspect_tensors
 from akas.checkpoints.safetensors import read_tensor
 from akas.checkpoints.safetensors import json_document as _json
+
+import math
+from akas.checkpoints.safetensors import TensorInfo
 
 
 class Qwen35Checkpoint:
@@ -122,7 +124,6 @@ from akas.models.qwen35.config import DenseConfig
 
 
 class DenseCheckpoint:
-
     def __init__(self, directory):
         self.directory = Path(directory).resolve()
         self.config = DenseConfig.from_json(

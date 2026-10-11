@@ -11,7 +11,7 @@ import tensor
 from tensor.runtime.abi import BoundCall
 from akas import GGUF
 from akas.checkpoints.gguf import dequantize
-from akas.kernels.packed.webgpu import source
+from akas.compilation.source import export_kernel as source
 
 # The eight configurations swept for the 230M report. Left unchanged so its
 # recorded evidence keeps its meaning.
@@ -118,7 +118,14 @@ def run(model, out, preset="legacy"):
             p.update(config)
             path = out / f"{name}-{preset}-{i}.py"
             artifact = path.with_suffix(".tbin")
-            path.write_text(source("linear", p))
+            path.write_text(
+                source(
+                    "akas.profiles.independent.factories",
+                    "packed_webgpu_factory",
+                    "linear",
+                    p,
+                )
+            )
             artifact.unlink(missing_ok=True)
             try:
                 tensor.build(path, artifact, provider="webgpu", cache_dir=out / "cache")

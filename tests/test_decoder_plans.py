@@ -32,9 +32,9 @@ def test_decoder_plan_preserves_complete_operation_contract(
     monkeypatch, phase, options, fixture
 ):
     paths = {
-        "decode": "akas.execution.hybrid.decode_plan",
-        "prefill": "akas.execution.hybrid.prefill_plan",
-        "batch": "akas.execution.batched.plan",
+        "decode": "akas.execution.fixed_slots.decode",
+        "prefill": "akas.execution.fixed_slots.prefill",
+        "batch": "akas.execution.compact_batch.plan",
     }
     module = importlib.import_module(paths[phase])
     import tensor.runtime.buffer

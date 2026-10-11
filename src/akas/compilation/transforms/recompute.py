@@ -7,8 +7,10 @@ import json
 import shutil
 from pathlib import Path
 from akas.compilation.build import export_source
-from akas.artifacts.hybrid import identity
-from akas.execution.hybrid.repair import implementation_hashes
+from akas.artifacts.kernels import identity
+from akas.artifacts.fingerprints import (
+    fixed_slots_hashes as implementation_hashes,
+)
 from akas.compilation.build import build_artifact
 
 
@@ -47,10 +49,13 @@ def produce(source, out):
         artifact = entry.with_suffix(".tbin")
         entry.write_text(
             export_source(
-                "akas.kernels.recurrent.recompute",
+                "akas.ops.gdn.cuda.recompute",
                 factory,
                 p,
-                dependencies=('tensor.compiler.frontend.source', "akas.kernels.elementwise"),
+                dependencies=(
+                    "tensor.compiler.frontend.source",
+                    "akas.ops.normalization.kernels",
+                ),
             )
         )
         artifact.unlink(missing_ok=True)

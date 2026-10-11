@@ -1,7 +1,8 @@
 """Validate an LFM2 GGUF checkpoint and upload its packed weights."""
 
 from akas.checkpoints.upload import upload_packed
-from akas.checkpoints.gguf import GGUF, GGUFError
+from akas.checkpoints.gguf import GGUF
+from akas.checkpoints.gguf import GGUFError
 from akas.models.lfm2.config import Config
 from akas.text.tokenizer import Tokenizer
 

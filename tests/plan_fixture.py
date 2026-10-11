@@ -2,9 +2,10 @@
 
 from types import SimpleNamespace
 
-from akas.models.qwen35.config import Qwen35Config, DenseConfig
+from akas.models.qwen35.config import Qwen35Config
+from akas.models.qwen35.config import DenseConfig
 from akas.models.qwen35.model import architecture
-from akas.ops.hybrid_state import allocate_hybrid_states
+from akas.memory.layouts import allocate_hybrid_states
 
 
 class Buffer:
@@ -110,7 +111,7 @@ def _record(module, phase, *, fp8=False, verify=False, draft=False, fused=False)
             device=Device(),
         )
         model.architecture = architecture(config, None)
-        from akas.execution.hybrid.workspace import allocate_workspace
+        from akas.execution.fixed_slots.workspace import allocate_workspace
 
         allocate_workspace(model)
         label(model.buffers, "decode:")
@@ -122,7 +123,7 @@ def _record(module, phase, *, fp8=False, verify=False, draft=False, fused=False)
                 state.name = f"state:{index}:{offset}"
         if phase == "decode":
             return normalize(module.build_decode_plan(model))
-        from akas.execution.hybrid.prefill import Qwen35Prefill
+        from akas.execution.fixed_slots.prefill import Qwen35Prefill
 
         model.plan = [("head", {}, None), ("argmax", {}, None)]
         executor = SimpleNamespace(
@@ -174,7 +175,7 @@ def _record(module, phase, *, fp8=False, verify=False, draft=False, fused=False)
         device=Device(),
         commit_calls=Plan(),
     )
-    from akas.execution.batched.workspace import allocate_workspace
+    from akas.execution.compact_batch.workspace import allocate_workspace
 
     allocate_workspace(batch)
     label(batch.buffers, "batch:")

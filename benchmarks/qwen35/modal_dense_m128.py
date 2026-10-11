@@ -26,7 +26,7 @@ def prepare(prepared):
     volume.reload()
     hashes = {
         str(p): hashlib.sha256(p.read_bytes()).hexdigest()
-        for p in (Path(__file__), Path("src/akas/kernels/linear/hopper_dense.py"))
+        for p in (Path(__file__), Path('src/akas/ops/linear/cuda/hopper.py'))
     }
     identity = hashlib.sha256(
         json.dumps(dict(prepared=prepared, sources=hashes), sort_keys=True).encode()
@@ -64,10 +64,13 @@ def prepare(prepared):
         entry = artifact.with_suffix(".py")
         entry.write_text(
             export_source(
-                "akas.kernels.linear.hopper_dense",
+                "akas.ops.linear.cuda.hopper",
                 "make_kernel",
                 schedule,
-                dependencies=('tensor.compiler.frontend.source', "akas.kernels.elementwise"),
+                dependencies=(
+                    "tensor.compiler.frontend.source",
+                    "akas.ops.normalization.kernels",
+                ),
             )
         )
         artifact.unlink()

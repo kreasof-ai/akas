@@ -15,7 +15,7 @@ import tensor
 from tensor.runtime.abi import BoundCall
 from akas import GGUF
 from akas.checkpoints.gguf import dequantize
-from akas.kernels.packed.webgpu import source
+from akas.compilation.source import export_kernel as source
 
 BASELINE = {"gemv_lanes": 16, "gemv_threads": 128, "gemv_dot": False}
 CONFIGS = [BASELINE] + [
@@ -88,7 +88,14 @@ def run(model, out, configs=None):
                 p = dict(r=1, k=k, o=o, type=2, sg=True, **config)
                 path = out / f"{suffix}-{i}.py"
                 artifact = path.with_suffix(".tbin")
-                path.write_text(source(kind, p))
+                path.write_text(
+                    source(
+                        "akas.profiles.independent.factories",
+                        "packed_webgpu_factory",
+                        kind,
+                        p,
+                    )
+                )
                 tensor.build(path, artifact, provider="webgpu", cache_dir=out / "cache")
                 kernel = device.load(artifact)
                 kernel.launch(input, *weights[0], output)

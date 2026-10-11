@@ -7,7 +7,11 @@ from types import SimpleNamespace
 
 import pytest
 
-from akas.compilation.profiles.hybrid import decode, prefill, draft, draft_prefill, verification
+from akas.compilation.profiles.fixed_slots import decode as decode
+from akas.compilation.profiles.fixed_slots import prefill as prefill
+from akas.compilation.profiles.fixed_slots import draft as draft
+from akas.compilation.profiles.fixed_slots import draft_prefill as draft_prefill
+from akas.compilation.profiles.fixed_slots import verification as verification
 from akas.models.qwen35.config import Qwen35Config
 
 
@@ -96,7 +100,13 @@ def test_draft_and_verification_reuse_target_kernels(
 def test_attention_projection_and_hopper_overlays_share_build_pipeline(
     tmp_path, checkpoint, declarations
 ):
-    from akas.compilation.transforms import compact_experts, hopper, hopper_verification, split_attention, split_linear, attention_workspace, bandwidth_projection
+    from akas.compilation.transforms import compact_experts
+    from akas.compilation.transforms import hopper
+    from akas.compilation.transforms import hopper_verification
+    from akas.compilation.transforms import split_attention
+    from akas.compilation.transforms import split_linear
+    from akas.compilation.transforms import attention_workspace
+    from akas.compilation.transforms import bandwidth_projection
 
     prefix = prefill.produce(
         checkpoint,
@@ -141,7 +151,8 @@ def test_attention_projection_and_hopper_overlays_share_build_pipeline(
 
 
 def test_recompute_and_decode_projection_profiles(tmp_path, checkpoint, declarations):
-    from akas.compilation.transforms import recompute, decode_profile
+    from akas.compilation.transforms import recompute
+    from akas.compilation.transforms import decode_profile
 
     prefix = prefill.produce(
         checkpoint,

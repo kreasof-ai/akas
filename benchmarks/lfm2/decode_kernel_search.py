@@ -1,6 +1,7 @@
 """Oracle-gated decode search with the complete F16 matrix traffic per sample."""
 
-from akas.compilation.paths import source_path, tensor_source
+from akas.compilation.paths import source_path
+from akas.compilation.paths import tensor_source
 
 from pathlib import Path as _Path
 import sys as _sys
@@ -13,9 +14,9 @@ import tensor, wgpu
 from tensor.providers.webgpu.device import Device
 from tensor.compiler.search import ScheduleSearch
 from akas import GGUF
-from akas.kernels.packed.webgpu import source
-from akas.execution.profiles.packed import DECODE_GEMV
-from akas.execution.profiles.packed import DECODE_GEMV_COMMON
+from akas.compilation.source import export_kernel as source
+from akas.profiles.independent.parameters import DECODE_GEMV
+from akas.profiles.independent.parameters import DECODE_GEMV_COMMON
 from benchmarks.lfm2.tensor_projection_search import TimestampAdapter, bind, check
 from wgpu.backends.wgpu_native.extras import write_timestamp
 
@@ -127,7 +128,7 @@ def run(model, out, minutes, extended=False):
         source_path(__file__),
         source_path("src/tensor/compiler/webgpu_lowering.py"),
         source_path("src/tensor/compiler/search.py"),
-        source_path("src/akas/kernels/packed/webgpu.py"),
+        source_path('src/akas/compilation/source.py'),
     ):
         report["sources"][path.name] = {
             "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
@@ -158,7 +159,14 @@ def run(model, out, minutes, extended=False):
         for o, k in shapes:
             path = out / f"baseline-{o}x{k}.py"
             artifact = path.with_suffix(".tbin")
-            path.write_text(source("linear", dict(r=1, k=k, o=o, type=1, sg=True)))
+            path.write_text(
+                source(
+                    "akas.profiles.independent.factories",
+                    "packed_webgpu_factory",
+                    "linear",
+                    dict(r=1, k=k, o=o, type=1, sg=True),
+                )
+            )
             artifact.unlink(missing_ok=True)
             tensor.build(path, artifact, provider="webgpu", cache_dir=out / "cache")
             baseline[(o, k)] = device.load(artifact)
@@ -256,7 +264,14 @@ def run(model, out, minutes, extended=False):
                     kind = "ffn" if config["family"] == "paired" else "linear"
                     path = out / f"{name}-{index}.py"
                     artifact = path.with_suffix(".tbin")
-                    path.write_text(source(kind, p))
+                    path.write_text(
+                        source(
+                            "akas.profiles.independent.factories",
+                            "packed_webgpu_factory",
+                            kind,
+                            p,
+                        )
+                    )
                     artifact.unlink(missing_ok=True)
                     tensor.build(
                         path, artifact, provider="webgpu", cache_dir=out / "cache"

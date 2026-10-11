@@ -1,6 +1,7 @@
 """Compare frontend CUDA bundles with the frozen native implementation."""
 
-from akas.compilation.paths import source_path, tensor_source
+from akas.compilation.paths import source_path
+from akas.compilation.paths import tensor_source
 
 from pathlib import Path as _Path
 import sys as _sys
@@ -21,7 +22,7 @@ def audit(bundle):
     """Verify compiled provenance, profile application and inspectable IR."""
     from tensor.artifacts.format import read_artifact
     from tensor.compiler.search import ScheduleProfile
-    from akas.kernels.packed.cuda import source
+    from akas.compilation.source import export_kernel as source
 
     bundle = source_path(bundle)
     data = json.loads((bundle / "inference.json").read_text())
@@ -41,7 +42,14 @@ def audit(bundle):
         assert digest(artifact) == value["sha256"]
         assert (
             manifest["source_sha256"]
-            == hashlib.sha256(source(kind, {**p, **schedule}).encode()).hexdigest()
+            == hashlib.sha256(
+                source(
+                    "akas.profiles.independent.factories",
+                    "packed_cuda_factory",
+                    kind,
+                    {**p, **schedule},
+                ).encode()
+            ).hexdigest()
         )
         assert manifest["compiler"]["lowering_sha256"] == digest(lowering)
         with zipfile.ZipFile(artifact) as archive:

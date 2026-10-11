@@ -11,9 +11,13 @@ from akas import Qwen35Batch
 from akas import Qwen35MTP
 from akas import Qwen35Prefill
 from akas import Qwen35Verifier
-from akas.execution.hybrid.draft_prefill import Qwen35MTPPrefill
-from akas.execution.optimizations.split_attention import install as install_attention
-from akas.execution.optimizations.split_linear import install as install_linear
+from akas.execution.fixed_slots.draft import Qwen35MTPPrefill
+from akas.execution.fixed_slots.optimizations.split_attention import (
+    install as install_attention,
+)
+from akas.execution.fixed_slots.optimizations.split_linear import (
+    install as install_linear,
+)
 from benchmarks.qwen35.spec_benchmark import initialize
 from benchmarks.qwen35.spec_benchmark import run
 from benchmarks.qwen35.spec_telemetry import Monitor
@@ -52,7 +56,7 @@ def provenance(paths, workload):
 def install_selected(executor, bundle):
     manifest = json.loads((Path(bundle) / "prefill.json").read_text())
     if "state_recompute" in manifest:
-        from akas.execution.hybrid.repair import Qwen35RecomputeVerifier
+        from akas.execution.fixed_slots.repair import Qwen35RecomputeVerifier
 
         if not isinstance(executor, Qwen35RecomputeVerifier):
             raise ValueError("recompute bundle requires make_verifier")
@@ -61,11 +65,13 @@ def install_selected(executor, bundle):
     if "split_linear" in manifest:
         install_linear(executor, bundle)
     if "compact_experts" in manifest:
-        from akas.execution.optimizations.compact_prefill import install as install_compact
+        from akas.execution.fixed_slots.optimizations.compact_prefill import (
+            install as install_compact,
+        )
 
         install_compact(executor, bundle)
     if "attention_workspace" in manifest:
-        from akas.execution.optimizations.attention_workspace import (
+        from akas.execution.fixed_slots.optimizations.attention_workspace import (
             install as install_workspace,
         )
 
@@ -79,14 +85,16 @@ def install_selected(executor, bundle):
 def make_verifier(model, bundle):
     manifest = json.loads((Path(bundle) / "prefill.json").read_text())
     if "state_recompute" in manifest:
-        from akas.execution.hybrid.repair import Qwen35RecomputeVerifier
+        from akas.execution.fixed_slots.repair import Qwen35RecomputeVerifier
 
         return Qwen35RecomputeVerifier(model, bundle)
     return Qwen35Verifier(model, bundle)
 
 
 def adaptive_profiles(bundle):
-    from akas.execution.hybrid.verification_pool import implementation_hashes
+    from akas.artifacts.fingerprints import (
+        fixed_slots_hashes as implementation_hashes,
+    )
 
     root = Path(bundle).resolve()
     manifest = json.loads((root / "prefill.json").read_text())
@@ -116,7 +124,7 @@ def adaptive_profiles(bundle):
 
 
 def make_verifier_pool(model, bundle):
-    from akas.execution.hybrid.verification_pool import VerifierPool
+    from akas.execution.fixed_slots.pools import VerifierPool
 
     profiles = adaptive_profiles(bundle)
     verifiers = {}
@@ -139,7 +147,7 @@ def make_verifier_pool(model, bundle):
 
 def make_speculative_pair(model, draft, bundle, repair_bundle):
     """Install graph pairs that share resident target and draft owners."""
-    from akas.execution.hybrid.verification_pool import RepairPool
+    from akas.execution.fixed_slots.pools import RepairPool
 
     verifier = make_verifier_pool(model, bundle)
     repairs = {}

@@ -9,8 +9,10 @@ import shutil
 from akas.compilation.build import build_artifact
 from akas.compilation.build import needs_build
 from akas.compilation.build import export_source
-from akas.artifacts.hybrid import identity
-from akas.execution.optimizations.split_attention import implementation_hashes
+from akas.artifacts.kernels import identity
+from akas.artifacts.fingerprints import (
+    fixed_slots_hashes as implementation_hashes,
+)
 
 
 def produce(
@@ -46,10 +48,10 @@ def produce(
         entry = out / (key + ".py")
         artifact = entry.with_suffix(".tbin")
         schedule = dict(p, packed_loads=True, key_rows=key_rows)
-        module = "akas.kernels.attention.speculative_attention"
+        module = "akas.ops.attention.cuda.split"
         target = manifest.get("target", "sm_89")
         if kind == "split_attention" and query_tokens is not None:
-            module = "akas.kernels.attention.hopper_attention"
+            module = "akas.ops.attention.cuda.hopper"
             schedule["query_tokens"] = query_tokens
             schedule["pad_queries"] = pad_queries
             target = kernel_target or target
@@ -57,7 +59,10 @@ def produce(
             module,
             factory,
             schedule,
-            dependencies=('tensor.compiler.frontend.source', "akas.kernels.elementwise"),
+            dependencies=(
+                "tensor.compiler.frontend.source",
+                "akas.ops.normalization.kernels",
+            ),
         )
         if needs_build(entry, artifact, source, target):
             entry.write_text(source)

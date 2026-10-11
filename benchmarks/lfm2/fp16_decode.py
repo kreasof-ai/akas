@@ -19,7 +19,7 @@ import shutil
 import numpy as np
 import tensor
 from akas import GGUF
-from akas.kernels.packed.ggml import source
+from akas.compilation.source import export_kernel as source
 from benchmarks.lfm2.text_helpers import emit, weight
 from akas.tensor.graph import CudaGraph
 from tensor.compiler.tuning import measure_cuda
@@ -40,7 +40,12 @@ def linear_source(parameters, mode):
     if mode not in MODES:
         raise ValueError("unknown FP16 decode experiment")
     if mode == "fp32":
-        return source("linear", parameters)
+        return source(
+            "akas.profiles.independent.factories",
+            "packed_baseline_factory",
+            "linear",
+            parameters,
+        )
     if parameters["r"] != 1:
         raise ValueError("decode candidates require one row")
     k, o, q = parameters["k"], parameters["o"], parameters["type"]
@@ -63,11 +68,11 @@ def linear_source(parameters, mode):
     rhs = T.alloc_shared((64, 32), "float16")
     accum = T.alloc_fragment((32, 64), "float32")
     T.clear(accum)
-    for tile in T.Pipelined({k//32}, num_stages=2):
+    for tile in T.Pipelined({k // 32}, num_stages=2):
         for i, j in T.Parallel(32, 32):
             lhs[i, j] = T.if_then_else(i == 0, x[tile * 32 + j], 0)
         for i, j in T.Parallel(64, 32):
-            rhs[i, j] = T.if_then_else(bx * 64 + i < {o}, {weight(q,'bx * 64 + i','tile * 32 + j',k)}, 0)
+            rhs[i, j] = T.if_then_else(bx * 64 + i < {o}, {weight(q, "bx * 64 + i", "tile * 32 + j", k)}, 0)
         T.gemm(lhs, rhs, accum, transpose_B=True)
     for i, j in T.Parallel(32, 64):
         if (i == 0) & (bx * 64 + j < {o}):
@@ -75,13 +80,13 @@ def linear_source(parameters, mode):
         )
     if mode == "fp16_cast":
         col = "tile * 32 + lane"
-        expression = f'T.cast(T.cast(x[{col}], "float16"), "float32") * T.cast(T.cast(({weight(q,"bx * 4 + row",col,k)}), "float16"), "float32")'
+        expression = f'T.cast(T.cast(x[{col}], "float16"), "float32") * T.cast(T.cast(({weight(q, "bx * 4 + row", col, k)}), "float16"), "float32")'
         tiles = k // 32
         prelude = ""
     else:
         col0 = "tile * 64 + lane * 2"
         col1 = col0 + " + 1"
-        expression = f'T.call_extern("float32", "tensor_half2_dot", x[{col0}], x[{col1}], {weight(q,"bx * 4 + row",col0,k)}, {weight(q,"bx * 4 + row",col1,k)})'
+        expression = f'T.call_extern("float32", "tensor_half2_dot", x[{col0}], x[{col1}], {weight(q, "bx * 4 + row", col0, k)}, {weight(q, "bx * 4 + row", col1, k)})'
         tiles = k // 64
         prelude = ", prelude=" + repr(HALF2)
     return emit(
@@ -210,7 +215,9 @@ def microbench(models, out):
                 expected = (
                     expected_fp32
                     if mode == "fp32"
-                    else expected_half2 if mode == "fp16_half2" else expected_fp16
+                    else expected_half2
+                    if mode == "fp16_half2"
+                    else expected_fp16
                 )
                 relative = float(
                     np.linalg.norm(actual - expected) / np.linalg.norm(expected)

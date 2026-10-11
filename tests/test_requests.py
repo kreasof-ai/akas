@@ -30,7 +30,7 @@ GPU = pytest.mark.skipif(
 @pytest.fixture(scope="module", params=["default", "optimized"])
 def fixture_bundle(request, tmp_path_factory):
     from benchmarks.lfm2.diagnostic import fixture
-    from akas.compilation.profiles.packed import produce
+    from akas.compilation.profiles.independent import produce
 
     cache = os.environ.get("TENSOR_LFM2_REQUEST_CACHE")
     directory = (
@@ -320,7 +320,9 @@ def test_bundle_provenance_and_request_context_rejections(fixture_bundle, tmp_pa
 
     model_path, bundle = fixture_bundle
     manifest = json.loads((bundle / "inference.json").read_text())
-    manifest["implementation"]["akas.execution.packed.model"] = "old-implementation"
+    manifest["implementation"]["akas.execution.independent.resident"] = (
+        "old-implementation"
+    )
     (tmp_path / "inference.json").write_text(json.dumps(manifest))
     with tensor.Device() as device:
         with pytest.raises(ValueError, match="implementation mismatch"):

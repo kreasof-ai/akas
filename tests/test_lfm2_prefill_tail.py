@@ -51,7 +51,7 @@ def test_two_width_three_convolutions_preserve_final_output_and_histories():
 
 def test_tail_specialization_requires_the_measured_shape_and_suffix():
     from types import SimpleNamespace
-    from akas.execution.profiles.selection import prefill_tail_rows
+    from akas.profiles.independent.selection import prefill_tail_rows
 
     cfg = SimpleNamespace(
         width=2048, ff=10752, layers=("conv", "attention", "conv", "conv")
@@ -104,14 +104,19 @@ def test_tail_extraction_partial_chunks_and_position_controls(tmp_path, provider
         != "1"
     ):
         pytest.skip("requires the selected GPU provider")
-    if provider == "cuda":
-        from akas.kernels.packed.cuda import source
-    else:
-        from akas.kernels.packed.webgpu import source
+    from akas.compilation.source import export_kernel as source
+    factory = "packed_cuda_factory" if provider == "cuda" else "packed_webgpu_factory"
     r, c, t = 128, 17, 8
     rng = np.random.default_rng(1805)
     path = tmp_path / "tail.py"
-    path.write_text(source("prefill_tail", dict(r=r, c=c, t=t)))
+    path.write_text(
+        source(
+            "akas.profiles.independent.factories",
+            factory,
+            "prefill_tail",
+            dict(r=r, c=c, t=t),
+        )
+    )
     artifact = path.with_suffix(".tbin")
     tensor.build(
         path,
@@ -158,10 +163,8 @@ def test_attention_tail_uses_absolute_positions_and_all_stored_keys(tmp_path, pr
         != "1"
     ):
         pytest.skip("requires the selected GPU provider")
-    if provider == "cuda":
-        from akas.kernels.packed.cuda import source
-    else:
-        from akas.kernels.packed.webgpu import source
+    from akas.compilation.source import export_kernel as source
+    factory = "packed_cuda_factory" if provider == "cuda" else "packed_webgpu_factory"
     r, t, h, kh, d, cap = 128, 8, 4, 2, 64, 192
     position = 23
     rng = np.random.default_rng(1817)
@@ -172,7 +175,12 @@ def test_attention_tail_uses_absolute_positions_and_all_stored_keys(tmp_path, pr
     for rows in (r, t):
         path = tmp_path / f"attention-{rows}.py"
         path.write_text(
-            source("attention", dict(r=rows, h=h, kh=kh, d=d, cap=cap, sg=True))
+            source(
+                "akas.profiles.independent.factories",
+                factory,
+                "attention",
+                dict(r=rows, h=h, kh=kh, d=d, cap=cap, sg=True),
+            )
         )
         artifact = path.with_suffix(".tbin")
         tensor.build(

@@ -47,7 +47,7 @@ def qualify():
         source_hashes={
             str(p): hashlib.sha256(p.read_bytes()).hexdigest()
             for p in (
-                Path("src/akas/kernels/recurrent/recompute.py"),
+                Path('src/akas/ops/gdn/cuda/recompute.py'),
                 Path("tests/test_qwen_recompute.py"),
             )
         },

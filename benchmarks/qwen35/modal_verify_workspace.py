@@ -33,8 +33,8 @@ def measure(prepared):
             for p in (
                 Path(__file__),
                 Path("benchmarks/qwen35/kernel_timing.py"),
-                Path("src/akas/kernels/attention/hopper_attention.py"),
-                Path("src/akas/kernels/attention/attention_workspace.py"),
+                Path('src/akas/ops/attention/cuda/hopper.py'),
+                Path('src/akas/ops/attention/cuda/workspace.py'),
                 Path("tests/test_qwen_hopper.py"),
             )
         },

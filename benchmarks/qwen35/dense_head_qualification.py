@@ -10,7 +10,7 @@ import numpy as np
 from tensor.providers.cuda.device import Device
 from akas.artifacts.kernels import identity
 from akas.models.qwen35.weights import DenseCheckpoint
-from akas.kernels.linear.split_linear import schedule
+from akas.profiles.compact_batch.parameters import schedule
 
 
 def qualify(checkpoint, bundle, out, counts):
@@ -72,9 +72,9 @@ def qualify(checkpoint, bundle, out, counts):
                     reference = logits.to_numpy().reshape(count, c.vocab)
                     expected = np.argmax(reference, axis=1)
                     expected[np.arange(count) % 3 == 1] = -1
-                    assert np.array_equal(
-                        predicted.to_numpy(), expected
-                    ), f"fused argmax changed at rows={count}"
+                    assert np.array_equal(predicted.to_numpy(), expected), (
+                        f"fused argmax changed at rows={count}"
+                    )
                     assert np.array_equal(
                         np.max(maximum.to_numpy(), axis=1), np.max(reference, axis=1)
                     ), f"fused maximum changed at rows={count}"
@@ -83,9 +83,9 @@ def qualify(checkpoint, bundle, out, counts):
                         device.driver.call("cuStreamSynchronize", None)
                         fused.launch(x, weight, maximum, indices)
                         merge.launch(maximum, indices, active, predicted)
-                        assert predicted.to_numpy().tolist() == [
-                            0
-                        ], "ties must choose lowest vocabulary ID"
+                        assert predicted.to_numpy().tolist() == [0], (
+                            "ties must choose lowest vocabulary ID"
+                        )
                     rows.append(dict(rows=count, exact_scores=True, exact_argmax=True))
                     Path(out).write_text(json.dumps(rows, indent=2) + "\n")
                     print(rows[-1], flush=True)

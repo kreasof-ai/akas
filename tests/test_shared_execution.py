@@ -7,9 +7,9 @@ import pytest
 
 from tensor.runtime.abi import StreamDescriptor
 from akas.execution.plan import ExecutionPlan
-from akas.execution.plan import capture
-from akas.execution.plan import submit
-from akas.ops.hybrid_state import allocate_hybrid_states
+from akas.tensor.executor import capture
+from akas.tensor.executor import submit
+from akas.memory.layouts import allocate_hybrid_states
 
 
 class Device:
@@ -190,8 +190,15 @@ def test_shared_kernel_preserves_each_existing_adapter_abi(
 
     pytest.importorskip("tilelang")
     family = "packed" if module in ("ggml", "cuda") else "hybrid"
-    factory = importlib.import_module(f"akas.kernels.{family}.{module}")
-    kernel = factory.make_kernel(kind, parameters)
+    factories = {
+        "ggml": ("akas.profiles.independent.factories", "packed_baseline_factory"),
+        "cuda": ("akas.profiles.independent.factories", "packed_cuda_factory"),
+        "hybrid": ("akas.profiles.fixed_slots.factories", "decode_factory"),
+        "hybrid_batch": ("akas.profiles.compact_batch.factories", "batch_factory"),
+    }
+    owner, name = factories[module]
+    factory = getattr(importlib.import_module(owner), name)
+    kernel = factory(kind, parameters)
     observed = [
         (
             kernel.buffer_map[param].name,
@@ -213,18 +220,34 @@ def test_shared_operator_change_invalidates_producer_source(
 
     original = entry.find_spec
     helper = tmp_path / "elementwise.py"
-    helper.write_bytes(Path(original("akas.kernels.elementwise").origin).read_bytes())
+    helper.write_bytes(
+        Path(original("akas.ops.normalization.kernels").origin).read_bytes()
+    )
 
     def find_spec(name):
         return (
             SimpleNamespace(origin=str(helper))
-            if name == "akas.kernels.elementwise"
+            if name == "akas.ops.normalization.kernels"
             else original(name)
         )
 
     monkeypatch.setattr(entry, "find_spec", find_spec)
     family = "hybrid" if module == "hybrid" else "packed"
-    source = importlib.import_module(f"akas.kernels.{family}.{module}").source
+    from functools import partial
+    from akas.compilation.source import export_kernel
+
+    owner = (
+        "akas.profiles.fixed_slots.factories"
+        if module == "hybrid"
+        else "akas.profiles.independent.factories"
+    )
+    name = {
+        "hybrid": "decode_factory",
+        "ggml": "packed_baseline_factory",
+        "cuda": "packed_cuda_factory",
+        "webgpu": "packed_webgpu_factory",
+    }[module]
+    source = partial(export_kernel, owner, name)
     first = source("rms", dict(r=2, c=128, eps=1e-6))
     helper.write_bytes(helper.read_bytes() + b"\n# Updated shared implementation.\n")
     assert source("rms", dict(r=2, c=128, eps=1e-6)) != first

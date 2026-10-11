@@ -42,7 +42,9 @@ base_image = (
         "pytest==9.1.1",
     )
     .add_local_file(
-        ROOT / "tools/bootstrap/bootstrap_nvrtc.py", "/tmp/bootstrap_nvrtc.py", copy=True
+        ROOT / "tools/bootstrap/bootstrap_nvrtc.py",
+        "/tmp/bootstrap_nvrtc.py",
+        copy=True,
     )
     .run_commands("python /tmp/bootstrap_nvrtc.py --out /opt/tensor-nvrtc")
     .env(
@@ -133,10 +135,12 @@ def prepare():
         return json.loads(ready.read_text())
     root.mkdir(parents=True, exist_ok=True)
     from akas.compilation.transforms.decode_profile import produce as decoder
-    from akas.compilation.profiles.hybrid.prefill import produce as prefill
-    from akas.compilation.profiles.hybrid.draft import produce as mtp
-    from akas.compilation.profiles.hybrid.draft_prefill import produce as mtp_prefill
-    from akas.compilation.profiles.hybrid.verification import produce as verify
+    from akas.compilation.profiles.fixed_slots.prefill import produce as prefill
+    from akas.compilation.profiles.fixed_slots.draft import produce as mtp
+    from akas.compilation.profiles.fixed_slots.draft_prefill import (
+        produce as mtp_prefill,
+    )
+    from akas.compilation.profiles.fixed_slots.verification import produce as verify
     from akas.compilation.transforms.split_attention import produce as attention
     from akas.compilation.transforms.split_linear import produce as linear
 
@@ -145,10 +149,17 @@ def prepare():
     # Fresh source identities always use a separate cache directory.
     paths = {}
     paths["decoder"] = decoder(
-        _CompilationQwen35Checkpoint(model), root / "decode-profile", kv_dtype="fp8", target="sm_90"
+        _CompilationQwen35Checkpoint(model),
+        root / "decode-profile",
+        kv_dtype="fp8",
+        target="sm_90",
     )
     volume.commit()
-    paths["draft"] = mtp(_CompilationQwen35Checkpoint(model, branch="mtp"), paths["decoder"], root / "mtp")
+    paths["draft"] = mtp(
+        _CompilationQwen35Checkpoint(model, branch="mtp"),
+        paths["decoder"],
+        root / "mtp",
+    )
     paths["prefill"] = prefill(
         _CompilationQwen35Checkpoint(model),
         root / "prefill512",
@@ -159,7 +170,9 @@ def prepare():
         target="sm_90",
     )
     paths["draft_prefill"] = mtp_prefill(
-        _CompilationQwen35Checkpoint(model, branch="mtp"), paths["prefill"], root / "mtp-prefill512"
+        _CompilationQwen35Checkpoint(model, branch="mtp"),
+        paths["prefill"],
+        root / "mtp-prefill512",
     )
     volume.commit()
     small = prefill(
@@ -174,7 +187,9 @@ def prepare():
     verified = verify(small, root / "verify8")
     split = attention(verified, root / "verify8-attention", key_rows=32)
     paths["verify"] = linear(split, root / "verify8-selected", expert_block_m=32)
-    repair = mtp_prefill(_CompilationQwen35Checkpoint(model, branch="mtp"), small, root / "repair8")
+    repair = mtp_prefill(
+        _CompilationQwen35Checkpoint(model, branch="mtp"), small, root / "repair8"
+    )
     paths["repair"] = attention(repair, root / "repair8-attention", key_rows=32)
     result = dict(
         checkpoint=str(model),
@@ -267,7 +282,7 @@ def measure(prepared, run_id):
         from akas import Qwen35Batch
         from akas import Qwen35MTP
         from akas import Qwen35Prefill
-        from akas.execution.hybrid.draft_prefill import Qwen35MTPPrefill
+        from akas.execution.fixed_slots.draft import Qwen35MTPPrefill
         from benchmarks.qwen35.spec_benchmark import initialize
         from benchmarks.qwen35.spec_quality import run as quality
 

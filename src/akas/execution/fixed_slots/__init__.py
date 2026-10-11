@@ -1,0 +1,1 @@
+"""Shared hybrid implementation."""

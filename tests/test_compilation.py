@@ -8,12 +8,16 @@ from types import SimpleNamespace
 
 import pytest
 
-from akas.compilation import compile_checkpoint, PROFILES
-from akas.compilation.build import build, checksum
+from akas.compilation import compile_checkpoint
+from akas.compilation import PROFILES
+from akas.compilation.build import build
+from akas.compilation.build import checksum
 from akas.compilation.bundles import copy
-from akas.compilation.plan import Bundle, Kernel
+from akas.compilation.plan import Bundle
+from akas.compilation.plan import Kernel
 from akas.models.lfm2.weights import LFM2Checkpoint
-from akas.models.qwen35.config import DenseConfig, Qwen35Config
+from akas.models.qwen35.config import DenseConfig
+from akas.models.qwen35.config import Qwen35Config
 
 CASES = json.loads(
     (Path(__file__).parent / "fixtures/compilation-profiles.json").read_text()
@@ -40,10 +44,10 @@ def test_profiles_preserve_original_kernel_sources_and_specializations(
 
     monkeypatch.setattr("tensor.compiler.frontend.source.export_source", trace)
     module = importlib.import_module(case["profile"])
-    if case["profile"].endswith("packed"):
+    if case["profile"].endswith("independent"):
         checkpoint = packed_checkpoint
     else:
-        cls = DenseConfig if case["profile"].endswith("batched") else Qwen35Config
+        cls = DenseConfig if case["profile"].endswith("compact_batch") else Qwen35Config
         values = {**case["config"], "layers": tuple(case["config"]["layers"])}
         checkpoint = SimpleNamespace(config=cls(**values))
     plan = module.plan(checkpoint, **case["options"])
@@ -56,33 +60,21 @@ def test_profiles_preserve_original_kernel_sources_and_specializations(
         )
         for k in plan.kernels
     ]
-    # The frozen fixture retains the old dependency names. Only migrate those
-    # names here; factory bodies, kernel selection and specializations stay exact.
+    # Only source ownership changed; frozen keys, parameters and schedule arguments
+    # remain the pre-migration numerical contract.
+    from akas.compilation.source import source_dependencies
+
     expected = json.loads(json.dumps(case["kernels"]))
-    renamed = {
-        "tensor.compiler.entry": "tensor.compiler.frontend.source",
-        "tensor.compiler.cuda_lowering": "tensor.compiler.cuda.lowering",
-    }
-    schedules = (
-        "gemv", "outer_product", "packed_integer", "packed_outer_product",
-        "partitioned", "register_matmul", "registers",
-    )
     for record in expected:
-        if not isinstance(record["source"], dict):
-            continue
-        dependencies = record["source"]["dependencies"]
-        migrated = []
-        for name in dependencies:
-            if name == "tensor.compiler.webgpu_templates":
-                migrated.extend("tensor.compiler.webgpu.schedules." + x for x in schedules)
-            else:
-                migrated.append(renamed.get(name, name))
-        record["source"]["dependencies"] = migrated
+        if isinstance(record["source"], dict):
+            assert record["source"]["dependencies"] == ["$shared-operation-closure"]
+            record["source"]["dependencies"] = list(source_dependencies())
     assert actual == expected
 
 
 def test_batched_profile_reuses_different_widths_and_vocabularies():
-    from akas.compilation.profiles.batched import plan, recurrent_plan
+    from akas.compilation.profiles.compact_batch import plan
+    from akas.compilation.profiles.compact_batch import recurrent_plan
 
     config = DenseConfig(
         width=512,
@@ -116,7 +108,7 @@ def test_batched_profile_reuses_different_widths_and_vocabularies():
 
 
 def test_fixed_layout_profile_rejects_incompatible_geometry():
-    from akas.compilation.profiles.hybrid.decode import plan
+    from akas.compilation.profiles.fixed_slots.decode import plan
 
     config = Qwen35Config(("full_attention",), 1024, 1e-6, 10000)
     with pytest.raises(ValueError, match="width=2048"):
@@ -272,8 +264,9 @@ def test_shared_entry_uses_supplied_checkpoint_reader_and_profile(
 ):
     calls = []
     definition = SimpleNamespace(
-        checkpoint_type=lambda path, **options: calls.append((path, options))
-        or SimpleNamespace(config="geometry")
+        checkpoint_type=lambda path, **options: (
+            calls.append((path, options)) or SimpleNamespace(config="geometry")
+        )
     )
     module = SimpleNamespace(
         produce=lambda checkpoint, out, **options: (checkpoint.config, out, options)

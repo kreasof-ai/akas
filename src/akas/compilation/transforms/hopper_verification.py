@@ -1,12 +1,16 @@
 """Compact Hopper expert projections for selected Split-K verification."""
 
 from akas.compilation.build import build
-from akas.compilation.plan import Bundle, Kernel, Source
+from akas.compilation.plan import Bundle
+from akas.compilation.plan import Kernel
+from akas.compilation.plan import Source
 
 import hashlib, json, shutil
 from pathlib import Path
-from akas.artifacts.hybrid import identity
-from akas.execution.optimizations.compact_prefill import implementation_hashes
+from akas.artifacts.kernels import identity
+from akas.artifacts.fingerprints import (
+    fixed_slots_hashes as implementation_hashes,
+)
 
 
 def produce_dense(source, out, *, asynchronous=False):
@@ -45,7 +49,7 @@ def produce_dense(source, out, *, asynchronous=False):
                 key,
                 record["kind"],
                 record["parameters"],
-                Source("akas.kernels.linear.hopper_dense", "make_kernel", (schedule,)),
+                Source("akas.ops.linear.cuda.hopper", "make_kernel", (schedule,)),
                 artifact=record["path"],
                 target="sm_90a",
             )
@@ -103,7 +107,7 @@ def produce(
     record["tile_map"] = add(
         "expert_tile_map",
         p,
-        "akas.kernels.moe.compact_experts",
+        "akas.ops.moe.cuda.compact",
         "tile_map_kernel",
         p,
         "sm_90",
@@ -134,7 +138,7 @@ def produce(
         record["projections"][logical] = add(
             "hopper_split_experts",
             p,
-            "akas.kernels.moe.hopper_experts",
+            "akas.ops.moe.cuda.hopper",
             "expert_kernel",
             schedule,
             "sm_90" if warp_mma else "sm_90a",

@@ -4,7 +4,7 @@ import ctypes as ct
 import importlib, json, time
 from pathlib import Path
 import numpy as np
-from akas.execution.optimizations.decode_projections import replace
+from akas.execution.fixed_slots.optimizations.linear_projections import replace
 
 
 class Snapshot:

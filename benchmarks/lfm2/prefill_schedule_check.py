@@ -10,9 +10,15 @@ import numpy as np
 import tensor
 from tensor.providers.webgpu.device import Device
 from akas import GGUF
-from akas.execution.profiles.selection import webgpu_parameters
-from akas.kernels.packed.webgpu import source
-from benchmarks.lfm2.tensor_projection_search import TimestampAdapter, Timer, bind, oracle, check
+from akas.profiles.independent.selection import webgpu_parameters
+from akas.compilation.source import export_kernel as source
+from benchmarks.lfm2.tensor_projection_search import (
+    TimestampAdapter,
+    Timer,
+    bind,
+    oracle,
+    check,
+)
 
 
 def run(model, out):
@@ -43,7 +49,14 @@ def run(model, out):
         for name, p in specs.items():
             path = out / (name + ".py")
             artifact = path.with_suffix(".tbin")
-            path.write_text(source("ffn", p))
+            path.write_text(
+                source(
+                    "akas.profiles.independent.factories",
+                    "packed_webgpu_factory",
+                    "ffn",
+                    p,
+                )
+            )
             artifact.unlink(missing_ok=True)
             tensor.build(path, artifact, provider="webgpu", cache_dir=out / "cache")
             kernel = device.load(artifact)

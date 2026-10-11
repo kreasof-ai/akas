@@ -1,6 +1,7 @@
 """Schedule independent request handles without assuming a model or provider."""
 
-from akas.models.contracts import Capabilities, IndependentModel
+from akas.models.contracts import Capabilities
+from akas.models.contracts import IndependentModel
 
 
 class IndependentAdapter:

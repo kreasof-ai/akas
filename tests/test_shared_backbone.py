@@ -8,7 +8,7 @@ import pytest
 
 from akas.artifacts.kernels import artifact_path
 from akas.artifacts.kernels import load_kernels
-from akas.ops.hybrid_state import allocate_hybrid_states
+from akas.memory.layouts import allocate_hybrid_states
 from akas.models.qwen35.weights import DenseCheckpoint
 
 

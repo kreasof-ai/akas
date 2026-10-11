@@ -1,6 +1,7 @@
 """Archive a matched quantized-model repeat and its runtime-only ablation."""
 
-from akas.compilation.paths import source_path, tensor_source
+from akas.compilation.paths import source_path
+from akas.compilation.paths import tensor_source
 
 from pathlib import Path as _Path
 import sys as _sys
@@ -13,7 +14,7 @@ import subprocess
 from pathlib import Path
 import numpy as np
 from tensor.artifacts.format import read_artifact
-from akas.artifacts.packed import implementation_hashes
+from akas.artifacts.fingerprints import independent_hashes as implementation_hashes
 
 
 def digest(path):

@@ -106,10 +106,10 @@ src/akas/
 ├── scheduling/          # Admission and prefill/decode policy
 ├── execution/           # Resident resources, handles/batches, plans and graphs
 ├── memory/              # Allocate explicit state layouts; clean up failures
-├── generation/          # Greedy, MTP, acceptance and draft lookup
+├── generation/          # Prompt/termination, acceptance and output lookup
 ├── models/              # Three files per family: config, weights and composition
-├── ops/                 # Decoder blocks, mixers, FFN and numerical primitives
-├── kernels/             # Linear, attention, MoE, recurrent, hybrid, packed ops
+├── ops/                 # Composition and kernels grouped by mathematical operation
+├── profiles/            # Shared requirements, schedules and producer routing
 ├── tensor/              # ABI binding, provider submission and graph handles
 ├── compilation/         # Shared offline build pipeline and execution profiles
 ├── checkpoints/         # GGUF and safetensors storage readers

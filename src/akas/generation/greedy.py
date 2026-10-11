@@ -1,7 +1,8 @@
-"""LFM2 greedy generation using its request workspaces and captured plans."""
+"""Greedy prompt, termination and result policy for independent requests."""
 
 from __future__ import annotations
 import numpy as np
+from akas.execution.independent.greedy import advance_greedy
 
 
 def generate_greedy(self, prompt, *, max_tokens=128, chat=True, gpu_greedy=True):
@@ -22,22 +23,7 @@ def generate_greedy(self, prompt, *, max_tokens=128, chat=True, gpu_greedy=True)
                 break
             if step + 1 == max_tokens:
                 break
-            if self.provider == "webgpu":
-                next_token = self.greedy[1].launch(
-                    readback=self.workspaces[1]["tokens"]
-                )
-            else:
-                long = (
-                    bool(self.long_plan) and self.position + 1 >= self.grouped_threshold
-                )
-                if self.graphs_enabled:
-                    (self.long_greedy_graph if long else self.greedy[1]).launch()
-                else:
-                    self._submit(
-                        self.long_greedy_plan if long else self.greedy_plans[1]
-                    )
-                next_token = self.workspaces[1]["tokens"].to_numpy()
-            self.position += 1
+            next_token = advance_greedy(self)
         return {
             "prompt_tokens": tokens,
             "generated_tokens": generated,

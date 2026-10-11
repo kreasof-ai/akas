@@ -3,8 +3,8 @@
 import os
 import numpy as np
 import pytest
-from akas.execution.profiles.selection import valid_rows
-from akas.execution.profiles.selection import webgpu_parameters
+from akas.profiles.independent.selection import valid_rows
+from akas.profiles.independent.selection import webgpu_parameters
 
 
 @pytest.mark.parametrize("chunk", [32, 64, 128])
@@ -171,7 +171,7 @@ def test_forward_chunk_controls_and_last_readback(rows, count, expected, read):
 @pytest.mark.parametrize("layout,fma", [("km", True), ("mk", False)])
 def test_mixed_activation_outer_product_fusion_and_tails(tmp_path, kind, layout, fma):
     import tensor
-    from akas.kernels.packed.webgpu import source
+    from akas.compilation.source import export_kernel as source
     from benchmarks.lfm2.prefill_chase_search import reference
 
     r, k, o = 35, 129, 33
@@ -196,7 +196,9 @@ def test_mixed_activation_outer_product_fusion_and_tails(tmp_path, kind, layout,
     )
     path = tmp_path / "outer.py"
     artifact = path.with_suffix(".tbin")
-    path.write_text(source(kind, p))
+    path.write_text(
+        source("akas.profiles.independent.factories", "packed_webgpu_factory", kind, p)
+    )
     tensor.build(path, artifact, provider="webgpu")
     rng = np.random.default_rng(903)
     weights = [
@@ -230,7 +232,7 @@ def test_short_half_fma_chains_against_explicit_rounding(
     tmp_path, kind, unroll, magnitude, group_order
 ):
     import tensor
-    from akas.kernels.packed.webgpu import source
+    from akas.compilation.source import export_kernel as source
 
     r, k, o = 35, 37, 34
     rng = np.random.default_rng(1683)
@@ -287,7 +289,9 @@ def test_short_half_fma_chains_against_explicit_rounding(
         ),
     )
     path = tmp_path / "half.py"
-    path.write_text(source(kind, p))
+    path.write_text(
+        source("akas.profiles.independent.factories", "packed_webgpu_factory", kind, p)
+    )
     artifact = path.with_suffix(".tbin")
     tensor.build(path, artifact, provider="webgpu")
     with tensor.Device(provider="webgpu") as device:
@@ -306,14 +310,19 @@ def test_short_half_fma_chains_against_explicit_rounding(
 )
 def test_parallel_prefill_rms_matches_independent_reduction(tmp_path):
     import tensor
-    from akas.kernels.packed.webgpu import source
+    from akas.compilation.source import export_kernel as source
 
     r, c = 35, 2048
     rng = np.random.default_rng(1725)
     w = rng.normal(size=c).astype(np.float32)
     path = tmp_path / "rms.py"
     path.write_text(
-        source("rms", dict(r=r, c=c, eps=1e-5, sg=True, parallel_rows=True))
+        source(
+            "akas.profiles.independent.factories",
+            "packed_webgpu_factory",
+            "rms",
+            dict(r=r, c=c, eps=1e-5, sg=True, parallel_rows=True),
+        )
     )
     artifact = path.with_suffix(".tbin")
     tensor.build(path, artifact, provider="webgpu")
@@ -360,7 +369,7 @@ def test_packed_outer_product_rounding_fusion_and_output_tail(
     import tensor
     from akas.checkpoints.gguf import TYPES
     from akas.checkpoints.gguf import dequantize
-    from akas.kernels.packed.webgpu import source
+    from akas.compilation.source import export_kernel as source
     from benchmarks.lfm2.prefill_chase_search import reference
 
     r, k, o = 35, 288 if encoding == 2 else 256, 34
@@ -404,7 +413,9 @@ def test_packed_outer_product_rounding_fusion_and_output_tail(
     )
     path = tmp_path / "packed.py"
     artifact = path.with_suffix(".tbin")
-    path.write_text(source(kind, p))
+    path.write_text(
+        source("akas.profiles.independent.factories", "packed_webgpu_factory", kind, p)
+    )
     tensor.build(path, artifact, provider="webgpu")
     with tensor.Device(provider="webgpu") as device:
         kernel = device.load(artifact)

@@ -1,6 +1,7 @@
 """Archive the 2.6B prefill experiment, including accuracy and target shortfalls."""
 
-from akas.compilation.paths import source_path, tensor_source
+from akas.compilation.paths import source_path
+from akas.compilation.paths import tensor_source
 
 from pathlib import Path as _Path
 import sys as _sys
@@ -9,9 +10,9 @@ _sys.path.insert(0, str(_Path(__file__).resolve().parents[2]))
 import argparse, hashlib, json, subprocess
 from pathlib import Path
 from tensor.artifacts.format import read_artifact
-from akas.artifacts.packed import implementation_hashes
-from akas.execution.profiles.packed import Q16_PREFILL
-from akas.execution.profiles.packed import HALF_PREFILL
+from akas.artifacts.fingerprints import independent_hashes as implementation_hashes
+from akas.profiles.independent.parameters import Q16_PREFILL
+from akas.profiles.independent.parameters import HALF_PREFILL
 
 
 def digest(path):
@@ -63,10 +64,10 @@ def run(root, reference, out):
         "benchmarks/lfm2/q16_prefill_search.py",
         "benchmarks/lfm2/prefill_chase_search.py",
         "benchmarks/lfm2/prefill_chase_compare.py",
-        "src/akas/compilation/profiles/packed.py",
+        'src/akas/compilation/profiles/independent.py',
         "benchmarks/lfm2/webgpu_profile.py",
-        "src/akas/execution/packed/model.py",
-        "src/akas/kernels/packed/webgpu.py",
+        'src/akas/execution/independent/resident.py',
+        *('src/akas/compilation/source.py', 'src/akas/ops/attention/webgpu/packed.py', 'src/akas/ops/linear/webgpu/packed.py', 'src/akas/ops/normalization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/storage.py', 'src/akas/ops/reductions/webgpu.py', 'src/akas/ops/sequence/webgpu/packed.py', 'src/akas/ops/vocabulary/webgpu/packed.py', 'src/akas/profiles/independent/factories.py'),
         "src/akas/checkpoints/gguf.py",
         "src/tensor/compiler/webgpu_lowering.py",
         "src/tensor/providers/webgpu.py",

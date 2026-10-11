@@ -198,7 +198,7 @@ def test_resident_speculative_graphs_remain_owned_by_caller_on_worker_exit():
 
 def test_resident_speculative_graphs_reuse_owners_across_fresh_cohorts(monkeypatch):
     import akas
-    import akas.execution.hybrid.draft_prefill as mtp_module
+    import akas.execution.fixed_slots.draft as mtp_module
     import benchmarks.qwen35.spec_run as spec_run
     from benchmarks.qwen35.server import NativeServer, Request
 

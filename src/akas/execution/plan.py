@@ -1,6 +1,8 @@
 """Ordered execution plans borrow kernels and buffers owned by the engine."""
 
-from akas.tensor.executor import bind, submit, capture
+from akas.tensor.executor import bind
+from akas.tensor.executor import submit
+from akas.tensor.executor import capture
 
 
 def call_bindings(kernel, call):

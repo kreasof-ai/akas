@@ -10,8 +10,13 @@ import numpy as np
 import tensor
 from wgpu.backends.wgpu_native.extras import write_timestamp
 from tensor.providers.webgpu.device import Device
-from akas.kernels.packed.webgpu import source
-from benchmarks.lfm2.tensor_projection_search import TimestampAdapter, Timer, bind, check
+from akas.compilation.source import export_kernel as source
+from benchmarks.lfm2.tensor_projection_search import (
+    TimestampAdapter,
+    Timer,
+    bind,
+    check,
+)
 
 
 class PlanTimer(Timer):
@@ -112,7 +117,12 @@ def run(out, heads=16, kv_heads=8, depth=64, capacity=576, include_current=False
         control = device.from_numpy(np.array([0, 1], np.int32))
         scorepath = out / "scores.py"
         scorepath.write_text(
-            source("attention_scores", dict(r=1, h=h, kh=kh, d=d, cap=cap, sg=True))
+            source(
+                "akas.profiles.independent.factories",
+                "packed_webgpu_factory",
+                "attention_scores",
+                dict(r=1, h=h, kh=kh, d=d, cap=cap, sg=True),
+            )
         )
         scoreartifact = scorepath.with_suffix(".tbin")
         tensor.build(
@@ -135,7 +145,14 @@ def run(out, heads=16, kv_heads=8, depth=64, capacity=576, include_current=False
             if spec["name"] == "current":
                 p.pop("attention_schedule")
             path = out / (spec["name"] + ".py")
-            path.write_text(source("attention", p))
+            path.write_text(
+                source(
+                    "akas.profiles.independent.factories",
+                    "packed_webgpu_factory",
+                    "attention",
+                    p,
+                )
+            )
             artifact = path.with_suffix(".tbin")
             row = dict(name=spec["name"], parameters=p, validation=[], positions={})
             records.append(row)

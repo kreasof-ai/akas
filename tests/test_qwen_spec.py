@@ -96,20 +96,20 @@ def test_recurrent_snapshots_restore_every_rejection_depth(tmp_path, chunk):
         if kind == "restore" and chunk > 8:
             entry.write_text(
                 export_source(
-                    "akas.kernels.recurrent.hopper_restore",
+                    "akas.ops.gdn.cuda.hopper_restore",
                     "restore_kernel",
                     p,
-                    dependencies=('tensor.compiler.frontend.source',),
+                    dependencies=("tensor.compiler.frontend.source",),
                 )
             )
         else:
             entry.write_text(
                 export_source(
-                    "akas.kernels.speculation.speculative",
-                    "make_kernel",
+                    "akas.profiles.fixed_slots.factories",
+                    "verification_factory",
                     kind,
                     p,
-                    dependencies=('tensor.compiler.frontend.source',),
+                    dependencies=("tensor.compiler.frontend.source",),
                 )
             )
         build_artifact(
@@ -174,11 +174,11 @@ def test_convolution_history_restore_keeps_only_accepted_inputs(tmp_path):
         out = entry.with_suffix(".tbin")
         entry.write_text(
             export_source(
-                "akas.kernels.speculation.speculative",
-                "make_kernel",
+                "akas.profiles.fixed_slots.factories",
+                "verification_factory",
                 kind,
                 p,
-                dependencies=('tensor.compiler.frontend.source',),
+                dependencies=("tensor.compiler.frontend.source",),
             )
         )
         build_artifact(
@@ -254,7 +254,7 @@ def test_split_attention_preserves_causality_at_partition_boundaries(tmp_path, c
         out = entry.with_suffix(".tbin")
         entry.write_text(
             export_source(
-                "akas.kernels.attention.speculative_attention",
+                "akas.ops.attention.cuda.split",
                 kind,
                 dict(
                     slots=s,
@@ -264,7 +264,7 @@ def test_split_attention_preserves_causality_at_partition_boundaries(tmp_path, c
                     packed_loads=True,
                     key_rows=32,
                 ),
-                dependencies=('tensor.compiler.frontend.source',),
+                dependencies=("tensor.compiler.frontend.source",),
             )
         )
         build_artifact(
@@ -338,7 +338,7 @@ def test_split_experts_preserve_hot_routes_and_scales(tmp_path, routed, block_m)
     artifact = entry.with_suffix(".tbin")
     entry.write_text(
         export_source(
-            "akas.kernels.linear.speculative_linear",
+            "akas.ops.moe.cuda.split",
             "expert_kernel",
             dict(
                 rows=rows,
@@ -351,7 +351,7 @@ def test_split_experts_preserve_hot_routes_and_scales(tmp_path, routed, block_m)
                 partitions=parts,
                 stages=2,
             ),
-            dependencies=('tensor.compiler.frontend.source',),
+            dependencies=("tensor.compiler.frontend.source",),
         )
     )
     build_artifact(
@@ -405,10 +405,10 @@ def test_all_row_head_matches_independent_bf16_projection(tmp_path, rows):
     artifact = entry.with_suffix(".tbin")
     entry.write_text(
         export_source(
-            "akas.kernels.speculation.speculative",
+            "akas.ops.vocabulary.cuda.speculative",
             "head_kernel",
             dict(r=rows, k=2048, o=256, block_m=rows, columns=128, depth=128),
-            dependencies=('tensor.compiler.frontend.source',),
+            dependencies=("tensor.compiler.frontend.source",),
         )
     )
     build_artifact(

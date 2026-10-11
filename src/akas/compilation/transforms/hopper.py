@@ -6,7 +6,9 @@ import hashlib
 import json
 from pathlib import Path
 from tensor.artifacts.format import read_artifact
-from akas.execution.optimizations.hopper import implementation_hashes
+from akas.artifacts.fingerprints import (
+    fixed_slots_hashes as implementation_hashes,
+)
 from akas.compilation.build import build_artifact
 
 
@@ -102,10 +104,13 @@ def produce(
             )
             new_entry.write_text(
                 export_source(
-                    "akas.kernels.moe.hopper_experts",
+                    "akas.ops.moe.cuda.hopper",
                     "expert_kernel",
                     schedule,
-                    dependencies=('tensor.compiler.frontend.source', "akas.kernels.elementwise"),
+                    dependencies=(
+                        "tensor.compiler.frontend.source",
+                        "akas.ops.normalization.kernels",
+                    ),
                 )
             )
         elif (
@@ -117,7 +122,7 @@ def produce(
 
             new_entry.write_text(
                 export_source(
-                    "akas.kernels.linear.hopper_dense",
+                    "akas.ops.linear.cuda.hopper",
                     "make_kernel",
                     dict(
                         record["parameters"],
@@ -136,7 +141,10 @@ def produce(
                         in ("bf16-pairs", "bf16-async", "bf16-pipeline"),
                         async_mma=expert_mma in ("bf16-async", "bf16-pipeline"),
                     ),
-                    dependencies=('tensor.compiler.frontend.source', "akas.kernels.elementwise"),
+                    dependencies=(
+                        "tensor.compiler.frontend.source",
+                        "akas.ops.normalization.kernels",
+                    ),
                 )
             )
         elif hopper_attention and record["kind"] == "attention":
@@ -144,10 +152,13 @@ def produce(
 
             new_entry.write_text(
                 export_source(
-                    "akas.kernels.attention.hopper_prefill_attention",
+                    "akas.ops.attention.cuda.hopper_prefill",
                     "attention",
                     dict(record["parameters"], packed_loads=True),
-                    dependencies=('tensor.compiler.frontend.source', "akas.kernels.elementwise"),
+                    dependencies=(
+                        "tensor.compiler.frontend.source",
+                        "akas.ops.normalization.kernels",
+                    ),
                 )
             )
         else:

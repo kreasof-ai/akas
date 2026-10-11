@@ -1,0 +1,1 @@
+"""Shared recurrent implementation."""

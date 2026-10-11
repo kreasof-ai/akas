@@ -28,8 +28,8 @@ def measure():
     volume.reload()
     torch.set_num_threads(4)
     sources = [
-        Path("src/akas/kernels/moe/hopper_experts.py"),
-        Path("src/akas/kernels/linear/resident_operands.py"),
+        Path('src/akas/ops/moe/cuda/hopper.py'),
+        Path('src/akas/ops/quantization/cuda/resident_operands.py'),
         Path(__file__),
     ]
     hashes = {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in sources}
@@ -44,10 +44,13 @@ def measure():
         artifact = entry.with_suffix(".tbin")
         entry.write_text(
             export_source(
-                "akas.kernels." + module,
+                "akas.ops." + module,
                 factory,
                 p,
-                dependencies=('tensor.compiler.frontend.source', "akas.kernels.elementwise"),
+                dependencies=(
+                    "tensor.compiler.frontend.source",
+                    "akas.ops.normalization.kernels",
+                ),
             )
         )
         artifact.unlink(missing_ok=True)
@@ -70,7 +73,7 @@ def measure():
             widening = dev.load(
                 compile(
                     f"widen-{k}",
-                    "resident_operands",
+                    "quantization.cuda.resident_operands",
                     "widen",
                     dict(shape=list(encoded.shape)),
                 )
@@ -129,7 +132,7 @@ def measure():
                         kernel = dev.load(
                             compile(
                                 f"expert-{k}-{rows}-{resident}-{n}",
-                                "hopper_experts",
+                                "moe.cuda.hopper",
                                 "expert_kernel",
                                 p,
                             )

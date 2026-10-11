@@ -4,8 +4,17 @@ These microbenchmarks do not substitute for the unchanged C8 client replay.
 """
 
 import modal
-from benchmarks.qwen35.modal_h200 import image, volume, app as base_app, prepare as prepare_base
-from benchmarks.qwen35.modal_hopper_long import app as serving_app, prepare_long, prepare_dense_tiles
+from benchmarks.qwen35.modal_h200 import (
+    image,
+    volume,
+    app as base_app,
+    prepare as prepare_base,
+)
+from benchmarks.qwen35.modal_hopper_long import (
+    app as serving_app,
+    prepare_long,
+    prepare_dense_tiles,
+)
 from benchmarks.qwen35.modal_compact import measure_compact, prepare_compact
 
 app = modal.App("tensor-qwen35-h200-bandwidth")
@@ -37,7 +46,7 @@ def prepare_micro():
     volume.reload()
     paths = [
         Path(__file__),
-        Path("src/akas/kernels/attention/hopper_prefill_attention.py"),
+        Path('src/akas/ops/attention/cuda/hopper_prefill.py'),
     ]
     hashes = {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
     key = hashlib.sha256(json.dumps(hashes, sort_keys=True).encode()).hexdigest()[:16]
@@ -57,10 +66,13 @@ def prepare_micro():
         entry = root / f"attention-q{q}-t{t}-j{int(joint)}.py"
         entry.write_text(
             export_source(
-                "akas.kernels.attention.hopper_prefill_attention",
+                "akas.ops.attention.cuda.hopper_prefill",
                 "attention",
                 schedule,
-                dependencies=('tensor.compiler.frontend.source', "akas.kernels.elementwise"),
+                dependencies=(
+                    "tensor.compiler.frontend.source",
+                    "akas.ops.normalization.kernels",
+                ),
             )
         )
         artifact = entry.with_suffix(".tbin")
@@ -264,8 +276,8 @@ def prepare_decoded_micro(prepared):
         str(p): hashlib.sha256(p.read_bytes()).hexdigest()
         for p in (
             Path(__file__),
-            Path("src/akas/kernels/attention/hopper_prefill_attention.py"),
-            Path("src/akas/kernels/attention/attention_workspace.py"),
+            Path('src/akas/ops/attention/cuda/hopper_prefill.py'),
+            Path('src/akas/ops/attention/cuda/workspace.py'),
         )
     }
     key = hashlib.sha256(json.dumps(hashes, sort_keys=True).encode()).hexdigest()[:16]
@@ -278,10 +290,10 @@ def prepare_decoded_micro(prepared):
         candidates=list(prepared["candidates"]),
     )
     for name, module, factory, schedule in (
-        ("decode", "attention_workspace", "decode", dict(slots=8, capacity=48000)),
+        ("decode", 'attention.cuda.workspace', "decode", dict(slots=8, capacity=48000)),
         (
             "attention",
-            "hopper_prefill_attention",
+            'attention.cuda.hopper_prefill',
             "attention",
             dict(
                 slots=8,
@@ -296,7 +308,7 @@ def prepare_decoded_micro(prepared):
         ),
         (
             "attention-split2",
-            "hopper_prefill_attention",
+            'attention.cuda.hopper_prefill',
             "attention",
             dict(
                 slots=8,
@@ -312,7 +324,7 @@ def prepare_decoded_micro(prepared):
         ),
         (
             "attention-512",
-            "hopper_prefill_attention",
+            'attention.cuda.hopper_prefill',
             "attention",
             dict(
                 slots=8,
@@ -328,7 +340,7 @@ def prepare_decoded_micro(prepared):
         ),
         (
             "attention-q64-256",
-            "hopper_prefill_attention",
+            'attention.cuda.hopper_prefill',
             "attention",
             dict(
                 slots=8,
@@ -346,10 +358,13 @@ def prepare_decoded_micro(prepared):
         artifact = entry.with_suffix(".tbin")
         entry.write_text(
             export_source(
-                "akas.kernels." + module,
+                "akas.ops." + module,
                 factory,
                 schedule,
-                dependencies=('tensor.compiler.frontend.source', "akas.kernels.elementwise"),
+                dependencies=(
+                    "tensor.compiler.frontend.source",
+                    "akas.ops.normalization.kernels",
+                ),
             )
         )
         build_artifact(entry, artifact, target="sm_90a")
@@ -408,7 +423,7 @@ def prepare_selected(prepared, query_rows=128, threads=256, joint=True):
         str(p): hashlib.sha256(p.read_bytes()).hexdigest()
         for p in (
             Path(__file__),
-            Path("src/akas/kernels/attention/hopper_prefill_attention.py"),
+            Path('src/akas/ops/attention/cuda/hopper_prefill.py'),
         )
     }
     key = hashlib.sha256(
@@ -447,10 +462,13 @@ def prepare_selected(prepared, query_rows=128, threads=256, joint=True):
         entry = destination.with_suffix(".py")
         entry.write_text(
             export_source(
-                "akas.kernels.attention.hopper_prefill_attention",
+                "akas.ops.attention.cuda.hopper_prefill",
                 "attention",
                 dict(old["parameters"], **schedule),
-                dependencies=('tensor.compiler.frontend.source', "akas.kernels.elementwise"),
+                dependencies=(
+                    "tensor.compiler.frontend.source",
+                    "akas.ops.normalization.kernels",
+                ),
             )
         )
         destination.unlink(missing_ok=True)
@@ -545,9 +563,9 @@ def prepare_workspace(prepared, query_rows=128, threads=256, value_splits=1):
         for p in (
             Path(__file__),
             Path("src/akas/compilation/transforms/attention_workspace.py"),
-            Path("src/akas/execution/optimizations/attention_workspace.py"),
-            Path("src/akas/kernels/attention/attention_workspace.py"),
-            Path("src/akas/kernels/attention/hopper_prefill_attention.py"),
+            Path('src/akas/artifacts/fingerprints.py'),
+            Path('src/akas/ops/attention/cuda/workspace.py'),
+            Path('src/akas/ops/attention/cuda/hopper_prefill.py'),
         )
     }
     key = hashlib.sha256(

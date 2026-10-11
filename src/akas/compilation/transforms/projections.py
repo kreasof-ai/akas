@@ -6,7 +6,8 @@ import hashlib
 from importlib.util import find_spec
 import json
 from pathlib import Path
-from akas.compilation.build import build_artifact, export_source
+from akas.compilation.build import build_artifact
+from akas.compilation.build import export_source
 
 
 def mma_bundle(
@@ -47,14 +48,14 @@ def mma_bundle(
             entry = out / (key + ".py")
             entry.write_text(
                 export_source(
-                    "akas.kernels.linear.matmul",
+                    "akas.ops.linear.cuda.block_fp8",
                     "make_kernel",
                     kind + ("_mma_prequantized" if prequantized else "_mma"),
                     newp,
                     dependencies=(
-                        'tensor.compiler.frontend.source',
-                        'tensor.compiler.cuda.lowering',
-                        "akas.kernels.elementwise",
+                        "tensor.compiler.frontend.source",
+                        "tensor.compiler.cuda.lowering",
+                        "akas.ops.normalization.kernels",
                     ),
                 )
             )
@@ -79,13 +80,13 @@ def mma_bundle(
                     qa = qe.with_suffix(".tbin")
                     qe.write_text(
                         export_source(
-                            "akas.kernels.linear.matmul",
+                            "akas.ops.quantization.cuda.block_fp8",
                             "quantize_kernel",
                             qp,
                             dependencies=(
-                                'tensor.compiler.frontend.source',
-                                'tensor.compiler.cuda.lowering',
-                                "akas.kernels.elementwise",
+                                "tensor.compiler.frontend.source",
+                                "tensor.compiler.cuda.lowering",
+                                "akas.ops.normalization.kernels",
                             ),
                         )
                     )
@@ -102,12 +103,12 @@ def mma_bundle(
                 merge_artifact = merge_entry.with_suffix(".tbin")
                 merge_entry.write_text(
                     export_source(
-                        "akas.kernels.linear.matmul",
+                        "akas.ops.linear.cuda.block_fp8",
                         "merge_kernel",
                         mergep,
                         dependencies=(
-                            'tensor.compiler.frontend.source',
-                            "akas.kernels.elementwise",
+                            "tensor.compiler.frontend.source",
+                            "akas.ops.normalization.kernels",
                         ),
                     )
                 )
@@ -123,9 +124,9 @@ def mma_bundle(
     # This tuning bundle binds the original consumer and records the producer
     # separately. Shipping it requires the final producer/consumer manifest.
     manifest["tuning_producer"] = dict(
-        module="akas.kernels.linear.matmul",
+        module="akas.ops.linear.cuda.block_fp8",
         sha256=hashlib.sha256(
-            Path(find_spec("akas.kernels.linear.matmul").origin).read_bytes()
+            Path(find_spec("akas.ops.linear.cuda.block_fp8").origin).read_bytes()
         ).hexdigest(),
     )
     publish(out / "inference.json", manifest)

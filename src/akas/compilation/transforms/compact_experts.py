@@ -1,14 +1,19 @@
 """Build an opt-in compact expert schedule beside an existing prefill bundle."""
 
 from akas.compilation.build import build
-from akas.compilation.plan import Bundle, Kernel, Source
+from akas.compilation.plan import Bundle
+from akas.compilation.plan import Kernel
+from akas.compilation.plan import Source
 
-import hashlib
 import json
 from pathlib import Path
 import shutil
-from akas.artifacts.hybrid import identity
-from akas.execution.optimizations.compact_prefill import implementation_hashes
+from akas.artifacts.kernels import identity
+from akas.artifacts.fingerprints import (
+    fixed_slots_hashes as implementation_hashes,
+)
+
+import hashlib
 
 
 def produce(source, out):
@@ -41,7 +46,7 @@ def produce(source, out):
 
     p = dict(rows=rows, block_m=m)
     record["tile_map"] = add(
-        "expert_tile_map", p, "akas.kernels.moe.compact_experts", "tile_map_kernel", p
+        "expert_tile_map", p, "akas.ops.moe.cuda.compact", "tile_map_kernel", p
     )
     for logical, row in list(manifest["kernels"].items()):
         if row["kind"] != "fp8_experts":
@@ -59,7 +64,7 @@ def produce(source, out):
         selected = add(
             "compact_fp8_experts",
             p,
-            "akas.kernels.hybrid.hybrid_prefill",
+            "akas.ops.moe.cuda.prefill",
             "expert_kernel",
             schedule,
         )

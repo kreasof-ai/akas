@@ -13,10 +13,12 @@ GPU = pytest.mark.skipif(
 
 def build(tmp_path, kind, p):
     from tensor.compiler.build import build_artifact
-    from akas.kernels.hybrid.hybrid import source
+    from akas.compilation.source import export_kernel as source
 
     entry = tmp_path / (kind + ".py")
-    entry.write_text(source(kind, p))
+    entry.write_text(
+        source("akas.profiles.fixed_slots.factories", "decode_factory", kind, p)
+    )
     artifact = tmp_path / (kind + ".tbin")
     build_artifact(
         entry,
@@ -35,10 +37,16 @@ def build_mma(tmp_path, factory, *args):
     entry = tmp_path / (factory + str(len(list(tmp_path.glob("*.py")))) + ".py")
     entry.write_text(
         export_source(
-            "akas.kernels.linear.matmul",
+            {
+                "quantize_kernel": "akas.ops.quantization.cuda.block_fp8",
+                "bf16_head_kernel": "akas.ops.vocabulary.cuda.bf16",
+            }.get(factory, "akas.ops.linear.cuda.block_fp8"),
             factory,
             *args,
-            dependencies=('tensor.compiler.frontend.source', "tensor.compiler.cuda.lowering"),
+            dependencies=(
+                "tensor.compiler.frontend.source",
+                "tensor.compiler.cuda.lowering",
+            ),
         )
     )
     artifact = entry.with_suffix(".tbin")

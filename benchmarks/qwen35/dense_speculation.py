@@ -9,7 +9,7 @@ from tensor.providers.cuda.device import Device
 from akas.models.qwen35.model import DenseEngine
 from akas.scheduling.scheduler import Request
 from akas.scheduling.scheduler import Scheduler
-from akas.generation.batched_mtp import SpeculativeEngine
+from akas.execution.compact_batch.speculative import SpeculativeEngine
 from benchmarks.qwen35.dense_qualification import snapshot
 
 
@@ -72,9 +72,9 @@ def qualify(
                     speculative, specifications
                 )
                 assert actual == control, f"MTP changed greedy output at C{count}"
-                assert (
-                    actual_states == control_states
-                ), f"MTP changed terminal state at C{count}"
+                assert actual_states == control_states, (
+                    f"MTP changed terminal state at C{count}"
+                )
                 row = dict(
                     concurrency=count,
                     tokens=sum(map(len, actual)),
