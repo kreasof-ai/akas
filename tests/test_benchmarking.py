@@ -91,3 +91,30 @@ def test_report_roundtrip_and_matched_regression(tmp_path):
     with pytest.raises(ValueError, match="baseline differs"):
         compare(report, restored)
     assert "tg/request" in table([row])
+
+
+def test_scaling_guard_catches_prefill_cliff_even_when_decode_improves():
+    from akas.benchmarking.report import scaling_regressions
+
+    def result(batch, pp, tg, prompt=2048):
+        return dict(
+            status="ok",
+            case=Case(batch, prompt).metadata(),
+            summary=dict(
+                prefill_tokens_per_second=dict(mean=pp),
+                decode_tokens_per_second=dict(mean=tg),
+            ),
+        )
+
+    rows = [
+        result(64, 112049, 10438),
+        result(256, 44418, 17133),
+        result(1, 9000, 761, prompt=32),
+    ]
+    losses = scaling_regressions(rows, 0.2)
+    assert len(losses) == 1
+    assert losses[0]["metric"] == "prefill_tokens_per_second"
+    assert losses[0]["previous_batch"] == 64
+    assert losses[0]["case"]["batch"] == 256
+    rows[1] = result(256, 113209, 16978)
+    assert scaling_regressions(rows, 0.2) == []

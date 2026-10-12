@@ -488,3 +488,53 @@ def test_webgpu_prepared_capture_accepts_labeled_forward_calls():
     labeled = [("kernel", "bound-call", "layer-label")]
     assert capture(device, labeled, resources=()) == [("kernel", "bound-call")]
     assert labeled[0][2] == "layer-label"
+
+
+def test_beam_search_keeps_default_when_candidates_regress_a_workload():
+    variant = Implementation(
+        "linear", "baseline", "reference", space=(("threads", (32,)),)
+    )
+
+    def measure(item, parameters, workload):
+        if "threads" not in parameters:
+            return Measurement(10, True)
+        return Measurement(2 if parameters["r"] == 1 else 20, True)
+
+    result = tune(
+        "linear",
+        {},
+        [Workload("small", {"r": 1}), Workload("large", {"r": 256})],
+        measure,
+        contract="reference",
+        target="sm_89",
+        catalog=[variant],
+        budget=4,
+    )
+    assert result.schedule == {}
+    assert result.score == 1
+    assert result.measurements == (10, 10)
+
+
+def test_beam_search_accepts_improvement_when_an_unchanged_workload_ties():
+    variant = Implementation(
+        "linear", "baseline", "reference", space=(("threads", (32,)),)
+    )
+
+    def measure(item, parameters, workload):
+        return Measurement(
+            5 if "threads" in parameters and parameters["r"] > 1 else 10, True
+        )
+
+    result = tune(
+        "linear",
+        {},
+        [Workload("small", {"r": 1}), Workload("large", {"r": 256})],
+        measure,
+        contract="reference",
+        target="sm_89",
+        catalog=[variant],
+        budget=4,
+    )
+    assert result.schedule == {"threads": 32}
+    assert result.score == 1
+    assert result.measurements == (10, 5)

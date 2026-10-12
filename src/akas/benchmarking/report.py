@@ -65,3 +65,32 @@ def compare(current, baseline):
         }
         comparisons.append(dict(case=row["case"], ratios=ratios))
     return comparisons
+
+
+def scaling_regressions(results, maximum):
+    """Find aggregate throughput drops between batches of the same workload."""
+    if not 0 <= maximum < 1:
+        raise ValueError("scaling regression limit must be in [0, 1)")
+    groups = {}
+    for row in results:
+        if row["status"] == "ok":
+            workload = {k: v for k, v in row["case"].items() if k != "batch"}
+            groups.setdefault(json.dumps(workload, sort_keys=True), []).append(row)
+    failures = []
+    for rows in groups.values():
+        rows.sort(key=lambda row: row["case"]["batch"])
+        for before, after in zip(rows, rows[1:]):
+            for metric in ("prefill_tokens_per_second", "decode_tokens_per_second"):
+                ratio = (
+                    after["summary"][metric]["mean"] / before["summary"][metric]["mean"]
+                )
+                if ratio < 1 - maximum:
+                    failures.append(
+                        dict(
+                            case=after["case"],
+                            previous_batch=before["case"]["batch"],
+                            metric=metric,
+                            ratio=ratio,
+                        )
+                    )
+    return failures

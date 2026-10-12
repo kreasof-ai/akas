@@ -264,7 +264,8 @@ def test_sharded_safetensors_index_and_extent_validation(checkpoint, tmp_path):
 
 
 @pytest.mark.parametrize("provider", ["cuda", "webgpu"])
-def test_reference_fp8_bytes_and_scales_match_torch(provider, tmp_path):
+@pytest.mark.parametrize("heads", [3, 96])
+def test_reference_fp8_bytes_and_scales_match_torch(provider, heads, tmp_path):
     if os.environ.get("AKAS_LFM_REFERENCE_" + provider.upper()) != "1":
         pytest.skip("enable provider codec qualification")
     import torch
@@ -273,13 +274,19 @@ def test_reference_fp8_bytes_and_scales_match_torch(provider, tmp_path):
     from akas.compilation.source import export_kernel
     from akas.ops.kv_quantization import get
 
-    rows, heads, d, cap = 4, 3, 64, 8
+    rows, d, cap = 4, 64, 8
     rng = np.random.default_rng(7)
     k = rng.normal(0, 1, (rows, heads * d)).astype("float32")
     v = rng.normal(0, 1, (rows, heads * d)).astype("float32")
+    if heads == 96:
+        factors = np.exp2(np.arange(heads) % 81 - 40).astype("float32")
+        k *= np.repeat(factors, d)
+        v *= np.repeat(factors, d)
+    k[2, 0] = -0.0
     k[0, :d] = 0
     k[0, 0] = 448
     k[0, 1:8] = np.arange(1, 15, 2, dtype="float32") / 1024
+    k[1, d : 2 * d] = 0  # exercise the minimum scale for an all-zero head
     positions = np.array([1, 3, 5, 7], dtype="int32")
     enabled = np.array([1, 1, 1, 0], dtype="int32")
     p = dict(
@@ -326,11 +333,7 @@ def test_reference_fp8_bytes_and_scales_match_torch(provider, tmp_path):
                         else raw
                     )
                     actual_scales = scales.to_numpy()
-                    x = (
-                        torch.from_numpy(inputs.reshape(rows, heads, d))
-                        .bfloat16()
-                        .float()
-                    )
+                    x = torch.from_numpy(inputs.reshape(rows, heads, d))
                     expected_scale = x.abs().amax(-1).clamp_min(1e-12) / 448
                     expected_bits = (
                         (x / expected_scale[..., None])

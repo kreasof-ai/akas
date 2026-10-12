@@ -80,6 +80,10 @@ def from_file(path):
     data = json.loads(path.read_text())
     config_path = path.with_name("tokenizer_config.json")
     config = json.loads(config_path.read_text()) if config_path.is_file() else {}
+    template_path = path.with_name("chat_template.jinja")
+    chat_template = config.get("chat_template")
+    if chat_template is None and template_path.is_file():
+        chat_template = template_path.read_text()
     model = data.get("model", {})
     if model.get("type") != "BPE" or any(
         model.get(key)
@@ -208,5 +212,5 @@ def from_file(path):
         bos=bos,
         eos=token_id("eos_token"),
         add_bos=template_bos is not None or config.get("add_bos_token", False),
-        chat_template=config.get("chat_template"),
+        chat_template=chat_template,
     )

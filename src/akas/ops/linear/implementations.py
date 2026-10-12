@@ -7,6 +7,10 @@ def large_batch(p):
     return p.get("r", 1) > 8
 
 
+def floating_optimized(p):
+    return p.get("optimized", False) and p["k"] % 32 == 0
+
+
 IMPLEMENTATIONS = (
     *variants(
         ("fp8_linear",),
@@ -72,4 +76,33 @@ IMPLEMENTATIONS += variants(
     provider="webgpu",
     priority=20,
     space=(("threads", (32, 64, 128, 256)),),
+)
+
+IMPLEMENTATIONS += variants(
+    ("linear", "ffn"),
+    "linear.cuda.floating",
+    "reference",
+    priority=30,
+    accepts=floating_optimized,
+    space=(
+        ("minimum_mma_groups", (32, 0, 64, 128, 256)),
+        ("maximum_gemv_rows", (31, 24, 8, 16, 25, 28, 32, 64)),
+        ("block_m", (32, 16, 64)),
+        ("block_n", (64, 32, 128)),
+        ("block_k", (32, 64, 128)),
+    ),
+)
+
+IMPLEMENTATIONS += variants(
+    ("linear", "ffn"),
+    "linear.webgpu.floating",
+    "reference",
+    provider="webgpu",
+    priority=30,
+    accepts=floating_optimized,
+    space=(
+        ("minimum_mma_groups", (0, 64, 128, 256, 512, 1024)),
+        ("schedule", ("register", "outer")),
+        ("outer_shared_dtype", ("float16", "float32")),
+    ),
 )

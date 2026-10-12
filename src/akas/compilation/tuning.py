@@ -92,7 +92,7 @@ def tune(
         raise ValueError("no compatible tuning candidates")
     if len({item.module for item in variants}) != len(variants):
         raise ValueError("tuning implementation modules must be unique")
-    baselines = []
+    baselines, baseline_modules = [], []
     for workload in workloads:
         p = {**parameters, **workload.parameters}
         base = select(kind, p, **options)
@@ -100,6 +100,7 @@ def tune(
         if not measured.valid:
             raise ValueError(f"invalid reference measurement: {workload.name}")
         baselines.append(measured.seconds)
+        baseline_modules.append(base.module)
     spaces, seeds, by_family = {}, [], {}
     for item in variants:
         axes = dict(item.space) or {"_default": (True,)}
@@ -115,7 +116,14 @@ def tune(
         )
         by_family[item.module] = item
     search = ScheduleSearch(seeds, spaces=spaces, width=width)
-    best, trials = None, 0
+    # Keep the established dispatch when search seeds are worse. A search space
+    # need not contain the factory's default schedule as an explicit candidate.
+    best = (
+        Result(baseline_modules[0], {}, 1.0, tuple(baselines), 0)
+        if len(set(baseline_modules)) == 1
+        else None
+    )
+    trials = 0
     while trials < budget:
         try:
             config = search.next()
@@ -140,14 +148,22 @@ def tune(
             if not measured.valid:
                 break
             times.append(measured.seconds)
+            if measured.seconds > baselines[len(times) - 1]:
+                # A configuration already slower on one workload cannot
+                # preserve the full set; avoid compiling its remaining shapes.
+                break
         if len(times) != len(workloads):
             continue
         score = max(value / baseline for value, baseline in zip(times, baselines))
         search.record(config, score)
-        if best is None or score < best.score:
+        if score <= 1 and (
+            best is None or (score, sum(times)) < (best.score, sum(best.measurements))
+        ):
             best = Result(item.module, schedule, score, tuple(times), trials)
     if best is None:
-        raise ValueError("no correctness-qualified candidate covered every workload")
+        raise ValueError(
+            "no correctness-qualified candidate preserved every workload baseline"
+        )
     from dataclasses import replace
 
     return replace(best, trials=trials)

@@ -343,3 +343,16 @@ def packed_attention(ctx, block):
             *arguments,
         )
     ctx.linear(prefix + "output.weight", ctx.buffers["attn"], ctx.buffers["mixed"])
+
+
+def floating_attention(plan, p, q, kc, vc, ks, vs, out, positions, active):
+    """Bind partitioned decode or tiled prefill through the floating cache ABI."""
+    if p.get("optimized") and p.get("chunk", 1) == 1:
+        p = {**p, "splits": 16}
+        parts = plan.buffer(
+            out.name + ".parts", (p["r"] * p["h"] * p["splits"] * 66,), "float32"
+        )
+        plan("attention_partial", p, q, kc, vc, ks, vs, parts, positions, active)
+        plan("attention_merge", p, parts, out, active)
+    else:
+        plan("attention", p, q, kc, vc, ks, vs, out, positions, active)

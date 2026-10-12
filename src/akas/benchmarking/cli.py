@@ -8,7 +8,7 @@ import subprocess
 import time
 from akas.benchmarking.cases import matrix
 from akas.benchmarking.runner import run
-from akas.benchmarking.report import compare, table, write_report
+from akas.benchmarking.report import compare, scaling_regressions, table, write_report
 
 
 def arguments(parser, factory):
@@ -38,11 +38,21 @@ def arguments(parser, factory):
         help="target-bound Tensor schedule profile used with --compile",
     )
     parser.add_argument("--device", type=int, default=0)
+    parser.add_argument(
+        "--max-buffer-size",
+        type=int,
+        help="WebGPU buffer/binding limit to request from the adapter, in bytes",
+    )
     parser.add_argument("--kv-dtype", default="float16")
     parser.add_argument("--batches", nargs="+", type=int, default=[1, 4, 16, 64, 256])
     parser.add_argument("--prompts", nargs="+", type=int, default=[32, 2048])
     parser.add_argument("--depths", nargs="+", type=int, default=[0])
     parser.add_argument("--generated", type=int, default=32)
+    parser.add_argument(
+        "--prefill-chunk",
+        type=int,
+        help="tokens per slot in each compiled prefill pass",
+    )
     parser.add_argument("--repeats", type=int, default=5)
     parser.add_argument("--warmup", type=int, default=1)
     parser.add_argument("--seed", type=int, default=17)
@@ -59,6 +69,11 @@ def arguments(parser, factory):
     )
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--baseline", type=Path)
+    parser.add_argument(
+        "--max-scaling-regression",
+        type=float,
+        help="stop if a larger batch loses this fraction of aggregate pp/tg throughput",
+    )
     parser.add_argument(
         "--max-regression",
         type=float,
@@ -107,7 +122,15 @@ def main(args):
     )
     if not 0 <= args.max_regression < 1 or args.repeats < 1 or args.warmup < 0:
         raise ValueError("invalid repeat/warmup/regression settings")
+    if args.max_scaling_regression is not None:
+        scaling_regressions([], args.max_scaling_regression)
     capacity = max(case.capacity for case in cases)
+    profile = getattr(args.definition, "compilation_profile", "reference")
+    chunk = args.prefill_chunk or (
+        min(capacity, 128 if args.provider == "cuda" else 32)
+        if profile == "floating"
+        else 1
+    )
     schedules = None
     if args.schedule_profile:
         if not args.compile:
@@ -116,7 +139,8 @@ def main(args):
 
         schedules = ScheduleProfile(json.loads(args.schedule_profile.read_text()))
     definition = args.definition.__module__ + ":" + args.definition.__name__
-    with tensor.Device(args.device, provider=args.provider) as probe:
+    device_options = dict(max_buffer_size=args.max_buffer_size)
+    with tensor.Device(args.device, provider=args.provider, **device_options) as probe:
         detected = dict(probe.info)
         args.target = args.target or detected["arch"]
     metadata = dict(
@@ -138,7 +162,8 @@ def main(args):
         input="seeded synthetic token IDs; greedy device sampling",
         timing="wall clock, synchronize before/after; compile/load/reset excluded; prefill includes control uploads",
         ttft="prefill to first greedy token, including logits/head/sampling; no network",
-        prefill="serial token-step reference",
+        prefill="chunked" if chunk > 1 else "serial token-step reference",
+        prefill_chunk=chunk,
         repeats=args.repeats,
         warmup=args.warmup,
     )
@@ -155,7 +180,7 @@ def main(args):
                     args.definition,
                     args.checkpoint,
                     bundle,
-                    profile="reference",
+                    profile=profile,
                     checkpoint_options={"tokenizer": False},
                     provider=args.provider,
                     target=args.target,
@@ -163,8 +188,11 @@ def main(args):
                     capacity=capacity,
                     kv_dtype=args.kv_dtype,
                     schedules=schedules,
+                    prefill_chunk=chunk,
                 )
-            with tensor.Device(args.device, provider=args.provider) as device:
+            with tensor.Device(
+                args.device, provider=args.provider, **device_options
+            ) as device:
                 metadata["device"] = device.info
                 with args.definition(
                     args.checkpoint, bundle, device, graphs=args.graphs, tokenizer=False
@@ -203,6 +231,16 @@ def main(args):
                         results.append(row)
                         write_report(args.out, metadata, results)
                         print(table([row]), flush=True)
+                        if args.max_scaling_regression is not None:
+                            losses = scaling_regressions(
+                                results, args.max_scaling_regression
+                            )
+                            if losses:
+                                print(
+                                    json.dumps(dict(scaling_regressions=losses)),
+                                    flush=True,
+                                )
+                                raise SystemExit(2)
         except Exception as error:
             completed = {json.dumps(row["case"], sort_keys=True) for row in results}
             for case in selected:

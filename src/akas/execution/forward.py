@@ -20,6 +20,18 @@ class Forward:
         try:
             if set(self.buffers) - set(self.definition.buffers):
                 raise ValueError("unknown supplied buffer")
+            from akas.memory.lifetimes import scratch_slots
+
+            for names in scratch_slots(self.definition):
+                # Caller-supplied scratch has explicit ownership and cannot be
+                # reused by another name.
+                names = [name for name in names if name not in self.buffers]
+                if not names:
+                    continue
+                spec = self.definition.buffers[names[0]]
+                value = device.empty(spec.shape, spec.dtype)
+                self.owned.append(value)
+                self.buffers.update((name, value) for name in names)
             for name, spec in self.definition.buffers.items():
                 if name in self.buffers:
                     continue

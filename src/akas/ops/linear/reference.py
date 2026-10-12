@@ -16,7 +16,7 @@ def make_kernel(kind, p):
     @T.prim_func
     def kernel(
         x: T.Tensor((r * k,), "float32"),
-        w: T.Tensor((o * k,), "float32"),
+        w: T.Tensor((o * k,), p.get("weight_dtype", "float32")),
         out: T.Tensor(out_shape, "float32"),
     ):
         with T.Kernel(T.ceildiv(o, 4), r, threads=threads) as (block, row):

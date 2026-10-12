@@ -119,13 +119,17 @@ class ReferenceCheckpoint:
             tensor_shapes(self.config, output="output.weight" in self.names)[name]
         )
 
-    def upload(self, device, *, max_weight_bytes=64 * 1024 * 1024):
+    def upload(
+        self, device, *, max_weight_bytes=64 * 1024 * 1024, matrix_dtype="float32"
+    ):
         from akas.checkpoints.partition import partitions
 
         result = {}
         try:
             for name in self.names:
                 values = self.read(name)
+                if values.ndim == 2 and not name.endswith("conv.weight"):
+                    values = values.astype(matrix_dtype)
                 for part in partitions(name, values.shape, max_bytes=max_weight_bytes):
                     selected = (
                         values

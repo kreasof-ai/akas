@@ -13,7 +13,7 @@ def make_kernel(kind, p):
         @T.prim_func
         def kernel(
             tokens: T.Tensor((r,), "int32"),
-            w: T.Tensor((v * c,), "float32"),
+            w: T.Tensor((v * c,), p.get("weight_dtype", "float32")),
             out: T.Tensor((r * c,), "float32"),
         ):
             with T.Kernel(T.ceildiv(c, 64), r, threads=64) as (block, row):

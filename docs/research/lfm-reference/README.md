@@ -1,4 +1,9 @@
-# LFM2 reference qualification
+# LFM2 qualification
+
+The current composed floating runtime and pretrained CUDA/hardware-WebGPU
+measurements are recorded in [performance repair](performance-repair/README.md).
+The results below describe the earlier serial reference path and its diagnostic
+fixture; they remain useful as correctness evidence.
 
 This records the readable reference path, not a throughput claim for the optimized
 packed implementation. Model composition stays in the three LFM2 model files;
@@ -9,7 +14,7 @@ CUDA (L40S) and WebGPU (Mesa llvmpipe CPU Vulkan adapter) executed batches
 safetensors, mixed short prompts, 128-token prompts, masked slots and reset.
 Dedicated tests compare FP8 payload bytes/scales against Torch E4M3, including
 rounding ties, and verify partial reset preserves sibling generation state.
-Existing 143 arithmetic hashes and 309 semantic requirements remain unchanged.
+Existing 143 packed arithmetic hashes and 309 semantic requirements remain unchanged.
 
 Pretrained LiquidAI/LFM2-350M revision
 `f37d3f5c8c5484bc01dad379a595cf4c68c4e70e` was checked at batch 1.
@@ -34,7 +39,7 @@ same device/checkpoint/protocol before comparing tuning candidates.
 
 WebGPU FP16 cache values are rounded to FP16 but backed by portable F32 buffers;
 FP8 uses four packed bytes per word plus scales. No physical FP16 memory-saving
-claim is made. Graphics GPU performance remains to be measured. Context and batch
+claim is made. For graphics GPU performance, see the composed floating measurements linked above. Context and batch
 allocations must fit adapter binding/buffer limits. See
 [the example](../../../examples/lfm2/README.md) and
 [the daily tuning harness](../../guides/performance-harness.md).

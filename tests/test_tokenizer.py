@@ -165,3 +165,26 @@ def test_sequence_decoder_and_bos_template_with_identity_normalized_added_token(
     (tmp_path / "tokenizer.json").write_text(json.dumps(data))
     with pytest.raises(TokenizerError, match="BOS"):
         Tokenizer.from_pretrained(tmp_path)
+
+
+@pytest.mark.parametrize("newline", ["\\n", "\n"])
+def test_standalone_chat_template_enables_chat_with_config_precedence(
+    tmp_path, newline
+):
+    import shutil
+
+    shutil.copyfile(FIXTURE / "tokenizer.json", tmp_path / "tokenizer.json")
+    template = "{%- if add_generation_prompt -%}{{- '<|im_start|>assistant\\n' -}}{%- endif -%}"
+    (tmp_path / "chat_template.jinja").write_text(template.replace("\\n", newline))
+    tokenizer = Tokenizer.from_pretrained(tmp_path)
+    assert tokenizer.generation_prefix == "<|im_start|>assistant\n"
+    assert tokenizer.chat("hello") == tokenizer.encode(
+        "<|im_start|>user\nhello<|im_end|>\n<|im_start|>assistant\n",
+        add_bos=False,
+        parse_special=True,
+    )
+    (tmp_path / "tokenizer_config.json").write_text(
+        json.dumps({"chat_template": "unsupported"})
+    )
+    with pytest.raises(TokenizerError, match="generation prefix"):
+        Tokenizer.from_pretrained(tmp_path).chat("hello")

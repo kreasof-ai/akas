@@ -1,7 +1,7 @@
-"""Reusable batched token-step runtime for composed decoder reference models.
+"""Reusable batched runtime for composed floating decoder models.
 
 Weights are shared by slots; all recurrent/cache state is slot-indexed. Prefill
-is intentionally serial in time. Decode replays device sampling/position updates
+uses an optional chunked graph. Decode replays device sampling/position updates
 without host token round trips. No compiler or reference framework is imported.
 """
 
@@ -16,6 +16,7 @@ class ReferenceModel:
     def __init__(self, checkpoint, bundle, device, *, graphs=False, tokenizer=True):
         self.device, self.closed = device, False
         self.owned, self.forward = [], None
+        self.prefill_forward = None
         manifest = json.loads((Path(bundle) / "forward.json").read_text())
         if manifest.get("provider") != device.info["provider"]:
             raise ValueError("reference bundle requires a different provider")
@@ -38,7 +39,13 @@ class ReferenceModel:
             raise ValueError("reference bundle belongs to a different model definition")
         try:
             supplied = self.checkpoint.upload(
-                device, max_weight_bytes=self.max_weight_bytes
+                device,
+                max_weight_bytes=self.max_weight_bytes,
+                **(
+                    {"matrix_dtype": meta["matrix_dtype"]}
+                    if "matrix_dtype" in meta
+                    else {}
+                ),
             )
             self.owned.extend(supplied.values())
             for name, spec in expected.buffers.items():
@@ -48,6 +55,43 @@ class ReferenceModel:
                     self.owned.append(value)
             self.forward = Forward(bundle, device, supplied, graphs=graphs)
             self.buffers = self.forward.buffers
+            self.prefill_chunk = meta.get("prefill_chunk", 1)
+            if self.prefill_chunk > 1:
+                shared = {
+                    name: value
+                    for name, value in self.buffers.items()
+                    if expected.buffers[name].role in ("weight", "state", "output")
+                    or name in ("tokens", "active")
+                }
+                spec = self.definition(
+                    self.config,
+                    batch=self.batch,
+                    capacity=self.capacity,
+                    provider=manifest["provider"],
+                    kv_dtype=self.kv_dtype,
+                    output="output.weight" in self.checkpoint.names,
+                    max_weight_bytes=self.max_weight_bytes,
+                    chunk=self.prefill_chunk,
+                )
+                prefill_manifest = json.loads(
+                    (Path(bundle) / "prefill.json").read_text()
+                )
+                if (
+                    json.loads(json.dumps(spec.metadata()))
+                    != prefill_manifest["forward"]
+                ):
+                    raise ValueError(
+                        "prefill bundle belongs to a different model definition"
+                    )
+                self.owned.append(
+                    device.from_numpy(
+                        np.zeros(self.batch * self.prefill_chunk, dtype="int32")
+                    )
+                )
+                shared["prefill_tokens"] = self.owned[-1]
+                self.prefill_forward = Forward(
+                    bundle, device, shared, filename="prefill.json", graphs=graphs
+                )
             self.reset()
         except BaseException:
             self.close()
@@ -55,7 +99,10 @@ class ReferenceModel:
 
     @property
     def allocated_bytes(self):
-        return sum(b.nbytes for b in self.buffers.values())
+        values = [*self.buffers.values()]
+        if self.prefill_forward:
+            values.extend(self.prefill_forward.buffers.values())
+        return sum(b.nbytes for b in {id(b): b for b in values}.values())
 
     def _check(self):
         if self.closed:
@@ -145,6 +192,21 @@ class ReferenceModel:
         lengths = np.array([len(x) for x in encoded], dtype="int32")
         if np.any(self.positions + lengths > self.capacity):
             raise ValueError("prompt exceeds reference context")
+        if self.prefill_forward is not None:
+            for start in range(0, int(lengths.max()), self.prefill_chunk):
+                counts = np.clip(lengths - start, 0, self.prefill_chunk).astype("int32")
+                tokens = np.zeros((self.batch, self.prefill_chunk), dtype="int32")
+                for slot, count in enumerate(counts):
+                    tokens[slot, :count] = encoded[slot][start : start + count]
+                write(
+                    self.device,
+                    self.prefill_forward.buffers["prefill_tokens"],
+                    tokens.reshape(-1),
+                )
+                write(self.device, self.buffers["active"], counts)
+                self.prefill_forward.run()
+                self.positions += counts
+            return self.logits() if read else None
         # Preserve each slot's last logits/sample when shorter prompts finish.
         last = (
             np.empty((self.batch, self.config.vocab), dtype="float32") if read else None
@@ -186,6 +248,8 @@ class ReferenceModel:
             return
         self.closed = True
         self.device.synchronize()
+        if self.prefill_forward is not None:
+            self.prefill_forward.close()
         if self.forward is not None:
             self.forward.close()
         for b in reversed(self.owned):

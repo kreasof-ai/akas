@@ -21,6 +21,8 @@ jobs:
       - run: uv run --no-sync python -m akas compile --definition akas.models.lfm2.model:LFM2Reference --checkpoint build/diagnostic.gguf --profile reference --out build/reference-cuda --config '{"batch":4,"capacity":32,"target":"sm_86","kv_dtype":"fp8"}'
       - run: uv run --no-sync python -m examples.lfm2.checkpoint --gguf build/diagnostic.gguf --out build/diagnostic-hf
       - run: uv run --no-sync python -m akas compile --definition akas.models.lfm2.model:LFM2Reference --checkpoint build/diagnostic-hf --checkpoint-options '{"tokenizer":false}' --profile reference --out build/reference-webgpu --config '{"batch":4,"capacity":32,"provider":"webgpu","kv_dtype":"fp8"}'
+      - run: uv run --no-sync python -m akas compile --definition akas.models.lfm2.model:LFM2Batched --checkpoint build/diagnostic.gguf --profile floating --out build/floating-cuda --config '{"batch":4,"capacity":32,"prefill_chunk":32,"target":"sm_86","kv_dtype":"fp8"}'
+      - run: uv run --no-sync python -m akas compile --definition akas.models.lfm2.model:LFM2Batched --checkpoint build/diagnostic-hf --checkpoint-options '{"tokenizer":false}' --profile floating --out build/floating-webgpu --config '{"batch":4,"capacity":32,"prefill_chunk":32,"provider":"webgpu","kv_dtype":"fp8"}'
       - run: uv build --out-dir build/wheels
       - name: Read the pinned Tensor revision
         id: tensor
@@ -54,7 +56,7 @@ jobs:
                       raise ImportError(fullname)
           sys.meta_path.insert(0, Guard())
           from akas import Engine, LFM2, Qwen35Batch
-          from akas.models.lfm2.model import LFM2Reference
+          from akas.models.lfm2.model import LFM2Reference, LFM2Batched
           from akas.benchmarking import Case, matrix
           assert len(matrix()) == 10 and Case(4,32).capacity == 64
           from akas.execution.forward import Forward

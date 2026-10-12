@@ -38,6 +38,12 @@ IMPLEMENTATIONS = (
 )
 
 IMPLEMENTATIONS += tuple(
-    item for provider in ("cuda", "webgpu")
-    for item in variants(('advance', 'next_tokens'), "sequence.reference", "reference", provider=provider)
+    item
+    for provider in ("cuda", "webgpu")
+    for item in variants(
+        ("advance", "next_tokens", "chunk_controls", "chunk_last", "masked_copy"),
+        "sequence.reference",
+        "reference",
+        provider=provider,
+    )
 )

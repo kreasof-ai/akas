@@ -9,7 +9,7 @@ def generation_prefix(template, default=None):
         return default
     if isinstance(template, str):
         match = regex.search(
-            r"""\{%-?\s*if add_generation_prompt\s*-?%\}\s*\{\{-?\s*(["'])(<\|im_start\|>assistant\\n(?:<think>)?)\1\s*-?\}\}\s*\{%-?\s*endif\s*-?%\}\s*\Z""",
+            r"""\{%-?\s*if add_generation_prompt\s*-?%\}\s*\{\{-?\s*(["'])(<\|im_start\|>assistant(?:\\n|\n)(?:<think>)?)\1\s*-?\}\}\s*\{%-?\s*endif\s*-?%\}\s*\Z""",
             template,
         )
         if match:

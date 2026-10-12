@@ -1,0 +1,137 @@
+{
+  "schema": "tensor.schedule-profile.v1",
+  "provider": "cuda",
+  "target": "sm_89",
+  "entries": [
+    {
+      "operation": "linear",
+      "parameters": {
+        "k": 1024,
+        "o": 4608,
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 1
+      },
+      "schedule": {
+        "implementation": "linear.cuda.floating"
+      }
+    },
+    {
+      "operation": "linear",
+      "parameters": {
+        "k": 1024,
+        "o": 4608,
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 4
+      },
+      "schedule": {
+        "implementation": "linear.cuda.floating"
+      }
+    },
+    {
+      "operation": "linear",
+      "parameters": {
+        "k": 1024,
+        "o": 4608,
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 16
+      },
+      "schedule": {
+        "implementation": "linear.cuda.floating"
+      }
+    },
+    {
+      "operation": "linear",
+      "parameters": {
+        "k": 1024,
+        "o": 4608,
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 64
+      },
+      "schedule": {
+        "implementation": "linear.cuda.floating"
+      }
+    },
+    {
+      "operation": "linear",
+      "parameters": {
+        "k": 1024,
+        "o": 4608,
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 256
+      },
+      "schedule": {
+        "implementation": "linear.cuda.floating"
+      }
+    },
+    {
+      "operation": "linear",
+      "parameters": {
+        "k": 1024,
+        "o": 4608,
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 128
+      },
+      "schedule": {
+        "implementation": "linear.cuda.floating"
+      }
+    },
+    {
+      "operation": "linear",
+      "parameters": {
+        "k": 1024,
+        "o": 4608,
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 512
+      },
+      "schedule": {
+        "implementation": "linear.cuda.floating"
+      }
+    },
+    {
+      "operation": "linear",
+      "parameters": {
+        "k": 1024,
+        "o": 4608,
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 2048
+      },
+      "schedule": {
+        "implementation": "linear.cuda.floating"
+      }
+    },
+    {
+      "operation": "linear",
+      "parameters": {
+        "k": 1024,
+        "o": 4608,
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 8192
+      },
+      "schedule": {
+        "implementation": "linear.cuda.floating"
+      }
+    },
+    {
+      "operation": "linear",
+      "parameters": {
+        "k": 1024,
+        "o": 4608,
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 32768
+      },
+      "schedule": {
+        "implementation": "linear.cuda.floating"
+      }
+    }
+  ]
+}

@@ -68,6 +68,29 @@ IMPLEMENTATIONS = (
 )
 
 IMPLEMENTATIONS += tuple(
-    item for provider in ("cuda", "webgpu")
-    for item in variants(("rope", "cache_write", "attention"), "attention.reference", "reference", provider=provider)
+    item
+    for provider in ("cuda", "webgpu")
+    for item in variants(
+        ("rope", "cache_write", "attention"),
+        "attention.reference",
+        "reference",
+        provider=provider,
+    )
+)
+
+IMPLEMENTATIONS += variants(
+    ("attention", "attention_partial", "attention_merge"),
+    "attention.cuda.floating",
+    "reference",
+    priority=30,
+    accepts=lambda p: p.get("optimized", False),
+)
+
+IMPLEMENTATIONS += variants(
+    ("attention_partial", "attention_merge"),
+    "attention.floating",
+    "reference",
+    provider="webgpu",
+    priority=30,
+    accepts=lambda p: p.get("optimized", False),
 )

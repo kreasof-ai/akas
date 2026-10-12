@@ -1,18 +1,19 @@
-# LFM2 reference implementation
+# LFM2 composed execution
 
 The model remains three files in `src/akas/models/lfm2`: architecture dimensions,
 checkpoint bindings, and operation composition. `LFM2` is the existing optimized
-packed-weight path. `LFM2Reference` exercises the shared forward-plan compiler and
-runtime with the same operations on CUDA and portable WebGPU.
+packed-weight path. `LFM2Batched` uses the shared forward-plan compiler and runtime,
+with chunked prefill and operation-owned optimized kernels. `LFM2Reference` keeps
+the serial F32 baseline for numerical checks.
 
-| Feature | Reference path |
+| Feature | Composed floating path |
 | --- | --- |
 | Loading | GGUF F32/F16/Q4_0/Q8_0/Q4_K/Q6_K, or single/sharded safetensors F32/F16/BF16 |
 | Architecture | LFM2 short convolution, Q/K RMS norm, RoPE, causal GQA, SwiGLU, tied/separate output head |
-| Providers | CUDA and portable WebGPU from the same model composition |
+| Providers | CUDA and WebGPU from the same composition; floating WebGPU needs shader-f16 and 32/64-wide subgroups |
 | Attention cache | FP32, FP16, or FP8 with per-head block scales |
 | Batches | 1, 4, 16, 64, 256; other positive sizes within memory limits |
-| Sequence lengths | Live position buffers; one token-step bundle per batch/cache/provider reused across lengths |
+| Sequence lengths | Live positions and lengths; decode/prefill graphs reused across lengths, including mixed prompts and padded chunk tails |
 | State | Separate convolution/KV state per slot, inactive masks, full/partial reset |
 | Generation | Greedy device sampling, mixed prompt lengths, independent EOS, raw prompts and supported checkpoint chat templates |
 | Submission | Ordinary execution or captured/prepared graph |
@@ -22,13 +23,13 @@ Checkpoint geometry is validated explicitly. This implements LFM2 dense decoder
 models with 64-channel heads, a three-tap bias-free short convolution, default
 RoPE, and SwiGLU. It does not silently accept another architecture merely because
 its name contains LFM. GGUF quantized matrices are dequantized to floating weights
-once for the reference path; use `LFM2` to retain their packed representation.
+once for the composed path; use `LFM2` to retain their packed representation.
 
 Compile a local safetensors checkpoint or GGUF:
 
 ```bash
-akas compile --definition akas.models.lfm2.model:LFM2Reference \
-  --checkpoint /path/to/LFM2-350M --profile reference \
+akas compile --definition akas.models.lfm2.model:LFM2Batched \
+  --checkpoint /path/to/LFM2-350M --profile floating \
   --out build/lfm-reference \
   --config '{"batch":1,"capacity":4096,"provider":"cuda","kv_dtype":"fp8"}'
 
@@ -57,7 +58,7 @@ run it with integer-token prompts or the benchmark harness, which loads with
 
 See [daily performance measurements](../../docs/guides/performance-harness.md)
 for short/long context matrices and regression checks. The numerical qualification
-suite is `tests/test_lfm2_reference.py`; enable actual execution with
+suites are `tests/test_lfm2_reference.py` and `tests/test_lfm2_floating.py`; enable actual execution with
 `AKAS_LFM_REFERENCE_CUDA=1` or `AKAS_LFM_REFERENCE_WEBGPU=1`.
 
 Adding another KV codec means supplying its format descriptor/provider layout and
@@ -74,4 +75,4 @@ limits; those failures are explicit rather than reported as performance results.
 
 WebGPU FP16 cache values use FP16 rounding with F32 backing storage for portability;
 CUDA uses physical FP16 storage. See [qualification evidence](../../docs/research/lfm-reference/README.md)
-for executed cases, pretrained parity, and software-adapter limitations.
+for executed cases, pretrained performance, precision policy, and adapter details.

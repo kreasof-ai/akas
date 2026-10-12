@@ -42,7 +42,9 @@ def partitions(name, shape, *, max_bytes=DEFAULT_BYTES):
 class Weights:
     """Declare the same physical partitions that checkpoint upload will allocate."""
 
-    def __init__(self, plan, shapes, *, max_bytes=DEFAULT_BYTES):
+    def __init__(
+        self, plan, shapes, *, max_bytes=DEFAULT_BYTES, matrix_dtype="float32"
+    ):
         self.plan = plan
         self.parts = {
             name: partitions(name, shape, max_bytes=max_bytes)
@@ -50,9 +52,14 @@ class Weights:
         }
         self.buffers = {
             part.name: plan.buffer(
-                part.name, (math.prod(part.shape),), "float32", role="weight"
+                part.name,
+                (math.prod(part.shape),),
+                matrix_dtype
+                if len(part.shape) == 2 and not name.endswith("conv.weight")
+                else "float32",
+                role="weight",
             )
-            for parts in self.parts.values()
+            for name, parts in self.parts.items()
             for part in parts
         }
 

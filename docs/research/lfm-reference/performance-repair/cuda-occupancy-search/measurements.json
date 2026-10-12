@@ -1,0 +1,2314 @@
+{
+  "device": {
+    "ordinal": 0,
+    "name": "NVIDIA L40S",
+    "arch": "sm_89",
+    "provider": "cuda"
+  },
+  "measurements": [
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 1,
+        "k": 4608,
+        "o": 1024
+      },
+      "checked_rows": [
+        0
+      ],
+      "relative_rms": 4.202391608032485e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 6.0232996474951506e-05,
+      "min_launch_and_sync_seconds": 5.655200220644474e-05,
+      "median_host_enqueue_seconds": 4.951299342792481e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 4,
+        "k": 4608,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        2,
+        3
+      ],
+      "relative_rms": 3.552349028268509e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 6.515299901366234e-05,
+      "min_launch_and_sync_seconds": 6.169400876387954e-05,
+      "median_host_enqueue_seconds": 4.7913010348565876e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 8,
+        "k": 4608,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        4,
+        7
+      ],
+      "relative_rms": 3.522486906604172e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 7.380401075351983e-05,
+      "min_launch_and_sync_seconds": 7.04340054653585e-05,
+      "median_host_enqueue_seconds": 4.594199708662927e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 9,
+        "k": 4608,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        4,
+        8
+      ],
+      "relative_rms": 7.49325226934161e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.0001324559998465702,
+      "min_launch_and_sync_seconds": 0.00012558700109366328,
+      "median_host_enqueue_seconds": 4.956299380864948e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 16,
+        "k": 4608,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        8,
+        15
+      ],
+      "relative_rms": 7.425535386573756e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.0001295060064876452,
+      "min_launch_and_sync_seconds": 0.00012708599388133734,
+      "median_host_enqueue_seconds": 4.955299664288759e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 24,
+        "k": 4608,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        12,
+        23
+      ],
+      "relative_rms": 7.415771506202873e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.00013227600720711052,
+      "min_launch_and_sync_seconds": 0.00013018598838243634,
+      "median_host_enqueue_seconds": 4.849200195167214e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 25,
+        "k": 4608,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        12,
+        24
+      ],
+      "relative_rms": 7.525484761572443e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.000157047004904598,
+      "min_launch_and_sync_seconds": 0.00013979700452182442,
+      "median_host_enqueue_seconds": 6.812300125602633e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 32,
+        "k": 4608,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        16,
+        31
+      ],
+      "relative_rms": 7.485964488296304e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.00011881600948981941,
+      "min_launch_and_sync_seconds": 0.00011482500121928751,
+      "median_host_enqueue_seconds": 4.739200812764466e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 64,
+        "k": 4608,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        32,
+        63
+      ],
+      "relative_rms": 7.430819096043706e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.00011940499825868756,
+      "min_launch_and_sync_seconds": 0.00011623599857557565,
+      "median_host_enqueue_seconds": 4.624199937097728e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 128,
+        "k": 4608,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        64,
+        127
+      ],
+      "relative_rms": 7.5270968409313355e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.0001199850084958598,
+      "min_launch_and_sync_seconds": 0.00011509499745443463,
+      "median_host_enqueue_seconds": 4.883299698121846e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 256,
+        "k": 4608,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        128,
+        255
+      ],
+      "relative_rms": 7.502559128624853e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.00012046500341966748,
+      "min_launch_and_sync_seconds": 0.00011585598986130208,
+      "median_host_enqueue_seconds": 4.8282992793247104e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 512,
+        "k": 4608,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        256,
+        511
+      ],
+      "relative_rms": 7.456694220309146e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.0001362670009257272,
+      "min_launch_and_sync_seconds": 0.0001310860097873956,
+      "median_host_enqueue_seconds": 4.7442008508369327e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 2048,
+        "k": 4608,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        1024,
+        2047
+      ],
+      "relative_rms": 7.415668278554222e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.00037213800533208996,
+      "min_launch_and_sync_seconds": 0.00036722699587699026,
+      "median_host_enqueue_seconds": 4.7532012104056776e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 8192,
+        "k": 4608,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        4096,
+        8191
+      ],
+      "relative_rms": 7.528976311732549e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.001141965010901913,
+      "min_launch_and_sync_seconds": 0.0011286939989076927,
+      "median_host_enqueue_seconds": 6.8582987296395e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 32768,
+        "k": 4608,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        16384,
+        32767
+      ],
+      "relative_rms": 7.346278380282456e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.004216033994453028,
+      "min_launch_and_sync_seconds": 0.004174772009719163,
+      "median_host_enqueue_seconds": 5.131200305186212e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 1,
+        "k": 1024,
+        "o": 4608
+      },
+      "checked_rows": [
+        0
+      ],
+      "relative_rms": 2.252840545224899e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 5.817299825139344e-05,
+      "min_launch_and_sync_seconds": 5.6133008911274374e-05,
+      "median_host_enqueue_seconds": 4.792200343217701e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 4,
+        "k": 1024,
+        "o": 4608
+      },
+      "checked_rows": [
+        0,
+        2,
+        3
+      ],
+      "relative_rms": 3.068561511554435e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 6.38430065009743e-05,
+      "min_launch_and_sync_seconds": 6.0363003285601735e-05,
+      "median_host_enqueue_seconds": 4.754299880005419e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 8,
+        "k": 1024,
+        "o": 4608
+      },
+      "checked_rows": [
+        0,
+        4,
+        7
+      ],
+      "relative_rms": 3.104920267560374e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 6.924298941157758e-05,
+      "min_launch_and_sync_seconds": 6.484299956355244e-05,
+      "median_host_enqueue_seconds": 4.521200025919825e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 9,
+        "k": 1024,
+        "o": 4608
+      },
+      "checked_rows": [
+        0,
+        4,
+        8
+      ],
+      "relative_rms": 1.7082683143598842e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 7.184299465734512e-05,
+      "min_launch_and_sync_seconds": 6.918299186509103e-05,
+      "median_host_enqueue_seconds": 4.933201125822961e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 16,
+        "k": 1024,
+        "o": 4608
+      },
+      "checked_rows": [
+        0,
+        8,
+        15
+      ],
+      "relative_rms": 1.7204913547175238e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 7.037400791887194e-05,
+      "min_launch_and_sync_seconds": 6.887300696689636e-05,
+      "median_host_enqueue_seconds": 4.754299880005419e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 24,
+        "k": 1024,
+        "o": 4608
+      },
+      "checked_rows": [
+        0,
+        12,
+        23
+      ],
+      "relative_rms": 1.7366683096042834e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 7.18240044079721e-05,
+      "min_launch_and_sync_seconds": 6.913399556651711e-05,
+      "median_host_enqueue_seconds": 4.538199573289603e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 25,
+        "k": 1024,
+        "o": 4608
+      },
+      "checked_rows": [
+        0,
+        12,
+        24
+      ],
+      "relative_rms": 1.725733682178543e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 7.238400576170534e-05,
+      "min_launch_and_sync_seconds": 6.991300324443728e-05,
+      "median_host_enqueue_seconds": 4.7371999244205654e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 32,
+        "k": 1024,
+        "o": 4608
+      },
+      "checked_rows": [
+        0,
+        16,
+        31
+      ],
+      "relative_rms": 1.7697005887384876e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 7.041300705168396e-05,
+      "min_launch_and_sync_seconds": 6.809299520682544e-05,
+      "median_host_enqueue_seconds": 4.8681991756893694e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 64,
+        "k": 1024,
+        "o": 4608
+      },
+      "checked_rows": [
+        0,
+        32,
+        63
+      ],
+      "relative_rms": 1.7346676486340584e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 7.030399865470827e-05,
+      "min_launch_and_sync_seconds": 6.847399345133454e-05,
+      "median_host_enqueue_seconds": 4.866199742536992e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 128,
+        "k": 1024,
+        "o": 4608
+      },
+      "checked_rows": [
+        0,
+        64,
+        127
+      ],
+      "relative_rms": 1.7681235249256133e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 7.50230101402849e-05,
+      "min_launch_and_sync_seconds": 7.166300201788545e-05,
+      "median_host_enqueue_seconds": 4.595299833454192e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 256,
+        "k": 1024,
+        "o": 4608
+      },
+      "checked_rows": [
+        0,
+        128,
+        255
+      ],
+      "relative_rms": 1.742124027259706e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 9.792500350158662e-05,
+      "min_launch_and_sync_seconds": 9.25250060390681e-05,
+      "median_host_enqueue_seconds": 4.6151995775289834e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 512,
+        "k": 1024,
+        "o": 4608
+      },
+      "checked_rows": [
+        0,
+        256,
+        511
+      ],
+      "relative_rms": 1.7361215896016802e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.00013263599248602986,
+      "min_launch_and_sync_seconds": 0.00012681599764619023,
+      "median_host_enqueue_seconds": 4.624199937097728e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 2048,
+        "k": 1024,
+        "o": 4608
+      },
+      "checked_rows": [
+        0,
+        1024,
+        2047
+      ],
+      "relative_rms": 1.7064282928913599e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.00032429498969577253,
+      "min_launch_and_sync_seconds": 0.0003203649976057932,
+      "median_host_enqueue_seconds": 4.922201333101839e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 8192,
+        "k": 1024,
+        "o": 4608
+      },
+      "checked_rows": [
+        0,
+        4096,
+        8191
+      ],
+      "relative_rms": 1.7490633581473958e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.001115222999942489,
+      "min_launch_and_sync_seconds": 0.0011030620080418885,
+      "median_host_enqueue_seconds": 4.904199158772826e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 32768,
+        "k": 1024,
+        "o": 4608
+      },
+      "checked_rows": [
+        0,
+        16384,
+        32767
+      ],
+      "relative_rms": 1.7236254734598333e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.004221031005727127,
+      "min_launch_and_sync_seconds": 0.004208799000480212,
+      "median_host_enqueue_seconds": 5.010201130062342e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 1,
+        "k": 1024,
+        "o": 16384
+      },
+      "checked_rows": [
+        0
+      ],
+      "relative_rms": 2.2281810174717975e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 6.560300244018435e-05,
+      "min_launch_and_sync_seconds": 6.231298903003335e-05,
+      "median_host_enqueue_seconds": 4.769199586007744e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 4,
+        "k": 1024,
+        "o": 16384
+      },
+      "checked_rows": [
+        0,
+        2,
+        3
+      ],
+      "relative_rms": 3.077944938922883e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 8.005400013644248e-05,
+      "min_launch_and_sync_seconds": 7.797300349920988e-05,
+      "median_host_enqueue_seconds": 4.74620028398931e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 8,
+        "k": 1024,
+        "o": 16384
+      },
+      "checked_rows": [
+        0,
+        4,
+        7
+      ],
+      "relative_rms": 3.0842122100693814e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.00011435500346124172,
+      "min_launch_and_sync_seconds": 0.0001107949938159436,
+      "median_host_enqueue_seconds": 5.5163007345981896e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 9,
+        "k": 1024,
+        "o": 16384
+      },
+      "checked_rows": [
+        0,
+        4,
+        8
+      ],
+      "relative_rms": 1.7115590935645741e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 7.361300231423229e-05,
+      "min_launch_and_sync_seconds": 7.210300827864558e-05,
+      "median_host_enqueue_seconds": 4.843200440518558e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 16,
+        "k": 1024,
+        "o": 16384
+      },
+      "checked_rows": [
+        0,
+        8,
+        15
+      ],
+      "relative_rms": 1.7140887393907178e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 7.374300912488252e-05,
+      "min_launch_and_sync_seconds": 7.223400461953133e-05,
+      "median_host_enqueue_seconds": 4.878199251834303e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 24,
+        "k": 1024,
+        "o": 16384
+      },
+      "checked_rows": [
+        0,
+        12,
+        23
+      ],
+      "relative_rms": 1.7196015278386767e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 7.59940012358129e-05,
+      "min_launch_and_sync_seconds": 7.236299279611558e-05,
+      "median_host_enqueue_seconds": 4.7501991502940655e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 25,
+        "k": 1024,
+        "o": 16384
+      },
+      "checked_rows": [
+        0,
+        12,
+        24
+      ],
+      "relative_rms": 1.7128289755419246e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 7.390299288090318e-05,
+      "min_launch_and_sync_seconds": 7.215399818960577e-05,
+      "median_host_enqueue_seconds": 4.686199827119708e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 32,
+        "k": 1024,
+        "o": 16384
+      },
+      "checked_rows": [
+        0,
+        16,
+        31
+      ],
+      "relative_rms": 1.7655972897046013e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 7.373301195912063e-05,
+      "min_launch_and_sync_seconds": 7.040299533400685e-05,
+      "median_host_enqueue_seconds": 4.6971996198408306e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 64,
+        "k": 1024,
+        "o": 16384
+      },
+      "checked_rows": [
+        0,
+        32,
+        63
+      ],
+      "relative_rms": 1.7436880170862423e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 8.571399666834623e-05,
+      "min_launch_and_sync_seconds": 8.095499651972204e-05,
+      "median_host_enqueue_seconds": 5.032199260313064e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 128,
+        "k": 1024,
+        "o": 16384
+      },
+      "checked_rows": [
+        0,
+        64,
+        127
+      ],
+      "relative_rms": 1.771332335920306e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.00013148700236342847,
+      "min_launch_and_sync_seconds": 0.00012802600394934416,
+      "median_host_enqueue_seconds": 4.804201307706535e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 256,
+        "k": 1024,
+        "o": 16384
+      },
+      "checked_rows": [
+        0,
+        128,
+        255
+      ],
+      "relative_rms": 1.7469197928221547e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.00019029900431632996,
+      "min_launch_and_sync_seconds": 0.0001847179955802858,
+      "median_host_enqueue_seconds": 4.6312008635140955e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 512,
+        "k": 1024,
+        "o": 16384
+      },
+      "checked_rows": [
+        0,
+        256,
+        511
+      ],
+      "relative_rms": 1.7439919020034722e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.00030983499891590327,
+      "min_launch_and_sync_seconds": 0.0002997639967361465,
+      "median_host_enqueue_seconds": 4.584201087709516e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 2048,
+        "k": 1024,
+        "o": 16384
+      },
+      "checked_rows": [
+        0,
+        1024,
+        2047
+      ],
+      "relative_rms": 1.7112845398514764e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.0010334789985790849,
+      "min_launch_and_sync_seconds": 0.001017948001390323,
+      "median_host_enqueue_seconds": 4.834200080949813e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 8192,
+        "k": 1024,
+        "o": 16384
+      },
+      "checked_rows": [
+        0,
+        4096,
+        8191
+      ],
+      "relative_rms": 1.7545444279676303e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.003876613001921214,
+      "min_launch_and_sync_seconds": 0.0038613820070168003,
+      "median_host_enqueue_seconds": 5.123199662193656e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 32768,
+        "k": 1024,
+        "o": 16384
+      },
+      "checked_rows": [
+        0,
+        16384,
+        32767
+      ],
+      "relative_rms": 1.7242759895452764e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.015404818012029864,
+      "min_launch_and_sync_seconds": 0.015247610994265415,
+      "median_host_enqueue_seconds": 5.020300159230828e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 1,
+        "k": 1024,
+        "o": 3072
+      },
+      "checked_rows": [
+        0
+      ],
+      "relative_rms": 2.2573813396320475e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 5.612299719359726e-05,
+      "min_launch_and_sync_seconds": 5.43630012543872e-05,
+      "median_host_enqueue_seconds": 4.7972003812901676e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 4,
+        "k": 1024,
+        "o": 3072
+      },
+      "checked_rows": [
+        0,
+        2,
+        3
+      ],
+      "relative_rms": 3.0383819193957606e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 5.9193000197410583e-05,
+      "min_launch_and_sync_seconds": 5.804299144074321e-05,
+      "median_host_enqueue_seconds": 4.690200148615986e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 8,
+        "k": 1024,
+        "o": 3072
+      },
+      "checked_rows": [
+        0,
+        4,
+        7
+      ],
+      "relative_rms": 3.066933800255356e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 6.483400647994131e-05,
+      "min_launch_and_sync_seconds": 6.30939903203398e-05,
+      "median_host_enqueue_seconds": 4.839300527237356e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 9,
+        "k": 1024,
+        "o": 3072
+      },
+      "checked_rows": [
+        0,
+        4,
+        8
+      ],
+      "relative_rms": 1.7090152368837153e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 7.02539982739836e-05,
+      "min_launch_and_sync_seconds": 6.738300726283342e-05,
+      "median_host_enqueue_seconds": 4.760200681630522e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 16,
+        "k": 1024,
+        "o": 3072
+      },
+      "checked_rows": [
+        0,
+        8,
+        15
+      ],
+      "relative_rms": 1.7168115391541505e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 7.545400876551867e-05,
+      "min_launch_and_sync_seconds": 7.227400783449411e-05,
+      "median_host_enqueue_seconds": 4.9152004066854715e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 24,
+        "k": 1024,
+        "o": 3072
+      },
+      "checked_rows": [
+        0,
+        12,
+        23
+      ],
+      "relative_rms": 1.738559717523458e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 7.219400140456855e-05,
+      "min_launch_and_sync_seconds": 6.88130094204098e-05,
+      "median_host_enqueue_seconds": 4.887199611403048e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 25,
+        "k": 1024,
+        "o": 3072
+      },
+      "checked_rows": [
+        0,
+        12,
+        24
+      ],
+      "relative_rms": 1.7305784467680496e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 7.327400089707226e-05,
+      "min_launch_and_sync_seconds": 6.957400182727724e-05,
+      "median_host_enqueue_seconds": 4.825199721381068e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 32,
+        "k": 1024,
+        "o": 3072
+      },
+      "checked_rows": [
+        0,
+        16,
+        31
+      ],
+      "relative_rms": 1.7644259742155555e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 6.872300582472235e-05,
+      "min_launch_and_sync_seconds": 6.578299507964402e-05,
+      "median_host_enqueue_seconds": 4.5881999540142715e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 64,
+        "k": 1024,
+        "o": 3072
+      },
+      "checked_rows": [
+        0,
+        32,
+        63
+      ],
+      "relative_rms": 1.728108031784359e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 6.904300244059414e-05,
+      "min_launch_and_sync_seconds": 6.613400182686746e-05,
+      "median_host_enqueue_seconds": 4.506199911702424e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 128,
+        "k": 1024,
+        "o": 3072
+      },
+      "checked_rows": [
+        0,
+        64,
+        127
+      ],
+      "relative_rms": 1.7642812508711359e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 9.584499639458954e-05,
+      "min_launch_and_sync_seconds": 8.964499284047633e-05,
+      "median_host_enqueue_seconds": 5.4392003221437335e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 256,
+        "k": 1024,
+        "o": 3072
+      },
+      "checked_rows": [
+        0,
+        128,
+        255
+      ],
+      "relative_rms": 1.7406651977580623e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 7.726399053353816e-05,
+      "min_launch_and_sync_seconds": 7.603400445077568e-05,
+      "median_host_enqueue_seconds": 4.742300370708108e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 512,
+        "k": 1024,
+        "o": 3072
+      },
+      "checked_rows": [
+        0,
+        256,
+        511
+      ],
+      "relative_rms": 1.734505303829792e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.00011198499123565853,
+      "min_launch_and_sync_seconds": 0.00010869599645957351,
+      "median_host_enqueue_seconds": 4.840298788622022e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 2048,
+        "k": 1024,
+        "o": 3072
+      },
+      "checked_rows": [
+        0,
+        1024,
+        2047
+      ],
+      "relative_rms": 1.7002463437165716e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.0002409719891147688,
+      "min_launch_and_sync_seconds": 0.00023463099205400795,
+      "median_host_enqueue_seconds": 4.830201214645058e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 8192,
+        "k": 1024,
+        "o": 3072
+      },
+      "checked_rows": [
+        0,
+        4096,
+        8191
+      ],
+      "relative_rms": 1.7390136690664804e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.0007468359981430694,
+      "min_launch_and_sync_seconds": 0.0007409850077237934,
+      "median_host_enqueue_seconds": 4.826299846172333e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 32768,
+        "k": 1024,
+        "o": 3072
+      },
+      "checked_rows": [
+        0,
+        16384,
+        32767
+      ],
+      "relative_rms": 1.717549253044126e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.0027674909943016246,
+      "min_launch_and_sync_seconds": 0.00275753099413123,
+      "median_host_enqueue_seconds": 4.97230066685006e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 1,
+        "k": 1024,
+        "o": 1024
+      },
+      "checked_rows": [
+        0
+      ],
+      "relative_rms": 2.3300715668028715e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 5.337299080565572e-05,
+      "min_launch_and_sync_seconds": 5.057199450675398e-05,
+      "median_host_enqueue_seconds": 4.541200178209692e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 4,
+        "k": 1024,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        2,
+        3
+      ],
+      "relative_rms": 3.039823752715165e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 6.882399611640722e-05,
+      "min_launch_and_sync_seconds": 5.8482997701503336e-05,
+      "median_host_enqueue_seconds": 4.9752998165786266e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 8,
+        "k": 1024,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        4,
+        7
+      ],
+      "relative_rms": 3.085856121742836e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 5.8833000366576016e-05,
+      "min_launch_and_sync_seconds": 5.73819997953251e-05,
+      "median_host_enqueue_seconds": 4.87220095237717e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 9,
+        "k": 1024,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        4,
+        8
+      ],
+      "relative_rms": 1.6960939319687895e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 7.096301123965532e-05,
+      "min_launch_and_sync_seconds": 6.782398850191385e-05,
+      "median_host_enqueue_seconds": 4.661199636757374e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 16,
+        "k": 1024,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        8,
+        15
+      ],
+      "relative_rms": 1.7094038184950477e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 8.928400347940624e-05,
+      "min_launch_and_sync_seconds": 6.93829933879897e-05,
+      "median_host_enqueue_seconds": 7.060299685690552e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 24,
+        "k": 1024,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        12,
+        23
+      ],
+      "relative_rms": 1.7341076272714417e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 7.614400237798691e-05,
+      "min_launch_and_sync_seconds": 6.741299876011908e-05,
+      "median_host_enqueue_seconds": 4.6451998059637845e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 25,
+        "k": 1024,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        12,
+        24
+      ],
+      "relative_rms": 1.7261819493796793e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 6.921299791429192e-05,
+      "min_launch_and_sync_seconds": 6.748299347236753e-05,
+      "median_host_enqueue_seconds": 4.621200787369162e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 32,
+        "k": 1024,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        16,
+        31
+      ],
+      "relative_rms": 1.7769540363588021e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 6.66230043862015e-05,
+      "min_launch_and_sync_seconds": 6.460299482569098e-05,
+      "median_host_enqueue_seconds": 4.708199412561953e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 64,
+        "k": 1024,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        32,
+        63
+      ],
+      "relative_rms": 1.7553862790009589e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 6.878400745335966e-05,
+      "min_launch_and_sync_seconds": 6.664299871772528e-05,
+      "median_host_enqueue_seconds": 4.778199945576489e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 128,
+        "k": 1024,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        64,
+        127
+      ],
+      "relative_rms": 1.7699896943668136e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 6.961300096008927e-05,
+      "min_launch_and_sync_seconds": 6.594300793949515e-05,
+      "median_host_enqueue_seconds": 4.8371992306783795e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 256,
+        "k": 1024,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        128,
+        255
+      ],
+      "relative_rms": 1.7737594362188247e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 7.06430000718683e-05,
+      "min_launch_and_sync_seconds": 6.775300425942987e-05,
+      "median_host_enqueue_seconds": 4.817199078388512e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 512,
+        "k": 1024,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        256,
+        511
+      ],
+      "relative_rms": 1.7322818166576326e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 7.354399713221937e-05,
+      "min_launch_and_sync_seconds": 7.097399793565273e-05,
+      "median_host_enqueue_seconds": 4.9241993110626936e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 2048,
+        "k": 1024,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        1024,
+        2047
+      ],
+      "relative_rms": 1.685682491370244e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.00013479599147103727,
+      "min_launch_and_sync_seconds": 0.00013031599519308656,
+      "median_host_enqueue_seconds": 4.9752998165786266e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 8192,
+        "k": 1024,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        4096,
+        8191
+      ],
+      "relative_rms": 1.7322802250419045e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.0002939039986813441,
+      "min_launch_and_sync_seconds": 0.00028897399897687137,
+      "median_host_enqueue_seconds": 4.878200707025826e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 32768,
+        "k": 1024,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        16384,
+        32767
+      ],
+      "relative_rms": 1.74820240772533e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.0009974470012821257,
+      "min_launch_and_sync_seconds": 0.0009822959982557222,
+      "median_host_enqueue_seconds": 5.2723000408150256e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 1,
+        "k": 1024,
+        "o": 512
+      },
+      "checked_rows": [
+        0
+      ],
+      "relative_rms": 2.408290527000645e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 5.5643002269789577e-05,
+      "min_launch_and_sync_seconds": 5.3612006013281643e-05,
+      "median_host_enqueue_seconds": 4.794199776370078e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 4,
+        "k": 1024,
+        "o": 512
+      },
+      "checked_rows": [
+        0,
+        2,
+        3
+      ],
+      "relative_rms": 3.03019618286271e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 5.580300057772547e-05,
+      "min_launch_and_sync_seconds": 5.481200059875846e-05,
+      "median_host_enqueue_seconds": 4.937300400342792e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 8,
+        "k": 1024,
+        "o": 512
+      },
+      "checked_rows": [
+        0,
+        4,
+        7
+      ],
+      "relative_rms": 3.062733071601542e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 5.64319925615564e-05,
+      "min_launch_and_sync_seconds": 5.4032992920838296e-05,
+      "median_host_enqueue_seconds": 4.874299338553101e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 9,
+        "k": 1024,
+        "o": 512
+      },
+      "checked_rows": [
+        0,
+        4,
+        8
+      ],
+      "relative_rms": 1.7150947542177164e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 7.08940060576424e-05,
+      "min_launch_and_sync_seconds": 6.731299799866974e-05,
+      "median_host_enqueue_seconds": 7.59940012358129e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 16,
+        "k": 1024,
+        "o": 512
+      },
+      "checked_rows": [
+        0,
+        8,
+        15
+      ],
+      "relative_rms": 1.7524218947073678e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 7.073300366755575e-05,
+      "min_launch_and_sync_seconds": 6.867300544399768e-05,
+      "median_host_enqueue_seconds": 4.745300975628197e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 24,
+        "k": 1024,
+        "o": 512
+      },
+      "checked_rows": [
+        0,
+        12,
+        23
+      ],
+      "relative_rms": 1.7670790839474648e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 7.12629989720881e-05,
+      "min_launch_and_sync_seconds": 6.798299727961421e-05,
+      "median_host_enqueue_seconds": 4.620201070792973e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 25,
+        "k": 1024,
+        "o": 512
+      },
+      "checked_rows": [
+        0,
+        12,
+        24
+      ],
+      "relative_rms": 1.7657116586633492e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 7.404400093946606e-05,
+      "min_launch_and_sync_seconds": 7.055400055833161e-05,
+      "median_host_enqueue_seconds": 5.144299939274788e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 32,
+        "k": 1024,
+        "o": 512
+      },
+      "checked_rows": [
+        0,
+        16,
+        31
+      ],
+      "relative_rms": 1.7681439885564032e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 6.880299770273268e-05,
+      "min_launch_and_sync_seconds": 6.735300121363252e-05,
+      "median_host_enqueue_seconds": 4.8372006858699024e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 64,
+        "k": 1024,
+        "o": 512
+      },
+      "checked_rows": [
+        0,
+        32,
+        63
+      ],
+      "relative_rms": 1.7298029888479505e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 6.81429955875501e-05,
+      "min_launch_and_sync_seconds": 6.578299507964402e-05,
+      "median_host_enqueue_seconds": 4.768199869431555e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 128,
+        "k": 1024,
+        "o": 512
+      },
+      "checked_rows": [
+        0,
+        64,
+        127
+      ],
+      "relative_rms": 1.8025441477220738e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 6.87629944877699e-05,
+      "min_launch_and_sync_seconds": 6.53830065857619e-05,
+      "median_host_enqueue_seconds": 4.8062007408589125e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 256,
+        "k": 1024,
+        "o": 512
+      },
+      "checked_rows": [
+        0,
+        128,
+        255
+      ],
+      "relative_rms": 1.7877722484627157e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 7.025300874374807e-05,
+      "min_launch_and_sync_seconds": 6.691300950478762e-05,
+      "median_host_enqueue_seconds": 4.7532012104056776e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 512,
+        "k": 1024,
+        "o": 512
+      },
+      "checked_rows": [
+        0,
+        256,
+        511
+      ],
+      "relative_rms": 1.7363840925099794e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 6.95040071150288e-05,
+      "min_launch_and_sync_seconds": 6.539199966937304e-05,
+      "median_host_enqueue_seconds": 4.69519873149693e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 2048,
+        "k": 1024,
+        "o": 512
+      },
+      "checked_rows": [
+        0,
+        1024,
+        2047
+      ],
+      "relative_rms": 1.6906575410757796e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 8.840400550980121e-05,
+      "min_launch_and_sync_seconds": 8.252399857155979e-05,
+      "median_host_enqueue_seconds": 4.781300958711654e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 8192,
+        "k": 1024,
+        "o": 512
+      },
+      "checked_rows": [
+        0,
+        4096,
+        8191
+      ],
+      "relative_rms": 1.7505310552223818e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.00018207900575362146,
+      "min_launch_and_sync_seconds": 0.00017683800251688808,
+      "median_host_enqueue_seconds": 4.629199975170195e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 32768,
+        "k": 1024,
+        "o": 512
+      },
+      "checked_rows": [
+        0,
+        16384,
+        32767
+      ],
+      "relative_rms": 1.7517470496386522e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.000538645006599836,
+      "min_launch_and_sync_seconds": 0.0005276949959807098,
+      "median_host_enqueue_seconds": 4.95730055263266e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 9,
+        "k": 4608,
+        "o": 1024,
+        "minimum_mma_groups": 32,
+        "maximum_gemv_rows": 16
+      },
+      "checked_rows": [
+        0,
+        4,
+        8
+      ],
+      "relative_rms": 3.46985558508095e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 7.699399429839104e-05,
+      "min_launch_and_sync_seconds": 7.558400102425367e-05,
+      "median_host_enqueue_seconds": 4.7712004743516445e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 16,
+        "k": 4608,
+        "o": 1024,
+        "minimum_mma_groups": 32,
+        "maximum_gemv_rows": 16
+      },
+      "checked_rows": [
+        0,
+        8,
+        15
+      ],
+      "relative_rms": 3.444043272793351e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 9.40750032896176e-05,
+      "min_launch_and_sync_seconds": 9.159400360658765e-05,
+      "median_host_enqueue_seconds": 4.6792003558948636e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 9,
+        "k": 1024,
+        "o": 1024,
+        "minimum_mma_groups": 32,
+        "maximum_gemv_rows": 16
+      },
+      "checked_rows": [
+        0,
+        4,
+        8
+      ],
+      "relative_rms": 3.129003687263321e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 6.029299402143806e-05,
+      "min_launch_and_sync_seconds": 5.764199886471033e-05,
+      "median_host_enqueue_seconds": 4.8663001507520676e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 16,
+        "k": 1024,
+        "o": 1024,
+        "minimum_mma_groups": 32,
+        "maximum_gemv_rows": 16
+      },
+      "checked_rows": [
+        0,
+        8,
+        15
+      ],
+      "relative_rms": 3.120431415482017e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 6.375199882313609e-05,
+      "min_launch_and_sync_seconds": 6.218299677129835e-05,
+      "median_host_enqueue_seconds": 4.829200042877346e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 9,
+        "k": 1024,
+        "o": 512,
+        "minimum_mma_groups": 32,
+        "maximum_gemv_rows": 16
+      },
+      "checked_rows": [
+        0,
+        4,
+        8
+      ],
+      "relative_rms": 3.154693786200369e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 5.798299389425665e-05,
+      "min_launch_and_sync_seconds": 5.520299600902945e-05,
+      "median_host_enqueue_seconds": 4.9152004066854715e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 16,
+        "k": 1024,
+        "o": 512,
+        "minimum_mma_groups": 32,
+        "maximum_gemv_rows": 16
+      },
+      "checked_rows": [
+        0,
+        8,
+        15
+      ],
+      "relative_rms": 3.187374773006013e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 5.8003002777695656e-05,
+      "min_launch_and_sync_seconds": 5.501299165189266e-05,
+      "median_host_enqueue_seconds": 4.65119956061244e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 9,
+        "k": 1024,
+        "o": 3072,
+        "minimum_mma_groups": 64,
+        "maximum_gemv_rows": 16
+      },
+      "checked_rows": [
+        0,
+        4,
+        8
+      ],
+      "relative_rms": 3.0867531108924595e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 6.773299537599087e-05,
+      "min_launch_and_sync_seconds": 6.476299313362688e-05,
+      "median_host_enqueue_seconds": 4.877200990449637e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 16,
+        "k": 1024,
+        "o": 3072,
+        "minimum_mma_groups": 64,
+        "maximum_gemv_rows": 16
+      },
+      "checked_rows": [
+        0,
+        8,
+        15
+      ],
+      "relative_rms": 3.0552902785530023e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 7.921300129964948e-05,
+      "min_launch_and_sync_seconds": 7.757400453556329e-05,
+      "median_host_enqueue_seconds": 4.538199573289603e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 24,
+        "k": 4608,
+        "o": 1024,
+        "minimum_mma_groups": 32,
+        "maximum_gemv_rows": 24
+      },
+      "checked_rows": [
+        0,
+        12,
+        23
+      ],
+      "relative_rms": 3.5799635611510894e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.00011323498620186001,
+      "min_launch_and_sync_seconds": 0.00011047499720007181,
+      "median_host_enqueue_seconds": 4.673200601246208e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 24,
+        "k": 1024,
+        "o": 1024,
+        "minimum_mma_groups": 32,
+        "maximum_gemv_rows": 24
+      },
+      "checked_rows": [
+        0,
+        12,
+        23
+      ],
+      "relative_rms": 3.071799596909841e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 6.78630021866411e-05,
+      "min_launch_and_sync_seconds": 6.415299139916897e-05,
+      "median_host_enqueue_seconds": 4.72029933007434e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 24,
+        "k": 1024,
+        "o": 512,
+        "minimum_mma_groups": 32,
+        "maximum_gemv_rows": 24
+      },
+      "checked_rows": [
+        0,
+        12,
+        23
+      ],
+      "relative_rms": 3.055271236007684e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 6.118298915680498e-05,
+      "min_launch_and_sync_seconds": 5.870200402569026e-05,
+      "median_host_enqueue_seconds": 4.74620028398931e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 25,
+        "k": 4608,
+        "o": 1024,
+        "minimum_mma_groups": 32,
+        "maximum_gemv_rows": 32
+      },
+      "checked_rows": [
+        0,
+        12,
+        24
+      ],
+      "relative_rms": 3.503898540202499e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.0001153459888882935,
+      "min_launch_and_sync_seconds": 0.00011128600453957915,
+      "median_host_enqueue_seconds": 4.5231994590722024e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 32,
+        "k": 4608,
+        "o": 1024,
+        "minimum_mma_groups": 32,
+        "maximum_gemv_rows": 32
+      },
+      "checked_rows": [
+        0,
+        16,
+        31
+      ],
+      "relative_rms": 3.484603325887292e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.00013450700498651713,
+      "min_launch_and_sync_seconds": 0.0001302659948123619,
+      "median_host_enqueue_seconds": 4.6661996748298407e-05
+    },
+    {
+      "implementation": "linear.cuda.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 9,
+        "k": 1024,
+        "o": 4608,
+        "minimum_mma_groups": 128,
+        "maximum_gemv_rows": 16
+      },
+      "checked_rows": [
+        0,
+        4,
+        8
+      ],
+      "relative_rms": 3.081362649481889e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 7.25940044503659e-05,
+      "min_launch_and_sync_seconds": 6.934299017302692e-05,
+      "median_host_enqueue_seconds": 4.838200402446091e-05
+    }
+  ]
+}

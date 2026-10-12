@@ -66,9 +66,18 @@ class Reference:
             result = self._chunk(tokens[start : start + 32])
         return result
 
-    def _chunk(self, tokens):
+    def _chunk(
+        self,
+        tokens,
+        *,
+        projection_half=None,
+        tail_half=None,
+        attention=None,
+        head_half=False,
+    ):
         c = self.config
         r = len(tokens)
+        count = r
         d = c.head_dim
         start = self.position
         w = self.weights
@@ -76,7 +85,10 @@ class Reference:
             raise ValueError("context capacity exceeded")
 
         def project(name, x, single=False):
-            half = r > 1 and not single
+            precision = (
+                projection_half(name) if callable(projection_half) else projection_half
+            )
+            half = (r > 1 if precision is None else precision) and not single
             return (x.astype(np.float16).astype(np.float32) if half else x) @ (
                 self.half_weights[name] if half else w[name]
             ).T
@@ -113,6 +125,9 @@ class Reference:
                 self.states[i] = combined[-2:].copy()
                 filters = w[p + "shortconv.conv.weight"]
                 conv = sum(combined[j : j + r] * filters[:, j] for j in range(3)) * gate
+                if tail_half is not None and i == len(c.layers) - 1:
+                    hidden, conv, r = hidden[-1:], conv[-1:], 1
+                    projection_half = tail_half
                 mix = project(p + "shortconv.out_proj.weight", conv)
             else:
                 q = project(p + "attn_q.weight", x).reshape(r, c.heads, d)
@@ -138,7 +153,18 @@ class Reference:
                 scores = np.where(mask[None], -np.inf, scores)
                 prob = np.exp(scores - np.max(scores, axis=-1, keepdims=True))
                 prob /= prob.sum(axis=-1, keepdims=True)
-                attn = (prob @ vals).transpose(1, 0, 2).reshape(r, c.width)
+                attn = (
+                    (
+                        prob @ vals
+                        if attention is None
+                        else attention(q, keys, vals, start)
+                    )
+                    .transpose(1, 0, 2)
+                    .reshape(r, c.width)
+                )
+                if tail_half is not None and i == len(c.layers) - 1:
+                    hidden, attn, r = hidden[-1:], attn[-1:], 1
+                    projection_half = tail_half
                 mix = project(p + "attn_output.weight", attn)
             hidden = hidden + mix
             x = norm(p + "ffn_norm.weight", hidden)
@@ -147,9 +173,10 @@ class Reference:
             activated = gate / (1 + np.exp(-gate)) * up
             hidden = hidden + project(p + "ffn_down.weight", activated)
         final = norm("token_embd_norm.weight", hidden[-1:])
-        self.position += r
+        self.position += count
+        projection_half = head_half
         return project(
             "output.weight" if "output.weight" in w else "token_embd.weight",
             final,
-            single=True,
+            single=not head_half,
         )[0]

@@ -1,4 +1,4 @@
-"""Run the LFM reference composition with batched text prompts."""
+"""Run a composed LFM decoder with batched text prompts."""
 
 import argparse
 import json
@@ -16,15 +16,21 @@ def main():
     parser.add_argument("--max-tokens", type=int, default=32)
     parser.add_argument("--graphs", action="store_true")
     parser.add_argument("--raw", action="store_true")
+    parser.add_argument(
+        "--reference", action="store_true", help="load a serial reference bundle"
+    )
+    parser.add_argument("--max-buffer-size", type=int)
     args = parser.parse_args()
     import tensor
-    from akas.models.lfm2.model import LFM2Reference
+    from akas.models.lfm2.model import LFM2Batched, LFM2Reference
+
+    definition = LFM2Reference if args.reference else LFM2Batched
 
     with (
-        tensor.Device(provider=args.provider) as device,
-        LFM2Reference(
-            args.checkpoint, args.bundle, device, graphs=args.graphs
-        ) as model,
+        tensor.Device(
+            provider=args.provider, max_buffer_size=args.max_buffer_size
+        ) as device,
+        definition(args.checkpoint, args.bundle, device, graphs=args.graphs) as model,
     ):
         results = model.generate(
             args.prompt, max_tokens=args.max_tokens, chat=not args.raw

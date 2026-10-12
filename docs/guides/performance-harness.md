@@ -1,7 +1,7 @@
 # Daily performance measurements
 
 `akas bench` measures a native session's prompt processing and token generation.
-The harness is model-independent; LFM2's portable batched reference is the first
+The harness is model-independent; LFM2's composed floating execution is the first
 complete example. Like [llama-benchy](https://github.com/eugr/llama-benchy), it
 reports prompt/decode throughput at different context depths. Native timing avoids
 network effects and explicitly distinguishes aggregate throughput from throughput
@@ -9,12 +9,13 @@ per request.
 
 ```bash
 akas bench \
-  --definition akas.models.lfm2.model:LFM2Reference \
+  --definition akas.models.lfm2.model:LFM2Batched \
   --checkpoint /path/to/LFM2-350M \
   --bundles build/lfm-reference \
   --compile --provider cuda --kv-dtype fp8 --graphs \
   --batches 1 4 16 64 256 --prompts 32 2048 --depths 0 \
   --generated 32 --warmup 1 --repeats 5 \
+  --max-scaling-regression 0.20 \
   --out build/lfm-baseline.json
 ```
 
@@ -38,6 +39,8 @@ Keep the baseline, change kernels/schedules, and repeat the identical command wi
 Throughput loss beyond the requested fraction exits with status 2. Failed build,
 load, allocation, or runtime cases are recorded as errors and exit with status 1.
 Reports are written after each case so an interrupted run retains completed results.
+`--max-scaling-regression` also stops if a larger batch loses aggregate prefill or
+decode throughput against the preceding measured batch of the same workload.
 Comparison requires matching checkpoint content, definition, device, provider,
 cache dtype, target, graphs, seed, protocol, and workload cases. Compiler/load times
 are excluded; reset and context preparation are excluded from pp/tg but context
@@ -71,13 +74,46 @@ Another model can supply that protocol without changing the runner or reports.
 The measured operation schedules can be selected through the existing
 `akas.compilation.tuning` API and passed to reference compilation as `schedules`.
 
-The reference runtime serializes prefill in time, and its projections use F32
-reductions. CUDA attention loops over live length. Portable WebGPU attention loops
-over compiled capacity with a causal mask to keep workgroup barriers uniform.
-Consequently these measurements describe the readable baseline; optimized packed
-LFM bundles remain available separately. Memory/binding limits still apply, and
-software WebGPU adapters are identified as CPU adapters in each report.
+The floating profile uses chunked prefill (CUDA 128 tokens, WebGPU 32 by
+default) and reuses the established GEMV/GEMM arithmetic. `--prefill-chunk` can
+override this at compilation. Optimized matrices use F16 storage on both
+providers. WebGPU requires shader-f16 and 32/64-wide subgroups. GEMV uses F32
+activations; GEMM rounds activations to F16 and accumulates in F32.
+WebGPU also uses GEMV when the tiled GEMM grid has fewer than 512 workgroups.
+CUDA uses a 32-workgroup floor through 31 rows, with a smaller GEMM row tile
+at the transition to maintain grid occupancy. The operation-owned
+`minimum_mma_groups` and `maximum_gemv_rows` axes tune this crossover. CUDA prefill attention
+uses F16 operands and probabilities with F32 online softmax sums;
+decode and portable WebGPU attention use F32 arithmetic. FP8 cache rounding can
+amplify small projection differences: the optional mixed-precision oracle has
+an explicit 2% relative-RMS logit budget for FP8 and 0.5% for F16, with matching
+greedy tokens. Separate long FP8 trajectories can exceed that budget when
+small arithmetic differences cross quantization thresholds; a passing codec
+test does not establish full-model logit or language-quality parity. Cache
+encoding quantizes the floating source directly and is qualified separately
+against exact bytes and scales.
+`LFM2Reference` remains the serial F32 baseline. Reports identify hardware and
+software adapters, and memory/binding limits still apply.
 
 Use `--schedule-profile path/to/profile.json --compile` to rebuild with a
 qualified Tensor schedule profile before measuring. The profile's hash is
 recorded; provider and target matching are enforced by shared compilation.
+
+For projection schedule search across decode and flattened prefill row counts:
+
+```bash
+python -m benchmarks.kernels.linear --provider cuda --k 1024 --o 4608 \
+  --rows 1 4 16 64 256 128 512 2048 8192 32768 \
+  --budget 9 --out build/linear-search
+```
+
+Add `--geometries 4608x1024 1024x4608 1024x16384 --provider webgpu` to qualify
+multiple projection geometries together. This searches operation-owned configurations
+using the worst slowdown across the whole workload set. Candidates that regress a measured shape are rejected; the
+default remains a candidate even when its settings are absent from search seeds.
+The resulting profile matches only the tested dimensions and row counts. Reports
+include sampled-row NumPy checks, ordinary launch timing, and timing per kernel
+inside a prepared graph/plan with 32 launches per replay. Beam selection uses
+the prepared timing to amortize host submission; `--launches-per-replay` controls
+the repetition count. This is a kernel check,
+so full-model qualification and timing still follow before promotion.

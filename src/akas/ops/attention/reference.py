@@ -12,7 +12,7 @@ def cache_storage(p):
     from akas.ops.kv_quantization.format import Storage
     from akas.memory.state import BufferSpec
 
-    shape = (p["r"], p["kh"], p["capacity"], p["d"])
+    shape = (p["r"] // p.get("chunk", 1), p["kh"], p["capacity"], p["d"])
     if p["kv_dtype"] not in ("float16", "float32"):
         return get(p["kv_dtype"]).storage(shape, provider=p["provider"])
     dtype = "float32" if p["provider"] == "webgpu" else p["kv_dtype"]
@@ -52,6 +52,7 @@ def make_kernel(kind, p):
 
         return kernel
     h, kh, cap = p["h"], p["kh"], p["capacity"]
+    chunk = p.get("chunk", 1)
     storage = cache_storage(p)
     shape, dtype = storage.values.shape, storage.values.dtype
     if len(storage.metadata) != 1:
@@ -62,7 +63,7 @@ def make_kernel(kind, p):
         from akas.ops.kv_quantization import get
 
         backend = get(p["kv_dtype"]).backend(p["provider"])
-        encode = backend.reference_writer(d)
+        encode = backend.reference_writer(d, chunk=chunk)
         read = backend.reference_decoder()
     else:
         from akas.ops.quantization.webgpu.storage import round_half
@@ -99,21 +100,21 @@ def make_kernel(kind, p):
                 else:
                     if enabled[row] != 0:
                         if tx == 0:
-                            ks[row, head, positions[row], 0] = 1
-                            vs[row, head, positions[row], 0] = 1
+                            ks[row // chunk, head, positions[row], 0] = 1
+                            vs[row // chunk, head, positions[row], 0] = 1
                         if tx < d:
                             if p["kv_dtype"] == "float16" and p["provider"] == "webgpu":
-                                kc[row, head, positions[row], tx] = rounded(
+                                kc[row // chunk, head, positions[row], tx] = rounded(
                                     keys[row, head * d + tx]
                                 )
-                                vc[row, head, positions[row], tx] = rounded(
+                                vc[row // chunk, head, positions[row], tx] = rounded(
                                     values[row, head * d + tx]
                                 )
                             else:
-                                kc[row, head, positions[row], tx] = keys[
+                                kc[row // chunk, head, positions[row], tx] = keys[
                                     row, head * d + tx
                                 ]
-                                vc[row, head, positions[row], tx] = values[
+                                vc[row // chunk, head, positions[row], tx] = values[
                                     row, head * d + tx
                                 ]
 
@@ -153,7 +154,7 @@ def make_kernel(kind, p):
                 cap if p["provider"] == "webgpu" else T.min(positions[row] + 1, cap)
             ):
                 scratch[tx] = q[row, head * d + tx] * read(
-                    kc, ks, row, head // (h // kh), position, tx
+                    kc, ks, row // chunk, head // (h // kh), position, tx
                 )
                 T.sync_threads()
                 total(scratch, tx)
@@ -172,7 +173,7 @@ def make_kernel(kind, p):
                     maximum[0] = next_max
                 T.sync_threads()
                 accum = accum * factor[0] + probability[0] * read(
-                    vc, vs, row, head // (h // kh), position, tx
+                    vc, vs, row // chunk, head // (h // kh), position, tx
                 )
                 T.sync_threads()
             if enabled[row] != 0:
@@ -184,7 +185,7 @@ def make_kernel(kind, p):
         from akas.ops.attention.portable import attention
 
         attend = attention(p, read)
-    return primitive(
+    kernel = primitive(
         [
             ("q", (r, h * d), "float32"),
             ("kc", shape, dtype),
@@ -197,3 +198,6 @@ def make_kernel(kind, p):
         ],
         attend,
     )
+    # The composed plan owns distinct cache/control/output allocations. This
+    # lets Tensor prove position loads uniform across each workgroup.
+    return kernel.with_attr("tirx.noalias", True) if p.get("optimized") else kernel

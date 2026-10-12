@@ -11,6 +11,7 @@ def attention(p, read):
     from akas.ops.reductions.webgpu import tree_reduce
 
     r, h, kh, d, cap = (p[k] for k in ("r", "h", "kh", "d", "capacity"))
+    chunk = p.get("chunk", 1)
     maximum = tree_reduce(64, "max")
     total = tree_reduce(64)
 
@@ -31,13 +32,17 @@ def attention(p, read):
                 running_max[0] = -T.infinity("float32")
                 normalizer[0] = 0
             T.sync_threads()
-            for tile in T.serial(T.ceildiv(cap, 64)):
+            for tile in T.serial(
+                T.ceildiv(T.min(positions[row] + 1, cap), 64)
+                if p.get("optimized")
+                else T.ceildiv(cap, 64)
+            ):
                 position = tile * 64 + tx
                 score = 0
                 if position < cap:
                     for channel in T.serial(d):
                         score += q[row, head * d + channel] * read(
-                            kc, ks, row, head // (h // kh), position, channel
+                            kc, ks, row // chunk, head // (h // kh), position, channel
                         )
                 score = T.if_then_else(
                     position < cap and position <= positions[row],
@@ -67,7 +72,7 @@ def attention(p, read):
                 for i in T.serial(64):
                     if tile * 64 + i < cap:
                         contribution += probabilities[i] * read(
-                            vc, vs, row, head // (h // kh), tile * 64 + i, tx
+                            vc, vs, row // chunk, head // (h // kh), tile * 64 + i, tx
                         )
                 accum = accum * factor[0] + contribution
                 T.sync_threads()
