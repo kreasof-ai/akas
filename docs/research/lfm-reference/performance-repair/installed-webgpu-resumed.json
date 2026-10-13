@@ -1,0 +1,1294 @@
+{
+  "provider": "webgpu",
+  "interpreter": "/home/sagemaker-user/akas/build/lfm-reference/resumed/consumer/bin/python",
+  "akas_module": "/home/sagemaker-user/akas/build/lfm-reference/resumed/consumer/lib/python3.12/site-packages/akas/__init__.py",
+  "tensor_module": "/home/sagemaker-user/akas/build/lfm-reference/resumed/consumer/lib/python3.12/site-packages/tensor/__init__.py",
+  "blocked_imports": [
+    "akas.compilation",
+    "tensor.compiler",
+    "torch",
+    "transformers",
+    "tilelang",
+    "tvm",
+    "tvm_ffi",
+    "triton"
+  ],
+  "records": [
+    {
+      "format": "safetensors",
+      "kv_dtype": "float16",
+      "generated": [
+        {
+          "prompt_tokens": [
+            1,
+            6,
+            6423,
+            708,
+            3493,
+            856,
+            730,
+            527,
+            2011,
+            730,
+            527,
+            540,
+            7,
+            708,
+            6,
+            64015,
+            708
+          ],
+          "generated_tokens": [
+            527,
+            2011,
+            730,
+            527,
+            30322,
+            730,
+            529,
+            523,
+            1470,
+            856,
+            768,
+            5975,
+            47418,
+            7927,
+            521,
+            1695
+          ],
+          "text": "2 + 2 equals 4. This is a basic arithmetic operation, where"
+        }
+      ],
+      "device": {
+        "ordinal": 0,
+        "provider": "webgpu",
+        "arch": "webgpu-portable-v1",
+        "name": "NVIDIA L40S",
+        "adapter": {
+          "vendor": "NVIDIA",
+          "architecture": "",
+          "device": "NVIDIA L40S",
+          "description": "595.91.07",
+          "stackgroup_min_size": 4,
+          "stackgroup_max_size": 128,
+          "vendor_id": 4318,
+          "device_id": 9913,
+          "adapter_type": "DiscreteGPU",
+          "backend_type": "Vulkan"
+        },
+        "features": [
+          "shader-f16",
+          "subgroup"
+        ],
+        "limits": {
+          "max-bind-groups": 8,
+          "max-bind-groups-plus-vertex-buffers": 0,
+          "max-bindings-per-bind-group": 1000,
+          "max-buffer-size": 2147483647,
+          "max-color-attachment-bytes-per-sample": 0,
+          "max-color-attachments": 0,
+          "max-compute-invocations-per-workgroup": 1024,
+          "max-compute-workgroup-size-x": 1024,
+          "max-compute-workgroup-size-y": 1024,
+          "max-compute-workgroup-size-z": 64,
+          "max-compute-workgroup-storage-size": 32768,
+          "max-compute-workgroups-per-dimension": 65535,
+          "max-dynamic-storage-buffers-per-pipeline-layout": 16,
+          "max-dynamic-uniform-buffers-per-pipeline-layout": 15,
+          "max-inter-stage-shader-variables": 0,
+          "max-non-sampler-bindings": 1000000,
+          "max-push-constant-size": 256,
+          "max-sampled-textures-per-shader-stage": 1048576,
+          "max-samplers-per-shader-stage": 1048576,
+          "max-storage-buffer-binding-size": 2147483647,
+          "max-storage-buffers-per-shader-stage": 1048576,
+          "max-storage-textures-per-shader-stage": 1048576,
+          "max-texture-array-layers": 2048,
+          "max-texture-dimension-1d": 32768,
+          "max-texture-dimension-2d": 32768,
+          "max-texture-dimension-3d": 16384,
+          "max-uniform-buffer-binding-size": 65536,
+          "max-uniform-buffers-per-shader-stage": 1048576,
+          "max-vertex-attributes": 32,
+          "max-vertex-buffer-array-stride": 2048,
+          "max-vertex-buffers": 16,
+          "min-storage-buffer-offset-alignment": 32,
+          "min-uniform-buffer-offset-alignment": 64
+        },
+        "prepared_encoding": "python",
+        "prepared_submission": "python"
+      },
+      "benchmark": [
+        {
+          "case": {
+            "batch": 1,
+            "prompt": 32,
+            "generated": 16,
+            "depth": 0,
+            "mixed": false
+          },
+          "status": "ok",
+          "seed": 17,
+          "repeats": 3,
+          "warmup": 1,
+          "prompt_tokens": 32,
+          "generated_tokens": 16,
+          "allocated_bytes": 763219344,
+          "samples": [
+            {
+              "context_seconds": 0.0,
+              "prefill_seconds": 0.008900514000060866,
+              "decode_seconds": 0.03662123999993128,
+              "prefill_tokens_per_second": 3595.2979793954787,
+              "decode_tokens_per_second": 436.9049218439907,
+              "decode_tokens_per_second_per_request": 436.9049218439907,
+              "ttft_seconds": 0.008900514000060866,
+              "inter_token_seconds": 0.002288827499995705
+            },
+            {
+              "context_seconds": 0.0,
+              "prefill_seconds": 0.007963169000049675,
+              "decode_seconds": 0.03331271799993374,
+              "prefill_tokens_per_second": 4018.5006747691004,
+              "decode_tokens_per_second": 480.2970445111031,
+              "decode_tokens_per_second_per_request": 480.2970445111031,
+              "ttft_seconds": 0.007963169000049675,
+              "inter_token_seconds": 0.0020820448749958587
+            },
+            {
+              "context_seconds": 0.0,
+              "prefill_seconds": 0.007989670000142723,
+              "decode_seconds": 0.03326624500004982,
+              "prefill_tokens_per_second": 4005.1716778575797,
+              "decode_tokens_per_second": 480.96802028530834,
+              "decode_tokens_per_second_per_request": 480.96802028530834,
+              "ttft_seconds": 0.007989670000142723,
+              "inter_token_seconds": 0.002079140312503114
+            }
+          ],
+          "summary": {
+            "prefill_seconds": {
+              "mean": 0.008284451000084422,
+              "stdev": 0.0005336907257077508,
+              "median": 0.007989670000142723,
+              "p95": 0.008900514000060866,
+              "min": 0.007963169000049675,
+              "max": 0.008900514000060866
+            },
+            "decode_seconds": {
+              "mean": 0.03440006766663828,
+              "stdev": 0.001923732007211308,
+              "median": 0.03331271799993374,
+              "p95": 0.03662123999993128,
+              "min": 0.03326624500004982,
+              "max": 0.03662123999993128
+            },
+            "prefill_tokens_per_second": {
+              "mean": 3872.990110674053,
+              "stdev": 240.5807668334992,
+              "median": 4005.1716778575797,
+              "p95": 4018.5006747691004,
+              "min": 3595.2979793954787,
+              "max": 4018.5006747691004
+            },
+            "decode_tokens_per_second": {
+              "mean": 466.05666221346735,
+              "stdev": 25.248376721077044,
+              "median": 480.2970445111031,
+              "p95": 480.96802028530834,
+              "min": 436.9049218439907,
+              "max": 480.96802028530834
+            },
+            "decode_tokens_per_second_per_request": {
+              "mean": 466.05666221346735,
+              "stdev": 25.248376721077044,
+              "median": 480.2970445111031,
+              "p95": 480.96802028530834,
+              "min": 436.9049218439907,
+              "max": 480.96802028530834
+            },
+            "ttft_seconds": {
+              "mean": 0.008284451000084422,
+              "stdev": 0.0005336907257077508,
+              "median": 0.007989670000142723,
+              "p95": 0.008900514000060866,
+              "min": 0.007963169000049675,
+              "max": 0.008900514000060866
+            },
+            "inter_token_seconds": {
+              "mean": 0.0021500042291648924,
+              "stdev": 0.00012023325045070675,
+              "median": 0.0020820448749958587,
+              "p95": 0.002288827499995705,
+              "min": 0.002079140312503114,
+              "max": 0.002288827499995705
+            }
+          }
+        },
+        {
+          "case": {
+            "batch": 1,
+            "prompt": 2048,
+            "generated": 16,
+            "depth": 0,
+            "mixed": false
+          },
+          "status": "ok",
+          "seed": 17,
+          "repeats": 3,
+          "warmup": 1,
+          "prompt_tokens": 2048,
+          "generated_tokens": 16,
+          "allocated_bytes": 763219344,
+          "samples": [
+            {
+              "context_seconds": 0.0,
+              "prefill_seconds": 0.6019030330000987,
+              "decode_seconds": 0.03789112100002967,
+              "prefill_tokens_per_second": 3402.5414189924245,
+              "decode_tokens_per_second": 422.26251368988187,
+              "decode_tokens_per_second_per_request": 422.26251368988187,
+              "ttft_seconds": 0.6019030330000987,
+              "inter_token_seconds": 0.0023681950625018544
+            },
+            {
+              "context_seconds": 0.0,
+              "prefill_seconds": 0.601525914999911,
+              "decode_seconds": 0.03792861300007644,
+              "prefill_tokens_per_second": 3404.6745932804956,
+              "decode_tokens_per_second": 421.8451120257879,
+              "decode_tokens_per_second_per_request": 421.8451120257879,
+              "ttft_seconds": 0.601525914999911,
+              "inter_token_seconds": 0.0023705383125047774
+            },
+            {
+              "context_seconds": 0.0,
+              "prefill_seconds": 0.6015016740000192,
+              "decode_seconds": 0.03789485099991907,
+              "prefill_tokens_per_second": 3404.811804397297,
+              "decode_tokens_per_second": 422.2209502825112,
+              "decode_tokens_per_second_per_request": 422.2209502825112,
+              "ttft_seconds": 0.6015016740000192,
+              "inter_token_seconds": 0.002368428187494942
+            }
+          ],
+          "summary": {
+            "prefill_seconds": {
+              "mean": 0.6016435406666764,
+              "stdev": 0.0002250535710618575,
+              "median": 0.601525914999911,
+              "p95": 0.6019030330000987,
+              "min": 0.6015016740000192,
+              "max": 0.6019030330000987
+            },
+            "decode_seconds": {
+              "mean": 0.03790486166667506,
+              "stdev": 2.0653634148771665e-05,
+              "median": 0.03789485099991907,
+              "p95": 0.03792861300007644,
+              "min": 0.03789112100002967,
+              "max": 0.03792861300007644
+            },
+            "prefill_tokens_per_second": {
+              "mean": 3404.009272223406,
+              "stdev": 1.2730481347615188,
+              "median": 3404.6745932804956,
+              "p95": 3404.811804397297,
+              "min": 3402.5414189924245,
+              "max": 3404.811804397297
+            },
+            "decode_tokens_per_second": {
+              "mean": 422.109525332727,
+              "stdev": 0.22992972159534483,
+              "median": 422.2209502825112,
+              "p95": 422.26251368988187,
+              "min": 421.8451120257879,
+              "max": 422.26251368988187
+            },
+            "decode_tokens_per_second_per_request": {
+              "mean": 422.109525332727,
+              "stdev": 0.22992972159534483,
+              "median": 422.2209502825112,
+              "p95": 422.26251368988187,
+              "min": 421.8451120257879,
+              "max": 422.26251368988187
+            },
+            "ttft_seconds": {
+              "mean": 0.6016435406666764,
+              "stdev": 0.0002250535710618575,
+              "median": 0.601525914999911,
+              "p95": 0.6019030330000987,
+              "min": 0.6015016740000192,
+              "max": 0.6019030330000987
+            },
+            "inter_token_seconds": {
+              "mean": 0.0023690538541671913,
+              "stdev": 1.290852134298229e-06,
+              "median": 0.002368428187494942,
+              "p95": 0.0023705383125047774,
+              "min": 0.0023681950625018544,
+              "max": 0.0023705383125047774
+            }
+          }
+        }
+      ]
+    },
+    {
+      "format": "safetensors",
+      "kv_dtype": "fp8",
+      "generated": [
+        {
+          "prompt_tokens": [
+            1,
+            6,
+            6423,
+            708,
+            3493,
+            856,
+            730,
+            527,
+            2011,
+            730,
+            527,
+            540,
+            7,
+            708,
+            6,
+            64015,
+            708
+          ],
+          "generated_tokens": [
+            527,
+            2011,
+            730,
+            527,
+            30322,
+            730,
+            529,
+            523,
+            1470,
+            856,
+            768,
+            5975,
+            47418,
+            7927,
+            521,
+            1695
+          ],
+          "text": "2 + 2 equals 4. This is a basic arithmetic operation, where"
+        }
+      ],
+      "device": {
+        "ordinal": 0,
+        "provider": "webgpu",
+        "arch": "webgpu-portable-v1",
+        "name": "NVIDIA L40S",
+        "adapter": {
+          "vendor": "NVIDIA",
+          "architecture": "",
+          "device": "NVIDIA L40S",
+          "description": "595.91.07",
+          "stackgroup_min_size": 4,
+          "stackgroup_max_size": 128,
+          "vendor_id": 4318,
+          "device_id": 9913,
+          "adapter_type": "DiscreteGPU",
+          "backend_type": "Vulkan"
+        },
+        "features": [
+          "shader-f16",
+          "subgroup"
+        ],
+        "limits": {
+          "max-bind-groups": 8,
+          "max-bind-groups-plus-vertex-buffers": 0,
+          "max-bindings-per-bind-group": 1000,
+          "max-buffer-size": 2147483647,
+          "max-color-attachment-bytes-per-sample": 0,
+          "max-color-attachments": 0,
+          "max-compute-invocations-per-workgroup": 1024,
+          "max-compute-workgroup-size-x": 1024,
+          "max-compute-workgroup-size-y": 1024,
+          "max-compute-workgroup-size-z": 64,
+          "max-compute-workgroup-storage-size": 32768,
+          "max-compute-workgroups-per-dimension": 65535,
+          "max-dynamic-storage-buffers-per-pipeline-layout": 16,
+          "max-dynamic-uniform-buffers-per-pipeline-layout": 15,
+          "max-inter-stage-shader-variables": 0,
+          "max-non-sampler-bindings": 1000000,
+          "max-push-constant-size": 256,
+          "max-sampled-textures-per-shader-stage": 1048576,
+          "max-samplers-per-shader-stage": 1048576,
+          "max-storage-buffer-binding-size": 2147483647,
+          "max-storage-buffers-per-shader-stage": 1048576,
+          "max-storage-textures-per-shader-stage": 1048576,
+          "max-texture-array-layers": 2048,
+          "max-texture-dimension-1d": 32768,
+          "max-texture-dimension-2d": 32768,
+          "max-texture-dimension-3d": 16384,
+          "max-uniform-buffer-binding-size": 65536,
+          "max-uniform-buffers-per-shader-stage": 1048576,
+          "max-vertex-attributes": 32,
+          "max-vertex-buffer-array-stride": 2048,
+          "max-vertex-buffers": 16,
+          "min-storage-buffer-offset-alignment": 32,
+          "min-uniform-buffer-offset-alignment": 64
+        },
+        "prepared_encoding": "python",
+        "prepared_submission": "python"
+      },
+      "benchmark": [
+        {
+          "case": {
+            "batch": 1,
+            "prompt": 32,
+            "generated": 16,
+            "depth": 0,
+            "mixed": false
+          },
+          "status": "ok",
+          "seed": 17,
+          "repeats": 3,
+          "warmup": 1,
+          "prompt_tokens": 32,
+          "generated_tokens": 16,
+          "allocated_bytes": 725175696,
+          "samples": [
+            {
+              "context_seconds": 0.0,
+              "prefill_seconds": 0.007958787999996275,
+              "decode_seconds": 0.033581038999955126,
+              "prefill_tokens_per_second": 4020.7127014835646,
+              "decode_tokens_per_second": 476.4593495758538,
+              "decode_tokens_per_second_per_request": 476.4593495758538,
+              "ttft_seconds": 0.007958787999996275,
+              "inter_token_seconds": 0.0020988149374971954
+            },
+            {
+              "context_seconds": 0.0,
+              "prefill_seconds": 0.008078993999788509,
+              "decode_seconds": 0.03351016500005244,
+              "prefill_tokens_per_second": 3960.889190020155,
+              "decode_tokens_per_second": 477.46706111339535,
+              "decode_tokens_per_second_per_request": 477.46706111339535,
+              "ttft_seconds": 0.008078993999788509,
+              "inter_token_seconds": 0.0020943853125032774
+            },
+            {
+              "context_seconds": 0.0,
+              "prefill_seconds": 0.008011260000102993,
+              "decode_seconds": 0.03381022999997185,
+              "prefill_tokens_per_second": 3994.3779130359776,
+              "decode_tokens_per_second": 473.22955212115744,
+              "decode_tokens_per_second_per_request": 473.22955212115744,
+              "ttft_seconds": 0.008011260000102993,
+              "inter_token_seconds": 0.0021131393749982408
+            }
+          ],
+          "summary": {
+            "prefill_seconds": {
+              "mean": 0.008016347333295926,
+              "stdev": 6.026426234323734e-05,
+              "median": 0.008011260000102993,
+              "p95": 0.008078993999788509,
+              "min": 0.007958787999996275,
+              "max": 0.008078993999788509
+            },
+            "decode_seconds": {
+              "mean": 0.03363381133332647,
+              "stdev": 0.0001568388995793194,
+              "median": 0.033581038999955126,
+              "p95": 0.03381022999997185,
+              "min": 0.03351016500005244,
+              "max": 0.03381022999997185
+            },
+            "prefill_tokens_per_second": {
+              "mean": 3991.993268179899,
+              "stdev": 29.982962316462096,
+              "median": 3994.3779130359776,
+              "p95": 4020.7127014835646,
+              "min": 3960.889190020155,
+              "max": 4020.7127014835646
+            },
+            "decode_tokens_per_second": {
+              "mean": 475.7186542701355,
+              "stdev": 2.2137282504316347,
+              "median": 476.4593495758538,
+              "p95": 477.46706111339535,
+              "min": 473.22955212115744,
+              "max": 477.46706111339535
+            },
+            "decode_tokens_per_second_per_request": {
+              "mean": 475.7186542701355,
+              "stdev": 2.2137282504316347,
+              "median": 476.4593495758538,
+              "p95": 477.46706111339535,
+              "min": 473.22955212115744,
+              "max": 477.46706111339535
+            },
+            "ttft_seconds": {
+              "mean": 0.008016347333295926,
+              "stdev": 6.026426234323734e-05,
+              "median": 0.008011260000102993,
+              "p95": 0.008078993999788509,
+              "min": 0.007958787999996275,
+              "max": 0.008078993999788509
+            },
+            "inter_token_seconds": {
+              "mean": 0.0021021132083329044,
+              "stdev": 9.802431223707462e-06,
+              "median": 0.0020988149374971954,
+              "p95": 0.0021131393749982408,
+              "min": 0.0020943853125032774,
+              "max": 0.0021131393749982408
+            }
+          }
+        },
+        {
+          "case": {
+            "batch": 1,
+            "prompt": 2048,
+            "generated": 16,
+            "depth": 0,
+            "mixed": false
+          },
+          "status": "ok",
+          "seed": 17,
+          "repeats": 3,
+          "warmup": 1,
+          "prompt_tokens": 2048,
+          "generated_tokens": 16,
+          "allocated_bytes": 725175696,
+          "samples": [
+            {
+              "context_seconds": 0.0,
+              "prefill_seconds": 0.6983799520000957,
+              "decode_seconds": 0.04103032199986956,
+              "prefill_tokens_per_second": 2932.5011322772325,
+              "decode_tokens_per_second": 389.9555065653852,
+              "decode_tokens_per_second_per_request": 389.9555065653852,
+              "ttft_seconds": 0.6983799520000957,
+              "inter_token_seconds": 0.0025643951249918473
+            },
+            {
+              "context_seconds": 0.0,
+              "prefill_seconds": 0.698717176999935,
+              "decode_seconds": 0.04088748399999531,
+              "prefill_tokens_per_second": 2931.0858061246586,
+              "decode_tokens_per_second": 391.31779299508463,
+              "decode_tokens_per_second_per_request": 391.31779299508463,
+              "ttft_seconds": 0.698717176999935,
+              "inter_token_seconds": 0.002555467749999707
+            },
+            {
+              "context_seconds": 0.0,
+              "prefill_seconds": 0.6984406840001611,
+              "decode_seconds": 0.04064242300000842,
+              "prefill_tokens_per_second": 2932.2461404604082,
+              "decode_tokens_per_second": 393.6773159414409,
+              "decode_tokens_per_second_per_request": 393.6773159414409,
+              "ttft_seconds": 0.6984406840001611,
+              "inter_token_seconds": 0.0025401514375005263
+            }
+          ],
+          "summary": {
+            "prefill_seconds": {
+              "mean": 0.6985126043333972,
+              "stdev": 0.00017974864638917835,
+              "median": 0.6984406840001611,
+              "p95": 0.698717176999935,
+              "min": 0.6983799520000957,
+              "max": 0.698717176999935
+            },
+            "decode_seconds": {
+              "mean": 0.04085340966662443,
+              "stdev": 0.00019618155792357209,
+              "median": 0.04088748399999531,
+              "p95": 0.04103032199986956,
+              "min": 0.04064242300000842,
+              "max": 0.04103032199986956
+            },
+            "prefill_tokens_per_second": {
+              "mean": 2931.9443596207666,
+              "stdev": 0.754381061480941,
+              "median": 2932.2461404604082,
+              "p95": 2932.5011322772325,
+              "min": 2931.0858061246586,
+              "max": 2932.5011322772325
+            },
+            "decode_tokens_per_second": {
+              "mean": 391.65020516730357,
+              "stdev": 1.8830400014613458,
+              "median": 391.31779299508463,
+              "p95": 393.6773159414409,
+              "min": 389.9555065653852,
+              "max": 393.6773159414409
+            },
+            "decode_tokens_per_second_per_request": {
+              "mean": 391.65020516730357,
+              "stdev": 1.8830400014613458,
+              "median": 391.31779299508463,
+              "p95": 393.6773159414409,
+              "min": 389.9555065653852,
+              "max": 393.6773159414409
+            },
+            "ttft_seconds": {
+              "mean": 0.6985126043333972,
+              "stdev": 0.00017974864638917835,
+              "median": 0.6984406840001611,
+              "p95": 0.698717176999935,
+              "min": 0.6983799520000957,
+              "max": 0.698717176999935
+            },
+            "inter_token_seconds": {
+              "mean": 0.002553338104164027,
+              "stdev": 1.2261347370223255e-05,
+              "median": 0.002555467749999707,
+              "p95": 0.0025643951249918473,
+              "min": 0.0025401514375005263,
+              "max": 0.0025643951249918473
+            }
+          }
+        }
+      ]
+    },
+    {
+      "format": "gguf",
+      "kv_dtype": "float16",
+      "generated": [
+        {
+          "prompt_tokens": [
+            1,
+            6,
+            6423,
+            708,
+            3493,
+            856,
+            730,
+            527,
+            2011,
+            730,
+            527,
+            540,
+            7,
+            708,
+            6,
+            64015,
+            708
+          ],
+          "generated_tokens": [
+            527,
+            2011,
+            730,
+            527,
+            30322,
+            730,
+            529,
+            523,
+            1470,
+            856,
+            768,
+            5975,
+            47418,
+            7927,
+            521,
+            1695
+          ],
+          "text": "2 + 2 equals 4. This is a basic arithmetic operation, where"
+        }
+      ],
+      "device": {
+        "ordinal": 0,
+        "provider": "webgpu",
+        "arch": "webgpu-portable-v1",
+        "name": "NVIDIA L40S",
+        "adapter": {
+          "vendor": "NVIDIA",
+          "architecture": "",
+          "device": "NVIDIA L40S",
+          "description": "595.91.07",
+          "stackgroup_min_size": 4,
+          "stackgroup_max_size": 128,
+          "vendor_id": 4318,
+          "device_id": 9913,
+          "adapter_type": "DiscreteGPU",
+          "backend_type": "Vulkan"
+        },
+        "features": [
+          "shader-f16",
+          "subgroup"
+        ],
+        "limits": {
+          "max-bind-groups": 8,
+          "max-bind-groups-plus-vertex-buffers": 0,
+          "max-bindings-per-bind-group": 1000,
+          "max-buffer-size": 2147483647,
+          "max-color-attachment-bytes-per-sample": 0,
+          "max-color-attachments": 0,
+          "max-compute-invocations-per-workgroup": 1024,
+          "max-compute-workgroup-size-x": 1024,
+          "max-compute-workgroup-size-y": 1024,
+          "max-compute-workgroup-size-z": 64,
+          "max-compute-workgroup-storage-size": 32768,
+          "max-compute-workgroups-per-dimension": 65535,
+          "max-dynamic-storage-buffers-per-pipeline-layout": 16,
+          "max-dynamic-uniform-buffers-per-pipeline-layout": 15,
+          "max-inter-stage-shader-variables": 0,
+          "max-non-sampler-bindings": 1000000,
+          "max-push-constant-size": 256,
+          "max-sampled-textures-per-shader-stage": 1048576,
+          "max-samplers-per-shader-stage": 1048576,
+          "max-storage-buffer-binding-size": 2147483647,
+          "max-storage-buffers-per-shader-stage": 1048576,
+          "max-storage-textures-per-shader-stage": 1048576,
+          "max-texture-array-layers": 2048,
+          "max-texture-dimension-1d": 32768,
+          "max-texture-dimension-2d": 32768,
+          "max-texture-dimension-3d": 16384,
+          "max-uniform-buffer-binding-size": 65536,
+          "max-uniform-buffers-per-shader-stage": 1048576,
+          "max-vertex-attributes": 32,
+          "max-vertex-buffer-array-stride": 2048,
+          "max-vertex-buffers": 16,
+          "min-storage-buffer-offset-alignment": 32,
+          "min-uniform-buffer-offset-alignment": 64
+        },
+        "prepared_encoding": "python",
+        "prepared_submission": "python"
+      },
+      "benchmark": [
+        {
+          "case": {
+            "batch": 1,
+            "prompt": 32,
+            "generated": 16,
+            "depth": 0,
+            "mixed": false
+          },
+          "status": "ok",
+          "seed": 17,
+          "repeats": 3,
+          "warmup": 1,
+          "prompt_tokens": 32,
+          "generated_tokens": 16,
+          "allocated_bytes": 763219344,
+          "samples": [
+            {
+              "context_seconds": 0.0,
+              "prefill_seconds": 0.007893485999829863,
+              "decode_seconds": 0.033054682000056346,
+              "prefill_tokens_per_second": 4053.975645321944,
+              "decode_tokens_per_second": 484.0464052860265,
+              "decode_tokens_per_second_per_request": 484.0464052860265,
+              "ttft_seconds": 0.007893485999829863,
+              "inter_token_seconds": 0.0020659176250035216
+            },
+            {
+              "context_seconds": 0.0,
+              "prefill_seconds": 0.007900424999888855,
+              "decode_seconds": 0.03295710799989138,
+              "prefill_tokens_per_second": 4050.415009376101,
+              "decode_tokens_per_second": 485.4794904957296,
+              "decode_tokens_per_second_per_request": 485.4794904957296,
+              "ttft_seconds": 0.007900424999888855,
+              "inter_token_seconds": 0.002059819249993211
+            },
+            {
+              "context_seconds": 0.0,
+              "prefill_seconds": 0.007888584000056653,
+              "decode_seconds": 0.033138918000076956,
+              "prefill_tokens_per_second": 4056.494803093963,
+              "decode_tokens_per_second": 482.8160050356154,
+              "decode_tokens_per_second_per_request": 482.8160050356154,
+              "ttft_seconds": 0.007888584000056653,
+              "inter_token_seconds": 0.0020711823750048097
+            }
+          ],
+          "summary": {
+            "prefill_seconds": {
+              "mean": 0.007894164999925124,
+              "stdev": 5.949630249316012e-06,
+              "median": 0.007893485999829863,
+              "p95": 0.007900424999888855,
+              "min": 0.007888584000056653,
+              "max": 0.007900424999888855
+            },
+            "decode_seconds": {
+              "mean": 0.033050236000008226,
+              "stdev": 9.098650575327585e-05,
+              "median": 0.033054682000056346,
+              "p95": 0.033138918000076956,
+              "min": 0.03295710799989138,
+              "max": 0.033138918000076956
+            },
+            "prefill_tokens_per_second": {
+              "mean": 4053.6284859306693,
+              "stdev": 3.0547279167139987,
+              "median": 4053.975645321944,
+              "p95": 4056.494803093963,
+              "min": 4050.415009376101,
+              "max": 4056.494803093963
+            },
+            "decode_tokens_per_second": {
+              "mean": 484.1139669391238,
+              "stdev": 1.3330274309956534,
+              "median": 484.0464052860265,
+              "p95": 485.4794904957296,
+              "min": 482.8160050356154,
+              "max": 485.4794904957296
+            },
+            "decode_tokens_per_second_per_request": {
+              "mean": 484.1139669391238,
+              "stdev": 1.3330274309956534,
+              "median": 484.0464052860265,
+              "p95": 485.4794904957296,
+              "min": 482.8160050356154,
+              "max": 485.4794904957296
+            },
+            "ttft_seconds": {
+              "mean": 0.007894164999925124,
+              "stdev": 5.949630249316012e-06,
+              "median": 0.007893485999829863,
+              "p95": 0.007900424999888855,
+              "min": 0.007888584000056653,
+              "max": 0.007900424999888855
+            },
+            "inter_token_seconds": {
+              "mean": 0.002065639750000514,
+              "stdev": 5.6866566095797404e-06,
+              "median": 0.0020659176250035216,
+              "p95": 0.0020711823750048097,
+              "min": 0.002059819249993211,
+              "max": 0.0020711823750048097
+            }
+          }
+        },
+        {
+          "case": {
+            "batch": 1,
+            "prompt": 2048,
+            "generated": 16,
+            "depth": 0,
+            "mixed": false
+          },
+          "status": "ok",
+          "seed": 17,
+          "repeats": 3,
+          "warmup": 1,
+          "prompt_tokens": 2048,
+          "generated_tokens": 16,
+          "allocated_bytes": 763219344,
+          "samples": [
+            {
+              "context_seconds": 0.0,
+              "prefill_seconds": 0.6012625329999537,
+              "decode_seconds": 0.037530521000007866,
+              "prefill_tokens_per_second": 3406.166005025558,
+              "decode_tokens_per_second": 426.31968791471473,
+              "decode_tokens_per_second_per_request": 426.31968791471473,
+              "ttft_seconds": 0.6012625329999537,
+              "inter_token_seconds": 0.0023456575625004916
+            },
+            {
+              "context_seconds": 0.0,
+              "prefill_seconds": 0.60169473499991,
+              "decode_seconds": 0.03768739799988907,
+              "prefill_tokens_per_second": 3403.7193295372717,
+              "decode_tokens_per_second": 424.54509595082936,
+              "decode_tokens_per_second_per_request": 424.54509595082936,
+              "ttft_seconds": 0.60169473499991,
+              "inter_token_seconds": 0.002355462374993067
+            },
+            {
+              "context_seconds": 0.0,
+              "prefill_seconds": 0.6013053350000064,
+              "decode_seconds": 0.03751149200002146,
+              "prefill_tokens_per_second": 3405.923547975802,
+              "decode_tokens_per_second": 426.5359533017467,
+              "decode_tokens_per_second_per_request": 426.5359533017467,
+              "ttft_seconds": 0.6013053350000064,
+              "inter_token_seconds": 0.0023444682500013414
+            }
+          ],
+          "summary": {
+            "prefill_seconds": {
+              "mean": 0.6014208676666234,
+              "stdev": 0.00023813964387157287,
+              "median": 0.6013053350000064,
+              "p95": 0.60169473499991,
+              "min": 0.6012625329999537,
+              "max": 0.60169473499991
+            },
+            "decode_seconds": {
+              "mean": 0.03757647033330613,
+              "stdev": 9.653619072799743e-05,
+              "median": 0.037530521000007866,
+              "p95": 0.03768739799988907,
+              "min": 0.03751149200002146,
+              "max": 0.03768739799988907
+            },
+            "prefill_tokens_per_second": {
+              "mean": 3405.2696275128774,
+              "stdev": 1.3480594256631706,
+              "median": 3405.923547975802,
+              "p95": 3406.166005025558,
+              "min": 3403.7193295372717,
+              "max": 3406.166005025558
+            },
+            "decode_tokens_per_second": {
+              "mean": 425.80024572243025,
+              "stdev": 1.0923568058420154,
+              "median": 426.31968791471473,
+              "p95": 426.5359533017467,
+              "min": 424.54509595082936,
+              "max": 426.5359533017467
+            },
+            "decode_tokens_per_second_per_request": {
+              "mean": 425.80024572243025,
+              "stdev": 1.0923568058420154,
+              "median": 426.31968791471473,
+              "p95": 426.5359533017467,
+              "min": 424.54509595082936,
+              "max": 426.5359533017467
+            },
+            "ttft_seconds": {
+              "mean": 0.6014208676666234,
+              "stdev": 0.00023813964387157287,
+              "median": 0.6013053350000064,
+              "p95": 0.60169473499991,
+              "min": 0.6012625329999537,
+              "max": 0.60169473499991
+            },
+            "inter_token_seconds": {
+              "mean": 0.0023485293958316333,
+              "stdev": 6.033511920499839e-06,
+              "median": 0.0023456575625004916,
+              "p95": 0.002355462374993067,
+              "min": 0.0023444682500013414,
+              "max": 0.002355462374993067
+            }
+          }
+        }
+      ]
+    },
+    {
+      "format": "gguf",
+      "kv_dtype": "fp8",
+      "generated": [
+        {
+          "prompt_tokens": [
+            1,
+            6,
+            6423,
+            708,
+            3493,
+            856,
+            730,
+            527,
+            2011,
+            730,
+            527,
+            540,
+            7,
+            708,
+            6,
+            64015,
+            708
+          ],
+          "generated_tokens": [
+            527,
+            2011,
+            730,
+            527,
+            30322,
+            730,
+            529,
+            523,
+            1470,
+            856,
+            768,
+            5975,
+            47418,
+            7927,
+            521,
+            1695
+          ],
+          "text": "2 + 2 equals 4. This is a basic arithmetic operation, where"
+        }
+      ],
+      "device": {
+        "ordinal": 0,
+        "provider": "webgpu",
+        "arch": "webgpu-portable-v1",
+        "name": "NVIDIA L40S",
+        "adapter": {
+          "vendor": "NVIDIA",
+          "architecture": "",
+          "device": "NVIDIA L40S",
+          "description": "595.91.07",
+          "stackgroup_min_size": 4,
+          "stackgroup_max_size": 128,
+          "vendor_id": 4318,
+          "device_id": 9913,
+          "adapter_type": "DiscreteGPU",
+          "backend_type": "Vulkan"
+        },
+        "features": [
+          "shader-f16",
+          "subgroup"
+        ],
+        "limits": {
+          "max-bind-groups": 8,
+          "max-bind-groups-plus-vertex-buffers": 0,
+          "max-bindings-per-bind-group": 1000,
+          "max-buffer-size": 2147483647,
+          "max-color-attachment-bytes-per-sample": 0,
+          "max-color-attachments": 0,
+          "max-compute-invocations-per-workgroup": 1024,
+          "max-compute-workgroup-size-x": 1024,
+          "max-compute-workgroup-size-y": 1024,
+          "max-compute-workgroup-size-z": 64,
+          "max-compute-workgroup-storage-size": 32768,
+          "max-compute-workgroups-per-dimension": 65535,
+          "max-dynamic-storage-buffers-per-pipeline-layout": 16,
+          "max-dynamic-uniform-buffers-per-pipeline-layout": 15,
+          "max-inter-stage-shader-variables": 0,
+          "max-non-sampler-bindings": 1000000,
+          "max-push-constant-size": 256,
+          "max-sampled-textures-per-shader-stage": 1048576,
+          "max-samplers-per-shader-stage": 1048576,
+          "max-storage-buffer-binding-size": 2147483647,
+          "max-storage-buffers-per-shader-stage": 1048576,
+          "max-storage-textures-per-shader-stage": 1048576,
+          "max-texture-array-layers": 2048,
+          "max-texture-dimension-1d": 32768,
+          "max-texture-dimension-2d": 32768,
+          "max-texture-dimension-3d": 16384,
+          "max-uniform-buffer-binding-size": 65536,
+          "max-uniform-buffers-per-shader-stage": 1048576,
+          "max-vertex-attributes": 32,
+          "max-vertex-buffer-array-stride": 2048,
+          "max-vertex-buffers": 16,
+          "min-storage-buffer-offset-alignment": 32,
+          "min-uniform-buffer-offset-alignment": 64
+        },
+        "prepared_encoding": "python",
+        "prepared_submission": "python"
+      },
+      "benchmark": [
+        {
+          "case": {
+            "batch": 1,
+            "prompt": 32,
+            "generated": 16,
+            "depth": 0,
+            "mixed": false
+          },
+          "status": "ok",
+          "seed": 17,
+          "repeats": 3,
+          "warmup": 1,
+          "prompt_tokens": 32,
+          "generated_tokens": 16,
+          "allocated_bytes": 725175696,
+          "samples": [
+            {
+              "context_seconds": 0.0,
+              "prefill_seconds": 0.008030855000015436,
+              "decode_seconds": 0.03375350800001797,
+              "prefill_tokens_per_second": 3984.6317733215824,
+              "decode_tokens_per_second": 474.0248035846076,
+              "decode_tokens_per_second_per_request": 474.0248035846076,
+              "ttft_seconds": 0.008030855000015436,
+              "inter_token_seconds": 0.0021095942500011233
+            },
+            {
+              "context_seconds": 0.0,
+              "prefill_seconds": 0.008011893999992026,
+              "decode_seconds": 0.033635110999966855,
+              "prefill_tokens_per_second": 3994.0618285803394,
+              "decode_tokens_per_second": 475.6933907551477,
+              "decode_tokens_per_second_per_request": 475.6933907551477,
+              "ttft_seconds": 0.008011893999992026,
+              "inter_token_seconds": 0.0021021944374979284
+            },
+            {
+              "context_seconds": 0.0,
+              "prefill_seconds": 0.008065115999897898,
+              "decode_seconds": 0.03375843900016662,
+              "prefill_tokens_per_second": 3967.7048662914594,
+              "decode_tokens_per_second": 473.9555641160135,
+              "decode_tokens_per_second_per_request": 473.9555641160135,
+              "ttft_seconds": 0.008065115999897898,
+              "inter_token_seconds": 0.0021099024375104136
+            }
+          ],
+          "summary": {
+            "prefill_seconds": {
+              "mean": 0.008035954999968453,
+              "stdev": 2.6975040651234588e-05,
+              "median": 0.008030855000015436,
+              "p95": 0.008065115999897898,
+              "min": 0.008011893999992026,
+              "max": 0.008065115999897898
+            },
+            "decode_seconds": {
+              "mean": 0.03371568600005048,
+              "stdev": 6.982353950834808e-05,
+              "median": 0.03375350800001797,
+              "p95": 0.03375843900016662,
+              "min": 0.033635110999966855,
+              "max": 0.03375843900016662
+            },
+            "prefill_tokens_per_second": {
+              "mean": 3982.132822731127,
+              "stdev": 13.354996473773861,
+              "median": 3984.6317733215824,
+              "p95": 3994.0618285803394,
+              "min": 3967.7048662914594,
+              "max": 3994.0618285803394
+            },
+            "decode_tokens_per_second": {
+              "mean": 474.55791948525626,
+              "stdev": 0.9839561878277109,
+              "median": 474.0248035846076,
+              "p95": 475.6933907551477,
+              "min": 473.9555641160135,
+              "max": 475.6933907551477
+            },
+            "decode_tokens_per_second_per_request": {
+              "mean": 474.55791948525626,
+              "stdev": 0.9839561878277109,
+              "median": 474.0248035846076,
+              "p95": 475.6933907551477,
+              "min": 473.9555641160135,
+              "max": 475.6933907551477
+            },
+            "ttft_seconds": {
+              "mean": 0.008035954999968453,
+              "stdev": 2.6975040651234588e-05,
+              "median": 0.008030855000015436,
+              "p95": 0.008065115999897898,
+              "min": 0.008011893999992026,
+              "max": 0.008065115999897898
+            },
+            "inter_token_seconds": {
+              "mean": 0.002107230375003155,
+              "stdev": 4.363971219271755e-06,
+              "median": 0.0021095942500011233,
+              "p95": 0.0021099024375104136,
+              "min": 0.0021021944374979284,
+              "max": 0.0021099024375104136
+            }
+          }
+        },
+        {
+          "case": {
+            "batch": 1,
+            "prompt": 2048,
+            "generated": 16,
+            "depth": 0,
+            "mixed": false
+          },
+          "status": "ok",
+          "seed": 17,
+          "repeats": 3,
+          "warmup": 1,
+          "prompt_tokens": 2048,
+          "generated_tokens": 16,
+          "allocated_bytes": 725175696,
+          "samples": [
+            {
+              "context_seconds": 0.0,
+              "prefill_seconds": 0.6988937940000142,
+              "decode_seconds": 0.040840296999931525,
+              "prefill_tokens_per_second": 2930.3450933203717,
+              "decode_tokens_per_second": 391.7699227316302,
+              "decode_tokens_per_second_per_request": 391.7699227316302,
+              "ttft_seconds": 0.6988937940000142,
+              "inter_token_seconds": 0.0025525185624957203
+            },
+            {
+              "context_seconds": 0.0,
+              "prefill_seconds": 0.698453870999856,
+              "decode_seconds": 0.040702640000063184,
+              "prefill_tokens_per_second": 2932.1907788530566,
+              "decode_tokens_per_second": 393.09489507253494,
+              "decode_tokens_per_second_per_request": 393.09489507253494,
+              "ttft_seconds": 0.698453870999856,
+              "inter_token_seconds": 0.002543915000003949
+            },
+            {
+              "context_seconds": 0.0,
+              "prefill_seconds": 0.6987929399999757,
+              "decode_seconds": 0.041362681000009616,
+              "prefill_tokens_per_second": 2930.7680183489992,
+              "decode_tokens_per_second": 386.8221211288572,
+              "decode_tokens_per_second_per_request": 386.8221211288572,
+              "ttft_seconds": 0.6987929399999757,
+              "inter_token_seconds": 0.002585167562500601
+            }
+          ],
+          "summary": {
+            "prefill_seconds": {
+              "mean": 0.6987135349999486,
+              "stdev": 0.00023046025045333763,
+              "median": 0.6987929399999757,
+              "p95": 0.6988937940000142,
+              "min": 0.698453870999856,
+              "max": 0.6988937940000142
+            },
+            "decode_seconds": {
+              "mean": 0.040968539333334775,
+              "stdev": 0.00034820698221044356,
+              "median": 0.040840296999931525,
+              "p95": 0.041362681000009616,
+              "min": 0.040702640000063184,
+              "max": 0.041362681000009616
+            },
+            "prefill_tokens_per_second": {
+              "mean": 2931.101296840809,
+              "stdev": 0.9669253777918553,
+              "median": 2930.7680183489992,
+              "p95": 2932.1907788530566,
+              "min": 2930.3450933203717,
+              "max": 2932.1907788530566
+            },
+            "decode_tokens_per_second": {
+              "mean": 390.5623129776741,
+              "stdev": 3.306155505342725,
+              "median": 391.7699227316302,
+              "p95": 393.09489507253494,
+              "min": 386.8221211288572,
+              "max": 393.09489507253494
+            },
+            "decode_tokens_per_second_per_request": {
+              "mean": 390.5623129776741,
+              "stdev": 3.306155505342725,
+              "median": 391.7699227316302,
+              "p95": 393.09489507253494,
+              "min": 386.8221211288572,
+              "max": 393.09489507253494
+            },
+            "ttft_seconds": {
+              "mean": 0.6987135349999486,
+              "stdev": 0.00023046025045333763,
+              "median": 0.6987929399999757,
+              "p95": 0.6988937940000142,
+              "min": 0.698453870999856,
+              "max": 0.6988937940000142
+            },
+            "inter_token_seconds": {
+              "mean": 0.0025605337083334234,
+              "stdev": 2.1762936388152722e-05,
+              "median": 0.0025525185624957203,
+              "p95": 0.002585167562500601,
+              "min": 0.002543915000003949,
+              "max": 0.002585167562500601
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

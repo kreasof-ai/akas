@@ -1,0 +1,142 @@
+{
+  "date": "2026-10-13",
+  "source_revision": "69f559e5a32775bed016ea6699aac16d6610787e",
+  "tensor_revision": "7decd80411018e704585b282e69f683712638f70",
+  "producer_packages": {
+    "numpy": "2.5.4",
+    "torch": "2.8.0",
+    "tilelang": "0.1.14",
+    "apache-tvm-ffi": "0.1.12",
+    "wgpu": "0.29.0",
+    "pytest": "9.1.1"
+  },
+  "wheel_sha256": {
+    "akas-0.1.0-py3-none-any.whl": "9f9af1413f41540ed4cf13169be19638739b02f159c10e0b4062d5ac3007712a",
+    "tensor_workspace-0.1.0-py3-none-any.whl": "e2bfa88ce3f628b77ffe07323f8344f028364acae4a2736fabe5caecf2471e4f"
+  },
+  "searches": {
+    "cuda": {
+      "trials": 12,
+      "workloads": 102,
+      "measured_kernels": 178,
+      "score": 1.0,
+      "selected_schedule": {},
+      "device": {
+        "ordinal": 0,
+        "name": "NVIDIA L40S",
+        "arch": "sm_89",
+        "provider": "cuda"
+      }
+    },
+    "webgpu": {
+      "trials": 24,
+      "workloads": 27,
+      "measured_kernels": 35,
+      "score": 1.0,
+      "selected_schedule": {},
+      "device": {
+        "ordinal": 0,
+        "provider": "webgpu",
+        "arch": "webgpu-portable-v1",
+        "name": "NVIDIA L40S",
+        "adapter": {
+          "vendor": "NVIDIA",
+          "architecture": "",
+          "device": "NVIDIA L40S",
+          "description": "595.91.07",
+          "stackgroup_min_size": 4,
+          "stackgroup_max_size": 128,
+          "vendor_id": 4318,
+          "device_id": 9913,
+          "adapter_type": "DiscreteGPU",
+          "backend_type": "Vulkan"
+        },
+        "features": [
+          "shader-f16",
+          "subgroup"
+        ],
+        "limits": {
+          "max-bind-groups": 8,
+          "max-bind-groups-plus-vertex-buffers": 0,
+          "max-bindings-per-bind-group": 1000,
+          "max-buffer-size": 150994944,
+          "max-color-attachment-bytes-per-sample": 0,
+          "max-color-attachments": 0,
+          "max-compute-invocations-per-workgroup": 1024,
+          "max-compute-workgroup-size-x": 1024,
+          "max-compute-workgroup-size-y": 1024,
+          "max-compute-workgroup-size-z": 64,
+          "max-compute-workgroup-storage-size": 32768,
+          "max-compute-workgroups-per-dimension": 65535,
+          "max-dynamic-storage-buffers-per-pipeline-layout": 16,
+          "max-dynamic-uniform-buffers-per-pipeline-layout": 15,
+          "max-inter-stage-shader-variables": 0,
+          "max-non-sampler-bindings": 1000000,
+          "max-push-constant-size": 256,
+          "max-sampled-textures-per-shader-stage": 1048576,
+          "max-samplers-per-shader-stage": 1048576,
+          "max-storage-buffer-binding-size": 150994944,
+          "max-storage-buffers-per-shader-stage": 1048576,
+          "max-storage-textures-per-shader-stage": 1048576,
+          "max-texture-array-layers": 2048,
+          "max-texture-dimension-1d": 32768,
+          "max-texture-dimension-2d": 32768,
+          "max-texture-dimension-3d": 16384,
+          "max-uniform-buffer-binding-size": 65536,
+          "max-uniform-buffers-per-shader-stage": 1048576,
+          "max-vertex-attributes": 32,
+          "max-vertex-buffer-array-stride": 2048,
+          "max-vertex-buffers": 16,
+          "min-storage-buffer-offset-alignment": 32,
+          "min-uniform-buffer-offset-alignment": 64
+        },
+        "prepared_encoding": "python",
+        "prepared_submission": "python"
+      }
+    }
+  },
+  "remaining_qualification": [],
+  "numerical_limitation": "Independent FP8 long-context trajectories remain outside the 2% relative-RMS logit budget. These results do not establish language-quality parity.",
+  "consumer_protocol": {
+    "isolated_python": true,
+    "compiler_and_reference_imports_blocked": true,
+    "providers": [
+      "cuda",
+      "webgpu"
+    ],
+    "checkpoint_formats": [
+      "safetensors",
+      "gguf"
+    ],
+    "kv_dtypes": [
+      "float16",
+      "fp8"
+    ],
+    "batch": 1,
+    "prompt_lengths": [
+      32,
+      2048
+    ],
+    "generated": 16,
+    "warmup": 1,
+    "repeats": 3,
+    "graphs": true,
+    "loader_generated_tokens_match": true
+  },
+  "installed_cli_checks": {
+    "providers": [
+      "cuda",
+      "webgpu"
+    ],
+    "compiler_and_reference_imports_blocked": true,
+    "static_profile_catalog_allowed": true,
+    "checkpoint_format": "safetensors",
+    "kv_dtype": "fp8",
+    "batch": 1,
+    "prompt": 32,
+    "generated": 16,
+    "repeats": 3,
+    "warmup": 1,
+    "graphs": true
+  }
+}

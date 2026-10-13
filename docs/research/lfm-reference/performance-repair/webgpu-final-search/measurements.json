@@ -1,0 +1,956 @@
+{
+  "device": {
+    "ordinal": 0,
+    "provider": "webgpu",
+    "arch": "webgpu-portable-v1",
+    "name": "NVIDIA L40S",
+    "adapter": {
+      "vendor": "NVIDIA",
+      "architecture": "",
+      "device": "NVIDIA L40S",
+      "description": "595.91.07",
+      "stackgroup_min_size": 4,
+      "stackgroup_max_size": 128,
+      "vendor_id": 4318,
+      "device_id": 9913,
+      "adapter_type": "DiscreteGPU",
+      "backend_type": "Vulkan"
+    },
+    "features": [
+      "shader-f16",
+      "subgroup"
+    ],
+    "limits": {
+      "max-bind-groups": 8,
+      "max-bind-groups-plus-vertex-buffers": 0,
+      "max-bindings-per-bind-group": 1000,
+      "max-buffer-size": 150994944,
+      "max-color-attachment-bytes-per-sample": 0,
+      "max-color-attachments": 0,
+      "max-compute-invocations-per-workgroup": 1024,
+      "max-compute-workgroup-size-x": 1024,
+      "max-compute-workgroup-size-y": 1024,
+      "max-compute-workgroup-size-z": 64,
+      "max-compute-workgroup-storage-size": 32768,
+      "max-compute-workgroups-per-dimension": 65535,
+      "max-dynamic-storage-buffers-per-pipeline-layout": 16,
+      "max-dynamic-uniform-buffers-per-pipeline-layout": 15,
+      "max-inter-stage-shader-variables": 0,
+      "max-non-sampler-bindings": 1000000,
+      "max-push-constant-size": 256,
+      "max-sampled-textures-per-shader-stage": 1048576,
+      "max-samplers-per-shader-stage": 1048576,
+      "max-storage-buffer-binding-size": 150994944,
+      "max-storage-buffers-per-shader-stage": 1048576,
+      "max-storage-textures-per-shader-stage": 1048576,
+      "max-texture-array-layers": 2048,
+      "max-texture-dimension-1d": 32768,
+      "max-texture-dimension-2d": 32768,
+      "max-texture-dimension-3d": 16384,
+      "max-uniform-buffer-binding-size": 65536,
+      "max-uniform-buffers-per-shader-stage": 1048576,
+      "max-vertex-attributes": 32,
+      "max-vertex-buffer-array-stride": 2048,
+      "max-vertex-buffers": 16,
+      "min-storage-buffer-offset-alignment": 32,
+      "min-uniform-buffer-offset-alignment": 64
+    },
+    "prepared_encoding": "python",
+    "prepared_submission": "python"
+  },
+  "measurements": [
+    {
+      "implementation": "linear.webgpu.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 1,
+        "k": 4608,
+        "o": 1024
+      },
+      "checked_rows": [
+        0
+      ],
+      "relative_rms": 4.3156805418220756e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.00033494600006633846,
+      "min_launch_and_sync_seconds": 0.0003216059999431309,
+      "median_host_enqueue_seconds": 0.00024179199999707635,
+      "launches_per_replay": 32,
+      "median_prepared_kernel_seconds": 1.865809375090066e-05,
+      "min_prepared_kernel_seconds": 1.839087499888592e-05
+    },
+    {
+      "implementation": "linear.webgpu.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 4,
+        "k": 4608,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        2,
+        3
+      ],
+      "relative_rms": 3.6083309851164813e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.00037051799995424517,
+      "min_launch_and_sync_seconds": 0.0003217460000541905,
+      "median_host_enqueue_seconds": 0.00023786100018696743,
+      "launches_per_replay": 32,
+      "median_prepared_kernel_seconds": 2.580437499943855e-05,
+      "min_prepared_kernel_seconds": 2.3855531246397277e-05
+    },
+    {
+      "implementation": "linear.webgpu.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 16,
+        "k": 4608,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        8,
+        15
+      ],
+      "relative_rms": 3.5384286434236856e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.000377479000007952,
+      "min_launch_and_sync_seconds": 0.0003704470000229776,
+      "median_host_enqueue_seconds": 0.00024134200020853314,
+      "launches_per_replay": 32,
+      "median_prepared_kernel_seconds": 6.833143750384352e-05,
+      "min_prepared_kernel_seconds": 6.67064062511713e-05
+    },
+    {
+      "implementation": "linear.webgpu.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 64,
+        "k": 4608,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        32,
+        63
+      ],
+      "relative_rms": 3.618197581545246e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.0005236450001575577,
+      "min_launch_and_sync_seconds": 0.0005140850000771024,
+      "median_host_enqueue_seconds": 0.000282804000107717,
+      "launches_per_replay": 32,
+      "median_prepared_kernel_seconds": 0.00022449600000129522,
+      "min_prepared_kernel_seconds": 0.00021831599999444506
+    },
+    {
+      "implementation": "linear.webgpu.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 256,
+        "k": 4608,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        128,
+        255
+      ],
+      "relative_rms": 6.635228260165604e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.000920185000040874,
+      "min_launch_and_sync_seconds": 0.0009111240001402621,
+      "median_host_enqueue_seconds": 0.0003141750000850152,
+      "launches_per_replay": 32,
+      "median_prepared_kernel_seconds": 0.0005996686874993884,
+      "min_prepared_kernel_seconds": 0.0005946431562477983
+    },
+    {
+      "implementation": "linear.webgpu.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 128,
+        "k": 4608,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        64,
+        127
+      ],
+      "relative_rms": 3.61901271617171e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.0007248250001339329,
+      "min_launch_and_sync_seconds": 0.0007103250000000116,
+      "median_host_enqueue_seconds": 0.00028030399994349864,
+      "launches_per_replay": 32,
+      "median_prepared_kernel_seconds": 0.0004243872812494942,
+      "min_prepared_kernel_seconds": 0.00041381153124575576
+    },
+    {
+      "implementation": "linear.webgpu.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 512,
+        "k": 4608,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        256,
+        511
+      ],
+      "relative_rms": 6.878588010295061e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.0013743770000473887,
+      "min_launch_and_sync_seconds": 0.0013505350000286853,
+      "median_host_enqueue_seconds": 0.00026220300014756504,
+      "launches_per_replay": 32,
+      "median_prepared_kernel_seconds": 0.0010510454374994538,
+      "min_prepared_kernel_seconds": 0.001046326156249222
+    },
+    {
+      "implementation": "linear.webgpu.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 2048,
+        "k": 4608,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        1024,
+        2047
+      ],
+      "relative_rms": 6.996014008109341e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.003867819999868516,
+      "min_launch_and_sync_seconds": 0.003713102000119761,
+      "median_host_enqueue_seconds": 0.0002731229999426432,
+      "launches_per_replay": 32,
+      "median_prepared_kernel_seconds": 0.0033965188749931485,
+      "min_prepared_kernel_seconds": 0.003390214218754295
+    },
+    {
+      "implementation": "linear.webgpu.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 8192,
+        "k": 4608,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        4096,
+        8191
+      ],
+      "relative_rms": 7.018515475465392e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.01379581500009408,
+      "min_launch_and_sync_seconds": 0.013532611999835353,
+      "median_host_enqueue_seconds": 0.0002486729999873205,
+      "launches_per_replay": 32,
+      "median_prepared_kernel_seconds": 0.013136048718749294,
+      "min_prepared_kernel_seconds": 0.013126037593750084
+    },
+    {
+      "implementation": "linear.webgpu.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 1,
+        "k": 1024,
+        "o": 3072
+      },
+      "checked_rows": [
+        0
+      ],
+      "relative_rms": 2.2773282637444936e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.00033943599987651396,
+      "min_launch_and_sync_seconds": 0.00032915599990701594,
+      "median_host_enqueue_seconds": 0.00026788400009536417,
+      "launches_per_replay": 32,
+      "median_prepared_kernel_seconds": 1.2845656250703996e-05,
+      "min_prepared_kernel_seconds": 1.2696250003330078e-05
+    },
+    {
+      "implementation": "linear.webgpu.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 4,
+        "k": 1024,
+        "o": 3072
+      },
+      "checked_rows": [
+        0,
+        2,
+        3
+      ],
+      "relative_rms": 3.0443450782513537e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.00034878699989349116,
+      "min_launch_and_sync_seconds": 0.000332775999822843,
+      "median_host_enqueue_seconds": 0.00027124299981551303,
+      "launches_per_replay": 32,
+      "median_prepared_kernel_seconds": 1.9413125002643028e-05,
+      "min_prepared_kernel_seconds": 1.92631249973374e-05
+    },
+    {
+      "implementation": "linear.webgpu.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 16,
+        "k": 1024,
+        "o": 3072
+      },
+      "checked_rows": [
+        0,
+        8,
+        15
+      ],
+      "relative_rms": 3.051206078907853e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.0003683879999698547,
+      "min_launch_and_sync_seconds": 0.0003257860000758228,
+      "median_host_enqueue_seconds": 0.0002691930001219589,
+      "launches_per_replay": 32,
+      "median_prepared_kernel_seconds": 4.539725000540784e-05,
+      "min_prepared_kernel_seconds": 4.524690625373751e-05
+    },
+    {
+      "implementation": "linear.webgpu.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 64,
+        "k": 1024,
+        "o": 3072
+      },
+      "checked_rows": [
+        0,
+        32,
+        63
+      ],
+      "relative_rms": 3.095716465395526e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.00048563300015302957,
+      "min_launch_and_sync_seconds": 0.00046894299998712086,
+      "median_host_enqueue_seconds": 0.00027575299986892787,
+      "launches_per_replay": 32,
+      "median_prepared_kernel_seconds": 0.00015459103124726425,
+      "min_prepared_kernel_seconds": 0.00014950828124682403
+    },
+    {
+      "implementation": "linear.webgpu.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 256,
+        "k": 1024,
+        "o": 3072
+      },
+      "checked_rows": [
+        0,
+        128,
+        255
+      ],
+      "relative_rms": 4.0645664967087214e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.0006557320000410982,
+      "min_launch_and_sync_seconds": 0.0006465819999448286,
+      "median_host_enqueue_seconds": 0.0002722439999160997,
+      "launches_per_replay": 32,
+      "median_prepared_kernel_seconds": 0.0003241953125012742,
+      "min_prepared_kernel_seconds": 0.00031704087499662137
+    },
+    {
+      "implementation": "linear.webgpu.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 128,
+        "k": 1024,
+        "o": 3072
+      },
+      "checked_rows": [
+        0,
+        64,
+        127
+      ],
+      "relative_rms": 4.100473631751811e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.0005178850001357205,
+      "min_launch_and_sync_seconds": 0.0004976549998900737,
+      "median_host_enqueue_seconds": 0.0002577529999143735,
+      "launches_per_replay": 32,
+      "median_prepared_kernel_seconds": 0.00019004309375247885,
+      "min_prepared_kernel_seconds": 0.00018598978125083931
+    },
+    {
+      "implementation": "linear.webgpu.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 512,
+        "k": 1024,
+        "o": 3072
+      },
+      "checked_rows": [
+        0,
+        256,
+        511
+      ],
+      "relative_rms": 4.017427670532925e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.0009184259999983624,
+      "min_launch_and_sync_seconds": 0.0009110949999922013,
+      "median_host_enqueue_seconds": 0.0002596219999304594,
+      "launches_per_replay": 32,
+      "median_prepared_kernel_seconds": 0.0005955283437444336,
+      "min_prepared_kernel_seconds": 0.000589658093751666
+    },
+    {
+      "implementation": "linear.webgpu.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 2048,
+        "k": 1024,
+        "o": 3072
+      },
+      "checked_rows": [
+        0,
+        1024,
+        2047
+      ],
+      "relative_rms": 4.0299286752087937e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.002599848000045313,
+      "min_launch_and_sync_seconds": 0.0025565959999767074,
+      "median_host_enqueue_seconds": 0.0002575329999672249,
+      "launches_per_replay": 32,
+      "median_prepared_kernel_seconds": 0.0022190682187499533,
+      "min_prepared_kernel_seconds": 0.0022147658124964664
+    },
+    {
+      "implementation": "linear.webgpu.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 8192,
+        "k": 1024,
+        "o": 3072
+      },
+      "checked_rows": [
+        0,
+        4096,
+        8191
+      ],
+      "relative_rms": 4.1203890077667893e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.009305213999823536,
+      "min_launch_and_sync_seconds": 0.009059892000095715,
+      "median_host_enqueue_seconds": 0.0002413710001292202,
+      "launches_per_replay": 32,
+      "median_prepared_kernel_seconds": 0.008706434281251063,
+      "min_prepared_kernel_seconds": 0.008703638187498086
+    },
+    {
+      "implementation": "linear.webgpu.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 1,
+        "k": 1024,
+        "o": 1024
+      },
+      "checked_rows": [
+        0
+      ],
+      "relative_rms": 2.3399309156957315e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.00034833700010494795,
+      "min_launch_and_sync_seconds": 0.00033698600009302027,
+      "median_host_enqueue_seconds": 0.00027203300010114617,
+      "launches_per_replay": 32,
+      "median_prepared_kernel_seconds": 1.243996874933373e-05,
+      "min_prepared_kernel_seconds": 1.2293687497333394e-05
+    },
+    {
+      "implementation": "linear.webgpu.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 4,
+        "k": 1024,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        2,
+        3
+      ],
+      "relative_rms": 3.081627824030875e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.00036138700011179026,
+      "min_launch_and_sync_seconds": 0.0003519760000472161,
+      "median_host_enqueue_seconds": 0.0002747429998635198,
+      "launches_per_replay": 32,
+      "median_prepared_kernel_seconds": 1.3462218753090838e-05,
+      "min_prepared_kernel_seconds": 1.33678124996095e-05
+    },
+    {
+      "implementation": "linear.webgpu.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 16,
+        "k": 1024,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        8,
+        15
+      ],
+      "relative_rms": 3.114684261618095e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.0003796870000769559,
+      "min_launch_and_sync_seconds": 0.00036952699997527816,
+      "median_host_enqueue_seconds": 0.0002688520000901917,
+      "launches_per_replay": 32,
+      "median_prepared_kernel_seconds": 2.2711062499070067e-05,
+      "min_prepared_kernel_seconds": 2.2605749997239855e-05
+    },
+    {
+      "implementation": "linear.webgpu.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 64,
+        "k": 1024,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        32,
+        63
+      ],
+      "relative_rms": 3.167093041156477e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.0003856189998714399,
+      "min_launch_and_sync_seconds": 0.0003643569998530438,
+      "median_host_enqueue_seconds": 0.0002761119999377115,
+      "launches_per_replay": 32,
+      "median_prepared_kernel_seconds": 5.751706250123334e-05,
+      "min_prepared_kernel_seconds": 5.709359374606038e-05
+    },
+    {
+      "implementation": "linear.webgpu.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 256,
+        "k": 1024,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        128,
+        255
+      ],
+      "relative_rms": 4.263743278443144e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.0004708120000032068,
+      "min_launch_and_sync_seconds": 0.00045318100001168204,
+      "median_host_enqueue_seconds": 0.00026990299988938204,
+      "launches_per_replay": 32,
+      "median_prepared_kernel_seconds": 0.00014666371874483275,
+      "min_prepared_kernel_seconds": 0.0001395155937515824
+    },
+    {
+      "implementation": "linear.webgpu.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 128,
+        "k": 1024,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        64,
+        127
+      ],
+      "relative_rms": 3.105585335561045e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.0004444209998837323,
+      "min_launch_and_sync_seconds": 0.00043686000003617664,
+      "median_host_enqueue_seconds": 0.00027348300000085146,
+      "launches_per_replay": 32,
+      "median_prepared_kernel_seconds": 0.00010693090624869228,
+      "min_prepared_kernel_seconds": 0.00010424768749572877
+    },
+    {
+      "implementation": "linear.webgpu.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 512,
+        "k": 1024,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        256,
+        511
+      ],
+      "relative_rms": 4.052698727718962e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.0005689669999355829,
+      "min_launch_and_sync_seconds": 0.0005603459999292681,
+      "median_host_enqueue_seconds": 0.0002711419999741338,
+      "launches_per_replay": 32,
+      "median_prepared_kernel_seconds": 0.0002503357812457807,
+      "min_prepared_kernel_seconds": 0.0002443948749970559
+    },
+    {
+      "implementation": "linear.webgpu.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 2048,
+        "k": 1024,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        1024,
+        2047
+      ],
+      "relative_rms": 4.0070659679258824e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.0011046219999570894,
+      "min_launch_and_sync_seconds": 0.0010974019999139273,
+      "median_host_enqueue_seconds": 0.00027703299997483555,
+      "launches_per_replay": 32,
+      "median_prepared_kernel_seconds": 0.0007735818125027549,
+      "min_prepared_kernel_seconds": 0.0007651495312543943
+    },
+    {
+      "implementation": "linear.webgpu.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 8192,
+        "k": 1024,
+        "o": 1024
+      },
+      "checked_rows": [
+        0,
+        4096,
+        8191
+      ],
+      "relative_rms": 4.173038803401141e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.0033100509999712813,
+      "min_launch_and_sync_seconds": 0.0032808490000206803,
+      "median_host_enqueue_seconds": 0.00025462299981882097,
+      "launches_per_replay": 32,
+      "median_prepared_kernel_seconds": 0.0029433509374996447,
+      "min_prepared_kernel_seconds": 0.0029383075625020183
+    },
+    {
+      "implementation": "linear.webgpu.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 16,
+        "k": 4608,
+        "o": 1024,
+        "minimum_mma_groups": 0,
+        "schedule": "register",
+        "outer_shared_dtype": "float16"
+      },
+      "checked_rows": [
+        0,
+        8,
+        15
+      ],
+      "relative_rms": 6.7354386601437e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.0007546060001004662,
+      "min_launch_and_sync_seconds": 0.0007320759998492576,
+      "median_host_enqueue_seconds": 0.00023934199998620898,
+      "launches_per_replay": 32,
+      "median_prepared_kernel_seconds": 0.00043627656249611846,
+      "min_prepared_kernel_seconds": 0.00042825393749978957
+    },
+    {
+      "implementation": "linear.webgpu.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 16,
+        "k": 4608,
+        "o": 1024,
+        "minimum_mma_groups": 0,
+        "schedule": "outer",
+        "outer_shared_dtype": "float16"
+      },
+      "checked_rows": [
+        0,
+        8,
+        15
+      ],
+      "relative_rms": 1.2353251577224e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.0011049440001897892,
+      "min_launch_and_sync_seconds": 0.0010849020000023302,
+      "median_host_enqueue_seconds": 0.00026623300004757766,
+      "launches_per_replay": 32,
+      "median_prepared_kernel_seconds": 0.0007902334062492855,
+      "min_prepared_kernel_seconds": 0.0007821617812453496
+    },
+    {
+      "implementation": "linear.webgpu.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 16,
+        "k": 4608,
+        "o": 1024,
+        "minimum_mma_groups": 0,
+        "schedule": "outer",
+        "outer_shared_dtype": "float32"
+      },
+      "checked_rows": [
+        0,
+        8,
+        15
+      ],
+      "relative_rms": 1.2353251577224e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.00106727200000023,
+      "min_launch_and_sync_seconds": 0.0010021590001088043,
+      "median_host_enqueue_seconds": 0.0002423720000024332,
+      "launches_per_replay": 32,
+      "median_prepared_kernel_seconds": 0.0007025529374971029,
+      "min_prepared_kernel_seconds": 0.0006947269374961706
+    },
+    {
+      "implementation": "linear.webgpu.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 64,
+        "k": 4608,
+        "o": 1024,
+        "minimum_mma_groups": 64,
+        "schedule": "register",
+        "outer_shared_dtype": "float16"
+      },
+      "checked_rows": [
+        0,
+        32,
+        63
+      ],
+      "relative_rms": 6.596330877073342e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.0007385460000932653,
+      "min_launch_and_sync_seconds": 0.000719194999874162,
+      "median_host_enqueue_seconds": 0.0002407719998700486,
+      "launches_per_replay": 32,
+      "median_prepared_kernel_seconds": 0.000432115656252563,
+      "min_prepared_kernel_seconds": 0.0004250450624994073
+    },
+    {
+      "implementation": "linear.webgpu.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 256,
+        "k": 4608,
+        "o": 1024,
+        "minimum_mma_groups": 64,
+        "schedule": "outer",
+        "outer_shared_dtype": "float16"
+      },
+      "checked_rows": [
+        0,
+        128,
+        255
+      ],
+      "relative_rms": 1.2208923862999654e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.0014879820000714972,
+      "min_launch_and_sync_seconds": 0.0014116590000412543,
+      "median_host_enqueue_seconds": 0.00023711099993306561,
+      "launches_per_replay": 32,
+      "median_prepared_kernel_seconds": 0.001095387937496639,
+      "min_prepared_kernel_seconds": 0.0010910065000047098
+    },
+    {
+      "implementation": "linear.webgpu.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 256,
+        "k": 4608,
+        "o": 1024,
+        "minimum_mma_groups": 64,
+        "schedule": "outer",
+        "outer_shared_dtype": "float32"
+      },
+      "checked_rows": [
+        0,
+        128,
+        255
+      ],
+      "relative_rms": 1.2208923862999654e-06,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.0012609709999651386,
+      "min_launch_and_sync_seconds": 0.0012383799999042822,
+      "median_host_enqueue_seconds": 0.0002500719999716239,
+      "launches_per_replay": 32,
+      "median_prepared_kernel_seconds": 0.0009367611562538514,
+      "min_prepared_kernel_seconds": 0.000927449781251255
+    },
+    {
+      "implementation": "linear.webgpu.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 256,
+        "k": 4608,
+        "o": 1024,
+        "minimum_mma_groups": 128,
+        "schedule": "outer",
+        "outer_shared_dtype": "float16"
+      },
+      "checked_rows": [
+        0,
+        128,
+        255
+      ],
+      "relative_rms": 3.5719787661037117e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.0011670569999751024,
+      "min_launch_and_sync_seconds": 0.0011438349999934871,
+      "median_host_enqueue_seconds": 0.00026633300012690597,
+      "launches_per_replay": 32,
+      "median_prepared_kernel_seconds": 0.0008436356874952367,
+      "min_prepared_kernel_seconds": 0.0008348059375009598
+    },
+    {
+      "implementation": "linear.webgpu.floating",
+      "parameters": {
+        "optimized": true,
+        "weight_dtype": "float16",
+        "r": 128,
+        "k": 4608,
+        "o": 1024,
+        "minimum_mma_groups": 256,
+        "schedule": "register",
+        "outer_shared_dtype": "float16"
+      },
+      "checked_rows": [
+        0,
+        64,
+        127
+      ],
+      "relative_rms": 6.811139883211581e-07,
+      "correct": true,
+      "warmup": 3,
+      "iters": 15,
+      "median_launch_and_sync_seconds": 0.0007869880000725971,
+      "min_launch_and_sync_seconds": 0.0007756269999390497,
+      "median_host_enqueue_seconds": 0.0002661729999999807,
+      "launches_per_replay": 32,
+      "median_prepared_kernel_seconds": 0.0004689523125023243,
+      "min_prepared_kernel_seconds": 0.00046234078124740563
+    }
+  ]
+}
