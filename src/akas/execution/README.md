@@ -1,30 +1,32 @@
-# Shared execution
+# Execution
 
-Read `executor.py` first. It owns request admission/release, occupied slots,
-positions, pending verification, batch validation, prefill/decode dispatch,
-owner-thread checks and shutdown. A slot identifies persistent request state;
-it does not specify a GPU row.
+`Executor.from_program()` opens a checksummed compiled program with one request-slot
+pool. Model declarations use this same constructor through `models/definition.py`.
+Runtime execution does not import kernel compilers or reference frameworks.
 
-Numerical bindings implement four hooks: reset admitted state, release state,
-execute a batch and close owned resources. They share the executor lifecycle.
+| File | Responsibility |
+| --- | --- |
+| `executor.py` | Admission, validation, phase dispatch, verification and accepted-prefix commit |
+| `batch.py` | Semantic request inputs and nearest qualified phase geometry |
+| `forward.py` | Load kernels, bind graph calls and capture/replay forward execution |
+| `plan.py` | Bind ordered calls to Tensor executables |
+| `workspace.py` | Allocate scratch/state, check view lifetimes and release owned resources |
+| `state.py` | Slot lifecycle and deferred recurrent journals |
+| `replay.py` | Capture proposal, verification, acceptance, commit and repair as one round |
 
-| Binding | Forward layout | State/precision constraints |
-| --- | --- | --- |
-| `bindings/packed/` | Serialized independent handles sharing weights and scratch | Packed GGUF projections; existing FP16 KV and FP32 convolution |
-| `bindings/block_fp8/` | Stable GPU rows with explicit inactive masks | Block-FP8 weights and qualified fixed kernel geometry |
-| `bindings/bf16/` | Row-to-request mapping over a persistent state pool | BF16 projections and the existing KV/recurrent layouts |
+Slots identify persistent state; execution rows can be reordered, padded or reused.
+Weights/state are shared across phase geometries. Scratch is reused only when graph
+lifetimes do not overlap. Borrowed views release their own descriptors, never base
+storage. Admission and release reset only the state declared by the model graph.
 
-`plan.py` owns kernel resolution and named/ordered argument binding. Provider
-submission and capture use `akas.tensor.executor`; numerical kernels stay in
-`akas.ops`. Bindings retain specialized prefill, draft, verification and repair
-plans where their buffer ABIs or commit semantics differ.
+`decode()` schedules one step. `decode_steps()` replays a fixed request group on the
+device with a single control upload and optional final readback, for throughput
+measurement. Both consume the same compiled decode phase.
 
-The public LFM2 default-request API and Qwen direct-forward helpers are retained.
-Scheduled execution uses the shared executor, including the generic handle binding.
-The compiler remains optional. This merge does not change compiled batch/chunk
-geometries or introduce dynamic kernels.
+`generation/speculative/decoding.py` owns the proposer-independent transaction flow.
+`models/heads/mtp.py` supplies one head implementation. Captured rounds and deferred
+state use the common executor rather than a separate model runtime.
 
-`forward.py` consumes the compiler-free `planning.ForwardPlan` metadata. It binds
-checksummed kernels, owns scratch/state and graph resources, and borrows supplied
-weights/input/output buffers. New model compositions can use it directly; existing
-numerical bindings retain their specialized request-state semantics.
+Migration remains in progress: `bindings/` and the older token-step `model.py` still
+serve unmigrated paths and parity checks. Their functionality must be accounted for
+before deletion; new models should use the compiled program interface above.

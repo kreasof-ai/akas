@@ -1,7 +1,7 @@
 """TileLang DSL for packed portable and standard-subgroup LFM2 schedules."""
 
-from akas.ops.quantization.ggml import weight_decoder
-from akas.ops.quantization.ggml import weight_storage
+from akas.quantization.weights.ggml import weight_decoder
+from akas.quantization.weights.ggml import weight_storage
 from akas.ops.quantization.webgpu.storage import round_half
 from akas.ops.quantization.webgpu.storage import packed_loads
 from akas.ops.reductions.webgpu import segmented_reduce

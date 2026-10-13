@@ -221,20 +221,20 @@ def test_shared_operator_change_invalidates_producer_source(
     original = entry.find_spec
     helper = tmp_path / "elementwise.py"
     helper.write_bytes(
-        Path(original("akas.ops.normalization.kernels").origin).read_bytes()
+        Path(original("akas.ops.normalization.kernel").origin).read_bytes()
     )
 
     def find_spec(name):
         return (
             SimpleNamespace(origin=str(helper))
-            if name == "akas.ops.normalization.kernels"
+            if name == "akas.ops.normalization.kernel"
             else original(name)
         )
 
     monkeypatch.setattr(entry, "find_spec", find_spec)
     family = "hybrid" if module == "hybrid" else "packed"
     from functools import partial
-    from akas.compilation.source import export_kernel
+    from akas.compilation.emit import export_kernel
 
     owner = (
         "akas.compilation.factories.block_fp8"

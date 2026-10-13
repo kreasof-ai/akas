@@ -80,8 +80,8 @@ class Tokenizer:
         )
 
     @classmethod
-    def from_gguf(cls, metadata):
-        return cls(from_gguf(metadata))
+    def from_gguf(cls, metadata, *, profile=None):
+        return cls(from_gguf(metadata, profile=profile))
 
     @classmethod
     def from_file(cls, path):

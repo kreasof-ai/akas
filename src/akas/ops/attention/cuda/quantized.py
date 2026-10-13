@@ -3,7 +3,7 @@
 The current attention geometry remains explicit; codecs own their representation.
 """
 
-from akas.ops.kv_quantization import get
+from akas.quantization.kv import get
 
 
 def make_kernel(kind, p):

@@ -8,7 +8,6 @@ import pytest
 
 from akas.execution.executor import Executor
 from akas.execution.handles import HandleExecutor
-from akas.execution.bindings.bf16.resources import BF16Binding
 from akas.execution.bindings.block_fp8.resources import BlockFP8Binding
 
 
@@ -40,7 +39,7 @@ class Sequence:
             child.close()
 
 
-@pytest.fixture(params=[HandleExecutor, BF16Binding, BlockFP8Binding])
+@pytest.fixture(params=[HandleExecutor, Executor, BlockFP8Binding])
 def executor(request, monkeypatch):
     kind = request.param
     if kind is HandleExecutor:
@@ -52,24 +51,18 @@ def executor(request, monkeypatch):
         model.values = np.zeros(8, dtype="int32")
         model.states = {}
         monkeypatch.setattr(model, "_close_resources", lambda: None)
-        if kind is BF16Binding:
-
-            def batch(count, chunk):
-                def run(slots, sequences):
+        if kind is Executor:
+            def select(count, chunk, **options):
+                def run(slots, sequences, positions):
                     result = []
                     for slot, sequence in zip(slots, sequences):
                         for token in sequence:
                             model.values[slot] = (3 * model.values[slot] + token) % 100
-                        model.positions[slot] += len(sequence)
                         result.append(int(model.values[slot]))
                     return result
-
-                return SimpleNamespace(_run_validated=run)
-
-            monkeypatch.setattr(model, "batch", batch)
-            monkeypatch.setattr(
-                model, "_admit_slot", lambda slot: model.values.__setitem__(slot, 0)
-            )
+                return SimpleNamespace(run=run)
+            model.batches = SimpleNamespace(select=select, owner=model)
+            model._reset_state = lambda slot: model.values.__setitem__(slot, 0)
         else:
             model.slots = 8
             model.position = model.positions
@@ -175,3 +168,28 @@ def test_scheduler_uses_same_executor_for_all_bindings(executor):
         assert [r.output for r in requests] == [[18, 72, 88, 52]] * 12
         assert not executor.occupied.any() and not executor.pending
         assert engine.scheduler.stats["completed"] == 12
+
+
+def test_scheduled_text_generation_releases_only_its_own_slot(executor):
+    tokenizer = SimpleNamespace(
+        encode=lambda _: [1, 2], eos=None, decode=lambda ids: str(ids)
+    )
+    peer = executor.admit()
+    executor.decode([peer], [7])
+    before = executor.positions[peer]
+    result = executor.generate("text", max_tokens=2, chat=False, tokenizer=tokenizer)
+    assert result["generated_tokens"] == [5, 20]
+    assert executor.positions[peer] == before
+    assert executor.occupied.sum() == 1
+
+
+def test_generation_error_reclaims_an_admitted_slot(executor, monkeypatch):
+    tokenizer = SimpleNamespace(encode=lambda _: [1], eos=None)
+
+    def fail(*args, **kwargs):
+        raise RuntimeError("forward failed")
+
+    monkeypatch.setattr(executor, "prefill", fail)
+    with pytest.raises(RuntimeError, match="forward failed"):
+        executor.generate("text", max_tokens=2, chat=False, tokenizer=tokenizer)
+    assert not executor.occupied.any()

@@ -14,7 +14,7 @@ import subprocess
 from pathlib import Path
 import numpy as np
 from tensor.artifacts.format import read_artifact
-from akas.artifacts.fingerprints import packed_hashes as implementation_hashes
+from akas.artifacts.fingerprint import packed_hashes as implementation_hashes
 
 
 def digest(path):

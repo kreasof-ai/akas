@@ -6,7 +6,7 @@ from akas.tensor.executor import bind
 from akas.tensor.executor import capture
 from akas.tensor.executor import submit
 from akas.memory.layouts import allocate_hybrid_states
-from akas.artifacts.kernels import identity
+from akas.artifacts.schema import identity
 from akas.execution.bindings.packed.plan import build_plan
 from akas.generation.greedy import generate_greedy
 

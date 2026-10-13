@@ -27,7 +27,62 @@ class WithoutImports(ast.NodeTransformer):
 
 @pytest.mark.parametrize("record", ARITHMETIC, ids=lambda r: r["unit"])
 def test_extracted_arithmetic_matches_pre_migration_baseline(record):
-    tree = ast.parse((ROOT / record["target"]).read_text())
+    target = record["target"]
+    migrated = target.startswith("src/akas/ops/ffn/")
+    if migrated and target.endswith("activation.py"):
+        from activation_parity import WithoutExpertLayout
+        tree = WithoutExpertLayout().visit(ast.parse((ROOT / "src/akas/ops/activation/kernel.py").read_text()))
+    elif migrated:
+        from activation_parity import source
+        tree = ast.parse(source(target.removeprefix("src/akas/ops/ffn/")))
+        # Removed dispatch wrappers are replaced by explicit parameters of the
+        # same kernel, with shape/precision parity and native before/after tests.
+        from akas.ops.registry import select
+        kind = "swiglu_experts" if "swiglu_experts" in record["selector"] else "swiglu"
+        contract = "bf16" if "bf16_batch" in target else "block-fp8" if "decode" in target else "packed"
+        variant = select(kind,{"r":2,"c":257,"top":3},contract=contract,
+                         phase="decode" if contract=="block-fp8" else "forward",target="sm_89")
+        assert variant.module == "activation.kernel"
+        if kind == "swiglu_experts":
+            assert dict(variant.defaults) == {"expert_rows":True,"output_dtype":"bfloat16","round_inputs":True}
+        else:
+            from activation_parity import old_factory
+            old = old_factory(target.removeprefix("src/akas/ops/ffn/"))(kind,{"r":2,"c":257})
+            from akas.ops.activation import kernel
+            from unittest.mock import patch
+            with patch.object(kernel,"swiglu_kernel",lambda p:p):
+                observed = variant.make({"r":2,"c":257})
+            assert observed == old
+    elif target == "src/akas/ops/gdn/cuda/journal.py":
+        tree = ast.parse((ROOT / "src/akas/ops/gdn/verification.py").read_text())
+    elif target == "src/akas/ops/speculation/cuda.py":
+        tree = ast.parse((ROOT / "src/akas/ops/control/speculative.py").read_text())
+    elif target == "src/akas/ops/kv_quantization/cuda/fp8.py":
+        tree = ast.parse((ROOT / "src/akas/quantization/kv/fp8.py").read_text())
+    elif target == "src/akas/ops/quantization/cuda/block_fp8.py":
+        tree = ast.parse((ROOT / "src/akas/quantization/activations/fp8.py").read_text())
+    elif target == "src/akas/ops/quantization/cuda/decode.py":
+        tree = ast.parse((ROOT / "src/akas/quantization/weights/block_fp8.py").read_text())
+    elif target in ("src/akas/ops/quantization/ggml.py", "src/akas/ops/quantization/cuda/ggml.py"):
+        tree = ast.parse((ROOT / "src/akas/quantization/weights/ggml.py").read_text())
+    elif target.startswith("src/akas/ops/residual/"):
+        tree = ast.parse((ROOT / "src/akas/ops/residual/kernel.py").read_text())
+    elif target == "src/akas/ops/normalization/kernels.py":
+        tree = ast.parse((ROOT / "src/akas/ops/normalization/kernel.py").read_text())
+    elif target.startswith("src/akas/ops/normalization/"):
+        from normalization_parity import source
+
+        tree = ast.parse(source(target.removeprefix("src/akas/ops/normalization/")))
+        if record["kind"] == "definition" and record["selector"] == "normalization_kernel" and "/cuda/" in target:
+            tree = ast.parse((ROOT / "src/akas/ops/normalization/kernel.py").read_text())
+        elif record["kind"] == "definition" and record["selector"] in ("rms_width", "rms_kernel"):
+            current = ast.parse((ROOT / "src/akas/ops/normalization/kernel.py").read_text())
+            name = "parallel_rms_kernel" if record["selector"] == "rms_kernel" else "rms_width"
+            node = next(n for n in current.body if getattr(n, "name", None) == name)
+            node.name = record["selector"]
+            tree = ast.Module(body=[node], type_ignores=[])
+    else:
+        tree = ast.parse((ROOT / target).read_text())
     if record["kind"] == "definition":
         node = next(
             n for n in tree.body if getattr(n, "name", None) == record["selector"]
@@ -57,6 +112,10 @@ def test_extracted_arithmetic_matches_pre_migration_baseline(record):
         from kv_extraction import restore
 
         node = restore(node)
+    if target == "src/akas/ops/linear/cuda/block_fp8.py" and record["selector"] == "make_kernel":
+        node = copy.deepcopy(node)
+        assert isinstance(node.body[0], ast.If) and ast.unparse(node.body[0].test) == "kind == 'bf16_linear'"
+        node.body = node.body[1:]
     node = WithoutImports().visit(copy.deepcopy(node))
     observed = hashlib.sha256(
         ast.dump(node, include_attributes=False).encode()
@@ -101,8 +160,8 @@ class Guard(importlib.abc.MetaPathFinder):
             raise ImportError(name)
 sys.meta_path.insert(0, Guard())
 from akas import Engine, LFM2, Qwen35Batch
-from akas.artifacts.fingerprints import packed_hashes, block_fp8_hashes, bf16_hashes
-for identity in (packed_hashes, block_fp8_hashes, bf16_hashes):
+from akas.artifacts.fingerprint import packed_hashes, block_fp8_hashes, backbone_hashes
+for identity in (packed_hashes, block_fp8_hashes, backbone_hashes):
     assert 'akas.ops.attention.cuda.decode' in identity()
 assert not any(name.startswith('akas.ops.') and '.cuda.' in name for name in sys.modules)
 """,

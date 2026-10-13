@@ -13,6 +13,14 @@ class LFM2Checkpoint:
         self.config = Config.from_gguf(self.gguf)
         self.tokenizer = Tokenizer.from_gguf(self.gguf.metadata)
 
+    def inventory(self):
+        from collections import Counter
+
+        return dict(
+            tensors=len(self.gguf.tensors),
+            encodings=dict(Counter(t.type for t in self.gguf.tensors.values())),
+        )
+
     def upload(self, device):
         return upload_packed(device, self.gguf)
 
@@ -79,6 +87,20 @@ class ReferenceCheckpoint:
     GGUF quantized matrices are dequantized once at load time. The existing
     packed path continues to use their original compressed storage.
     """
+
+    @property
+    def definition_options(self):
+        return {"output": "output.weight" in self.names}
+
+    def program_upload_options(self, weights, *, model_options):
+        matrices = tensor_shapes(self.config, output="output.weight" in self.names)
+        dtypes = {spec.dtype for name, spec in weights.items()
+                  if len(matrices[name.split(".part")[0]]) == 2
+                  and not name.endswith("conv.weight")}
+        if len(dtypes) != 1:
+            raise ValueError("floating checkpoint requires one matrix storage precision")
+        return dict(matrix_dtype=dtypes.pop(),
+                    max_weight_bytes=model_options.get("max_weight_bytes", 64 * 1024 * 1024))
 
     def __init__(self, path, *, tokenizer=True):
         from pathlib import Path

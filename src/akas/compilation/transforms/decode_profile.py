@@ -4,13 +4,13 @@ The profile remains experimental: kernel correctness and model quality have
 separate gates, and complete numerical qualification remains open.
 """
 
-from akas.compilation.build import publish
+from akas.artifacts.write import publish
 
 import hashlib, json
 from pathlib import Path
-from akas.compilation.build import export_source
-from akas.compilation.build import build_artifact
-from akas.artifacts.fingerprints import block_fp8_hashes as implementation_hashes
+from akas.compilation.emit import export_source
+from akas.compilation.emit import build_artifact
+from akas.artifacts.fingerprint import block_fp8_hashes as implementation_hashes
 from akas.compilation.recipes.block_fp8.decode import produce as produce_base
 from akas.compilation.transforms.projections import mma_bundle
 
@@ -52,7 +52,7 @@ def produce(
                 dependencies=(
                     "tensor.compiler.frontend.source",
                     "tensor.compiler.cuda.lowering",
-                    "akas.ops.normalization.kernels",
+                    "akas.ops.normalization.kernel",
                 ),
             )
         )
@@ -108,7 +108,7 @@ def produce(
                     dict(r=slots, top=8, o=p["o"], partitions=parts),
                     dependencies=(
                         "tensor.compiler.frontend.source",
-                        "akas.ops.normalization.kernels",
+                        "akas.ops.normalization.kernel",
                     ),
                 )
             )

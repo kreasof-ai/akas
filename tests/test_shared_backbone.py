@@ -6,8 +6,8 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from akas.artifacts.kernels import artifact_path
-from akas.artifacts.kernels import load_kernels
+from akas.artifacts.read import artifact_path
+from akas.artifacts.read import load_kernels
 from akas.memory.layouts import allocate_hybrid_states
 from akas.models.qwen35.weights import DenseCheckpoint
 

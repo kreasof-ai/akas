@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 from akas.tensor.graph import CudaGraph
 from akas.tensor.executor import submit as submit_calls
-from akas.artifacts.kernels import load_kernels
+from akas.artifacts.read import load_kernels
 from types import SimpleNamespace
 from akas.ops.attention import compose as attention
 from akas.ops.gdn import compose as gdn
@@ -14,8 +14,8 @@ from akas.ops.moe import compose as ffn
 from akas.execution.plan import ExecutionPlan
 from akas.execution.plan import KernelPlan
 from akas.ops.linear.compose import linear
-from akas.ops.normalization.compose import rms_norm
-from akas.ops.quantization.cache import ActivationCache
+from akas.ops.normalization.operation import rms_norm
+from akas.quantization.activations.cache import ActivationCache
 
 
 class Qwen35Prefill:
@@ -159,16 +159,19 @@ class Qwen35Prefill:
             self.model.prefills.discard(self)
 
 
-def build_prefill_plan(self):
+def build_prefill_plan(self, *, graph=None):
     model = self.model
     b = self.buffers
     w = model.weights
     d = self.device
     r = self.rows
     s = model.slots
-    self.plan = ExecutionPlan(d)
+    self.plan = ExecutionPlan(d) if graph is None else graph
     activation_cache = ActivationCache(b, self.quantized, rows=r)
-    call = KernelPlan(self.plan, self.kernels, on_write=activation_cache.invalidate)
+    def parameters(kind, values):
+        return {**values, "prequantized": True} if kind == "fp8_linear" else values
+    call = KernelPlan(self.plan, self.kernels, on_write=activation_cache.invalidate,
+                      parameters=parameters if graph is not None else None)
 
     def small(kind, **bindings):
         call(kind, dict(slots=s, chunk=self.chunk), **bindings)
@@ -271,8 +274,13 @@ def build_prefill_plan(self):
         lengths=b["lengths"],
         out=model.buffers["normal"],
     )
-    for kernel, bound, label in model.plan[-2:]:
-        self.plan.append((kernel, bound))
+    if graph is None:
+        for kernel, bound, label in model.plan[-2:]:
+            self.plan.append((kernel, bound))
+    else:
+        from dataclasses import replace
+        self.plan.calls.extend(replace(call, parameters={**call.parameters, "decode_head": True})
+                               if call.kind == "bf16_linear" else call for call in model.plan.calls[-2:])
     small(
         "advance",
         position=model.buffers["positions"],

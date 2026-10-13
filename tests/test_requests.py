@@ -370,15 +370,20 @@ def test_shared_engine_lfm2_adapter_schedules_and_reclaims_independent_handles(
     fixture_bundle,
 ):
     from akas import Engine, EngineConfig
+    from akas.models.lfm2.model import LFM2
+    from akas.execution.handles import HandleExecutor
+    from functools import partial
     import tensor
 
     model_path, bundle = fixture_bundle
     with tensor.Device() as device:
-        with Engine.from_lfm2(
+        with Engine.from_checkpoint(
+            LFM2,
             model_path,
             bundle,
             device,
-            capacity=2,
+            max_requests=2,
+            adapter=partial(HandleExecutor, capacity=2),
             config=EngineConfig(prefill_chunk=32),
         ) as engine:
             assert not engine.model.capabilities.native_batch

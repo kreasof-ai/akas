@@ -13,13 +13,13 @@ import numpy as np
 from akas.tensor.graph import CudaGraph
 from akas.tensor.executor import bind as bind_call
 from akas.execution.bindings.block_fp8.resources import BlockFP8Binding as Qwen35Batch
-from akas.artifacts.kernels import identity
-from akas.artifacts.kernels import load_kernels
-from akas.artifacts.fingerprints import (
+from akas.artifacts.schema import identity
+from akas.artifacts.read import load_kernels
+from akas.artifacts.fingerprint import (
     block_fp8_hashes as mtp_implementation_hashes,
 )
 from akas.execution.bindings.block_fp8.prefill import Qwen35Prefill
-from akas.artifacts.fingerprints import block_fp8_hashes
+from akas.artifacts.fingerprint import block_fp8_hashes
 
 
 class Qwen35MTP(Qwen35Batch):

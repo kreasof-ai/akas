@@ -10,7 +10,7 @@ import numpy as np
 import tensor
 from tensor.runtime.abi import BoundCall
 from akas import LFM2
-from akas.compilation.source import export_kernel as source
+from akas.compilation.emit import export_kernel as source
 from benchmarks.lfm2.webgpu_run import metrics
 
 

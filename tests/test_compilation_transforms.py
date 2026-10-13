@@ -17,7 +17,7 @@ from akas.models.qwen35.config import Qwen35Config
 
 @pytest.fixture
 def declarations(monkeypatch):
-    import akas.compilation.build as pipeline
+    import akas.compilation.emit as pipeline
 
     calls = []
 

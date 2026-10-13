@@ -157,7 +157,7 @@ def search(model, out, *, candidates=12, width=4):
                     dependencies=(
                         "tensor.compiler.frontend.source",
                         "tensor.compiler.cuda.lowering",
-                        "akas.ops.normalization.kernels",
+                        "akas.ops.normalization.kernel",
                     ),
                 )
                 if (
@@ -204,7 +204,7 @@ def search(model, out, *, candidates=12, width=4):
                         mp,
                         dependencies=(
                             "tensor.compiler.frontend.source",
-                            "akas.ops.normalization.kernels",
+                            "akas.ops.normalization.kernel",
                         ),
                     )
                     if not ma.is_file() or not me.is_file() or me.read_text() != mt:

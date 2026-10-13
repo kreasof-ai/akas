@@ -1,15 +1,15 @@
 """Compile pointer-ABI Hopper matrix kernels from a pinned control bundle."""
 
-from akas.compilation.build import publish
+from akas.artifacts.write import publish
 
 import hashlib
 import json
 from pathlib import Path
 from tensor.artifacts.format import read_artifact
-from akas.artifacts.fingerprints import (
+from akas.artifacts.fingerprint import (
     block_fp8_hashes as implementation_hashes,
 )
-from akas.compilation.build import build_artifact
+from akas.compilation.emit import build_artifact
 
 
 def produce(
@@ -76,7 +76,7 @@ def produce(
         old, _ = read_artifact(artifact)
         new_entry = out / entry.name
         if expert_mma != "control" and record["kind"] == "compact_fp8_experts":
-            from akas.compilation.build import export_source
+            from akas.compilation.emit import export_source
 
             p = record["parameters"]
             schedule = dict(
@@ -109,7 +109,7 @@ def produce(
                     schedule,
                     dependencies=(
                         "tensor.compiler.frontend.source",
-                        "akas.ops.normalization.kernels",
+                        "akas.ops.normalization.kernel",
                     ),
                 )
             )
@@ -118,7 +118,7 @@ def produce(
             in ("bf16", "bf16-32", "bf16-pairs", "bf16-async", "bf16-pipeline")
             and record["kind"] == "fp8_linear"
         ):
-            from akas.compilation.build import export_source
+            from akas.compilation.emit import export_source
 
             new_entry.write_text(
                 export_source(
@@ -143,12 +143,12 @@ def produce(
                     ),
                     dependencies=(
                         "tensor.compiler.frontend.source",
-                        "akas.ops.normalization.kernels",
+                        "akas.ops.normalization.kernel",
                     ),
                 )
             )
         elif hopper_attention and record["kind"] == "attention":
-            from akas.compilation.build import export_source
+            from akas.compilation.emit import export_source
 
             new_entry.write_text(
                 export_source(
@@ -157,7 +157,7 @@ def produce(
                     dict(record["parameters"], packed_loads=True),
                     dependencies=(
                         "tensor.compiler.frontend.source",
-                        "akas.ops.normalization.kernels",
+                        "akas.ops.normalization.kernel",
                     ),
                 )
             )

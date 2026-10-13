@@ -13,6 +13,9 @@ class Buffer:
         self.name, self.shape, self.dtype = name, tuple(shape), dtype
         self.pointer = 1
 
+    def view(self, shape):
+        return Buffer("view:" + self.name, shape, self.dtype)
+
 
 class Device:
     def empty(self, shape, dtype="float32"):
@@ -133,53 +136,7 @@ def _record(module, phase, *, fp8=False, verify=False, draft=False, fused=False)
         label(executor.buffers, "prefill:")
         module.build_prefill_plan(executor)
         return normalize(executor.plan)
-    config = DenseConfig(
-        1024,
-        2048,
-        256,
-        ("full_attention",) if draft else ("linear_attention", "full_attention"),
-        8,
-        2,
-        256,
-        16,
-        32,
-        128,
-        128,
-        1e-6,
-        1e6,
-        64,
-        4096,
-    )
-    owner = SimpleNamespace(
-        config=config, weights=Weights(config), capacity=4, context=64, fused_head=fused
-    )
-    owner.architecture = architecture(config, None)
-    owner.states = allocate_hybrid_states(
-        Device(), config, owner.capacity, owner.context
-    )
-    owner.hidden = Buffer("hidden-bank", (owner.capacity, config.width), "bfloat16")
-    for index, states in owner.states.items():
-        for offset, state in enumerate(states):
-            state.name = f"state:{index}:{offset}"
-    batch = SimpleNamespace(
-        owner=owner,
-        slots=2,
-        chunk=4,
-        rows=8,
-        head_rows=8 if verify else 2,
-        draft=draft,
-        verify=verify,
-        buffers={},
-        kernels={},
-        views=[],
-        device=Device(),
-        commit_calls=Plan(),
-    )
-    from akas.execution.bindings.bf16.workspace import allocate_workspace
-
-    allocate_workspace(batch)
-    label(batch.buffers, "batch:")
-    return normalize(dict(forward=module.build_plan(batch), commit=batch.commit_calls))
+    raise ValueError("use dense_graph_contract for dense composition")
 
 
 def record(module, phase, **options):
@@ -190,3 +147,65 @@ def record(module, phase, **options):
         patch.object(module, "KernelPlan", Emitter),
     ):
         return _record(module, phase, **options)
+
+
+def dense_graph_contract(*, verify=False, draft=False, fused=False):
+    """Record direct composition; frozen native graphs provide numerical parity."""
+    from akas.models.qwen35.weights import DenseCheckpoint
+    from akas.models.qwen35.model import compose_dense
+
+    config = DenseConfig(1024,2048,256,("linear_attention","full_attention"),
+                         8,2,256,16,32,128,128,1e-6,1e6,64,4096)
+    checkpoint = object.__new__(DenseCheckpoint)
+    checkpoint.config = config
+    checkpoint.tensors = {name: SimpleNamespace(shape=shape,
+        dtype="F32" if name.endswith(("linear_attn.A_log","linear_attn.norm.weight")) else "BF16")
+        for name,shape in config.expected_tensors().items()}
+    graph,commit = compose_dense(checkpoint,slots=2,chunk=4,pool=4,context=64,
+                                 verify=verify,draft=draft,fused_head=fused)
+    def reference(name):
+        value = graph.buffers[name]
+        # The old mock recorded all weights as F32 irrespective of actual
+        # checkpoint storage. Real storage precision has independent native tests.
+        dtype = "float32" if value.role == "weight" else value.dtype
+        identity = None
+        if value.role == "weight":
+            identity = value.name
+            if draft:
+                identity = identity.replace("mtp.layers.0.", "model.language_model.layers.0.")
+                if identity == "mtp.norm.weight": identity = "model.language_model.norm.weight"
+        elif value.role == "state":
+            identity = value.name.removeprefix("proposal.").replace("state.","state:").replace(".",":")
+            if value.name == "proposal.saved_hidden": identity = "hidden-bank"
+        return dict(buffer=identity,shape=list(value.shape),dtype=dtype)
+    def calls(value):
+        return [[call.kind,dict(parameters=call.parameters,
+                               arguments=[reference(name) for name in call.arguments],
+                               bindings={name:reference(buffer) for name,buffer in call.bindings.items()}),call.label]
+                for call in value.calls]
+    return dict(forward=calls(graph),commit=calls(commit))
+
+
+def dense_frozen_contract(value):
+    """Ignore renamed private scratch while retaining all shapes and identities."""
+    if isinstance(value,dict):
+        if "buffer" in value:
+            value = dict(value)
+            name = value["buffer"]
+            if name.startswith(("batch:", "view:batch:")):
+                value["buffer"] = None
+            return value
+        return {name:dense_frozen_contract(item) for name,item in value.items()}
+    if isinstance(value,list):
+        return [dense_frozen_contract(item) for item in value]
+    return value
+
+
+def dense_checkpoint(config):
+    from akas.models.qwen35.weights import DenseCheckpoint
+    checkpoint = object.__new__(DenseCheckpoint)
+    checkpoint.config = config
+    checkpoint.tensors = {name: SimpleNamespace(shape=shape,
+        dtype="F32" if name.endswith(("linear_attn.A_log","linear_attn.norm.weight")) else "BF16")
+        for name,shape in config.expected_tensors().items()}
+    return checkpoint

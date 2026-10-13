@@ -3,7 +3,7 @@
 import os
 import numpy as np
 import pytest
-from akas.generation.acceptance import accepted_prefix
+from akas.generation.speculative.acceptance import accepted_prefix
 from akas.generation.lookup import OutputLookup
 
 
@@ -57,7 +57,7 @@ def test_output_lookup_uses_only_confirmed_past_transitions_and_is_bounded():
 @pytest.mark.parametrize("chunk", [2, 4, 8, 32, 64, 128])
 def test_recurrent_snapshots_restore_every_rejection_depth(tmp_path, chunk):
     import torch, tensor
-    from akas.compilation.source import export_kernel as export_source
+    from akas.compilation.emit import export_kernel as export_source
     from tensor.compiler.build import build_artifact
 
     torch.set_num_threads(1)
@@ -145,7 +145,7 @@ def test_recurrent_snapshots_restore_every_rejection_depth(tmp_path, chunk):
 )
 def test_convolution_history_restore_keeps_only_accepted_inputs(tmp_path):
     import tensor, torch
-    from akas.compilation.source import export_kernel as export_source
+    from akas.compilation.emit import export_kernel as export_source
     from tensor.compiler.build import build_artifact
 
     slots, chunk, channels = 8, 4, 8192
@@ -210,7 +210,7 @@ def test_convolution_history_restore_keeps_only_accepted_inputs(tmp_path):
 @pytest.mark.parametrize("chunk", [2, 4, 8])
 def test_split_attention_preserves_causality_at_partition_boundaries(tmp_path, chunk):
     import tensor, torch
-    from akas.compilation.source import export_kernel as export_source
+    from akas.compilation.emit import export_kernel as export_source
     from tensor.compiler.build import build_artifact
     from test_qwen_fp8_kv import quantize
 
@@ -301,7 +301,7 @@ def test_split_attention_preserves_causality_at_partition_boundaries(tmp_path, c
 @pytest.mark.parametrize("block_m", [16, 32])
 def test_split_experts_preserve_hot_routes_and_scales(tmp_path, routed, block_m):
     import tensor, torch
-    from akas.compilation.source import export_kernel as export_source
+    from akas.compilation.emit import export_kernel as export_source
     from tensor.compiler.build import build_artifact
 
     torch.set_num_threads(1)
@@ -393,7 +393,7 @@ def test_split_experts_preserve_hot_routes_and_scales(tmp_path, routed, block_m)
 @pytest.mark.parametrize("rows", [32, 64])
 def test_all_row_head_matches_independent_bf16_projection(tmp_path, rows):
     import torch, tensor
-    from akas.compilation.source import export_kernel as export_source
+    from akas.compilation.emit import export_kernel as export_source
     from tensor.compiler.build import build_artifact
 
     torch.set_num_threads(1)

@@ -8,8 +8,8 @@ import pytest
 
 from akas.memory.state import BufferSpec
 from akas.memory.layouts import hybrid_state_specs
-from akas.ops.kv_quantization import get, is_quantized
-from akas.ops.kv_quantization.format import Format, Storage
+from akas.quantization.kv import get, is_quantized
+from akas.quantization.kv.codec import Format, Storage
 from akas.ops.registry import select
 
 
@@ -36,10 +36,10 @@ def test_another_codec_needs_no_central_dispatch_or_memory_change(monkeypatch):
         )
 
     codec = Format(
-        "test_int4", layout, (("cuda", "akas.ops.kv_quantization.cuda.fp8"),)
+        "test_int4", layout, (("cuda", "akas.quantization.kv.fp8"),)
     )
     monkeypatch.setitem(
-        sys.modules, "akas.ops.kv_quantization.test_int4", SimpleNamespace(FORMAT=codec)
+        sys.modules, "akas.quantization.kv.test_int4", SimpleNamespace(FORMAT=codec)
     )
     assert get("test_int4") is codec
     config = SimpleNamespace(layers=("attention",), kv_heads=3, head_dim=256)
@@ -58,7 +58,7 @@ def test_another_codec_needs_no_central_dispatch_or_memory_change(monkeypatch):
     )
     assert (
         select("kv_encode", parameters, contract="kv-pair", target="sm_89").module
-        == "kv_quantization.kernels"
+        == "akas.quantization.kv.fp8"
     )
     # This test supplies storage/selection only; it does not claim an INT4 numerical implementation.
 
@@ -91,7 +91,7 @@ def test_standalone_codec_roundtrip_matches_torch_and_preserves_inactive_rows(
 ):
     import tensor
     import torch
-    from akas.compilation.source import export_kernel
+    from akas.compilation.emit import export_kernel
 
     torch.set_num_threads(1)
     slots, chunk, capacity = 2, 2, 16
@@ -114,7 +114,7 @@ def test_standalone_codec_roundtrip_matches_torch_and_preserves_inactive_rows(
         path = tmp_path / (kind + ".py")
         path.write_text(
             export_kernel(
-                "akas.ops.kv_quantization.kernels", "make_kernel", kind, parameters
+                "akas.quantization.kv.fp8", "make_kernel", kind, parameters
             )
         )
         artifacts[kind] = path.with_suffix(".tbin")
@@ -192,21 +192,21 @@ def test_standalone_codec_roundtrip_matches_torch_and_preserves_inactive_rows(
 
 
 def test_scalar_codec_does_not_require_packed_attention_helpers(monkeypatch):
-    from akas.ops.kv_quantization.fp8 import layout
-    from akas.ops.kv_quantization.cuda import fp8
+    from akas.quantization.kv.fp8 import layout
+    from akas.quantization.kv import fp8
     from akas.ops.attention.cuda.quantized import make_kernel
 
     scalar = SimpleNamespace(writer=fp8.writer, decoder=fp8.decoder)
     codec = Format(
-        "scalar_only", layout, (("cuda", "akas.ops.kv_quantization.cuda.scalar_only"),)
+        "scalar_only", layout, (("cuda", "akas.quantization.kv.cuda.scalar_only"),)
     )
     monkeypatch.setitem(
         sys.modules,
-        "akas.ops.kv_quantization.scalar_only",
+        "akas.quantization.kv.scalar_only",
         SimpleNamespace(FORMAT=codec),
     )
     monkeypatch.setitem(
-        sys.modules, "akas.ops.kv_quantization.cuda.scalar_only", scalar
+        sys.modules, "akas.quantization.kv.cuda.scalar_only", scalar
     )
     parameters = dict(r=1, capacity=64, kv_dtype="scalar_only")
     assert make_kernel("attention_partial", parameters) is not None
@@ -216,7 +216,7 @@ def test_scalar_codec_does_not_require_packed_attention_helpers(monkeypatch):
 
 @pytest.mark.parametrize("chunk", [0, -1, True])
 def test_standalone_kernel_rejects_invalid_chunk(chunk):
-    from akas.ops.kv_quantization.kernels import make_kernel
+    from akas.quantization.kv.fp8 import make_kernel
 
     with pytest.raises(ValueError, match="positive chunk"):
         make_kernel(

@@ -1,11 +1,11 @@
 """Reduce projection CTA registers without changing FP8 values or reductions."""
 
-from akas.compilation.build import publish
+from akas.artifacts.write import publish
 
 import hashlib, json, shutil
 from pathlib import Path
-from akas.compilation.build import export_source
-from akas.compilation.build import build_artifact
+from akas.compilation.emit import export_source
+from akas.compilation.emit import build_artifact
 
 
 def prefill(prepared, out, columns=64, packed_widen=False):
@@ -64,7 +64,7 @@ def prefill(prepared, out, columns=64, packed_widen=False):
                 dependencies=(
                     "tensor.compiler.frontend.source",
                     "akas.ops.quantization.cuda.fp8_operand",
-                    "akas.ops.normalization.kernels",
+                    "akas.ops.normalization.kernel",
                 ),
             )
         )
@@ -122,7 +122,7 @@ def dense_verification(source, out, columns=64, packed_widen=False):
                 dependencies=(
                     "tensor.compiler.frontend.source",
                     "akas.ops.quantization.cuda.fp8_operand",
-                    "akas.ops.normalization.kernels",
+                    "akas.ops.normalization.kernel",
                 ),
             )
         )

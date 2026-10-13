@@ -2,6 +2,8 @@
 
 
 def make_kernel(kind, p):
+    if kind == "bf16_linear":
+        return bf16_kernel(p)
     import tilelang.language as T
     from tensor.compiler.frontend.source import primitive
 

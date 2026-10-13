@@ -1,6 +1,6 @@
 """Split-context FP8 attention reusing KV across speculative query rows."""
 
-from akas.ops.kv_quantization import get
+from akas.quantization.kv import get
 
 
 def partial(p):

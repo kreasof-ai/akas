@@ -17,7 +17,7 @@ BEFORE_COMMIT = "4c6872674756454982af8c87c6a1d77b3fc5ef02"
 def compile_templates(out):
     """Compile every selected 2.6B prefill schedule without a GPU or checkpoint."""
     from benchmarks.lfm2.cuda_format_search import compile_source
-    from akas.compilation.source import export_kernel as source
+    from akas.compilation.emit import export_kernel as source
 
     profile = json.loads(
         Path(__file__)

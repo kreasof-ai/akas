@@ -1,6 +1,6 @@
 """Hopper attention with padded MMA operands and 16-key softmax updates."""
 
-from akas.ops.kv_quantization import get
+from akas.quantization.kv import get
 
 
 def attention(p):

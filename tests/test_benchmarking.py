@@ -2,6 +2,7 @@
 
 from types import SimpleNamespace
 import json
+import numpy as np
 import pytest
 from akas.benchmarking import Case, matrix, run
 from akas.benchmarking.report import compare, write_report, table
@@ -25,6 +26,50 @@ class Session:
     def decode(self, n, *, read):
         assert not read
         self.calls.append(n)
+
+
+def test_program_session_continues_device_feedback_and_releases_owned_requests():
+    from akas.benchmarking.session import Session as ProgramSession
+
+    calls = []
+    available = iter([3, 1])
+    base = SimpleNamespace(nbytes=64)
+    view = SimpleNamespace(_base=base, nbytes=64)
+    executor = SimpleNamespace(
+        capacity=4, context=32, device=object(), config=SimpleNamespace(vocab=73),
+        program=dict(model_options=dict(kv_dtype="fp8")),
+        weights={"weight": base},
+        batches=SimpleNamespace(states={}, frames={"decode": SimpleNamespace(buffers={"view": view})}),
+        admit=lambda: next(available), release=lambda slot: calls.append(("release", slot)),
+        prefill=lambda slots, prompts, **options: [11, 12],
+        decode_steps=lambda slots, tokens, steps, **options: calls.append(("decode", tuple(slots), tokens, steps, options)),
+    )
+    with ProgramSession(executor, batch=2, chunk=4) as session:
+        session.reset()
+        assert session.allocated_bytes == 64
+        session.prefill([np.array([1, 2]), np.array([3])], read=False)
+        session.decode(3, read=False)
+        session.decode(2, read=False)
+    assert calls == [("decode", (3, 1), [11, 12], 3, dict(read=False)),
+                     ("decode", (3, 1), None, 2, dict(read=False)),
+                     ("release", 1), ("release", 3)]
+
+
+def test_program_session_reclaims_admission_when_batch_setup_fails():
+    from akas.benchmarking.session import Session as ProgramSession
+
+    released = []
+    def admit():
+        if not hasattr(admit, "called"):
+            admit.called = True
+            return 2
+        raise RuntimeError("capacity exhausted")
+    executor = SimpleNamespace(capacity=4, context=32, device=object(), config=object(),
+                               program={}, admit=admit, release=released.append)
+    session = ProgramSession(executor, batch=2)
+    with pytest.raises(RuntimeError, match="capacity exhausted"):
+        session.reset()
+    assert released == [2] and session.slots == []
 
 
 def test_synchronized_measurements_count_only_executed_tokens():

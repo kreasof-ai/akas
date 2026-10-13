@@ -20,7 +20,7 @@ def prepare_compact(prepared):
     import os
     from pathlib import Path
     from akas.compilation.transforms.compact_experts import produce
-    from akas.artifacts.fingerprints import (
+    from akas.artifacts.fingerprint import (
         block_fp8_hashes as implementation_hashes,
     )
 

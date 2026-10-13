@@ -10,9 +10,9 @@ import numpy as np
 from akas.tensor.executor import bind as bind_call
 from akas.tensor.executor import submit as submit_calls
 from akas.tensor.graph import CudaGraph
-from akas.artifacts.kernels import identity
+from akas.artifacts.schema import identity
 from akas.execution.bindings.block_fp8.prefill import Qwen35Prefill
-from akas.artifacts.fingerprints import (
+from akas.artifacts.fingerprint import (
     block_fp8_hashes as implementation_hashes,
 )
 

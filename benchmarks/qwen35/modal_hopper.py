@@ -29,7 +29,7 @@ def prepare_hopper(
 
     os.chdir("/workspace")
     volume.reload()
-    from akas.artifacts.fingerprints import block_fp8_hashes as implementation_hashes
+    from akas.artifacts.fingerprint import block_fp8_hashes as implementation_hashes
 
     decoder = source_path(prepared["base"]["paths"]["decoder"]) / "inference.json"
     if json.loads(decoder.read_text())["implementation"] != implementation_hashes():

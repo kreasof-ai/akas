@@ -44,7 +44,7 @@ class KernelPlan:
 
     def __init__(self, plan, kernels, *, identity=None, parameters=None, on_write=None):
         if identity is None:
-            from akas.artifacts.kernels import identity
+            from akas.artifacts.schema import identity
         self.plan = plan
         self.kernels = kernels
         self.identity = identity
@@ -56,8 +56,8 @@ class KernelPlan:
             raise TypeError("operation arguments must be positional or named")
         if self.parameters is not None:
             parameters = self.parameters(kind, parameters)
-        from akas.planning.forward import ForwardPlan
-        if isinstance(self.plan, ForwardPlan):
+        from akas.graph import Graph
+        if isinstance(self.plan, Graph):
             self.plan(kind, parameters, *arguments, label=label, **bindings)
             if self.on_write is not None and "out" in bindings:
                 self.on_write(bindings["out"])
@@ -70,3 +70,25 @@ class KernelPlan:
         self.plan.bind(kernel, arguments, label=label)
         if self.on_write is not None and "out" in bindings:
             self.on_write(bindings["out"])
+
+
+def bind_graph(graph, device, kernels, buffers):
+    from akas.execution.plan import ExecutionPlan, KernelPlan
+
+    if set(buffers) != set(graph.buffers):
+        raise ValueError("forward buffer coverage mismatch")
+    for name, spec in graph.buffers.items():
+        value = buffers[name]
+        if tuple(value.shape) != spec.shape or str(value.dtype) != spec.dtype:
+            raise ValueError(f"incompatible forward buffer: {name}")
+    result = ExecutionPlan(device, labeled=True)
+    emit = KernelPlan(result, kernels)
+    for call in graph.calls:
+        emit(
+            call.kind,
+            call.parameters,
+            *(buffers[name] for name in call.arguments),
+            label=call.label,
+            **{name: buffers[ref] for name, ref in call.bindings.items()},
+        )
+    return result

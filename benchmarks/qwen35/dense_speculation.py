@@ -9,7 +9,8 @@ from tensor.providers.cuda.device import Device
 from akas.models.qwen35.model import DenseEngine
 from akas.scheduling.scheduler import Request
 from akas.scheduling.scheduler import Scheduler
-from akas.execution.bindings.bf16.speculative import SpeculativeEngine
+from akas.generation.speculative.decoding import SpeculativeDecoder
+from akas.models.heads.mtp import MTPHead
 from benchmarks.qwen35.dense_qualification import snapshot
 
 
@@ -54,8 +55,8 @@ def qualify(
     rows = []
     with Device() as device:
         target = DenseEngine(checkpoint, bundle, device, fused_head=fused_head)
-        speculative = SpeculativeEngine(
-            target, window=window, single_graph=single_graph, deferred=deferred
+        speculative = SpeculativeDecoder(
+            target, MTPHead(target), window=window, capture=single_graph, deferred=deferred
         )
         try:
             for count in counts:

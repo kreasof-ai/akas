@@ -16,7 +16,7 @@ import tensor
 from tensor.artifacts.format import read_artifact
 from tensor.runtime.abi import BoundCall
 from akas import LFM2
-from akas.compilation.source import export_kernel as source
+from akas.compilation.emit import export_kernel as source
 from benchmarks.lfm2.text_helpers import emit, reference_attention_source
 from benchmarks.lfm2.fp16_decode import linear_source, HALF2
 

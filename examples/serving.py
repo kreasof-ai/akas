@@ -21,10 +21,20 @@ def lfm2(
     graphs=True,
 ):
     import tensor
+    from akas.models.lfm2.model import LFM2
+    from akas.execution.handles import HandleExecutor
+    from functools import partial
 
     with tensor.Device(device, provider=provider) as gpu:
-        with Engine.from_lfm2(
-            checkpoint, bundle, gpu, capacity=capacity, context=context, graphs=graphs
+        with Engine.from_checkpoint(
+            LFM2,
+            checkpoint,
+            bundle,
+            gpu,
+            adapter=partial(HandleExecutor, capacity=capacity),
+            max_requests=capacity,
+            context=context,
+            graphs=graphs,
         ) as engine:
             tokenizer = engine.model.model.tokenizer
             yield Service(
@@ -70,12 +80,13 @@ def qwen35_dense(
         engine = None
         try:
             if mtp:
-                from akas.execution.bindings.bf16.speculative import SpeculativeEngine
+                from akas.generation.speculative.decoding import SpeculativeDecoder
+                from akas.models.heads.mtp import MTPHead
 
-                model = SpeculativeEngine(
-                    target,
+                model = SpeculativeDecoder(
+                    target, MTPHead(target),
                     window=verification_window,
-                    single_graph=single_graph,
+                    capture=single_graph,
                     deferred=deferred,
                 )
             engine = Engine(model, config=EngineConfig())
@@ -85,14 +96,12 @@ def qwen35_dense(
                         target.batch(count)
                         if mtp:
                             target.batch(count, verification_window, verify=True)
-                            model.drafter.batch(count)
-                            model.drafter.batch(count, verification_window)
-                            if single_graph:
-                                model.round(count)
+                            model.proposer.frame(count, 1)
+                            model.proposer.frame(count, verification_window)
                     if count <= min(capacity, 32):
                         target.batch(count, 32)
                         if mtp:
-                            model.drafter.batch(count, 32)
+                            model.proposer.frame(count, 32)
                 yield Service(
                     engine,
                     lambda text: tokenizer.encode(
@@ -105,7 +114,7 @@ def qwen35_dense(
                         "kv_dtype": "bfloat16",
                         "state_dtype": "float32",
                         "prefix_cache": False,
-                        "implementation": target.implementation,
+                        "program": target.program["schema"],
                         "quality_qualified": False,
                     },
                 )

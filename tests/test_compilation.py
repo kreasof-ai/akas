@@ -10,11 +10,11 @@ import pytest
 
 from akas.compilation import compile_checkpoint
 from akas.compilation import PROFILES
-from akas.compilation.build import build
-from akas.compilation.build import checksum
-from akas.compilation.bundles import copy
-from akas.compilation.plan import Bundle
-from akas.compilation.plan import Kernel
+from akas.compilation.compile import build
+from akas.artifacts.write import checksum
+from akas.artifacts.write import copy
+from akas.artifacts.schema import Bundle
+from akas.artifacts.schema import Kernel
 from akas.models.lfm2.weights import LFM2Checkpoint
 from akas.models.qwen35.config import DenseConfig
 from akas.models.qwen35.config import Qwen35Config
@@ -43,14 +43,28 @@ def test_profiles_preserve_original_kernel_sources_and_specializations(
         )
 
     monkeypatch.setattr("tensor.compiler.frontend.source.export_source", trace)
-    module = importlib.import_module(case["profile"])
-    if case["profile"].endswith("packed"):
-        checkpoint = packed_checkpoint
-    else:
-        cls = DenseConfig if case["profile"].endswith("bf16") else Qwen35Config
+    dense = case["profile"].endswith("bf16")
+    if dense:
+        from plan_fixture import dense_checkpoint
+        from akas.models.qwen35.model import compose_dense
+        from akas.compilation.compile import plan as graph_plan
         values = {**case["config"], "layers": tuple(case["config"]["layers"])}
-        checkpoint = SimpleNamespace(config=cls(**values))
-    plan = module.plan(checkpoint, **case["options"])
+        checkpoint = dense_checkpoint(DenseConfig(**values))
+        options = dict(case["options"])
+        target = options.pop("target", "sm_89")
+        graph, commit = compose_dense(checkpoint, **options)
+        plan = graph_plan(graph, target=target)
+        if commit.calls:
+            extra = graph_plan(commit, target=target)
+            plan.kernels = list({kernel.key: kernel for kernel in [*plan.kernels, *extra.kernels]}.values())
+    else:
+        module = importlib.import_module(case["profile"])
+        if case["profile"].endswith("packed"):
+            checkpoint = packed_checkpoint
+        else:
+            values = {**case["config"], "layers": tuple(case["config"]["layers"])}
+            checkpoint = SimpleNamespace(config=Qwen35Config(**values))
+        plan = module.plan(checkpoint, **case["options"])
     actual = [
         dict(
             key=k.key,
@@ -62,19 +76,57 @@ def test_profiles_preserve_original_kernel_sources_and_specializations(
     ]
     # Only source ownership changed; frozen keys, parameters and schedule arguments
     # remain the pre-migration numerical contract.
-    from akas.compilation.source import source_dependencies
-
     expected = json.loads(json.dumps(case["kernels"]))
     for record in expected:
         if isinstance(record["source"], dict):
             assert record["source"]["dependencies"] == ["$shared-operation-closure"]
-            record["source"]["dependencies"] = list(source_dependencies())
-    assert actual == expected
+            del record["source"]["dependencies"]
+            if record["source"]["module"].startswith("akas.ops.ffn."):
+                from activation_parity import old_dispatch
+                original = record["source"]
+                kind, parameters = original["args"]
+                if kind == "swiglu_experts":
+                    parameters = {**parameters, "expert_rows":True, "output_dtype":"bfloat16", "round_inputs":True}
+                else:
+                    has_rows = "r" in parameters
+                    parameters = old_dispatch(original["module"],kind,parameters)
+                    if not has_rows:
+                        parameters.pop("r", None)
+                original["module"] = "akas.ops.activation.kernel"
+                original["args"] = json.loads(json.dumps([kind,parameters]))
+            elif record["source"]["module"].startswith("akas.ops.normalization."):
+                from normalization_parity import migrated_parameters
+                original = record["source"]
+                kind, parameters = original["args"]
+                original["args"] = [kind, migrated_parameters(original["module"], kind, parameters)]
+                original["module"] = "akas.ops.normalization.kernel"
+            elif record["source"]["module"].startswith("akas.ops.residual."):
+                record["source"]["module"] = "akas.ops.residual.kernel"
+            elif record["source"]["module"] == "akas.ops.quantization.cuda.block_fp8":
+                record["source"]["module"] = "akas.quantization.activations.fp8"
+    # The old placeholder described a package-wide cache hash, not arithmetic.
+    # Import-scoped cache invalidation has its own behavioral tests below.
+    for record in actual:
+        dependencies = record["source"].pop("dependencies")
+        assert dependencies == sorted(set(dependencies))
+        assert "tensor.compiler.frontend.source" in dependencies
+        if not record["source"]["module"].startswith("akas.compilation.factories."):
+            assert not any(name.startswith("akas.execution.") for name in dependencies)
+    if dense:
+        # The old inventory also emitted unreachable GDN, merge and fused-head
+        # kernels. Only actual forward/commit calls enter the common compiler.
+        reference = {item["key"]: item for item in expected}
+        assert set(item["key"] for item in actual) <= reference.keys()
+        assert {item["key"]: item for item in actual} == {item["key"]: reference[item["key"]] for item in actual}
+    else:
+        assert actual == expected
 
 
 def test_batched_profile_reuses_different_widths_and_vocabularies():
-    from akas.compilation.recipes.bf16 import plan
-    from akas.compilation.recipes.bf16 import recurrent_plan
+    from akas.compilation.compile import plan
+    from akas.compilation.rewrites import deferred_state
+    from akas.models.qwen35.model import compose_dense
+    from plan_fixture import dense_checkpoint
 
     config = DenseConfig(
         width=512,
@@ -93,14 +145,19 @@ def test_batched_profile_reuses_different_widths_and_vocabularies():
         rotary_dim=32,
         context_limit=1024,
     )
-    bundle = plan(SimpleNamespace(config=config), slots=2, chunk=4, pool=8, context=512)
+    checkpoint = dense_checkpoint(config)
+    graph, _ = compose_dense(checkpoint, slots=2, chunk=4, pool=8, context=512)
+    bundle = plan(graph)
     embedding = next(k for k in bundle.kernels if k.kind == "embedding")
     assert embedding.parameters == dict(r=8, c=512, vocab=4096)
-    recurrent = recurrent_plan(config, slots=2, window=4, pool=8)
+    verification, _ = compose_dense(checkpoint, slots=2, chunk=4, pool=8, context=512, verify=True)
+    deferred, commit, materialize, _ = deferred_state(verification)
+    recurrent = plan(commit)
+    recurrent.kernels.extend(plan(materialize).kernels)
     conv = next(k for k in recurrent.kernels if k.kind == "conv_commit")
     assert conv.parameters["channels"] == 1024 and conv.parameters["projection"] == 1552
     assert (
-        next(k for k in recurrent.kernels if k.kind == "gdn_deferred").parameters[
+        next(k for k in recurrent.kernels if k.kind == "gdn_materialize").parameters[
             "heads"
         ]
         == 8
@@ -117,7 +174,7 @@ def test_fixed_layout_profile_rejects_incompatible_geometry():
 
 @pytest.fixture
 def compiler(monkeypatch):
-    import akas.compilation.build as pipeline
+    import akas.compilation.emit as pipeline
 
     calls = []
     version = ["compiler-v1"]

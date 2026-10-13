@@ -3,11 +3,10 @@
 from importlib import import_module
 
 PROFILES = {
-    "reference": ("akas.compilation.recipes.reference", "produce"),
-    "floating": ("akas.compilation.recipes.reference", "produce"),
+    "program": ("akas.compilation.compile", "compile_program"),
+    "reference": ("akas.compilation.compile", "compile_model"),
+    "floating": ("akas.compilation.compile", "compile_model"),
     "packed": ("akas.compilation.recipes.packed", "produce"),
-    "batched": ("akas.compilation.recipes.bf16", "produce"),
-    "batched-bank": ("akas.compilation.recipes.bf16", "produce_bank"),
     "hybrid.decode": ("akas.compilation.recipes.block_fp8.decode", "produce"),
     "hybrid.prefill": ("akas.compilation.recipes.block_fp8.prefill", "produce"),
     "hybrid.draft": ("akas.compilation.recipes.block_fp8.draft", "produce"),
@@ -19,11 +18,15 @@ PROFILES = {
 
 
 def compile_checkpoint(
-    definition, checkpoint, out, *, profile, checkpoint_options=None, **options
+    definition, checkpoint, out, *, profile="program", checkpoint_options=None, **options
 ):
     """Load with a supplied definition; reusable profiles never name a model family."""
     module, factory = PROFILES[profile]
     loaded = definition.checkpoint_type(checkpoint, **(checkpoint_options or {}))
+    if profile == "program":
+        options["definition"] = definition.compose
+        if getattr(definition, "model_defaults", None):
+            options["model_options"] = {**definition.model_defaults, **options.get("model_options", {})}
     if profile in ("reference", "floating"):
         options["definition"] = definition.definition
         if profile == "floating":

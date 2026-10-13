@@ -1,17 +1,17 @@
 """Add compact recurrent-state replay to a checksummed frozen verifier bundle."""
 
-from akas.compilation.build import publish
+from akas.artifacts.write import publish
 
 import hashlib
 import json
 import shutil
 from pathlib import Path
-from akas.compilation.build import export_source
-from akas.artifacts.kernels import identity
-from akas.artifacts.fingerprints import (
+from akas.compilation.emit import export_source
+from akas.artifacts.schema import identity
+from akas.artifacts.fingerprint import (
     block_fp8_hashes as implementation_hashes,
 )
-from akas.compilation.build import build_artifact
+from akas.compilation.emit import build_artifact
 
 
 def produce(source, out):
@@ -54,7 +54,7 @@ def produce(source, out):
                 p,
                 dependencies=(
                     "tensor.compiler.frontend.source",
-                    "akas.ops.normalization.kernels",
+                    "akas.ops.normalization.kernel",
                 ),
             )
         )

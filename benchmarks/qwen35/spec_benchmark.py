@@ -10,7 +10,7 @@ from pathlib import Path
 import time
 import ctypes as ct
 import numpy as np
-from akas.generation.acceptance import accepted_prefix
+from akas.generation.speculative.acceptance import accepted_prefix
 
 
 class PrefixSnapshot:

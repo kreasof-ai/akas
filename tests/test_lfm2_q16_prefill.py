@@ -53,7 +53,7 @@ def test_two_component_projection_fields_and_precision(
     import tensor
     from akas.checkpoints.gguf import dequantize
     from akas.checkpoints.gguf import prepack_q4_0
-    from akas.compilation.source import export_kernel as source
+    from akas.compilation.emit import export_kernel as source
 
     r, k, o = 35, 256, 34
     rng = np.random.default_rng(1462)

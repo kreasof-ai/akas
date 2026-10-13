@@ -1,34 +1,33 @@
-# Operation ownership
+# Operations
 
-Read an operation's `compose.py` for its host-side bindings, then its kernel file
-for arithmetic. CUDA variants live under `cuda/`; WebGPU files exist where
-supported. Factories import TileLang only when constructing a kernel.
+Start with an operation's `operation.py`: it declares compatible implementations,
+schedule axes and composition rules. `validation.py` contains independent arithmetic
+and state references. Kernel files construct Tensor/TileLang kernels; compiler
+imports occur inside factories.
 
-| Operation | Responsibility |
+| Area | Responsibility |
 | --- | --- |
-| `attention`, `gdn`, `convolution` | Mixer composition, cache and recurrent arithmetic |
-| `linear` | Packed, BF16 and FP8 projections; shared fused projection implementations |
-| `ffn`, `moe` | Dense/packed FFN, activations, routed and shared experts |
+| `linear` | Projection, paired projection fusion and split reductions |
+| `activation` | Dense, packed and expert-row SwiGLU layouts |
 | `normalization`, `residual` | RMS, residual normalization and addition |
-| `kv_quantization` | Independent KV formats, storage metadata, encode/decode and provider codecs |
-| `quantization`, `reductions` | Storage decoders, conversion, scratch validity and reductions |
-| `vocabulary`, `sequence` | Embedding/head/token selection and row/position control |
-| `mtp`, `speculation` | Draft joining and device control for speculative rounds |
+| `attention` | Query/KV preparation, cache access and attention algorithms |
+| `gdn`, `convolution` | Recurrent mixing and causal history |
+| `moe` | Routing, expert projection and weighted/shared combination |
+| `vocabulary`, `sequence` | Embeddings, sampling and row/position controls |
+| `control`, `mtp` | Speculative-round controls, token feedback and head joining |
+| `indexing`, `state` | State row reset and compile-time request mapping |
 
-`models/blocks.py` declares decoder order and weight roles. `execution/plan.py`
-binds calls and borrows buffers and kernels. `memory/layouts.py` describes
-persistent state. Execution owns graph lifetimes, state advancement, commit and
-repair; generation owns prompt, termination and acceptance policy.
+Weight, activation and KV codecs belong to `quantization/`, independently of model
+families. [KV formats](../quantization/kv/README.md) own storage, metadata and codec
+placement; attention consumes their declared interface.
 
-`implementations.py` beside each operation owns compatible variants and search
-spaces. `ops.registry` selects by contract, provider, phase, target and geometry
-without importing kernels. `compilation/factories/` retains small compatibility
-entry points that delegate to this registry. Numerical differences remain explicit: native FP8 decode and
-prequantized prefill have different operand contracts; packed weights retain
-their recorded quantization type; split projections retain reduction order.
-The fixed-slot FP8 profile's supported geometry is explicitly validated in
-`execution/bindings/block_fp8/geometry.py`.
+The registry selects by operation contract, target, provider, phase and geometry.
+The compiler performs numerical qualification and calls Tensor beam search by
+default. A schedule cannot change semantic dimensions or the call's buffer ABI.
+Different prefill/decode algorithms, packed operands and partition reductions remain
+explicit choices; they do not require separate model executors.
 
-[KV quantization](kv_quantization/README.md) owns cache representations separately
-from weight quantization and attention. Add a format module and its provider codec;
-shared allocation and compatible attention calls resolve the named format.
+Kernel consolidation remains in progress. Existing provider directories contain
+unmigrated algorithms and must not be removed before parity/performance evidence.
+`compilation/factories/` also remains for old producers. New model integration
+should use graph calls and the common compiler rather than adding another factory.

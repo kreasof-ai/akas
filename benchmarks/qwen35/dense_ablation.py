@@ -40,17 +40,18 @@ def configurations():
 
 def create_engine(args, config, device):
     from akas.models.qwen35.model import DenseEngine
-    from akas.execution.bindings.bf16.speculative import SpeculativeEngine
+    from akas.generation.speculative.decoding import SpeculativeDecoder
+    from akas.models.heads.mtp import MTPHead
 
     target = DenseEngine(
         args.checkpoint, args.bundle, device, fused_head=config["fused_head"]
     )
     engine = target
     if config["window"]:
-        engine = SpeculativeEngine(
-            target,
+        engine = SpeculativeDecoder(
+            target, MTPHead(target),
             window=config["window"],
-            single_graph=config["single_graph"],
+            capture=config["single_graph"],
             deferred=config["deferred"],
         )
     return target, engine

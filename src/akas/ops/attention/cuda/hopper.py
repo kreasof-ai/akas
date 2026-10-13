@@ -1,6 +1,6 @@
 """Bounded Hopper query tiles for long speculative verification windows."""
 
-from akas.ops.kv_quantization import get
+from akas.quantization.kv import get
 
 
 def partial(p):

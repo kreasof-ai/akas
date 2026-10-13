@@ -3,14 +3,14 @@
 from __future__ import annotations
 from dataclasses import asdict
 from pathlib import Path
-from threading import get_ident
+from akas.execution.workspace import DeviceOwner, release
 from types import MappingProxyType
 import json
 import numpy as np
 from akas.execution.bindings.packed.workspace import allocate_workspaces
-from akas.artifacts.kernels import artifact_path
-from akas.artifacts.kernels import load_kernels
-from akas.artifacts.fingerprints import packed_hashes as implementation_hashes
+from akas.artifacts.read import artifact_path
+from akas.artifacts.read import load_kernels
+from akas.artifacts.fingerprint import packed_hashes as implementation_hashes
 from akas.ops.schedules.packed_parameters import CUDA_PROFILES
 from akas.ops.schedules.packed_parameters import CUDA_GROUPED_THRESHOLD
 from akas.ops.schedules.packed_selection import prefill_tail_rows
@@ -19,7 +19,7 @@ from akas.execution.bindings.packed.requirements import requirements
 from akas.execution.bindings.packed.request import LFM2Request
 
 
-class PackedResources:
+class PackedResources(DeviceOwner):
     """One weight/kernel allocation and serialized executor scratch space."""
 
     def __init__(
@@ -37,9 +37,7 @@ class PackedResources:
             raise ValueError("max_requests must be a positive integer")
         self.checkpoint_type = checkpoint_type
         self.definition = definition
-        self.device = device
-        self.thread = get_ident()
-        self.generation = device._generation
+        super().__init__(device)
         self.max_requests = max_requests
         self.requests = set()
         self.closed = False
@@ -166,13 +164,7 @@ class PackedResources:
             raise ValueError("context exceeds the compiled capacity")
 
     def check(self):
-        if self.closed:
-            raise RuntimeError("LFM2 model is closed")
-        if get_ident() != self.thread:
-            raise RuntimeError("LFM2 execution requires the model owner thread")
-        self.device._check()
-        if self.device._generation != self.generation:
-            raise RuntimeError("LFM2 model belongs to an old device session")
+        self._check()
 
     @property
     def allocated_bytes(self):
@@ -183,10 +175,7 @@ class PackedResources:
             return
         self.check()
         self.device.synchronize()
-        for kernel in self.kernels.values():
-            kernel.release()
-        for buffer in self.buffers:
-            buffer.release()
+        release(kernels=self.kernels.values(), buffers=self.buffers)
         self.closed = True
 
 
@@ -200,8 +189,16 @@ class PackedModel(LFM2Request):
     """
 
     def __init__(
-        self, model, bundle, device, *, context=8448, graphs=True, max_requests=1
+        self, model, bundle, device, *, context=None, graphs=True, max_requests=1
     ):
+        if type(max_requests) is not int or max_requests < 1:
+            raise ValueError("max_requests must be a positive integer")
+        if context is None:
+            manifest = json.loads((Path(bundle) / "inference.json").read_text())
+            context = min(
+                manifest["capacity"] - max(manifest["rows"]),
+                manifest["config"]["max_context"],
+            )
         resources = PackedResources(
             model,
             bundle,

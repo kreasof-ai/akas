@@ -40,7 +40,7 @@ def prepare_micro():
     import hashlib, json, os
     from pathlib import Path
     from tensor.compiler.frontend.source import export_source
-    from akas.compilation.build import build_artifact
+    from akas.compilation.emit import build_artifact
 
     os.chdir("/workspace")
     volume.reload()
@@ -71,7 +71,7 @@ def prepare_micro():
                 schedule,
                 dependencies=(
                     "tensor.compiler.frontend.source",
-                    "akas.ops.normalization.kernels",
+                    "akas.ops.normalization.kernel",
                 ),
             )
         )
@@ -268,7 +268,7 @@ def prepare_decoded_micro(prepared):
     import hashlib, json, os
     from pathlib import Path
     from tensor.compiler.frontend.source import export_source
-    from akas.compilation.build import build_artifact
+    from akas.compilation.emit import build_artifact
 
     os.chdir("/workspace")
     volume.reload()
@@ -363,7 +363,7 @@ def prepare_decoded_micro(prepared):
                 schedule,
                 dependencies=(
                     "tensor.compiler.frontend.source",
-                    "akas.ops.normalization.kernels",
+                    "akas.ops.normalization.kernel",
                 ),
             )
         )
@@ -408,7 +408,7 @@ def prepare_selected(prepared, query_rows=128, threads=256, joint=True):
     from pathlib import Path
     from tensor.compiler.frontend.source import export_source
     from tensor.artifacts.format import read_artifact
-    from akas.compilation.build import build_artifact
+    from akas.compilation.emit import build_artifact
 
     os.chdir("/workspace")
     volume.reload()
@@ -467,7 +467,7 @@ def prepare_selected(prepared, query_rows=128, threads=256, joint=True):
                 dict(old["parameters"], **schedule),
                 dependencies=(
                     "tensor.compiler.frontend.source",
-                    "akas.ops.normalization.kernels",
+                    "akas.ops.normalization.kernel",
                 ),
             )
         )

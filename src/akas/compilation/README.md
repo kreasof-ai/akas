@@ -1,64 +1,41 @@
-# Shared compilation
+# Compilation
 
-Compilation belongs to the installed AKAS package. Compiler dependencies remain
-optional and are imported only while rendering or compiling kernels. Inference
-can import the package and consume bundles without the compiler extra.
+`compile.py` turns model graphs into a compiled program. `compile_program()` accepts
+phase geometries, request/context bounds and model options. `compile_checkpoint()`
+loads weights through the supplied definition; the CLI defaults to this program path.
 
-`plan.py` describes `Source`, `Kernel` and `Bundle`. `build.py` compiles these
-same declarations for every model, checks source/provider/target/compiler identity,
-records artifact checksums and publishes a completed manifest atomically.
-`bundles.py` copies checked artifacts when deriving a new execution bundle.
-
-Compilation recipes are `recipes/packed.py`, `recipes/bf16.py` and
-`recipes/block_fp8/`. Existing CLI profile names remain compatible:
-
-| Profile | Inputs and responsibility |
+| File | Responsibility |
 | --- | --- |
-| `packed` | Loaded packed checkpoint; CUDA/WebGPU rows and numerical profile |
-| `batched` | Loaded checkpoint geometry; BF16 hybrid batches, verification or draft |
-| `batched-bank` | Several batched geometries plus optional speculation controls |
-| `hybrid.decode` | Loaded checkpoint geometry matching the fixed-layout block-FP8 kernels |
-| `hybrid.prefill` | The same FP8 contract with chunked prefill and cache precision |
-| `hybrid.draft`, `hybrid.draft-prefill` | Loaded draft checkpoint and a checksummed target bundle |
+| `compile.py` | Coordinate phases, state reset, verification commits and publication |
+| `selection.py` | Resolve operation implementations and protected schedule parameters |
+| `tuning.py` | Numerically qualify candidates, measure workloads and call Tensor beam search |
+| `validate.py` | Check each candidate against every call's storage ABI |
+| `buffers.py` | Plan scratch reuse from graph lifetimes |
+| `state.py` | Lift row-local state addressing into request-slot pools |
+| `rewrites.py` | Operation fusion, terminal row pruning, token feedback and deferred state |
+| `phases.py` | Describe token phases and proposal-independent speculative controls |
+| `emit.py` | Export dependency-tracked sources and invoke Tensor compilation |
 
-`packed`, `batched`, `hybrid.decode` and `hybrid.prefill` expose `plan()` for
-inspecting kernel declarations before building. Model definitions supply checkpoint readers;
-profiles receive the resulting objects and never import model-family definitions.
-Adding a model that matches an execution contract requires configuration, weight
-roles and decoder composition, not another producer implementation.
+Beam search is enabled by default. Candidate axes belong to operations; Tensor owns
+the search algorithm and backend compilation. A candidate must preserve numerical
+results, immutable inputs, state and buffer layouts before its timing can count.
+Qualification is scoped to the compiled workload; it does not imply peak performance
+at every other shape.
+
+Each program build writes separate immutable phase/kernel paths. `program.json` is
+published last. A failed rebuild leaves the previously published program usable.
+Runtime imports do not require the compiler extra or reference frameworks.
 
 ```sh
-akas compile --definition akas.models.lfm2.model:LFM2 \
-  --checkpoint model.gguf --profile packed --out build/model \
-  --config '{"context":384,"target":"sm_89"}'
-
 akas compile --definition akas.models.qwen35.model:DenseEngine \
-  --checkpoint /path/to/checkpoint --profile batched --out build/model \
-  --config '{"slots":8,"chunk":32,"context":4096,"target":"sm_89"}'
+  --checkpoint /path/to/weights --out build/model \
+  --config '{"geometries":[[1,1],[1,32]],"max_requests":256,"max_context":4096}'
 ```
 
-Python callers can pass a loaded checkpoint to `recipes.packed.plan()` or
-`recipes.bf16.plan()`, inspect the result, then call `build.build()`.
-`compile_checkpoint()` loads through a supplied definition and invokes the selected
-profile. Checkpoint reader options, such as a draft branch, are supplied separately.
+To compile MTP, include `proposal` and `verify` geometries, `round_windows`, and
+optionally `deferred`. The checkpoint reader derives its upload branch from declared
+weight buffers. Numerical kernels still determine which targets/layouts are supported.
 
-`transforms/` selects reusable attention, projection, expert, recurrent and device
-specializations over existing bundles. Kernel source factories remain in
-`akas.ops`; candidate measurements and searches remain in `benchmarks`.
-
-Fixed-layout FP8 kernels currently support one explicit geometry, checked in
-`akas.execution.bindings.block_fp8.geometry`. A different width or state layout needs a compatible
-kernel/profile implementation; compilation never substitutes another model's
-geometry silently. Measured device specializations retain their qualification
-limits. Existing schema names retain compatibility with runtime bundle readers.
-
-`source.py` replaces per-kernel source wrappers. It binds source cache identities
-to the extracted operation bodies and shared profile metadata. Kernel requirements live with `execution/bindings/`; measured schedules live with
-operations. `operations.py` resolves operation-owned registrations into source declarations.
-`factories/` retains compatibility entry points. Runtime consumers
-can validate requirements without importing this compilation package.
-
-New compositions use `forward.py`, with requirements derived from actual calls.
-`tuning.py` qualifies operation-owned beam candidates across representative
-workloads and produces target-bound profiles. See [model composition](../planning/README.md)
-for the three-file model, compilation, execution and tuning contracts.
+Migration remains in progress: `recipes/`, `factories/` and `transforms/` still serve
+unmigrated packed and MoE paths. They must be replaced and qualified before deletion;
+they are not extension points for new models.

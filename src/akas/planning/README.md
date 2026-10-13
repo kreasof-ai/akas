@@ -67,3 +67,5 @@ Hopper overlays still require their existing workspace/ABI rewrites and explicit
 qualification. They are not automatically interchangeable with ordinary calls.
 Forward plans currently describe static buffer geometry; this work does not add
 dynamic-shape arithmetic, a universal tokenizer, or new checkpoint encodings.
+
+Operation-owned `planning.py` modules declare safe row independence and implemented fusion rewrites. The shared optimizer discovers them through `ops.registry`; unknown operations retain their original graph. Adding an activation does not require editing a central fusion whitelist, and declaring row independence does not claim a fused kernel exists.

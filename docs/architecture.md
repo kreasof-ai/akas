@@ -1,138 +1,85 @@
-# Engine architecture
+# Inference architecture
 
-Model definitions supply architecture, weight mappings and numerical constraints.
-Shared operations compose their forward paths. Shared executors own resident
-resources, request state, execution batches and graph lifetimes. Tensor supplies
-compilation, buffers, artifact execution and device graphs.
+A model declares configuration, checkpoint storage and an operation graph. The
+compiler qualifies kernels and writes a program. The executor consumes that
+program, owns request slots and dispatches its compiled phase geometries. Tensor
+supplies compilation, device buffers, launches and capture.
 
 ```mermaid
 flowchart LR
-    Definition[Model config and weight layout] --> Blocks[Decoder blocks]
-    Blocks --> Operations[Attention / GDN / convolution / FFN]
-    Operations --> Plan[Ordered kernel plan]
-    Caller[Local caller or HTTP adapter] --> Scheduler[Request scheduler]
-    Scheduler --> Execution[Shared request and batch executor]
-    Execution --> Plan
-    Execution --> State[Request state and scratch]
-    Plan --> Tensor[Tensor binding and device execution]
+    Model[Model config / weights / graph] --> Compile[Compilation and default kernel search]
+    Compile --> Program[Checksummed program and phase artifacts]
+    Program --> Executor[Request executor and batch bank]
+    Scheduler[Scheduler] --> Executor
+    Executor --> Tensor[Tensor device execution]
+    Head[Speculative proposer] --> Generation[Acceptance / commit / repair]
+    Generation --> Executor
 ```
 
-## Models and operations
+## Reading map
 
-`models/lfm2/` and `models/qwen35/` each contain `config.py`, `weights.py` and
-`model.py`. Dense and MoE Qwen are variants of one family. The definitions compose
-`DecoderBlock` objects with explicit mixer, feed-forward and weight roles. See
-[the model reading map](../src/akas/models/README.md).
-
-`models/blocks.py` contains the shared decoder declarations. Each operation in
-`ops/` owns its `compose.py` and its numerical kernels: attention, GDN, convolution,
-linear, normalization, FFN and MoE. Supporting vocabulary, sequence, quantization
-and reduction operations have the same ownership. CUDA and WebGPU variants exist
-only where implemented. [The operation map](../src/akas/ops/README.md) gives the
-reading path.
-
-`execution/executor.py` owns the common request-slot lifecycle, batch validation,
-prefill and decode interface, owner-thread checks and resource teardown. Every
-scheduled forward uses persistent slot IDs; numerical bindings choose how those
-slots map to kernel rows.
-
-`execution/bindings/` contains packed-weight, block-FP8 and BF16 buffer bindings.
-Packed handles execute selected sequences serially; block-FP8 kernels retain
-fixed row IDs and mask inactive rows; BF16 kernels map selected slots into dense
-execution rows. These are kernel layout constraints underneath one executor,
-not separate request engines. Precision, rounding and compiled geometry remain
-explicit. Existing direct LFM2 request handles and Qwen forward helpers remain
-available for benchmarks and compatibility.
-
-Bindings own their kernel requirements and workspace layouts. Operation schedules
-live in `ops/schedules/` and `ops/linear/schedule.py`; compiler-only factory routing
-lives in `compilation/factories/`. `execution/plan.py` resolves kernels and binds
-ordered calls, while `tensor/executor.py` submits or captures them using Tensor.
-
-## Ownership
-
-| Owner | Resources | Lifetime |
+| Area | Entry point | Responsibility |
 | --- | --- | --- |
-| Caller | Tensor device | Encloses engine lifetime |
-| Resident executor | Weights and loaded kernels | Shared across requests |
-| Request | Position, KV/convolution/GDN state | Admission through release |
-| Execution geometry | Scratch, bound calls and captured graphs | Geometry/profile |
-| Scheduler | Queues, admission and work budgets | Engine lifetime |
-| Transport | Connections, events and cancellation signals | Client connection |
+| Models | `models/<family>/model.py` | Compose operations and declare request bindings |
+| Graph | `graph.py` | Buffers, views, ordered calls and ownership roles |
+| Operations | `ops/<operation>/operation.py` | Eligibility, schedules, references and composition |
+| Quantization | `quantization/weights/`, `activations/`, `kv/` | Storage, codecs and format-specific primitives |
+| Compilation | `compilation/compile.py` | Qualify and emit all phases through one coordinator |
+| Artifacts | `artifacts/schema.py`, `read.py`, `write.py` | Descriptors, integrity and publication |
+| Execution | `execution/executor.py` | Request lifecycle, forward dispatch and verification |
+| Generation | `generation/speculative/decoding.py` | Proposer-independent speculative flow |
+| Scheduling | `scheduling/` | Queues, admission and token budgets |
+| Serving | `serving/` | HTTP transport around a caller-supplied Engine |
+| Text | `text/tokenizer.py` | Shared tokenization with serialized format rules |
+| Benchmarks | `benchmarking/` | Reproducible timing, accounting and regression reports |
 
-Plans borrow resources. Request slots remain distinct from execution row IDs.
-The common executor owns occupied slots, positions and pending verification.
-Each binding supplies state reset, release cleanup and forward hooks; the handle
-binding adapts any `IndependentModel`, without loading checkpoints or selecting
-provider kernels. Model factories supply checkpoint and architecture definitions.
-Submission and cancellation use thread-safe queues/signals; execution and resource
-destruction stay on the owner thread.
+## Ownership and phases
 
-`memory/state.py` allocates explicit buffer specifications and releases partial
-allocations on failure. `memory/layouts.py` derives buffer specifications from geometry; both allocation
-and byte estimates use these specifications, including FP8 KV scales.
-`execution/bindings/bf16/journal.py` owns deferred recurrent execution. Speculative
-verification commits or restores state at the accepted prefix for each request.
+Weights and persistent state are shared across compiled geometries. A request slot
+identifies state, independently of its current execution row. Semantic bindings
+identify tokens, mappings, positions, lengths and predictions; the executor does
+not infer model names from buffer names.
 
-`checkpoints/` implements GGUF/safetensors reading and bit-preserving transfer.
-Models declare inventories and projection packing layouts; upload implementations
-own transfer barriers and allocation cleanup. `artifacts/` implements kernel
-coverage, integrity, loading and implementation identities.
+Scratch lifetimes follow graph calls, including borrowed views. Scratch can share
+an allocation only when lifetimes do not overlap. Views borrow storage and retain
+independent descriptors. Verification journals remain live until accepted-prefix
+commit or discard. Admission/release reset model-declared state; stale KV beyond
+the current position remains unread.
 
-`generation/` owns prompt/termination policy, acceptance and output lookup.
-Provider submission lives in `execution/bindings/packed/greedy.py`; MTP orchestration
-lives in the numerical bindings' `speculative.py`, alongside commit and repair. The retained
-paths have different commit semantics, represented explicitly. `serving/` handles
-transport over any `Engine`. Caller-owned factories provide devices, model adapters,
-tokenizers and metadata; LFM2 and Qwen dense examples use the same HTTP routes.
-`text/tokenizer.py` supplies one byte-level BPE implementation to both families.
-`text/formats.py` loads GGUF or local tokenizer JSON rules; `text/chat.py` owns
-bounded ChatML formatting independently of tokenization.
-The fixed-slot MoE benchmark server retains
-its experimental lifecycle and qualification limits.
+Prefill, decode, verification and proposal are separate phases. This preserves
+their different algorithms, chunk layouts and state effects. A batch bank selects
+the smallest qualified row capacity for the requested phase/chunk. It does not
+force every request group into the largest launch.
 
-## Extension and qualification
+MTP is one proposal head in `models/heads/mtp.py`. The shared coordinator performs
+proposal, verification, acceptance, commit and repair. `execution/replay.py` can
+capture the whole round. `execution/state.py` owns deferred recurrent journals.
+Future heads implement the same proposer protocol.
 
-Add a model by declaring its configuration, checkpoint layout and decoder blocks.
-Reuse the common executor and select compatible numerical bindings.
-Add an operation/profile variant when those numerical contracts differ. A model
-should not implement its own device launch loop or graph-resource lifecycle.
+## Compilation and tuning
 
-Paged caches need continuation semantics for both KV and recurrent state. Token
-beam search requires state fork/reorder. The scheduled API currently supports
-greedy token-ID generation bounded by output length; LFM2's convenience generator
-also provides tokenizer/chat formatting and EOS stopping.
+Kernel beam search is on by default. Operations supply implementation choices,
+schedule axes and independent references. AKAS checks numerical results, state,
+immutable inputs and every call's storage ABI, then invokes Tensor's search and
+measurement. Compilation records the selected target/geometry and qualification.
+A result qualifies its measured workloads; it does not prove universal peak speed.
 
-AKAS depends on a pinned published Tensor revision. Consumers need no compiler or
-reference framework. Existing whole-model Qwen qualification limits remain; CPU
-plan parity and local CUDA checks do not qualify Hopper or WebGPU profiles.
+Each build owns separate phase/kernel paths. The program index is published after
+its artifacts. Failed replacements leave the previous index and artifacts intact.
+Installed inference imports do not require the compiler or reference frameworks.
+See [compilation](../src/akas/compilation/README.md) and
+[execution](../src/akas/execution/README.md) for file responsibilities.
 
-## Offline compilation
+## Migration status
 
-`compilation/build.py` handles source reuse, CUDA/WGSL builds and atomic manifests.
-Compilation recipes accept loaded checkpoints and declare kernel specializations;
-models do not supply custom producers. Recipes select geometry
-and produce artifacts for the corresponding execution contracts. See
-[the compilation map](../src/akas/compilation/README.md). Kernel and serving searches live in
-`benchmarks/`; general setup lives in `tools/`, and model-specific downloads live with benchmarks. Producer dependencies do not
-enter installed runtime imports.
+The common program path runs dense Qwen and LFM graphs. Dense Qwen's public
+constructor and MTP serving example use the common executor. MoE and packed-weight
+integration is incomplete: `execution/bindings/`, `compilation/recipes/`,
+`compilation/factories/` and existing optimization transforms remain until their
+behavior and performance are qualified through the new path. They are not the
+intended extension interface.
 
-Bundles fingerprint model definitions, shared operations, execution, transfer and
-memory code. Rebuild implementation-bound bundles after changes. Historical
-reports and frozen source identities remain unchanged.
-
-## Compiled runtime direction
-
-The merged executor preserves the existing numerical implementations and
-shape-specialized bundles. It does not yet remove compilation by batch/chunk
-geometry or introduce adaptive runtime dispatch.
-
-The next execution contract should consume one bundle per model, precision and
-GPU target, containing a small set of dynamic kernel variants. Live token rows,
-sequence lengths and request mappings select precompiled variants; allocation
-capacity and graph capture are separate from kernel compilation. Offline tuning
-must score mixed workloads and test dispatch boundaries, including large-batch
-throughput regressions. The runtime should bind plans once, update metadata in
-bulk, and submit or replay GPU work without loading compilation or tuning code.
-A native executor is justified by measured CPU overhead, rather than required by
-the directory structure.
+Current local qualification includes CPU contracts and CUDA/WebGPU checks. It does
+not qualify unavailable hardware specializations or prove full-model performance
+parity at every batch/context. The previously observed long-context LFM FP8
+trajectory drift remains unresolved.

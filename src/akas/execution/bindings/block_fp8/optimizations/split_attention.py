@@ -5,10 +5,10 @@ from pathlib import Path
 from akas.execution.plan import bind_named
 from akas.execution.plan import call_bindings
 from akas.tensor.executor import submit as submit_calls
-from akas.artifacts.kernels import artifact_path
+from akas.artifacts.read import artifact_path
 from akas.tensor.graph import CudaGraph
-from akas.artifacts.kernels import identity
-from akas.artifacts.fingerprints import (
+from akas.artifacts.schema import identity
+from akas.artifacts.fingerprint import (
     block_fp8_hashes as implementation_hashes,
 )
 

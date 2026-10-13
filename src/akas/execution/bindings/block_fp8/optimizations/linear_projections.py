@@ -5,7 +5,7 @@ from dataclasses import asdict
 from pathlib import Path
 from akas.tensor.graph import CudaGraph
 from akas.tensor.executor import bind as bind_call
-from akas.artifacts.kernels import artifact_path
+from akas.artifacts.read import artifact_path
 from tensor.runtime.signature import resolve_shape
 
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 from akas.models.lfm2.config import Config
-from akas.artifacts.kernels import identity
+from akas.artifacts.schema import identity
 from akas.ops.schedules.packed_parameters import CUDA_PROFILES
 from akas.ops.schedules.packed_parameters import Q16_PREFILL
 from akas.ops.schedules.packed_parameters import SUBGROUP_PROFILES

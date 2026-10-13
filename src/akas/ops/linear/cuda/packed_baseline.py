@@ -1,7 +1,7 @@
 """Operation kernels for linear.cuda.packed_baseline."""
 
-from akas.ops.quantization.ggml import weight_storage
-from akas.ops.quantization.ggml import weight_decoder
+from akas.quantization.weights.ggml import weight_storage
+from akas.quantization.weights.ggml import weight_decoder
 
 from akas.checkpoints.gguf import TYPES
 

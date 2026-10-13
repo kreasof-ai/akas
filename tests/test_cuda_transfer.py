@@ -27,7 +27,7 @@ def test_cuda_profile_rows_are_explicit():
 
 def build(kind, parameters, directory, generator=None):
     import tensor
-    from akas.compilation.source import export_kernel as source
+    from akas.compilation.emit import export_kernel as source
 
     path = directory / (kind + ".py")
     path.write_text((generator or source)(kind, parameters))
@@ -140,7 +140,7 @@ def test_staged_prefill_pairs_and_padding(tmp_path, encoding, rows, kind):
     import torch
     import tensor
     from akas import GGUF
-    from akas.compilation.source import export_kernel as prefill_source
+    from akas.compilation.emit import export_kernel as prefill_source
 
     g = GGUF(ROOT / "build/lfm2-diagnostic.gguf")
     k, o = 256, 63

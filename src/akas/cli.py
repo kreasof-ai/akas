@@ -1,12 +1,19 @@
 """Inspect checkpoints, generate locally, or serve an Engine over HTTP."""
 
 import argparse
-from collections import Counter
+import hashlib
+import json
+from pathlib import Path
+import platform
+import subprocess
+import time
+from contextlib import nullcontext
+from akas.benchmarking.cases import matrix
+from akas.benchmarking.runner import run
+from akas.benchmarking.report import compare, scaling_regressions, table, write_report
 from dataclasses import asdict
 from functools import partial
 from importlib import import_module
-import json
-from pathlib import Path
 
 
 def main():
@@ -16,17 +23,20 @@ def main():
         "inspect", help="inspect model architecture and packed tensor types"
     )
     inspect.add_argument("--model", required=True, type=Path)
+    inspect.add_argument("--definition", required=True, type=_factory)
+    inspect.add_argument("--checkpoint-options", type=_settings, default={})
     inspect.set_defaults(run=_inspect)
     generate = commands.add_parser(
         "generate", help="generate with a precompiled CUDA or WebGPU bundle"
     )
     generate.add_argument("--model", required=True, type=Path)
+    generate.add_argument("--definition", required=True, type=_factory)
+    generate.add_argument("--config", type=_settings, default={})
+    generate.add_argument("--max-buffer-size", type=int)
     generate.add_argument("--bundle", required=True, type=Path)
     generate.add_argument("--prompt", required=True)
     generate.add_argument("--max-tokens", default=128, type=int)
-    generate.add_argument(
-        "--context", type=int, help="default: 512 for WebGPU, 8448 for CUDA"
-    )
+    generate.add_argument("--context", type=int, help="override constructor context")
     generate.add_argument(
         "--raw", action="store_true", help="use a plain completion prompt"
     )
@@ -62,7 +72,7 @@ def main():
     )
     compile_command.add_argument("--checkpoint", required=True, type=Path)
     compile_command.add_argument("--out", required=True, type=Path)
-    compile_command.add_argument("--profile", choices=PROFILES, required=True)
+    compile_command.add_argument("--profile", choices=PROFILES, default="program")
     compile_command.add_argument(
         "--config", type=_settings, default={}, help="JSON execution profile options"
     )
@@ -73,8 +83,9 @@ def main():
         help="JSON options for the checkpoint reader",
     )
     compile_command.set_defaults(run=_compile)
-    from akas.benchmarking.cli import arguments
-    arguments(commands.add_parser("bench", help="reproducible native prefill/decode performance matrix"), _factory)
+    _benchmark_arguments(
+        commands.add_parser("bench", help="native prefill/decode performance matrix")
+    )
     args = parser.parse_args()
     args.run(args)
 
@@ -93,39 +104,31 @@ def _compile(args):
 
 
 def _inspect(args):
-    from akas.checkpoints.gguf import GGUF
-    from akas.models.lfm2.config import Config
-
-    gguf = GGUF(args.model)
-    print(
-        json.dumps(
-            {
-                "architecture": asdict(Config.from_gguf(gguf)),
-                "tensors": len(gguf.tensors),
-                "encodings": dict(Counter(t.encoding for t in gguf.tensors.values())),
-            },
-            indent=2,
-        )
-    )
+    checkpoint = args.definition.checkpoint_type(args.model, **args.checkpoint_options)
+    config = asdict(checkpoint.config)
+    inventory = checkpoint.inventory() if hasattr(checkpoint, "inventory") else None
+    print(json.dumps(dict(config=config, inventory=inventory), indent=2))
 
 
 def _generate(args):
     import tensor
-    from akas.models.lfm2.model import LFM2
 
-    context = (
-        args.context
-        if args.context is not None
-        else (512 if args.provider == "webgpu" else 8448)
-    )
+    options = dict(args.config)
+    if args.context is not None:
+        options["context"] = args.context
     with (
-        tensor.Device(args.device, provider=args.provider) as device,
-        LFM2(args.model, args.bundle, device, context=context) as model,
+        tensor.Device(
+            args.device, provider=args.provider, max_buffer_size=args.max_buffer_size
+        ) as device,
+        args.definition(args.model, args.bundle, device, **options) as model,
     ):
         result = model.generate(
-            args.prompt, max_tokens=args.max_tokens, chat=not args.raw
+            args.prompt,
+            max_tokens=args.max_tokens,
+            chat=not args.raw,
         )
-    print(result["text"])
+    rows = result if isinstance(result, list) else [result]
+    print("\n".join(row["text"] for row in rows))
     if args.out:
         args.out.write_text(json.dumps(result, indent=2, ensure_ascii=False) + "\n")
 
@@ -162,6 +165,276 @@ def _serve(args):
         access_log=None,
         handler_cancellation=True,
     )
+
+
+def _benchmark_arguments(parser):
+    parser.add_argument(
+        "--definition",
+        type=_factory,
+        required=True,
+        help="module:class implementing the session protocol",
+    )
+    parser.add_argument("--checkpoint", type=Path, required=True)
+    parser.add_argument(
+        "--bundles",
+        type=Path,
+        required=True,
+        help="bundle bank, one directory per batch",
+    )
+    parser.add_argument(
+        "--compile",
+        action="store_true",
+        help="build missing/stale bundles before measurement",
+    )
+    parser.add_argument("--provider", choices=("cuda", "webgpu"), default="cuda")
+    parser.add_argument("--target")
+    parser.add_argument(
+        "--schedule-profile",
+        type=Path,
+        help="target-bound Tensor schedule profile used with --compile",
+    )
+    parser.add_argument("--device", type=int, default=0)
+    parser.add_argument(
+        "--max-buffer-size",
+        type=int,
+        help="WebGPU buffer/binding limit to request from the adapter, in bytes",
+    )
+    parser.add_argument("--kv-dtype")
+    parser.add_argument("--batches", nargs="+", type=int, default=[1, 4, 16, 64, 256])
+    parser.add_argument("--prompts", nargs="+", type=int, default=[32, 2048])
+    parser.add_argument("--depths", nargs="+", type=int, default=[0])
+    parser.add_argument("--generated", type=int, default=32)
+    parser.add_argument(
+        "--prefill-chunk",
+        type=int,
+        help="tokens per slot in each compiled prefill pass",
+    )
+    parser.add_argument("--repeats", type=int, default=5)
+    parser.add_argument("--warmup", type=int, default=1)
+    parser.add_argument("--seed", type=int, default=17)
+    parser.add_argument(
+        "--mixed", action="store_true", help="stagger prompt lengths across slots"
+    )
+    parser.add_argument(
+        "--check",
+        type=_factory,
+        help="module:callable(session, case) returning correctness evidence",
+    )
+    parser.add_argument(
+        "--graphs", action="store_true", help="capture the token-step graph"
+    )
+    parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--baseline", type=Path)
+    parser.add_argument(
+        "--max-scaling-regression",
+        type=float,
+        help="stop if a larger batch loses this fraction of aggregate pp/tg throughput",
+    )
+    parser.add_argument(
+        "--max-regression",
+        type=float,
+        default=0.1,
+        help="fail on throughput loss beyond this fraction against baseline",
+    )
+    parser.set_defaults(run=_benchmark)
+
+
+def checkpoint_digest(path):
+    path = Path(path)
+    files = (
+        [path]
+        if path.is_file()
+        else sorted([*path.glob("*.safetensors"), *path.glob("*.json")])
+    )
+    if not files:
+        raise ValueError("checkpoint has no local weights/configuration")
+    digest = hashlib.sha256()
+    for file in files:
+        digest.update(file.name.encode())
+        with file.open("rb") as stream:
+            for block in iter(lambda: stream.read(1024 * 1024), b""):
+                digest.update(block)
+    return digest.hexdigest()
+
+
+def revision():
+    try:
+        return subprocess.run(
+            ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True
+        ).stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        return None
+
+
+def _benchmark(args):
+    import tensor
+
+    cases = matrix(
+        batches=args.batches,
+        prompts=args.prompts,
+        depths=args.depths,
+        generated=args.generated,
+        mixed=args.mixed,
+    )
+    if not 0 <= args.max_regression < 1 or args.repeats < 1 or args.warmup < 0:
+        raise ValueError("invalid repeat/warmup/regression settings")
+    if args.max_scaling_regression is not None:
+        scaling_regressions([], args.max_scaling_regression)
+    capacity = max(case.capacity for case in cases)
+    profile = getattr(args.definition, "compilation_profile", "reference")
+    args.kv_dtype = args.kv_dtype or getattr(args.definition, "model_defaults", {}).get("kv_dtype", "float16")
+    chunk = args.prefill_chunk or (
+        min(capacity, 128 if args.provider == "cuda" else 32)
+        if profile in ("floating", "program")
+        else 1
+    )
+    schedules = None
+    if args.schedule_profile:
+        if not args.compile:
+            raise ValueError("schedule profile requires --compile")
+        from tensor.compiler.search import ScheduleProfile
+
+        schedules = ScheduleProfile(json.loads(args.schedule_profile.read_text()))
+    definition = args.definition.__module__ + ":" + args.definition.__name__
+    device_options = dict(max_buffer_size=args.max_buffer_size)
+    with tensor.Device(args.device, provider=args.provider, **device_options) as probe:
+        detected = dict(probe.info)
+        args.target = args.target or detected["arch"]
+    metadata = dict(
+        device=detected,
+        schedule_profile_sha256=schedules.sha256 if schedules else None,
+        correctness="callback" if args.check else "not checked",
+        definition=definition,
+        checkpoint=str(args.checkpoint.resolve()),
+        checkpoint_sha256=checkpoint_digest(args.checkpoint),
+        provider=args.provider,
+        target=args.target,
+        kv_dtype=args.kv_dtype,
+        graphs=args.graphs,
+        revision=revision(),
+        python=platform.python_version(),
+        seed=args.seed,
+        timestamp=time.time(),
+        protocol="native-token-step-v1",
+        input="seeded synthetic token IDs; greedy device sampling",
+        timing="wall clock, synchronize before/after; compile/load/reset excluded; prefill includes control uploads",
+        ttft="prefill to first greedy token, including logits/head/sampling; no network",
+        prefill="chunked" if chunk > 1 else "serial token-step reference",
+        prefill_chunk=chunk,
+        repeats=args.repeats,
+        warmup=args.warmup,
+    )
+    results = []
+    baseline = json.loads(args.baseline.read_text()) if args.baseline else None
+    for batch in dict.fromkeys(args.batches):
+        selected = [case for case in cases if case.batch == batch]
+        bundle = args.bundles / f"{args.provider}-{args.kv_dtype}-b{batch}"
+        try:
+            if args.compile:
+                from akas.compilation import compile_checkpoint
+
+                options = (
+                    dict(geometries=list(dict.fromkeys(((batch, 1), (batch, chunk)))),
+                         max_requests=batch, max_context=capacity,
+                         model_options={"kv_dtype": args.kv_dtype}, schedules=schedules)
+                    if profile == "program" else
+                    dict(batch=batch, capacity=capacity, kv_dtype=args.kv_dtype,
+                         schedules=schedules, prefill_chunk=chunk)
+                )
+                compile_checkpoint(
+                    args.definition, args.checkpoint, bundle, profile=profile,
+                    checkpoint_options={} if profile == "program" else {"tokenizer": False},
+                    provider=args.provider, target=args.target, **options,
+                )
+            with tensor.Device(
+                args.device, provider=args.provider, **device_options
+            ) as device:
+                metadata["device"] = device.info
+                from akas.benchmarking.session import Session
+                constructor_options = dict(graphs=args.graphs)
+                if profile == "program":
+                    constructor_options["checkpoint_options"] = {}
+                else:
+                    constructor_options["tokenizer"] = False
+                with args.definition(args.checkpoint, bundle, device, **constructor_options) as model:
+                    context = Session(model, batch=batch, chunk=chunk) if profile == "program" else nullcontext(model)
+                    with context as session:
+                        actual_chunk = getattr(session, "prefill_chunk", chunk)
+                        metadata["prefill_chunk"] = actual_chunk
+                        metadata["prefill"] = (
+                            "chunked" if actual_chunk > 1 else "serial token-step reference"
+                        )
+                        if session.kv_dtype != args.kv_dtype:
+                            raise ValueError(
+                                "bundle KV dtype differs from benchmark request"
+                            )
+                        for case in selected:
+                            print(
+                                f"running batch={batch} prompt={case.prompt} depth={case.depth} kv={args.kv_dtype}",
+                                flush=True,
+                            )
+                            try:
+                                evidence = args.check(session, case) if args.check else None
+                                if args.check and (
+                                    not isinstance(evidence, dict)
+                                    or evidence.get("correct") is not True
+                                ):
+                                    raise ValueError("correctness check failed")
+                                row = run(
+                                    session,
+                                    case,
+                                    repeats=args.repeats,
+                                    warmup=args.warmup,
+                                    seed=args.seed,
+                                )
+                                if evidence is not None:
+                                    row["correctness"] = evidence
+                            except Exception as error:
+                                row = dict(
+                                    case=case.metadata(),
+                                    status="error",
+                                    error=f"{type(error).__name__}: {error}",
+                                )
+                            results.append(row)
+                            write_report(args.out, metadata, results)
+                            print(table([row]), flush=True)
+                            if args.max_scaling_regression is not None:
+                                losses = scaling_regressions(
+                                    results, args.max_scaling_regression
+                                )
+                                if losses:
+                                    print(
+                                        json.dumps(dict(scaling_regressions=losses)),
+                                        flush=True,
+                                    )
+                                    raise SystemExit(2)
+        except Exception as error:
+            completed = {json.dumps(row["case"], sort_keys=True) for row in results}
+            for case in selected:
+                if json.dumps(case.metadata(), sort_keys=True) not in completed:
+                    results.append(
+                        dict(
+                            case=case.metadata(),
+                            status="error",
+                            error=f"{type(error).__name__}: {error}",
+                        )
+                    )
+            write_report(args.out, metadata, results)
+    report = write_report(args.out, metadata, results)
+    print(table(results))
+    if any(row["status"] != "ok" for row in results):
+        raise SystemExit(1)
+    if baseline:
+        changes = compare(report, baseline)
+        if not changes or len(changes) != len(results):
+            raise ValueError("baseline must cover every measured case")
+        print(json.dumps(dict(comparison=changes), indent=2))
+        if any(
+            ratio < 1 - args.max_regression
+            for row in changes
+            for ratio in row["ratios"].values()
+        ):
+            raise SystemExit(2)
 
 
 if __name__ == "__main__":

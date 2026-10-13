@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from plan_fixture import Buffer, record
+from plan_fixture import Buffer, record, dense_graph_contract, dense_frozen_contract
 
 
 @pytest.mark.parametrize(
@@ -31,10 +31,14 @@ from plan_fixture import Buffer, record
 def test_decoder_plan_preserves_complete_operation_contract(
     monkeypatch, phase, options, fixture
 ):
+    if phase == "batch":
+        expected = json.loads((Path(__file__).parent / "fixtures" / ("plan-" + fixture + ".json")).read_text())
+        actual = dense_graph_contract(**options)
+        assert actual == dense_frozen_contract(expected)
+        return
     paths = {
         "decode": "akas.execution.bindings.block_fp8.decode",
         "prefill": "akas.execution.bindings.block_fp8.prefill",
-        "batch": "akas.execution.bindings.bf16.plan",
     }
     module = importlib.import_module(paths[phase])
     import tensor.runtime.buffer

@@ -2,8 +2,11 @@
 
 import json
 from pathlib import Path
-from akas.artifacts.kernels import load_kernels
-from akas.planning.forward import ForwardPlan
+from akas.artifacts.read import load_kernels
+from akas.graph import Graph
+from akas.execution.plan import bind_graph
+from akas.execution.workspace import release
+from akas.execution.workspace import Workspace
 
 
 class Forward:
@@ -12,54 +15,23 @@ class Forward:
     ):
         self.device, self.closed = device, False
         self.owned, self.kernels, self.graph = [], {}, None
+        self.workspace = None
         manifest = json.loads((Path(directory) / filename).read_text())
         if manifest.get("schema") != "akas.forward.v1":
             raise ValueError("unsupported forward bundle")
-        self.definition = ForwardPlan.from_metadata(manifest["forward"])
+        self.definition = Graph.from_metadata(manifest["forward"])
         self.buffers = dict(buffers)
         try:
-            if set(self.buffers) - set(self.definition.buffers):
-                raise ValueError("unknown supplied buffer")
-            from akas.memory.lifetimes import scratch_slots
-
-            for names in scratch_slots(self.definition):
-                # Caller-supplied scratch has explicit ownership and cannot be
-                # reused by another name.
-                names = [name for name in names if name not in self.buffers]
-                if not names:
-                    continue
-                spec = self.definition.buffers[names[0]]
-                value = device.empty(spec.shape, spec.dtype)
-                self.owned.append(value)
-                self.buffers.update((name, value) for name in names)
-            for name, spec in self.definition.buffers.items():
-                if name in self.buffers:
-                    continue
-                if spec.role not in ("scratch", "state"):
-                    raise ValueError(f"missing supplied buffer: {name}")
-                if spec.role == "state":
-                    import numpy as np
-
-                    host = np.zeros(
-                        spec.shape,
-                        dtype="float32" if spec.dtype == "bfloat16" else spec.dtype,
-                    )
-                    value = (
-                        device.from_numpy(host, dtype=spec.dtype)
-                        if spec.dtype == "bfloat16"
-                        else device.from_numpy(host)
-                    )
-                else:
-                    value = device.empty(spec.shape, spec.dtype)
-                self.owned.append(value)
-                self.buffers[name] = value
+            self.workspace = Workspace(self.definition, device, buffers, manifest.get("allocations"))
+            self.buffers = self.workspace.buffers
+            self.owned = self.workspace.owned
             self.kernels = load_kernels(
                 device,
                 directory,
                 manifest["kernels"],
                 requirements=self.definition.requirements(),
             )
-            self.plan = self.definition.bind(device, self.kernels, self.buffers)
+            self.plan = bind_graph(self.definition, device, self.kernels, self.buffers)
             if graphs:
                 self.graph = self.plan.capture(
                     resources=tuple(self.buffers.values())
@@ -81,12 +53,12 @@ class Forward:
         if self.closed:
             return
         self.closed = True
-        if self.graph is not None:
-            self.graph.close()
-        for kernel in self.kernels.values():
-            kernel.release()
-        for buffer in reversed(self.owned):
-            buffer.release()
+        release(
+            graphs=(self.graph,),
+            kernels=self.kernels.values(),
+        )
+        if self.workspace is not None:
+            self.workspace.close()
 
     def __enter__(self):
         return self

@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 
 from tensor.providers.cuda.device import Device
-from akas.artifacts.kernels import identity
+from akas.artifacts.schema import identity
 from akas.models.qwen35.weights import DenseCheckpoint
 from akas.ops.linear.schedule import schedule
 

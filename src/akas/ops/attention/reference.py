@@ -8,8 +8,8 @@ import math
 
 
 def cache_storage(p):
-    from akas.ops.kv_quantization import get
-    from akas.ops.kv_quantization.format import Storage
+    from akas.quantization.kv import get
+    from akas.quantization.kv.codec import Storage
     from akas.memory.state import BufferSpec
 
     shape = (p["r"] // p.get("chunk", 1), p["kh"], p["capacity"], p["d"])
@@ -60,7 +60,7 @@ def make_kernel(kind, p):
     scale_shape = storage.metadata[0].shape
     quantized = p["kv_dtype"] not in ("float16", "float32")
     if quantized:
-        from akas.ops.kv_quantization import get
+        from akas.quantization.kv import get
 
         backend = get(p["kv_dtype"]).backend(p["provider"])
         encode = backend.reference_writer(d, chunk=chunk)

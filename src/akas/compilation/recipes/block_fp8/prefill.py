@@ -1,15 +1,15 @@
 """Compile chunked prefill artifacts without a consumer inference framework."""
 
-from akas.ops.kv_quantization import get, is_quantized, validate as validate_kv_dtype
+from akas.quantization.kv import get, is_quantized, validate as validate_kv_dtype
 
 from pathlib import Path
-from akas.compilation.build import build
-from akas.compilation.plan import Bundle
-from akas.compilation.plan import Kernel
-from akas.compilation.plan import Source
+from akas.compilation.compile import build
+from akas.artifacts.schema import Bundle
+from akas.artifacts.schema import Kernel
+from akas.artifacts.schema import Source
 from akas.execution.bindings.block_fp8.geometry import validate
 from akas.execution.bindings.block_fp8.geometry import metadata
-from akas.artifacts.kernels import identity
+from akas.artifacts.schema import identity
 from akas.execution.bindings.block_fp8.requirements import requirements
 
 
@@ -49,7 +49,7 @@ def plan(
                         "tensor.compiler.frontend.source",
                         "tensor.compiler.cuda.lowering",
                         "akas.ops.attention.cuda.quantized",
-                        "akas.ops.normalization.kernels",
+                        "akas.ops.normalization.kernel",
                     ),
                 ),
             )
@@ -150,7 +150,7 @@ def plan(
         p = dict(r=rows, k=k)
         if top:
             p["top"] = top
-        add("quantize", p, "akas.ops.quantization.cuda.block_fp8", "quantize_kernel", p)
+        add("quantize", p, "akas.quantization.activations.fp8", "quantize_kernel", p)
     manifest = dict(
         schema="tensor.qwen35-prefill.v1",
         slots=slots,

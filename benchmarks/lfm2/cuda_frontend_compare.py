@@ -22,7 +22,7 @@ def audit(bundle):
     """Verify compiled provenance, profile application and inspectable IR."""
     from tensor.artifacts.format import read_artifact
     from tensor.compiler.search import ScheduleProfile
-    from akas.compilation.source import export_kernel as source
+    from akas.compilation.emit import export_kernel as source
 
     bundle = source_path(bundle)
     data = json.loads((bundle / "inference.json").read_text())

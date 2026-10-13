@@ -21,7 +21,7 @@ def measure():
     import numpy as np
     import tensor, torch
     from tensor.compiler.frontend.source import export_source
-    from akas.compilation.build import build_artifact
+    from akas.compilation.emit import build_artifact
     from benchmarks.qwen35.kernel_timing import time_calls
 
     os.chdir("/workspace")
@@ -49,7 +49,7 @@ def measure():
                 p,
                 dependencies=(
                     "tensor.compiler.frontend.source",
-                    "akas.ops.normalization.kernels",
+                    "akas.ops.normalization.kernel",
                 ),
             )
         )

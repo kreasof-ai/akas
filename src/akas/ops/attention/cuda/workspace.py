@@ -1,6 +1,6 @@
 """Decode authoritative FP8 KV once per attention call into BF16 scratch."""
 
-from akas.ops.kv_quantization import get
+from akas.quantization.kv import get
 
 
 def decode(p):

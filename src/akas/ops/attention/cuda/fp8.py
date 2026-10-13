@@ -1,6 +1,6 @@
 """Block-scaled E4M3 KV with indirect ownership and split causal attention."""
 
-from akas.ops.kv_quantization import get
+from akas.quantization.kv import get
 
 
 def make_kernel(kind, p):

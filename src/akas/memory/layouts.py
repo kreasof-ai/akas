@@ -2,7 +2,7 @@
 
 from akas.memory.state import BufferSpec
 from akas.memory.state import allocate_states
-from akas.ops.kv_quantization import get, is_quantized
+from akas.quantization.kv import get, is_quantized
 
 
 def hybrid_state_specs(

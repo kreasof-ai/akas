@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from akas.models.lfm2.model import LFM2Batched
 from akas.models.lfm2.weights import ReferenceCheckpoint
-from akas.compilation.forward import plan
+from akas.compilation.compile import plan
 from benchmarks.lfm2.diagnostic import fixture
 from examples.lfm2.checkpoint import export
 
@@ -19,7 +19,7 @@ def checkpoints(tmp_path_factory):
 
 
 def test_optimized_selection_and_scratch_lifetimes(checkpoints):
-    from akas.memory.lifetimes import scratch_slots
+    from akas.compilation.buffers import scratch_slots
 
     config = ReferenceCheckpoint(checkpoints[0], tokenizer=False).config
     forward = LFM2Batched.definition(config, batch=4, capacity=256, chunk=32)
@@ -50,7 +50,7 @@ def test_default_prefill_chunk_fits_a_small_context(
     checkpoints, tmp_path, monkeypatch, provider
 ):
     from akas.compilation import compile_checkpoint
-    from akas.compilation.recipes import reference
+    from akas.compilation import compile as session
 
     def compose_chunk(checkpoint, out, *, definition, **options):
         return definition(
@@ -61,7 +61,7 @@ def test_default_prefill_chunk_fits_a_small_context(
             chunk=options["prefill_chunk"],
         )
 
-    monkeypatch.setattr(reference, "produce", compose_chunk)
+    monkeypatch.setattr(session, "compile_model", compose_chunk)
     forward = compile_checkpoint(
         LFM2Batched,
         checkpoints[0],
@@ -181,8 +181,8 @@ def test_floating_projection_preserves_partitioned_output(
     if os.environ.get("AKAS_LFM_REFERENCE_" + provider.upper()) != "1":
         pytest.skip("enable provider qualification")
     import tensor
-    from akas.compilation.build import build_artifact
-    from akas.compilation.source import export_kernel
+    from akas.compilation.emit import build_artifact
+    from akas.compilation.emit import export_kernel
 
     p = dict(
         r=rows,

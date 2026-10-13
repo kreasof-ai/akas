@@ -14,7 +14,7 @@ import tensor, wgpu
 from tensor.providers.webgpu.device import Device
 from tensor.compiler.search import ScheduleSearch
 from akas import GGUF
-from akas.compilation.source import export_kernel as source
+from akas.compilation.emit import export_kernel as source
 from akas.ops.schedules.packed_parameters import DECODE_GEMV
 from akas.ops.schedules.packed_parameters import DECODE_GEMV_COMMON
 from benchmarks.lfm2.tensor_projection_search import TimestampAdapter, bind, check

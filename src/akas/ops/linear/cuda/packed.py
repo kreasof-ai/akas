@@ -3,11 +3,11 @@
 Factories are producer-only; consumers execute Tensor artifacts."""
 
 from akas.ops.linear.cuda.packed_baseline import make_kernel as baseline_kernel
-from akas.ops.quantization.ggml import weight_decoder
-from akas.ops.quantization.ggml import weight_storage
+from akas.quantization.weights.ggml import weight_decoder
+from akas.quantization.weights.ggml import weight_storage
 from akas.checkpoints.gguf import TYPES
-from akas.ops.quantization.cuda.ggml import packed_dot
-from akas.ops.quantization.cuda.ggml import pair_decoder
+from akas.quantization.weights.ggml import packed_dot
+from akas.quantization.weights.ggml import pair_decoder
 
 
 def projection_abi(kind, p, algorithm):

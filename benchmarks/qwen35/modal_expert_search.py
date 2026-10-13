@@ -18,7 +18,7 @@ def prepare_candidates():
     import hashlib, json, os
     from pathlib import Path
     from tensor.compiler.frontend.source import export_source
-    from akas.compilation.build import build_artifact
+    from akas.compilation.emit import build_artifact
 
     os.chdir("/workspace")
     volume.reload()
@@ -46,7 +46,7 @@ def prepare_candidates():
                 p,
                 dependencies=(
                     "tensor.compiler.frontend.source",
-                    "akas.ops.normalization.kernels",
+                    "akas.ops.normalization.kernel",
                 ),
             )
         )

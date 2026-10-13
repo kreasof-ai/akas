@@ -1,0 +1,1133 @@
+{
+  "config": {
+    "width": 1024,
+    "intermediate": 2048,
+    "vocab": 256,
+    "layers": [
+      "linear_attention",
+      "full_attention"
+    ],
+    "heads": 8,
+    "kv_heads": 2,
+    "head_dim": 256,
+    "key_heads": 16,
+    "value_heads": 32,
+    "key_dim": 128,
+    "value_dim": 128,
+    "epsilon": 1e-06,
+    "theta": 1000000.0,
+    "rotary_dim": 64,
+    "context_limit": 4096
+  },
+  "forward": {
+    "contract": "bf16",
+    "phase": "prefill",
+    "buffers": [
+      {
+        "name": "model.language_model.embed_tokens.weight",
+        "shape": [
+          256,
+          1024
+        ],
+        "dtype": "bfloat16",
+        "role": "weight"
+      },
+      {
+        "name": "model.language_model.norm.weight",
+        "shape": [
+          1024
+        ],
+        "dtype": "bfloat16",
+        "role": "weight"
+      },
+      {
+        "name": "model.language_model.layers.0.input_layernorm.weight",
+        "shape": [
+          1024
+        ],
+        "dtype": "bfloat16",
+        "role": "weight"
+      },
+      {
+        "name": "model.language_model.layers.0.post_attention_layernorm.weight",
+        "shape": [
+          1024
+        ],
+        "dtype": "bfloat16",
+        "role": "weight"
+      },
+      {
+        "name": "model.language_model.layers.0.mlp.down_proj.weight",
+        "shape": [
+          1024,
+          2048
+        ],
+        "dtype": "bfloat16",
+        "role": "weight"
+      },
+      {
+        "name": "model.language_model.layers.0.linear_attn.A_log",
+        "shape": [
+          32
+        ],
+        "dtype": "float32",
+        "role": "weight"
+      },
+      {
+        "name": "model.language_model.layers.0.linear_attn.dt_bias",
+        "shape": [
+          32
+        ],
+        "dtype": "bfloat16",
+        "role": "weight"
+      },
+      {
+        "name": "model.language_model.layers.0.linear_attn.conv1d.weight",
+        "shape": [
+          8192,
+          1,
+          4
+        ],
+        "dtype": "bfloat16",
+        "role": "weight"
+      },
+      {
+        "name": "model.language_model.layers.0.linear_attn.norm.weight",
+        "shape": [
+          128
+        ],
+        "dtype": "float32",
+        "role": "weight"
+      },
+      {
+        "name": "model.language_model.layers.0.linear_attn.out_proj.weight",
+        "shape": [
+          1024,
+          4096
+        ],
+        "dtype": "bfloat16",
+        "role": "weight"
+      },
+      {
+        "name": "model.language_model.layers.1.input_layernorm.weight",
+        "shape": [
+          1024
+        ],
+        "dtype": "bfloat16",
+        "role": "weight"
+      },
+      {
+        "name": "model.language_model.layers.1.post_attention_layernorm.weight",
+        "shape": [
+          1024
+        ],
+        "dtype": "bfloat16",
+        "role": "weight"
+      },
+      {
+        "name": "model.language_model.layers.1.mlp.down_proj.weight",
+        "shape": [
+          1024,
+          2048
+        ],
+        "dtype": "bfloat16",
+        "role": "weight"
+      },
+      {
+        "name": "model.language_model.layers.1.self_attn.o_proj.weight",
+        "shape": [
+          1024,
+          2048
+        ],
+        "dtype": "bfloat16",
+        "role": "weight"
+      },
+      {
+        "name": "model.language_model.layers.1.self_attn.q_norm.weight",
+        "shape": [
+          256
+        ],
+        "dtype": "bfloat16",
+        "role": "weight"
+      },
+      {
+        "name": "model.language_model.layers.1.self_attn.k_norm.weight",
+        "shape": [
+          256
+        ],
+        "dtype": "bfloat16",
+        "role": "weight"
+      },
+      {
+        "name": "model.language_model.layers.0.linear_attn.input.weight",
+        "shape": [
+          12352,
+          1024
+        ],
+        "dtype": "bfloat16",
+        "role": "weight"
+      },
+      {
+        "name": "model.language_model.layers.0.mlp.input.weight",
+        "shape": [
+          4096,
+          1024
+        ],
+        "dtype": "bfloat16",
+        "role": "weight"
+      },
+      {
+        "name": "model.language_model.layers.1.self_attn.input.weight",
+        "shape": [
+          5120,
+          1024
+        ],
+        "dtype": "bfloat16",
+        "role": "weight"
+      },
+      {
+        "name": "model.language_model.layers.1.mlp.input.weight",
+        "shape": [
+          4096,
+          1024
+        ],
+        "dtype": "bfloat16",
+        "role": "weight"
+      },
+      {
+        "name": "state.0.0",
+        "shape": [
+          4,
+          32,
+          128,
+          128
+        ],
+        "dtype": "float32",
+        "role": "state"
+      },
+      {
+        "name": "state.0.1",
+        "shape": [
+          4,
+          8192,
+          3
+        ],
+        "dtype": "float32",
+        "role": "state"
+      },
+      {
+        "name": "state.1.0",
+        "shape": [
+          4,
+          2,
+          64,
+          256
+        ],
+        "dtype": "bfloat16",
+        "role": "state"
+      },
+      {
+        "name": "state.1.1",
+        "shape": [
+          4,
+          2,
+          64,
+          256
+        ],
+        "dtype": "bfloat16",
+        "role": "state"
+      },
+      {
+        "name": "tokens",
+        "shape": [
+          8
+        ],
+        "dtype": "int32",
+        "role": "input"
+      },
+      {
+        "name": "mapping",
+        "shape": [
+          2
+        ],
+        "dtype": "int32",
+        "role": "input"
+      },
+      {
+        "name": "position",
+        "shape": [
+          2
+        ],
+        "dtype": "int32",
+        "role": "input"
+      },
+      {
+        "name": "lengths",
+        "shape": [
+          2
+        ],
+        "dtype": "int32",
+        "role": "input"
+      },
+      {
+        "name": "flat_position",
+        "shape": [
+          8
+        ],
+        "dtype": "int32",
+        "role": "scratch"
+      },
+      {
+        "name": "active",
+        "shape": [
+          8
+        ],
+        "dtype": "int32",
+        "role": "scratch"
+      },
+      {
+        "name": "predicted",
+        "shape": [
+          2
+        ],
+        "dtype": "int32",
+        "role": "output"
+      },
+      {
+        "name": "head_position",
+        "shape": [
+          2
+        ],
+        "dtype": "int32",
+        "role": "input"
+      },
+      {
+        "name": "head_active",
+        "shape": [
+          2
+        ],
+        "dtype": "int32",
+        "role": "input"
+      },
+      {
+        "name": "residual",
+        "shape": [
+          8,
+          1024
+        ],
+        "dtype": "bfloat16",
+        "role": "scratch"
+      },
+      {
+        "name": "normal",
+        "shape": [
+          8,
+          1024
+        ],
+        "dtype": "bfloat16",
+        "role": "output"
+      },
+      {
+        "name": "mixed",
+        "shape": [
+          8,
+          1024
+        ],
+        "dtype": "float32",
+        "role": "scratch"
+      },
+      {
+        "name": "ffn",
+        "shape": [
+          8,
+          1024
+        ],
+        "dtype": "float32",
+        "role": "scratch"
+      },
+      {
+        "name": "gdn_input",
+        "shape": [
+          8,
+          12352
+        ],
+        "dtype": "float32",
+        "role": "scratch"
+      },
+      {
+        "name": "conv",
+        "shape": [
+          8,
+          8192
+        ],
+        "dtype": "float32",
+        "role": "scratch"
+      },
+      {
+        "name": "q",
+        "shape": [
+          8,
+          32,
+          128
+        ],
+        "dtype": "float32",
+        "role": "scratch"
+      },
+      {
+        "name": "k",
+        "shape": [
+          8,
+          32,
+          128
+        ],
+        "dtype": "float32",
+        "role": "scratch"
+      },
+      {
+        "name": "v",
+        "shape": [
+          8,
+          32,
+          128
+        ],
+        "dtype": "float32",
+        "role": "scratch"
+      },
+      {
+        "name": "gdn_out",
+        "shape": [
+          8,
+          32,
+          128
+        ],
+        "dtype": "float32",
+        "role": "scratch"
+      },
+      {
+        "name": "g",
+        "shape": [
+          8,
+          32
+        ],
+        "dtype": "float32",
+        "role": "scratch"
+      },
+      {
+        "name": "beta",
+        "shape": [
+          8,
+          32
+        ],
+        "dtype": "float32",
+        "role": "scratch"
+      },
+      {
+        "name": "gdn_normal",
+        "shape": [
+          8,
+          4096
+        ],
+        "dtype": "bfloat16",
+        "role": "scratch"
+      },
+      {
+        "name": "att_input",
+        "shape": [
+          8,
+          5120
+        ],
+        "dtype": "float32",
+        "role": "scratch"
+      },
+      {
+        "name": "att_q",
+        "shape": [
+          8,
+          8,
+          256
+        ],
+        "dtype": "bfloat16",
+        "role": "scratch"
+      },
+      {
+        "name": "att_out",
+        "shape": [
+          8,
+          2048
+        ],
+        "dtype": "bfloat16",
+        "role": "scratch"
+      },
+      {
+        "name": "mlp_input",
+        "shape": [
+          8,
+          4096
+        ],
+        "dtype": "float32",
+        "role": "scratch"
+      },
+      {
+        "name": "activation",
+        "shape": [
+          8,
+          2048
+        ],
+        "dtype": "bfloat16",
+        "role": "scratch"
+      },
+      {
+        "name": "last",
+        "shape": [
+          2,
+          1024
+        ],
+        "dtype": "bfloat16",
+        "role": "scratch"
+      },
+      {
+        "name": "logits",
+        "shape": [
+          2,
+          256
+        ],
+        "dtype": "float32",
+        "role": "scratch"
+      },
+      {
+        "name": "projection_out",
+        "shape": [
+          8,
+          8,
+          1024
+        ],
+        "dtype": "float32",
+        "role": "scratch"
+      },
+      {
+        "name": "projection_down",
+        "shape": [
+          8,
+          8,
+          1024
+        ],
+        "dtype": "float32",
+        "role": "scratch"
+      },
+      {
+        "name": "gdn_input.view.55",
+        "shape": [
+          8,
+          1,
+          12352
+        ],
+        "dtype": "float32",
+        "role": "scratch",
+        "alias_of": "gdn_input"
+      },
+      {
+        "name": "mlp_input.view.56",
+        "shape": [
+          8,
+          1,
+          4096
+        ],
+        "dtype": "float32",
+        "role": "scratch",
+        "alias_of": "mlp_input"
+      },
+      {
+        "name": "att_input.view.57",
+        "shape": [
+          8,
+          1,
+          5120
+        ],
+        "dtype": "float32",
+        "role": "scratch",
+        "alias_of": "att_input"
+      },
+      {
+        "name": "mlp_input.view.58",
+        "shape": [
+          8,
+          1,
+          4096
+        ],
+        "dtype": "float32",
+        "role": "scratch",
+        "alias_of": "mlp_input"
+      },
+      {
+        "name": "logits.view.59",
+        "shape": [
+          2,
+          1,
+          256
+        ],
+        "dtype": "float32",
+        "role": "scratch",
+        "alias_of": "logits"
+      }
+    ],
+    "calls": [
+      {
+        "kind": "controls",
+        "parameters": {
+          "slots": 2,
+          "chunk": 4,
+          "pool": 4
+        },
+        "arguments": [
+          "position",
+          "lengths",
+          "flat_position",
+          "active"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "embedding",
+        "parameters": {
+          "r": 8,
+          "c": 1024,
+          "vocab": 256
+        },
+        "arguments": [
+          "tokens",
+          "model.language_model.embed_tokens.weight",
+          "residual"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "rms",
+        "parameters": {
+          "r": 8,
+          "c": 1024,
+          "eps": 1e-06
+        },
+        "arguments": [],
+        "bindings": {
+          "residual": "residual",
+          "w": "model.language_model.layers.0.input_layernorm.weight",
+          "out": "normal"
+        },
+        "label": null
+      },
+      {
+        "kind": "split_linear",
+        "parameters": {
+          "r": 8,
+          "k": 1024,
+          "o": 12352,
+          "m": 16,
+          "n": 64,
+          "bk": 128,
+          "parts": 1
+        },
+        "arguments": [
+          "normal",
+          "model.language_model.layers.0.linear_attn.input.weight",
+          "gdn_input.view.55"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "gdn_conv",
+        "parameters": {
+          "slots": 2,
+          "chunk": 4,
+          "pool": 4,
+          "channels": 8192,
+          "projection": 12352
+        },
+        "arguments": [
+          "gdn_input",
+          "model.language_model.layers.0.linear_attn.conv1d.weight",
+          "mapping",
+          "lengths",
+          "state.0.1",
+          "conv"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "gdn_prepare",
+        "parameters": {
+          "slots": 2,
+          "chunk": 4,
+          "pool": 4,
+          "heads": 32,
+          "key_heads": 16,
+          "d": 128,
+          "channels": 8192,
+          "projection": 12352
+        },
+        "arguments": [
+          "conv",
+          "gdn_input",
+          "model.language_model.layers.0.linear_attn.dt_bias",
+          "model.language_model.layers.0.linear_attn.A_log",
+          "q",
+          "k",
+          "v",
+          "g",
+          "beta"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "gdn_scan",
+        "parameters": {
+          "slots": 2,
+          "chunk": 4,
+          "pool": 4,
+          "heads": 32,
+          "d": 128,
+          "tile": 32
+        },
+        "arguments": [
+          "q",
+          "k",
+          "v",
+          "g",
+          "beta",
+          "mapping",
+          "lengths",
+          "state.0.0",
+          "gdn_out"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "gdn_norm",
+        "parameters": {
+          "slots": 2,
+          "chunk": 4,
+          "pool": 4,
+          "heads": 32,
+          "d": 128,
+          "channels": 8192,
+          "projection": 12352,
+          "eps": 1e-06
+        },
+        "arguments": [
+          "gdn_out",
+          "gdn_input",
+          "model.language_model.layers.0.linear_attn.norm.weight",
+          "gdn_normal"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "split_linear",
+        "parameters": {
+          "r": 8,
+          "k": 4096,
+          "o": 1024,
+          "m": 16,
+          "n": 64,
+          "bk": 128,
+          "parts": 8
+        },
+        "arguments": [
+          "gdn_normal",
+          "model.language_model.layers.0.linear_attn.out_proj.weight",
+          "projection_out"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "split_merge",
+        "parameters": {
+          "r": 8,
+          "k": 4096,
+          "o": 1024,
+          "m": 16,
+          "n": 64,
+          "bk": 128,
+          "parts": 8
+        },
+        "arguments": [
+          "projection_out",
+          "mixed"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "add_rms",
+        "parameters": {
+          "r": 8,
+          "c": 1024,
+          "eps": 1e-06
+        },
+        "arguments": [],
+        "bindings": {
+          "x": "mixed",
+          "residual": "residual",
+          "w": "model.language_model.layers.0.post_attention_layernorm.weight",
+          "out": "normal"
+        },
+        "label": null
+      },
+      {
+        "kind": "split_linear",
+        "parameters": {
+          "r": 8,
+          "k": 1024,
+          "o": 4096,
+          "m": 16,
+          "n": 64,
+          "bk": 128,
+          "parts": 1
+        },
+        "arguments": [
+          "normal",
+          "model.language_model.layers.0.mlp.input.weight",
+          "mlp_input.view.56"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "swiglu",
+        "parameters": {
+          "slots": 2,
+          "chunk": 4,
+          "pool": 4,
+          "c": 2048
+        },
+        "arguments": [
+          "mlp_input",
+          "activation"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "split_linear",
+        "parameters": {
+          "r": 8,
+          "k": 2048,
+          "o": 1024,
+          "m": 16,
+          "n": 64,
+          "bk": 128,
+          "parts": 8
+        },
+        "arguments": [
+          "activation",
+          "model.language_model.layers.0.mlp.down_proj.weight",
+          "projection_down"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "split_merge",
+        "parameters": {
+          "r": 8,
+          "k": 2048,
+          "o": 1024,
+          "m": 16,
+          "n": 64,
+          "bk": 128,
+          "parts": 8
+        },
+        "arguments": [
+          "projection_down",
+          "ffn"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "add_rms",
+        "parameters": {
+          "r": 8,
+          "c": 1024,
+          "eps": 1e-06
+        },
+        "arguments": [],
+        "bindings": {
+          "x": "ffn",
+          "residual": "residual",
+          "w": "model.language_model.layers.1.input_layernorm.weight",
+          "out": "normal"
+        },
+        "label": null
+      },
+      {
+        "kind": "split_linear",
+        "parameters": {
+          "r": 8,
+          "k": 1024,
+          "o": 5120,
+          "m": 16,
+          "n": 64,
+          "bk": 128,
+          "parts": 1
+        },
+        "arguments": [
+          "normal",
+          "model.language_model.layers.1.self_attn.input.weight",
+          "att_input.view.57"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "attention_qkv",
+        "parameters": {
+          "slots": 2,
+          "chunk": 4,
+          "pool": 4,
+          "heads": 8,
+          "kv_heads": 2,
+          "d": 256,
+          "capacity": 64,
+          "eps": 1e-06,
+          "theta": 1000000.0
+        },
+        "arguments": [
+          "att_input",
+          "model.language_model.layers.1.self_attn.q_norm.weight",
+          "model.language_model.layers.1.self_attn.k_norm.weight",
+          "mapping",
+          "flat_position",
+          "active",
+          "state.1.0",
+          "state.1.1",
+          "att_q"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "attention",
+        "parameters": {
+          "slots": 2,
+          "chunk": 4,
+          "pool": 4,
+          "heads": 8,
+          "kv_heads": 2,
+          "d": 256,
+          "capacity": 64,
+          "eps": 1e-06
+        },
+        "arguments": [
+          "att_q",
+          "state.1.0",
+          "state.1.1",
+          "att_input",
+          "mapping",
+          "position",
+          "lengths",
+          "att_out"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "split_linear",
+        "parameters": {
+          "r": 8,
+          "k": 2048,
+          "o": 1024,
+          "m": 16,
+          "n": 64,
+          "bk": 128,
+          "parts": 8
+        },
+        "arguments": [
+          "att_out",
+          "model.language_model.layers.1.self_attn.o_proj.weight",
+          "projection_down"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "split_merge",
+        "parameters": {
+          "r": 8,
+          "k": 2048,
+          "o": 1024,
+          "m": 16,
+          "n": 64,
+          "bk": 128,
+          "parts": 8
+        },
+        "arguments": [
+          "projection_down",
+          "mixed"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "add_rms",
+        "parameters": {
+          "r": 8,
+          "c": 1024,
+          "eps": 1e-06
+        },
+        "arguments": [],
+        "bindings": {
+          "x": "mixed",
+          "residual": "residual",
+          "w": "model.language_model.layers.1.post_attention_layernorm.weight",
+          "out": "normal"
+        },
+        "label": null
+      },
+      {
+        "kind": "split_linear",
+        "parameters": {
+          "r": 8,
+          "k": 1024,
+          "o": 4096,
+          "m": 16,
+          "n": 64,
+          "bk": 128,
+          "parts": 1
+        },
+        "arguments": [
+          "normal",
+          "model.language_model.layers.1.mlp.input.weight",
+          "mlp_input.view.58"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "swiglu",
+        "parameters": {
+          "slots": 2,
+          "chunk": 4,
+          "pool": 4,
+          "c": 2048
+        },
+        "arguments": [
+          "mlp_input",
+          "activation"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "split_linear",
+        "parameters": {
+          "r": 8,
+          "k": 2048,
+          "o": 1024,
+          "m": 16,
+          "n": 64,
+          "bk": 128,
+          "parts": 8
+        },
+        "arguments": [
+          "activation",
+          "model.language_model.layers.1.mlp.down_proj.weight",
+          "projection_down"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "split_merge",
+        "parameters": {
+          "r": 8,
+          "k": 2048,
+          "o": 1024,
+          "m": 16,
+          "n": 64,
+          "bk": 128,
+          "parts": 8
+        },
+        "arguments": [
+          "projection_down",
+          "ffn"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "add_rms",
+        "parameters": {
+          "r": 8,
+          "c": 1024,
+          "eps": 1e-06
+        },
+        "arguments": [],
+        "bindings": {
+          "x": "ffn",
+          "residual": "residual",
+          "w": "model.language_model.norm.weight",
+          "out": "normal"
+        },
+        "label": null
+      },
+      {
+        "kind": "last_rows",
+        "parameters": {
+          "slots": 2,
+          "chunk": 4,
+          "pool": 4,
+          "c": 1024
+        },
+        "arguments": [
+          "normal",
+          "lengths",
+          "last"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "split_linear",
+        "parameters": {
+          "r": 2,
+          "k": 1024,
+          "o": 256,
+          "m": 16,
+          "n": 64,
+          "bk": 128,
+          "parts": 1
+        },
+        "arguments": [
+          "last",
+          "model.language_model.embed_tokens.weight",
+          "logits.view.59"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "argmax",
+        "parameters": {
+          "r": 2,
+          "vocab": 256
+        },
+        "arguments": [
+          "logits",
+          "predicted",
+          "head_position",
+          "head_active"
+        ],
+        "bindings": {},
+        "label": null
+      }
+    ]
+  }
+}

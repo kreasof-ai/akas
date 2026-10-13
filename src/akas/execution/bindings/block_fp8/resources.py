@@ -7,7 +7,7 @@ qualification, not just a successful decode microbenchmark."""
 
 from __future__ import annotations
 
-from akas.ops.kv_quantization import validate as validate_kv_dtype
+from akas.quantization.kv import validate as validate_kv_dtype
 import ctypes as ct
 from dataclasses import asdict
 import json
@@ -15,11 +15,12 @@ from pathlib import Path
 import numpy as np
 from akas.tensor.executor import capture
 from akas.tensor.executor import submit
-from akas.artifacts.kernels import load_kernels
+from akas.artifacts.read import load_kernels
 import akas.memory.layouts as common_state
 from akas.execution.bindings.block_fp8.requirements import requirements
-from akas.artifacts.fingerprints import block_fp8_hashes as implementation_hashes
+from akas.artifacts.fingerprint import block_fp8_hashes as implementation_hashes
 from akas.execution.executor import Executor
+from akas.execution.workspace import release
 from akas.execution.bindings.block_fp8.workspace import allocate_workspace
 from akas.execution.bindings.block_fp8.decode import build_decode_plan
 
@@ -297,17 +298,16 @@ class BlockFP8Binding(Executor):
     def _close_resources(self):
         for prefill in tuple(self.prefills):
             prefill.close()
-        if self.graph is not None:
-            self.graph.close()
-            self.graph = None
-        for buffer in (
-            *self.weights.values(),
-            *self.buffers.values(),
-            *(b for state in self.states.values() for b in state),
-        ):
-            buffer.release()
-        for kernel in self.kernels.values():
-            kernel.release()
+        release(
+            graphs=(self.graph,),
+            kernels=self.kernels.values(),
+            buffers=(
+                *self.weights.values(),
+                *self.buffers.values(),
+                *(b for state in self.states.values() for b in state),
+            ),
+        )
+        self.graph = None
         self.weights, self.buffers, self.states, self.kernels = {}, {}, {}, {}
 
     def _admit_slot(self, slot):

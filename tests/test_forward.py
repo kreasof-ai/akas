@@ -8,8 +8,9 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from akas.planning import ForwardPlan
-from akas.compilation.forward import plan as compile_plan
+from akas.graph import Graph
+from akas.execution.plan import bind_graph
+from akas.compilation.compile import plan as compile_plan
 from akas.compilation.tuning import Measurement, Workload, tune
 from akas.ops.registry import Implementation, select
 from examples.models.residual.config import Config
@@ -23,7 +24,7 @@ def test_new_model_uses_both_providers_without_compiler_branches():
         assert len(bundle.kernels) == 2
         assert bundle.manifest["forward"] == forward.metadata()
         assert bundle.kernels[0].source.module == f"akas.ops.linear.{provider}.packed"
-        restored = ForwardPlan.from_metadata(json.loads(json.dumps(forward.metadata())))
+        restored = Graph.from_metadata(json.loads(json.dumps(forward.metadata())))
         assert restored.requirements() == forward.requirements()
 
 
@@ -36,24 +37,24 @@ def test_calls_derive_unique_kernel_requirements():
 
 
 def test_named_bindings_follow_compiled_argument_order(monkeypatch):
-    forward = ForwardPlan(contract="test")
+    forward = Graph(contract="test")
     a = forward.buffer("a", (1,), "float32", role="input")
     b = forward.buffer("b", (1,), "float32", role="output")
     call = forward("op", {}, x=a, out=b)
     kernel = SimpleNamespace(manifest={"arguments": [{"name": "out"}, {"name": "x"}]})
     values = {name: SimpleNamespace(shape=(1,), dtype="float32") for name in ("a", "b")}
     monkeypatch.setattr("akas.execution.plan.bind", lambda device, kernel, args: args)
-    result = forward.bind(None, {call.key: kernel}, values)
+    result = bind_graph(forward, None, {call.key: kernel}, values)
     assert result[0][1] == (values["b"], values["a"])
     values["b"].shape = (2,)
     with pytest.raises(ValueError, match="incompatible forward buffer"):
-        forward.bind(None, {call.key: kernel}, values)
+        bind_graph(forward, None, {call.key: kernel}, values)
 
 
 def test_recording_and_binding_share_kernel_emitter():
     from akas.execution.plan import KernelPlan
 
-    forward = ForwardPlan(contract="test")
+    forward = Graph(contract="test")
     x = forward.buffer("x", (1,), "float32")
     KernelPlan(forward, None)("op", dict(r=1), x=x, out=x)
     assert forward.calls[0].bindings == {"x": "x", "out": "x"}
@@ -136,7 +137,7 @@ def test_beam_search_rejects_incorrect_and_batch_regressing_candidates():
     assert result.score == 0.6
     assert result.trials == 8
     profile = result.profile("add", {"c": 256}, provider="cuda", target="sm_89")
-    forward = ForwardPlan(contract="packed")
+    forward = Graph(contract="packed")
     x = forward.buffer("x", (256,), "float32")
     forward("add", {"c": 256, "r": 1}, x, x, x)
     bundle = compile_plan(forward, schedules=profile, catalog=catalog)
@@ -169,7 +170,7 @@ def test_invalid_reference_cannot_qualify_tuning(seconds, correct):
 def test_three_file_model_matches_numpy_on_cuda(tmp_path, rows, graphs):
     import struct
     import tensor
-    from akas.compilation.forward import produce
+    from akas.compilation.compile import produce
     from akas.execution.forward import Forward
     from examples.models.residual.weights import load
 
@@ -230,7 +231,7 @@ def test_beam_winner_builds_and_runs_on_representative_cuda_batches(tmp_path):
     import time
     import tensor
     from tensor.compiler.search import ScheduleProfile
-    from akas.compilation.build import build
+    from akas.compilation.compile import build
     from akas.execution.forward import Forward
 
     config = Config()
@@ -265,7 +266,7 @@ def test_beam_winner_builds_and_runs_on_representative_cuda_batches(tmp_path):
             )
             bundle = compile_plan(compose(config, rows=rows), schedules=profile)
             path = tmp_path / workload.name
-            build(bundle, path)
+            build(bundle, path, search=False)
             values = rng.normal(0, 0.05, (rows, config.width)).astype("float32")
             x = device.from_numpy(values.reshape(-1))
             out = device.empty(x.shape, "float32")
@@ -380,12 +381,13 @@ class Guard(importlib.abc.MetaPathFinder):
         if name.startswith(('akas.compilation', 'tensor.compiler')) or name.split('.')[0] in {'torch', 'tilelang', 'tvm', 'tvm_ffi', 'triton'}:
             raise ImportError(name)
 sys.meta_path.insert(0, Guard())
-from akas.planning import ForwardPlan
+from akas.graph import Graph
+from akas.execution.plan import bind_graph
 from akas.execution.forward import Forward
 from examples.models.residual.config import Config
 from examples.models.residual.model import compose
 plan = compose(Config())
-assert ForwardPlan.from_metadata(plan.metadata()).requirements() == plan.requirements()
+assert Graph.from_metadata(plan.metadata()).requirements() == plan.requirements()
 """,
         ],
         check=True,
@@ -400,13 +402,13 @@ def test_new_operation_registration_is_discovered_without_central_table(
 
     package = tmp_path / "future_op"
     package.mkdir()
-    (package / "implementations.py").write_text(
+    (package / "operation.py").write_text(
         "# registration module supplied below\n"
     )
     item = Implementation("future", "future_op.cuda", "new-contract")
     monkeypatch.setitem(
         sys.modules,
-        "akas.ops.future_op.implementations",
+        "akas.ops.future_op.operation",
         SimpleNamespace(IMPLEMENTATIONS=(item,)),
     )
     monkeypatch.setattr(registry, "__file__", str(tmp_path / "registry.py"))
@@ -445,7 +447,7 @@ def test_provider_build_does_not_leak_cuda_options(
     tmp_path, monkeypatch, provider, compiler, nvrtc
 ):
     import tensor
-    from akas.compilation.build import build_artifact
+    from akas.compilation.emit import build_artifact
 
     monkeypatch.setenv("TENSOR_NVRTC_HOME", "/cuda-only")
     monkeypatch.setattr(tensor, "build", lambda *args, **kwargs: kwargs)
@@ -468,11 +470,11 @@ def test_forward_provider_has_correct_default_target():
 
 @pytest.mark.parametrize("rows", [1, 4])
 def test_new_model_compiles_to_webgpu_without_device(tmp_path, monkeypatch, rows):
-    from akas.compilation.forward import produce
+    from akas.compilation.compile import produce
     from tensor.artifacts.format import read_artifact
 
     monkeypatch.setenv("TENSOR_NVRTC_HOME", "/cuda-option-must-not-reach-webgpu")
-    manifest = produce(compose(Config(), rows=rows), tmp_path, provider="webgpu")
+    manifest = produce(compose(Config(), rows=rows), tmp_path, provider="webgpu", search=False)
     for row in manifest["kernels"].values():
         artifact, _ = read_artifact(tmp_path / row["path"])
         assert artifact["provider"] == "webgpu"
@@ -538,3 +540,80 @@ def test_beam_search_accepts_improvement_when_an_unchanged_workload_ties():
     assert result.schedule == {"threads": 32}
     assert result.score == 1
     assert result.measurements == (10, 5)
+
+
+def test_operation_owner_can_extend_row_pruning_and_fusion(monkeypatch):
+    from akas.compilation.rewrites import optimize
+    from akas.ops.registry import planning_rules
+
+    original = planning_rules()
+    forward = Graph(contract="reference")
+    x = forward.buffer("x", (8,), "float32")
+    y = forward.buffer("y", (8,), "float32")
+    final = forward.buffer("final", (4,), "float32", role="output")
+    counts = forward.buffer("counts", (2,), "int32", role="input")
+    forward("new_activation", dict(r=4, c=2), x, y)
+    forward("chunk_last", dict(r=2, c=2, chunk=2), y, final, counts)
+    assert len(optimize(forward).calls) == 2  # Unknown operation is retained safely.
+    observed = []
+
+    def rewrite(plan):
+        observed.append(plan.calls[-1].kind)
+        return plan
+
+    monkeypatch.setattr(
+        "akas.ops.registry.planning_rules",
+        lambda: (
+            *original,
+            SimpleNamespace(ROW_INDEPENDENT=("new_activation",), REWRITES=(rewrite,)),
+        ),
+    )
+    optimized = optimize(forward)
+    assert optimized.calls[-1].kind == "new_activation"
+    assert optimized.calls[-1].parameters["r"] == 2
+    assert optimized.buffers["y"].shape == (4,)
+    assert observed == ["new_activation"]
+
+
+@pytest.mark.parametrize("provider", ["cuda", "webgpu"])
+def test_new_model_searches_by_default_and_reuses_qualified_cache(tmp_path, monkeypatch, provider):
+    if os.environ.get("AKAS_FORWARD_"+provider.upper()) != "1":
+        pytest.skip("enable provider for default search qualification")
+    from akas.compilation.compile import produce
+    from akas.compilation.tuning import SearchSettings
+
+    graph = compose(Config(), rows=4)
+    settings = SearchSettings(budget=2, samples=2, repeats=2)
+    manifest = produce(graph, tmp_path, provider=provider, search_settings=settings)
+    report = manifest["tuning"]
+    assert not report["cache_hit"]
+    assert len(report["operations"]) == len(graph.requirements())
+    assert all(row["candidates"][0]["status"] == "passed" for row in report["operations"])
+    assert all(row["selected"]["measurements"][0] > 0 for row in report["operations"])
+    def unexpected_measurement(*args, **kwargs):
+        pytest.fail("compatible cached qualification must not rerun timing")
+    monkeypatch.setattr("tensor.compiler.tuning.measure", unexpected_measurement)
+    cached = produce(graph, tmp_path, provider=provider, search_settings=settings)
+    assert cached["tuning"]["cache_hit"]
+    assert cached["kernels"] == manifest["kernels"]
+
+
+def test_view_lifetime_prevents_scratch_reuse_until_last_alias_read():
+    from akas.compilation.buffers import scratch_slots
+
+    graph = Graph(contract="test")
+    base = graph.buffer("base", (6,), "float32")
+    view = graph.view("view", base, (2,3))
+    other = graph.buffer("other", (6,), "float32")
+    graph("write", {}, base)
+    graph("write", {}, other)
+    graph("read", {}, view)
+    assert scratch_slots(graph) == [["base"],["other"]]
+    restored = Graph.from_metadata(json.loads(json.dumps(graph.metadata())))
+    assert restored.buffers["view"].alias_of == "base"
+    assert restored.metadata() == graph.metadata()
+    with pytest.raises(ValueError,match="same dtype and size"):
+        graph.view("bad",base,(7,))
+    foreign = Graph(contract="test").buffer("base",(6,),"float32")
+    with pytest.raises(ValueError,match="another graph"):
+        graph.view("foreign",foreign,(6,))

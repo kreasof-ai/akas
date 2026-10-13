@@ -16,7 +16,7 @@ from tensor.compiler.search import ScheduleSearch
 from tensor.compiler.webgpu.schedules.search_space import SPACES, coupled_moves
 from akas import GGUF
 from benchmarks.lfm2.text_helpers import emit, round_half
-from akas.compilation.source import export_kernel as source
+from akas.compilation.emit import export_kernel as source
 from wgpu.backends.wgpu_native.extras import write_timestamp
 
 

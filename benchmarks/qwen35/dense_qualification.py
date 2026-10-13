@@ -11,13 +11,13 @@ import numpy as np
 
 def snapshot(engine, request):
     """Hash the full recurrent state and only the initialized KV prefix."""
-    if hasattr(engine, "deferred"):
-        engine.deferred.materialize([request])
+    engine._materialize([request])
     engine.device.synchronize()
     position = int(engine.positions[request])
     records = {}
     for layer, kind in enumerate(engine.config.layers):
-        for index, buffer in enumerate(engine.states[layer]):
+        for index in range(2):
+            buffer = engine.batches.states[f"state.{layer}.{index}"]
             parts = []
             if kind == "linear_attention":
                 size = buffer.nbytes // engine.capacity

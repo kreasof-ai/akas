@@ -2,12 +2,12 @@
 
 from types import SimpleNamespace
 
-from akas.artifacts.kernels import identity
+from akas.artifacts.schema import identity
 from akas.execution.plan import KernelPlan
 from akas.ops.linear.compose import linear
 from akas.ops.linear.compose import split_linear
-from akas.ops.normalization.compose import rms_norm
-from akas.ops.quantization.cache import ActivationCache
+from akas.ops.normalization.operation import rms_norm
+from akas.quantization.activations.cache import ActivationCache
 
 
 class Plan:
@@ -105,16 +105,7 @@ def test_quantized_scratch_reuses_reads_and_invalidates_all_overwritten_aliases(
     assert plan.calls[-1][1] == (source, *outputs["first"])
 
 
-def test_single_split_borrows_output_and_multi_split_emits_merge(monkeypatch):
-    import tensor.runtime.buffer
-
-    monkeypatch.setattr(
-        tensor.runtime.buffer,
-        "Buffer",
-        lambda device, pointer, shape, dtype, owner: SimpleNamespace(
-            pointer=pointer, shape=shape, dtype=dtype, owner=owner
-        ),
-    )
+def test_single_split_borrows_output_and_multi_split_emits_merge():
     calls = []
 
     def emit(kind, parameters, *args):
@@ -123,6 +114,8 @@ def test_single_split_borrows_output_and_multi_split_emits_merge(monkeypatch):
     source = object()
     weight = SimpleNamespace(shape=(64, 128))
     output = SimpleNamespace(pointer=123, dtype="float32")
+    output.view = lambda shape: SimpleNamespace(pointer=output.pointer, shape=shape,
+                                               dtype=output.dtype, owner=output)
     scratch = object()
     views = []
     split_linear(

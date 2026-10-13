@@ -24,11 +24,7 @@ def packed_linear(emit, inputs, weight, out, *, rows, shape, quantization, tile)
 def split_linear(emit, device, x, weight, out, *, rows, parameters, scratch, views):
     """Emit split/merge calls, retaining a borrowed view for singleton splits."""
     if parameters["parts"] == 1:
-        from tensor.runtime.buffer import Buffer
-
-        scratch = Buffer(
-            device, out.pointer, (rows, 1, weight.shape[0]), out.dtype, owner=out
-        )
+        scratch = out.view((rows, 1, weight.shape[0]))
         views.append(scratch)
     emit("split_linear", parameters, x, weight, scratch)
     if parameters["parts"] > 1:

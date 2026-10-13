@@ -11,10 +11,10 @@ from pathlib import Path
 import numpy as np
 
 from tensor.compiler.frontend.source import export_source
-from akas.artifacts.kernels import identity
+from akas.artifacts.schema import identity
 from akas.models.qwen35.weights import DenseCheckpoint
-from akas.compilation.build import needs_build
-from akas.compilation.build import build_artifact
+from akas.compilation.emit import needs_build
+from akas.compilation.emit import build_artifact
 
 
 def flush_kernel(p):
@@ -125,7 +125,7 @@ def prepare(directory, *, extended=False):
             dependencies=(
                 "tensor.compiler.frontend.source",
                 "tensor.compiler.cuda.lowering",
-                "akas.ops.normalization.kernels",
+                "akas.ops.normalization.kernel",
             ),
         )
         entry = directory / (key + ".py")

@@ -35,7 +35,7 @@ Those live in shared components:
 | Packed, block-FP8 and BF16 buffer/kernel bindings | `execution/bindings/` |
 | Plan rewrites | `execution/bindings/block_fp8/optimizations/` |
 | Measured operation schedules | `ops/schedules/`, `ops/linear/schedule.py` |
-| Persistent state allocation and recurrent journals | `memory/`, `execution/bindings/bf16/journal.py` |
+| Persistent state allocation and recurrent journals | `memory/`, `execution/state.py` |
 | Bit-preserving upload and raw storage readers | `checkpoints/` |
 | Bundle coverage, loading and integrity | `artifacts/` |
 | Prompt, termination, acceptance and output lookup | `generation/` |

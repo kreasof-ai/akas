@@ -27,7 +27,7 @@ from benchmarks.lfm2.decode_optimization import (
     OptimizedLFM2,
 )
 from benchmarks.lfm2.fp16_decode import linear_source, metrics
-from akas.compilation.source import export_kernel as source
+from akas.compilation.emit import export_kernel as source
 
 
 def micro_attention(out, *, implementation="warp"):

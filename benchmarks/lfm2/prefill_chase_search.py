@@ -15,7 +15,7 @@ from tensor.providers.webgpu.device import Device
 from akas import GGUF
 from akas.ops.schedules.packed_selection import webgpu_parameters
 from akas.ops.schedules.packed_selection import projection_tile
-from akas.compilation.source import export_kernel as source
+from akas.compilation.emit import export_kernel as source
 from tensor.compiler.webgpu.schedules.outer_product import outer_product_matmul_schedule
 from benchmarks.lfm2.tensor_projection_search import (
     TimestampAdapter,

@@ -1,6 +1,6 @@
 """Decoder block operations for explicit packed, FP8 and BF16 execution contracts."""
 
-from akas.ops.kv_quantization import is_quantized
+from akas.quantization.kv import is_quantized
 from akas.ops.schedules.packed_parameters import QUANT_ATTENTION
 from akas.ops.schedules.packed_parameters import SUBGROUP_PROFILES
 
@@ -127,44 +127,6 @@ def fp8_prefill_attention(ctx, block):
     ctx.fp8(prefix + "o_proj", "att_out", "mixed")
 
 
-def bf16_batch_attention(ctx, block):
-    prefix = block.mixer_prefix
-    ctx.linear(prefix + "input", ctx.buffers["normal"], ctx.buffers["att_input"])
-    kc, vc = ctx.executor.owner.states[block.index]
-    att = dict(
-        ctx.common,
-        heads=ctx.config.heads,
-        kv_heads=ctx.config.kv_heads,
-        d=ctx.config.head_dim,
-        capacity=ctx.executor.owner.context,
-        eps=ctx.config.epsilon,
-    )
-    ctx.emit(
-        "attention_qkv",
-        dict(att, theta=ctx.config.theta),
-        ctx.buffers["att_input"],
-        ctx.weights[prefix + "q_norm.weight"],
-        ctx.weights[prefix + "k_norm.weight"],
-        ctx.buffers["mapping"],
-        ctx.buffers["flat_position"],
-        ctx.buffers["active"],
-        kc,
-        vc,
-        ctx.buffers["att_q"],
-    )
-    ctx.emit(
-        "attention",
-        att,
-        ctx.buffers["att_q"],
-        kc,
-        vc,
-        ctx.buffers["att_input"],
-        ctx.buffers["mapping"],
-        ctx.buffers["position"],
-        ctx.buffers["lengths"],
-        ctx.buffers["att_out"],
-    )
-    ctx.linear(prefix + "o_proj", ctx.buffers["att_out"], ctx.buffers["mixed"])
 
 
 def packed_attention(ctx, block):

@@ -9,7 +9,7 @@ import copy
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-CODEC = ast.parse((ROOT / "src/akas/ops/kv_quantization/cuda/fp8.py").read_text())
+CODEC = ast.parse((ROOT / "src/akas/quantization/kv/fp8.py").read_text())
 
 
 def macro(factory):

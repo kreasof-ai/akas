@@ -9,12 +9,9 @@ class TokenizerError(ValueError):
     pass
 
 
-# GGUF stores a pre-tokenizer name rather than its regular expression.
-LFM2_PATTERN = r"(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+"
-GPT2_PATTERN = (
-    r"'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"
-)
-GGUF_PROFILES = {"lfm2": (LFM2_PATTERN, True), "gpt2": (GPT2_PATTERN, False)}
+def profiles():
+    """Serialized format presets; no model execution policy lives here."""
+    return json.loads(Path(__file__).with_name("profiles.json").read_text())
 
 
 @dataclass(frozen=True)
@@ -44,11 +41,12 @@ def _merges(values):
     return tuple(result)
 
 
-def from_gguf(metadata):
+def from_gguf(metadata, *, profile=None):
     pre = metadata.get("tokenizer.ggml.pre")
-    if metadata.get("tokenizer.ggml.model") != "gpt2" or pre not in GGUF_PROFILES:
+    profile = profiles()["gguf"].get(pre) if profile is None else profile
+    if profile is None or metadata.get("tokenizer.ggml.model") != profile["model"]:
         raise TokenizerError(f"unsupported GGUF byte-level BPE profile: {pre!r}")
-    pattern, ignore = GGUF_PROFILES[pre]
+    pattern, ignore = profile["pattern"], profile.get("ignore_merges", False)
     tokens = metadata["tokenizer.ggml.tokens"]
     types = metadata["tokenizer.ggml.token_type"]
     if len(set(tokens)) != len(tokens) or len(types) != len(tokens):
@@ -63,11 +61,13 @@ def from_gguf(metadata):
         special=special,
         bos=metadata.get("tokenizer.ggml.bos_token_id"),
         eos=metadata.get("tokenizer.ggml.eos_token_id"),
-        add_bos=metadata.get("tokenizer.ggml.add_bos_token", pre == "lfm2"),
+        add_bos=metadata.get(
+            "tokenizer.ggml.add_bos_token", profile.get("add_bos", False)
+        ),
         chat_template=metadata.get("tokenizer.chat_template"),
         generation_prefix=(
-            "<|im_start|>assistant\n<think>"
-            if pre == "lfm2" and "tokenizer.chat_template" not in metadata
+            profile.get("generation_prefix")
+            if "tokenizer.chat_template" not in metadata
             else None
         ),
     )
@@ -110,7 +110,7 @@ def from_file(path):
         and stages[0].get("use_regex", True)
     ):
         byte = stages[0]
-        pattern = GPT2_PATTERN
+        pattern = profiles()["byte_level"]["pattern"]
     elif (
         len(stages) == 2
         and stages[0].get("type") == "Split"

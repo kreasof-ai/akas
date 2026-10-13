@@ -15,7 +15,7 @@ import tensor
 from tensor.runtime.abi import BoundCall
 from akas import GGUF
 from akas.checkpoints.gguf import dequantize
-from akas.compilation.source import export_kernel as source
+from akas.compilation.emit import export_kernel as source
 
 BASELINE = {"gemv_lanes": 16, "gemv_threads": 128, "gemv_dot": False}
 CONFIGS = [BASELINE] + [

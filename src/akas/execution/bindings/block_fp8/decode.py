@@ -8,12 +8,12 @@ from akas.ops.moe import compose as ffn
 from akas.execution.plan import ExecutionPlan
 from akas.execution.plan import KernelPlan
 from akas.ops.linear.compose import linear
-from akas.ops.normalization.compose import rms_norm
+from akas.ops.normalization.operation import rms_norm
 
 
-def build_decode_plan(self):
+def build_decode_plan(self, *, graph=None):
     w, b, r = (self.weights, self.buffers, self.slots)
-    calls = ExecutionPlan(self.device, labeled=True)
+    calls = ExecutionPlan(self.device, labeled=True) if graph is None else graph
     add = KernelPlan(calls, self.kernels)
 
     def fp8(name, x, out):

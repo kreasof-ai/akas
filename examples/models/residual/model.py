@@ -1,10 +1,10 @@
 """A three-file model: y = x + x @ projection.T, using existing operations."""
 
-from akas.planning import ForwardPlan
+from akas.graph import Graph
 
 
 def compose(config, *, rows=1):
-    plan = ForwardPlan(contract="packed")
+    plan = Graph(contract="packed")
     x = plan.buffer("input", (rows * config.width,), "float32", role="input")
     w = plan.buffer(
         "projection", (config.width * config.width,), "float32", role="weight"

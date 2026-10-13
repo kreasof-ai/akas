@@ -53,7 +53,7 @@ class Guard(importlib.abc.MetaPathFinder):
 sys.meta_path.insert(0, Guard())
 from akas.compilation.factories.packed import packed_baseline_factory, packed_cuda_factory, packed_webgpu_factory
 from akas.ops.schedules.packed_parameters import CUDA_PROFILES
-from akas.artifacts.kernels import identity
+from akas.artifacts.schema import identity
 assert len(identity('linear', {'k':256})) == 24
 """,
         ],

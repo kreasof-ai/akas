@@ -3,7 +3,7 @@
 from functools import partial
 
 from akas.execution.bindings.packed.resources import PackedModel
-from akas.execution.reference import ReferenceModel
+from akas.execution.model import Model
 from akas.models.lfm2.weights import LFM2Checkpoint, ReferenceCheckpoint
 from akas.models.blocks import DecoderArchitecture
 from akas.models.blocks import DecoderBlock
@@ -53,7 +53,7 @@ def compose(
     optimized=False,
 ):
     """Compose a chunk of tokens per slot with masked, persistent state."""
-    from akas.planning import ForwardPlan
+    from akas.graph import Graph
     from akas.models.lfm2.weights import tensor_shapes
     from akas.ops.attention.reference import cache_storage
 
@@ -70,10 +70,10 @@ def compose(
     if provider not in ("cuda", "webgpu"):
         raise ValueError("reference requires CUDA or WebGPU")
     if kv_dtype not in ("float16", "float32"):
-        from akas.ops.kv_quantization import get
+        from akas.quantization.kv import get
 
         get(kv_dtype)
-    plan = ForwardPlan(contract="reference")
+    plan = Graph(contract="reference")
     b, c = batch * chunk, config.width
     from akas.checkpoints.partition import Weights
 
@@ -264,22 +264,50 @@ def compose(
         active,
     )
     if optimized:
-        from akas.planning.fusion import last_rows, swiglu
+        from akas.compilation.rewrites import optimize
 
-        return swiglu(last_rows(plan))
+        return optimize(plan)
     return plan
 
 
-class LFM2Reference(ReferenceModel):
+def compose_program(checkpoint, *, rows, chunk, max_requests, max_context,
+                    provider="cuda", kv_dtype="float16",
+                    max_weight_bytes=64 * 1024 * 1024):
+    """Compose token phases over the shared executor's persistent slot pool."""
+    from dataclasses import replace
+
+    graph = compose(checkpoint.config, batch=rows, chunk=chunk,
+                    capacity=max_context, provider=provider, kv_dtype=kv_dtype,
+                    max_weight_bytes=max_weight_bytes, optimized=True,
+                    **checkpoint.definition_options)
+    for name, spec in tuple(graph.buffers.items()):
+        if spec.role == "state":
+            if spec.shape[0] != rows:
+                raise ValueError("LFM state must have one leading request dimension")
+            value = replace(spec, shape=(max_requests, *spec.shape[1:]))
+            object.__setattr__(value, "_graph", graph)
+            graph.buffers[name] = value
+    graph.buffer("mapping", (rows,), "int32", role="input")
+    return graph.bind_requests(
+        inputs={"tokens": "prefill_tokens" if chunk > 1 else "tokens",
+                "mapping": "mapping", "lengths": "active"},
+        prediction="sampled",
+        reset=[name for name, spec in graph.buffers.items()
+               if spec.role == "state" and (name == "positions" or name.endswith("conv_state"))],
+    )
+
+
+class LFM2Reference(Model):
     """Batched CUDA/WebGPU example using the same forward plan and checkpoint contract."""
 
     checkpoint_type = ReferenceCheckpoint
     definition = staticmethod(compose)
 
 
-class LFM2Batched(ReferenceModel):
+class LFM2Batched(Model):
     """Canonical loaders and masked slots, using shared optimized operations."""
 
     checkpoint_type = ReferenceCheckpoint
     definition = staticmethod(partial(compose, optimized=True))
     compilation_profile = "floating"
+    compose = staticmethod(compose_program)

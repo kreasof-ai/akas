@@ -11,7 +11,7 @@ import tensor
 from tensor.runtime.abi import BoundCall
 from akas import GGUF
 from akas.checkpoints.gguf import dequantize
-from akas.compilation.source import export_kernel as source
+from akas.compilation.emit import export_kernel as source
 
 # The eight configurations swept for the 230M report. Left unchanged so its
 # recorded evidence keeps its meaning.

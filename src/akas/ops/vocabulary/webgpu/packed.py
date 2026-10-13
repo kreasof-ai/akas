@@ -1,7 +1,7 @@
 """Operation kernels for vocabulary.webgpu.packed."""
 
-from akas.ops.quantization.ggml import weight_decoder
-from akas.ops.quantization.ggml import weight_storage
+from akas.quantization.weights.ggml import weight_decoder
+from akas.quantization.weights.ggml import weight_storage
 
 
 def make_kernel(kind, p):

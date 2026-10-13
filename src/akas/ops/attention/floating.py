@@ -12,7 +12,7 @@ def cache_reader(p):
 
     storage = cache_storage(p)
     if p["kv_dtype"] not in ("float16", "float32"):
-        from akas.ops.kv_quantization import get
+        from akas.quantization.kv import get
 
         backend = get(p["kv_dtype"]).backend(p["provider"])
         read = getattr(backend, "decoder", backend.reference_decoder)()

@@ -16,7 +16,7 @@ from akas import GGUF
 from akas.checkpoints.gguf import prepack_q4_0
 from akas.ops.schedules.packed_selection import webgpu_parameters
 from akas.ops.schedules.packed_selection import projection_tile
-from akas.compilation.source import export_kernel as source
+from akas.compilation.emit import export_kernel as source
 from benchmarks.lfm2.tensor_projection_search import TimestampAdapter, bind, check
 from benchmarks.lfm2.decode_fusion_search import PlanTimer
 

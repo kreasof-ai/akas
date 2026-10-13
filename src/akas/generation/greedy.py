@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 import numpy as np
-from akas.execution.bindings.packed.greedy import advance_greedy
 
 
 def generate_greedy(self, prompt, *, max_tokens=128, chat=True, gpu_greedy=True):
+    from akas.execution.bindings.packed.greedy import advance_greedy
+
     self._check_open()
     if type(max_tokens) != int or max_tokens < 1:
         raise ValueError("max_tokens must be positive")
@@ -89,3 +90,28 @@ def generate_batch(model, prompts, *, max_tokens=128, chat=True):
         )
         for p, g in zip(encoded, generated)
     ]
+
+
+def generate_scheduled(model, prompt, *, tokenizer, max_tokens=128, chat=True):
+    """Generate a sequence through any scheduled executor without disturbing peers."""
+    if type(max_tokens) is not int or max_tokens < 1:
+        raise ValueError("max_tokens must be positive")
+    tokens = tokenizer.chat(prompt) if chat else tokenizer.encode(prompt)
+    if not tokens or len(tokens) + max_tokens > model.context:
+        raise ValueError("generation exceeds context capacity")
+    slot = model.admit()
+    generated = []
+    try:
+        token = model.prefill([slot], [tokens])[0]
+        for step in range(max_tokens):
+            generated.append(int(token))
+            if token == tokenizer.eos or step + 1 == max_tokens:
+                break
+            token = model.decode([slot], [int(token)])[0]
+    finally:
+        model.release(slot)
+    return dict(
+        prompt_tokens=tokens,
+        generated_tokens=generated,
+        text=tokenizer.decode(generated),
+    )

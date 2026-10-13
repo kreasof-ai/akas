@@ -1,0 +1,3983 @@
+{
+  "config": {
+    "layers": [
+      "linear_attention",
+      "full_attention"
+    ],
+    "context_limit": 64,
+    "epsilon": 1e-06,
+    "rope_theta": 1000000.0,
+    "width": 2048,
+    "vocab": 1024,
+    "heads": 16,
+    "kv_heads": 2,
+    "head_dim": 256,
+    "rotary_dim": 64,
+    "key_heads": 16,
+    "value_heads": 32,
+    "key_dim": 128,
+    "value_dim": 128,
+    "conv_width": 4,
+    "experts": 256,
+    "top_k": 8,
+    "expert_width": 512
+  },
+  "geometries": {
+    "1": {
+      "contract": "block-fp8",
+      "phase": "decode",
+      "buffers": [
+        {
+          "name": "model.language_model.embed_tokens.weight",
+          "shape": [
+            1024,
+            2048
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.norm.weight",
+          "shape": [
+            2048
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "lm_head.weight",
+          "shape": [
+            1024,
+            2048
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.input_layernorm.weight",
+          "shape": [
+            2048
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.post_attention_layernorm.weight",
+          "shape": [
+            2048
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.linear_attn.A_log",
+          "shape": [
+            32
+          ],
+          "dtype": "float32",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.linear_attn.dt_bias",
+          "shape": [
+            32
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.linear_attn.conv1d.weight",
+          "shape": [
+            8192,
+            1,
+            4
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.linear_attn.norm.weight",
+          "shape": [
+            128
+          ],
+          "dtype": "float32",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.linear_attn.in_proj_a.weight",
+          "shape": [
+            32,
+            2048
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.linear_attn.in_proj_b.weight",
+          "shape": [
+            32,
+            2048
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.linear_attn.in_proj_qkv.weight",
+          "shape": [
+            8192,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.linear_attn.in_proj_qkv.weight_scale_inv",
+          "shape": [
+            64,
+            16
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.linear_attn.in_proj_z.weight",
+          "shape": [
+            4096,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.linear_attn.in_proj_z.weight_scale_inv",
+          "shape": [
+            32,
+            16
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.linear_attn.out_proj.weight",
+          "shape": [
+            2048,
+            4096
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.linear_attn.out_proj.weight_scale_inv",
+          "shape": [
+            16,
+            32
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.mlp.gate.weight",
+          "shape": [
+            256,
+            2048
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.mlp.shared_expert_gate.weight",
+          "shape": [
+            1,
+            2048
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.mlp.shared_expert.gate_proj.weight",
+          "shape": [
+            512,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.mlp.shared_expert.gate_proj.weight_scale_inv",
+          "shape": [
+            4,
+            16
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.mlp.shared_expert.up_proj.weight",
+          "shape": [
+            512,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.mlp.shared_expert.up_proj.weight_scale_inv",
+          "shape": [
+            4,
+            16
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.mlp.shared_expert.down_proj.weight",
+          "shape": [
+            2048,
+            512
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.mlp.shared_expert.down_proj.weight_scale_inv",
+          "shape": [
+            16,
+            4
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.mlp.experts.gate_proj.weight",
+          "shape": [
+            256,
+            512,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.mlp.experts.gate_proj.weight_scale_inv",
+          "shape": [
+            256,
+            4,
+            16
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.mlp.experts.up_proj.weight",
+          "shape": [
+            256,
+            512,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.mlp.experts.up_proj.weight_scale_inv",
+          "shape": [
+            256,
+            4,
+            16
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.mlp.experts.down_proj.weight",
+          "shape": [
+            256,
+            2048,
+            512
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.mlp.experts.down_proj.weight_scale_inv",
+          "shape": [
+            256,
+            16,
+            4
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.input_layernorm.weight",
+          "shape": [
+            2048
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.post_attention_layernorm.weight",
+          "shape": [
+            2048
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.self_attn.q_proj.weight",
+          "shape": [
+            8192,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.self_attn.q_proj.weight_scale_inv",
+          "shape": [
+            64,
+            16
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.self_attn.k_proj.weight",
+          "shape": [
+            512,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.self_attn.k_proj.weight_scale_inv",
+          "shape": [
+            4,
+            16
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.self_attn.v_proj.weight",
+          "shape": [
+            512,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.self_attn.v_proj.weight_scale_inv",
+          "shape": [
+            4,
+            16
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.self_attn.o_proj.weight",
+          "shape": [
+            2048,
+            4096
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.self_attn.o_proj.weight_scale_inv",
+          "shape": [
+            16,
+            32
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.self_attn.q_norm.weight",
+          "shape": [
+            256
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.self_attn.k_norm.weight",
+          "shape": [
+            256
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.mlp.gate.weight",
+          "shape": [
+            256,
+            2048
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.mlp.shared_expert_gate.weight",
+          "shape": [
+            1,
+            2048
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.mlp.shared_expert.gate_proj.weight",
+          "shape": [
+            512,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.mlp.shared_expert.gate_proj.weight_scale_inv",
+          "shape": [
+            4,
+            16
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.mlp.shared_expert.up_proj.weight",
+          "shape": [
+            512,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.mlp.shared_expert.up_proj.weight_scale_inv",
+          "shape": [
+            4,
+            16
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.mlp.shared_expert.down_proj.weight",
+          "shape": [
+            2048,
+            512
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.mlp.shared_expert.down_proj.weight_scale_inv",
+          "shape": [
+            16,
+            4
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.mlp.experts.gate_proj.weight",
+          "shape": [
+            256,
+            512,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.mlp.experts.gate_proj.weight_scale_inv",
+          "shape": [
+            256,
+            4,
+            16
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.mlp.experts.up_proj.weight",
+          "shape": [
+            256,
+            512,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.mlp.experts.up_proj.weight_scale_inv",
+          "shape": [
+            256,
+            4,
+            16
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.mlp.experts.down_proj.weight",
+          "shape": [
+            256,
+            2048,
+            512
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.mlp.experts.down_proj.weight_scale_inv",
+          "shape": [
+            256,
+            16,
+            4
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "state.0.0",
+          "shape": [
+            4,
+            32,
+            128,
+            128
+          ],
+          "dtype": "float32",
+          "role": "state"
+        },
+        {
+          "name": "state.0.1",
+          "shape": [
+            4,
+            8192,
+            3
+          ],
+          "dtype": "float32",
+          "role": "state"
+        },
+        {
+          "name": "state.1.0",
+          "shape": [
+            4,
+            2,
+            32,
+            256
+          ],
+          "dtype": "bfloat16",
+          "role": "state"
+        },
+        {
+          "name": "state.1.1",
+          "shape": [
+            4,
+            2,
+            32,
+            256
+          ],
+          "dtype": "bfloat16",
+          "role": "state"
+        },
+        {
+          "name": "tokens",
+          "shape": [
+            2
+          ],
+          "dtype": "int32",
+          "role": "input"
+        },
+        {
+          "name": "positions",
+          "shape": [
+            4
+          ],
+          "dtype": "int32",
+          "role": "state"
+        },
+        {
+          "name": "active",
+          "shape": [
+            2
+          ],
+          "dtype": "int32",
+          "role": "input"
+        },
+        {
+          "name": "residual",
+          "shape": [
+            2,
+            2048
+          ],
+          "dtype": "bfloat16",
+          "role": "scratch"
+        },
+        {
+          "name": "normal",
+          "shape": [
+            2,
+            2048
+          ],
+          "dtype": "bfloat16",
+          "role": "scratch"
+        },
+        {
+          "name": "mixed",
+          "shape": [
+            2,
+            2048
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "ffn",
+          "shape": [
+            2,
+            2048
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "qkv",
+          "shape": [
+            2,
+            8192
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "z",
+          "shape": [
+            2,
+            4096
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "a",
+          "shape": [
+            2,
+            32
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "b",
+          "shape": [
+            2,
+            32
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "conv",
+          "shape": [
+            2,
+            8192
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "attq",
+          "shape": [
+            2,
+            8192
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "attk",
+          "shape": [
+            2,
+            512
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "attv",
+          "shape": [
+            2,
+            512
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "router",
+          "shape": [
+            2,
+            256
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "shared_gate",
+          "shape": [
+            2,
+            1
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "shared_g",
+          "shape": [
+            2,
+            512
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "shared_u",
+          "shape": [
+            2,
+            512
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "shared_out",
+          "shape": [
+            2,
+            2048
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "attq_normal",
+          "shape": [
+            2,
+            16,
+            256
+          ],
+          "dtype": "bfloat16",
+          "role": "scratch"
+        },
+        {
+          "name": "att_parts",
+          "shape": [
+            2,
+            2,
+            16,
+            8,
+            256
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "att_stats",
+          "shape": [
+            2,
+            2,
+            16,
+            8,
+            2
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "att_out",
+          "shape": [
+            2,
+            4096
+          ],
+          "dtype": "bfloat16",
+          "role": "scratch"
+        },
+        {
+          "name": "gdn_q",
+          "shape": [
+            2,
+            32,
+            128
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "gdn_k",
+          "shape": [
+            2,
+            32,
+            128
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "gdn_v",
+          "shape": [
+            2,
+            32,
+            128
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "gdn_out",
+          "shape": [
+            2,
+            32,
+            128
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "gdn_decay",
+          "shape": [
+            2,
+            32
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "gdn_beta",
+          "shape": [
+            2,
+            32
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "gdn_normal",
+          "shape": [
+            2,
+            4096
+          ],
+          "dtype": "bfloat16",
+          "role": "scratch"
+        },
+        {
+          "name": "ids",
+          "shape": [
+            2,
+            8
+          ],
+          "dtype": "int32",
+          "role": "scratch"
+        },
+        {
+          "name": "routes",
+          "shape": [
+            16,
+            2
+          ],
+          "dtype": "int32",
+          "role": "scratch"
+        },
+        {
+          "name": "experts",
+          "shape": [
+            16
+          ],
+          "dtype": "int32",
+          "role": "scratch"
+        },
+        {
+          "name": "router_weights",
+          "shape": [
+            2,
+            8
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "expert_g",
+          "shape": [
+            2,
+            8,
+            512
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "expert_u",
+          "shape": [
+            2,
+            8,
+            512
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "expert_out",
+          "shape": [
+            2,
+            8,
+            2048
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "expert_activation",
+          "shape": [
+            2,
+            8,
+            512
+          ],
+          "dtype": "bfloat16",
+          "role": "scratch"
+        },
+        {
+          "name": "shared_activation",
+          "shape": [
+            2,
+            512
+          ],
+          "dtype": "bfloat16",
+          "role": "scratch"
+        },
+        {
+          "name": "logits",
+          "shape": [
+            2,
+            1024
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "mapping",
+          "shape": [
+            2
+          ],
+          "dtype": "int32",
+          "role": "input"
+        }
+      ],
+      "calls": [
+        {
+          "kind": "embedding",
+          "parameters": {
+            "r": 2,
+            "c": 2048,
+            "vocab": 1024
+          },
+          "arguments": [
+            "tokens",
+            "model.language_model.embed_tokens.weight",
+            "residual"
+          ],
+          "bindings": {},
+          "label": null
+        },
+        {
+          "kind": "rms",
+          "parameters": {
+            "r": 2,
+            "c": 2048,
+            "eps": 1e-06
+          },
+          "arguments": [],
+          "bindings": {
+            "residual": "residual",
+            "w": "model.language_model.layers.0.input_layernorm.weight",
+            "out": "normal"
+          },
+          "label": [
+            0,
+            "input"
+          ]
+        },
+        {
+          "kind": "fp8_linear",
+          "parameters": {
+            "r": 2,
+            "k": 2048,
+            "o": 8192
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "normal",
+            "w": "model.language_model.layers.0.linear_attn.in_proj_qkv.weight",
+            "out": "qkv",
+            "scales": "model.language_model.layers.0.linear_attn.in_proj_qkv.weight_scale_inv"
+          },
+          "label": null
+        },
+        {
+          "kind": "fp8_linear",
+          "parameters": {
+            "r": 2,
+            "k": 2048,
+            "o": 4096
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "normal",
+            "w": "model.language_model.layers.0.linear_attn.in_proj_z.weight",
+            "out": "z",
+            "scales": "model.language_model.layers.0.linear_attn.in_proj_z.weight_scale_inv"
+          },
+          "label": null
+        },
+        {
+          "kind": "bf16_linear",
+          "parameters": {
+            "r": 2,
+            "k": 2048,
+            "o": 32
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "normal",
+            "w": "model.language_model.layers.0.linear_attn.in_proj_a.weight",
+            "out": "a"
+          },
+          "label": null
+        },
+        {
+          "kind": "bf16_linear",
+          "parameters": {
+            "r": 2,
+            "k": 2048,
+            "o": 32
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "normal",
+            "w": "model.language_model.layers.0.linear_attn.in_proj_b.weight",
+            "out": "b"
+          },
+          "label": null
+        },
+        {
+          "kind": "gdn_conv",
+          "parameters": {
+            "r": 2
+          },
+          "arguments": [
+            "qkv",
+            "model.language_model.layers.0.linear_attn.conv1d.weight",
+            "active",
+            "state.0.1",
+            "conv"
+          ],
+          "bindings": {},
+          "label": null
+        },
+        {
+          "kind": "gdn_prepare",
+          "parameters": {
+            "r": 2
+          },
+          "arguments": [
+            "conv",
+            "a",
+            "b",
+            "model.language_model.layers.0.linear_attn.dt_bias",
+            "model.language_model.layers.0.linear_attn.A_log",
+            "gdn_q",
+            "gdn_k",
+            "gdn_v",
+            "gdn_decay",
+            "gdn_beta"
+          ],
+          "bindings": {},
+          "label": null
+        },
+        {
+          "kind": "gdn_recurrent",
+          "parameters": {
+            "slots": 2,
+            "heads": 32,
+            "key": 128,
+            "value": 128
+          },
+          "arguments": [
+            "gdn_q",
+            "gdn_k",
+            "gdn_v",
+            "gdn_decay",
+            "gdn_beta",
+            "active",
+            "state.0.0",
+            "gdn_out"
+          ],
+          "bindings": {},
+          "label": null
+        },
+        {
+          "kind": "gdn_norm",
+          "parameters": {
+            "r": 2,
+            "eps": 1e-06
+          },
+          "arguments": [
+            "gdn_out",
+            "z",
+            "model.language_model.layers.0.linear_attn.norm.weight",
+            "gdn_normal"
+          ],
+          "bindings": {},
+          "label": null
+        },
+        {
+          "kind": "fp8_linear",
+          "parameters": {
+            "r": 2,
+            "k": 4096,
+            "o": 2048
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "gdn_normal",
+            "w": "model.language_model.layers.0.linear_attn.out_proj.weight",
+            "out": "mixed",
+            "scales": "model.language_model.layers.0.linear_attn.out_proj.weight_scale_inv"
+          },
+          "label": null
+        },
+        {
+          "kind": "add_rms",
+          "parameters": {
+            "r": 2,
+            "c": 2048,
+            "eps": 1e-06
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "mixed",
+            "residual": "residual",
+            "w": "model.language_model.layers.0.post_attention_layernorm.weight",
+            "out": "normal"
+          },
+          "label": [
+            0,
+            "post_attention"
+          ]
+        },
+        {
+          "kind": "bf16_linear",
+          "parameters": {
+            "r": 2,
+            "k": 2048,
+            "o": 256
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "normal",
+            "w": "model.language_model.layers.0.mlp.gate.weight",
+            "out": "router"
+          },
+          "label": null
+        },
+        {
+          "kind": "bf16_linear",
+          "parameters": {
+            "r": 2,
+            "k": 2048,
+            "o": 1
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "normal",
+            "w": "model.language_model.layers.0.mlp.shared_expert_gate.weight",
+            "out": "shared_gate"
+          },
+          "label": null
+        },
+        {
+          "kind": "router",
+          "parameters": {
+            "r": 2,
+            "experts": 256,
+            "top": 8
+          },
+          "arguments": [
+            "router",
+            "ids",
+            "router_weights"
+          ],
+          "bindings": {},
+          "label": null
+        },
+        {
+          "kind": "moe_groups",
+          "parameters": {
+            "r": 2,
+            "top": 8
+          },
+          "arguments": [
+            "ids",
+            "experts",
+            "routes"
+          ],
+          "bindings": {},
+          "label": null
+        },
+        {
+          "kind": "fp8_experts",
+          "parameters": {
+            "r": 2,
+            "experts": 256,
+            "top": 8,
+            "o": 512,
+            "k": 2048,
+            "routed_input": false
+          },
+          "arguments": [
+            "normal",
+            "model.language_model.layers.0.mlp.experts.gate_proj.weight",
+            "model.language_model.layers.0.mlp.experts.gate_proj.weight_scale_inv",
+            "experts",
+            "routes",
+            "expert_g"
+          ],
+          "bindings": {},
+          "label": null
+        },
+        {
+          "kind": "fp8_experts",
+          "parameters": {
+            "r": 2,
+            "experts": 256,
+            "top": 8,
+            "o": 512,
+            "k": 2048,
+            "routed_input": false
+          },
+          "arguments": [
+            "normal",
+            "model.language_model.layers.0.mlp.experts.up_proj.weight",
+            "model.language_model.layers.0.mlp.experts.up_proj.weight_scale_inv",
+            "experts",
+            "routes",
+            "expert_u"
+          ],
+          "bindings": {},
+          "label": null
+        },
+        {
+          "kind": "swiglu_experts",
+          "parameters": {
+            "r": 2,
+            "top": 8,
+            "c": 512
+          },
+          "arguments": [
+            "expert_g",
+            "expert_u",
+            "expert_activation"
+          ],
+          "bindings": {},
+          "label": null
+        },
+        {
+          "kind": "fp8_experts",
+          "parameters": {
+            "r": 2,
+            "experts": 256,
+            "top": 8,
+            "o": 2048,
+            "k": 512,
+            "routed_input": true
+          },
+          "arguments": [
+            "expert_activation",
+            "model.language_model.layers.0.mlp.experts.down_proj.weight",
+            "model.language_model.layers.0.mlp.experts.down_proj.weight_scale_inv",
+            "experts",
+            "routes",
+            "expert_out"
+          ],
+          "bindings": {},
+          "label": null
+        },
+        {
+          "kind": "fp8_linear",
+          "parameters": {
+            "r": 2,
+            "k": 2048,
+            "o": 512
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "normal",
+            "w": "model.language_model.layers.0.mlp.shared_expert.gate_proj.weight",
+            "out": "shared_g",
+            "scales": "model.language_model.layers.0.mlp.shared_expert.gate_proj.weight_scale_inv"
+          },
+          "label": null
+        },
+        {
+          "kind": "fp8_linear",
+          "parameters": {
+            "r": 2,
+            "k": 2048,
+            "o": 512
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "normal",
+            "w": "model.language_model.layers.0.mlp.shared_expert.up_proj.weight",
+            "out": "shared_u",
+            "scales": "model.language_model.layers.0.mlp.shared_expert.up_proj.weight_scale_inv"
+          },
+          "label": null
+        },
+        {
+          "kind": "swiglu",
+          "parameters": {
+            "r": 2,
+            "c": 512
+          },
+          "arguments": [
+            "shared_g",
+            "shared_u",
+            "shared_activation"
+          ],
+          "bindings": {},
+          "label": null
+        },
+        {
+          "kind": "fp8_linear",
+          "parameters": {
+            "r": 2,
+            "k": 512,
+            "o": 2048
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "shared_activation",
+            "w": "model.language_model.layers.0.mlp.shared_expert.down_proj.weight",
+            "out": "shared_out",
+            "scales": "model.language_model.layers.0.mlp.shared_expert.down_proj.weight_scale_inv"
+          },
+          "label": null
+        },
+        {
+          "kind": "moe_combine",
+          "parameters": {
+            "r": 2,
+            "top": 8,
+            "c": 2048
+          },
+          "arguments": [
+            "expert_out",
+            "router_weights",
+            "shared_out",
+            "shared_gate",
+            "ffn"
+          ],
+          "bindings": {},
+          "label": [
+            0,
+            "mlp"
+          ]
+        },
+        {
+          "kind": "add_rms",
+          "parameters": {
+            "r": 2,
+            "c": 2048,
+            "eps": 1e-06
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "ffn",
+            "residual": "residual",
+            "w": "model.language_model.layers.1.input_layernorm.weight",
+            "out": "normal"
+          },
+          "label": [
+            1,
+            "input"
+          ]
+        },
+        {
+          "kind": "fp8_linear",
+          "parameters": {
+            "r": 2,
+            "k": 2048,
+            "o": 8192
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "normal",
+            "w": "model.language_model.layers.1.self_attn.q_proj.weight",
+            "out": "attq",
+            "scales": "model.language_model.layers.1.self_attn.q_proj.weight_scale_inv"
+          },
+          "label": null
+        },
+        {
+          "kind": "fp8_linear",
+          "parameters": {
+            "r": 2,
+            "k": 2048,
+            "o": 512
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "normal",
+            "w": "model.language_model.layers.1.self_attn.k_proj.weight",
+            "out": "attk",
+            "scales": "model.language_model.layers.1.self_attn.k_proj.weight_scale_inv"
+          },
+          "label": null
+        },
+        {
+          "kind": "fp8_linear",
+          "parameters": {
+            "r": 2,
+            "k": 2048,
+            "o": 512
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "normal",
+            "w": "model.language_model.layers.1.self_attn.v_proj.weight",
+            "out": "attv",
+            "scales": "model.language_model.layers.1.self_attn.v_proj.weight_scale_inv"
+          },
+          "label": null
+        },
+        {
+          "kind": "attention_q",
+          "parameters": {
+            "r": 2,
+            "eps": 1e-06,
+            "capacity": 32,
+            "theta": 1000000.0
+          },
+          "arguments": [
+            "attq",
+            "model.language_model.layers.1.self_attn.q_norm.weight",
+            "positions",
+            "active",
+            "attq_normal"
+          ],
+          "bindings": {},
+          "label": null
+        },
+        {
+          "kind": "attention_kv",
+          "parameters": {
+            "r": 2,
+            "eps": 1e-06,
+            "capacity": 32,
+            "theta": 1000000.0
+          },
+          "arguments": [
+            "attk",
+            "attv",
+            "model.language_model.layers.1.self_attn.k_norm.weight",
+            "positions",
+            "active",
+            "state.1.0",
+            "state.1.1"
+          ],
+          "bindings": {},
+          "label": null
+        },
+        {
+          "kind": "attention_partial",
+          "parameters": {
+            "r": 2,
+            "capacity": 32,
+            "splits": 16
+          },
+          "arguments": [
+            "attq_normal",
+            "state.1.0",
+            "state.1.1",
+            "positions",
+            "active",
+            "att_parts",
+            "att_stats"
+          ],
+          "bindings": {},
+          "label": null
+        },
+        {
+          "kind": "attention_merge",
+          "parameters": {
+            "r": 2,
+            "splits": 16
+          },
+          "arguments": [
+            "att_parts",
+            "att_stats",
+            "attq",
+            "active",
+            "att_out"
+          ],
+          "bindings": {},
+          "label": null
+        },
+        {
+          "kind": "fp8_linear",
+          "parameters": {
+            "r": 2,
+            "k": 4096,
+            "o": 2048
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "att_out",
+            "w": "model.language_model.layers.1.self_attn.o_proj.weight",
+            "out": "mixed",
+            "scales": "model.language_model.layers.1.self_attn.o_proj.weight_scale_inv"
+          },
+          "label": null
+        },
+        {
+          "kind": "add_rms",
+          "parameters": {
+            "r": 2,
+            "c": 2048,
+            "eps": 1e-06
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "mixed",
+            "residual": "residual",
+            "w": "model.language_model.layers.1.post_attention_layernorm.weight",
+            "out": "normal"
+          },
+          "label": [
+            1,
+            "post_attention"
+          ]
+        },
+        {
+          "kind": "bf16_linear",
+          "parameters": {
+            "r": 2,
+            "k": 2048,
+            "o": 256
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "normal",
+            "w": "model.language_model.layers.1.mlp.gate.weight",
+            "out": "router"
+          },
+          "label": null
+        },
+        {
+          "kind": "bf16_linear",
+          "parameters": {
+            "r": 2,
+            "k": 2048,
+            "o": 1
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "normal",
+            "w": "model.language_model.layers.1.mlp.shared_expert_gate.weight",
+            "out": "shared_gate"
+          },
+          "label": null
+        },
+        {
+          "kind": "router",
+          "parameters": {
+            "r": 2,
+            "experts": 256,
+            "top": 8
+          },
+          "arguments": [
+            "router",
+            "ids",
+            "router_weights"
+          ],
+          "bindings": {},
+          "label": null
+        },
+        {
+          "kind": "moe_groups",
+          "parameters": {
+            "r": 2,
+            "top": 8
+          },
+          "arguments": [
+            "ids",
+            "experts",
+            "routes"
+          ],
+          "bindings": {},
+          "label": null
+        },
+        {
+          "kind": "fp8_experts",
+          "parameters": {
+            "r": 2,
+            "experts": 256,
+            "top": 8,
+            "o": 512,
+            "k": 2048,
+            "routed_input": false
+          },
+          "arguments": [
+            "normal",
+            "model.language_model.layers.1.mlp.experts.gate_proj.weight",
+            "model.language_model.layers.1.mlp.experts.gate_proj.weight_scale_inv",
+            "experts",
+            "routes",
+            "expert_g"
+          ],
+          "bindings": {},
+          "label": null
+        },
+        {
+          "kind": "fp8_experts",
+          "parameters": {
+            "r": 2,
+            "experts": 256,
+            "top": 8,
+            "o": 512,
+            "k": 2048,
+            "routed_input": false
+          },
+          "arguments": [
+            "normal",
+            "model.language_model.layers.1.mlp.experts.up_proj.weight",
+            "model.language_model.layers.1.mlp.experts.up_proj.weight_scale_inv",
+            "experts",
+            "routes",
+            "expert_u"
+          ],
+          "bindings": {},
+          "label": null
+        },
+        {
+          "kind": "swiglu_experts",
+          "parameters": {
+            "r": 2,
+            "top": 8,
+            "c": 512
+          },
+          "arguments": [
+            "expert_g",
+            "expert_u",
+            "expert_activation"
+          ],
+          "bindings": {},
+          "label": null
+        },
+        {
+          "kind": "fp8_experts",
+          "parameters": {
+            "r": 2,
+            "experts": 256,
+            "top": 8,
+            "o": 2048,
+            "k": 512,
+            "routed_input": true
+          },
+          "arguments": [
+            "expert_activation",
+            "model.language_model.layers.1.mlp.experts.down_proj.weight",
+            "model.language_model.layers.1.mlp.experts.down_proj.weight_scale_inv",
+            "experts",
+            "routes",
+            "expert_out"
+          ],
+          "bindings": {},
+          "label": null
+        },
+        {
+          "kind": "fp8_linear",
+          "parameters": {
+            "r": 2,
+            "k": 2048,
+            "o": 512
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "normal",
+            "w": "model.language_model.layers.1.mlp.shared_expert.gate_proj.weight",
+            "out": "shared_g",
+            "scales": "model.language_model.layers.1.mlp.shared_expert.gate_proj.weight_scale_inv"
+          },
+          "label": null
+        },
+        {
+          "kind": "fp8_linear",
+          "parameters": {
+            "r": 2,
+            "k": 2048,
+            "o": 512
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "normal",
+            "w": "model.language_model.layers.1.mlp.shared_expert.up_proj.weight",
+            "out": "shared_u",
+            "scales": "model.language_model.layers.1.mlp.shared_expert.up_proj.weight_scale_inv"
+          },
+          "label": null
+        },
+        {
+          "kind": "swiglu",
+          "parameters": {
+            "r": 2,
+            "c": 512
+          },
+          "arguments": [
+            "shared_g",
+            "shared_u",
+            "shared_activation"
+          ],
+          "bindings": {},
+          "label": null
+        },
+        {
+          "kind": "fp8_linear",
+          "parameters": {
+            "r": 2,
+            "k": 512,
+            "o": 2048
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "shared_activation",
+            "w": "model.language_model.layers.1.mlp.shared_expert.down_proj.weight",
+            "out": "shared_out",
+            "scales": "model.language_model.layers.1.mlp.shared_expert.down_proj.weight_scale_inv"
+          },
+          "label": null
+        },
+        {
+          "kind": "moe_combine",
+          "parameters": {
+            "r": 2,
+            "top": 8,
+            "c": 2048
+          },
+          "arguments": [
+            "expert_out",
+            "router_weights",
+            "shared_out",
+            "shared_gate",
+            "ffn"
+          ],
+          "bindings": {},
+          "label": [
+            1,
+            "mlp"
+          ]
+        },
+        {
+          "kind": "add_rms",
+          "parameters": {
+            "r": 2,
+            "c": 2048,
+            "eps": 1e-06
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "ffn",
+            "residual": "residual",
+            "w": "model.language_model.norm.weight",
+            "out": "normal"
+          },
+          "label": [
+            40,
+            "final"
+          ]
+        },
+        {
+          "kind": "bf16_linear",
+          "parameters": {
+            "r": 2,
+            "k": 2048,
+            "o": 1024
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "normal",
+            "w": "lm_head.weight",
+            "out": "logits"
+          },
+          "label": null
+        },
+        {
+          "kind": "argmax",
+          "parameters": {
+            "r": 2,
+            "vocab": 1024
+          },
+          "arguments": [
+            "logits",
+            "tokens",
+            "positions",
+            "active"
+          ],
+          "bindings": {},
+          "label": null
+        }
+      ],
+      "request": {
+        "inputs": {
+          "tokens": "tokens",
+          "mapping": "mapping",
+          "lengths": "active"
+        },
+        "prediction": "tokens",
+        "reset": [
+          "state.0.0",
+          "state.0.1",
+          "positions"
+        ]
+      }
+    },
+    "4": {
+      "contract": "block-fp8",
+      "phase": "prefill",
+      "buffers": [
+        {
+          "name": "model.language_model.embed_tokens.weight",
+          "shape": [
+            1024,
+            2048
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.norm.weight",
+          "shape": [
+            2048
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "lm_head.weight",
+          "shape": [
+            1024,
+            2048
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.input_layernorm.weight",
+          "shape": [
+            2048
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.post_attention_layernorm.weight",
+          "shape": [
+            2048
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.linear_attn.A_log",
+          "shape": [
+            32
+          ],
+          "dtype": "float32",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.linear_attn.dt_bias",
+          "shape": [
+            32
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.linear_attn.conv1d.weight",
+          "shape": [
+            8192,
+            1,
+            4
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.linear_attn.norm.weight",
+          "shape": [
+            128
+          ],
+          "dtype": "float32",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.linear_attn.in_proj_a.weight",
+          "shape": [
+            32,
+            2048
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.linear_attn.in_proj_b.weight",
+          "shape": [
+            32,
+            2048
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.linear_attn.in_proj_qkv.weight",
+          "shape": [
+            8192,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.linear_attn.in_proj_qkv.weight_scale_inv",
+          "shape": [
+            64,
+            16
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.linear_attn.in_proj_z.weight",
+          "shape": [
+            4096,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.linear_attn.in_proj_z.weight_scale_inv",
+          "shape": [
+            32,
+            16
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.linear_attn.out_proj.weight",
+          "shape": [
+            2048,
+            4096
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.linear_attn.out_proj.weight_scale_inv",
+          "shape": [
+            16,
+            32
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.mlp.gate.weight",
+          "shape": [
+            256,
+            2048
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.mlp.shared_expert_gate.weight",
+          "shape": [
+            1,
+            2048
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.mlp.shared_expert.gate_proj.weight",
+          "shape": [
+            512,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.mlp.shared_expert.gate_proj.weight_scale_inv",
+          "shape": [
+            4,
+            16
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.mlp.shared_expert.up_proj.weight",
+          "shape": [
+            512,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.mlp.shared_expert.up_proj.weight_scale_inv",
+          "shape": [
+            4,
+            16
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.mlp.shared_expert.down_proj.weight",
+          "shape": [
+            2048,
+            512
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.mlp.shared_expert.down_proj.weight_scale_inv",
+          "shape": [
+            16,
+            4
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.mlp.experts.gate_proj.weight",
+          "shape": [
+            256,
+            512,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.mlp.experts.gate_proj.weight_scale_inv",
+          "shape": [
+            256,
+            4,
+            16
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.mlp.experts.up_proj.weight",
+          "shape": [
+            256,
+            512,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.mlp.experts.up_proj.weight_scale_inv",
+          "shape": [
+            256,
+            4,
+            16
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.mlp.experts.down_proj.weight",
+          "shape": [
+            256,
+            2048,
+            512
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.0.mlp.experts.down_proj.weight_scale_inv",
+          "shape": [
+            256,
+            16,
+            4
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.input_layernorm.weight",
+          "shape": [
+            2048
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.post_attention_layernorm.weight",
+          "shape": [
+            2048
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.self_attn.q_proj.weight",
+          "shape": [
+            8192,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.self_attn.q_proj.weight_scale_inv",
+          "shape": [
+            64,
+            16
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.self_attn.k_proj.weight",
+          "shape": [
+            512,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.self_attn.k_proj.weight_scale_inv",
+          "shape": [
+            4,
+            16
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.self_attn.v_proj.weight",
+          "shape": [
+            512,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.self_attn.v_proj.weight_scale_inv",
+          "shape": [
+            4,
+            16
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.self_attn.o_proj.weight",
+          "shape": [
+            2048,
+            4096
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.self_attn.o_proj.weight_scale_inv",
+          "shape": [
+            16,
+            32
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.self_attn.q_norm.weight",
+          "shape": [
+            256
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.self_attn.k_norm.weight",
+          "shape": [
+            256
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.mlp.gate.weight",
+          "shape": [
+            256,
+            2048
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.mlp.shared_expert_gate.weight",
+          "shape": [
+            1,
+            2048
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.mlp.shared_expert.gate_proj.weight",
+          "shape": [
+            512,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.mlp.shared_expert.gate_proj.weight_scale_inv",
+          "shape": [
+            4,
+            16
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.mlp.shared_expert.up_proj.weight",
+          "shape": [
+            512,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.mlp.shared_expert.up_proj.weight_scale_inv",
+          "shape": [
+            4,
+            16
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.mlp.shared_expert.down_proj.weight",
+          "shape": [
+            2048,
+            512
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.mlp.shared_expert.down_proj.weight_scale_inv",
+          "shape": [
+            16,
+            4
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.mlp.experts.gate_proj.weight",
+          "shape": [
+            256,
+            512,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.mlp.experts.gate_proj.weight_scale_inv",
+          "shape": [
+            256,
+            4,
+            16
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.mlp.experts.up_proj.weight",
+          "shape": [
+            256,
+            512,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.mlp.experts.up_proj.weight_scale_inv",
+          "shape": [
+            256,
+            4,
+            16
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.mlp.experts.down_proj.weight",
+          "shape": [
+            256,
+            2048,
+            512
+          ],
+          "dtype": "uint8",
+          "role": "weight"
+        },
+        {
+          "name": "model.language_model.layers.1.mlp.experts.down_proj.weight_scale_inv",
+          "shape": [
+            256,
+            16,
+            4
+          ],
+          "dtype": "bfloat16",
+          "role": "weight"
+        },
+        {
+          "name": "state.0.0",
+          "shape": [
+            4,
+            32,
+            128,
+            128
+          ],
+          "dtype": "float32",
+          "role": "state"
+        },
+        {
+          "name": "state.0.1",
+          "shape": [
+            4,
+            8192,
+            3
+          ],
+          "dtype": "float32",
+          "role": "state"
+        },
+        {
+          "name": "state.1.0",
+          "shape": [
+            4,
+            2,
+            32,
+            256
+          ],
+          "dtype": "bfloat16",
+          "role": "state"
+        },
+        {
+          "name": "state.1.1",
+          "shape": [
+            4,
+            2,
+            32,
+            256
+          ],
+          "dtype": "bfloat16",
+          "role": "state"
+        },
+        {
+          "name": "tokens",
+          "shape": [
+            2
+          ],
+          "dtype": "int32",
+          "role": "input"
+        },
+        {
+          "name": "positions",
+          "shape": [
+            4
+          ],
+          "dtype": "int32",
+          "role": "state"
+        },
+        {
+          "name": "active",
+          "shape": [
+            2
+          ],
+          "dtype": "int32",
+          "role": "input"
+        },
+        {
+          "name": "normal",
+          "shape": [
+            2,
+            2048
+          ],
+          "dtype": "bfloat16",
+          "role": "scratch"
+        },
+        {
+          "name": "logits",
+          "shape": [
+            2,
+            1024
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "mapping",
+          "shape": [
+            2
+          ],
+          "dtype": "int32",
+          "role": "input"
+        },
+        {
+          "name": "chunk.tokens",
+          "shape": [
+            8
+          ],
+          "dtype": "int32",
+          "role": "input"
+        },
+        {
+          "name": "chunk.residual",
+          "shape": [
+            8,
+            2048
+          ],
+          "dtype": "bfloat16",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.normal",
+          "shape": [
+            8,
+            2048
+          ],
+          "dtype": "bfloat16",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.mixed",
+          "shape": [
+            8,
+            2048
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.ffn",
+          "shape": [
+            8,
+            2048
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.qkv",
+          "shape": [
+            8,
+            8192
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.z",
+          "shape": [
+            8,
+            4096
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.a",
+          "shape": [
+            8,
+            32
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.b",
+          "shape": [
+            8,
+            32
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.conv",
+          "shape": [
+            8,
+            8192
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.attq",
+          "shape": [
+            8,
+            8192
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.attk",
+          "shape": [
+            8,
+            512
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.attv",
+          "shape": [
+            8,
+            512
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.router",
+          "shape": [
+            8,
+            256
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.shared_gate",
+          "shape": [
+            8,
+            1
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.shared_g",
+          "shape": [
+            8,
+            512
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.shared_u",
+          "shape": [
+            8,
+            512
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.shared_out",
+          "shape": [
+            8,
+            2048
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.attq_normal",
+          "shape": [
+            8,
+            16,
+            256
+          ],
+          "dtype": "bfloat16",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.att_out",
+          "shape": [
+            8,
+            4096
+          ],
+          "dtype": "bfloat16",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.gdn_q",
+          "shape": [
+            8,
+            32,
+            128
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.gdn_k",
+          "shape": [
+            8,
+            32,
+            128
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.gdn_v",
+          "shape": [
+            8,
+            32,
+            128
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.gdn_out",
+          "shape": [
+            8,
+            32,
+            128
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.gdn_decay",
+          "shape": [
+            8,
+            32
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.gdn_beta",
+          "shape": [
+            8,
+            32
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.gdn_normal",
+          "shape": [
+            8,
+            4096
+          ],
+          "dtype": "bfloat16",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.ids",
+          "shape": [
+            8,
+            8
+          ],
+          "dtype": "int32",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.router_weights",
+          "shape": [
+            8,
+            8
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.expert_g",
+          "shape": [
+            8,
+            8,
+            512
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.expert_u",
+          "shape": [
+            8,
+            8,
+            512
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.expert_out",
+          "shape": [
+            8,
+            8,
+            2048
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.expert_activation",
+          "shape": [
+            8,
+            8,
+            512
+          ],
+          "dtype": "bfloat16",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.shared_activation",
+          "shape": [
+            8,
+            512
+          ],
+          "dtype": "bfloat16",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.flat_positions",
+          "shape": [
+            8
+          ],
+          "dtype": "int32",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.flat_active",
+          "shape": [
+            8
+          ],
+          "dtype": "int32",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.lengths",
+          "shape": [
+            2
+          ],
+          "dtype": "int32",
+          "role": "input"
+        },
+        {
+          "name": "chunk.counts",
+          "shape": [
+            256
+          ],
+          "dtype": "int32",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.routes",
+          "shape": [
+            256,
+            8
+          ],
+          "dtype": "int32",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.quantized_normal",
+          "shape": [
+            8,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.scales_normal",
+          "shape": [
+            8,
+            16
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.quantized_gdn_normal",
+          "shape": [
+            8,
+            4096
+          ],
+          "dtype": "uint8",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.scales_gdn_normal",
+          "shape": [
+            8,
+            32
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.quantized_att_out",
+          "shape": [
+            8,
+            4096
+          ],
+          "dtype": "uint8",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.scales_att_out",
+          "shape": [
+            8,
+            32
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.quantized_shared_activation",
+          "shape": [
+            8,
+            512
+          ],
+          "dtype": "uint8",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.scales_shared_activation",
+          "shape": [
+            8,
+            4
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.quantized_expert_activation",
+          "shape": [
+            8,
+            8,
+            512
+          ],
+          "dtype": "uint8",
+          "role": "scratch"
+        },
+        {
+          "name": "chunk.scales_expert_activation",
+          "shape": [
+            8,
+            8,
+            4
+          ],
+          "dtype": "float32",
+          "role": "scratch"
+        }
+      ],
+      "calls": [
+        {
+          "kind": "controls",
+          "parameters": {
+            "slots": 2,
+            "chunk": 4
+          },
+          "arguments": [],
+          "bindings": {
+            "position": "positions",
+            "lengths": "chunk.lengths",
+            "flat_position": "chunk.flat_positions",
+            "active": "chunk.flat_active"
+          },
+          "label": null
+        },
+        {
+          "kind": "embedding",
+          "parameters": {
+            "r": 8,
+            "c": 2048,
+            "vocab": 1024
+          },
+          "arguments": [],
+          "bindings": {
+            "ids": "chunk.tokens",
+            "w": "model.language_model.embed_tokens.weight",
+            "out": "chunk.residual"
+          },
+          "label": null
+        },
+        {
+          "kind": "rms",
+          "parameters": {
+            "r": 8,
+            "c": 2048,
+            "eps": 1e-06
+          },
+          "arguments": [],
+          "bindings": {
+            "residual": "chunk.residual",
+            "w": "model.language_model.layers.0.input_layernorm.weight",
+            "out": "chunk.normal"
+          },
+          "label": null
+        },
+        {
+          "kind": "quantize",
+          "parameters": {
+            "r": 8,
+            "k": 2048
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.normal",
+            "out": "chunk.quantized_normal",
+            "scales": "chunk.scales_normal"
+          },
+          "label": null
+        },
+        {
+          "kind": "fp8_linear",
+          "parameters": {
+            "r": 8,
+            "k": 2048,
+            "o": 8192,
+            "prequantized": true
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.quantized_normal",
+            "w": "model.language_model.layers.0.linear_attn.in_proj_qkv.weight",
+            "out": "chunk.qkv",
+            "scales": "model.language_model.layers.0.linear_attn.in_proj_qkv.weight_scale_inv",
+            "activation_scales": "chunk.scales_normal"
+          },
+          "label": null
+        },
+        {
+          "kind": "fp8_linear",
+          "parameters": {
+            "r": 8,
+            "k": 2048,
+            "o": 4096,
+            "prequantized": true
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.quantized_normal",
+            "w": "model.language_model.layers.0.linear_attn.in_proj_z.weight",
+            "out": "chunk.z",
+            "scales": "model.language_model.layers.0.linear_attn.in_proj_z.weight_scale_inv",
+            "activation_scales": "chunk.scales_normal"
+          },
+          "label": null
+        },
+        {
+          "kind": "bf16_linear",
+          "parameters": {
+            "r": 8,
+            "k": 2048,
+            "o": 32
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.normal",
+            "w": "model.language_model.layers.0.linear_attn.in_proj_a.weight",
+            "out": "chunk.a"
+          },
+          "label": null
+        },
+        {
+          "kind": "bf16_linear",
+          "parameters": {
+            "r": 8,
+            "k": 2048,
+            "o": 32
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.normal",
+            "w": "model.language_model.layers.0.linear_attn.in_proj_b.weight",
+            "out": "chunk.b"
+          },
+          "label": null
+        },
+        {
+          "kind": "gdn_conv",
+          "parameters": {
+            "slots": 2,
+            "chunk": 4
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.qkv",
+            "w": "model.language_model.layers.0.linear_attn.conv1d.weight",
+            "lengths": "chunk.lengths",
+            "state": "state.0.1",
+            "out": "chunk.conv"
+          },
+          "label": null
+        },
+        {
+          "kind": "gdn_prepare",
+          "parameters": {
+            "r": 8
+          },
+          "arguments": [],
+          "bindings": {
+            "qkv": "chunk.conv",
+            "a": "chunk.a",
+            "b": "chunk.b",
+            "dt": "model.language_model.layers.0.linear_attn.dt_bias",
+            "A": "model.language_model.layers.0.linear_attn.A_log",
+            "q": "chunk.gdn_q",
+            "k": "chunk.gdn_k",
+            "v": "chunk.gdn_v",
+            "g": "chunk.gdn_decay",
+            "beta": "chunk.gdn_beta"
+          },
+          "label": null
+        },
+        {
+          "kind": "gdn_scan",
+          "parameters": {
+            "slots": 2,
+            "chunk": 4
+          },
+          "arguments": [],
+          "bindings": {
+            "q": "chunk.gdn_q",
+            "k": "chunk.gdn_k",
+            "v": "chunk.gdn_v",
+            "g": "chunk.gdn_decay",
+            "beta": "chunk.gdn_beta",
+            "lengths": "chunk.lengths",
+            "state": "state.0.0",
+            "out": "chunk.gdn_out"
+          },
+          "label": null
+        },
+        {
+          "kind": "gdn_norm",
+          "parameters": {
+            "r": 8,
+            "eps": 1e-06
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.gdn_out",
+            "z": "chunk.z",
+            "w": "model.language_model.layers.0.linear_attn.norm.weight",
+            "out": "chunk.gdn_normal"
+          },
+          "label": null
+        },
+        {
+          "kind": "quantize",
+          "parameters": {
+            "r": 8,
+            "k": 4096
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.gdn_normal",
+            "out": "chunk.quantized_gdn_normal",
+            "scales": "chunk.scales_gdn_normal"
+          },
+          "label": null
+        },
+        {
+          "kind": "fp8_linear",
+          "parameters": {
+            "r": 8,
+            "k": 4096,
+            "o": 2048,
+            "prequantized": true
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.quantized_gdn_normal",
+            "w": "model.language_model.layers.0.linear_attn.out_proj.weight",
+            "out": "chunk.mixed",
+            "scales": "model.language_model.layers.0.linear_attn.out_proj.weight_scale_inv",
+            "activation_scales": "chunk.scales_gdn_normal"
+          },
+          "label": null
+        },
+        {
+          "kind": "add_rms",
+          "parameters": {
+            "r": 8,
+            "c": 2048,
+            "eps": 1e-06
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.mixed",
+            "residual": "chunk.residual",
+            "w": "model.language_model.layers.0.post_attention_layernorm.weight",
+            "out": "chunk.normal"
+          },
+          "label": null
+        },
+        {
+          "kind": "bf16_linear",
+          "parameters": {
+            "r": 8,
+            "k": 2048,
+            "o": 256
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.normal",
+            "w": "model.language_model.layers.0.mlp.gate.weight",
+            "out": "chunk.router"
+          },
+          "label": null
+        },
+        {
+          "kind": "bf16_linear",
+          "parameters": {
+            "r": 8,
+            "k": 2048,
+            "o": 1
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.normal",
+            "w": "model.language_model.layers.0.mlp.shared_expert_gate.weight",
+            "out": "chunk.shared_gate"
+          },
+          "label": null
+        },
+        {
+          "kind": "router",
+          "parameters": {
+            "r": 8,
+            "experts": 256,
+            "top": 8
+          },
+          "arguments": [],
+          "bindings": {
+            "logits": "chunk.router",
+            "ids": "chunk.ids",
+            "weights": "chunk.router_weights"
+          },
+          "label": null
+        },
+        {
+          "kind": "expert_routes",
+          "parameters": {
+            "slots": 2,
+            "chunk": 4
+          },
+          "arguments": [],
+          "bindings": {
+            "ids": "chunk.ids",
+            "active": "chunk.flat_active",
+            "counts": "chunk.counts",
+            "routes": "chunk.routes"
+          },
+          "label": null
+        },
+        {
+          "kind": "quantize",
+          "parameters": {
+            "r": 8,
+            "k": 2048
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.normal",
+            "out": "chunk.quantized_normal",
+            "scales": "chunk.scales_normal"
+          },
+          "label": null
+        },
+        {
+          "kind": "fp8_experts",
+          "parameters": {
+            "r": 8,
+            "experts": 256,
+            "top": 8,
+            "o": 512,
+            "k": 2048,
+            "routed_input": false
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.quantized_normal",
+            "activation_scales": "chunk.scales_normal",
+            "w": "model.language_model.layers.0.mlp.experts.gate_proj.weight",
+            "scales": "model.language_model.layers.0.mlp.experts.gate_proj.weight_scale_inv",
+            "counts": "chunk.counts",
+            "routes": "chunk.routes",
+            "out": "chunk.expert_g"
+          },
+          "label": null
+        },
+        {
+          "kind": "fp8_experts",
+          "parameters": {
+            "r": 8,
+            "experts": 256,
+            "top": 8,
+            "o": 512,
+            "k": 2048,
+            "routed_input": false
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.quantized_normal",
+            "activation_scales": "chunk.scales_normal",
+            "w": "model.language_model.layers.0.mlp.experts.up_proj.weight",
+            "scales": "model.language_model.layers.0.mlp.experts.up_proj.weight_scale_inv",
+            "counts": "chunk.counts",
+            "routes": "chunk.routes",
+            "out": "chunk.expert_u"
+          },
+          "label": null
+        },
+        {
+          "kind": "swiglu_experts",
+          "parameters": {
+            "r": 8,
+            "top": 8,
+            "c": 512
+          },
+          "arguments": [],
+          "bindings": {
+            "g": "chunk.expert_g",
+            "u": "chunk.expert_u",
+            "out": "chunk.expert_activation"
+          },
+          "label": null
+        },
+        {
+          "kind": "quantize",
+          "parameters": {
+            "r": 8,
+            "k": 512,
+            "top": 8
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.expert_activation",
+            "out": "chunk.quantized_expert_activation",
+            "scales": "chunk.scales_expert_activation"
+          },
+          "label": null
+        },
+        {
+          "kind": "fp8_experts",
+          "parameters": {
+            "r": 8,
+            "experts": 256,
+            "top": 8,
+            "o": 2048,
+            "k": 512,
+            "routed_input": true
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.quantized_expert_activation",
+            "activation_scales": "chunk.scales_expert_activation",
+            "w": "model.language_model.layers.0.mlp.experts.down_proj.weight",
+            "scales": "model.language_model.layers.0.mlp.experts.down_proj.weight_scale_inv",
+            "counts": "chunk.counts",
+            "routes": "chunk.routes",
+            "out": "chunk.expert_out"
+          },
+          "label": null
+        },
+        {
+          "kind": "fp8_linear",
+          "parameters": {
+            "r": 8,
+            "k": 2048,
+            "o": 512,
+            "prequantized": true
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.quantized_normal",
+            "w": "model.language_model.layers.0.mlp.shared_expert.gate_proj.weight",
+            "out": "chunk.shared_g",
+            "scales": "model.language_model.layers.0.mlp.shared_expert.gate_proj.weight_scale_inv",
+            "activation_scales": "chunk.scales_normal"
+          },
+          "label": null
+        },
+        {
+          "kind": "fp8_linear",
+          "parameters": {
+            "r": 8,
+            "k": 2048,
+            "o": 512,
+            "prequantized": true
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.quantized_normal",
+            "w": "model.language_model.layers.0.mlp.shared_expert.up_proj.weight",
+            "out": "chunk.shared_u",
+            "scales": "model.language_model.layers.0.mlp.shared_expert.up_proj.weight_scale_inv",
+            "activation_scales": "chunk.scales_normal"
+          },
+          "label": null
+        },
+        {
+          "kind": "swiglu",
+          "parameters": {
+            "r": 8,
+            "c": 512
+          },
+          "arguments": [],
+          "bindings": {
+            "g": "chunk.shared_g",
+            "u": "chunk.shared_u",
+            "out": "chunk.shared_activation"
+          },
+          "label": null
+        },
+        {
+          "kind": "quantize",
+          "parameters": {
+            "r": 8,
+            "k": 512
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.shared_activation",
+            "out": "chunk.quantized_shared_activation",
+            "scales": "chunk.scales_shared_activation"
+          },
+          "label": null
+        },
+        {
+          "kind": "fp8_linear",
+          "parameters": {
+            "r": 8,
+            "k": 512,
+            "o": 2048,
+            "prequantized": true
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.quantized_shared_activation",
+            "w": "model.language_model.layers.0.mlp.shared_expert.down_proj.weight",
+            "out": "chunk.shared_out",
+            "scales": "model.language_model.layers.0.mlp.shared_expert.down_proj.weight_scale_inv",
+            "activation_scales": "chunk.scales_shared_activation"
+          },
+          "label": null
+        },
+        {
+          "kind": "moe_combine",
+          "parameters": {
+            "r": 8,
+            "top": 8,
+            "c": 2048
+          },
+          "arguments": [],
+          "bindings": {
+            "experts": "chunk.expert_out",
+            "weights": "chunk.router_weights",
+            "shared": "chunk.shared_out",
+            "gate": "chunk.shared_gate",
+            "out": "chunk.ffn"
+          },
+          "label": null
+        },
+        {
+          "kind": "add_rms",
+          "parameters": {
+            "r": 8,
+            "c": 2048,
+            "eps": 1e-06
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.ffn",
+            "residual": "chunk.residual",
+            "w": "model.language_model.layers.1.input_layernorm.weight",
+            "out": "chunk.normal"
+          },
+          "label": null
+        },
+        {
+          "kind": "quantize",
+          "parameters": {
+            "r": 8,
+            "k": 2048
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.normal",
+            "out": "chunk.quantized_normal",
+            "scales": "chunk.scales_normal"
+          },
+          "label": null
+        },
+        {
+          "kind": "fp8_linear",
+          "parameters": {
+            "r": 8,
+            "k": 2048,
+            "o": 8192,
+            "prequantized": true
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.quantized_normal",
+            "w": "model.language_model.layers.1.self_attn.q_proj.weight",
+            "out": "chunk.attq",
+            "scales": "model.language_model.layers.1.self_attn.q_proj.weight_scale_inv",
+            "activation_scales": "chunk.scales_normal"
+          },
+          "label": null
+        },
+        {
+          "kind": "fp8_linear",
+          "parameters": {
+            "r": 8,
+            "k": 2048,
+            "o": 512,
+            "prequantized": true
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.quantized_normal",
+            "w": "model.language_model.layers.1.self_attn.k_proj.weight",
+            "out": "chunk.attk",
+            "scales": "model.language_model.layers.1.self_attn.k_proj.weight_scale_inv",
+            "activation_scales": "chunk.scales_normal"
+          },
+          "label": null
+        },
+        {
+          "kind": "fp8_linear",
+          "parameters": {
+            "r": 8,
+            "k": 2048,
+            "o": 512,
+            "prequantized": true
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.quantized_normal",
+            "w": "model.language_model.layers.1.self_attn.v_proj.weight",
+            "out": "chunk.attv",
+            "scales": "model.language_model.layers.1.self_attn.v_proj.weight_scale_inv",
+            "activation_scales": "chunk.scales_normal"
+          },
+          "label": null
+        },
+        {
+          "kind": "attention_q",
+          "parameters": {
+            "r": 8,
+            "eps": 1e-06,
+            "capacity": 32,
+            "theta": 1000000.0
+          },
+          "arguments": [],
+          "bindings": {
+            "projection": "chunk.attq",
+            "w": "model.language_model.layers.1.self_attn.q_norm.weight",
+            "positions": "chunk.flat_positions",
+            "active": "chunk.flat_active",
+            "q": "chunk.attq_normal"
+          },
+          "label": null
+        },
+        {
+          "kind": "attention_kv",
+          "parameters": {
+            "slots": 2,
+            "chunk": 4,
+            "capacity": 32,
+            "eps": 1e-06,
+            "theta": 1000000.0
+          },
+          "arguments": [],
+          "bindings": {
+            "projection": "chunk.attk",
+            "values": "chunk.attv",
+            "w": "model.language_model.layers.1.self_attn.k_norm.weight",
+            "positions": "chunk.flat_positions",
+            "active": "chunk.flat_active",
+            "kc": "state.1.0",
+            "vc": "state.1.1"
+          },
+          "label": null
+        },
+        {
+          "kind": "attention",
+          "parameters": {
+            "slots": 2,
+            "chunk": 4,
+            "capacity": 32
+          },
+          "arguments": [],
+          "bindings": {
+            "q": "chunk.attq_normal",
+            "kc": "state.1.0",
+            "vc": "state.1.1",
+            "projection": "chunk.attq",
+            "positions": "positions",
+            "lengths": "chunk.lengths",
+            "out": "chunk.att_out"
+          },
+          "label": null
+        },
+        {
+          "kind": "quantize",
+          "parameters": {
+            "r": 8,
+            "k": 4096
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.att_out",
+            "out": "chunk.quantized_att_out",
+            "scales": "chunk.scales_att_out"
+          },
+          "label": null
+        },
+        {
+          "kind": "fp8_linear",
+          "parameters": {
+            "r": 8,
+            "k": 4096,
+            "o": 2048,
+            "prequantized": true
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.quantized_att_out",
+            "w": "model.language_model.layers.1.self_attn.o_proj.weight",
+            "out": "chunk.mixed",
+            "scales": "model.language_model.layers.1.self_attn.o_proj.weight_scale_inv",
+            "activation_scales": "chunk.scales_att_out"
+          },
+          "label": null
+        },
+        {
+          "kind": "add_rms",
+          "parameters": {
+            "r": 8,
+            "c": 2048,
+            "eps": 1e-06
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.mixed",
+            "residual": "chunk.residual",
+            "w": "model.language_model.layers.1.post_attention_layernorm.weight",
+            "out": "chunk.normal"
+          },
+          "label": null
+        },
+        {
+          "kind": "bf16_linear",
+          "parameters": {
+            "r": 8,
+            "k": 2048,
+            "o": 256
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.normal",
+            "w": "model.language_model.layers.1.mlp.gate.weight",
+            "out": "chunk.router"
+          },
+          "label": null
+        },
+        {
+          "kind": "bf16_linear",
+          "parameters": {
+            "r": 8,
+            "k": 2048,
+            "o": 1
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.normal",
+            "w": "model.language_model.layers.1.mlp.shared_expert_gate.weight",
+            "out": "chunk.shared_gate"
+          },
+          "label": null
+        },
+        {
+          "kind": "router",
+          "parameters": {
+            "r": 8,
+            "experts": 256,
+            "top": 8
+          },
+          "arguments": [],
+          "bindings": {
+            "logits": "chunk.router",
+            "ids": "chunk.ids",
+            "weights": "chunk.router_weights"
+          },
+          "label": null
+        },
+        {
+          "kind": "expert_routes",
+          "parameters": {
+            "slots": 2,
+            "chunk": 4
+          },
+          "arguments": [],
+          "bindings": {
+            "ids": "chunk.ids",
+            "active": "chunk.flat_active",
+            "counts": "chunk.counts",
+            "routes": "chunk.routes"
+          },
+          "label": null
+        },
+        {
+          "kind": "quantize",
+          "parameters": {
+            "r": 8,
+            "k": 2048
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.normal",
+            "out": "chunk.quantized_normal",
+            "scales": "chunk.scales_normal"
+          },
+          "label": null
+        },
+        {
+          "kind": "fp8_experts",
+          "parameters": {
+            "r": 8,
+            "experts": 256,
+            "top": 8,
+            "o": 512,
+            "k": 2048,
+            "routed_input": false
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.quantized_normal",
+            "activation_scales": "chunk.scales_normal",
+            "w": "model.language_model.layers.1.mlp.experts.gate_proj.weight",
+            "scales": "model.language_model.layers.1.mlp.experts.gate_proj.weight_scale_inv",
+            "counts": "chunk.counts",
+            "routes": "chunk.routes",
+            "out": "chunk.expert_g"
+          },
+          "label": null
+        },
+        {
+          "kind": "fp8_experts",
+          "parameters": {
+            "r": 8,
+            "experts": 256,
+            "top": 8,
+            "o": 512,
+            "k": 2048,
+            "routed_input": false
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.quantized_normal",
+            "activation_scales": "chunk.scales_normal",
+            "w": "model.language_model.layers.1.mlp.experts.up_proj.weight",
+            "scales": "model.language_model.layers.1.mlp.experts.up_proj.weight_scale_inv",
+            "counts": "chunk.counts",
+            "routes": "chunk.routes",
+            "out": "chunk.expert_u"
+          },
+          "label": null
+        },
+        {
+          "kind": "swiglu_experts",
+          "parameters": {
+            "r": 8,
+            "top": 8,
+            "c": 512
+          },
+          "arguments": [],
+          "bindings": {
+            "g": "chunk.expert_g",
+            "u": "chunk.expert_u",
+            "out": "chunk.expert_activation"
+          },
+          "label": null
+        },
+        {
+          "kind": "quantize",
+          "parameters": {
+            "r": 8,
+            "k": 512,
+            "top": 8
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.expert_activation",
+            "out": "chunk.quantized_expert_activation",
+            "scales": "chunk.scales_expert_activation"
+          },
+          "label": null
+        },
+        {
+          "kind": "fp8_experts",
+          "parameters": {
+            "r": 8,
+            "experts": 256,
+            "top": 8,
+            "o": 2048,
+            "k": 512,
+            "routed_input": true
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.quantized_expert_activation",
+            "activation_scales": "chunk.scales_expert_activation",
+            "w": "model.language_model.layers.1.mlp.experts.down_proj.weight",
+            "scales": "model.language_model.layers.1.mlp.experts.down_proj.weight_scale_inv",
+            "counts": "chunk.counts",
+            "routes": "chunk.routes",
+            "out": "chunk.expert_out"
+          },
+          "label": null
+        },
+        {
+          "kind": "fp8_linear",
+          "parameters": {
+            "r": 8,
+            "k": 2048,
+            "o": 512,
+            "prequantized": true
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.quantized_normal",
+            "w": "model.language_model.layers.1.mlp.shared_expert.gate_proj.weight",
+            "out": "chunk.shared_g",
+            "scales": "model.language_model.layers.1.mlp.shared_expert.gate_proj.weight_scale_inv",
+            "activation_scales": "chunk.scales_normal"
+          },
+          "label": null
+        },
+        {
+          "kind": "fp8_linear",
+          "parameters": {
+            "r": 8,
+            "k": 2048,
+            "o": 512,
+            "prequantized": true
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.quantized_normal",
+            "w": "model.language_model.layers.1.mlp.shared_expert.up_proj.weight",
+            "out": "chunk.shared_u",
+            "scales": "model.language_model.layers.1.mlp.shared_expert.up_proj.weight_scale_inv",
+            "activation_scales": "chunk.scales_normal"
+          },
+          "label": null
+        },
+        {
+          "kind": "swiglu",
+          "parameters": {
+            "r": 8,
+            "c": 512
+          },
+          "arguments": [],
+          "bindings": {
+            "g": "chunk.shared_g",
+            "u": "chunk.shared_u",
+            "out": "chunk.shared_activation"
+          },
+          "label": null
+        },
+        {
+          "kind": "quantize",
+          "parameters": {
+            "r": 8,
+            "k": 512
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.shared_activation",
+            "out": "chunk.quantized_shared_activation",
+            "scales": "chunk.scales_shared_activation"
+          },
+          "label": null
+        },
+        {
+          "kind": "fp8_linear",
+          "parameters": {
+            "r": 8,
+            "k": 512,
+            "o": 2048,
+            "prequantized": true
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.quantized_shared_activation",
+            "w": "model.language_model.layers.1.mlp.shared_expert.down_proj.weight",
+            "out": "chunk.shared_out",
+            "scales": "model.language_model.layers.1.mlp.shared_expert.down_proj.weight_scale_inv",
+            "activation_scales": "chunk.scales_shared_activation"
+          },
+          "label": null
+        },
+        {
+          "kind": "moe_combine",
+          "parameters": {
+            "r": 8,
+            "top": 8,
+            "c": 2048
+          },
+          "arguments": [],
+          "bindings": {
+            "experts": "chunk.expert_out",
+            "weights": "chunk.router_weights",
+            "shared": "chunk.shared_out",
+            "gate": "chunk.shared_gate",
+            "out": "chunk.ffn"
+          },
+          "label": null
+        },
+        {
+          "kind": "add_rms",
+          "parameters": {
+            "r": 8,
+            "c": 2048,
+            "eps": 1e-06
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.ffn",
+            "residual": "chunk.residual",
+            "w": "model.language_model.norm.weight",
+            "out": "chunk.normal"
+          },
+          "label": null
+        },
+        {
+          "kind": "last_rows",
+          "parameters": {
+            "slots": 2,
+            "chunk": 4,
+            "width": 2048
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "chunk.normal",
+            "lengths": "chunk.lengths",
+            "out": "normal"
+          },
+          "label": null
+        },
+        {
+          "kind": "bf16_linear",
+          "parameters": {
+            "r": 2,
+            "k": 2048,
+            "o": 1024,
+            "decode_head": true
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "normal",
+            "w": "lm_head.weight",
+            "out": "logits"
+          },
+          "label": null
+        },
+        {
+          "kind": "argmax",
+          "parameters": {
+            "r": 2,
+            "vocab": 1024
+          },
+          "arguments": [
+            "logits",
+            "tokens",
+            "positions",
+            "active"
+          ],
+          "bindings": {},
+          "label": null
+        },
+        {
+          "kind": "advance",
+          "parameters": {
+            "slots": 2,
+            "chunk": 4
+          },
+          "arguments": [],
+          "bindings": {
+            "position": "positions",
+            "lengths": "chunk.lengths",
+            "active": "active"
+          },
+          "label": null
+        }
+      ],
+      "request": {
+        "inputs": {
+          "tokens": "chunk.tokens",
+          "mapping": "mapping",
+          "lengths": "chunk.lengths",
+          "head_active": "active"
+        },
+        "prediction": "tokens",
+        "reset": [
+          "state.0.0",
+          "state.0.1",
+          "positions"
+        ]
+      }
+    }
+  }
+}

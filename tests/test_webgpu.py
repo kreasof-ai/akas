@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 import tensor
 from akas import LFM2
-from akas.artifacts.kernels import identity
+from akas.artifacts.schema import identity
 
 pytestmark = pytest.mark.skipif(
     os.environ.get("TENSOR_LFM2_WEBGPU") != "1",
@@ -137,7 +137,7 @@ def test_q6_embedding_gather_matches_cpu_blocks_exactly():
 
 def test_q4_embedding_word_boundaries_and_half_subnormal_scales(tmp_path):
     from akas.checkpoints.gguf import dequantize
-    from akas.compilation.source import export_kernel as source
+    from akas.compilation.emit import export_kernel as source
 
     # Eighteen-byte blocks alternate between aligned and unaligned u32 loads.
     rng = np.random.default_rng(411)
@@ -171,7 +171,7 @@ def test_q4_embedding_word_boundaries_and_half_subnormal_scales(tmp_path):
 
 
 def test_gpu_argmax_ties_tail_and_control(tmp_path):
-    from akas.compilation.source import export_kernel as source
+    from akas.compilation.emit import export_kernel as source
 
     n = 1025
     path = tmp_path / "argmax.py"
@@ -224,7 +224,7 @@ def test_gpu_argmax_ties_tail_and_control(tmp_path):
 def test_packed_decode_projection_block_fields(tmp_path, kind, subgroup, unroll, dot):
     from akas.checkpoints.gguf import dequantize
     from akas.checkpoints.gguf import TYPES
-    from akas.compilation.source import export_kernel as source
+    from akas.compilation.emit import export_kernel as source
 
     k, o = 512, 8
     _, block, size = TYPES[kind]
@@ -307,7 +307,7 @@ def test_q4_decode_schedules_tail_and_paired_accumulators(
     tmp_path, schedule, subgroup, kind
 ):
     from akas.checkpoints.gguf import dequantize
-    from akas.compilation.source import export_kernel as source
+    from akas.compilation.emit import export_kernel as source
 
     k, o = 512, 11
     rng = np.random.default_rng(547)
@@ -371,7 +371,7 @@ def test_q4_decode_schedules_tail_and_paired_accumulators(
 @pytest.mark.parametrize("subgroup", [False, True])
 def test_decode_residual_projection_matches_separate_add(tmp_path, encoding, subgroup):
     from akas.checkpoints.gguf import TYPES
-    from akas.compilation.source import export_kernel as source
+    from akas.compilation.emit import export_kernel as source
 
     k, o = 512, 11
     rng = np.random.default_rng(829)
@@ -446,7 +446,7 @@ def test_native_half_unpack_all_bit_patterns(tmp_path):
 
 def test_q8_activation_packing_and_integer_dot_reference(tmp_path):
     from akas.checkpoints.gguf import dequantize
-    from akas.compilation.source import export_kernel as source
+    from akas.compilation.emit import export_kernel as source
 
     k, o = 256, 8
     rng = np.random.default_rng(802)

@@ -7,12 +7,12 @@ from akas.ops.convolution import compose as shortconv
 from akas.execution.plan import ExecutionPlan
 from akas.execution.plan import KernelPlan
 from akas.ops.linear.compose import packed_linear
-from akas.ops.normalization.compose import rms_norm
-from akas.artifacts.kernels import identity
+from akas.ops.normalization.operation import rms_norm
+from akas.artifacts.schema import identity
 from akas.ops.schedules.packed_selection import projection_tile
 from akas.ops.schedules.packed_selection import webgpu_parameters
 
-from akas.ops.ffn.compose import packed_ffn as ffn_packed_ffn
+from akas.ops.activation.operation import packed_ffn as ffn_packed_ffn
 
 
 def build_plan(self, r, *, grouped=False):

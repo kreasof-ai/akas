@@ -1,13 +1,13 @@
 """FP8 projection schedule transforms over an existing execution bundle."""
 
-from akas.compilation.build import publish
+from akas.artifacts.write import publish
 
 import hashlib
 from importlib.util import find_spec
 import json
 from pathlib import Path
-from akas.compilation.build import build_artifact
-from akas.compilation.build import export_source
+from akas.compilation.emit import build_artifact
+from akas.compilation.emit import export_source
 
 
 def mma_bundle(
@@ -55,7 +55,7 @@ def mma_bundle(
                     dependencies=(
                         "tensor.compiler.frontend.source",
                         "tensor.compiler.cuda.lowering",
-                        "akas.ops.normalization.kernels",
+                        "akas.ops.normalization.kernel",
                     ),
                 )
             )
@@ -80,13 +80,13 @@ def mma_bundle(
                     qa = qe.with_suffix(".tbin")
                     qe.write_text(
                         export_source(
-                            "akas.ops.quantization.cuda.block_fp8",
+                            "akas.quantization.activations.fp8",
                             "quantize_kernel",
                             qp,
                             dependencies=(
                                 "tensor.compiler.frontend.source",
                                 "tensor.compiler.cuda.lowering",
-                                "akas.ops.normalization.kernels",
+                                "akas.ops.normalization.kernel",
                             ),
                         )
                     )
@@ -108,7 +108,7 @@ def mma_bundle(
                         mergep,
                         dependencies=(
                             "tensor.compiler.frontend.source",
-                            "akas.ops.normalization.kernels",
+                            "akas.ops.normalization.kernel",
                         ),
                     )
                 )

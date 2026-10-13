@@ -4,14 +4,14 @@ import hashlib
 import json
 from pathlib import Path
 
-from akas.compilation.build import build
-from akas.compilation.plan import Bundle
-from akas.compilation.plan import Kernel
-from akas.compilation.plan import Source
-from akas.compilation.bundles import copy
+from akas.compilation.compile import build
+from akas.artifacts.schema import Bundle
+from akas.artifacts.schema import Kernel
+from akas.artifacts.schema import Source
+from akas.artifacts.write import copy
 from akas.execution.bindings.block_fp8.geometry import validate
-from akas.artifacts.kernels import identity
-from akas.artifacts.fingerprints import (
+from akas.artifacts.schema import identity
+from akas.artifacts.fingerprint import (
     block_fp8_hashes as implementation_hashes,
 )
 

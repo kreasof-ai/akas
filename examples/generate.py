@@ -3,6 +3,8 @@
 import argparse
 import tensor
 from akas import Engine
+from akas.models.lfm2.model import LFM2
+from akas.execution.handles import HandleExecutor
 
 
 def main():
@@ -13,7 +15,9 @@ def main():
     parser.add_argument("--max-tokens", type=int, default=32)
     args = parser.parse_args()
     with tensor.Device() as device:
-        with Engine.from_lfm2(args.model, args.bundle, device) as engine:
+        with Engine.from_checkpoint(
+            LFM2, args.model, args.bundle, device, adapter=HandleExecutor
+        ) as engine:
             tokenizer = engine.model.model.tokenizer
             request = engine.submit(
                 tokenizer.encode(args.prompt), max_tokens=args.max_tokens

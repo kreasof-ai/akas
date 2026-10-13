@@ -92,7 +92,7 @@ def make_verifier(model, bundle):
 
 
 def adaptive_profiles(bundle):
-    from akas.artifacts.fingerprints import (
+    from akas.artifacts.fingerprint import (
         block_fp8_hashes as implementation_hashes,
     )
 

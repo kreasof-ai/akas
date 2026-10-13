@@ -1,6 +1,7 @@
 """Qwen checkpoint inventory, raw storage constraints and projection layouts."""
 
 from __future__ import annotations
+from functools import cached_property
 from akas.checkpoints.upload import upload_shards
 from akas.checkpoints.upload import upload_concatenated
 from akas.models.qwen35.config import Qwen35Config
@@ -10,14 +11,17 @@ from akas.checkpoints.safetensors import inspect_tensors
 from akas.checkpoints.safetensors import read_tensor
 from akas.checkpoints.safetensors import json_document as _json
 
-import math
-from akas.checkpoints.safetensors import TensorInfo
-
 
 class Qwen35Checkpoint:
     """Validate the complete text checkpoint before allocating GPU weights."""
 
     storage = {"F8_E4M3": ("uint8", 1), "BF16": ("uint16", 2), "F32": ("float32", 4)}
+
+    @cached_property
+    def tokenizer(self):
+        from akas.text.tokenizer import Tokenizer
+
+        return Tokenizer.from_pretrained(self.directory)
 
     def __init__(self, directory, *, branch="text"):
         self.directory = Path(directory).resolve()
@@ -92,6 +96,12 @@ class Qwen35Checkpoint:
         The returned buffers are owned by the caller.
         """
         wanted = list(self.tensors) if names is None else list(names)
+        layouts = self.storage_layouts(names=wanted, pack_experts=pack_experts)
+        return upload_shards(device, self.tensors, wanted, layouts)
+
+    def storage_layouts(self, *, names=None, pack_experts=False):
+        """Use the same grouped storage declaration for graphs and transfers."""
+        wanted = list(self.tensors) if names is None else list(names)
         if len(set(wanted)) != len(wanted) or any(
             (n not in self.tensors for n in wanted)
         ):
@@ -117,13 +127,30 @@ class Qwen35Checkpoint:
                     raise ValueError(
                         "packed loading requires every expert in each selected projection"
                     )
-        return upload_shards(device, self.tensors, wanted, layouts)
+        return layouts
+
+    def storage_specs(self, *, names=None, pack_experts=False):
+        from akas.checkpoints.upload import DTYPES
+
+        return {group: (tuple(shape), DTYPES[self.tensors[name].dtype])
+                for name, (group, _, shape) in
+                self.storage_layouts(names=names, pack_experts=pack_experts).items()}
 
 
 from akas.models.qwen35.config import DenseConfig
 
 
 class DenseCheckpoint:
+    def program_upload_options(self, weights, *, model_options):
+        """Select the checkpoint branch from the program's declared weights."""
+        return {"branch": "all" if any(name.startswith("mtp.") for name in weights) else "text"}
+
+    @cached_property
+    def tokenizer(self):
+        from akas.text.tokenizer import Tokenizer
+
+        return Tokenizer.from_pretrained(self.directory)
+
     def __init__(self, directory):
         self.directory = Path(directory).resolve()
         self.config = DenseConfig.from_json(
@@ -153,40 +180,61 @@ class DenseCheckpoint:
         return read_tensor(self.tensors[name])
 
     def upload(self, device, *, branch="text"):
-        if branch not in ("text", "mtp"):
+        if branch not in ("text", "mtp", "all"):
             raise ValueError("invalid checkpoint branch")
         selected = {
             name: info
             for name, info in self.tensors.items()
-            if name.startswith("mtp.") == (branch == "mtp")
+            if branch == "all" or name.startswith("mtp.") == (branch == "mtp")
         }
-        groups = []
-        layers = self.config.layers if branch == "text" else ("full_attention",)
-        for layer, kind in enumerate(layers):
-            root = (
-                f"model.language_model.layers.{layer}."
-                if branch == "text"
-                else f"mtp.layers.{layer}."
-            )
-            if kind == "linear_attention":
-                names = tuple(
-                    root + "linear_attn.in_proj_" + name + ".weight"
-                    for name in ("qkv", "z", "a", "b")
-                )
-                destination = root + "linear_attn.input.weight"
-            else:
-                names = tuple(
-                    root + "self_attn." + name + "_proj.weight"
-                    for name in ("q", "k", "v")
-                )
-                destination = root + "self_attn.input.weight"
-            groups.append((destination, names, "bfloat16"))
-            names = tuple(
-                root + "mlp." + name + "_proj.weight" for name in ("gate", "up")
-            )
-            groups.append((root + "mlp.input.weight", names, "bfloat16"))
+        groups = dense_groups(self.config, branch)
         return upload_concatenated(device, selected, self.read, groups)
 
+
+    def storage_specs(self, *, branch="text"):
+        if branch not in ("text", "mtp", "all"):
+            raise ValueError("invalid checkpoint branch")
+        from akas.checkpoints.upload import DTYPES
+        selected = {name:info for name,info in self.tensors.items()
+                    if branch == "all" or name.startswith("mtp.") == (branch == "mtp")}
+        specs = {name:(tuple(info.shape),DTYPES[info.dtype]) for name,info in selected.items()}
+        for destination,names,dtype in dense_groups(self.config,branch):
+            shapes = [specs[name][0] for name in names]
+            specs[destination] = ((sum(shape[0] for shape in shapes),*shapes[0][1:]),dtype)
+            for name in names:
+                del specs[name]
+        return specs
+
+
+def dense_groups(config, branch="text"):
+    if branch == "all":
+        return [*dense_groups(config, "text"), *dense_groups(config, "mtp")]
+    groups = []
+    layers = config.layers if branch == "text" else ("full_attention",)
+    for layer, kind in enumerate(layers):
+        root = (
+            f"model.language_model.layers.{layer}."
+            if branch == "text"
+            else f"mtp.layers.{layer}."
+        )
+        if kind == "linear_attention":
+            names = tuple(
+                root + "linear_attn.in_proj_" + name + ".weight"
+                for name in ("qkv", "z", "a", "b")
+            )
+            destination = root + "linear_attn.input.weight"
+        else:
+            names = tuple(
+                root + "self_attn." + name + "_proj.weight"
+                for name in ("q", "k", "v")
+            )
+            destination = root + "self_attn.input.weight"
+        groups.append((destination, names, "bfloat16"))
+        names = tuple(
+            root + "mlp." + name + "_proj.weight" for name in ("gate", "up")
+        )
+        groups.append((root + "mlp.input.weight", names, "bfloat16"))
+    return groups
 
 def expected_moe_tensors(config):
     shapes = {

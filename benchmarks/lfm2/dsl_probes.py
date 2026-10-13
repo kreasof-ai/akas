@@ -73,6 +73,6 @@ def subgroup_source(kind, parameters, size):
             "tensor.compiler.webgpu.schedules.partitioned",
             "tensor.compiler.webgpu.schedules.register_matmul",
             "tensor.compiler.webgpu.schedules.registers",
-            "akas.ops.normalization.kernels",
+            "akas.ops.normalization.kernel",
         ),
     )

@@ -18,11 +18,11 @@ jobs:
       - run: uv run --no-sync python tools/bootstrap_nvrtc.py --out build/nvrtc-12.9
       - run: uv run --no-sync python -m benchmarks.lfm2.diagnostic --out build/diagnostic.gguf
       - run: uv run --no-sync python -m akas compile --definition akas.models.lfm2.model:LFM2 --checkpoint build/diagnostic.gguf --profile packed --out build/diagnostic --config '{"context":384,"target":"sm_86"}'
-      - run: uv run --no-sync python -m akas compile --definition akas.models.lfm2.model:LFM2Reference --checkpoint build/diagnostic.gguf --profile reference --out build/reference-cuda --config '{"batch":4,"capacity":32,"target":"sm_86","kv_dtype":"fp8"}'
+      - run: uv run --no-sync python -m akas compile --definition akas.models.lfm2.model:LFM2Reference --checkpoint build/diagnostic.gguf --profile reference --out build/reference-cuda --config '{"search":false,"batch":4,"capacity":32,"target":"sm_86","kv_dtype":"fp8"}'
       - run: uv run --no-sync python -m examples.lfm2.checkpoint --gguf build/diagnostic.gguf --out build/diagnostic-hf
-      - run: uv run --no-sync python -m akas compile --definition akas.models.lfm2.model:LFM2Reference --checkpoint build/diagnostic-hf --checkpoint-options '{"tokenizer":false}' --profile reference --out build/reference-webgpu --config '{"batch":4,"capacity":32,"provider":"webgpu","kv_dtype":"fp8"}'
-      - run: uv run --no-sync python -m akas compile --definition akas.models.lfm2.model:LFM2Batched --checkpoint build/diagnostic.gguf --profile floating --out build/floating-cuda --config '{"batch":4,"capacity":32,"prefill_chunk":32,"target":"sm_86","kv_dtype":"fp8"}'
-      - run: uv run --no-sync python -m akas compile --definition akas.models.lfm2.model:LFM2Batched --checkpoint build/diagnostic-hf --checkpoint-options '{"tokenizer":false}' --profile floating --out build/floating-webgpu --config '{"batch":4,"capacity":32,"prefill_chunk":32,"provider":"webgpu","kv_dtype":"fp8"}'
+      - run: uv run --no-sync python -m akas compile --definition akas.models.lfm2.model:LFM2Reference --checkpoint build/diagnostic-hf --checkpoint-options '{"tokenizer":false}' --profile reference --out build/reference-webgpu --config '{"search":false,"batch":4,"capacity":32,"provider":"webgpu","kv_dtype":"fp8"}'
+      - run: uv run --no-sync python -m akas compile --definition akas.models.lfm2.model:LFM2Batched --checkpoint build/diagnostic.gguf --profile floating --out build/floating-cuda --config '{"search":false,"batch":4,"capacity":32,"prefill_chunk":32,"target":"sm_86","kv_dtype":"fp8"}'
+      - run: uv run --no-sync python -m akas compile --definition akas.models.lfm2.model:LFM2Batched --checkpoint build/diagnostic-hf --checkpoint-options '{"tokenizer":false}' --profile floating --out build/floating-webgpu --config '{"search":false,"batch":4,"capacity":32,"prefill_chunk":32,"provider":"webgpu","kv_dtype":"fp8"}'
       - run: uv build --out-dir build/wheels
       - name: Read the pinned Tensor revision
         id: tensor
@@ -47,7 +47,7 @@ jobs:
         run: |
           uv venv --python 3.12 build/consumer
           uv pip install --python build/consumer/bin/python build/wheels/*.whl
-          build/consumer/bin/python -m akas inspect --model build/diagnostic.gguf
+          build/consumer/bin/python -m akas inspect --definition akas.models.lfm2.model:LFM2 --model build/diagnostic.gguf
           build/consumer/bin/python - <<'PY'
           import importlib.abc, sys
           class Guard(importlib.abc.MetaPathFinder):
@@ -60,12 +60,12 @@ jobs:
           from akas.benchmarking import Case, matrix
           assert len(matrix()) == 10 and Case(4,32).capacity == 64
           from akas.execution.forward import Forward
-          from akas.planning import ForwardPlan
-          plan = ForwardPlan(contract='packed')
+          from akas.graph import Graph
+          plan = Graph(contract='packed')
           value = plan.buffer('x', (256,), 'float32')
           plan('add', dict(c=256), value, value, value)
-          assert len(ForwardPlan.from_metadata(plan.metadata()).requirements()) == 1
-          from akas.artifacts.fingerprints import packed_hashes as implementation_hashes
+          assert len(Graph.from_metadata(plan.metadata()).requirements()) == 1
+          from akas.artifacts.fingerprint import packed_hashes as implementation_hashes
           import json
           from pathlib import Path
           assert json.loads(Path('build/diagnostic/inference.json').read_text())['implementation'] == implementation_hashes()

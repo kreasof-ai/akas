@@ -1,8 +1,8 @@
 """Logical Qwen kernel requirements shared by producers and executors."""
 
-from akas.ops.kv_quantization import is_quantized, validate as validate_kv_dtype
+from akas.quantization.kv import is_quantized, validate as validate_kv_dtype
 
-from akas.artifacts.kernels import identity
+from akas.artifacts.schema import identity
 
 
 def requirements(config, slots, capacity, *, splits=16, kv_dtype="bfloat16"):

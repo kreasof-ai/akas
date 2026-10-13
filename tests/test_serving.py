@@ -241,7 +241,7 @@ def test_startup_failure_closes_factory_resources():
 
 
 def test_speculative_adapter_exposes_target_limits_for_engine_submission(monkeypatch):
-    import akas.execution.bindings.bf16.speculative as mtp
+    from akas.generation.speculative.decoding import SpeculativeDecoder
 
     closed = []
     target = SimpleNamespace(
@@ -250,12 +250,8 @@ def test_speculative_adapter_exposes_target_limits_for_engine_submission(monkeyp
         config=SimpleNamespace(vocab=73),
         close=lambda: closed.append("target"),
     )
-    monkeypatch.setattr(
-        mtp,
-        "DenseMTP",
-        lambda model: SimpleNamespace(close=lambda: closed.append("draft")),
-    )
-    with Engine(mtp.SpeculativeEngine(target)) as engine:
+    proposer = SimpleNamespace(close=lambda: closed.append("draft"))
+    with Engine(SpeculativeDecoder(target, proposer)) as engine:
         assert engine.submit([72], max_tokens=1).prompt == [72]
         with pytest.raises(ValueError, match="token IDs"):
             engine.submit([73], max_tokens=1)

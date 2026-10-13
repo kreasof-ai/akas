@@ -3,12 +3,14 @@
 import numpy as np
 
 
-def allocate_workspace(model):
+def allocate_workspace(model, *, declare=None):
     r, c = model.slots, model.config.width
 
     def alloc(name, shape, dtype="float32", zero=False):
         model.buffers[name] = (
-            model.device.from_numpy(np.zeros(shape, dtype=dtype))
+            declare(name, shape, dtype)
+            if declare is not None
+            else model.device.from_numpy(np.zeros(shape, dtype=dtype))
             if zero
             else model.device.empty(shape, dtype)
         )

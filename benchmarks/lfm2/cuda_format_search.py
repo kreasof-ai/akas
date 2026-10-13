@@ -19,10 +19,10 @@ from tensor.compiler.search import ScheduleSearch, ScheduleProfile
 from tensor.compiler.cuda.schedules import projection_space, projection_legal
 from tensor.artifacts.format import read_artifact
 from akas import GGUF
-from akas.compilation.source import export_kernel as gemv_source
-from akas.compilation.source import export_kernel as fused_source
-from akas.compilation.source import export_kernel as prefill_source
-from akas.compilation.source import export_kernel as baseline_source
+from akas.compilation.emit import export_kernel as gemv_source
+from akas.compilation.emit import export_kernel as fused_source
+from akas.compilation.emit import export_kernel as prefill_source
+from akas.compilation.emit import export_kernel as baseline_source
 
 
 def current_source(kind, p):

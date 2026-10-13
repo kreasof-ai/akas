@@ -40,7 +40,7 @@ uv run --no-sync python -m benchmarks.lfm2.diagnostic --out build/diagnostic.ggu
 TENSOR_NVRTC_HOME="$PWD/build/nvrtc-12.9" uv run --no-sync python -m akas compile \
   --definition akas.models.lfm2.model:LFM2 --checkpoint build/diagnostic.gguf \
   --profile packed --out build/diagnostic --config '{"context":384,"target":"sm_89"}'
-uv run --no-sync python -m akas inspect --model build/diagnostic.gguf
+uv run --no-sync python -m akas inspect --definition akas.models.lfm2.model:LFM2 --model build/diagnostic.gguf
 uv run --no-sync python examples/generate.py \
   --model build/diagnostic.gguf --bundle build/diagnostic --prompt Hello --max-tokens 8
 ```
@@ -53,9 +53,13 @@ describe supported formats and measured scope.
 ```python
 import tensor
 from akas import Engine
+from functools import partial
+from akas.models.lfm2.model import LFM2
+from akas.execution.handles import HandleExecutor
 
 with tensor.Device() as device:
-    with Engine.from_lfm2(checkpoint, bundle, device, capacity=2) as engine:
+    with Engine.from_checkpoint(LFM2, checkpoint, bundle, device,
+                                max_requests=2, adapter=partial(HandleExecutor, capacity=2)) as engine:
         request = engine.submit(prompt_token_ids, max_tokens=32)
         while engine.step():
             engine.events.clear()  # Consume events here when streaming.
@@ -69,7 +73,7 @@ and EOS stopping. LFM2 schedules independent handles serially; it does not claim
 native batching. `Engine.from_independent(model, capacity=...)` accepts any model
 with `new_request()`, `reset()`, `next_token(tokens)` and `close()`; scheduling
 does not inspect model names, artifact formats or providers.
-`Engine.from_qwen35_dense()` uses native CUDA execution batches.
+`Engine.from_checkpoint(DenseEngine, ...)` uses native CUDA execution batches; the caller supplies its model definition.
 The fixed-slot Qwen MoE runner retains its specialized serving adapter and
 qualification status.
 

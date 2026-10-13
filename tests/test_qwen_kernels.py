@@ -13,7 +13,7 @@ GPU = pytest.mark.skipif(
 
 def build(tmp_path, kind, p):
     from tensor.compiler.build import build_artifact
-    from akas.compilation.source import export_kernel as source
+    from akas.compilation.emit import export_kernel as source
 
     entry = tmp_path / (kind + ".py")
     entry.write_text(
@@ -38,7 +38,7 @@ def build_mma(tmp_path, factory, *args):
     entry.write_text(
         export_source(
             {
-                "quantize_kernel": "akas.ops.quantization.cuda.block_fp8",
+                "quantize_kernel": "akas.quantization.activations.fp8",
                 "bf16_head_kernel": "akas.ops.vocabulary.cuda.bf16",
             }.get(factory, "akas.ops.linear.cuda.block_fp8"),
             factory,

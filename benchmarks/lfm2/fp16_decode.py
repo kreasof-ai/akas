@@ -19,7 +19,7 @@ import shutil
 import numpy as np
 import tensor
 from akas import GGUF
-from akas.compilation.source import export_kernel as source
+from akas.compilation.emit import export_kernel as source
 from benchmarks.lfm2.text_helpers import emit, weight
 from akas.tensor.graph import CudaGraph
 from tensor.compiler.tuning import measure_cuda

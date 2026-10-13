@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 from akas.models.lfm2.weights import ReferenceCheckpoint
 from akas.models.lfm2.model import LFM2Reference, compose
-from akas.compilation.forward import plan
+from akas.compilation.compile import plan
 from benchmarks.lfm2.diagnostic import fixture
 from examples.lfm2.checkpoint import export
 
@@ -193,6 +193,7 @@ def test_reference_builds_webgpu_without_device(checkpoint, tmp_path, kv_dtype):
         capacity=32,
         provider="webgpu",
         kv_dtype=kv_dtype,
+        search=False,
     )
     for record in result["kernels"].values():
         meta, _ = read_artifact(tmp_path / record["path"])
@@ -270,9 +271,9 @@ def test_reference_fp8_bytes_and_scales_match_torch(provider, heads, tmp_path):
         pytest.skip("enable provider codec qualification")
     import torch
     import tensor
-    from akas.compilation.build import build_artifact
-    from akas.compilation.source import export_kernel
-    from akas.ops.kv_quantization import get
+    from akas.compilation.emit import build_artifact
+    from akas.compilation.emit import export_kernel
+    from akas.quantization.kv import get
 
     rows, d, cap = 4, 64, 8
     rng = np.random.default_rng(7)

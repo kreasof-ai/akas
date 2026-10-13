@@ -2,7 +2,7 @@
 
 import time
 import numpy as np
-from akas.generation.acceptance import accepted_prefix
+from akas.generation.speculative.acceptance import accepted_prefix
 from akas.generation.lookup import OutputLookup
 
 

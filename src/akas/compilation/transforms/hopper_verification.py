@@ -1,14 +1,14 @@
 """Compact Hopper expert projections for selected Split-K verification."""
 
-from akas.compilation.build import build
-from akas.compilation.plan import Bundle
-from akas.compilation.plan import Kernel
-from akas.compilation.plan import Source
+from akas.compilation.compile import build
+from akas.artifacts.schema import Bundle
+from akas.artifacts.schema import Kernel
+from akas.artifacts.schema import Source
 
 import hashlib, json, shutil
 from pathlib import Path
-from akas.artifacts.kernels import identity
-from akas.artifacts.fingerprints import (
+from akas.artifacts.schema import identity
+from akas.artifacts.fingerprint import (
     block_fp8_hashes as implementation_hashes,
 )
 

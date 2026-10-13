@@ -17,9 +17,9 @@ from tensor.compiler.search import ScheduleSearch
 from tensor.compiler.cuda.schedules import ATTENTION_SPACES
 from akas.tensor.graph import CudaGraph
 from tensor.compiler.tuning import measure_cuda
-from akas.compilation.source import export_kernel as warp_partial_source
-from akas.compilation.source import export_kernel as merge_source
-from akas.compilation.source import export_kernel as grouped_source
+from akas.compilation.emit import export_kernel as warp_partial_source
+from akas.compilation.emit import export_kernel as merge_source
+from akas.compilation.emit import export_kernel as grouped_source
 from benchmarks.lfm2.cuda_format_search import compile_source
 
 

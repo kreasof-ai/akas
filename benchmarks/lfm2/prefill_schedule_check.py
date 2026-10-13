@@ -11,7 +11,7 @@ import tensor
 from tensor.providers.webgpu.device import Device
 from akas import GGUF
 from akas.ops.schedules.packed_selection import webgpu_parameters
-from akas.compilation.source import export_kernel as source
+from akas.compilation.emit import export_kernel as source
 from benchmarks.lfm2.tensor_projection_search import (
     TimestampAdapter,
     Timer,

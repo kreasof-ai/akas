@@ -54,3 +54,31 @@ def test_engine_rejects_invalid_requests_and_wrong_thread_before_admission():
             with pytest.raises(RuntimeError, match="owner thread"):
                 pool.submit(engine.step).result()
         assert not model.state
+
+
+def test_checkpoint_factory_and_adapter_are_supplied_by_the_caller():
+    opened = []
+
+    def load(checkpoint, bundle, device, *, capacity):
+        opened.append((checkpoint, bundle, device))
+        return Adapter(capacity)
+
+    with Engine.from_checkpoint(
+        load, "new-model", "compiled", None, capacity=1
+    ) as engine:
+        request = engine.submit([3], max_tokens=2)
+        while engine.step():
+            pass
+        assert request.output == [3, 6]
+    assert opened == [("new-model", "compiled", None)]
+
+
+def test_failed_adapter_construction_releases_the_loaded_model():
+    model = Adapter(1)
+
+    def fail_adapter(value):
+        raise ValueError("adapter failed")
+
+    with pytest.raises(ValueError, match="adapter failed"):
+        Engine.from_checkpoint(lambda *args: model, "", "", None, adapter=fail_adapter)
+    assert model.closed

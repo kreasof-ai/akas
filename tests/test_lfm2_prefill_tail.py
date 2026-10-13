@@ -104,7 +104,7 @@ def test_tail_extraction_partial_chunks_and_position_controls(tmp_path, provider
         != "1"
     ):
         pytest.skip("requires the selected GPU provider")
-    from akas.compilation.source import export_kernel as source
+    from akas.compilation.emit import export_kernel as source
     factory = "packed_cuda_factory" if provider == "cuda" else "packed_webgpu_factory"
     r, c, t = 128, 17, 8
     rng = np.random.default_rng(1805)
@@ -163,7 +163,7 @@ def test_attention_tail_uses_absolute_positions_and_all_stored_keys(tmp_path, pr
         != "1"
     ):
         pytest.skip("requires the selected GPU provider")
-    from akas.compilation.source import export_kernel as source
+    from akas.compilation.emit import export_kernel as source
     factory = "packed_cuda_factory" if provider == "cuda" else "packed_webgpu_factory"
     r, t, h, kh, d, cap = 128, 8, 4, 2, 64, 192
     position = 23

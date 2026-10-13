@@ -1,15 +1,15 @@
 """Compile a separate, source-bound prefill attention workspace bundle."""
 
-from akas.compilation.build import publish
+from akas.artifacts.write import publish
 
 import hashlib, json
 from pathlib import Path
 from tensor.artifacts.format import read_artifact
-from akas.compilation.build import export_source
-from akas.artifacts.fingerprints import (
+from akas.compilation.emit import export_source
+from akas.artifacts.fingerprint import (
     block_fp8_hashes as implementation_hashes,
 )
-from akas.compilation.build import build_artifact
+from akas.compilation.emit import build_artifact
 
 
 def _compile(out, original, old, module, schedule, **settings):
@@ -52,7 +52,7 @@ def _compile(out, original, old, module, schedule, **settings):
                 p,
                 dependencies=(
                     "tensor.compiler.frontend.source",
-                    "akas.ops.normalization.kernels",
+                    "akas.ops.normalization.kernel",
                 ),
             )
         )

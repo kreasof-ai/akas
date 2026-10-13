@@ -2,6 +2,8 @@
 
 
 def make_kernel(kind, p):
+    if kind == "fp8_experts":
+        return expert_kernel({**p, "rows": p["r"]})
     import tilelang.language as T
 
     slots, chunk = p["slots"], p["chunk"]

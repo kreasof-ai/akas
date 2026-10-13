@@ -4,12 +4,11 @@ from dataclasses import asdict
 import json
 from pathlib import Path
 
-from akas.artifacts.fingerprints import packed_hashes as implementation_hashes
+from akas.artifacts.fingerprint import packed_hashes as implementation_hashes
 from akas.execution.bindings.packed.requirements import requirements
-from akas.compilation.build import build
-from akas.compilation.plan import Bundle
-from akas.compilation.plan import Kernel
-from akas.compilation.operations import source
+from akas.compilation.compile import build
+from akas.artifacts.schema import Bundle
+from akas.compilation.selection import kernels as assemble
 from akas.ops.schedules.packed_selection import valid_rows
 from akas.ops.schedules.packed_parameters import CUDA_PROFILES
 
@@ -69,28 +68,9 @@ def plan(
         if provider == "cuda" and cuda_profile != "optimized"
         else "packed"
     )
-    kernels = []
-    for key, (kind, parameters) in wanted.items():
-        schedule = (
-            selected.select(kind, parameters, provider=provider, target=target)
-            if selected
-            else {}
-        )
-        kernels.append(
-            Kernel(
-                key,
-                kind,
-                parameters,
-                source(
-                    kind,
-                    {**parameters, **schedule},
-                    contract=contract,
-                    provider=provider,
-                    target=target,
-                ),
-                schedule=schedule,
-            )
-        )
+    kernels = assemble(
+        wanted, contract=contract, provider=provider, target=target, schedules=selected
+    )
     manifest = dict(
         schema="tensor.lfm2-inference.v1",
         config=asdict(config),

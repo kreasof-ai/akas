@@ -1,16 +1,16 @@
 """Add split-context small-chunk attention to a selected verification/repair bundle."""
 
-from akas.compilation.build import publish
+from akas.artifacts.write import publish
 
 import hashlib
 import json
 from pathlib import Path
 import shutil
-from akas.compilation.build import build_artifact
-from akas.compilation.build import needs_build
-from akas.compilation.build import export_source
-from akas.artifacts.kernels import identity
-from akas.artifacts.fingerprints import (
+from akas.compilation.emit import build_artifact
+from akas.compilation.emit import needs_build
+from akas.compilation.emit import export_source
+from akas.artifacts.schema import identity
+from akas.artifacts.fingerprint import (
     block_fp8_hashes as implementation_hashes,
 )
 
@@ -61,7 +61,7 @@ def produce(
             schedule,
             dependencies=(
                 "tensor.compiler.frontend.source",
-                "akas.ops.normalization.kernels",
+                "akas.ops.normalization.kernel",
             ),
         )
         if needs_build(entry, artifact, source, target):

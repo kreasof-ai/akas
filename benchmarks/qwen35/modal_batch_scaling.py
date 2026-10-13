@@ -198,7 +198,7 @@ def prepare_short(prepared):
     from akas.compilation.transforms.hopper_verification import produce as experts
     from akas.compilation.transforms.hopper_verification import produce_dense
     from akas.compilation.recipes.block_fp8.draft_prefill import produce as repair
-    from akas.artifacts.fingerprints import (
+    from akas.artifacts.fingerprint import (
         block_fp8_hashes as implementation_hashes,
     )
 

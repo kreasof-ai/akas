@@ -14,8 +14,8 @@ from pathlib import Path
 
 import numpy as np
 import tensor
-from akas.compilation.build import build_artifact
-from akas.compilation.source import export_kernel
+from akas.compilation.emit import build_artifact
+from akas.compilation.emit import export_kernel
 from akas.compilation.tuning import Measurement, Workload, tune
 from akas.ops.registry import candidates
 from akas.ops.linear.floating import projection_algorithm

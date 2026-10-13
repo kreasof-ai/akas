@@ -37,48 +37,26 @@ class Engine:
         )
 
     @classmethod
-    def from_lfm2(
+    def from_checkpoint(
         cls,
+        definition,
         checkpoint,
         bundle,
         device,
         *,
+        adapter=None,
         config=None,
-        capacity=1,
-        context=None,
-        graphs=True,
+        publish=None,
+        **options,
     ):
-        import json
-        from pathlib import Path
-        from akas.models.lfm2.model import LFM2
-
-        if type(capacity) is not int or capacity < 1:
-            raise ValueError("capacity must be a positive integer")
-        if context is None:
-            manifest = json.loads((Path(bundle) / "inference.json").read_text())
-            context = min(
-                manifest["capacity"] - max(manifest["rows"]),
-                manifest["config"]["max_context"],
-            )
-        model = LFM2(
-            checkpoint,
-            bundle,
-            device,
-            context=context,
-            graphs=graphs,
-            max_requests=capacity,
-        )
+        """Load caller-selected resources and optionally adapt their request API."""
+        model = definition(checkpoint, bundle, device, **options)
         try:
-            return cls.from_independent(model, capacity=capacity, config=config)
+            scheduled = model if adapter is None else adapter(model)
+            return cls(scheduled, config=config, publish=publish)
         except BaseException:
             model.close()
             raise
-
-    @classmethod
-    def from_qwen35_dense(cls, checkpoint, bundle, device, *, config=None, **options):
-        from akas.models.qwen35.model import DenseEngine
-
-        return cls(DenseEngine(checkpoint, bundle, device, **options), config=config)
 
     def submit(self, prompt, *, max_tokens):
         prompt = list(prompt)

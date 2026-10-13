@@ -1,13 +1,14 @@
 """One request lifecycle and batch interface over numerical forward bindings."""
 
-from threading import get_ident
+from akas.execution.workspace import DeviceOwner
+from akas.execution.state import StatePool
 
 import numpy as np
 
 from akas.models.contracts import Capabilities
 
 
-class Executor:
+class Executor(DeviceOwner):
     """Own request slots; bindings supply state resets and forward execution.
 
     A slot identifies persistent state. Bindings may execute it alone, at its
@@ -18,36 +19,54 @@ class Executor:
     capabilities = Capabilities(native_batch=True)
     prefill_group_size = 32
 
-    def __init__(self, *, capacity, context, device=None):
+    def __init__(self, *, capacity, context, device=None, batches=None, reset=None):
         if type(capacity) is not int or capacity < 1:
             raise ValueError("capacity must be a positive integer")
         self.capacity = capacity
         self.context = context
-        self.device = device
-        self.thread = get_ident()
-        self.generation = device._generation if device is not None else None
-        self.closed = False
-        self.positions = np.zeros(capacity, dtype="int32")
-        self.occupied = np.zeros(capacity, dtype=bool)
-        self.pending = {}
+        self.batches = batches
+        if batches is not None:
+            batches.owner = self
+        self._reset_state = reset
+        super().__init__(device)
+        self.state = StatePool(capacity)
+        self.positions = self.state.positions
+        self.occupied = self.state.occupied
+        self.pending = self.state.pending
+        self.journals = {}
 
-    def _check(self):
-        if self.closed:
-            raise RuntimeError("executor is closed")
-        if get_ident() != self.thread:
-            raise RuntimeError("executor must run on its owner thread")
-        if self.device is not None:
-            self.device._check()
-            if self.generation != self.device._generation:
-                raise RuntimeError("executor belongs to an expired device session")
+    @classmethod
+    def from_program(cls, checkpoint, directory, device, *, graphs=True):
+        from dataclasses import asdict
+        from akas.artifacts.read import read_program
+        from akas.execution.batch import BatchBank
+        from akas.execution.workspace import release
+
+        program = read_program(directory)
+        if program["provider"] != device.info["provider"] or program["target"] != device.info["arch"]:
+            raise ValueError("program requires a different compilation target")
+        import json
+        if program["config"] != json.loads(json.dumps(asdict(checkpoint.config))):
+            raise ValueError("program belongs to a different checkpoint configuration")
+        weights = checkpoint.upload(device,**program["upload_options"])
+        bank = None
+        try:
+            bank = BatchBank(directory,device,program["phases"],weights,graphs=graphs,reset=program.get("reset"))
+            executor = cls(capacity=program["max_requests"],context=program["max_context"],
+                           device=device,batches=bank,reset=bank.reset)
+            executor.checkpoint, executor.config = checkpoint, checkpoint.config
+            from pathlib import Path
+            executor.bundle, executor.program = Path(directory), program
+            executor.weights = weights
+            return executor
+        except BaseException:
+            if bank is not None:
+                bank.close()
+            release(buffers=weights.values())
+            raise
 
     def _slot(self, slot):
-        if (
-            type(slot) is not int
-            or not 0 <= slot < self.capacity
-            or not self.occupied[slot]
-        ):
-            raise ValueError("request is not owned")
+        self.state.check(slot)
 
     def admit(self):
         self._check()
@@ -58,27 +77,11 @@ class Executor:
 
     def admit_at(self, slot):
         self._check()
-        if (
-            type(slot) is not int
-            or not 0 <= slot < self.capacity
-            or self.occupied[slot]
-        ):
-            raise ValueError("request slot is unavailable")
-        self._admit_slot(slot)
-        self.positions[slot] = 0
-        self.occupied[slot] = True
-        return slot
+        return self.state.reserve(slot, reset=self._admit_slot)
 
     def release(self, slot):
         self._check()
-        self._slot(slot)
-        if slot in self.pending:
-            raise ValueError(
-                "discard pending verification before releasing its request"
-            )
-        self._release_slot(slot)
-        self.occupied[slot] = False
-        self.positions[slot] = 0
+        self.state.free(slot, release=self._release_slot)
 
     def run_batch(self, slots, sequences, *, chunk=1):
         self._check()
@@ -110,6 +113,54 @@ class Executor:
 
     def decode(self, slots, tokens):
         return self.run_batch(slots, [[t] for t in tokens])
+
+    def decode_steps(self, slots, tokens, steps, *, read=True):
+        """Replay greedy steps with one control upload and optional final readback.
+
+        This fixed request group is useful for throughput measurement. Request
+        scheduling and EOS decisions still use decode(), one step at a time.
+        """
+        self._check()
+        if type(steps) is not int or steps < 1:
+            raise ValueError("decode steps must be positive")
+        if tokens is None:
+            slots = list(slots)
+            if not slots or len(set(slots)) != len(slots):
+                raise ValueError("invalid execution batch")
+            for slot in slots:
+                self._slot(slot)
+                if slot in self.pending:
+                    raise ValueError("request has an uncommitted verification")
+            sequences = None
+        else:
+            slots, sequences = self._validate_batch(slots, [[token] for token in tokens], 1)
+        if any(self.positions[slot] + steps > self.context for slot in slots):
+            raise ValueError("context exhausted")
+        self._materialize(slots)
+        frame = self.batch(len(slots))
+        if not getattr(frame, "feedback", False):
+            raise ValueError("compiled decode phase has no device token feedback")
+        if tokens is None:
+            if (getattr(frame, "slots", None) != tuple(slots)
+                    or not np.array_equal(getattr(frame, "expected_positions", None), self.positions[slots])
+                    or not np.array_equal(getattr(frame, "expected_generations", None), self.state.generations[slots])):
+                raise ValueError("device feedback does not match the current request state")
+        else:
+            frame.prepare(slots, sequences, self.positions)
+        for _ in range(steps):
+            frame.forward.run()
+        self.positions[slots] += steps
+        frame.expected_positions = self.positions[slots].copy()
+        frame.expected_generations = self.state.generations[slots].copy()
+        if read:
+            return frame.buffers[frame.prediction].to_numpy()[:len(slots)].astype(int).tolist()
+        return None
+
+    def batch(self, count, chunk=1, *, verify=False):
+        self._check()
+        if self.batches is None or type(count) is not int or not 1 <= count <= self.capacity:
+            raise ValueError("invalid execution batch size")
+        return self.batches.select(count, chunk, phase="verify" if verify else None)
 
     def prefill_batch(self, requests, sequences, chunk):
         return self._prefill_groups([r.slot for r in requests], sequences, chunk)
@@ -158,25 +209,106 @@ class Executor:
                 predicted[index] = token
         return predicted
 
+    def verify(self, slots, sequences, *, chunk):
+        self._check()
+        slots,sequences = self._validate_batch(slots,sequences,chunk)
+        self._materialize(slots)
+        frame = self.batches.select(len(slots),chunk,phase="verify")
+        if getattr(frame,"verification",None) is not None:
+            raise ValueError("verification workspace already has pending requests")
+        if frame.commit_forward is None:
+            raise ValueError("program has no verification commit phase")
+        frame.prepare(slots,sequences,self.positions)
+        frame.forward.run()
+        result = frame.forward.buffers[frame.prediction].to_numpy().reshape(frame.rows,chunk)
+        frame.verification = (tuple(slots),tuple(map(len,sequences)))
+        for slot in slots:
+            self.pending[slot] = frame
+        return [result[row,:len(sequence)].tolist() for row,sequence in enumerate(sequences)]
+
+    def commit(self, slots, accepted):
+        self._check()
+        slots,accepted = tuple(slots),tuple(accepted)
+        if not slots or len(slots) != len(accepted) or slots[0] not in self.pending:
+            raise ValueError("no matching pending verification")
+        frame = self.pending[slots[0]]
+        expected,lengths = frame.verification
+        if slots != expected or any(self.pending.get(slot) is not frame for slot in slots):
+            raise ValueError("commit must cover its complete verification batch")
+        if any(type(count) is not int or not 0 <= count <= length for count,length in zip(accepted,lengths)):
+            raise ValueError("invalid accepted prefix")
+        from akas.memory.transfer import write
+        values = np.zeros(frame.rows,dtype="int32")
+        values[:len(accepted)] = accepted
+        write(self.device,frame.forward.buffers[frame.inputs["lengths"]],values)
+        frame.commit_forward.run()
+        for slot,count in zip(slots,accepted):
+            self.positions[slot] += count
+            del self.pending[slot]
+        frame.verification = None
+
+    def discard(self, slots):
+        self._check()
+        slots = tuple(slots)
+        if not slots or slots[0] not in self.pending:
+            raise ValueError("no matching pending verification")
+        frame = self.pending[slots[0]]
+        if frame.verification[0] != slots:
+            raise ValueError("discard must cover its complete verification batch")
+        for slot in slots:
+            del self.pending[slot]
+        frame.verification = None
+
+    def generate(self, prompt, *, max_tokens=128, chat=True, tokenizer=None):
+        from akas.generation.greedy import generate_scheduled
+
+        tokenizer = self.checkpoint.tokenizer if tokenizer is None else tokenizer
+        return generate_scheduled(
+            self, prompt, tokenizer=tokenizer, max_tokens=max_tokens, chat=chat
+        )
+
     def _admit_slot(self, slot):
-        raise NotImplementedError
+        if self._reset_state is None:
+            raise NotImplementedError
+        self._reset_state(slot)
 
     def _release_slot(self, slot):
-        raise NotImplementedError
+        if self._reset_state is None:
+            raise NotImplementedError
+        self._reset_state(slot)
+        for journal in self.journals.values():
+            journal.dirty[slot] = False
 
     def _execute_batch(self, slots, sequences, chunk):
-        raise NotImplementedError
+        if self.batches is None:
+            raise NotImplementedError
+        self._materialize(slots)
+        frame = self.batches.select(len(slots),chunk)
+        result = frame.run(slots,sequences,self.positions)
+        for slot,sequence in zip(slots,sequences):
+            self.positions[slot] += len(sequence)
+        return result
 
     def _close_resources(self):
-        raise NotImplementedError
+        if self.batches is None:
+            raise NotImplementedError
+        for journal in self.journals.values():
+            journal.close()
+        self.journals.clear()
+        self.batches.close()
+        from akas.execution.workspace import release
+        release(buffers=getattr(self, "weights", {}).values())
+
+    def _materialize(self, slots):
+        for journal in self.journals.values():
+            journal.materialize(slots)
 
     def close(self):
         if self.closed:
             return
         self._check()
         self._close_resources()
-        self.occupied.fill(False)
-        self.pending.clear()
+        self.state.clear()
         self.closed = True
 
     def __enter__(self):

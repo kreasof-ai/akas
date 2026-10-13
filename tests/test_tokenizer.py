@@ -188,3 +188,19 @@ def test_standalone_chat_template_enables_chat_with_config_precedence(
     )
     with pytest.raises(TokenizerError, match="generation prefix"):
         Tokenizer.from_pretrained(tmp_path).chat("hello")
+
+
+def test_new_gguf_profile_needs_no_parser_or_model_branch():
+    metadata = {
+        "tokenizer.ggml.model": "custom-byte-bpe",
+        "tokenizer.ggml.pre": "new-pretokenizer",
+        "tokenizer.ggml.tokens": ["a", "b", "ab"],
+        "tokenizer.ggml.token_type": [1, 1, 1],
+        "tokenizer.ggml.merges": ["a b"],
+    }
+    profile = dict(model="custom-byte-bpe", pattern=r"\w+")
+    with pytest.raises(TokenizerError, match="unsupported"):
+        Tokenizer.from_gguf(metadata)
+    tokenizer = Tokenizer.from_gguf(metadata, profile=profile)
+    assert tokenizer.encode("ab") == [2]
+    assert tokenizer.decode([2]) == "ab"
