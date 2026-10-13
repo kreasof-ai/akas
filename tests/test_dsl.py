@@ -10,7 +10,7 @@ def test_common_packed_program_constructs_tirx(rows, chunk, tmp_path):
     pytest.importorskip("tilelang")
     import importlib
     import tvm
-    from benchmarks.lfm2.diagnostic import fixture
+    from support.diagnostic import fixture
     from akas.models.lfm2.weights import LFM2Checkpoint
     from akas.models.lfm2.model import compose_program
     from akas.compilation.compile import plan

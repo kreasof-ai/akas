@@ -45,7 +45,7 @@ def test_frozen_packed_kernel_parameters_use_uniform_definitions(case):
 
 @pytest.fixture(scope="module")
 def packed_checkpoint(tmp_path_factory):
-    from benchmarks.lfm2.diagnostic import fixture
+    from support.diagnostic import fixture
 
     return LFM2Checkpoint(
         fixture(tmp_path_factory.mktemp("compilation") / "model.gguf")

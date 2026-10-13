@@ -7,7 +7,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from benchmarks.lfm2.diagnostic import fixture
+from support.diagnostic import fixture
 from akas.models.lfm2.weights import ReferenceCheckpoint
 from akas.models.lfm2.model import compose_program
 
@@ -34,7 +34,7 @@ def test_lfm_common_executor_ragged_reordered_and_reused_requests(tmp_path, prov
     from akas.compilation.compile import compile_program
     from akas.compilation.tuning import SearchSettings
     from akas.execution.executor import Executor
-    from examples.lfm2.oracle import OptimizedOracle
+    from support.oracle import OptimizedOracle
 
     path = fixture(tmp_path / "model.gguf")
     checkpoint = ReferenceCheckpoint(path, tokenizer=False)
@@ -127,7 +127,7 @@ def test_lfm_packed_program_preserves_weight_bytes_and_mapped_state(tmp_path, pr
 
 
 def test_public_definitions_share_executor_and_loader_dispatch(tmp_path):
-    from examples.lfm2.checkpoint import export as hf_fixture
+    from support.checkpoint import export as hf_fixture
     from akas.models.definition import Definition
     from akas.models.lfm2.model import LFM2, LFM2Batched, LFM2Reference
     from akas.models.lfm2.weights import LFM2Checkpoint

@@ -1,23 +1,6 @@
 include LICENSE README.md uv.lock
-recursive-include src/akas/models *.md
-recursive-include src/akas/ops *.md
-recursive-include src/akas/execution *.md
-recursive-include src/akas/compilation *.md *.json
-recursive-include docs/research/engine-layout *.md *.csv *.json
-recursive-include docs/research/executor-merge *.md *.csv *.json
-recursive-include examples *.py
-recursive-include tools *.py *.json
-recursive-include benchmarks *.py *.json *.md *.txt
+recursive-include src/akas *.md
 recursive-include tests *.py *.json
-include docs/architecture.md docs/research/tensor-llm-migration.md docs/legacy-inference.md
-include docs/research/data/qwen35-native-h200/scaling/workload-c64.json.gz
-include docs/guides/llm-serving-benchmarks.md
-
-recursive-include src/akas/planning *.md
-recursive-include docs/research/forward-plan *.md *.csv *.json
-
-recursive-include docs/research/kv-quantization *.md *.csv *.json
-
-recursive-include examples/lfm2 *.md
-include docs/guides/performance-harness.md
-recursive-include docs/research/lfm-reference *.md *.json *.csv *.xml
+recursive-include examples/models/residual *.py
+include tools/bootstrap_nvrtc.py
+prune src/akas/text/.ipynb_checkpoints

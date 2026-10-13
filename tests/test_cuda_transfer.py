@@ -13,7 +13,7 @@ GPU = pytest.mark.skipif(
 
 
 def test_common_cuda_request_geometries_are_explicit(tmp_path):
-    from benchmarks.lfm2.diagnostic import fixture
+    from support.diagnostic import fixture
     from akas.models.lfm2.weights import LFM2Checkpoint
     from akas.models.lfm2.model import compose_program
 
@@ -258,7 +258,7 @@ def test_split_norm_rope_and_partial_cache_store(tmp_path):
 def test_adaptive_model_state_reset_and_greedy(graphs):
     import tensor
     from akas import LFM2
-    from benchmarks.lfm2.torch_reference import Reference
+    from support.torch_reference import Reference
 
     path = ROOT / "build/lfm2-diagnostic.gguf"
     bundle = ROOT / "build/lfm2-cuda-transfer/diagnostic-optimized"

@@ -31,5 +31,3 @@ Legacy numerical bindings and model-specific compiler recipes have been removed.
 
 Start with [the three-file example](../../../examples/models/residual/),
 [the graph contract](../graph.py), and [the compiler map](../compilation/README.md).
-The [LFM reference example](../../../examples/lfm2/README.md) demonstrates
-checkpoint loading, masked request state, KV codecs and performance reports.

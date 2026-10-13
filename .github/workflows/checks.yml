@@ -16,13 +16,11 @@ jobs:
       - run: uv sync --locked --extra compiler
       - run: uv run --no-sync python -m pytest
       - run: uv run --no-sync python tools/bootstrap_nvrtc.py --out build/nvrtc-12.9
-      - run: uv run --no-sync python -m benchmarks.lfm2.diagnostic --out build/diagnostic.gguf
-      - run: uv run --no-sync python -m akas compile --definition akas.models.lfm2.model:LFM2 --checkpoint build/diagnostic.gguf --profile packed --out build/diagnostic --config '{"context":384,"target":"sm_86"}'
-      - run: uv run --no-sync python -m akas compile --definition akas.models.lfm2.model:LFM2Reference --checkpoint build/diagnostic.gguf --profile reference --out build/reference-cuda --config '{"search":false,"batch":4,"capacity":32,"target":"sm_86","kv_dtype":"fp8"}'
-      - run: uv run --no-sync python -m examples.lfm2.checkpoint --gguf build/diagnostic.gguf --out build/diagnostic-hf
-      - run: uv run --no-sync python -m akas compile --definition akas.models.lfm2.model:LFM2Reference --checkpoint build/diagnostic-hf --checkpoint-options '{"tokenizer":false}' --profile reference --out build/reference-webgpu --config '{"search":false,"batch":4,"capacity":32,"provider":"webgpu","kv_dtype":"fp8"}'
-      - run: uv run --no-sync python -m akas compile --definition akas.models.lfm2.model:LFM2Batched --checkpoint build/diagnostic.gguf --profile floating --out build/floating-cuda --config '{"search":false,"batch":4,"capacity":32,"prefill_chunk":32,"target":"sm_86","kv_dtype":"fp8"}'
-      - run: uv run --no-sync python -m akas compile --definition akas.models.lfm2.model:LFM2Batched --checkpoint build/diagnostic-hf --checkpoint-options '{"tokenizer":false}' --profile floating --out build/floating-webgpu --config '{"search":false,"batch":4,"capacity":32,"prefill_chunk":32,"provider":"webgpu","kv_dtype":"fp8"}'
+      - run: uv run --no-sync python tests/support/diagnostic.py --out build/diagnostic.gguf
+      - run: uv run --no-sync python -m akas compile --definition akas.models.lfm2.model:LFM2 --checkpoint build/diagnostic.gguf --out build/diagnostic --config '{"search":false,"geometries":[[1,1],[1,32]],"max_requests":8,"max_context":384,"target":"sm_86"}'
+      - run: uv run --no-sync python -m akas compile --definition akas.models.lfm2.model:LFM2Reference --checkpoint build/diagnostic.gguf --out build/reference-cuda --config '{"search":false,"geometries":[[4,1],[4,32]],"max_requests":4,"max_context":32,"provider":"cuda","model_options":{"kv_dtype":"fp8"},"target":"sm_86"}'
+      - run: uv run --no-sync python tests/support/checkpoint.py --gguf build/diagnostic.gguf --out build/diagnostic-hf
+      - run: uv run --no-sync python -m akas compile --definition akas.models.lfm2.model:LFM2Reference --checkpoint build/diagnostic-hf --checkpoint-options '{"tokenizer":false}' --out build/reference-webgpu --config '{"search":false,"geometries":[[4,1],[4,32]],"max_requests":4,"max_context":32,"provider":"webgpu","model_options":{"kv_dtype":"fp8"}}'
       - run: uv build --out-dir build/wheels
       - name: Read the pinned Tensor revision
         id: tensor
@@ -65,10 +63,9 @@ jobs:
           value = plan.buffer('x', (256,), 'float32')
           plan('add', dict(c=256), value, value, value)
           assert len(Graph.from_metadata(plan.metadata()).requirements()) == 1
-          from akas.artifacts.fingerprint import packed_hashes as implementation_hashes
           import json
           from pathlib import Path
-          assert json.loads(Path('build/diagnostic/inference.json').read_text())['implementation'] == implementation_hashes()
+          assert json.loads(Path('build/diagnostic/program.json').read_text())['schema'] == 'akas.program.v1'
           PY
       - uses: actions/upload-artifact@v7.0.1
         with:

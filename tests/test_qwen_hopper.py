@@ -140,61 +140,6 @@ def test_hopper_prefill_attention_preserves_control_bits(
             np.testing.assert_array_equal(results[1], results[0])
 
 
-@pytest.mark.skipif(
-    os.environ.get("TENSOR_QWEN_CUDA") != "1",
-    reason="captured profiling event qualification",
-)
-def test_captured_profile_has_real_event_timestamps(tmp_path):
-    import json
-    from pathlib import Path
-    from types import SimpleNamespace
-    import tensor
-    from akas.tensor.graph import CudaGraph
-    from tensor.runtime.abi import BoundCall
-    from benchmarks.qwen35.modal_profile import profile_captured_plan
-
-    artifact = tmp_path / "elementwise.tbin"
-    entry = tmp_path / "elementwise.py"
-    entry.write_text("""import tilelang.language as T
-@T.prim_func
-def kernel(a:T.Tensor((4096,),'float32'),b:T.Tensor((4096,),'float32'),out:T.Tensor((4096,),'float32')):
-    with T.Kernel(16,threads=256) as block:
-        for i in T.Parallel(256):out[block*256+i]=2*a[block*256+i]+b[block*256+i]
-def tensor_export():return {'kernel':kernel,'outputs':['out']}
-""")
-    tensor.build(entry, artifact, compiler="nvrtc")
-    (tmp_path / "prefill.json").write_text(
-        json.dumps(
-            {"kernels": {"normalization.kernels": {"kind": "normalization.kernels"}}}
-        )
-    )
-    with tensor.Device() as device:
-        kernel = device.load(artifact)
-        a = device.arange(4096)
-        b = device.ones((4096,))
-        out = device.zeros((4096,))
-        storage, symbols, launch = kernel._bind((a, b, out), {}, include_outputs=True)
-        bound = BoundCall(
-            device, kernel.manifest, storage, symbols, launch, validated=True
-        )
-        with CudaGraph(
-            device, lambda: device._launch(kernel, bound), resources=(kernel, a, b, out)
-        ) as graph:
-            executor = SimpleNamespace(
-                device=device,
-                kernels={"normalization.kernels": kernel},
-                plan=[(kernel, bound)],
-                graph=graph,
-            )
-            result = profile_captured_plan(
-                executor, tmp_path, tmp_path / "profile.json"
-            )
-            assert (
-                0
-                < result["groups"]["normalization.kernels"]
-                <= result["captured_plan_milliseconds"]
-            )
-            np.testing.assert_array_equal(out.to_numpy(), 2 * np.arange(4096) + 1)
 
 
 @pytest.mark.skipif(

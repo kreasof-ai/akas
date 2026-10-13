@@ -8,8 +8,8 @@ import pytest
 from akas.models.lfm2.weights import ReferenceCheckpoint
 from akas.models.lfm2.model import LFM2Reference, compose
 from akas.compilation.compile import plan
-from benchmarks.lfm2.diagnostic import fixture
-from examples.lfm2.checkpoint import export
+from support.diagnostic import fixture
+from support.checkpoint import export
 
 
 @pytest.fixture(scope="module")
@@ -90,7 +90,7 @@ def test_reference_executes_short_and_long_sequences(
         pytest.skip("enable provider reference qualification")
     import tensor
     from akas.compilation import compile_checkpoint
-    from examples.lfm2.oracle import Oracle
+    from support.oracle import Oracle
 
     path = os.environ.get("AKAS_LFM_REFERENCE_BUILD")
     bundle = Path(path or tmp_path) / f"{provider}-{kv_dtype}-b{batch}"

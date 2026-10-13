@@ -46,7 +46,7 @@ def test_streamed_gemv_fused_tail_and_f32_activation_contract(
                provider='webgpu',
            ).render()
     if force_fallback:
-        from benchmarks.lfm2.dsl_probes import subgroup_source
+        from support.dsl_probes import subgroup_source
 
         text = subgroup_source("ffn", p, 0)
     path = tmp_path / "gemv.py"
@@ -90,7 +90,7 @@ def test_fused_attention_active_tail_and_qk_fallback(tmp_path, force_fallback):
             fused_scores=True,
         ), contract='packed', provider='webgpu').render()
     if force_fallback:
-        from benchmarks.lfm2.dsl_probes import subgroup_source
+        from support.dsl_probes import subgroup_source
 
         text = subgroup_source(
             "attention",

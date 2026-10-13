@@ -51,7 +51,7 @@ def test_explicit_half_rounding_ties_subnormals_and_random_values(tmp_path):
     artifact = tmp_path / "round.tbin"
     source.write_text(
         export_source(
-            "benchmarks.lfm2.dsl_probes",
+            "support.dsl_probes",
             "half_conversion_kernel",
             n,
             dependencies=("akas.ops.definition",),
@@ -256,7 +256,7 @@ def test_packed_decode_projection_block_fields(tmp_path, kind, subgroup, unroll,
             gemv_q6_dot=dot,
         ), contract='packed', provider='webgpu').render()
     if subgroup == "fallback":
-        from benchmarks.lfm2.dsl_probes import subgroup_source
+        from support.dsl_probes import subgroup_source
 
         text = subgroup_source(
             "linear",
@@ -343,7 +343,7 @@ def test_q4_decode_schedules_tail_and_paired_accumulators(
                provider='webgpu',
            ).render()
     if subgroup == "fallback":
-        from benchmarks.lfm2.dsl_probes import subgroup_source
+        from support.dsl_probes import subgroup_source
 
         text = subgroup_source(
             kind, dict(r=1, k=k, o=o, type=2, sg=True, **schedule), 4
@@ -420,7 +420,7 @@ def test_native_half_unpack_all_bit_patterns(tmp_path):
     artifact = path.with_suffix(".tbin")
     path.write_text(
         export_source(
-            "benchmarks.lfm2.dsl_probes",
+            "support.dsl_probes",
             "half_conversion_kernel",
             n,
             True,

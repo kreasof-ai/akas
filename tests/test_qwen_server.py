@@ -1,4 +1,4 @@
-"""Research serving uses the shared scheduler and preserves exact stream counts."""
+"""The shared scheduler preserves exact independent and speculative stream counts."""
 
 from types import SimpleNamespace
 import numpy as np
@@ -91,16 +91,6 @@ def test_native_scheduler_preserves_eight_independent_streams():
             assert event["meta_info"]["completion_tokens"] == len(event["output_ids"])
 
 
-def test_native_adapter_counts_server_usage_without_text_estimates():
-    from benchmarks.llm_serving.adapters import Adapter
-    adapter = Adapter("tensor", "qwen35")
-    request = dict(prompt_token_ids=[12, 24], output_tokens=3)
-    payload = adapter.payload(request, seed=7, prefix_cache=False)
-    assert payload["input_ids"] == request["prompt_token_ids"]
-    assert payload["sampling_params"]["ignore_eos"] is True
-    event = adapter.parse(dict(output_ids=[89, 90, 91], meta_info=dict(
-        completion_tokens=3, prompt_tokens=2, finish_reason=dict(type="length"))), 2)
-    assert event.count == 3 and event.prompt_tokens == 2 and event.finished
 
 
 def test_verified_chunks_preserve_exact_stream_counts_and_completion():

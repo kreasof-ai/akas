@@ -67,7 +67,7 @@ def test_manifest_implementation_and_artifact_checksum_rejected(tmp_path):
 
 
 def test_small_mixed_encoding_model_against_independent_operators():
-    from benchmarks.lfm2.torch_reference import Reference
+    from support.torch_reference import Reference
 
     path = ROOT / "build/lfm2-diagnostic.gguf"
     bundle = ROOT / "build/lfm2-diagnostic"

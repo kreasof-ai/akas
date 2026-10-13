@@ -5,13 +5,13 @@ checkpoint reader and weight mapping, `model.py` for operation composition.
 The runnable [residual example](../../../examples/models/residual/) follows this
 contract. It uses the shared safetensors reader and existing linear/add kernels.
 
-`ForwardPlan` declares named buffers with shape, dtype and ownership role, then
+`Graph` declares named buffers with shape, dtype and ownership role, then
 records ordered operation calls. Calls accept positional buffers or named ABI
 bindings. Repeated specializations share one kernel declaration. No device or
 compiler is needed to compose or serialize a plan.
 
 ```python
-from akas.compilation.forward import produce
+from akas.compilation.compile import produce
 from examples.models.residual.config import Config
 from examples.models.residual.model import compose
 
@@ -19,7 +19,7 @@ forward = compose(Config(width=256), rows=4)
 produce(forward, "build/residual", provider="cuda", target="sm_89")
 ```
 
-`compilation.forward` derives requirements from those calls, selects compatible
+`compilation.compile` derives requirements from those calls, selects compatible
 operation implementations and uses the existing Tensor build pipeline. Pass
 `provider="webgpu", target="webgpu-portable-v1"` to select WebGPU implementations.
 An unavailable operation/contract/provider fails selection; compilation does not
@@ -56,16 +56,8 @@ must pass every workload. The objective minimizes the worst latency ratio agains
 each workload's default, so a small-batch win cannot hide a large-batch regression.
 A finite candidate budget bounds exploration; it cannot guarantee the global best.
 The returned `Result.profile(...)` is target-bound and can be passed as
-`schedules=` to `compilation.forward.plan` or `produce`. Keep semantic shape and
+`schedules=` to `compilation.compile.plan` or `produce`. Keep semantic shape and
 precision parameters out of the schedule axes. Workload input metadata can carry
 ragged lengths, positions and other realistic request conditions.
-
-Existing LFM2/Qwen entry points retain their qualified numerical bindings and
-specialized state/verification plans. Their main recipes now share operation
-selection; legacy factory entry points delegate to registrations. Experimental
-Hopper overlays still require their existing workspace/ABI rewrites and explicit
-qualification. They are not automatically interchangeable with ordinary calls.
-Forward plans currently describe static buffer geometry; this work does not add
-dynamic-shape arithmetic, a universal tokenizer, or new checkpoint encodings.
 
 Operation-owned `planning.py` modules declare safe row independence and implemented fusion rewrites. The shared optimizer discovers them through `ops.registry`; unknown operations retain their original graph. Adding an activation does not require editing a central fusion whitelist, and declaring row independence does not claim a fused kernel exists.

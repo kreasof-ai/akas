@@ -26,7 +26,7 @@ GPU = pytest.mark.skipif(os.environ.get("TENSOR_LFM2_CUDA") != "1", reason="enab
 
 @pytest.fixture(scope="module")
 def fixture_bundle(tmp_path_factory):
-    from benchmarks.lfm2.diagnostic import fixture
+    from support.diagnostic import fixture
     from akas.compilation import compile_checkpoint
     from akas.compilation.tuning import SearchSettings
     directory = Path(os.environ["TENSOR_LFM2_REQUEST_CACHE"]) if os.environ.get("TENSOR_LFM2_REQUEST_CACHE") else tmp_path_factory.mktemp("common-requests")
@@ -198,7 +198,7 @@ def test_shared_engine_schedules_and_reclaims_request_slots(fixture_bundle):
 def test_shared_http_serves_lfm2_with_real_cuda_resources(fixture_bundle):
     from aiohttp.test_utils import TestClient,TestServer
     from akas.serving import create_app
-    from examples.serving import lfm2
+    from support.serving import lfm2
     path,bundle=fixture_bundle
     async def check():
         async with TestClient(TestServer(create_app(partial(lfm2,checkpoint=path,bundle=bundle,capacity=8)))) as client:

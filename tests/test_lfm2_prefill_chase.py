@@ -153,7 +153,7 @@ def test_common_prefill_qualified_chunks_and_final_readback(chunks,count,expecte
 def test_mixed_activation_outer_product_fusion_and_tails(tmp_path, kind, layout, fma):
     import tensor
     from akas.compilation.emit import export_kernel as source
-    from benchmarks.lfm2.prefill_chase_search import reference
+    from support.projection_reference import reference
 
     r, k, o = 35, 129, 33
     p = dict(
@@ -361,7 +361,7 @@ def test_packed_outer_product_rounding_fusion_and_output_tail(
     from akas.checkpoints.gguf import TYPES
     from akas.checkpoints.gguf import dequantize
     from akas.compilation.emit import export_kernel as source
-    from benchmarks.lfm2.prefill_chase_search import reference
+    from support.projection_reference import reference
 
     r, k, o = 35, 288 if encoding == 2 else 256, 34
     _, block, size = TYPES[encoding]

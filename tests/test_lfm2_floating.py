@@ -7,8 +7,8 @@ import pytest
 from akas.models.lfm2.model import LFM2Batched
 from akas.models.lfm2.weights import ReferenceCheckpoint
 from akas.compilation.compile import plan
-from benchmarks.lfm2.diagnostic import fixture
-from examples.lfm2.checkpoint import export
+from support.diagnostic import fixture
+from support.checkpoint import export
 
 
 @pytest.fixture(scope="module")
@@ -107,7 +107,7 @@ def test_chunked_mixed_tails_decode_and_partial_reset(
         pytest.skip("enable provider qualification")
     import tensor
     from akas.compilation import compile_checkpoint
-    from examples.lfm2.oracle import Oracle
+    from support.oracle import Oracle
 
     bundle = (
         Path(os.environ.get("AKAS_LFM_FLOATING_BUILD", tmp_path))
