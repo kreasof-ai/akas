@@ -48,8 +48,34 @@ IMPLEMENTATIONS += tuple(
 )
 
 
+IMPLEMENTATIONS += variants(("advance",), "sequence.cuda.prefill", "block-fp8", phase="commit", required=("all_tokens",))
+IMPLEMENTATIONS += variants(("gather_hidden", "store_hidden"), "sequence.cuda.bf16_batch", "block-fp8")
+
 from akas.ops.sequence.validation import VALIDATIONS
 
 """Row independence for graph pruning; kernel arithmetic is unchanged."""
 
 ROW_INDEPENDENT = ("add",)
+
+from akas.ops.sequence.tail import validation as tail_validation
+
+IMPLEMENTATIONS += tuple(
+    item for provider in ("cuda", "webgpu")
+    for item in variants(("chunk_tail", "tail_controls"), "sequence.tail", "reference", provider=provider)
+)
+VALIDATIONS.update({name: tail_validation for name in ("chunk_tail", "tail_controls")})
+
+
+# Output locations are part of the operation ABI, independent of compiler passes.
+OUTPUT_ARGUMENTS = {"reference": {'chunk_tail': (-1,), 'tail_controls': (2, 3, 4), 'chunk_last': (1,), 'masked_copy': (1,), 'chunk_controls': (2, 3), 'advance': (0,), 'next_tokens': (1,)}}
+
+from akas.ops.contracts import OutputABI
+
+for _contract in ("bf16", "block-fp8"):
+    OUTPUT_ARGUMENTS.setdefault(_contract, {}).update({
+        "gather_hidden": OutputABI((-1,), ("out",)),
+        "store_hidden": OutputABI((-1,), ("saved",)),
+        "controls": OutputABI((2, 3), ("flat_position", "active")),
+        "last_rows": OutputABI((-1,), ("out",)),
+        "advance": OutputABI((0,), ("position",)),
+    })

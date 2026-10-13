@@ -1,5 +1,7 @@
 """Oracle-gated search over Tensor-produced Vulkan WebGPU kernels."""
 
+from akas.compilation.selection import source as kernel_source
+
 from pathlib import Path as _Path
 import sys as _sys
 
@@ -41,12 +43,12 @@ def program(r, k, o, config):
     if family == "staged":
         tm, tn, bk = (p.pop(a) for a in ("tile_m", "tile_n", "tile_k"))
         # Producer helper now honors explicit thread counts for staged schedules.
-        return source(
-            "akas.compilation.factories.packed",
-            "packed_webgpu_factory",
-            "linear",
-            dict(r=r, k=k, o=o, type=1, tile=(tm, tn, bk), **p),
-        )
+        return kernel_source(
+                   "linear",
+                   dict(r=r, k=k, o=o, type=1, tile=(tm, tn, bk), **p),
+                   contract='packed',
+                   provider='webgpu',
+               ).render()
     if family == "partitioned_rows":
         p["owner_axis"] = "row"
     lhs = round_half("x[({row}) * " + str(k) + " + ({k})]")

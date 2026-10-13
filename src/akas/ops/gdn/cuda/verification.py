@@ -6,6 +6,8 @@ def make_kernel(kind, p):
 
     slots, chunk = p["slots"], p["chunk"]
     rows = slots * chunk
+    snapshots = chunk if p.get("full_checkpoints", False) else chunk - 1
+    commit = p.get("commit", True)
     if kind == "gdn_conv":
         channels = 8192
 
@@ -16,7 +18,7 @@ def make_kernel(kind, p):
             lengths: T.Tensor((slots,), "int32"),
             state: T.Tensor((slots, channels, 3), "float32"),
             out: T.Tensor((rows, channels), "float32"),
-            checkpoints: T.Tensor((slots, chunk - 1, channels, 3), "float32"),
+            checkpoints: T.Tensor((slots, snapshots, channels, 3), "float32"),
         ):
             with T.Kernel(slots, channels // 256, threads=256) as (slot, tile):
                 for j in T.Parallel(256):
@@ -42,15 +44,16 @@ def make_kernel(kind, p):
                             h0 = h1
                             h1 = h2
                             h2 = current
-                            if t < chunk - 1:
+                            if t < snapshots:
                                 checkpoints[slot, t, col, 0] = h0
                                 checkpoints[slot, t, col, 1] = h1
                                 checkpoints[slot, t, col, 2] = h2
                         else:
                             out[slot * chunk + t, col] = 0
-                    state[slot, col, 0] = h0
-                    state[slot, col, 1] = h1
-                    state[slot, col, 2] = h2
+                    if commit:
+                        state[slot, col, 0] = h0
+                        state[slot, col, 1] = h1
+                        state[slot, col, 2] = h2
 
         return kernel
     import tilelang.language as T
@@ -71,7 +74,7 @@ def make_kernel(kind, p):
             lengths: T.Tensor((slots,), "int32"),
             state: T.Tensor((slots, heads, value, key), "float32"),
             out: T.Tensor((rows, heads, value), "float32"),
-            checkpoints: T.Tensor((slots, chunk - 1, heads, value, key), "float32"),
+            checkpoints: T.Tensor((slots, snapshots, heads, value, key), "float32"),
         ):
             with T.Kernel(slots, heads, value // tile, threads=128) as (
                 slot,
@@ -103,7 +106,7 @@ def make_kernel(kind, p):
                             )
                             prediction[i, j] = matrix[i, j] * qq[j]
                         T.reduce_sum(prediction, result, dim=1)
-                        if t < chunk - 1:
+                        if t < snapshots:
                             T.copy(
                                 matrix,
                                 checkpoints[
@@ -115,7 +118,8 @@ def make_kernel(kind, p):
                     else:
                         for i in T.Parallel(tile):
                             out[row, head, part * tile + i] = 0
-                T.copy(matrix, state[slot, head, part * tile : part * tile + tile, :])
+                if commit:
+                    T.copy(matrix, state[slot, head, part * tile : part * tile + tile, :])
 
         return kernel
     import tilelang.language as T
@@ -129,15 +133,15 @@ def make_kernel(kind, p):
 
         @T.prim_func
         def kernel(
-            checkpoints: T.Tensor((slots, chunk - 1, *shape), "float32"),
+            checkpoints: T.Tensor((slots, snapshots, *shape), "float32"),
             state: T.Tensor((slots, *shape), "float32"),
             accepted: T.Tensor((slots,), "int32"),
             lengths: T.Tensor((slots,), "int32"),
         ):
-            saved = T.view(checkpoints, shape=(slots, chunk - 1, width))
+            saved = T.view(checkpoints, shape=(slots, snapshots, width))
             dest = T.view(state, shape=(slots, width))
             with T.Kernel(slots, T.ceildiv(width, 256), threads=256) as (slot, tile):
-                if (accepted[slot] > 0) & (accepted[slot] < lengths[slot]):
+                if (accepted[slot] > 0) & ((accepted[slot] < lengths[slot]) | (snapshots == chunk)):
                     for j in T.Parallel(256):
                         col = tile * 256 + j
                         if col < width:

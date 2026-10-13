@@ -54,6 +54,14 @@ def read_program(directory):
 
     root = Path(directory).resolve()
     manifest = json.loads((root/"program.json").read_text())
+    return validate_program(root, manifest)
+
+
+def validate_program(directory, manifest):
+    """Check an unpublished program using the same contract as its loader."""
+    import json
+
+    root = Path(directory).resolve()
     if manifest.get("schema") != "akas.program.v1":
         raise ValueError("unsupported inference program")
     if any(type(manifest.get(name)) is not int or manifest[name] < 1 for name in ("max_requests","max_context")):

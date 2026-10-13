@@ -16,6 +16,10 @@ class Definition:
                 checkpoint_options=None, capacity=None, context=None, **model_options):
         from akas.artifacts.read import read_program
 
+        for name, value in (("capacity", capacity), ("context", context)):
+            if value is not None and (type(value) is not int or value < 1):
+                raise ValueError(f"{name} must be a positive integer")
+
         program = read_program(bundle)
         for requested, field in ((capacity, "max_requests"), (context, "max_context")):
             if requested is not None and requested != program[field]:

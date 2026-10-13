@@ -27,7 +27,7 @@ def run(model, bundle, out, repeats):
         report = {
             "protocol": "default full generate call plus completion; reset/tokenization/prefill/sampling included; load excluded",
             "adapter": device.info,
-            "implementation": engine.manifest["implementation"],
+            "implementation": engine.program,
             "generation": expected,
             "samples_seconds": samples,
             "median_seconds": statistics.median(samples),

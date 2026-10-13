@@ -8,7 +8,6 @@ import argparse, math
 from pathlib import Path
 import numpy as np
 import wgpu
-from akas import LFM2
 from benchmarks.lfm2 import decode_search_compare as compare
 
 
@@ -33,22 +32,30 @@ def legacy_readback(device, buffer):
         staging.unmap()
 
 
+def frames(engine):
+    """Resolve the same compiled phases for each local runtime ablation."""
+    executor = getattr(engine, "executor", engine)
+    if executor.device.info["provider"] != "webgpu":
+        raise ValueError("submission/readback ablations require WebGPU")
+    for record in executor.batches.records:
+        yield executor.batches.select(record["rows"], record["chunk"], phase=record["phase"])
+
+
 def install_legacy_readback(engine):
-    for plan in (*engine.prepared.values(), *engine.greedy.values()):
-        launch = plan.launch
-
-        def legacy(*, readback=None, launch=launch):
-            launch()
-            if readback is not None:
-                return legacy_readback(engine.device, readback)
-
-        plan.launch = legacy
+    for frame in frames(engine):
+        buffer = frame.feature("logits")
+        def read(buffer=buffer):
+            buffer._check()
+            return legacy_readback(buffer.device, buffer)
+        buffer.to_numpy = read
     return engine
 
 
 def install_python_submission(engine):
-    for plan in (*engine.prepared.values(), *engine.greedy.values()):
-        plan._submit_native = None
+    for frame in frames(engine):
+        if frame.forward.graph is None:
+            raise ValueError("submission ablation requires prepared graphs")
+        frame.forward.graph._submit_native = None
     return engine
 
 
@@ -76,7 +83,7 @@ def run(a):
     report["protocol"]["runtime_ablation"] = (
         "tensor_before: Python command encoder/pass/finish/submit wrappers with native dispatch encoding; tensor_searched: native fresh command creation/encoding/copy/submission/release. Identical shaders, ordered map completion and owned host snapshots."
         if a.ablation == "submission"
-        else "tensor_before: original queue fence, separate copy submission, public map_sync empty flush; tensor_runtime (or tensor_searched in a runtime-only run): same shaders with combined compute/copy submission and map completion only; tensor_searched with --searched: extended kernel search too"
+        else "tensor_before: original queue fence, separate copy submission, public map_sync empty flush; tensor_runtime (or tensor_searched in a runtime-only run): same shaders with the current buffer-readback mapping path; tensor_searched with --searched: extended kernel search too"
     )
     path.write_text(json.dumps(report, indent=2) + "\n")
 

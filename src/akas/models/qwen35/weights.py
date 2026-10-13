@@ -68,6 +68,28 @@ class Qwen35Checkpoint:
             dtypes[name] = dtype
         self.tensors = inspect_tensors(self.directory, index, selected, dtypes)
 
+    @cached_property
+    def mtp_checkpoint(self):
+        return type(self)(self.directory, branch="mtp")
+
+    def program_upload_options(self, weights, *, model_options):
+        branch = "all" if any(name.startswith("mtp.") for name in weights) else "text"
+        stored = self.storage_specs(pack_experts=True, branch=branch)
+        conversions = {}
+        for name, spec in weights.items():
+            shape, dtype = stored[name]
+            if tuple(shape) != spec.shape:
+                raise ValueError("program weight shape differs from checkpoint storage")
+            if dtype != spec.dtype:
+                if dtype != "uint8" or spec.dtype not in ("float16", "float32"):
+                    raise ValueError("unsupported program weight conversion")
+                conversions[name] = spec.dtype
+        return {
+            "pack_experts": True,
+            "branch": branch,
+            **({"conversions": conversions} if conversions else {}),
+        }
+
     @property
     def weight_bytes(self):
         return sum((info.nbytes for info in self.tensors.values()))
@@ -87,7 +109,9 @@ class Qwen35Checkpoint:
         """Copy a single raw tensor for producer/reference use, preserving bits."""
         return read_tensor(self.tensors[name])
 
-    def upload(self, device, *, names=None, pack_experts=False):
+    def upload(
+        self, device, *, names=None, pack_experts=False, branch=None, conversions=None
+    ):
         """Upload native bytes; close all allocations if any transfer fails.
 
         FP8 is stored as uint8 with an explicit E4M3FN kernel decoder; BF16
@@ -95,9 +119,51 @@ class Qwen35Checkpoint:
         transfer before unmapping its host shard or launching on another stream.
         The returned buffers are owned by the caller.
         """
+        if branch not in (None, "text", "mtp", "all"):
+            raise ValueError("invalid checkpoint branch")
+        if branch == "mtp" and self.branch != "mtp":
+            return self.mtp_checkpoint.upload(
+                device, names=names, pack_experts=pack_experts, conversions=conversions
+            )
+        if branch == "all":
+            if names is not None or self.branch != "text":
+                raise ValueError(
+                    "combined upload requires the complete text checkpoint"
+                )
+            conversions = dict(conversions or {})
+            text = self.storage_specs(pack_experts=pack_experts)
+            mtp = self.mtp_checkpoint.storage_specs(pack_experts=pack_experts)
+            if conversions.keys() - (text.keys() | mtp.keys()):
+                raise ValueError("weight conversion names an undeclared storage group")
+            result = self.upload(
+                device,
+                pack_experts=pack_experts,
+                conversions={
+                    name: dtype for name, dtype in conversions.items() if name in text
+                },
+            )
+            try:
+                result.update(
+                    self.mtp_checkpoint.upload(
+                        device,
+                        pack_experts=pack_experts,
+                        conversions={
+                            name: dtype
+                            for name, dtype in conversions.items()
+                            if name in mtp
+                        },
+                    )
+                )
+                return result
+            except BaseException:
+                for value in result.values():
+                    value.release()
+                raise
         wanted = list(self.tensors) if names is None else list(names)
         layouts = self.storage_layouts(names=wanted, pack_experts=pack_experts)
-        return upload_shards(device, self.tensors, wanted, layouts)
+        return upload_shards(
+            device, self.tensors, wanted, layouts, conversions=conversions
+        )
 
     def storage_layouts(self, *, names=None, pack_experts=False):
         """Use the same grouped storage declaration for graphs and transfers."""
@@ -129,12 +195,30 @@ class Qwen35Checkpoint:
                     )
         return layouts
 
-    def storage_specs(self, *, names=None, pack_experts=False):
+    def storage_specs(self, *, names=None, pack_experts=False, branch=None):
         from akas.checkpoints.upload import DTYPES
 
-        return {group: (tuple(shape), DTYPES[self.tensors[name].dtype])
-                for name, (group, _, shape) in
-                self.storage_layouts(names=names, pack_experts=pack_experts).items()}
+        if branch not in (None, "text", "mtp", "all"):
+            raise ValueError("invalid checkpoint branch")
+        if branch == "mtp" and self.branch != "mtp":
+            return self.mtp_checkpoint.storage_specs(
+                names=names, pack_experts=pack_experts
+            )
+        if branch == "all":
+            if names is not None or self.branch != "text":
+                raise ValueError(
+                    "combined declaration requires the complete text checkpoint"
+                )
+            return {
+                **self.storage_specs(pack_experts=pack_experts),
+                **self.mtp_checkpoint.storage_specs(pack_experts=pack_experts),
+            }
+        return {
+            group: (tuple(shape), DTYPES[self.tensors[name].dtype])
+            for name, (group, _, shape) in self.storage_layouts(
+                names=names, pack_experts=pack_experts
+            ).items()
+        }
 
 
 from akas.models.qwen35.config import DenseConfig
@@ -143,7 +227,11 @@ from akas.models.qwen35.config import DenseConfig
 class DenseCheckpoint:
     def program_upload_options(self, weights, *, model_options):
         """Select the checkpoint branch from the program's declared weights."""
-        return {"branch": "all" if any(name.startswith("mtp.") for name in weights) else "text"}
+        return {
+            "branch": "all"
+            if any(name.startswith("mtp.") for name in weights)
+            else "text"
+        }
 
     @cached_property
     def tokenizer(self):
@@ -190,17 +278,26 @@ class DenseCheckpoint:
         groups = dense_groups(self.config, branch)
         return upload_concatenated(device, selected, self.read, groups)
 
-
     def storage_specs(self, *, branch="text"):
         if branch not in ("text", "mtp", "all"):
             raise ValueError("invalid checkpoint branch")
         from akas.checkpoints.upload import DTYPES
-        selected = {name:info for name,info in self.tensors.items()
-                    if branch == "all" or name.startswith("mtp.") == (branch == "mtp")}
-        specs = {name:(tuple(info.shape),DTYPES[info.dtype]) for name,info in selected.items()}
-        for destination,names,dtype in dense_groups(self.config,branch):
+
+        selected = {
+            name: info
+            for name, info in self.tensors.items()
+            if branch == "all" or name.startswith("mtp.") == (branch == "mtp")
+        }
+        specs = {
+            name: (tuple(info.shape), DTYPES[info.dtype])
+            for name, info in selected.items()
+        }
+        for destination, names, dtype in dense_groups(self.config, branch):
             shapes = [specs[name][0] for name in names]
-            specs[destination] = ((sum(shape[0] for shape in shapes),*shapes[0][1:]),dtype)
+            specs[destination] = (
+                (sum(shape[0] for shape in shapes), *shapes[0][1:]),
+                dtype,
+            )
             for name in names:
                 del specs[name]
         return specs
@@ -225,16 +322,14 @@ def dense_groups(config, branch="text"):
             destination = root + "linear_attn.input.weight"
         else:
             names = tuple(
-                root + "self_attn." + name + "_proj.weight"
-                for name in ("q", "k", "v")
+                root + "self_attn." + name + "_proj.weight" for name in ("q", "k", "v")
             )
             destination = root + "self_attn.input.weight"
         groups.append((destination, names, "bfloat16"))
-        names = tuple(
-            root + "mlp." + name + "_proj.weight" for name in ("gate", "up")
-        )
+        names = tuple(root + "mlp." + name + "_proj.weight" for name in ("gate", "up"))
         groups.append((root + "mlp.input.weight", names, "bfloat16"))
     return groups
+
 
 def expected_moe_tensors(config):
     shapes = {
@@ -373,7 +468,8 @@ def expected_dense_tensors(config):
 
 def expected_mtp_tensors(config):
     """The official one-layer draft branch; embedding/head are shared."""
-    prefix = "model.language_model.layers.3."
+    layer = next(i for i, kind in enumerate(config.layers) if kind == "full_attention")
+    prefix = f"model.language_model.layers.{layer}."
     shapes = {
         "mtp.layers.0." + name[len(prefix) :]: shape
         for name, shape in expected_tensors(config).items()

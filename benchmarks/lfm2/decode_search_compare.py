@@ -176,7 +176,7 @@ def run(
         sample_times = {name: [] for name, engine in engines}
         for name, engine in engines:
             first = engine.generate("What is 2 + 2?", max_tokens=96)
-            host = engine.generate("What is 2 + 2?", max_tokens=96, gpu_greedy=False)
+            host = engine.generate("What is 2 + 2?", max_tokens=96, sampling="host")
             if first != host:
                 raise AssertionError("host/GPU greedy mismatch: " + name)
             generation[name] = first

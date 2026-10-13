@@ -69,7 +69,7 @@ def run(
                 "src/tensor/compiler/webgpu_lowering.py",
                 "src/tensor/compiler/webgpu/build.py",
                 'src/akas/execution/bindings/packed/resources.py',
-                *('src/akas/compilation/source.py', 'src/akas/ops/attention/webgpu/packed.py', 'src/akas/ops/linear/webgpu/packed.py', 'src/akas/ops/normalization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/storage.py', 'src/akas/ops/reductions/webgpu.py', 'src/akas/ops/sequence/webgpu/packed.py', 'src/akas/ops/vocabulary/webgpu/packed.py', 'src/akas/compilation/factories/packed.py'),
+                *('src/akas/compilation/source.py', 'src/akas/ops/attention/webgpu/packed.py', 'src/akas/ops/linear/webgpu/packed.py', 'src/akas/ops/normalization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/storage.py', 'src/akas/ops/reductions/webgpu.py', 'src/akas/ops/sequence/webgpu/packed.py', 'src/akas/ops/vocabulary/webgpu/packed.py', 'src/akas/ops/definition.py'),
                 'src/akas/compilation/recipes/packed.py',
             )
         },
@@ -231,7 +231,7 @@ def run(
         generation = {}
         for name, engine in engines.items():
             gpu = engine.generate("What is 2 + 2?", max_tokens=96)
-            host = engine.generate("What is 2 + 2?", max_tokens=96, gpu_greedy=False)
+            host = engine.generate("What is 2 + 2?", max_tokens=96, sampling="host")
             if gpu != host:
                 raise AssertionError("host/GPU greedy mismatch: " + name)
             generation[name] = gpu

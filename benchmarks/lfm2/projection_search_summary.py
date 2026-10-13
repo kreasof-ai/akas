@@ -119,7 +119,7 @@ def run(search_root, recheck_root, native_root, json_out, native_default_root=No
         "src/tensor/compiler/webgpu_lowering.py",
         "src/tensor/compiler/search.py",
         "src/tensor/compiler/webgpu/schedules/search_space.py",
-        *('src/akas/compilation/source.py', 'src/akas/ops/attention/webgpu/packed.py', 'src/akas/ops/linear/webgpu/packed.py', 'src/akas/ops/normalization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/storage.py', 'src/akas/ops/reductions/webgpu.py', 'src/akas/ops/sequence/webgpu/packed.py', 'src/akas/ops/vocabulary/webgpu/packed.py', 'src/akas/compilation/factories/packed.py'),
+        *('src/akas/compilation/source.py', 'src/akas/ops/attention/webgpu/packed.py', 'src/akas/ops/linear/webgpu/packed.py', 'src/akas/ops/normalization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/storage.py', 'src/akas/ops/reductions/webgpu.py', 'src/akas/ops/sequence/webgpu/packed.py', 'src/akas/ops/vocabulary/webgpu/packed.py', 'src/akas/ops/definition.py'),
         "benchmarks/lfm2/tensor_projection_search.py",
         "benchmarks/lfm2/projection_search_recheck.py",
         "benchmarks/lfm2/llama_projection_compare.py",

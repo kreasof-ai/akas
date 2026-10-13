@@ -1,5 +1,7 @@
 """Packed WebGPU inference kernels preserve fused arithmetic and masking."""
 
+from akas.compilation.selection import source as kernel_source
+
 import os
 import numpy as np
 import pytest
@@ -37,9 +39,12 @@ def test_streamed_gemv_fused_tail_and_f32_activation_contract(
         k_layout="striped",
         shared_input=shared_input,
     )
-    text = source(
-        "akas.compilation.factories.packed", "packed_webgpu_factory", "ffn", p
-    )
+    text = kernel_source(
+               "ffn",
+               p,
+               contract='packed',
+               provider='webgpu',
+           ).render()
     if force_fallback:
         from benchmarks.lfm2.dsl_probes import subgroup_source
 
@@ -72,11 +77,7 @@ def test_fused_attention_active_tail_and_qk_fallback(tmp_path, force_fallback):
     from akas.compilation.emit import export_kernel as source
 
     h, kh, d, cap = 4, 2, 64, 96
-    text = source(
-        "akas.compilation.factories.packed",
-        "packed_webgpu_factory",
-        "attention",
-        dict(
+    text = kernel_source("attention", dict(
             r=1,
             h=h,
             kh=kh,
@@ -87,8 +88,7 @@ def test_fused_attention_active_tail_and_qk_fallback(tmp_path, force_fallback):
             channels=32,
             value_parts=16,
             fused_scores=True,
-        ),
-    )
+        ), contract='packed', provider='webgpu').render()
     if force_fallback:
         from benchmarks.lfm2.dsl_probes import subgroup_source
 

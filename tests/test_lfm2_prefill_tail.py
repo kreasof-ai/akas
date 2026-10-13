@@ -104,18 +104,15 @@ def test_tail_extraction_partial_chunks_and_position_controls(tmp_path, provider
         != "1"
     ):
         pytest.skip("requires the selected GPU provider")
-    from akas.compilation.emit import export_kernel as source
-    factory = "packed_cuda_factory" if provider == "cuda" else "packed_webgpu_factory"
+    from akas.compilation.selection import source
     r, c, t = 128, 17, 8
     rng = np.random.default_rng(1805)
     path = tmp_path / "tail.py"
     path.write_text(
         source(
-            "akas.compilation.factories.packed",
-            factory,
             "prefill_tail",
-            dict(r=r, c=c, t=t),
-        )
+            dict(r=r, c=c, t=t), contract="packed", provider=provider,
+        ).render()
     )
     artifact = path.with_suffix(".tbin")
     tensor.build(
@@ -163,8 +160,7 @@ def test_attention_tail_uses_absolute_positions_and_all_stored_keys(tmp_path, pr
         != "1"
     ):
         pytest.skip("requires the selected GPU provider")
-    from akas.compilation.emit import export_kernel as source
-    factory = "packed_cuda_factory" if provider == "cuda" else "packed_webgpu_factory"
+    from akas.compilation.selection import source
     r, t, h, kh, d, cap = 128, 8, 4, 2, 64, 192
     position = 23
     rng = np.random.default_rng(1817)
@@ -176,11 +172,10 @@ def test_attention_tail_uses_absolute_positions_and_all_stored_keys(tmp_path, pr
         path = tmp_path / f"attention-{rows}.py"
         path.write_text(
             source(
-                "akas.compilation.factories.packed",
-                factory,
                 "attention",
                 dict(r=rows, h=h, kh=kh, d=d, cap=cap, sg=True),
-            )
+                contract="packed", provider=provider,
+            ).render()
         )
         artifact = path.with_suffix(".tbin")
         tensor.build(

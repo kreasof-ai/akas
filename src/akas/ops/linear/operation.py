@@ -8,7 +8,7 @@ def large_batch(p):
 
 
 def floating_optimized(p):
-    return p.get("optimized", False) and p["k"] % 32 == 0
+    return not p.get("ggml", False) and p.get("optimized", False) and p["k"] % 32 == 0
 
 
 IMPLEMENTATIONS = (
@@ -51,14 +51,23 @@ IMPLEMENTATIONS = (
         priority=20,
     ),
     *variants(
-        ("linear",), "linear.cuda.bf16_batch", "bf16",
+        ("linear",),
+        "linear.cuda.bf16_batch",
+        "bf16",
         semantic_keys=("r", "k", "o"),
-        space=(("m", (16, 32, 64)), ("n", (64, 128)),
-               ("bk", (128, 64, 256)), ("stages", (2, 1, 3))),
+        space=(
+            ("m", (16, 32, 64)),
+            ("n", (64, 128)),
+            ("bk", (128, 64, 256)),
+            ("stages", (2, 1, 3)),
+        ),
     ),
     *variants(
-        ("gemv",), "linear.cuda.bf16_batch", "bf16",
-        semantic_keys=("r", "k", "o"), space=(("columns", (16, 8, 32)),),
+        ("gemv",),
+        "linear.cuda.bf16_batch",
+        "bf16",
+        semantic_keys=("r", "k", "o"),
+        space=(("columns", (16, 8, 32)),),
     ),
     *variants(("bf16_linear",), "linear.cuda.decode", "block-fp8"),
     *variants(("fp8_linear",), "linear.cuda.decode", "block-fp8", phase="decode"),
@@ -114,6 +123,7 @@ IMPLEMENTATIONS += tuple(
         "linear.reference",
         "reference",
         provider=provider,
+        accepts=lambda p: not p.get("ggml", False),
         space=(("threads", (32, 64, 128, 256)),),
     )
 )
@@ -124,6 +134,7 @@ IMPLEMENTATIONS += variants(
     "reference",
     provider="webgpu",
     priority=20,
+    accepts=lambda p: not p.get("ggml", False),
     space=(("threads", (32, 64, 128, 256)),),
 )
 
@@ -157,77 +168,73 @@ IMPLEMENTATIONS += variants(
 )
 
 
+# Storage format is an operand choice in a common model graph. Prefill stages
+# FP16 operands; decode preserves the packed GEMV arithmetic and fused pairs.
+IMPLEMENTATIONS += variants(
+    ("linear", "ffn", "linear_add"),
+    "linear.cuda.packed",
+    "reference",
+    priority=40,
+    accepts=lambda p: p.get("ggml", False) and p["r"] == 1,
+    semantic_keys=("r", "k", "o", "type", "ggml"),
+    space=(
+        ("threads", (64, 128, 256)),
+        ("unroll", (1, 2, 4, 8)),
+        ("f16_values", (4, 8, 16)),
+    ),
+)
+IMPLEMENTATIONS += variants(
+    ("linear", "ffn", "linear_add"),
+    "linear.cuda.packed",
+    "reference",
+    priority=40,
+    accepts=lambda p: p.get("ggml", False) and p["r"] > 1,
+    variant="prefill",
+    semantic_keys=("r", "k", "o", "type", "ggml"),
+    defaults=(("block_m", 32), ("block_n", 64), ("block_k", 32), ("stages", 2)),
+    space=(
+        ("block_m", (32, 16, 64)),
+        ("block_n", (64, 32, 128)),
+        ("block_k", (32, 64, 128)),
+        ("stages", (2, 1, 3)),
+        ("threads", (128, 256)),
+    ),
+)
+IMPLEMENTATIONS += variants(
+    ("linear", "ffn", "linear_add"),
+    "linear.webgpu.packed",
+    "reference",
+    provider="webgpu",
+    priority=40,
+    accepts=lambda p: (
+        p.get("ggml", False) and (p["r"] != 1 or p["type"] not in (2, 14))
+    ),
+)
+IMPLEMENTATIONS += variants(
+    ("linear", "ffn", "linear_add"),
+    "linear.webgpu.packed",
+    "reference",
+    provider="webgpu",
+    priority=40,
+    variant="quantized-decode",
+    accepts=lambda p: p.get("ggml", False) and p["r"] == 1 and p["type"] in (2, 14),
+    semantic_keys=("r", "k", "o", "type", "ggml"),
+    space=(
+        ("sg", (False, True)),
+        ("gemv_threads", (128, 64, 256)),
+        ("gemv_lanes", (16, 32)),
+        ("gemv_unroll", (1, 2, 4, 8)),
+        ("gemv_chains", (1, 2, 4)),
+    ),
+)
+
+
 from akas.ops.linear.validation import VALIDATIONS
 
 
-def fuse_projections(plan):
-    """Fuse private paired projections into the established FFN operation.
+from akas.ops.linear.rewrites import fuse_projections, fuse_residual_projection
 
-    Decode with one row keeps separate projections: the established FP16 GEMV
-    route is faster there. Partitioned or externally consumed intermediates
-    keep their original calls. The runtime recomposes this same graph.
-    """
-    from collections import Counter
-    from dataclasses import replace
-
-    uses = Counter(
-        name
-        for call in plan.calls
-        for name in (*call.arguments, *call.bindings.values())
-    )
-    result, index = [], 0
-    while index < len(plan.calls):
-        calls = plan.calls[index : index + 3]
-        if len(calls) == 3:
-            gate, up, activation = calls
-            p = gate.parameters
-            if (
-                (gate.kind, up.kind, activation.kind) == ("linear", "linear", "swiglu")
-                and p == up.parameters
-                and p.get("optimized")
-                and p["r"] > 1
-                and not p.get("matrix_output")
-                and p.get("output_offset", 0) == 0
-                and p.get("output_stride", p["o"]) == p["o"]
-                and len(gate.arguments)
-                == len(up.arguments)
-                == len(activation.arguments)
-                == 3
-                and gate.arguments[0] == up.arguments[0]
-                and activation.arguments[:2] == (gate.arguments[2], up.arguments[2])
-                and activation.parameters == dict(r=p["r"], c=p["o"])
-                and uses[gate.arguments[2]] == uses[up.arguments[2]] == 2
-            ):
-                result.append(
-                    replace(
-                        gate,
-                        kind="ffn",
-                        arguments=(
-                            gate.arguments[0],
-                            gate.arguments[1],
-                            up.arguments[1],
-                            activation.arguments[2],
-                        ),
-                        label=activation.label,
-                    )
-                )
-                index += 3
-                continue
-        result.append(plan.calls[index])
-        index += 1
-    plan.calls = result
-    used = {
-        name for call in result for name in (*call.arguments, *call.bindings.values())
-    }
-    plan.buffers = {
-        name: spec
-        for name, spec in plan.buffers.items()
-        if spec.role != "scratch" or name in used
-    }
-    return plan
-
-
-REWRITES = (fuse_projections,)
+REWRITES = (fuse_projections, fuse_residual_projection)
 ROW_INDEPENDENT = ("linear",)
 
 
@@ -252,3 +259,86 @@ def project(graph, x, weight, *, width, name, role="scratch"):
     if parameters["parts"] > 1:
         graph("split_merge", parameters, partial, out)
     return out
+
+
+from akas.ops.linear.lowering import lower
+from akas.ops.linear.pipeline import validation as pipeline_validation
+
+IMPLEMENTATIONS += variants(
+    ("projection_partial",),
+    "linear.pipeline",
+    "block-fp8",
+    semantic_keys=("r", "k", "o", "partitions"),
+    space=(
+        ("columns", (64, 32, 128)),
+        ("block_m", (16, 32, 64)),
+        ("threads", (128, 256)),
+        ("stages", (1, 2, 3)),
+    ),
+)
+IMPLEMENTATIONS += variants(("projection_merge",), "linear.pipeline", "block-fp8")
+VALIDATIONS.update(
+    {name: pipeline_validation for name in ("projection_partial", "projection_merge")}
+)
+
+
+# Output locations are part of the operation ABI, independent of compiler passes.
+OUTPUT_ARGUMENTS = {"reference": {"linear": (-1,), "ffn": (-1,), "linear_add": (-1,)}}
+
+IMPLEMENTATIONS += variants(
+    ("projection_partial",),
+    "linear.hardware.hopper.projection",
+    "block-fp8",
+    priority=20,
+    targets=("sm_90a",),
+    accepts=lambda p: p.get("hopper", False),
+    parameters_only=True,
+    semantic_keys=("r", "k", "o", "partitions"),
+    space=(
+        ("columns", (64, 128)),
+        ("block_m", (16, 32, 64)),
+        ("threads", (128, 256)),
+        ("stages", (1, 2, 3)),
+    ),
+)
+
+
+from akas.ops.contracts import OutputABI
+
+for _contract in ("reference", "packed", "packed-baseline", "bf16", "block-fp8"):
+    OUTPUT_ARGUMENTS.setdefault(_contract, {}).update(
+        {
+            "linear": OutputABI((-1,), ("out",)),
+            "gemv": OutputABI((-1,), ("out",)),
+            "ffn": OutputABI((-1,), ("out",)),
+            "linear_add": OutputABI((-1,), ("out",)),
+            "bf16_linear": OutputABI((-1,), ("out",)),
+            "fp8_linear": OutputABI((-1,), ("out",)),
+            "split_linear": OutputABI((-1,), ("out",)),
+            "split_merge": OutputABI((-1,), ("out",)),
+            "projection_partial": OutputABI((-1,), ("out",)),
+            "projection_merge": OutputABI((-1,), ("out",)),
+        }
+    )
+
+# Keep per-CTA work bounded as request rows grow; beam search compares this
+# tiled path with the scalar reduction while preserving its buffer contract.
+IMPLEMENTATIONS += variants(
+    ("bf16_linear",),
+    "linear.cuda.block_fp8",
+    "block-fp8",
+    phase="decode",
+    priority=20,
+    accepts=lambda p: p.get("r", 1) > 8 and p["k"] % 64 == 0,
+    variant="large-batch",
+)
+IMPLEMENTATIONS += variants(
+    ("bf16_linear",),
+    "linear.cuda.block_fp8",
+    "block-fp8",
+    phase="prefill",
+    priority=20,
+    required=("decode_head",),
+    accepts=lambda p: p.get("decode_head") and p.get("r", 1) > 8 and p["k"] % 64 == 0,
+    variant="large-head",
+)

@@ -10,6 +10,8 @@ import numpy as np
 import tensor
 from akas import GGUF
 from akas.models.lfm2.model import LFM2
+from akas.benchmarking.session import Session
+from akas.benchmarking.replay import evaluate
 from akas.text.tokenizer import Tokenizer
 from akas.checkpoints.gguf import dequantize
 
@@ -124,15 +126,19 @@ def validate(model, bundle, reference_executable, ggml_library, out):
     }
     saved = []
     with tensor.Device() as device, LFM2(model, bundle, device) as network:
+        chunk = max((phase["chunk"] for phase in network.program["phases"]
+                     if phase["phase"] == "prefill"), default=1)
+        session = Session(network, batch=1, chunk=chunk)
+        session.reset()
         for i, item in enumerate(items):
             if item.get("reset"):
-                network.reset()
-            actual = network.forward(item["tokens"])
+                session.reset()
+            actual = evaluate(session, item["tokens"])
             expected = np.fromfile(out / "llama" / f"{i}-logits.bin", np.float32)
             difference = actual - expected
             metrics = {
                 "step": i,
-                "position": network.position,
+                "position": int(network.positions[session.slots[0]]),
                 "max_error": float(np.max(np.abs(difference))),
                 "rmse": float(np.sqrt(np.mean(difference * difference))),
                 "reference_top1": int(np.argmax(expected)),
@@ -152,8 +158,8 @@ def validate(model, bundle, reference_executable, ggml_library, out):
             print(metrics, flush=True)
         report.update(
             adapter=device.info,
-            owned_device_bytes=network.allocated_bytes,
-            launches_per_decode=len(network.plans[1]),
+            owned_device_bytes=session.allocated_bytes,
+            launches_per_decode=len(network.batches.select(1, 1).forward.plan),
         )
     np.testing.assert_array_equal(saved[0], saved[-1])
     # Same GGUF decoding, independent eager mixed-precision operators.

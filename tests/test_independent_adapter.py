@@ -1,85 +1,55 @@
-"""Independent scheduling against unrelated request implementations."""
+"""The common executor isolates unrelated recurrence definitions and lifetimes."""
 
-from threading import get_ident
 from types import SimpleNamespace
 
+import numpy as np
 import pytest
 
 from akas import Engine, EngineConfig
-from akas.execution.handles import HandleExecutor
+from akas.execution.executor import Executor
 
 
-class Handle:
-    def __init__(self, multiplier=1, *, fail_reset=False):
-        self.multiplier = multiplier
-        self.fail_reset = fail_reset
-        self.state = 0
-        self.closed = False
-        self.resets = 0
-        self.thread = get_ident()
+class Counter(Executor):
+    multiplier = 1
+    config = SimpleNamespace(vocab=100)
 
-    def reset(self):
-        assert not self.closed and get_ident() == self.thread
+    def __init__(self, capacity=2):
+        super().__init__(capacity=capacity, context=64, reset=self.reset_slot)
+        self.values = np.zeros(capacity, dtype="int32")
+        self.fail_reset = False
+        self.resources_closed = False
+
+    def reset_slot(self, slot):
         if self.fail_reset:
             raise RuntimeError("injected reset failure")
-        self.state = 0
-        self.resets += 1
+        self.values[slot] = 0
 
-    def next_token(self, tokens):
-        assert not self.closed and get_ident() == self.thread
-        for token in tokens:
-            self.state = (self.multiplier * self.state + token) % 100
-        return self.state
+    def _execute_batch(self, slots, sequences, chunk):
+        for slot, sequence in zip(slots, sequences):
+            for token in sequence:
+                self.values[slot] = (self.multiplier * self.values[slot] + token) % 100
+            self.positions[slot] += len(sequence)
+        return self.values[slots].astype(int).tolist()
 
-    def close(self):
-        assert get_ident() == self.thread
-        self.closed = True
-
-
-class Counter(Handle):
-    config = SimpleNamespace(vocab=100)
-    context = 64
-
-    def __init__(self):
-        super().__init__()
-        self.children = []
-        self.fail_child = False
-
-    def new_request(self):
-        child = Handle(self.multiplier, fail_reset=self.fail_child)
-        self.children.append(child)
-        return child
-
-    def close(self):
-        for child in self.children:
-            child.close()
-        super().close()
+    def _close_resources(self):
+        self.resources_closed = True
 
 
 class Recurrent(Counter):
-    def __init__(self):
-        super().__init__()
-        self.multiplier = 3
+    multiplier = 3
 
 
-@pytest.mark.parametrize(
-    "kind,expected", [(Counter, [6, 12, 24, 48]), (Recurrent, [18, 72, 88, 52])]
-)
-def test_independent_handles_schedule_complete_cancel_and_reuse_without_provider_fields(
-    kind, expected
-):
+@pytest.mark.parametrize("kind,expected", [(Counter, [6, 12, 24, 48]), (Recurrent, [18, 72, 88, 52])])
+def test_sequences_complete_cancel_and_reuse_without_provider_fields(kind, expected):
     model = kind()
-    with Engine.from_independent(
-        model, capacity=2, config=EngineConfig(prefill_chunk=2)
-    ) as engine:
+    with Engine(model, config=EngineConfig(prefill_chunk=2)) as engine:
         first = engine.submit([1, 2, 3], max_tokens=4)
         second = engine.submit([7], max_tokens=2)
         while engine.step():
             pass
         assert first.output == expected
         assert second.output == ([7, 14] if kind is Counter else [7, 28])
-        assert not engine.model.handles
-        assert not model.closed and model.children[0].closed
+        assert not model.occupied.any() and not model.closed
         replacement = engine.submit([1, 2, 3], max_tokens=4)
         while engine.step():
             pass
@@ -89,49 +59,43 @@ def test_independent_handles_schedule_complete_cancel_and_reuse_without_provider
         engine.cancel(cancelled)
         while engine.step():
             pass
-        assert cancelled.slot is None and not engine.model.handles
-    assert model.closed
+        assert cancelled.slot is None and not model.occupied.any()
+    assert model.closed and model.resources_closed
     engine.close()
     with pytest.raises(RuntimeError, match="closed"):
-        engine.model.admit()
+        model.admit()
 
 
 @pytest.mark.parametrize("capacity", [0, -1, True, 1.5])
-def test_capacity_validation_does_not_take_model_ownership(capacity):
-    model = Counter()
+def test_capacity_validation_before_resources(capacity):
     with pytest.raises(ValueError, match="capacity"):
-        HandleExecutor(model, capacity=capacity)
-    assert not model.closed and not model.children
+        Counter(capacity)
 
 
-def test_capacity_and_failed_child_reset_leave_no_orphan_handle():
+def test_failed_reset_does_not_claim_or_mutate_another_slot():
     model = Counter()
-    adapter = HandleExecutor(model, capacity=2)
-    assert adapter.admit() == 0
-    model.fail_child = True
+    assert model.admit() == 0
+    model.values[0] = 73
+    model.fail_reset = True
     with pytest.raises(RuntimeError, match="reset failure"):
-        adapter.admit()
-    assert model.children[0].closed and set(adapter.handles) == {0}
-    model.fail_child = False
-    assert adapter.admit() == 1
+        model.admit()
+    assert model.occupied.tolist() == [True, False] and model.values[0] == 73
+    model.fail_reset = False
+    assert model.admit() == 1
     with pytest.raises(ValueError, match="exhausted"):
-        adapter.admit()
-    adapter.release(1)
-    assert model.children[1].closed
-    adapter.release(0)
-    assert not model.closed
-    adapter.close()
-    assert model.closed and not adapter.handles
+        model.admit()
+    model.release(1)
+    model.release(0)
+    assert not model.closed and not model.occupied.any()
+    model.close()
 
 
-def test_engine_close_releases_both_active_independent_sequences():
+def test_engine_close_releases_both_active_sequences():
     model = Recurrent()
-    with Engine.from_independent(
-        model, capacity=2, config=EngineConfig(prefill_chunk=1)
-    ) as engine:
+    with Engine(model, config=EngineConfig(prefill_chunk=1)) as engine:
         first = engine.submit([1, 2, 3], max_tokens=4)
         second = engine.submit([7, 8, 9], max_tokens=2)
         engine.step()
-        assert set(engine.model.handles) == {0, 1}
+        assert model.occupied.tolist() == [True, True]
     assert first.slot is None and second.slot is None
-    assert model.closed and model.children[0].closed
+    assert model.closed and not model.occupied.any()

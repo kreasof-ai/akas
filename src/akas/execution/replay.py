@@ -8,9 +8,9 @@ from akas.memory.transfer import write
 
 
 class CapturedRound:
-    def __init__(self, engine, count):
+    def __init__(self, engine, count, *, window=None):
         self.engine, self.device = engine, engine.target.device
-        self.window = engine.window
+        self.window = engine.window if window is None else window
         self.verifier = engine.target.batch(count, self.window, verify=True)
         self.repair = engine.proposer.frame(count, self.window)
         self.draft = engine.proposer.frame(count, 1) if self.window > 2 else None

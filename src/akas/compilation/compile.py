@@ -148,7 +148,7 @@ def compile_model(
 def compile_program(checkpoint, out, *, definition, geometries, max_requests, max_context,
                     inputs=None, prediction=None, reset_buffers=(), upload_options=None,
                     provider="cuda", target=None, search=True, search_settings=None,
-                    round_windows=(), deferred=False, model_options=None, schedules=None):
+                    round_windows=(), deferred=False, model_options=None, schedules=None, device=None, policy=None, catalog=None):
     """Compile all model-supplied phase graphs through the common pipeline.
 
     Definitions receive geometry and state-pool bounds, not a runtime adapter.
@@ -193,6 +193,8 @@ def compile_program(checkpoint, out, *, definition, geometries, max_requests, ma
                               **model_options,
                               **({"phase":purpose} if purpose is not None else {}))
         graph,commit = composed if isinstance(composed,tuple) else (composed,None)
+        from akas.compilation.policy import lower
+        graph,commit = lower(graph, commit, policy=policy, provider=provider, target=target)
         bindings = graph.request or {}
         phase_inputs = inputs if inputs is not None else bindings.get("inputs")
         phase_prediction = prediction if prediction is not None else bindings.get("prediction")
@@ -215,10 +217,10 @@ def compile_program(checkpoint, out, *, definition, geometries, max_requests, ma
                 if (previous.shape,previous.dtype) != (spec.shape,spec.dtype):
                     raise ValueError("state layout differs across program geometries")
         filename = f"{generation}/phases/{phase}-b{rows}-t{chunk}.json"
-        bundle = plan(graph,provider=provider,target=target,filename=filename,schedules=schedules)
+        bundle = plan(graph,provider=provider,target=target,filename=filename,schedules=schedules,catalog=catalog)
         bundle.source_directory = f"{generation}/phases/{phase}-b{rows}-t{chunk}/sources"
         bundle.artifact_directory = f"{generation}/phases/{phase}-b{rows}-t{chunk}/kernels"
-        built = build(bundle,out,search=search,search_settings=search_settings)
+        built = build(bundle,out,search=search,search_settings=search_settings,device=device)
         record = dict(phase=phase,rows=rows,chunk=chunk,path=filename,
                       sha256=checksum(out/filename),inputs=dict(phase_inputs),prediction=phase_prediction,
                       feedback=feedback)
@@ -226,15 +228,35 @@ def compile_program(checkpoint, out, *, definition, geometries, max_requests, ma
             record["features"] = bindings["features"]
         if commit is not None and commit.calls:
             used = {name for call in commit.calls for name in (*call.arguments,*call.bindings.values())}
+            # Row-local state kernels acquire mapping during plan(), so preserve
+            # that declared input even before its explicit call binding exists.
+            if "mapping" in commit.buffers:
+                used.add("mapping")
             commit.buffers = {name:spec for name,spec in commit.buffers.items() if name in used}
             commit.phase = "commit"
             commit_file = f"{generation}/phases/commit-b{rows}-t{chunk}.json"
-            commit_bundle = plan(commit,provider=provider,target=built["target"],filename=commit_file)
+            commit_bundle = plan(commit,provider=provider,target=built["target"],filename=commit_file,catalog=catalog)
             commit_bundle.source_directory = f"{generation}/phases/commit-b{rows}-t{chunk}/sources"
             commit_bundle.artifact_directory = f"{generation}/phases/commit-b{rows}-t{chunk}/kernels"
-            build(commit_bundle,out,search=search,search_settings=search_settings)
+            build(commit_bundle,out,search=search,search_settings=search_settings,device=device)
             record["commit"] = dict(path=commit_file,sha256=checksum(out/commit_file))
         records.append(record)
+        if phase == "prefill":
+            from akas.compilation.liveness import state_prefill
+            from akas.compilation.buffers import scratch_slots
+            from akas.graph import Graph
+            state_graph = state_prefill(Graph.from_metadata(built["forward"]))
+            if state_graph is not None:
+                state_file = f"{generation}/phases/prefill-state-b{rows}-t{chunk}.json"
+                state_manifest = {**built, "forward": state_graph.metadata(),
+                                  "allocations": scratch_slots(state_graph),
+                                  "kernels": {key: value for key, value in built["kernels"].items()
+                                              if key in state_graph.requirements()}}
+                state_manifest["tuning"] = {**built.get("tuning", {}), "inherited_from": filename}
+                publish(out / state_file, state_manifest)
+                records.append(dict(phase="prefill_state", rows=rows, chunk=chunk, path=state_file,
+                                    sha256=checksum(out / state_file), inputs=dict(phase_inputs),
+                                    prediction=phase_prediction, state_only=True))
         target = built["target"]
     if not records:
         raise ValueError("program needs at least one geometry")
@@ -253,10 +275,10 @@ def compile_program(checkpoint, out, *, definition, geometries, max_requests, ma
             descriptor = {}
             for name,graph in (("verify",verification),("commit",commit),("materialize",materialize)):
                 filename = f"{generation}/journals/{name}-b{record['rows']}-w{record['chunk']}.json"
-                bundle = plan(graph,provider=provider,target=target,filename=filename)
+                bundle = plan(graph,provider=provider,target=target,filename=filename,catalog=catalog)
                 bundle.source_directory = f"{generation}/journals/{name}-b{record['rows']}-w{record['chunk']}/sources"
                 bundle.artifact_directory = f"{generation}/journals/{name}-b{record['rows']}-w{record['chunk']}/kernels"
-                build(bundle,out,search=search,search_settings=search_settings)
+                build(bundle,out,search=search,search_settings=search_settings,device=device)
                 descriptor[name] = dict(path=filename,sha256=checksum(out/filename))
             record["journal"] = descriptor
             resets.update(clear)
@@ -280,10 +302,10 @@ def compile_program(checkpoint, out, *, definition, geometries, max_requests, ma
             rows = reset_graph.view(name+".rows",state,(max_requests,width))
             reset_graph("clear_rows",dict(rows=1,pool=max_requests,width=width,dtype=spec.dtype),mapping,rows)
         filename = f"{generation}/phases/reset.json"
-        reset_bundle = plan(reset_graph,provider=provider,target=target,filename=filename)
+        reset_bundle = plan(reset_graph,provider=provider,target=target,filename=filename,catalog=catalog)
         reset_bundle.source_directory = f"{generation}/phases/reset/sources"
         reset_bundle.artifact_directory = f"{generation}/phases/reset/kernels"
-        build(reset_bundle,out,search=search,search_settings=search_settings)
+        build(reset_bundle,out,search=search,search_settings=search_settings,device=device)
         reset_record = dict(path=filename,sha256=checksum(out/filename),mapping="mapping")
     rounds = []
     for window in round_windows:
@@ -301,16 +323,18 @@ def compile_program(checkpoint, out, *, definition, geometries, max_requests, ma
             width = prod(feature.shape)//(phase["rows"]*window)
             controls = round_controls(slots=phase["rows"],window=window,width=width)
             filename = f"{generation}/rounds/control-b{phase['rows']}-w{window}.json"
-            control_bundle = plan(controls,provider=provider,target=target,filename=filename)
+            control_bundle = plan(controls,provider=provider,target=target,filename=filename,catalog=catalog)
             control_bundle.source_directory = f"{generation}/rounds/b{phase['rows']}-w{window}/sources"
             control_bundle.artifact_directory = f"{generation}/rounds/b{phase['rows']}-w{window}/kernels"
-            build(control_bundle,out,search=search,search_settings=search_settings)
+            build(control_bundle,out,search=search,search_settings=search_settings,device=device)
             rounds.append(dict(rows=phase["rows"],window=window,path=filename,sha256=checksum(out/filename)))
     if upload_options is None and hasattr(checkpoint, "program_upload_options"):
         upload_options = checkpoint.program_upload_options(weight_specs, model_options=model_options)
     manifest = dict(schema="akas.program.v1",provider=provider,target=target,
                     config=asdict(checkpoint.config),max_requests=max_requests,max_context=max_context,
                     phases=records,reset=reset_record,rounds=rounds,upload_options=upload_options or {},
-                    model_options=model_options)
+                    model_options=model_options, policy=dict(policy or {}))
+    from akas.artifacts.read import validate_program
+    validate_program(out, manifest)
     publish(out/"program.json",manifest)
     return manifest

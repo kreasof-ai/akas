@@ -53,6 +53,7 @@ def make_kernel(kind, p):
 
     slots, chunk = p["slots"], p["chunk"]
     if kind == "advance":
+        all_tokens = p.get("all_tokens", False)
 
         @T.prim_func
         def kernel(
@@ -65,7 +66,7 @@ def make_kernel(kind, p):
                     # Decode argmax already advances one position for each
                     # active slot; prefill accounts for the remaining rows.
                     active[slot] = T.cast(lengths[slot] > 0, "int32")
-                    position[slot] += T.max(lengths[slot] - 1, 0)
+                    position[slot] += T.max(lengths[slot] - (0 if all_tokens else 1), 0)
 
         return kernel
     raise ValueError("unsupported operation: " + kind)

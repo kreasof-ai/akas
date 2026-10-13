@@ -1,62 +1,33 @@
-"""Optional model loading and inference without framework/compiler imports."""
+"""Inference and optional model loading without compiler imports."""
 
 from akas.engine import Engine
 from akas.config import EngineConfig
 from akas.requests import Request
-from akas.checkpoints.gguf import GGUF
-from akas.checkpoints.gguf import GGUFError
+from akas.checkpoints.gguf import GGUF, GGUFError
+
+_EXPORTS = {
+    "Executor": ("akas.execution.executor", "Executor"),
+    "Definition": ("akas.models.definition", "Definition"),
+    "MTPHead": ("akas.models.heads.mtp", "MTPHead"),
+    "SpeculativeDecoder": ("akas.generation.speculative.decoding", "SpeculativeDecoder"),
+    "Tokenizer": ("akas.text.tokenizer", "Tokenizer"),
+    "LFM2": ("akas.models.lfm2.model", "LFM2"),
+    "LFM2Reference": ("akas.models.lfm2.model", "LFM2Reference"),
+    "LFM2Batched": ("akas.models.lfm2.model", "LFM2Batched"),
+    "Qwen35Batch": ("akas.models.qwen35.model", "Qwen35Batch"),
+    "DenseEngine": ("akas.models.qwen35.model", "DenseEngine"),
+    "Qwen35Checkpoint": ("akas.models.qwen35.weights", "Qwen35Checkpoint"),
+}
 
 
 def __getattr__(name):
-    if name in ("LFM2", "LFM2Request"):
-        from akas.models.lfm2.model import LFM2
-        from akas.execution.bindings.packed.request import LFM2Request
-
-        return {"LFM2": LFM2, "LFM2Request": LFM2Request}[name]
-    if name == "Tokenizer":
-        from akas.text.tokenizer import Tokenizer
-
-        return Tokenizer
-    if name == "Qwen35Batch":
-        from akas.models.qwen35.model import Qwen35Batch
-
-        return Qwen35Batch
-    if name == "Qwen35Prefill":
-        from akas.execution.bindings.block_fp8.prefill import Qwen35Prefill
-
-        return Qwen35Prefill
-    if name == "Qwen35Checkpoint":
-        from akas.models.qwen35.weights import Qwen35Checkpoint
-
-        return Qwen35Checkpoint
-    if name == "Qwen35MTP":
-        from akas.execution.bindings.block_fp8.draft import Qwen35MTP
-
-        return Qwen35MTP
-    if name == "Qwen35Verifier":
-        from akas.execution.bindings.block_fp8.verify import Qwen35Verifier
-
-        return Qwen35Verifier
-    if name == "Qwen35Speculative":
-        from akas.execution.bindings.block_fp8.speculative import Qwen35Speculative
-
-        return Qwen35Speculative
-    raise AttributeError(name)
+    if name not in _EXPORTS:
+        raise AttributeError(name)
+    from importlib import import_module
+    module, attribute = _EXPORTS[name]
+    value = getattr(import_module(module), attribute)
+    globals()[name] = value
+    return value
 
 
-__all__ = [
-    "Engine",
-    "EngineConfig",
-    "Request",
-    "GGUF",
-    "GGUFError",
-    "LFM2",
-    "LFM2Request",
-    "Tokenizer",
-    "Qwen35Batch",
-    "Qwen35Prefill",
-    "Qwen35Checkpoint",
-    "Qwen35MTP",
-    "Qwen35Verifier",
-    "Qwen35Speculative",
-]
+__all__ = ["Engine", "EngineConfig", "Request", "GGUF", "GGUFError", *_EXPORTS]

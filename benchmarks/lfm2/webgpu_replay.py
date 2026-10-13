@@ -9,6 +9,8 @@ from pathlib import Path
 import numpy as np
 import tensor
 from akas import LFM2
+from akas.benchmarking.session import Session
+from akas.benchmarking.replay import evaluate
 from benchmarks.lfm2.webgpu_run import metrics
 
 
@@ -19,11 +21,15 @@ def run(model, bundle, evidence, out=None):
         tensor.Device(provider="webgpu") as device,
         LFM2(model, bundle, device, context=512) as engine,
     ):
+        chunk = max((phase["chunk"] for phase in engine.program["phases"]
+                     if phase["phase"] == "prefill"), default=1)
+        session = Session(engine, batch=1, chunk=chunk)
+        session.reset()
         first = None
         for i, case in enumerate(report["validation"]):
             if case["reset"]:
-                engine.reset()
-            actual = engine.forward(case["tokens"])
+                session.reset()
+            actual = evaluate(session, case["tokens"])
             expected = np.load(evidence / f"{i}-numpy-logits.npy")
             result = metrics(actual, expected)
             if (
@@ -43,7 +49,7 @@ def run(model, bundle, evidence, out=None):
             "status": "passed",
             "model": str(model),
             "bundle": str(bundle),
-            "implementation": engine.manifest["implementation"],
+            "implementation": engine.program,
             "validation": validation,
         }
         if out is not None:

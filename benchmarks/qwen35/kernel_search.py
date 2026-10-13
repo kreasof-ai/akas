@@ -86,7 +86,7 @@ def cases(*, extended=False):
                 parameters=dict(
                     slots=rows, chunk=1, pool=256, heads=16, d=128, tile=tile
                 ),
-                module="akas.compilation.factories.bf16",
+                module="operation",
                 factory="make_kernel",
             )
 
@@ -118,7 +118,8 @@ def prepare(directory, *, extended=False):
             if row["kind"] == "flush"
             else (row["kind"], row["parameters"])
         )
-        source = export_source(
+        from akas.compilation.selection import source as operation_source
+        source = operation_source(*args,contract="bf16").render() if row["module"] == "operation" else export_source(
             row["module"],
             row["factory"],
             *args,

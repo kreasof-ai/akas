@@ -1,7 +1,7 @@
 """Measure a lossless FP16 operand cache before allocating one for the model."""
 
 import modal
-from benchmarks.qwen35.modal_h200 import image, volume
+from benchmarks.qwen35.modal_environment import image, volume
 
 app = modal.App("tensor-qwen35-h200-resident-operands")
 
@@ -29,7 +29,7 @@ def measure():
     torch.set_num_threads(4)
     sources = [
         Path('src/akas/ops/moe/cuda/hopper.py'),
-        Path('src/akas/ops/quantization/cuda/resident_operands.py'),
+        Path('src/akas/quantization/weights/operands.py'),
         Path(__file__),
     ]
     hashes = {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in sources}
@@ -44,7 +44,7 @@ def measure():
         artifact = entry.with_suffix(".tbin")
         entry.write_text(
             export_source(
-                "akas.ops." + module,
+                module if module.startswith("akas.") else "akas.ops." + module,
                 factory,
                 p,
                 dependencies=(
@@ -73,7 +73,7 @@ def measure():
             widening = dev.load(
                 compile(
                     f"widen-{k}",
-                    "quantization.cuda.resident_operands",
+                    "akas.quantization.weights.operands",
                     "widen",
                     dict(shape=list(encoded.shape)),
                 )
@@ -132,7 +132,7 @@ def measure():
                         kernel = dev.load(
                             compile(
                                 f"expert-{k}-{rows}-{resident}-{n}",
-                                "moe.cuda.hopper",
+                                "moe.hardware.hopper.experts",
                                 "expert_kernel",
                                 p,
                             )

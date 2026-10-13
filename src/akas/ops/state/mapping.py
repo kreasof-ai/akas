@@ -34,7 +34,9 @@ def map_state(kernel, states, *, rows, capacity):
 
     def bind_ranges(node):
         if isinstance(node, ir.For):
-            analyzer.bind(node.loop_var, tvm.ir.Range.from_min_extent(node.min, node.extent))
+            analyzer.bind(
+                node.loop_var, tvm.ir.Range.from_min_extent(node.min, node.extent)
+            )
         elif isinstance(node, ir.AttrStmt) and node.attr_key == "thread_extent":
             analyzer.bind(node.node.var, tvm.ir.Range.from_min_extent(0, node.value))
 
@@ -57,7 +59,9 @@ def map_state(kernel, states, *, rows, capacity):
             row = selected.get(node.args[1])
             if row is not None:
                 stride = row[2]
-                if not analyzer.can_prove(node.args[2] % stride + node.args[3] <= stride):
+                if not analyzer.can_prove(
+                    node.args[2] % stride + node.args[3] <= stride
+                ):
                     raise ValueError("state pointer region crosses request rows")
         return None
 
@@ -81,7 +85,14 @@ def map_state(kernel, states, *, rows, capacity):
             if row is None:
                 return None
             old, new, stride = row
-            index = indices(node.indices, old, new, stride)
+            # T.view aliases keep the same storage but change index rank.
+            # Flatten with the accessed view's shape, then address the mapped
+            # persistent buffer; the original parameter's rank may differ.
+            if prod(tuple(int(d) for d in node.buffer.shape)) != prod(
+                tuple(int(d) for d in old.shape)
+            ):
+                raise ValueError("state aliases must cover the complete storage")
+            index = indices(node.indices, node.buffer, new, stride)
             if isinstance(node, ir.BufferLoad):
                 return ir.BufferLoad(new, index)
             return ir.BufferStore(new, node.value, index)
@@ -99,8 +110,62 @@ def map_state(kernel, states, *, rows, capacity):
                 )
         return None
 
+    def logical_row(buffer, values, stride):
+        shape = tuple(int(d) for d in buffer.shape)
+        return (
+            sum(value * prod(shape[index + 1 :]) for index, value in enumerate(values))
+            // stride
+        )
+
+    def guard_writes(node):
+        predicates = []
+        if isinstance(node, ir.BufferStore):
+            row = selected.get(node.buffer.data)
+            if row is not None:
+                predicates.append(
+                    mapping[logical_row(node.buffer, node.indices, row[2])] >= 0
+                )
+        elif isinstance(node, ir.Evaluate):
+
+            def written_region(call):
+                if not isinstance(call, ir.Call):
+                    return
+                name = getattr(call.op, "name", "")
+                if (
+                    name == "tl.region"
+                    and isinstance(call.args[0], ir.BufferLoad)
+                    and int(call.args[1]) & 2
+                ):
+                    load = call.args[0]
+                    row = selected.get(load.buffer.data)
+                    if row is not None:
+                        predicates.append(
+                            mapping[logical_row(load.buffer, load.indices, row[2])] >= 0
+                        )
+                elif (
+                    name in ("tirx.tvm_access_ptr", "tir.tvm_access_ptr")
+                    and int(call.args[4]) & 2
+                ):
+                    row = selected.get(call.args[1])
+                    if row is not None:
+                        predicates.append(mapping[call.args[2] // row[2]] >= 0)
+
+            ir.stmt_functor.post_order_visit(node.value, written_region)
+        if predicates:
+            condition = predicates[0]
+            for predicate in predicates[1:]:
+                condition = ir.And(condition, predicate)
+            return ir.IfThenElse(condition, node, None)
+        return None
+
+    # Invalid rows can safely read the clamped address, but must never write
+    # that live request's state. Guard both scalar stores and collective copies
+    # before rewriting addresses, while their logical row is still available.
+    guarded = ir.stmt_functor.ir_transform(
+        kernel.body, None, guard_writes, ["tirx.BufferStore", "tirx.Evaluate"]
+    )
     body = ir.stmt_functor.ir_transform(
-        kernel.body,
+        guarded,
         validate_region,
         rewrite,
         ["tirx.BufferLoad", "tirx.BufferStore", "tirx.Call"],

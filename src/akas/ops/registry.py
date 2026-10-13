@@ -75,7 +75,14 @@ def select(kind, parameters, *, preferred=None, **options):
 
 
 def make_kernel(kind, parameters, **options):
-    return select(kind, parameters, **options).make(parameters)
+    """Compatibility entry; all providers use the canonical definition boundary."""
+    from akas.ops.definition import define
+
+    selected = select(kind, parameters, **options)
+    spec = dict(kind=kind, parameters=parameters, contract=options["contract"],
+                phase=options.get("phase", "forward"))
+    capabilities = dict(provider=options.get("provider", "cuda"), target=options.get("target"))
+    return define(spec, {}, capabilities, selected.declaration())
 
 
 @lru_cache(maxsize=1)
@@ -109,3 +116,35 @@ def validation(kind, parameters, signature):
     if len(matches) != 1:
         raise ValueError(f"operation {kind!r} needs exactly one independent validation recipe")
     return matches[0](kind, parameters, signature)
+
+
+def graph_outputs(call, *, contract):
+    """Return operation-declared outputs; unknown ABIs keep the full graph.
+
+    Positional indexes and named ABI fields are owned by operation registrations,
+    so compiler passes do not infer output locations from model or kernel names.
+    """
+    declarations = []
+    for module in planning_rules():
+        owned = getattr(module, "OUTPUT_ARGUMENTS", {})
+        declarations.append(owned.get(contract, owned.get("*", {})).get(call.kind))
+    declarations = [item for item in declarations if item is not None]
+    if not declarations:
+        return None
+    if len(declarations) != 1:
+        raise ValueError(f"operation {call.kind!r} has ambiguous output declarations")
+    outputs = declarations[0]
+    if callable(outputs):
+        outputs = outputs(call)
+    if outputs is None:
+        return None
+    from akas.ops.contracts import OutputABI
+    if isinstance(outputs, OutputABI):
+        outputs = outputs.names if call.bindings else outputs.positions
+    if call.bindings:
+        if not all(isinstance(name, str) and name in call.bindings for name in outputs):
+            return None
+        return tuple(call.bindings[name] for name in outputs)
+    if not all(type(index) is int and -len(call.arguments) <= index < len(call.arguments) for index in outputs):
+        raise ValueError(f"operation {call.kind!r} does not match its declared output ABI")
+    return tuple(call.arguments[index] for index in outputs)

@@ -22,8 +22,6 @@ def lfm2(
 ):
     import tensor
     from akas.models.lfm2.model import LFM2
-    from akas.execution.handles import HandleExecutor
-    from functools import partial
 
     with tensor.Device(device, provider=provider) as gpu:
         with Engine.from_checkpoint(
@@ -31,12 +29,11 @@ def lfm2(
             checkpoint,
             bundle,
             gpu,
-            adapter=partial(HandleExecutor, capacity=capacity),
-            max_requests=capacity,
+            capacity=capacity,
             context=context,
             graphs=graphs,
         ) as engine:
-            tokenizer = engine.model.model.tokenizer
+            tokenizer = engine.model.checkpoint.tokenizer
             yield Service(
                 engine,
                 lambda text: tokenizer.encode(text, add_bos=False),

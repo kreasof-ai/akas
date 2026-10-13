@@ -1,7 +1,7 @@
 """Bounded Hopper expert schedule search with exact arithmetic checks."""
 
 import modal
-from benchmarks.qwen35.modal_h200 import image, volume
+from benchmarks.qwen35.modal_environment import image, volume
 
 app = modal.App("tensor-qwen35-h200-expert-search")
 
@@ -77,7 +77,7 @@ def prepare_candidates():
             p.update(schedule)
             artifact = compile(
                 f"candidate-{k}-{index}",
-                "akas.ops.moe.cuda.hopper",
+                "akas.ops.moe.hardware.hopper.experts",
                 "expert_kernel",
                 p,
                 "sm_90a",

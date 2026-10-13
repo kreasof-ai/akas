@@ -89,6 +89,7 @@ def test_program_keeps_each_phase_kernel_directory(tmp_path, monkeypatch):
 
     checkpoint = SimpleNamespace(config=Config())
     directories = []
+    device = object()
 
     def definition(checkpoint, **geometry):
         graph = Graph(contract="test")
@@ -98,15 +99,16 @@ def test_program_keeps_each_phase_kernel_directory(tmp_path, monkeypatch):
         return graph.bind_requests(inputs={"tokens": "tokens", "lengths": "lengths"}, prediction="sampled")
 
     def build(bundle, out, **options):
+        assert options["device"] is device
         directories.append((bundle.source_directory, bundle.artifact_directory))
         publish(tmp_path / bundle.filename, bundle.manifest)
         return bundle.manifest
 
     monkeypatch.setattr(coordinator, "plan", lambda graph, **options: Bundle(
-        dict(target="sm_89"), options["filename"]))
+        dict(target="sm_89", provider="cuda", forward=graph.metadata()), options["filename"]))
     monkeypatch.setattr(coordinator, "build", build)
     result = coordinator.compile_program(checkpoint, tmp_path, definition=definition,
-                                         geometries=[(2, 1), (2, 4)], max_requests=4, max_context=32)
+                                         geometries=[(2, 1), (2, 4)], max_requests=4, max_context=32, device=device)
     assert len(set(directories)) == 2
     assert result["phases"][0]["inputs"] == result["phases"][1]["inputs"]
     with pytest.raises(ValueError, match="optional phase"):
@@ -133,7 +135,7 @@ def test_failed_program_replacement_preserves_published_phase_bytes(tmp_path, mo
         return graph.bind_requests(inputs={"tokens": "tokens", "lengths": "lengths"}, prediction="sampled")
 
     monkeypatch.setattr(coordinator, "plan", lambda graph, **options: Bundle(
-        dict(target="sm_89", marker="original"), options["filename"]))
+        dict(target="sm_89", provider="cuda", forward=graph.metadata(), marker="original"), options["filename"]))
     def build(bundle, out, **options):
         publish(out / bundle.filename, bundle.manifest)
         return bundle.manifest
@@ -156,6 +158,17 @@ def test_failed_program_replacement_preserves_published_phase_bytes(tmp_path, mo
     assert (tmp_path / "program.json").read_bytes() == previous
     assert all((tmp_path / path).read_bytes() == data for path, data in phases.items())
     assert not set(calls) & phases.keys()
+
+    # A compiler may return successfully yet emit a manifest the loader rejects.
+    # Publication must preserve the working generation in that case as well.
+    def invalid_build(bundle, out, **options):
+        bundle.manifest["provider"] = "wrong-provider"
+        return build(bundle, out, **options)
+    monkeypatch.setattr(coordinator, "build", invalid_build)
+    with pytest.raises(ValueError, match="target/provider mismatch"):
+        coordinator.compile_program(SimpleNamespace(config=Config()), tmp_path, **options)
+    assert (tmp_path / "program.json").read_bytes() == previous
+    assert all((tmp_path / path).read_bytes() == data for path, data in phases.items())
 
 
 def test_kernel_cache_tracks_codec_changes_without_unrelated_executor_changes(tmp_path, monkeypatch):
@@ -218,3 +231,44 @@ def test_round_controls_expose_phase_fields_without_a_model_name():
     short = round_controls(slots=2,window=2,width=128)
     assert not any(name.startswith("draft.") for name in short.buffers)
     assert graph.buffers["verify.hidden"].shape == (8,128)
+
+
+def test_commit_retains_mapping_until_row_local_state_lowering(tmp_path, monkeypatch):
+    from dataclasses import dataclass
+    from akas.compilation import compile as coordinator
+    from akas.artifacts.schema import Bundle
+    from akas.artifacts.write import publish
+
+    @dataclass
+    class Config:
+        vocab: int = 8
+
+    def definition(checkpoint, **geometry):
+        graph = Graph(contract="test", phase="verify")
+        for name, shape, role in (("tokens", (2,), "input"), ("lengths", (2,), "input"),
+                                  ("mapping", (2,), "input"), ("sampled", (2,), "output"),
+                                  ("state", (4, 3), "state")):
+            graph.buffer(name, shape, "int32", role=role)
+        graph.bind_requests(inputs={"tokens": "tokens", "lengths": "lengths", "mapping": "mapping"},
+                            prediction="sampled")
+        commit = Graph(contract="test", phase="commit")
+        commit.buffers.update(graph.buffers)
+        commit("restore", {"r": 2}, "state")
+        return graph, commit
+
+    phases = []
+    def plan(graph, **options):
+        phases.append(graph.phase)
+        if graph.phase == "commit":
+            assert "mapping" in graph.buffers
+        return Bundle(dict(target="sm_89", provider="cuda", forward=graph.metadata()), options["filename"])
+
+    def build(bundle, out, **options):
+        publish(out / bundle.filename, bundle.manifest)
+        return bundle.manifest
+
+    monkeypatch.setattr(coordinator, "plan", plan)
+    monkeypatch.setattr(coordinator, "build", build)
+    coordinator.compile_program(SimpleNamespace(config=Config()), tmp_path, definition=definition,
+                                geometries=[(2, 1, "verify")], max_requests=4, max_context=16)
+    assert phases == ["verify", "commit"]

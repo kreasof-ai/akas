@@ -2,42 +2,8 @@
 
 from functools import partial
 
-from akas.execution.bindings.packed.resources import PackedModel
-from akas.execution.model import Model
+from akas.models.definition import Definition
 from akas.models.lfm2.weights import LFM2Checkpoint, ReferenceCheckpoint
-from akas.models.blocks import DecoderArchitecture
-from akas.models.blocks import DecoderBlock
-
-
-def architecture(config, checkpoint):
-    blocks = []
-    for index, kind in enumerate(config.layers):
-        prefix = f"blk.{index}."
-        blocks.append(
-            DecoderBlock(
-                index,
-                prefix,
-                kind,
-                prefix + ("shortconv." if kind == "conv" else "attn_"),
-                "packed",
-                prefix + "ffn_",
-                prefix + "attn_norm.weight",
-                prefix + "ffn_norm.weight",
-            )
-        )
-    head = (
-        "output.weight"
-        if "output.weight" in checkpoint.gguf.tensors
-        else "token_embd.weight"
-    )
-    return DecoderArchitecture(
-        tuple(blocks), "token_embd.weight", "token_embd_norm.weight", head
-    )
-
-
-class LFM2(PackedModel):
-    checkpoint_type = LFM2Checkpoint
-    definition = staticmethod(architecture)
 
 
 def compose(
@@ -51,6 +17,7 @@ def compose(
     max_weight_bytes=64 * 1024 * 1024,
     chunk=1,
     optimized=False,
+    checkpoint=None,
 ):
     """Compose a chunk of tokens per slot with masked, persistent state."""
     from akas.graph import Graph
@@ -78,12 +45,10 @@ def compose(
     from akas.checkpoints.partition import Weights
 
     matrix_dtype = "float16" if optimized else "float32"
-    weights = Weights(
-        plan,
-        tensor_shapes(config, output=output),
-        max_bytes=max_weight_bytes,
-        matrix_dtype=matrix_dtype,
-    )
+    weights = (checkpoint.graph_weights(plan, provider=provider)
+               if checkpoint is not None and hasattr(checkpoint, "graph_weights")
+               else Weights(plan, tensor_shapes(config, output=output),
+                            max_bytes=max_weight_bytes, matrix_dtype=matrix_dtype))
     tokens = plan.buffer("tokens", (batch,), "int32", role="input")
     positions = plan.buffer("positions", (batch,), "int32", role="state")
     active = plan.buffer("active", (batch,), "int32", role="input")
@@ -109,7 +74,8 @@ def compose(
                 c=c,
                 v=rows,
                 start=start,
-                **({"weight_dtype": matrix_dtype} if optimized else {}),
+                **(weights.parameters("token_embd.weight") if hasattr(weights, "parameters")
+                   else {"weight_dtype": matrix_dtype} if optimized else {}),
             ),
             source_tokens,
             w,
@@ -127,6 +93,8 @@ def compose(
         return out
 
     def project(x, weight, k, o, out, *, matrix=False, count=b):
+        if matrix and hasattr(weights, "parameters"):
+            out = out.view((count * o,))
         for w, start, rows in weights.matrix(weight):
             plan(
                 "linear",
@@ -134,11 +102,11 @@ def compose(
                     r=count,
                     k=k,
                     o=rows,
-                    matrix_output=matrix,
-                    output_stride=o,
-                    output_offset=start,
+                    **(dict(matrix_output=matrix, output_stride=o, output_offset=start)
+                       if not hasattr(weights, "parameters") else {}),
                     **(
-                        {"optimized": True, "weight_dtype": matrix_dtype}
+                        {"optimized": True, **(weights.parameters(weight)
+                         if hasattr(weights, "parameters") else {"weight_dtype": matrix_dtype})}
                         if optimized
                         else {}
                     ),
@@ -272,14 +240,21 @@ def compose(
 
 def compose_program(checkpoint, *, rows, chunk, max_requests, max_context,
                     provider="cuda", kv_dtype="float16",
-                    max_weight_bytes=64 * 1024 * 1024):
+                    max_weight_bytes=64 * 1024 * 1024, optimized=True,
+                    activation_quantization=None):
     """Compose token phases over the shared executor's persistent slot pool."""
     from dataclasses import replace
 
     graph = compose(checkpoint.config, batch=rows, chunk=chunk,
                     capacity=max_context, provider=provider, kv_dtype=kv_dtype,
-                    max_weight_bytes=max_weight_bytes, optimized=True,
-                    **checkpoint.definition_options)
+                    max_weight_bytes=max_weight_bytes, optimized=optimized,
+                    checkpoint=checkpoint, **checkpoint.definition_options)
+    if activation_quantization is not None:
+        if activation_quantization != "q16" or provider != "webgpu":
+            raise ValueError("q16 activation storage requires WebGPU")
+        from akas.compilation.quantization import q16_activations
+
+        graph = q16_activations(graph)
     for name, spec in tuple(graph.buffers.items()):
         if spec.role == "state":
             if spec.shape[0] != rows:
@@ -292,22 +267,34 @@ def compose_program(checkpoint, *, rows, chunk, max_requests, max_context,
         inputs={"tokens": "prefill_tokens" if chunk > 1 else "tokens",
                 "mapping": "mapping", "lengths": "active"},
         prediction="sampled",
+        features={"logits": "logits"},
         reset=[name for name, spec in graph.buffers.items()
                if spec.role == "state" and (name == "positions" or name.endswith("conv_state"))],
     )
 
 
-class LFM2Reference(Model):
-    """Batched CUDA/WebGPU example using the same forward plan and checkpoint contract."""
+
+class LFM2(Definition):
+    """GGML matrices execute through the shared compiled request runtime."""
+
+    checkpoint_type = LFM2Checkpoint
+    compose = staticmethod(compose_program)
+    model_defaults = {"kv_dtype": "float16", "optimized": True}
+
+
+class LFM2Reference(Definition):
+    """Full precision reference composition over the shared request runtime."""
 
     checkpoint_type = ReferenceCheckpoint
     definition = staticmethod(compose)
+    compose = staticmethod(partial(compose_program, optimized=False))
+    model_defaults = {"kv_dtype": "float16", "optimized": False}
 
 
-class LFM2Batched(Model):
-    """Canonical loaders and masked slots, using shared optimized operations."""
+class LFM2Batched(Definition):
+    """Floating CUDA/WebGPU composition with shared geometry optimization."""
 
     checkpoint_type = ReferenceCheckpoint
     definition = staticmethod(partial(compose, optimized=True))
-    compilation_profile = "floating"
     compose = staticmethod(compose_program)
+    model_defaults = {"kv_dtype": "float16", "optimized": True}

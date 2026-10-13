@@ -95,43 +95,9 @@ def export_source(module, factory, *args, dependencies=()):
 
 
 
-def operation_modules():
-    root = Path(__file__).resolve().parents[1]
-    return tuple(
-        "akas." + str(path.relative_to(root).with_suffix("")).replace("/", ".")
-        for folder in ("ops", "quantization", "execution/bindings", "compilation/factories")
-        for path in sorted((root / folder).rglob("*.py"))
-        if path.name != "__init__.py"
-    )
-
-
-def source_dependencies(module=None, *, dependencies=()):
-    if module is not None and not module.startswith("akas.compilation.factories."):
-        return dependency_closure(module, dependencies)
-    return tuple(
-        sorted(
-            {
-                "akas.compilation.emit",
-                "akas.checkpoints.gguf",
-                "tensor.compiler.frontend.source",
-                "tensor.compiler.cuda.lowering",
-                *(
-                    "tensor.compiler.webgpu.schedules." + name
-                    for name in (
-                        "gemv",
-                        "outer_product",
-                        "packed_integer",
-                        "packed_outer_product",
-                        "partitioned",
-                        "register_matmul",
-                        "registers",
-                    )
-                ),
-                *operation_modules(),
-                *dependencies,
-            }
-        )
-    )
+def source_dependencies(module, *, dependencies=()):
+    """Hash the selected operation and its transitive source imports."""
+    return dependency_closure(module, dependencies)
 
 
 def dependency_closure(module, dependencies):

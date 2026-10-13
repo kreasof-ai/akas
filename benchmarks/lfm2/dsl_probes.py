@@ -3,8 +3,8 @@
 
 def half_conversion_kernel(n, unpack=False):
     import tilelang.language as T
-    from akas.ops.quantization.webgpu.storage import half_bits
-    from akas.ops.quantization.webgpu.storage import round_half
+    from akas.quantization.weights.storage import half_bits
+    from akas.quantization.weights.storage import round_half
 
     convert = half_bits() if unpack else round_half()
 
@@ -25,10 +25,11 @@ def half_conversion_kernel(n, unpack=False):
 def kernel_with_subgroup_size(kind, parameters, size):
     """Exercise the actual small-subgroup branch, without editing Python source."""
     import tvm
-    from akas.compilation.factories.packed import packed_webgpu_factory as make_kernel
+    from akas.ops.definition import define
 
     ir = tvm.tirx
-    kernel = make_kernel(kind, parameters)
+    kernel = define(dict(kind=kind, parameters=parameters, contract="packed"),
+                    capabilities={"provider": "webgpu"})
 
     def subgroup_call(node):
         return (
@@ -62,9 +63,9 @@ def subgroup_source(kind, parameters, size):
         parameters,
         size,
         dependencies=(
-            "akas.compilation.factories.packed",
+            "akas.ops.definition",
             "akas.checkpoints.gguf",
-            "akas.compilation.factories.packed",
+            "akas.ops.definition",
             "tensor.compiler.frontend.source",
             "tensor.compiler.webgpu.schedules.gemv",
             "tensor.compiler.webgpu.schedules.outer_product",

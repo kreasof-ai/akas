@@ -116,7 +116,7 @@ def validate(
             runner.graphs_enabled = True
         gpu = runner.generate("What is the capital of France?", max_tokens=16)
         host = runner.generate(
-            "What is the capital of France?", max_tokens=16, gpu_greedy=False
+            "What is the capital of France?", max_tokens=16, sampling="host"
         )
         assert gpu == host
         long_generation = None
@@ -133,7 +133,7 @@ def validate(
             assert prompt_tokens + 4 <= runner.context
             long_gpu = runner.generate(prompt, max_tokens=4, chat=False)
             long_host = runner.generate(
-                prompt, max_tokens=4, chat=False, gpu_greedy=False
+                prompt, max_tokens=4, chat=False, sampling="host"
             )
             assert long_gpu == long_host
             long_generation = dict(

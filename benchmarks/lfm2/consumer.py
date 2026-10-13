@@ -37,6 +37,8 @@ def consume(model, bundle, reference, out, *, engine_cls=None):
     import numpy as np
     import tensor
     from akas import LFM2
+    from akas.benchmarking.session import Session
+    from akas.benchmarking.replay import evaluate
 
     validation = json.loads((reference / "validation.json").read_text())
     if validation["status"] != "passed":
@@ -47,20 +49,25 @@ def consume(model, bundle, reference, out, *, engine_cls=None):
         tensor.Device() as device,
         (engine_cls or LFM2)(model, bundle, device) as network,
     ):
+        chunk = max((phase["chunk"] for phase in network.program["phases"]
+                     if phase["phase"] == "prefill"), default=1)
+        session = Session(network, batch=1, chunk=chunk)
+        session.reset()
         # Repeat the complete numerical fixture, including cache and reset boundaries.
         for i, item in enumerate(spec["validation"]):
             if item.get("reset"):
-                network.reset()
-            logits = network.forward(item["tokens"])
+                session.reset()
+            logits = evaluate(session, item["tokens"])
             expected = np.load(reference / f"tensor-{i}-logits.npy")
             np.testing.assert_array_equal(logits, expected)
             observations.append(
                 {
                     "step": i,
-                    "position": network.position,
+                    "position": int(network.positions[session.slots[0]]),
                     "top1": int(np.argmax(logits)),
                 }
             )
+        session.close()
         generation = network.generate("What is the capital of France?", max_tokens=256)
         report = {
             "schema": "tensor.lfm2-consumer.v1",
@@ -69,7 +76,7 @@ def consume(model, bundle, reference, out, *, engine_cls=None):
             "distributions": distributions,
             "steps": observations,
             "generation": generation,
-            "owned_device_bytes": network.allocated_bytes,
+            "owned_device_bytes": session.allocated_bytes,
         }
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2) + "\n")

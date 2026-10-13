@@ -1,64 +1,35 @@
-# Minimal model definitions
+# Model definitions
 
-Each model family has three files. `config.py` describes architecture and supported
-checkpoint variants. `weights.py` validates tensor inventories and declares raw
-storage and projection layouts. `model.py` declares decoder blocks and selects a
-numerical binding. Package initializers contain no implementation.
+A model family owns three files: `config.py` describes architecture,
+`weights.py` maps and validates checkpoint tensors, and `model.py` composes
+operation graphs. Initializers expose public names. Shared optional heads live
+under `models/heads/`; MTP implements the common speculative proposer protocol.
 
-```text
-models/
-├── lfm2/
-│   ├── config.py
-│   ├── weights.py
-│   └── model.py
-└── qwen35/
-    ├── config.py
-    ├── weights.py
-    └── model.py
-```
-
-LFM2's definition composes short convolution or attention with a packed SwiGLU
-feed-forward block. Qwen's definition composes GDN or attention with dense or MoE
-feed-forward blocks, selected from its configuration. Both use `models.blocks.DecoderBlock`.
-Weight prefixes, normalization names, embedding and output-head bindings are
-explicit architecture data.
-
-The model files do not implement request admission, forward loops, scratch
-allocation, graph capture, cache reset, speculative acceptance or state repair.
-Those live in shared components:
-
-| Responsibility | Owner |
+| Responsibility | Files |
 | --- | --- |
-| Decoder block composition and mathematics | `models/blocks.py`, `ops/{attention,gdn,convolution,ffn,moe}/` |
-| Linear, RMS/residual norm and quantization reuse | `ops/{linear,normalization,quantization}/` |
-| Request admission, validation, prefill, decode and teardown | `execution/executor.py` |
-| Packed, block-FP8 and BF16 buffer/kernel bindings | `execution/bindings/` |
-| Plan rewrites | `execution/bindings/block_fp8/optimizations/` |
-| Measured operation schedules | `ops/schedules/`, `ops/linear/schedule.py` |
-| Persistent state allocation and recurrent journals | `memory/`, `execution/state.py` |
-| Bit-preserving upload and raw storage readers | `checkpoints/` |
-| Bundle coverage, loading and integrity | `artifacts/` |
-| Prompt, termination, acceptance and output lookup | `generation/` |
-| Device stepping and MTP orchestration | `execution/` |
-| Queue admission and work budgets | `scheduling/` |
+| Model declaration and compiled-program construction | `models/definition.py` |
+| Architecture and checkpoint mapping | `models/{lfm2,qwen35}/{config,weights,model}.py` |
+| Operation composition and qualified kernel choices | `ops/*/operation.py`, `ops/contracts.py` |
+| Semantic calls, buffers and request bindings | `graph.py` |
+| Geometry compilation and default beam search | `compilation/compile.py`, `compilation/tuning.py` |
+| Shared request lifecycle and phase execution | `execution/executor.py`, `execution/batch.py` |
+| State, scratch and device replay | `execution/{state,workspace,replay}.py` |
+| Speculative acceptance and proposer orchestration | `generation/speculative/`, `models/heads/mtp.py` |
+| Checkpoint formats and storage partitions | `checkpoints/` |
+| Activation, weight and KV codecs | `quantization/{activations,weights,kv}/` |
 
-Numerical bindings receive checkpoint and architecture definitions from the model classes.
-Decoder blocks dispatch to operation implementations appropriate to their numerical
-contract. The current packed, block-FP8 and BF16 paths retain their existing geometry,
-precision and qualification limits; adding a model does not make incompatible kernel
-layouts interchangeable.
+The common compiler reads graph requirements and qualifies operation-owned
+implementations by default. A model that composes existing operations does not
+need its own compiler, tuner or executor. Supported providers and storage layouts
+are explicit operation capabilities; unsupported combinations must fail clearly.
 
-Start with `lfm2/model.py` or `qwen35/model.py`, follow `DecoderBlock.compose`, then
-read the corresponding execution path. Public `akas` entry points remain available.
+Dense Qwen, MoE Qwen and LFM constructors all return the same Executor. LFM
+supports GGUF and safetensors through its checkpoint declarations; packed and
+floating projections share graph composition. Model/provider compatibility remains
+explicit: a definition does not silently make unsupported layouts interchangeable.
+Legacy numerical bindings and model-specific compiler recipes have been removed.
 
-For a new composition that uses existing operation ABIs, start with
-[the three-file example](../../../examples/models/residual/) and
-[the shared forward-plan contract](../planning/README.md). Its compiler and runtime
-derive their work from the same calls, without another model-specific recipe.
-
-LFM2 also provides the [complete reference example](../../../examples/lfm2/README.md):
-GGUF/safetensors loading, one shared token-step composition for CUDA/WebGPU,
-FP16/FP32/FP8 KV, batched masked state, and shared performance reports. The
-reference runtime owns lifecycle/submission, while `model.py` owns only the
-operation graph. Large matrices use row partitions from `checkpoints/partition.py`
-so their bindings fit portable limits without changing the architecture.
+Start with [the three-file example](../../../examples/models/residual/),
+[the graph contract](../graph.py), and [the compiler map](../compilation/README.md).
+The [LFM reference example](../../../examples/lfm2/README.md) demonstrates
+checkpoint loading, masked request state, KV codecs and performance reports.

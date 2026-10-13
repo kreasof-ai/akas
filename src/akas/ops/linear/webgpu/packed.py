@@ -2,8 +2,8 @@
 
 from akas.quantization.weights.ggml import weight_decoder
 from akas.quantization.weights.ggml import weight_storage
-from akas.ops.quantization.webgpu.storage import round_half
-from akas.ops.quantization.webgpu.storage import packed_loads
+from akas.quantization.weights.storage import round_half
+from akas.quantization.weights.storage import packed_loads
 from akas.ops.reductions.webgpu import segmented_reduce
 
 

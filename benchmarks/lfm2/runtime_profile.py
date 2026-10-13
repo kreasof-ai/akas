@@ -9,6 +9,8 @@ from pathlib import Path
 import numpy as np
 import tensor
 from akas import LFM2
+from akas.benchmarking.session import Session
+from akas.benchmarking.replay import evaluate
 
 
 def run(model, bundle, out):
@@ -16,15 +18,19 @@ def run(model, bundle, out):
         tensor.Device(provider="webgpu") as device,
         LFM2(model, bundle, device, context=512) as engine,
     ):
-        prompt = engine.tokenizer.chat("What is 2 + 2?")
-        engine.forward(np.resize(prompt, 128))
+        chunk = max((row["chunk"] for row in engine.program["phases"]
+                     if row["phase"] == "prefill"), default=1)
+        session = Session(engine,batch=1,chunk=chunk)
+        session.reset()
+        prompt = engine.checkpoint.tokenizer.chat("What is 2 + 2?")
+        evaluate(session,np.resize(prompt, 128))
         for token in np.resize(prompt, 32):
-            engine.forward([int(token)])
+            evaluate(session,[int(token)])
         profile = cProfile.Profile()
         profile.enable()
         start = time.perf_counter()
         for token in np.resize(prompt, 64):
-            engine.forward([int(token)])
+            evaluate(session,[int(token)])
         elapsed = time.perf_counter() - start
         profile.disable()
         output = io.StringIO()
@@ -51,7 +57,7 @@ def run(model, bundle, out):
             )
         report = dict(
             adapter=device.info,
-            bundle=engine.manifest,
+            bundle=engine.program,
             decode_tokens=64,
             instrumented_seconds=elapsed,
             stats=sorted(stats, key=lambda row: -row["cumulative_seconds"]),

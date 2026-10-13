@@ -6,6 +6,7 @@ def make_kernel(kind, p):
 
     slots, chunk = p["slots"], p["chunk"]
     rows = slots * chunk
+    commit = p.get("commit", True)
     if kind == "gdn_conv":
         channels = 8192
 
@@ -43,9 +44,10 @@ def make_kernel(kind, p):
                             h2 = current
                         else:
                             out[slot * chunk + t, col] = 0
-                    state[slot, col, 0] = h0
-                    state[slot, col, 1] = h1
-                    state[slot, col, 2] = h2
+                    if commit:
+                        state[slot, col, 0] = h0
+                        state[slot, col, 1] = h1
+                        state[slot, col, 2] = h2
 
         return kernel
     import tilelang.language as T
@@ -102,7 +104,8 @@ def make_kernel(kind, p):
                     else:
                         for i in T.Parallel(tile):
                             out[row, head, part * tile + i] = 0
-                T.copy(matrix, state[slot, head, part * tile : part * tile + tile, :])
+                if commit:
+                    T.copy(matrix, state[slot, head, part * tile : part * tile + tile, :])
 
         return kernel
     raise ValueError("unsupported operation: " + kind)

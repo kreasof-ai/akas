@@ -29,7 +29,7 @@ def run(root, out):
     profiles = {name: load("profile-" + name + ".json") for name in ("before", "after")}
     source_paths = [
         'src/akas/execution/bindings/packed/resources.py',
-        *('src/akas/compilation/source.py', 'src/akas/ops/attention/webgpu/packed.py', 'src/akas/ops/linear/webgpu/packed.py', 'src/akas/ops/normalization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/storage.py', 'src/akas/ops/reductions/webgpu.py', 'src/akas/ops/sequence/webgpu/packed.py', 'src/akas/ops/vocabulary/webgpu/packed.py', 'src/akas/compilation/factories/packed.py'),
+        *('src/akas/compilation/source.py', 'src/akas/ops/attention/webgpu/packed.py', 'src/akas/ops/linear/webgpu/packed.py', 'src/akas/ops/normalization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/storage.py', 'src/akas/ops/reductions/webgpu.py', 'src/akas/ops/sequence/webgpu/packed.py', 'src/akas/ops/vocabulary/webgpu/packed.py', 'src/akas/ops/definition.py'),
         "src/tensor/compiler/webgpu_lowering.py",
         "src/tensor/compiler/search.py",
         "src/tensor/compiler/webgpu/schedules/search_space.py",
@@ -52,7 +52,7 @@ def run(root, out):
     }
     for key, path in (
         ("akas.execution.bindings.packed.resources", source_paths[0]),
-        ("akas.compilation.factories.packed", source_paths[1]),
+        ("akas.ops.definition", source_paths[1]),
     ):
         if (
             model["bundles"]["searched"]["implementation"][key]

@@ -1,5 +1,7 @@
 """Independent accepted-prefix and recurrent rollback qualification."""
 
+from akas.compilation.selection import source as operation_source
+
 import os
 import numpy as np
 import pytest
@@ -96,7 +98,7 @@ def test_recurrent_snapshots_restore_every_rejection_depth(tmp_path, chunk):
         if kind == "restore" and chunk > 8:
             entry.write_text(
                 export_source(
-                    "akas.ops.gdn.cuda.hopper_restore",
+                    "akas.ops.gdn.restore",
                     "restore_kernel",
                     p,
                     dependencies=("tensor.compiler.frontend.source",),
@@ -104,13 +106,7 @@ def test_recurrent_snapshots_restore_every_rejection_depth(tmp_path, chunk):
             )
         else:
             entry.write_text(
-                export_source(
-                    "akas.compilation.factories.block_fp8",
-                    "verification_factory",
-                    kind,
-                    p,
-                    dependencies=("tensor.compiler.frontend.source",),
-                )
+                operation_source(kind, p, contract="block-fp8", phase="verification", dependencies=('tensor.compiler.frontend.source',)).render()
             )
         build_artifact(
             entry,
@@ -173,13 +169,7 @@ def test_convolution_history_restore_keeps_only_accepted_inputs(tmp_path):
         entry = tmp_path / (kind + ".py")
         out = entry.with_suffix(".tbin")
         entry.write_text(
-            export_source(
-                "akas.compilation.factories.block_fp8",
-                "verification_factory",
-                kind,
-                p,
-                dependencies=("tensor.compiler.frontend.source",),
-            )
+            operation_source(kind, p, contract="block-fp8", phase="verification", dependencies=('tensor.compiler.frontend.source',)).render()
         )
         build_artifact(
             entry,

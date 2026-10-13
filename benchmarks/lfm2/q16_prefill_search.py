@@ -1,5 +1,7 @@
 """Oracle-gated packed integer prefill search including two-component preparation."""
 
+from akas.compilation.selection import source as kernel_source
+
 from akas.compilation.paths import source_path
 from akas.compilation.paths import tensor_source
 
@@ -153,7 +155,7 @@ def run(
             for p in (
                 __file__,
                 "src/tensor/compiler/webgpu_lowering.py",
-                *('src/akas/compilation/source.py', 'src/akas/ops/attention/webgpu/packed.py', 'src/akas/ops/linear/webgpu/packed.py', 'src/akas/ops/normalization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/storage.py', 'src/akas/ops/reductions/webgpu.py', 'src/akas/ops/sequence/webgpu/packed.py', 'src/akas/ops/vocabulary/webgpu/packed.py', 'src/akas/compilation/factories/packed.py'),
+                *('src/akas/compilation/source.py', 'src/akas/ops/attention/webgpu/packed.py', 'src/akas/ops/linear/webgpu/packed.py', 'src/akas/ops/normalization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/storage.py', 'src/akas/ops/reductions/webgpu.py', 'src/akas/ops/sequence/webgpu/packed.py', 'src/akas/ops/vocabulary/webgpu/packed.py', 'src/akas/ops/definition.py'),
                 "src/akas/checkpoints/gguf.py",
             )
         },
@@ -204,12 +206,12 @@ def run(
                 outputs = [device.full(r * o, np.nan) for _ in names]
                 qp = out / f"quant-{r}-{k}.py"
                 qa = qp.with_suffix(".tbin")
-                text = source(
-                    "akas.compilation.factories.packed",
-                    "packed_webgpu_factory",
-                    "quantize_q16",
-                    dict(r=r, k=k, sg=quantize_subgroup, fixed_residual=fixed_residual),
-                )
+                text = kernel_source(
+                           "quantize_q16",
+                           dict(r=r, k=k, sg=quantize_subgroup, fixed_residual=fixed_residual),
+                           contract='packed',
+                           provider='webgpu',
+                       ).render()
                 if not qp.exists() or qp.read_text() != text:
                     qa.unlink(missing_ok=True)
                 qp.write_text(text)
@@ -227,12 +229,12 @@ def run(
                     sp = out / f"swiglu-{r}-{o}.py"
                     sa = sp.with_suffix(".tbin")
                     sp.write_text(
-                        source(
-                            "akas.compilation.factories.packed",
-                            "packed_webgpu_factory",
+                        kernel_source(
                             "swiglu",
                             dict(r=r, c=o),
-                        )
+                            contract='packed',
+                            provider='webgpu',
+                        ).render()
                     )
                     if not sa.exists():
                         tensor.build(sp, sa, provider="webgpu", cache_dir=out / "cache")
@@ -343,18 +345,11 @@ def run(
                         try:
                             path = out / f"{kind}-{r}-{k}-{o}-{label}.py"
                             path.write_text(
-                                source(
-                                    (
-                                        "akas.compilation.factories.packed",
-                                        "packed_webgpu_factory",
-                                        "linear_q16"
-                                        if p.get("split_ffn")
-                                        else kind + "_q16"
-                                        if integer
-                                        else kind,
-                                    ),
-                                    p,
-                                )
+                                kernel_source(
+                                    "linear_q16" if p.get("split_ffn")
+                                    else kind + "_q16" if integer else kind,
+                                    p, contract="packed", provider="webgpu",
+                                ).render()
                             )
                             artifact = path.with_suffix(".tbin")
                             artifact.unlink(missing_ok=True)

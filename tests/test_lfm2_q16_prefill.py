@@ -1,5 +1,7 @@
 """Two-component integer projections: packed fields and independent dot oracle."""
 
+from akas.compilation.selection import source as kernel_source
+
 import os
 import numpy as np
 import pytest
@@ -74,11 +76,7 @@ def test_two_component_projection_fields_and_precision(
     for name in ("quantize_q16", kind):
         path = tmp_path / (name + ".py")
         path.write_text(
-            source(
-                "akas.compilation.factories.packed",
-                "packed_webgpu_factory",
-                name,
-                dict(
+            kernel_source(name, dict(
                     r=r,
                     k=k,
                     o=o,
@@ -86,8 +84,7 @@ def test_two_component_projection_fields_and_precision(
                     fixed_residual=fixed_residual,
                     q4_prepacked=prepacked,
                     integer=dict(tile_k=tile_k, fixed_residual=fixed_residual),
-                ),
-            )
+                ), contract='packed', provider='webgpu').render()
         )
         artifact = path.with_suffix(".tbin")
         tensor.build(path, artifact, provider="webgpu")

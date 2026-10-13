@@ -37,26 +37,33 @@ def consume(model, bundle, reference, out):
     import numpy as np
     import tensor
     from akas import LFM2
+    from akas.benchmarking.session import Session
+    from akas.benchmarking.replay import evaluate
     from akas.artifacts.fingerprint import packed_hashes as implementation_hashes
 
     fixture = json.loads((reference / "validation.json").read_text())
     assert fixture["status"] == "passed" and digest(model) == fixture["model_sha256"]
-    assert digest(bundle / "inference.json") == fixture["bundle_sha256"]
+    assert digest(bundle / "program.json") == fixture["bundle_sha256"]
     cases = fixture["cases"]
     observations = []
     with tensor.Device() as device, LFM2(model, bundle, device) as runner:
+        chunk = max((phase["chunk"] for phase in runner.program["phases"]
+                     if phase["phase"] == "prefill"), default=1)
+        session = Session(runner, batch=1, chunk=chunk)
+        session.reset()
         for case in cases:
-            runner.reset()
+            session.reset()
             for stage, values in (
                 ("prefill", case["prompt"]),
                 ("decode", case["decode"]),
             ):
-                actual = runner.forward(values)
+                actual = evaluate(session, values)
                 expected = np.load(reference / f"{case['depth']}-{stage}.npy")
                 np.testing.assert_array_equal(actual, expected)
                 observations.append(
                     dict(depth=case["depth"], stage=stage, bitwise_equal=True)
                 )
+        session.close()
         generated = runner.generate("What is the capital of France?", max_tokens=16)
         assert generated == fixture["generation"]
         long = fixture.get("long_generation")

@@ -24,10 +24,10 @@ def test_optimized_selection_and_scratch_lifetimes(checkpoints):
     config = ReferenceCheckpoint(checkpoints[0], tokenizer=False).config
     forward = LFM2Batched.definition(config, batch=4, capacity=256, chunk=32)
     bundle = plan(forward)
-    assert {k.source.module for k in bundle.kernels if k.kind == "linear"} == {
+    assert {k.source.args[3]["module"] for k in bundle.kernels if k.kind == "linear"} == {
         "akas.ops.linear.cuda.floating"
     }
-    assert {k.source.module for k in bundle.kernels if k.kind == "attention"} == {
+    assert {k.source.args[3]["module"] for k in bundle.kernels if k.kind == "attention"} == {
         "akas.ops.attention.cuda.floating"
     }
     assert forward.buffers["blk.1.kc"].shape[0] == 4
@@ -89,7 +89,7 @@ def test_dispatch_boundaries_keep_optimized_projections(checkpoints, batch, prov
         bundle = plan(forward, provider=provider)
         expected = f"akas.ops.linear.{provider}.floating"
         assert {
-            k.source.module for k in bundle.kernels if k.kind in ("linear", "ffn")
+            k.source.args[3]["module"] for k in bundle.kernels if k.kind in ("linear", "ffn")
         } == {expected}
         if chunk > 1:
             # The stateful mixer retains every token; its terminal pointwise

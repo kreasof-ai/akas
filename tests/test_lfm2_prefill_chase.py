@@ -1,5 +1,7 @@
 """Experimental chunk profiles preserve decode and mixed-precision prefill."""
 
+from akas.compilation.selection import source as kernel_source
+
 import os
 import numpy as np
 import pytest
@@ -102,66 +104,45 @@ def test_integer_and_mixed_prefill_are_opt_in_and_preserve_decode():
     assert webgpu_parameters("ffn", p, "prefill_mixed")["outer"]["tile_m"] > 1
 
 
-@pytest.mark.parametrize(
-    "rows,count,expected",
-    [
-        ((1, 32), 33, [32, 1]),
-        ((1, 32), 17, [32]),
-        ((1, 128), 129, [128, 1]),
-        ((1, 32, 128), 129, [128, 1]),
-        ((1, 32, 128), 159, [128, 32]),
-        ((1, 32, 128), 384, [128, 128, 128]),
-    ],
-)
-@pytest.mark.parametrize("read", [False, True])
-def test_forward_chunk_controls_and_last_readback(rows, count, expected, read):
+@pytest.mark.parametrize("chunks,count,expected",[
+    ((1,32),33,[32,1]),((1,32),17,[32]),
+    ((1,128),129,[128,1]),((1,32,128),129,[128,1]),
+    ((1,32,128),159,[128,32]),((1,32,128),384,[128,128,128]),
+])
+def test_common_prefill_qualified_chunks_and_final_readback(chunks,count,expected):
     from types import SimpleNamespace
-    from akas.models.lfm2.model import LFM2
+    from akas.execution.executor import Executor
 
-    launches = []
-    writes = []
-
-    class Plan:
-        def __init__(self, r, state=False):
-            self.r = r
-            self.state = state
-
-        def launch(self, *, readback):
-            launches.append((self.r, readback, self.state))
-            return np.array([4], np.int32) if readback is not None else None
-
-    engine = LFM2.__new__(LFM2)
-    engine.__dict__.update(
-        closed=False,
-        position=0,
-        context=512,
-        rows=rows,
-        provider="webgpu",
-        _resources=SimpleNamespace(check=lambda: None),
-        config=SimpleNamespace(vocab=8),
-        logits="logits",
-        control="control",
-        workspaces={r: {"tokens": "tokens" + str(r)} for r in rows},
-        prepared={r: Plan(r) for r in rows},
-        prepared_states={r: Plan(r, True) for r in rows if r > 1},
-        _write=lambda buffer, value: writes.append((buffer, value.copy())),
-    )
-    result = LFM2.forward(engine, np.full(count, 4, np.int32), read=read)
-    assert [v[0] for v in launches] == expected
-    assert all(v[1] is None for v in launches[:-1])
-    assert [v[2] for v in launches] == [
-        r > 1 and i < len(expected) - 1 for i, r in enumerate(expected)
-    ]
-    if read:
-        assert launches[-1][1] == "logits" and result[0] == 4
-    else:
-        assert launches[-1][1] is None and result is None
-    controls = [value for buffer, value in writes if buffer == "control"]
-    assert sum(int(v[1]) for v in controls) == count
-    assert [int(v[0]) for v in controls] == [
-        sum(int(w[1]) for w in controls[:i]) for i in range(len(controls))
-    ]
-    assert engine.position == count
+    calls=[]
+    class Frame:
+        def __init__(self,chunk,phase):
+            self.chunk,self.phase=chunk,phase
+            self.forward=SimpleNamespace(run=self.submit)
+        def prepare(self,slots,sequences,positions):
+            self.slots=tuple(slots)
+            self.sequences=sequences
+            self.start=int(positions[slots[0]])
+        def submit(self):
+            calls.append((self.chunk,self.start,len(self.sequences[0]),self.phase,False))
+        def run(self,slots,sequences,positions):
+            self.prepare(slots,sequences,positions)
+            calls.append((self.chunk,self.start,len(sequences[0]),self.phase,True))
+            return [4]*len(slots)
+    records=[dict(phase="decode" if chunk==1 else "prefill",rows=1,chunk=chunk) for chunk in chunks]
+    records += [dict(phase="prefill_state",rows=1,chunk=chunk) for chunk in chunks if chunk>1]
+    frames={(r["phase"],r["chunk"]):Frame(r["chunk"],r["phase"]) for r in records}
+    bank=SimpleNamespace(records=records,
+                         select=lambda count,chunk,phase=None:frames[(phase or ("decode" if chunk==1 else "prefill"),chunk)])
+    engine=Executor(capacity=1,context=512,batches=bank,reset=lambda slot:None)
+    engine.config=SimpleNamespace(vocab=8)
+    slot=engine.admit()
+    assert engine.prefill([slot],[[4]*count],chunk=max(chunks)) == [4]
+    assert [call[0] for call in calls] == expected
+    assert [call[4] for call in calls] == [False]*(len(expected)-1)+[True]
+    assert sum(call[2] for call in calls) == count
+    assert [call[1] for call in calls] == [sum(v[2] for v in calls[:i]) for i in range(len(calls))]
+    assert engine.positions[slot] == count
+    assert engine.last_prefill_chunk == expected[-1]
 
 
 @pytest.mark.skipif(
@@ -197,7 +178,12 @@ def test_mixed_activation_outer_product_fusion_and_tails(tmp_path, kind, layout,
     path = tmp_path / "outer.py"
     artifact = path.with_suffix(".tbin")
     path.write_text(
-        source("akas.compilation.factories.packed", "packed_webgpu_factory", kind, p)
+        kernel_source(
+            kind,
+            p,
+            contract='packed',
+            provider='webgpu',
+        ).render()
     )
     tensor.build(path, artifact, provider="webgpu")
     rng = np.random.default_rng(903)
@@ -290,7 +276,12 @@ def test_short_half_fma_chains_against_explicit_rounding(
     )
     path = tmp_path / "half.py"
     path.write_text(
-        source("akas.compilation.factories.packed", "packed_webgpu_factory", kind, p)
+        kernel_source(
+            kind,
+            p,
+            contract='packed',
+            provider='webgpu',
+        ).render()
     )
     artifact = path.with_suffix(".tbin")
     tensor.build(path, artifact, provider="webgpu")
@@ -317,12 +308,12 @@ def test_parallel_prefill_rms_matches_independent_reduction(tmp_path):
     w = rng.normal(size=c).astype(np.float32)
     path = tmp_path / "rms.py"
     path.write_text(
-        source(
-            "akas.compilation.factories.packed",
-            "packed_webgpu_factory",
+        kernel_source(
             "rms",
             dict(r=r, c=c, eps=1e-5, sg=True, parallel_rows=True),
-        )
+            contract='packed',
+            provider='webgpu',
+        ).render()
     )
     artifact = path.with_suffix(".tbin")
     tensor.build(path, artifact, provider="webgpu")
@@ -414,7 +405,12 @@ def test_packed_outer_product_rounding_fusion_and_output_tail(
     path = tmp_path / "packed.py"
     artifact = path.with_suffix(".tbin")
     path.write_text(
-        source("akas.compilation.factories.packed", "packed_webgpu_factory", kind, p)
+        kernel_source(
+            kind,
+            p,
+            contract='packed',
+            provider='webgpu',
+        ).render()
     )
     tensor.build(path, artifact, provider="webgpu")
     with tensor.Device(provider="webgpu") as device:

@@ -156,36 +156,38 @@ def test_dense_program_runs_public_executor_without_native_binding(tmp_path):
             a, b = executor.admit_at(3), executor.admit_at(1)
             initial = executor.run_batch([a,b], [[1,2,3,4],[5,6]], chunk=4)
             expected_tokens = initial
-            for _ in range(3):
+            for _ in range(5):
                 expected_tokens = executor.decode([a,b], expected_tokens)
             expected_state = {name: value.to_numpy().copy() for name,value in executor.batches.states.items()}
             executor.release(a)
             executor.release(b)
             a, b = executor.admit_at(3), executor.admit_at(1)
             initial = executor.run_batch([a,b], [[1,2,3,4],[5,6]], chunk=4)
-            assert executor.decode_steps([a,b], initial, 3, read=False) is None
+            assert executor.decode_steps([a,b], initial, 2, read=False) is None
+            assert executor.decode_steps([a,b], None, 3, read=False) is None
             actual = executor.batch(2).buffers[executor.batch(2).prediction].to_numpy()[:2].tolist()
             assert actual == expected_tokens
             for name, value in expected_state.items():
                 # Unwritten KV beyond the live prefix belongs to prior rounds.
                 if loaded.config.layers[int(name.split(".")[1])] == "linear_attention":
                     np.testing.assert_array_equal(executor.batches.states[name].to_numpy(), value)
-            np.testing.assert_array_equal(executor.positions, [0,5,0,7])
+            np.testing.assert_array_equal(executor.positions, [0,7,0,9])
             executor.release(a)
             assert executor.admit_at(3) == a
-            np.testing.assert_array_equal(executor.positions,[0,5,0,0])
+            np.testing.assert_array_equal(executor.positions,[0,7,0,0])
             executor.release(a)
             executor.release(b)
         assert not device._buffers
 
 
-def moe_checkpoint():
+def moe_checkpoint(*, layers=("linear_attention", "full_attention")):
     from akas.models.qwen35.config import Qwen35Config
     from akas.models.qwen35.weights import Qwen35Checkpoint
 
-    config = Qwen35Config(("linear_attention", "full_attention"), 64, 1e-6, 1e6, vocab=1024)
+    config = Qwen35Config(layers, 64, 1e-6, 1e6, vocab=1024)
     loaded = object.__new__(Qwen35Checkpoint)
     loaded.config = config
+    loaded.branch = "text"
     shapes = config.expected_tensors()
     loaded.tensors = {}
     for name, shape in shapes.items():
@@ -291,7 +293,7 @@ def test_moe_decode_declares_native_storage_and_common_slot_mapping():
     prefill_bundle = plan(prefill)
     assert prefill.request["inputs"]["tokens"] == "chunk.tokens"
     assert any(kernel.kind == "quantize" for kernel in prefill_bundle.kernels)
-    assert any(kernel.kind == "fp8_experts" and kernel.source.module == "akas.ops.moe.cuda.prefill" for kernel in prefill_bundle.kernels)
+    assert any(kernel.kind == "fp8_experts" and kernel.source.args[3]["module"] == "akas.ops.moe.cuda.prefill" for kernel in prefill_bundle.kernels)
     graph = compose_moe_decode(loaded, rows=2, max_requests=4, max_context=32)
     bundle = plan(graph)
     assert graph.request["prediction"] == "tokens"
@@ -425,3 +427,112 @@ def test_direct_moe_composition_preserves_frozen_operation_and_storage_contracts
         assert actual["request"]["inputs"] == expected["request"]["inputs"]
         assert actual["request"]["prediction"] == expected["request"]["prediction"]
         assert set(actual["request"]["reset"]) == set(expected["request"]["reset"])
+
+
+def test_moe_verification_declares_nonmutating_prefix_journals():
+    from akas.models.qwen35.model import compose_moe_program
+    from akas.compilation.compile import plan
+
+    graph, commit = compose_moe_program(moe_checkpoint(), rows=2, chunk=4,
+                                        max_requests=4, max_context=32, phase="verify")
+    assert graph.request["inputs"]["positions"] == "verify.positions"
+    assert graph.buffers[graph.request["prediction"]].shape == (8,)
+    recurrent = [call for call in graph.calls if call.kind in ("gdn_conv", "gdn_scan")]
+    assert len(recurrent) == 2
+    for call in recurrent:
+        assert call.parameters["commit"] is False
+        saved = graph.buffers[call.bindings["checkpoints"]]
+        assert saved.role == "journal" and saved.shape[:2] == (2,4)
+    assert [call.kind for call in commit.calls] == ["restore", "restore", "advance"]
+    assert commit.calls[-1].parameters["all_tokens"] is True
+    plan(graph)
+    plan(commit)
+
+
+@pytest.mark.skipif(os.environ.get("TENSOR_QWEN_CUDA") != "1", reason="native MoE verification qualification")
+@pytest.mark.parametrize("commit_policy",["snapshots","recompute"])
+def test_moe_verification_commit_and_discard_preserve_mapped_recurrent_state(tmp_path,commit_policy):
+    from contextlib import ExitStack
+    import tensor
+    from akas.compilation.compile import compile_program
+    from akas.models.qwen35.model import compose_moe_program
+    from akas.execution.executor import Executor
+
+    loaded = moe_checkpoint(layers=("linear_attention","linear_attention","full_attention"))
+    def upload(device, **options):
+        rng = np.random.default_rng(41)
+        result = {}
+        try:
+            for name, (shape, dtype) in loaded.storage_specs(pack_experts=True).items():
+                if dtype == "uint8":
+                    host = rng.integers(16, 40, shape, dtype="uint8")
+                    host |= rng.integers(0, 2, shape, dtype="uint8") * 128
+                elif name.endswith("scale_inv"):
+                    host = np.full(shape, 0.03125, dtype="float32")
+                elif name.endswith("A_log"):
+                    host = np.full(shape, -3, dtype="float32")
+                elif name.endswith("linear_attn.norm.weight"):
+                    host = np.ones(shape, dtype="float32")
+                else:
+                    host = rng.normal(0, 0.02, shape).astype("float32")
+                result[name] = device.from_numpy(host, dtype=dtype)
+            return result
+        except BaseException:
+            for value in result.values():
+                value.release()
+            raise
+    loaded.upload = upload
+    destination = tmp_path / "program"
+    compile_program(loaded, destination, definition=compose_moe_program,
+                    geometries=[(2,1),(2,4),(2,4,"verify")], max_requests=4,
+                    max_context=32, upload_options={"pack_experts":True}, policy={"gdn":{"commit":commit_policy}}, search=False)
+    with tensor.Device() as device, ExitStack() as stack:
+        target = stack.enter_context(Executor.from_program(loaded,destination,device))
+        reference = stack.enter_context(Executor.from_program(loaded,destination,device))
+        slots = [3,1]
+        for executor in (target,reference):
+            for slot in slots:
+                executor.admit_at(slot)
+            executor.run_batch(slots,[[1,2],[3]],chunk=4)
+        names = [name for name in target.batches.states if name.startswith(("state.0.","state.1."))] + ["positions"]
+        before = {name: target.batches.states[name].to_numpy() for name in names}
+        target.verify(slots,[[4,5,6,7],[8,9]],chunk=4)
+        for name in names:
+            np.testing.assert_array_equal(target.batches.states[name].to_numpy(),before[name])
+        target.discard(slots)
+        for counts in ([2,0],[4,2]):
+            target.verify(slots,[[4,5,6,7],[8,9]],chunk=4)
+            target.commit(slots,counts)
+            active = [slot for slot,count in zip(slots,counts) if count]
+            sequences = [sequence[:count] for sequence,count in zip([[4,5,6,7],[8,9]],counts) if count]
+            reference.run_batch(active,sequences,chunk=4)
+            for name in names:
+                np.testing.assert_array_equal(target.batches.states[name].to_numpy(),reference.batches.states[name].to_numpy())
+            np.testing.assert_array_equal(target.positions,reference.positions)
+        assert target.run_batch(slots,[[10],[11]]) == reference.run_batch(slots,[[10],[11]])
+
+
+def test_moe_proposal_uses_shared_head_and_private_mapped_state():
+    from akas.models.qwen35.weights import Qwen35Checkpoint
+    from akas.models.qwen35.model import compose_moe_program
+    from akas.compilation.compile import plan
+
+    loaded = moe_checkpoint()
+    mtp = object.__new__(Qwen35Checkpoint)
+    mtp.branch, mtp.config = "mtp", loaded.config
+    shapes = loaded.config.expected_mtp_tensors()
+    mtp.tensors = {}
+    for name,shape in shapes.items():
+        dtype = "F8_E4M3" if name + "_scale_inv" in shapes else "BF16"
+        mtp.tensors[name] = SimpleNamespace(shape=shape,dtype=dtype,nbytes=int(np.prod(shape))*(1 if dtype=="F8_E4M3" else 2))
+    loaded.mtp_checkpoint = mtp
+    for chunk in (1,4):
+        graph = compose_moe_program(loaded,rows=2,chunk=chunk,max_requests=4,max_context=32,phase="proposal")
+        assert graph.request["inputs"]["positions"] == "proposal.positions"
+        assert graph.request["features"]["mode"] == "proposal.mode"
+        assert "proposal.saved_hidden" in graph.request["reset"]
+        weights = {name for name,spec in graph.buffers.items() if spec.role=="weight"}
+        assert all(name.startswith("mtp.") or name in ("lm_head.weight","model.language_model.embed_tokens.weight") for name in weights)
+        assert graph.buffers["proposal.state.0.0"].shape[0] == 4
+        assert any(call.kind=="store_hidden" for call in graph.calls)
+        plan(graph)

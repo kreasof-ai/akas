@@ -48,3 +48,7 @@ def validation(kind, p, signature):
 
 
 VALIDATIONS = {"conv": validation}
+
+
+# Output locations are part of the operation ABI, independent of compiler passes.
+OUTPUT_ARGUMENTS = {"reference": {'conv': (2, 3)}}

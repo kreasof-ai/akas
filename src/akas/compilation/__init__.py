@@ -6,14 +6,7 @@ PROFILES = {
     "program": ("akas.compilation.compile", "compile_program"),
     "reference": ("akas.compilation.compile", "compile_model"),
     "floating": ("akas.compilation.compile", "compile_model"),
-    "packed": ("akas.compilation.recipes.packed", "produce"),
-    "hybrid.decode": ("akas.compilation.recipes.block_fp8.decode", "produce"),
-    "hybrid.prefill": ("akas.compilation.recipes.block_fp8.prefill", "produce"),
-    "hybrid.draft": ("akas.compilation.recipes.block_fp8.draft", "produce"),
-    "hybrid.draft-prefill": (
-        "akas.compilation.recipes.block_fp8.draft_prefill",
-        "produce",
-    ),
+
 }
 
 

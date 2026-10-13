@@ -1,5 +1,7 @@
 """Matched three-format CUDA comparison, retaining a frozen before runner."""
 
+from akas.compilation.selection import source as kernel_source
+
 from pathlib import Path as _Path
 import sys as _sys
 
@@ -40,12 +42,12 @@ def compile_templates(out):
     records = []
     for kind, parameters in specs:
         artifact = compile_source(
-            source(
-                "akas.compilation.factories.packed",
-                "packed_cuda_factory",
+            kernel_source(
                 kind,
                 parameters,
-            ),
+                contract='packed',
+                provider='cuda',
+            ).render(),
             out,
         )
         records.append(dict(kind=kind, parameters=parameters, artifact=artifact.name))

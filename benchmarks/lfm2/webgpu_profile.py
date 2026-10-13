@@ -21,6 +21,7 @@ import wgpu
 from wgpu.backends.wgpu_native.extras import write_timestamp
 from tensor.providers.webgpu.device import Device
 from akas import LFM2
+from akas.benchmarking.session import Session
 
 
 class TimestampAdapter:
@@ -51,14 +52,20 @@ def profile(
         raise ValueError("requires the measured Vulkan timestampPeriod")
     device = Device(max_buffer_size=max_buffer_size)
     device._adapter = TimestampAdapter(device._adapter)
-    with device, LFM2(model, bundle, device, context=512) as engine:
-        prompt = engine.tokenizer.chat("What is 2 + 2?")
+    with device, LFM2(model, bundle, device) as engine, Session(
+        engine, batch=1, chunk=engine.prefill_geometry()) as session:
+        prompt = engine.checkpoint.tokenizer.chat("What is 2 + 2?")
         rows = []
-        for r in engine.rows:
+        chunks = sorted({record["chunk"] for record in engine.batches.records
+                         if record["phase"] in ("decode", "prefill")})
+        for r in chunks:
             prefix = 128 if r == 1 else prefill_position
             if prefix < 0 or prefix + r > engine.context:
                 raise ValueError("profile position exceeds context")
-            plan = engine.prepared[r]
+            frame = engine.batches.select(1, r)
+            plan = frame.forward.graph
+            if plan is None:
+                raise ValueError("timestamp profiling requires prepared WebGPU plans")
             n = len(plan.nodes)
             query = device._gpu.create_query_set(type="timestamp", count=2 * n)
             result = device._gpu.create_buffer(
@@ -71,20 +78,14 @@ def profile(
             for mode in ("host", "whole", "dispatch"):
                 samples = []
                 for repeat in range(repeats + 1):
-                    engine.reset()
+                    session.reset()
                     if prefix:
-                        engine.forward(np.resize(prompt, prefix))
+                        session.prefill([np.resize(prompt, prefix)], read=False)
                     start = time.perf_counter()
                     device.synchronize()
                     sync = time.perf_counter() - start
                     start = time.perf_counter()
-                    engine._write(
-                        engine.workspaces[r]["tokens"],
-                        np.resize(prompt, r).astype(np.int32),
-                    )
-                    engine._write(
-                        engine.control, np.array([engine.position, r], np.int32)
-                    )
+                    frame.prepare(session.slots, [np.resize(prompt, r).tolist()], engine.positions)
                     upload = time.perf_counter() - start
                     start = time.perf_counter()
                     if mode == "host":
@@ -111,7 +112,7 @@ def profile(
                         device._gpu.queue.submit([encoder.finish()])
                     encode = time.perf_counter() - start
                     start = time.perf_counter()
-                    logits = engine.logits.to_numpy()
+                    logits = frame.feature("logits").to_numpy()
                     read = time.perf_counter() - start
                     if not np.isfinite(logits).all():
                         raise AssertionError("nonfinite profile output")
@@ -144,10 +145,7 @@ def profile(
                     whole = statistics.median(samples)
                 else:
                     elapsed = np.median(samples, axis=0).tolist()
-            kinds = {
-                id(engine.kernels[key]): record["kind"]
-                for key, record in engine.manifest["kernels"].items()
-            }
+            kinds = {id(frame.kernels[call.key]): call.kind for call in frame.forward.definition.calls}
             weights = {id(buffer): name for name, buffer in engine.weights.items()}
             nodes = []
             totals = defaultdict(float)

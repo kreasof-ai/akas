@@ -8,10 +8,25 @@ from akas.text.tokenizer import Tokenizer
 
 
 class LFM2Checkpoint:
-    def __init__(self, path):
+    def __new__(cls, path, *, tokenizer=True):
+        from pathlib import Path
+
+        if Path(path).is_dir():
+            return ReferenceCheckpoint(path, tokenizer=tokenizer)
+        return super().__new__(cls)
+
+    def __init__(self, path, *, tokenizer=True):
         self.gguf = GGUF(path)
         self.config = Config.from_gguf(self.gguf)
-        self.tokenizer = Tokenizer.from_gguf(self.gguf.metadata)
+        validate_tensors(self.config, self.gguf)
+        self.tokenizer = Tokenizer.from_gguf(self.gguf.metadata) if tokenizer else None
+
+    @property
+    def definition_options(self):
+        return {"output": "output.weight" in self.gguf.tensors}
+
+    def graph_weights(self, graph, *, provider):
+        return PackedWeights(graph, self, provider=provider)
 
     def inventory(self):
         from collections import Counter
@@ -207,3 +222,27 @@ def huggingface_names(config, *, output=False):
             }
         )
     return names
+
+
+class PackedWeights:
+    """Declare original GGML bytes; mathematical shapes stay with the checkpoint."""
+
+    def __init__(self, graph, checkpoint, *, provider):
+        from math import prod
+        from akas.quantization.weights.ggml import weight_storage
+
+        self.checkpoint = checkpoint
+        self.buffers = {}
+        for name, info in checkpoint.gguf.tensors.items():
+            count, dtype = weight_storage(info.type, prod(info.shape),
+                                          packed_words=provider == "webgpu")
+            self.buffers[name] = graph.buffer(name, (count,), dtype, role="weight")
+
+    def __getitem__(self, name):
+        return self.buffers[name]
+
+    def matrix(self, name):
+        return [(self.buffers[name], 0, self.checkpoint.gguf.tensors[name].shape[0])]
+
+    def parameters(self, name):
+        return {"ggml": True, "type": self.checkpoint.gguf.tensors[name].type}

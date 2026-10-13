@@ -1,5 +1,7 @@
 """Discover fused QK/softmax/V schedules against the complete split baseline."""
 
+from akas.compilation.selection import source as kernel_source
+
 from pathlib import Path as _Path
 import sys as _sys
 
@@ -117,12 +119,12 @@ def run(out, heads=16, kv_heads=8, depth=64, capacity=576, include_current=False
         control = device.from_numpy(np.array([0, 1], np.int32))
         scorepath = out / "scores.py"
         scorepath.write_text(
-            source(
-                "akas.compilation.factories.packed",
-                "packed_webgpu_factory",
+            kernel_source(
                 "attention_scores",
                 dict(r=1, h=h, kh=kh, d=d, cap=cap, sg=True),
-            )
+                contract='packed',
+                provider='webgpu',
+            ).render()
         )
         scoreartifact = scorepath.with_suffix(".tbin")
         tensor.build(
@@ -146,12 +148,12 @@ def run(out, heads=16, kv_heads=8, depth=64, capacity=576, include_current=False
                 p.pop("attention_schedule")
             path = out / (spec["name"] + ".py")
             path.write_text(
-                source(
-                    "akas.compilation.factories.packed",
-                    "packed_webgpu_factory",
+                kernel_source(
                     "attention",
                     p,
-                )
+                    contract='packed',
+                    provider='webgpu',
+                ).render()
             )
             artifact = path.with_suffix(".tbin")
             row = dict(name=spec["name"], parameters=p, validation=[], positions={})

@@ -39,7 +39,7 @@ def run(root, out):
     paths = [
         "src/tensor/providers/webgpu.py",
         'src/akas/execution/bindings/packed/resources.py',
-        *('src/akas/compilation/source.py', 'src/akas/ops/attention/webgpu/packed.py', 'src/akas/ops/linear/webgpu/packed.py', 'src/akas/ops/normalization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/storage.py', 'src/akas/ops/reductions/webgpu.py', 'src/akas/ops/sequence/webgpu/packed.py', 'src/akas/ops/vocabulary/webgpu/packed.py', 'src/akas/compilation/factories/packed.py'),
+        *('src/akas/compilation/source.py', 'src/akas/ops/attention/webgpu/packed.py', 'src/akas/ops/linear/webgpu/packed.py', 'src/akas/ops/normalization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/storage.py', 'src/akas/ops/reductions/webgpu.py', 'src/akas/ops/sequence/webgpu/packed.py', 'src/akas/ops/vocabulary/webgpu/packed.py', 'src/akas/ops/definition.py'),
         "src/tensor/compiler/webgpu_lowering.py",
         "src/tensor/compiler/search.py",
         "src/tensor/compiler/webgpu/schedules/search_space.py",
@@ -68,7 +68,7 @@ def run(root, out):
     }
     for module, path in [
         ("akas.execution.bindings.packed.resources", "model.py"),
-        ("akas.compilation.factories.packed", "webgpu_kernels.py"),
+        ("akas.ops.definition", "webgpu_kernels.py"),
         (
             "tensor.providers.webgpu.adapter",
             "tensor.providers.webgpu.buffer",

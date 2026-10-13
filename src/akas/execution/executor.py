@@ -43,7 +43,10 @@ class Executor(DeviceOwner):
         from akas.execution.workspace import release
 
         program = read_program(directory)
-        if program["provider"] != device.info["provider"] or program["target"] != device.info["arch"]:
+        from tensor.runtime.cuda_target import matches_device
+        compatible = (matches_device(program["target"], device.info["arch"])
+                      if program["provider"] == "cuda" else program["target"] == device.info["arch"])
+        if program["provider"] != device.info["provider"] or not compatible:
             raise ValueError("program requires a different compilation target")
         import json
         if program["config"] != json.loads(json.dumps(asdict(checkpoint.config))):
@@ -112,7 +115,26 @@ class Executor(DeviceOwner):
         return slots, sequences
 
     def decode(self, slots, tokens):
-        return self.run_batch(slots, [[t] for t in tokens])
+        self._check()
+        slots, sequences = self._validate_batch(slots, [[t] for t in tokens], 1)
+        count = self._phase_rows(1)
+        result = []
+        for start in range(0, len(slots), count):
+            result.extend(self.run_batch(slots[start:start + count], sequences[start:start + count]))
+        return result
+
+    def _phase_rows(self, chunk):
+        records = getattr(self.batches, "records", ())
+        phase = "decode" if chunk == 1 else "prefill"
+        rows = [row["rows"] for row in records if row["phase"] == phase and row["chunk"] == chunk]
+        return max(rows) if rows else self.capacity
+
+    def prefill_geometry(self, requested=32):
+        records = getattr(self.batches, "records", ())
+        chunks = {row["chunk"] for row in records if row["phase"] in ("decode", "prefill")}
+        if not chunks:
+            return requested
+        return min((chunk for chunk in chunks if chunk >= requested), default=max(chunks))
 
     def decode_steps(self, slots, tokens, steps, *, read=True):
         """Replay greedy steps with one control upload and optional final readback.
@@ -149,6 +171,7 @@ class Executor(DeviceOwner):
             frame.prepare(slots, sequences, self.positions)
         for _ in range(steps):
             frame.forward.run()
+        self.last_frame = frame
         self.positions[slots] += steps
         frame.expected_positions = self.positions[slots].copy()
         frame.expected_generations = self.state.generations[slots].copy()
@@ -163,22 +186,25 @@ class Executor(DeviceOwner):
         return self.batches.select(count, chunk, phase="verify" if verify else None)
 
     def prefill_batch(self, requests, sequences, chunk):
-        return self._prefill_groups([r.slot for r in requests], sequences, chunk)
+        return self.prefill([r.slot for r in requests], sequences, chunk=self.prefill_geometry(chunk))
 
     def _prefill_groups(self, slots, sequences, chunk):
         self._check()
         slots, sequences = self._validate_batch(slots, sequences, chunk)
         result = []
-        for start in range(0, len(slots), self.prefill_group_size):
-            stop = start + self.prefill_group_size
+        group_size = min(self.prefill_group_size, self._phase_rows(chunk))
+        for start in range(0, len(slots), group_size):
+            stop = start + group_size
             result.extend(
                 self.run_batch(slots[start:stop], sequences[start:stop], chunk=chunk)
             )
         return result
 
-    def prefill(self, slots, prompts, *, chunk=32):
+    def prefill(self, slots, prompts, *, chunk=None):
         self._check()
         slots, prompts = list(slots), [list(p) for p in prompts]
+        if chunk is None:
+            chunk = self.prefill_geometry()
         if (
             type(chunk) is not int
             or chunk < 1
@@ -197,16 +223,38 @@ class Executor(DeviceOwner):
             for slot, prompt in zip(slots, prompts)
         ):
             raise ValueError("invalid prefill sequence")
+        budget = self.prefill_geometry(chunk)
+        qualified = {row["chunk"] for row in getattr(self.batches,"records", ())
+                     if row["phase"] in ("decode","prefill") and row["chunk"] <= budget}
+        qualified = qualified or {budget}
         predicted = [None] * len(slots)
-        for begin in range(0, max(map(len, prompts)), chunk):
+        self.last_prefill_chunk, self.last_prefill_frame = None, None
+        begin = 0
+        while begin < max(map(len,prompts)):
+            remaining = max(len(prompt)-begin for prompt in prompts)
+            wanted = min(budget,remaining)
+            chunk = min((value for value in qualified if value >= wanted),default=max(qualified))
             active = [i for i, prompt in enumerate(prompts) if begin < len(prompt)]
-            result = self._prefill_groups(
-                [slots[i] for i in active],
-                [prompts[i][begin : begin + chunk] for i in active],
-                chunk,
-            )
-            for index, token in zip(active, result):
-                predicted[index] = token
+            state_only = [row for row in getattr(self.batches, "records", ())
+                          if row["phase"] == "prefill_state" and row["chunk"] == chunk]
+            intermediate = [i for i in active if begin + chunk < len(prompts[i])] if state_only else []
+            if intermediate:
+                group_size = min(self.prefill_group_size, max(row["rows"] for row in state_only))
+                for start in range(0, len(intermediate), group_size):
+                    indexes = intermediate[start:start + group_size]
+                    self._execute_batch([slots[i] for i in indexes],
+                                        [prompts[i][begin:begin + chunk] for i in indexes],
+                                        chunk, phase="prefill_state", read=False)
+            final = [i for i in active if i not in intermediate]
+            if final:
+                result = self._prefill_groups(
+                    [slots[i] for i in final],
+                    [prompts[i][begin:begin + chunk] for i in final], chunk)
+                for index, token in zip(final, result):
+                    predicted[index] = token
+                self.last_prefill_chunk = chunk
+                self.last_prefill_frame = getattr(self,"last_frame",None)
+            begin += chunk
         return predicted
 
     def verify(self, slots, sequences, *, chunk):
@@ -259,12 +307,12 @@ class Executor(DeviceOwner):
             del self.pending[slot]
         frame.verification = None
 
-    def generate(self, prompt, *, max_tokens=128, chat=True, tokenizer=None):
+    def generate(self, prompt, *, max_tokens=128, chat=True, tokenizer=None, sampling="device"):
         from akas.generation.greedy import generate_scheduled
 
         tokenizer = self.checkpoint.tokenizer if tokenizer is None else tokenizer
         return generate_scheduled(
-            self, prompt, tokenizer=tokenizer, max_tokens=max_tokens, chat=chat
+            self, prompt, tokenizer=tokenizer, max_tokens=max_tokens, chat=chat, sampling=sampling
         )
 
     def _admit_slot(self, slot):
@@ -279,12 +327,18 @@ class Executor(DeviceOwner):
         for journal in self.journals.values():
             journal.dirty[slot] = False
 
-    def _execute_batch(self, slots, sequences, chunk):
+    def _execute_batch(self, slots, sequences, chunk, *, phase=None, read=True):
         if self.batches is None:
             raise NotImplementedError
         self._materialize(slots)
-        frame = self.batches.select(len(slots),chunk)
-        result = frame.run(slots,sequences,self.positions)
+        frame = self.batches.select(len(slots),chunk, phase=phase)
+        if read:
+            result = frame.run(slots,sequences,self.positions)
+        else:
+            frame.prepare(slots, sequences, self.positions)
+            frame.forward.run()
+            result = None
+        self.last_frame = frame
         for slot,sequence in zip(slots,sequences):
             self.positions[slot] += len(sequence)
         return result

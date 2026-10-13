@@ -130,3 +130,63 @@ def test_generate_routes_constructor_options_without_model_dispatch(
     main()
     assert capsys.readouterr().out.strip() == "hello:3:False"
     assert ForeignModel.opened[2:] == (device, 5)
+
+
+def test_benchmark_compiles_one_program_bank_for_all_requested_batches(monkeypatch, tmp_path):
+    import tensor
+    from types import SimpleNamespace
+    from akas import cli
+
+    compiled, opened = [], []
+    class Device:
+        info = {"arch": "sm_89"}
+        def __init__(self, *args, **options):
+            pass
+        def __enter__(self):
+            return self
+        def __exit__(self, *error):
+            pass
+
+    class Model:
+        compilation_profile = "program"
+        def __init__(self, checkpoint, bundle, device, **options):
+            opened.append((bundle, options))
+        def __enter__(self):
+            return self
+        def __exit__(self, *error):
+            pass
+
+    class Session:
+        kv_dtype = "float16"
+        def __init__(self, model, *, batch, chunk):
+            self.prefill_chunk = chunk
+        def __enter__(self):
+            return self
+        def __exit__(self, *error):
+            pass
+
+    checkpoint = tmp_path / "weights.json"
+    checkpoint.write_text('{}')
+    monkeypatch.setattr(tensor, "Device", Device)
+    monkeypatch.setattr(cli, "_factory", lambda value: Model)
+    monkeypatch.setattr("akas.benchmarking.session.Session", Session)
+    monkeypatch.setattr("akas.compilation.compile_checkpoint",
+                        lambda *args, **options: compiled.append((args, options)))
+    monkeypatch.setattr(cli, "run", lambda session, case, **options:
+                        dict(status="ok", case=case.metadata()))
+    monkeypatch.setattr(cli, "table", lambda rows: "")
+    monkeypatch.setattr(cli, "write_report", lambda out, metadata, results:
+                        dict(metadata=metadata, results=results))
+    monkeypatch.setattr(sys, "argv", ["akas", "bench", "--definition", "foreign:Model",
+        "--checkpoint", str(checkpoint), "--bundles", str(tmp_path / "bank"),
+        "--compile", "--batches", "1", "4", "--prompts", "4", "--generated", "2",
+        "--prefill-chunk", "4", "--checkpoint-options", '{"tokenizer":false}',
+        "--out", str(tmp_path / "report.json")])
+    cli.main()
+    assert len(compiled) == 1
+    options = compiled[0][1]
+    assert options["geometries"] == [(1, 1), (1, 4), (4, 1), (4, 4)]
+    assert options["max_requests"] == 4 and options["max_context"] == 6
+    assert options["checkpoint_options"] == {"tokenizer": False}
+    assert len(opened) == 2 and opened[0][0] == opened[1][0]
+    assert all(options["checkpoint_options"] == {"tokenizer": False} for _, options in opened)

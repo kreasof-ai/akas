@@ -1,5 +1,7 @@
 """Numerical qualification of native FP8 bits and independent recurrent slots."""
 
+from akas.compilation.selection import source as operation_source
+
 import os
 
 import numpy as np
@@ -17,7 +19,7 @@ def build(tmp_path, kind, p):
 
     entry = tmp_path / (kind + ".py")
     entry.write_text(
-        source("akas.compilation.factories.block_fp8", "decode_factory", kind, p)
+        operation_source(kind, p, contract="block-fp8", phase="decode").render()
     )
     artifact = tmp_path / (kind + ".tbin")
     build_artifact(

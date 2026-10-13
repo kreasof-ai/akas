@@ -11,6 +11,7 @@ import numpy as np
 import tensor
 from akas import GGUF
 from akas.models.lfm2.model import LFM2
+from akas.benchmarking.session import Session
 from akas.text.tokenizer import Tokenizer
 
 
@@ -73,18 +74,23 @@ def benchmark(
             model, bundle, device, context=max(depths) + generated
         ) as network,
     ):
+        chunk = max((record["chunk"] for record in network.program["phases"]
+                     if record["phase"] == "prefill"), default=1)
+        session = Session(network, batch=1, chunk=chunk)
         for item, baseline in zip(cases, reference["benchmarks"]):
             samples = []
             for repeat in range(-1, repeats):
-                network.reset()
+                session.reset()
                 start = time.perf_counter()
-                network.forward(item["prompt"])
+                session.prefill([item["prompt"]])
+                network.batches.select(1, chunk).feature("logits").to_numpy()
                 prefill = time.perf_counter() - start
                 latencies = []
                 start = time.perf_counter()
                 for token in item["decode"]:
                     begin = time.perf_counter()
-                    network.forward([token])
+                    network.decode(session.slots, [token])
+                    network.batches.select(1, 1).feature("logits").to_numpy()
                     latencies.append(time.perf_counter() - begin)
                 seconds = time.perf_counter() - start
                 if repeat >= 0:
@@ -147,17 +153,19 @@ def benchmark(
                     if k not in ("benchmarks", "validation", "tokenization")
                 },
             },
-            "protocol": "one sequence; prefill chunks <=128; one-token decode; last-token logits available on host; excludes loading/tokenization/sampling",
+            "protocol": "one sequence; qualified prefill chunks; forced one-token decode; predictions and final logits on host; excludes loading/tokenization/sampling",
+            "prefill_chunk": chunk,
             "cache_type": "f16",
             "cuda_graphs": True,
-            "owned_device_bytes": network.allocated_bytes,
-            "launches_per_decode": len(network.plans[1]),
+            "owned_device_bytes": session.allocated_bytes,
+            "launches_per_decode": len(network.batches.select(1, 1).forward.plan),
             "versions": {
                 name: version(name)
                 for name in ("numpy", "tensor-workspace", "tensor-llm", "regex")
             },
             "cases": results,
         }
+        session.close()
     (out / "benchmark.json").write_text(json.dumps(report, indent=2) + "\n")
     return report
 

@@ -31,3 +31,13 @@ def validation(kind, p, signature):
 
 
 VALIDATIONS = {"add": validation}
+
+
+# Output locations are part of the operation ABI, independent of compiler passes.
+OUTPUT_ARGUMENTS = {"reference": {'add': (-1,)}}
+
+
+from akas.ops.contracts import OutputABI
+
+for _contract in ("reference", "packed", "packed-baseline", "bf16", "block-fp8"):
+    OUTPUT_ARGUMENTS.setdefault(_contract, {}).update({'add': OutputABI((-1,), ('out',))})

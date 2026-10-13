@@ -5,37 +5,24 @@ import sys
 import pytest
 
 
-@pytest.mark.parametrize(
-    "profile",
-    [
-        "portable",
-        "subgroup",
-        "decode_searched",
-        "decode_fused",
-        "prefill_unrolled",
-        "prefill_outer",
-        "prefill_chunked",
-        "quant_searched",
-        "prefill_q16",
-        "prefill_mixed",
-    ],
-)
-def test_webgpu_diagnostic_profile_constructs_tirx(profile, tmp_path):
+@pytest.mark.parametrize("rows,chunk",[(1,1),(1,32),(4,1),(4,32)])
+def test_common_packed_program_constructs_tirx(rows, chunk, tmp_path):
     pytest.importorskip("tilelang")
+    import importlib
     import tvm
     from benchmarks.lfm2.diagnostic import fixture
-    from akas import GGUF
-    from akas.execution.bindings.packed.requirements import requirements
-    from akas.compilation.factories.packed import packed_webgpu_factory as make_kernel
+    from akas.models.lfm2.weights import LFM2Checkpoint
+    from akas.models.lfm2.model import compose_program
+    from akas.compilation.compile import plan
 
-    path = tmp_path / "model.gguf"
-    fixture(path)
-    specs = requirements(
-        GGUF(path), 448, (1, 32), provider="webgpu", webgpu_profile=profile
-    )
-    for kind, parameters in specs.values():
-        kernel = make_kernel(kind, parameters)
-        assert isinstance(kernel, tvm.tirx.PrimFunc)
+    checkpoint = LFM2Checkpoint(fixture(tmp_path/"model.gguf"),tokenizer=False)
+    graph = compose_program(checkpoint,rows=rows,chunk=chunk,max_requests=8,
+                            max_context=128,provider="webgpu")
+    compiled = plan(graph,provider="webgpu")
+    for declaration in compiled.kernels:
+        source = declaration.source
+        kernel = getattr(importlib.import_module(source.module),source.factory)(*source.args)
+        assert isinstance(kernel,tvm.tirx.PrimFunc)
         assert len(kernel.params) > 0
 
 
@@ -51,7 +38,7 @@ class Guard(importlib.abc.MetaPathFinder):
   if name.split('.')[0] in {'tilelang','tvm','tvm_ffi','torch','triton'} or name.startswith('tensor.compiler'):
    raise ImportError(name)
 sys.meta_path.insert(0, Guard())
-from akas.compilation.factories.packed import packed_baseline_factory, packed_cuda_factory, packed_webgpu_factory
+from akas.ops.definition import define, definition, KernelSpec, Capabilities
 from akas.ops.schedules.packed_parameters import CUDA_PROFILES
 from akas.artifacts.schema import identity
 assert len(identity('linear', {'k':256})) == 24

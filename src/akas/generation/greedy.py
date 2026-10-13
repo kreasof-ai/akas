@@ -4,48 +4,6 @@ from __future__ import annotations
 import numpy as np
 
 
-def generate_greedy(self, prompt, *, max_tokens=128, chat=True, gpu_greedy=True):
-    from akas.execution.bindings.packed.greedy import advance_greedy
-
-    self._check_open()
-    if type(max_tokens) != int or max_tokens < 1:
-        raise ValueError("max_tokens must be positive")
-    tokens = self.tokenizer.chat(prompt) if chat else self.tokenizer.encode(prompt)
-    if len(tokens) + max_tokens > self.context:
-        raise ValueError("generation exceeds context capacity")
-    if (self.provider == "webgpu" or self.cuda_optimized) and gpu_greedy:
-        self.reset()
-        next_token = self.forward(tokens, _greedy=True)
-        generated = []
-        for step in range(max_tokens):
-            token = int(next_token[0])
-            generated.append(token)
-            if token == self.tokenizer.eos:
-                break
-            if step + 1 == max_tokens:
-                break
-            next_token = advance_greedy(self)
-        return {
-            "prompt_tokens": tokens,
-            "generated_tokens": generated,
-            "text": self.tokenizer.decode(generated),
-        }
-    self.reset()
-    logits = self.forward(tokens)
-    generated = []
-    for _ in range(max_tokens):
-        token = int(np.argmax(logits))
-        generated.append(token)
-        if token == self.tokenizer.eos:
-            break
-        logits = self.forward([token])
-    return {
-        "prompt_tokens": tokens,
-        "generated_tokens": generated,
-        "text": self.tokenizer.decode(generated),
-    }
-
-
 def generate_batch(model, prompts, *, max_tokens=128, chat=True):
     """Greedy generation over any batched token-step session.
 
@@ -92,22 +50,61 @@ def generate_batch(model, prompts, *, max_tokens=128, chat=True):
     ]
 
 
-def generate_scheduled(model, prompt, *, tokenizer, max_tokens=128, chat=True):
+def generate_scheduled(model, prompt, *, tokenizer, max_tokens=128, chat=True, sampling="device"):
     """Generate a sequence through any scheduled executor without disturbing peers."""
     if type(max_tokens) is not int or max_tokens < 1:
         raise ValueError("max_tokens must be positive")
+    if sampling not in ("device", "host"):
+        raise ValueError("sampling must be device or host")
+    if tokenizer is None:
+        raise ValueError("text generation requires a tokenizer")
+    chunk = model.prefill_geometry() if hasattr(model,"prefill_geometry") else 32
+    host_frames = {}
+    if sampling == "host":
+        if not hasattr(model,"batches") or not hasattr(model.batches,"select"):
+            raise ValueError("host sampling requires declared logits features")
+        geometries = {row["chunk"] for row in getattr(model.batches,"records",())
+                      if row["phase"] in ("decode","prefill") and row["chunk"] <= chunk}
+        for geometry in geometries or {chunk,1}:
+            frame = model.batches.select(1,geometry)
+            if "logits" not in frame.features:
+                raise ValueError("host sampling requires declared logits features")
+            name = frame.features["logits"]
+            spec = frame.forward.definition.buffers[name]
+            if spec.role != "output":
+                raise ValueError("host sampling requires owned output logits")
+            from math import prod
+
+            if prod(spec.shape) != frame.rows * model.config.vocab:
+                raise ValueError("host sampling requires one vocabulary row per request")
+            host_frames[geometry] = frame
+
+    def sample(predicted, geometry):
+        if sampling == "device":
+            return predicted[0]
+        if geometry not in host_frames:
+            frame = model.batches.select(1,geometry)
+            if "logits" not in frame.features:
+                raise ValueError("host sampling requires declared logits features")
+            host_frames[geometry] = frame
+        frame = getattr(model,"last_prefill_frame",None) if geometry != 1 else None
+        frame = frame or host_frames[geometry]
+        values = frame.feature("logits").to_numpy().reshape(frame.rows,-1)
+        return int(np.argmax(values[0]))
+
     tokens = tokenizer.chat(prompt) if chat else tokenizer.encode(prompt)
     if not tokens or len(tokens) + max_tokens > model.context:
         raise ValueError("generation exceeds context capacity")
     slot = model.admit()
     generated = []
     try:
-        token = model.prefill([slot], [tokens])[0]
+        predicted = model.prefill([slot],[tokens],chunk=chunk)
+        token = sample(predicted,getattr(model,"last_prefill_chunk",None) or chunk)
         for step in range(max_tokens):
             generated.append(int(token))
             if token == tokenizer.eos or step + 1 == max_tokens:
                 break
-            token = model.decode([slot], [int(token)])[0]
+            token = sample(model.decode([slot], [int(token)]),1)
     finally:
         model.release(slot)
     return dict(

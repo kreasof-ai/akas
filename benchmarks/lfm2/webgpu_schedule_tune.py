@@ -1,5 +1,7 @@
 """Prefill shared layouts and scalar/vector dot scheduling on actual GGUF weights."""
 
+from akas.compilation.selection import source as kernel_source
+
 from pathlib import Path as _Path
 import sys as _sys
 
@@ -119,12 +121,12 @@ def run(model, out, preset="legacy"):
             path = out / f"{name}-{preset}-{i}.py"
             artifact = path.with_suffix(".tbin")
             path.write_text(
-                source(
-                    "akas.compilation.factories.packed",
-                    "packed_webgpu_factory",
+                kernel_source(
                     "linear",
                     p,
-                )
+                    contract='packed',
+                    provider='webgpu',
+                ).render()
             )
             artifact.unlink(missing_ok=True)
             try:

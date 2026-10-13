@@ -13,6 +13,7 @@ import pytest
 def test_recompute_matches_every_frozen_prefix(tmp_path, chunk):
     import tensor
     from tensor.compiler.frontend.source import export_source
+    from akas.compilation.selection import source as operation_source
     from tensor.compiler.build import build_artifact
 
     s, c = 3, chunk
@@ -22,18 +23,18 @@ def test_recompute_matches_every_frozen_prefix(tmp_path, chunk):
     for name, module, factory, args in (
         (
             "control_scan",
-            "akas.compilation.factories.block_fp8",
-            "verification_factory",
+            "operation",
+            "verification",
             ("gdn_scan", dict(slots=s, chunk=c)),
         ),
-        ("scan", "akas.compilation.factories.block_fp8", "prefill_factory", ("gdn_scan", dict(slots=s, chunk=c))),
+        ("scan", "operation", "prefill", ("gdn_scan", dict(slots=s, chunk=c))),
         (
             "control_conv",
-            "akas.compilation.factories.block_fp8",
-            "verification_factory",
+            "operation",
+            "verification",
             ("gdn_conv", dict(slots=s, chunk=c)),
         ),
-        ("conv", "akas.compilation.factories.block_fp8", "prefill_factory", ("gdn_conv", dict(slots=s, chunk=c))),
+        ("conv", "operation", "prefill", ("gdn_conv", dict(slots=s, chunk=c))),
         *(
             (name, "akas.ops.gdn.cuda.recompute", name, (dict(slots=s, chunk=c),))
             for name in ("save_scan", "save_conv", "restore_scan", "restore_conv")
@@ -42,7 +43,8 @@ def test_recompute_matches_every_frozen_prefix(tmp_path, chunk):
         entry = tmp_path / (name + ".py")
         artifact = entry.with_suffix(".tbin")
         entry.write_text(
-            export_source(
+            operation_source(*args,contract="block-fp8",phase=factory).render()
+            if module == "operation" else export_source(
                 module,
                 factory,
                 *args,
@@ -144,6 +146,7 @@ def test_recompute_matches_every_frozen_prefix(tmp_path, chunk):
 def test_c64_input_copy_at_int32_bitcount_boundary(tmp_path):
     import tensor
     from tensor.compiler.frontend.source import export_source
+    from akas.compilation.selection import source as operation_source
     from tensor.compiler.build import build_artifact
     from tensor.runtime.dtypes import encode_bfloat16, decode_bfloat16
 
@@ -186,13 +189,14 @@ def test_c64_input_copy_at_int32_bitcount_boundary(tmp_path):
 def test_c64_short_snapshot_restore_without_flat_bitcount_view(tmp_path):
     import tensor
     from tensor.compiler.frontend.source import export_source
+    from akas.compilation.selection import source as operation_source
     from tensor.compiler.build import build_artifact
 
     source = tmp_path / "restore.py"
     artifact = source.with_suffix(".tbin")
     source.write_text(
         export_source(
-            "akas.ops.gdn.cuda.hopper_restore",
+            "akas.ops.gdn.restore",
             "restore_kernel",
             dict(slots=64, chunk=4, shape=[32, 128, 128]),
             dependencies=("tensor.compiler.frontend.source",),

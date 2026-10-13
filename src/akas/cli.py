@@ -175,6 +175,8 @@ def _benchmark_arguments(parser):
         help="module:class implementing the session protocol",
     )
     parser.add_argument("--checkpoint", type=Path, required=True)
+    parser.add_argument("--checkpoint-options", type=_settings, default={},
+                        help="JSON options for the model checkpoint reader")
     parser.add_argument(
         "--bundles",
         type=Path,
@@ -326,16 +328,19 @@ def _benchmark(args):
     )
     results = []
     baseline = json.loads(args.baseline.read_text()) if args.baseline else None
+    program_compiled = False
     for batch in dict.fromkeys(args.batches):
         selected = [case for case in cases if case.batch == batch]
-        bundle = args.bundles / f"{args.provider}-{args.kv_dtype}-b{batch}"
+        bundle = args.bundles / (f"{args.provider}-{args.kv_dtype}-program"
+                                  if profile == "program" else f"{args.provider}-{args.kv_dtype}-b{batch}")
         try:
-            if args.compile:
+            if args.compile and (profile != "program" or not program_compiled):
                 from akas.compilation import compile_checkpoint
 
                 options = (
-                    dict(geometries=list(dict.fromkeys(((batch, 1), (batch, chunk)))),
-                         max_requests=batch, max_context=capacity,
+                    dict(geometries=list(dict.fromkeys((rows, tokens)
+                             for rows in args.batches for tokens in (1, chunk))),
+                         max_requests=max(args.batches), max_context=capacity,
                          model_options={"kv_dtype": args.kv_dtype}, schedules=schedules)
                     if profile == "program" else
                     dict(batch=batch, capacity=capacity, kv_dtype=args.kv_dtype,
@@ -343,9 +348,10 @@ def _benchmark(args):
                 )
                 compile_checkpoint(
                     args.definition, args.checkpoint, bundle, profile=profile,
-                    checkpoint_options={} if profile == "program" else {"tokenizer": False},
+                    checkpoint_options=args.checkpoint_options if profile == "program" else {"tokenizer": False, **args.checkpoint_options},
                     provider=args.provider, target=args.target, **options,
                 )
+                program_compiled = profile == "program"
             with tensor.Device(
                 args.device, provider=args.provider, **device_options
             ) as device:
@@ -353,7 +359,7 @@ def _benchmark(args):
                 from akas.benchmarking.session import Session
                 constructor_options = dict(graphs=args.graphs)
                 if profile == "program":
-                    constructor_options["checkpoint_options"] = {}
+                    constructor_options["checkpoint_options"] = args.checkpoint_options
                 else:
                     constructor_options["tokenizer"] = False
                 with args.definition(args.checkpoint, bundle, device, **constructor_options) as model:

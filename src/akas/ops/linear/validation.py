@@ -2,6 +2,10 @@
 
 
 def validation(kind, p, signature):
+    if p.get("q16") or kind in ("linear_q16", "ffn_q16"):
+        from akas.quantization.activations.q16 import projection_validation
+
+        return projection_validation(kind, p, signature)
     import numpy as np
 
     from akas.ops.contracts import ValidationCase, sample_arguments
@@ -9,7 +13,7 @@ def validation(kind, p, signature):
     values = sample_arguments(signature)
     expected = {name: value.copy() for name, value in values.items()}
     r, k, o = p["r"], p["k"], p["o"]
-    if p.get("type", 0) not in (0, 1) and "scales" not in values:
+    if (p.get("ggml", False) or p.get("type", 0) not in (0, 1)) and "scales" not in values:
         from akas.quantization.weights.ggml import sample_weight
 
         x = values["x"].reshape(r, k)

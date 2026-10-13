@@ -34,6 +34,18 @@ class SpeculativeDecoder:
         self.target.release(slot)
         self.proposer.release(slot)
 
+    def prefill_geometry(self, requested=32):
+        records = getattr(getattr(self.target, "batches", None), "records", ())
+        phase = getattr(self.proposer, "phase", None)
+        if phase is not None and records:
+            chunks = {row["chunk"] for row in records if row["phase"] in ("decode", "prefill")}
+            chunks &= {row["chunk"] for row in records if row["phase"] == phase}
+            if not chunks:
+                raise ValueError("target and proposer have no shared prefill geometry")
+            return min((chunk for chunk in chunks if chunk >= requested), default=max(chunks))
+        geometry = getattr(self.target, "prefill_geometry", None)
+        return geometry(requested) if geometry is not None else requested
+
     def prefill_batch(self, requests, sequences, chunk):
         group_size = getattr(self.target, "prefill_group_size", len(requests))
         result = []
@@ -46,18 +58,40 @@ class SpeculativeDecoder:
         return result
 
     def decode_many(self, requests):
+        records = getattr(getattr(self.target, "batches", None), "records", ())
+        rows = [record["rows"] for record in records
+                if record["phase"] == "verify" and record["chunk"] == self.window]
+        if rows and len(requests) > max(rows):
+            size = max(rows)
+            return [tokens for start in range(0, len(requests), size)
+                    for tokens in self.decode_many(requests[start:start + size])]
+        window = self.window
+        if records and requests:
+            needed = max(min(self.window, request.limit - len(request.output),
+                             self.context - int(self.target.positions[request.slot]))
+                         for request in requests)
+            chunks = None
+            phase = getattr(self.proposer, "phase", None)
+            if phase is not None:
+                chunks = {row["chunk"] for row in records if row["phase"] == phase}
+            if self.capture:
+                controls = {row["window"] for row in self.target.program.get("rounds", ())}
+                chunks = controls if chunks is None else chunks & controls
+            window = self.target.batches.select_window(len(requests), max(1, needed),
+                                                       limit=self.window, chunks=chunks).chunk
         if self.capture:
             from akas.execution.replay import CapturedRound
-            rows = self.target.batch(len(requests), self.window, verify=True).rows
-            if rows not in self.rounds:
-                self.rounds[rows] = CapturedRound(self,len(requests))
-            return self.rounds[rows].run(requests)
+            rows = self.target.batch(len(requests), window, verify=True).rows
+            key = (rows, window)
+            if key not in self.rounds:
+                self.rounds[key] = CapturedRound(self, len(requests), window=window)
+            return self.rounds[key].run(requests)
         if self.replay is not None:
             return self.replay.run(requests)
         slots = [request.slot for request in requests]
         if not slots or len(set(slots)) != len(slots):
             raise ValueError("invalid speculative request batch")
-        limits = [min(self.window, request.limit-len(request.output),
+        limits = [min(window, request.limit-len(request.output),
                       self.context-int(self.target.positions[request.slot]))
                   for request in requests]
         if any(limit < 1 or not request.output for request, limit in zip(requests, limits)):
@@ -67,10 +101,10 @@ class SpeculativeDecoder:
             raise ValueError("proposer exceeded the verification budget")
         sequences = [[request.output[-1], *proposal] for request, proposal in zip(requests, proposals)]
         positions = [int(self.target.positions[slot]) for slot in slots]
-        inputs = np.zeros((len(slots), self.window), dtype="int32")
+        inputs = np.zeros((len(slots), window), dtype="int32")
         verified = np.zeros_like(inputs)
         lengths = np.array(list(map(len, sequences)), dtype="int32")
-        predictions = self.target.verify(slots, sequences, chunk=self.window)
+        predictions = self.target.verify(slots, sequences, chunk=window)
         try:
             if len(predictions) != len(sequences):
                 raise ValueError("verifier returned an incomplete batch")
@@ -84,7 +118,7 @@ class SpeculativeDecoder:
         except BaseException:
             self.target.discard(slots)
             raise
-        self.proposer.repair(requests, outputs, positions, target=self.target, chunk=self.window)
+        self.proposer.repair(requests, outputs, positions, target=self.target, chunk=window)
         self.stats["rounds"] += 1
         self.stats["request_rounds"] += len(slots)
         self.stats["proposed"] += sum(map(len, proposals))

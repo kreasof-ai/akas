@@ -8,7 +8,7 @@ import numpy as np
 
 from akas.checkpoints.safetensors import upload_bits
 
-DTYPES = {"BF16": "bfloat16", "F32": "float32", "F8_E4M3": "uint8"}
+DTYPES = {"BF16": "bfloat16", "F32": "float32", "F16": "float16", "F8_E4M3": "uint8"}
 
 
 def upload_packed(device, checkpoint):
@@ -28,14 +28,46 @@ def upload_packed(device, checkpoint):
     return weights
 
 
-def upload_shards(device, tensors, wanted, layouts):
+def convert_storage(raw, source_dtype, target_dtype):
+    """Convert explicitly requested numeric storage; native uploads keep bytes."""
+    if target_dtype not in ("float16", "float32"):
+        raise ValueError("numeric weight conversion requires float16 or float32")
+    if source_dtype == "F8_E4M3":
+        from akas.quantization.weights.block_fp8 import decode_storage
+        if np.any((raw & 127) == 127):
+            raise ValueError("resident FP8 storage must be finite")
+        values = decode_storage(raw)
+    elif source_dtype == "BF16":
+        from tensor.runtime.dtypes import decode_bfloat16
+        values = decode_bfloat16(raw.view("uint16"))
+    elif source_dtype in ("F16", "F32"):
+        values = raw.view(DTYPES[source_dtype])
+    else:
+        raise ValueError(f"unsupported numeric source storage {source_dtype!r}")
+    return np.ascontiguousarray(values.astype(target_dtype)).view("uint8")
+
+
+def upload_shards(device, tensors, wanted, layouts, *, conversions=None):
     """Map one shard at a time and copy bytes into declared grouped layouts."""
+    conversions = dict(conversions or {})
+    groups = {layouts[name][0] for name in wanted}
+    if conversions.keys() - groups:
+        raise ValueError("weight conversion names an undeclared storage group")
+    group_dtypes = {}
+    for name in wanted:
+        group, offset, _ = layouts[name]
+        dtype = tensors[name].dtype
+        if group_dtypes.setdefault(group, dtype) != dtype:
+            raise ValueError("grouped weight storage has inconsistent source dtypes")
+        source_width = 2 if dtype in ("BF16", "F16") else 4 if dtype == "F32" else 1
+        if group in conversions and (conversions[group] not in ("float16", "float32") or offset % source_width):
+            raise ValueError("invalid numeric weight conversion or group offset")
     buffers = {}
     try:
         for name in wanted:
             group, _, shape = layouts[name]
             if group not in buffers:
-                buffers[group] = device.empty(shape, DTYPES[tensors[name].dtype])
+                buffers[group] = device.empty(shape, conversions.get(group, DTYPES[tensors[name].dtype]))
         for shard in sorted({tensors[name].shard for name in wanted}):
             with (
                 shard.open("rb") as stream,
@@ -50,15 +82,22 @@ def upload_shards(device, tensors, wanted, layouts):
                         mapped, dtype="uint8", count=info.nbytes, offset=info.offset
                     )
                     try:
+                        data = view
+                        destination_offset = offset
+                        if group in conversions:
+                            data = convert_storage(view.copy(), info.dtype, conversions[group])
+                            source_width = 2 if info.dtype in ("BF16", "F16") else 4 if info.dtype == "F32" else 1
+                            destination_offset = offset // source_width * np.dtype(conversions[group]).itemsize
                         device._check()
                         device.driver.call(
                             "cuMemcpyHtoD_v2",
-                            buffers[group].pointer + offset,
-                            ct.c_void_p(view.ctypes.data),
-                            info.nbytes,
+                            buffers[group].pointer + destination_offset,
+                            ct.c_void_p(data.ctypes.data),
+                            data.nbytes,
                         )
                         device.driver.call("cuStreamSynchronize", None)
                     finally:
+                        del data
                         del view
         return MappingProxyType(buffers)
     except BaseException:

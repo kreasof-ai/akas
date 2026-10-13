@@ -21,6 +21,8 @@ class Implementation:
     space: tuple[tuple[str, tuple], ...] = ()
     semantic_keys: tuple[str, ...] | None = None
     variant: str | None = None
+    factory: str = "make_kernel"
+    parameters_only: bool = False
 
     @property
     def identifier(self):
@@ -41,13 +43,31 @@ class Implementation:
         )
 
     def source_arguments(self, parameters):
-        return self.kernel_kind or self.kind, {**dict(self.defaults), **parameters}
+        options = {**dict(self.defaults), **parameters}
+        return (options,) if self.parameters_only else (self.kernel_kind or self.kind, options)
+
+    def declaration(self):
+        """Serializable routing; the exported source needs no registry discovery."""
+        return dict(identifier=self.identifier, module=self.module_name, kind=self.kind,
+                    kernel_kind=self.kernel_kind or self.kind, contract=self.contract,
+                    provider=self.provider, phase=self.phase, targets=self.targets,
+                    defaults=dict(self.defaults), semantic_keys=self.semantic_keys,
+                    axes=tuple(name for name, _ in self.space),
+                    factory=self.factory, parameters_only=self.parameters_only)
 
     def make(self, parameters):
-        return import_module(self.module_name).make_kernel(
+        return getattr(import_module(self.module_name), self.factory)(
             *self.source_arguments(parameters)
         )
 
+
+
+@dataclass(frozen=True)
+class OutputABI:
+    """Potential writes for ordered and named graph calls of an operation."""
+
+    positions: tuple[int, ...]
+    names: tuple[str, ...]
 
 
 @dataclass(frozen=True)

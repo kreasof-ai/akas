@@ -28,6 +28,7 @@ def run(root, out):
     import tensor
     import akas
     from akas import LFM2
+    from akas.benchmarking.session import Session
 
     root = Path(root).resolve()
     rows = []
@@ -43,17 +44,23 @@ def run(root, out):
                 context=512,
             ) as model,
         ):
+            chunk = max((phase["chunk"] for phase in model.program["phases"]
+                         if phase["phase"] == "prefill"), default=1)
+            session = Session(model, batch=1, chunk=chunk)
+            session.reset()
+            session.prefill([report["validation"][0]["tokens"]])
             np.testing.assert_array_equal(
-                model.forward(report["validation"][0]["tokens"]),
+                session.read_feature("logits")[0],
                 np.load(evidence / "0-tensor-logits.npy"),
             )
+            session.close()
             generated = model.generate("What is 2 + 2?", max_tokens=96)
             assert generated == report["generation"]
             rows.append(
                 {
                     "format": kind,
                     "generation": generated,
-                    "allocated_bytes": model.allocated_bytes,
+                    "allocated_bytes": session.allocated_bytes,
                     "adapter": device.info["adapter"],
                     "prepared_encoding": device.info.get("prepared_encoding", "python"),
                 }

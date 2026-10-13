@@ -1,5 +1,7 @@
 """Bounded prefill tile sweep against exact FP16-operand matrix products."""
 
+from akas.compilation.selection import source as kernel_source
+
 from pathlib import Path as _Path
 import sys as _sys
 
@@ -45,12 +47,12 @@ def run(model, out):
             p = dict(r=32, k=k, o=o, type=info.type, tile=tile)
             path = out / f"{name}-{tile[0]}-{tile[1]}-{tile[2]}.py"
             artifact = path.with_suffix(".tbin")
-            text = source(
-                "akas.compilation.factories.packed",
-                "packed_webgpu_factory",
-                "linear",
-                p,
-            )
+            text = kernel_source(
+                       "linear",
+                       p,
+                       contract='packed',
+                       provider='webgpu',
+                   ).render()
             if path.exists() and path.read_text() != text:
                 artifact.unlink(missing_ok=True)
             path.write_text(text)

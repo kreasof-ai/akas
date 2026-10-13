@@ -6,6 +6,8 @@ fp16_half2 multiplies two FP16 values together (FP16 product rounding) and sums
 into FP32; fp16_mma32 uses a padded 32-row FP16 tensor-core tile/FP32 accumulator.
 """
 
+from akas.compilation.selection import source as kernel_source
+
 from pathlib import Path as _Path
 import sys as _sys
 
@@ -40,12 +42,12 @@ def linear_source(parameters, mode):
     if mode not in MODES:
         raise ValueError("unknown FP16 decode experiment")
     if mode == "fp32":
-        return source(
-            "akas.compilation.factories.packed",
-            "packed_baseline_factory",
-            "linear",
-            parameters,
-        )
+        return kernel_source(
+                   "linear",
+                   parameters,
+                   contract='packed-baseline',
+                   provider='cuda',
+               ).render()
     if parameters["r"] != 1:
         raise ValueError("decode candidates require one row")
     k, o, q = parameters["k"], parameters["o"], parameters["type"]

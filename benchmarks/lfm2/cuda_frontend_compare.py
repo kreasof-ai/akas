@@ -1,5 +1,7 @@
 """Compare frontend CUDA bundles with the frozen native implementation."""
 
+from akas.compilation.selection import source as kernel_source
+
 from akas.compilation.paths import source_path
 from akas.compilation.paths import tensor_source
 
@@ -43,12 +45,12 @@ def audit(bundle):
         assert (
             manifest["source_sha256"]
             == hashlib.sha256(
-                source(
-                    "akas.compilation.factories.packed",
-                    "packed_cuda_factory",
+                kernel_source(
                     kind,
                     {**p, **schedule},
-                ).encode()
+                    contract='packed',
+                    provider='cuda',
+                ).render().encode()
             ).hexdigest()
         )
         assert manifest["compiler"]["lowering_sha256"] == digest(lowering)

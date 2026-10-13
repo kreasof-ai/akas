@@ -1,7 +1,7 @@
 """Probe H200 hardware counters separately from serving measurements."""
 
 import modal
-from benchmarks.qwen35.modal_h200 import base_image, with_workspace, volume
+from benchmarks.qwen35.modal_environment import base_image, with_workspace, volume
 
 app = modal.App("tensor-qwen35-h200-counters")
 profiler_image = with_workspace(

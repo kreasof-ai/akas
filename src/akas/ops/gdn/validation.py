@@ -55,8 +55,20 @@ def validation(kind, p, signature):
                 expected["out"][row] = rounded(conv / (1 + np.exp(-conv)))
                 history[:, :2] = history[:, 1:]
                 history[:, 2] = current
+                if (
+                    "checkpoints" in expected
+                    and token < expected["checkpoints"].shape[1]
+                ):
+                    expected["checkpoints"][batch, token] = history
             if p.get("commit", True):
                 expected["state"][request] = history
+    elif kind == "restore":
+        values["accepted"][:] = np.arange(slots) % (chunk + 1)
+        values["lengths"][:] = chunk
+        expected = {name: value.copy() for name, value in values.items()}
+        for batch, count in enumerate(values["accepted"]):
+            if count > 0 and (p.get("full_checkpoints", False) or count < chunk):
+                expected["state"][batch] = values["checkpoints"][batch, count - 1]
     elif kind == "gdn_prepare":
         conv = values["conv"] if "conv" in values else values["qkv"]
         heads, d = values["q"].shape[1:]
@@ -117,6 +129,11 @@ def validation(kind, p, signature):
                 delta = values["beta"][row, :, None] * (v - prediction)
                 matrix += delta[:, :, None] * k[:, None, :]
                 expected["out"][row] = np.einsum("hvk,hk->hv", matrix, q)
+                if (
+                    "checkpoints" in expected
+                    and token < expected["checkpoints"].shape[1]
+                ):
+                    expected["checkpoints"][batch, token] = matrix
             if p.get("commit", True):
                 expected["state"][request] = matrix
     elif kind == "gdn_norm":
@@ -140,7 +157,14 @@ def validation(kind, p, signature):
 
 VALIDATIONS = {
     name: validation
-    for name in ("gdn_conv", "gdn_prepare", "gdn_scan", "gdn_recurrent", "gdn_norm")
+    for name in (
+        "gdn_conv",
+        "gdn_prepare",
+        "gdn_scan",
+        "gdn_recurrent",
+        "gdn_norm",
+        "restore",
+    )
 }
 from akas.ops.gdn.verification import validation as deferred_validation
 

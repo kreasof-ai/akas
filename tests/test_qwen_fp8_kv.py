@@ -1,5 +1,7 @@
 """Independent FP8 KV quantization, persistence and attention quality gates."""
 
+from akas.compilation.selection import source as operation_source
+
 import os
 import numpy as np
 import pytest
@@ -15,17 +17,7 @@ def build(tmp_path, kind, p):
 
     entry = tmp_path / (kind + "-" + str(p.get("kv_dtype", "bfloat16")) + ".py")
     entry.write_text(
-        export_source(
-            "akas.compilation.factories.block_fp8",
-            "decode_factory",
-            kind,
-            p,
-            dependencies=(
-                "tensor.compiler.frontend.source",
-                "tensor.compiler.cuda.lowering",
-                "akas.ops.attention.cuda.quantized",
-            ),
-        )
+        operation_source(kind, p, contract="block-fp8", phase="decode", dependencies=('tensor.compiler.frontend.source', 'tensor.compiler.cuda.lowering', 'akas.ops.attention.cuda.quantized')).render()
     )
     artifact = entry.with_suffix(".tbin")
     build_artifact(

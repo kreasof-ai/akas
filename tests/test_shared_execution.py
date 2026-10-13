@@ -189,16 +189,10 @@ def test_shared_kernel_preserves_each_existing_adapter_abi(
     import importlib
 
     pytest.importorskip("tilelang")
-    family = "packed" if module in ("ggml", "cuda") else "hybrid"
-    factories = {
-        "ggml": ("akas.compilation.factories.packed", "packed_baseline_factory"),
-        "cuda": ("akas.compilation.factories.packed", "packed_cuda_factory"),
-        "hybrid": ("akas.compilation.factories.block_fp8", "decode_factory"),
-        "hybrid_batch": ("akas.compilation.factories.bf16", "batch_factory"),
-    }
-    owner, name = factories[module]
-    factory = getattr(importlib.import_module(owner), name)
-    kernel = factory(kind, parameters)
+    from akas.ops import define
+    contracts = {"ggml":"packed-baseline", "cuda":"packed", "hybrid":"block-fp8", "hybrid_batch":"bf16"}
+    kernel = define(dict(kind=kind,parameters=parameters,contract=contracts[module],
+                         phase="decode" if module=="hybrid" else "forward"))
     observed = [
         (
             kernel.buffer_map[param].name,
@@ -232,22 +226,12 @@ def test_shared_operator_change_invalidates_producer_source(
         )
 
     monkeypatch.setattr(entry, "find_spec", find_spec)
-    family = "hybrid" if module == "hybrid" else "packed"
-    from functools import partial
-    from akas.compilation.emit import export_kernel
-
-    owner = (
-        "akas.compilation.factories.block_fp8"
-        if module == "hybrid"
-        else "akas.compilation.factories.packed"
-    )
-    name = {
-        "hybrid": "decode_factory",
-        "ggml": "packed_baseline_factory",
-        "cuda": "packed_cuda_factory",
-        "webgpu": "packed_webgpu_factory",
-    }[module]
-    source = partial(export_kernel, owner, name)
+    from akas.compilation.selection import source as operation_source
+    contracts = {"hybrid":"block-fp8", "ggml":"packed-baseline", "cuda":"packed", "webgpu":"packed"}
+    def source(kind, parameters):
+        return operation_source(kind,parameters,contract=contracts[module],
+                                provider="webgpu" if module=="webgpu" else "cuda",
+                                phase="decode" if module=="hybrid" else "forward").render()
     first = source("rms", dict(r=2, c=128, eps=1e-6))
     helper.write_bytes(helper.read_bytes() + b"\n# Updated shared implementation.\n")
     assert source("rms", dict(r=2, c=128, eps=1e-6)) != first

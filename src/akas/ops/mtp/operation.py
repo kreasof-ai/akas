@@ -3,7 +3,8 @@
 from akas.ops.registry import variants
 
 
-IMPLEMENTATIONS = (*variants(("mtp_join", "mtp_cast"), "mtp.cuda", "bf16"),)
+IMPLEMENTATIONS = tuple(item for contract in ("bf16", "block-fp8")
+                        for item in variants(("mtp_join", "mtp_cast"), "mtp.cuda", contract))
 
 
 def validation(kind, parameters, signature):
@@ -29,3 +30,11 @@ def validation(kind, parameters, signature):
 
 
 VALIDATIONS = {name:validation for name in ("mtp_join", "mtp_cast")}
+
+
+from akas.ops.contracts import OutputABI
+
+OUTPUT_ARGUMENTS = {}
+
+for _contract in ("reference", "packed", "packed-baseline", "bf16", "block-fp8"):
+    OUTPUT_ARGUMENTS.setdefault(_contract, {}).update({'mtp_join': OutputABI((-1,), ('out',)), 'mtp_cast': OutputABI((-1,), ('out',))})

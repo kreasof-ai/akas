@@ -7,78 +7,25 @@ import numpy as np
 import pytest
 
 from akas.execution.executor import Executor
-from akas.execution.handles import HandleExecutor
-from akas.execution.bindings.block_fp8.resources import BlockFP8Binding
 
 
-class Sequence:
-    config = SimpleNamespace(vocab=100)
-    context = 64
-
-    def __init__(self):
-        self.value = 0
-        self.closed = False
-        self.children = []
-
-    def reset(self):
-        self.value = 0
-
-    def next_token(self, tokens):
-        for token in tokens:
-            self.value = (3 * self.value + token) % 100
-        return self.value
-
-    def new_request(self):
-        request = Sequence()
-        self.children.append(request)
-        return request
-
-    def close(self):
-        self.closed = True
-        for child in self.children:
-            child.close()
-
-
-@pytest.fixture(params=[HandleExecutor, Executor, BlockFP8Binding])
-def executor(request, monkeypatch):
-    kind = request.param
-    if kind is HandleExecutor:
-        model = kind(Sequence(), capacity=8)
-    else:
-        model = object.__new__(kind)
-        Executor.__init__(model, capacity=8, context=64)
-        model.config = SimpleNamespace(vocab=100, layers=())
-        model.values = np.zeros(8, dtype="int32")
-        model.states = {}
-        monkeypatch.setattr(model, "_close_resources", lambda: None)
-        if kind is Executor:
-            def select(count, chunk, **options):
-                def run(slots, sequences, positions):
-                    result = []
-                    for slot, sequence in zip(slots, sequences):
-                        for token in sequence:
-                            model.values[slot] = (3 * model.values[slot] + token) % 100
-                        result.append(int(model.values[slot]))
-                    return result
-                return SimpleNamespace(run=run)
-            model.batches = SimpleNamespace(select=select, owner=model)
-            model._reset_state = lambda slot: model.values.__setitem__(slot, 0)
-        else:
-            model.slots = 8
-            model.position = model.positions
-
-            def reset(slots):
-                model.values[slots] = 0
-                model.positions[slots] = 0
-
-            def forward(tokens):
-                active = tokens >= 0
-                model.values[active] = (3 * model.values[active] + tokens[active]) % 100
-                model.positions[active] += 1
-                return model.values.copy()
-
-            monkeypatch.setattr(model, "reset", reset)
-            monkeypatch.setattr(model, "forward", forward)
+@pytest.fixture
+def executor(monkeypatch):
+    model = Executor(capacity=8, context=64)
+    model.config = SimpleNamespace(vocab=100)
+    model.values = np.zeros(8, dtype="int32")
+    monkeypatch.setattr(model, "_close_resources", lambda: None)
+    def select(count, chunk, **options):
+        def run(slots, sequences, positions):
+            result = []
+            for slot, sequence in zip(slots, sequences):
+                for token in sequence:
+                    model.values[slot] = (3 * model.values[slot] + token) % 100
+                result.append(int(model.values[slot]))
+            return result
+        return SimpleNamespace(run=run)
+    model.batches = SimpleNamespace(select=select, owner=model)
+    model._reset_state = lambda slot: model.values.__setitem__(slot, 0)
     yield model
     model.close()
 

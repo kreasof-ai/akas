@@ -1,5 +1,7 @@
 """Experimental Q8 activation dots; retain the existing full-logit gate."""
 
+from akas.compilation.selection import source as kernel_source
+
 from pathlib import Path as _Path
 import sys as _sys
 
@@ -24,9 +26,12 @@ def run(model, bundle, evidence, out):
     ):
         path = out / (kind + ".py")
         artifact = path.with_suffix(".tbin")
-        text = source(
-            "akas.compilation.factories.packed", "packed_webgpu_factory", kind, p
-        )
+        text = kernel_source(
+                   kind,
+                   p,
+                   contract='packed',
+                   provider='webgpu',
+               ).render()
         if path.exists() and path.read_text() != text:
             artifact.unlink(missing_ok=True)
         path.write_text(text)

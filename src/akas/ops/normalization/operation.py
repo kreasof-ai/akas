@@ -138,3 +138,32 @@ def normalize(graph, x, weight, *, epsilon, name, residual=None, role="scratch")
     else:
         graph("add_rms", parameters, x=x, residual=residual, w=weight, out=out)
     return out
+
+
+IMPLEMENTATIONS += variants(
+    ("add_rms",), "normalization.kernel", "reference",
+    defaults=(("flat", True), ("separate_residual", True)),
+)
+IMPLEMENTATIONS += variants(
+    ("add_rms",), "normalization.kernel", "reference", provider="webgpu",
+    defaults=(("algorithm", "parallel-tree"),),
+)
+
+from akas.ops.normalization.rewrites import fuse_residual_normalization
+
+REWRITES = (fuse_residual_normalization,)
+
+
+# Output locations are part of the operation ABI, independent of compiler passes.
+OUTPUT_ARGUMENTS = {"reference": {'rms': (-1,), 'add_rms': (2, -1)}}
+
+
+from akas.ops.contracts import OutputABI
+
+for _contract in ("reference", "packed", "packed-baseline", "bf16", "block-fp8"):
+    OUTPUT_ARGUMENTS.setdefault(_contract, {}).update({'rms': OutputABI((-1,), ('out',))})
+
+for _contract in ("bf16", "block-fp8"):
+    OUTPUT_ARGUMENTS[_contract]["add_rms"] = OutputABI((1, -1), ("residual", "out"))
+for _contract in ("reference", "packed"):
+    OUTPUT_ARGUMENTS[_contract]["add_rms"] = OutputABI((2, -1), ("residual", "out"))

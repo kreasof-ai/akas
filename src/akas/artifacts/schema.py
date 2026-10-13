@@ -13,7 +13,6 @@ class Source:
     args: tuple = ()
     dependencies: tuple[str, ...] = (
         "tensor.compiler.frontend.source",
-        "akas.ops.normalization.kernel",
     )
     export: bool = True
 

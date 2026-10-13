@@ -27,6 +27,8 @@ measurement. Both consume the same compiled decode phase.
 `models/heads/mtp.py` supplies one head implementation. Captured rounds and deferred
 state use the common executor rather than a separate model runtime.
 
-Migration remains in progress: `bindings/` and the older token-step `model.py` still
-serve unmigrated paths and parity checks. Their functionality must be accounted for
-before deletion; new models should use the compiled program interface above.
+All model families open the same executor. Legacy numerical bindings, independent
+request adapters and token-step runtimes have been removed. Prefill uses qualified
+chunk sizes, skips output-only work on intermediate chunks, and computes final
+outputs through the normal phase. Speculative rounds select qualified windows
+and cache captures by both row count and window width.

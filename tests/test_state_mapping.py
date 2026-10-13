@@ -87,44 +87,176 @@ def test_native_state_algorithms_preserve_math_with_reordered_pool(tmp_path, kin
     rows, pool = 2, 4
     if kind == "gdn_recurrent":
         module = "akas.ops.gdn.cuda.decode"
-        p = dict(slots=rows,heads=2,key=32,value=32,value_tile=16)
+        p = dict(slots=rows, heads=2, key=32, value=32, value_tile=16)
         states = (6,)
     else:
         module = "akas.ops.attention.cuda.prefill"
-        p = dict(slots=rows,chunk=2,capacity=64)
-        states = (1,2)
+        p = dict(slots=rows, chunk=2, capacity=64)
+        states = (1, 2)
     paths = []
     for index in range(2):
-        path = tmp_path/f'kernel-{index}.py'
-        text = (export_source(module,"make_kernel",kind,p,dependencies=()) if index==0 else
-                export_kernel("akas.ops.state.mapping","make_kernel",module,"make_kernel",(kind,p),states,rows,pool))
+        path = tmp_path / f"kernel-{index}.py"
+        text = (
+            export_source(module, "make_kernel", kind, p, dependencies=())
+            if index == 0
+            else export_kernel(
+                "akas.ops.state.mapping",
+                "make_kernel",
+                module,
+                "make_kernel",
+                (kind, p),
+                states,
+                rows,
+                pool,
+            )
+        )
         path.write_text(text)
-        image = path.with_suffix('.tbin')
-        build_artifact(path,image,target="sm_89")
+        image = path.with_suffix(".tbin")
+        build_artifact(path, image, target="sm_89")
         paths.append(image)
     rng = np.random.default_rng(34)
-    mapping = np.array([3,1],dtype="int32")
+    mapping = np.array([3, 1], dtype="int32")
     with tensor.Device() as device:
         baseline, mapped = [device.load(path) for path in paths]
         initial, expected_pool, inputs, full_inputs = {}, {}, [], []
         for index, spec in enumerate(baseline.manifest["arguments"]):
             shape, dtype = tuple(spec["shape"]), spec["dtype"]
-            full_shape = (pool,*shape[1:]) if index in states else shape
+            full_shape = (pool, *shape[1:]) if index in states else shape
             if dtype == "int32":
-                host = np.full(full_shape, 2 if spec["name"]=="lengths" else 3 if spec["name"]=="positions" else 1,dtype="int32")
+                host = np.full(
+                    full_shape,
+                    2
+                    if spec["name"] == "lengths"
+                    else 3
+                    if spec["name"] == "positions"
+                    else 1,
+                    dtype="int32",
+                )
             else:
-                host = rng.normal(0,0.05,full_shape).astype("float32")
-                if dtype == "bfloat16": host = decode_bfloat16(encode_bfloat16(host))
+                host = rng.normal(0, 0.05, full_shape).astype("float32")
+                if dtype == "bfloat16":
+                    host = decode_bfloat16(encode_bfloat16(host))
             if index in states:
                 expected_pool[index] = host.copy()
                 small = host[mapping].copy()
-            else: small = host.copy()
-            inputs.append(device.from_numpy(small,dtype="bfloat16") if dtype=="bfloat16" else device.from_numpy(small))
-            full_inputs.append(device.from_numpy(host,dtype="bfloat16") if dtype=="bfloat16" else device.from_numpy(host))
+            else:
+                small = host.copy()
+            inputs.append(
+                device.from_numpy(small, dtype="bfloat16")
+                if dtype == "bfloat16"
+                else device.from_numpy(small)
+            )
+            full_inputs.append(
+                device.from_numpy(host, dtype="bfloat16")
+                if dtype == "bfloat16"
+                else device.from_numpy(host)
+            )
         request_map = device.from_numpy(mapping)
         baseline.launch(*inputs)
-        mapped.launch(*full_inputs,request_map)
-        np.testing.assert_array_equal(inputs[-1].to_numpy(),full_inputs[-1].to_numpy())
+        mapped.launch(*full_inputs, request_map)
+        np.testing.assert_array_equal(inputs[-1].to_numpy(), full_inputs[-1].to_numpy())
         for index in states:
             expected_pool[index][mapping] = inputs[index].to_numpy()
-            np.testing.assert_array_equal(full_inputs[index].to_numpy(),expected_pool[index])
+            np.testing.assert_array_equal(
+                full_inputs[index].to_numpy(), expected_pool[index]
+            )
+
+
+@pytest.mark.skipif(
+    os.environ.get("TENSOR_QWEN_CUDA") != "1",
+    reason="native mapped state alias regression",
+)
+@pytest.mark.parametrize("implementation", ["view", "nd"])
+def test_mapped_restore_flattens_view_indices_using_view_shape(
+    tmp_path, implementation
+):
+    import numpy as np
+    import tensor
+    from akas.graph import Graph
+    from akas.compilation.compile import produce
+    from akas.execution.forward import Forward
+
+    graph = Graph(contract="block-fp8", phase="commit")
+    saved = graph.buffer("saved", (2, 4, 3, 4), "float32", role="input")
+    state = graph.buffer("state", (4, 3, 4), "float32", role="state")
+    accepted = graph.buffer("accepted", (2,), "int32", role="input")
+    mapping = graph.buffer("mapping", (2,), "int32", role="input")
+    graph(
+        "restore",
+        dict(slots=2, chunk=4, shape=[3, 4], full_checkpoints=True),
+        checkpoints=saved,
+        state=state,
+        accepted=accepted,
+        lengths=accepted,
+    )
+    from akas.ops.contracts import Implementation
+
+    catalog = (
+        (Implementation("restore", "gdn.cuda.verification", "block-fp8"),)
+        if implementation == "view"
+        else None
+    )
+    produce(graph, tmp_path, search=False, catalog=catalog)
+    checkpoints = np.arange(96, dtype="float32").reshape(2, 4, 3, 4)
+    initial = np.arange(48, dtype="float32").reshape(4, 3, 4) * -1 - 1
+    expected = initial.copy()
+    expected[3] = checkpoints[0, 1]
+    with tensor.Device() as device:
+        buffers = {}
+        try:
+            for name, value in (
+                ("saved", checkpoints),
+                ("state", initial),
+                ("accepted", np.array([2, 0], dtype="int32")),
+                ("mapping", np.array([3, 1], dtype="int32")),
+            ):
+                buffers[name] = device.from_numpy(value)
+            with Forward(tmp_path, device, buffers) as forward:
+                forward.run()
+                np.testing.assert_array_equal(buffers["state"].to_numpy(), expected)
+        finally:
+            for value in buffers.values():
+                value.release()
+
+
+@pytest.mark.skipif(
+    os.environ.get("TENSOR_QWEN_CUDA") != "1",
+    reason="native inactive request isolation",
+)
+def test_inactive_collective_state_writes_cannot_overwrite_live_slot_zero(tmp_path):
+    import numpy as np
+    import tensor
+
+    source = tmp_path / "mapped.py"
+    source.write_text("""import tilelang.language as T
+from akas.ops.state.mapping import map_state
+
+def tensor_export():
+    @T.prim_func
+    def original(state:T.Tensor((2,64),"float32"), active:T.Tensor((2,),"int32")):
+        with T.Kernel(2,threads=64) as row:
+            local = T.alloc_fragment((64,),"float32")
+            T.copy(state[row,:],local)
+            for column in T.Parallel(64):
+                local[column] += T.cast(active[row],"float32")
+            T.copy(local,state[row,:])
+    return {"kernel":map_state(original,(0,),rows=2,capacity=4)}
+""")
+    artifact = tmp_path / "mapped.tbin"
+    tensor.build(source, artifact, target="sm_89")
+    with tensor.Device() as device:
+        state = device.zeros((4, 64), "float32")
+        active = device.from_numpy(np.array([1, 0], dtype="int32"))
+        mapping = device.from_numpy(np.array([0, -1], dtype="int32"))
+        kernel = device.load(artifact)
+        try:
+            for _ in range(100):
+                kernel.launch(state, active, mapping)
+            expected = np.zeros((4, 64), dtype="float32")
+            expected[0] = 100
+            np.testing.assert_array_equal(state.to_numpy(), expected)
+        finally:
+            kernel.release()
+            mapping.release()
+            active.release()
+            state.release()

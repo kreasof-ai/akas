@@ -163,3 +163,26 @@ def test_scaling_guard_catches_prefill_cliff_even_when_decode_improves():
     assert losses[0]["case"]["batch"] == 256
     rows[1] = result(256, 113209, 16978)
     assert scaling_regressions(rows, 0.2) == []
+
+
+def test_program_session_forced_step_and_feature_read_use_the_last_phase():
+    from akas.benchmarking.session import Session as ProgramSession
+    calls = []
+    values = np.arange(12, dtype="float32").reshape(4, 3)
+    frame = SimpleNamespace(rows=4, features={"logits": "declared"},
+                            feature=lambda name: SimpleNamespace(to_numpy=lambda: values))
+    executor = SimpleNamespace(capacity=4, context=32, device=object(), config=object(), program={},
+        admit=lambda: 0, release=lambda slot: None,
+        decode_steps=lambda slots, tokens, steps, **options: calls.append((tokens, steps, options)) or [8],
+        batches=SimpleNamespace(select=lambda rows, chunk: frame))
+    session = ProgramSession(executor, batch=1)
+    session.reset()
+    assert session.step([7]) == [8]
+    assert calls == [([7], 1, {"read": True})]
+    actual = session.read_feature("logits")
+    np.testing.assert_array_equal(actual, [[0, 1, 2]])
+    actual[:] = 99
+    assert values[0, 0] == 0
+    session.close()
+    with pytest.raises(ValueError, match="completed token phase"):
+        session.read_feature("logits")

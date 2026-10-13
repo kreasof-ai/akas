@@ -29,14 +29,6 @@ class Engine:
         )
 
     @classmethod
-    def from_independent(cls, model, *, capacity=1, config=None, publish=None):
-        from akas.execution.handles import HandleExecutor
-
-        return cls(
-            HandleExecutor(model, capacity=capacity), config=config, publish=publish
-        )
-
-    @classmethod
     def from_checkpoint(
         cls,
         definition,

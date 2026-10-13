@@ -44,12 +44,12 @@ def validation(kind, p, signature):
         ).reshape(-1)
     elif kind == "last_rows":
         x = values["x"].reshape(r, chunk, p.get("c", p.get("width")))
-        out = x[np.arange(r), np.maximum(values["lengths"] - 1, 0)].copy()
+        out = x[np.arange(r), np.maximum(values["lengths"] - (0 if p.get("all_tokens", False) else 1), 0)].copy()
         out[values["lengths"] == 0] = 0
         expected["out"][:] = out.reshape(expected["out"].shape)
     elif kind == "advance":
         if "position" in values:
-            expected["position"] += np.maximum(values["lengths"] - 1, 0)
+            expected["position"] += np.maximum(values["lengths"] - (0 if p.get("all_tokens", False) else 1), 0)
             expected["active"][:] = values["lengths"] > 0
         else:
             expected["positions"] += np.where(
@@ -76,7 +76,7 @@ def validation(kind, p, signature):
     elif kind == "chunk_last":
         x = values["x"].reshape(r, chunk, p["c"])
         expected["out"][:] = x[
-            np.arange(r), np.maximum(values["lengths"] - 1, 0)
+            np.arange(r), np.maximum(values["lengths"] - (0 if p.get("all_tokens", False) else 1), 0)
         ].reshape(expected["out"].shape)
     else:
         raise ValueError(f"missing control validation for {kind}")

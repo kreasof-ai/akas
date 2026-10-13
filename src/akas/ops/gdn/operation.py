@@ -50,6 +50,16 @@ IMPLEMENTATIONS = (
 )
 
 
+# Non-mutating verification keeps every accepted prefix in its journal.
+IMPLEMENTATIONS += variants(
+    ("gdn_conv", "gdn_scan"),
+    "gdn.cuda.verification",
+    "block-fp8",
+    required=("full_checkpoints",),
+    priority=30,
+)
+
+
 from akas.ops.gdn.validation import VALIDATIONS
 
 
@@ -57,15 +67,26 @@ def separate_workspace(graph, rows, config, *, prefix=""):
     """Declare scratch for separately projected recurrent operands."""
     heads, key, value = config.value_heads, config.key_dim, config.value_dim
     channels = 2 * config.key_heads * key + heads * value
-    specs = {"qkv": (rows, channels), "z": (rows, heads * value),
-             "a": (rows, heads), "b": (rows, heads), "conv": (rows, channels),
-             "gdn_q": (rows, heads, key), "gdn_k": (rows, heads, key),
-             "gdn_v": (rows, heads, value), "gdn_out": (rows, heads, value),
-             "gdn_decay": (rows, heads), "gdn_beta": (rows, heads),
-             "gdn_normal": (rows, heads * value)}
-    return {name: graph.buffer(prefix + name, shape,
-                              "bfloat16" if name == "gdn_normal" else "float32")
-            for name, shape in specs.items()}
+    specs = {
+        "qkv": (rows, channels),
+        "z": (rows, heads * value),
+        "a": (rows, heads),
+        "b": (rows, heads),
+        "conv": (rows, channels),
+        "gdn_q": (rows, heads, key),
+        "gdn_k": (rows, heads, key),
+        "gdn_v": (rows, heads, value),
+        "gdn_out": (rows, heads, value),
+        "gdn_decay": (rows, heads),
+        "gdn_beta": (rows, heads),
+        "gdn_normal": (rows, heads * value),
+    }
+    return {
+        name: graph.buffer(
+            prefix + name, shape, "bfloat16" if name == "gdn_normal" else "float32"
+        )
+        for name, shape in specs.items()
+    }
 
 
 def gated_delta(
@@ -192,3 +213,156 @@ def gated_delta(
         width=width,
         name=prefix + "output",
     )
+
+
+def journal_prefixes(graph, commit, *, slots, chunk, lengths, mode="snapshots"):
+    """Keep native scan snapshots without mutating persistent state until accept.
+
+    Every live prefix has a checkpoint, including the complete window. Zero
+    accepted tokens and discarded verification leave recurrent state unchanged.
+    """
+    from dataclasses import replace
+
+    if mode not in ("snapshots", "recompute"):
+        raise ValueError("unknown recurrent commit policy")
+    commit.buffers = graph.buffers
+    calls = []
+    for call in graph.calls:
+        if call.kind not in ("gdn_conv", "gdn_scan"):
+            calls.append(call)
+            continue
+        if mode == "recompute":
+            from math import prod
+            from akas.graph import Graph
+
+            copies = Graph(contract=graph.contract, phase=graph.phase)
+            copies.buffers = graph.buffers
+            bindings = dict(call.bindings)
+            for name in ("x", "q", "k", "v", "g", "beta"):
+                if name not in bindings:
+                    continue
+                source = graph.buffers[bindings[name]]
+                # Model workspaces can be reused by later blocks; preserve
+                # each layer's operands rather than changing their lifetime.
+                saved = graph.buffer(
+                    "verify.operands." + bindings["state"] + "." + name,
+                    source.shape,
+                    source.dtype,
+                    role="journal",
+                )
+                shape = (prod(source.shape),)
+                source_view = graph.view(saved.name + ".source", source, shape)
+                saved_view = graph.view(saved.name + ".flat", saved, shape)
+                copies(
+                    "copy_buffer",
+                    dict(n=shape[0], dtype=source.dtype),
+                    x=source_view,
+                    out=saved_view,
+                )
+                bindings[name] = saved.name
+            calls.extend(copies.calls)
+            calls.append(
+                replace(
+                    call,
+                    parameters={**call.parameters, "commit": False},
+                    bindings=bindings,
+                )
+            )
+            commit(
+                call.kind,
+                call.parameters,
+                **{name: graph.buffers[value] for name, value in bindings.items()},
+            )
+            continue
+        state = graph.buffers[call.bindings["state"]]
+        saved = graph.buffer(
+            "verify.saved." + state.name,
+            (slots, chunk, *state.shape[1:]),
+            state.dtype,
+            role="journal",
+        )
+        parameters = {**call.parameters, "full_checkpoints": True, "commit": False}
+        calls.append(
+            replace(
+                call,
+                parameters=parameters,
+                bindings={**call.bindings, "checkpoints": saved.name},
+            )
+        )
+        commit(
+            "restore",
+            dict(
+                slots=slots,
+                chunk=chunk,
+                shape=list(state.shape[1:]),
+                full_checkpoints=True,
+            ),
+            checkpoints=saved,
+            state=state,
+            accepted=lengths,
+            lengths=lengths,
+        )
+    graph.calls = calls
+
+
+from akas.ops.gdn.lowering import lower
+
+# Recomputed commit executes the same scan arithmetic on retained operands.
+IMPLEMENTATIONS += variants(
+    ("gdn_conv", "gdn_scan"),
+    "gdn.cuda.prefill",
+    "block-fp8",
+    phase="commit",
+    required=("slots", "chunk"),
+)
+
+IMPLEMENTATIONS += variants(
+    ("restore",),
+    "gdn.restore",
+    "block-fp8",
+    required=("full_checkpoints",),
+    priority=30,
+    factory="restore_kernel",
+    parameters_only=True,
+)
+
+from akas.ops.contracts import OutputABI
+
+
+def _native_conv_outputs(call):
+    if call.parameters.get("full_checkpoints") or "checkpoints" in call.bindings or len(call.arguments) == 6:
+        indexes = (4, 5) if call.parameters.get("commit") is False else (3, 4, 5)
+        names = ("out", "checkpoints") if call.parameters.get("commit") is False else ("state", "out", "checkpoints")
+    else:
+        indexes = (4,) if call.parameters.get("commit") is False else (3, 4)
+        names = ("out",) if call.parameters.get("commit") is False else ("state", "out")
+    return OutputABI(indexes, names)
+
+
+def _native_scan_outputs(call):
+    indexes, names = ((7,), ("out",))
+    if call.parameters.get("commit", True):
+        indexes, names = ((6, 7), ("state", "out"))
+    if call.parameters.get("full_checkpoints") or "checkpoints" in call.bindings or len(call.arguments) == 9:
+        indexes, names = ((*indexes, 8), (*names, "checkpoints"))
+    return OutputABI(indexes, names)
+
+
+OUTPUT_ARGUMENTS = {
+    "bf16": {
+        "gdn_conv": lambda call: OutputABI((5,) if call.parameters.get("commit") is False else (4, 5),
+                                           ("out",) if call.parameters.get("commit") is False else ("state", "out")),
+        "gdn_prepare": OutputABI((4, 5, 6, 7, 8), ("q", "k", "v", "g", "beta")),
+        "gdn_scan": lambda call: OutputABI((8,) if call.parameters.get("commit") is False else (7, 8),
+                                           ("out",) if call.parameters.get("commit") is False else ("state", "out")),
+        "gdn_norm": OutputABI((-1,), ("out",)),
+    },
+    "block-fp8": {
+        "gdn_conv": _native_conv_outputs,
+        "gdn_prepare": OutputABI((5, 6, 7, 8, 9), ("q", "k", "v", "g", "beta")),
+        "gdn_scan": _native_scan_outputs,
+        "gdn_recurrent": OutputABI((6, 7), ("state", "out")),
+        "gdn_norm": OutputABI((-1,), ("out",)),
+        "restore": OutputABI((1,), ("state",)),
+    },
+}

@@ -1,5 +1,7 @@
 """Production CUDA algorithms remain inspectable by the compiler frontend."""
 
+from akas.compilation.selection import source as kernel_source
+
 from pathlib import Path
 import pytest
 
@@ -37,12 +39,12 @@ def test_algorithms_have_ir_loops_and_only_typed_hardware_externs(
 
     path = tmp_path / "kernel.py"
     path.write_text(
-        source(
-            "akas.compilation.factories.packed",
-            "packed_cuda_factory",
+        kernel_source(
             kind,
             parameters,
-        )
+            contract='packed',
+            provider='cuda',
+        ).render()
     )
     spec = export_spec(path)
     externs = []

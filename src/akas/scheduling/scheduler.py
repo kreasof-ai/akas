@@ -18,7 +18,8 @@ class Scheduler:
             raise ValueError("invalid prefill budget")
         self.engine = engine
         self.publish = publish
-        self.prefill_chunk = prefill_chunk
+        geometry = getattr(engine, "prefill_geometry", None)
+        self.prefill_chunk = geometry(prefill_chunk) if geometry is not None else prefill_chunk
         self.prefill_requests = prefill_requests
         self.incoming = Queue()
         self.pending = deque()

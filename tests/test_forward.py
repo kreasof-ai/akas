@@ -23,7 +23,7 @@ def test_new_model_uses_both_providers_without_compiler_branches():
         bundle = compile_plan(forward, provider=provider, target=target)
         assert len(bundle.kernels) == 2
         assert bundle.manifest["forward"] == forward.metadata()
-        assert bundle.kernels[0].source.module == f"akas.ops.linear.{provider}.packed"
+        assert bundle.kernels[0].source.args[3]["module"] == f"akas.ops.linear.{provider}.packed"
         restored = Graph.from_metadata(json.loads(json.dumps(forward.metadata())))
         assert restored.requirements() == forward.requirements()
 
@@ -141,7 +141,7 @@ def test_beam_search_rejects_incorrect_and_batch_regressing_candidates():
     x = forward.buffer("x", (256,), "float32")
     forward("add", {"c": 256, "r": 1}, x, x, x)
     bundle = compile_plan(forward, schedules=profile, catalog=catalog)
-    assert bundle.kernels[0].source.module == "akas.ops." + stable.module
+    assert bundle.kernels[0].source.args[3]["module"] == "akas.ops." + stable.module
     with pytest.raises(ValueError, match="provider/target"):
         compile_plan(forward, target="sm_90a", schedules=profile, catalog=catalog)
 

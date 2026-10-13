@@ -70,16 +70,17 @@ Installed inference imports do not require the compiler or reference frameworks.
 See [compilation](../src/akas/compilation/README.md) and
 [execution](../src/akas/execution/README.md) for file responsibilities.
 
-## Migration status
+## Qualification
 
-The common program path runs dense Qwen and LFM graphs. Dense Qwen's public
-constructor and MTP serving example use the common executor. MoE and packed-weight
-integration is incomplete: `execution/bindings/`, `compilation/recipes/`,
-`compilation/factories/` and existing optimization transforms remain until their
-behavior and performance are qualified through the new path. They are not the
-intended extension interface.
+Dense Qwen, MoE Qwen and LFM public constructors share one Executor and program
+compiler. Legacy execution bindings, independent adapters, numerical recipes,
+factories and transforms have been removed. Operation-owned policies preserve
+optimized physical pipelines; beam search qualifies their registered kernel axes.
+Geometry remains explicit, and pipeline choices remain explicit policies.
 
-Current local qualification includes CPU contracts and CUDA/WebGPU checks. It does
-not qualify unavailable hardware specializations or prove full-model performance
-parity at every batch/context. The previously observed long-context LFM FP8
-trajectory drift remains unresolved.
+Local qualification covers CPU contracts and targeted CUDA/WebGPU correctness,
+request isolation, packed storage, KV codecs, speculative rounds and recomputation.
+State-only prefill preserves persistent state while removing terminal output work.
+Hopper execution and full-model performance parity across every batch/context have
+not been verified on this L40S instance. Long-context LFM FP8 trajectory drift is
+still unresolved.

@@ -215,7 +215,8 @@ def qualify(bundle, out, *, settings=None, device=None):
     import tensor
     from tensor.compiler.search import ScheduleProfile
     from tensor.compiler.tuning import measure as time_kernel
-    from akas.artifacts.schema import Kernel, Source, identity
+    from akas.artifacts.schema import Kernel, identity
+    from akas.compilation.selection import selected_source
     from akas.artifacts.read import artifact_path
     from akas.artifacts.write import publish
     from akas.artifacts.fingerprint import backbone_hashes, _compiler_identity, _hashes
@@ -268,8 +269,12 @@ def qualify(bundle, out, *, settings=None, device=None):
                 try:
                     declaration = Kernel(
                         candidate_key, kind, parameters,
-                        Source(implementation.module_name, "make_kernel",
-                               implementation.source_arguments(parameters)),
+                        selected_source(
+                            dict(kind=kind, parameters=semantic, contract=graph.contract, phase=graph.phase),
+                            {name: value for name, value in parameters.items()
+                             if name not in semantic or value != semantic[name]},
+                            dict(provider=bundle.provider, target=bundle.target), implementation,
+                        ),
                     )
                     original = next(item for item in bundle.kernels if item.key == key)
                     if original.mapping is not None:
@@ -283,7 +288,7 @@ def qualify(bundle, out, *, settings=None, device=None):
                     loaded = device.load(artifact_path(out / "search-kernels", record))
                     from akas.compilation.validate import kernel_bindings
                     kernel_bindings(graph, key, loaded.manifest["arguments"])
-                    validation_parameters = implementation.source_arguments(parameters)[1]
+                    validation_parameters = {**dict(implementation.defaults), **parameters}
                     if original.mapping is None:
                         case = validation(kind, validation_parameters, loaded.manifest["arguments"])
                     else:

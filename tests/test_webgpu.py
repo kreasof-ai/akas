@@ -1,5 +1,7 @@
 """Opt-in real Radeon execution and exact packed-weight gathers."""
 
+from akas.compilation.selection import source as kernel_source
+
 import json
 import os
 from pathlib import Path
@@ -52,7 +54,7 @@ def test_explicit_half_rounding_ties_subnormals_and_random_values(tmp_path):
             "benchmarks.lfm2.dsl_probes",
             "half_conversion_kernel",
             n,
-            dependencies=("akas.compilation.factories.packed",),
+            dependencies=("akas.ops.definition",),
         )
     )
     tensor.build(source, artifact, provider="webgpu")
@@ -151,12 +153,12 @@ def test_q4_embedding_word_boundaries_and_half_subnormal_scales(tmp_path):
     path = tmp_path / "gather.py"
     artifact = tmp_path / "gather.tbin"
     path.write_text(
-        source(
-            "akas.compilation.factories.packed",
-            "packed_webgpu_factory",
+        kernel_source(
             "embedding",
             dict(r=1, c=64, v=4, type=2),
-        )
+            contract='packed',
+            provider='webgpu',
+        ).render()
     )
     tensor.build(path, artifact, provider="webgpu")
     with tensor.Device(provider="webgpu") as device:
@@ -177,12 +179,12 @@ def test_gpu_argmax_ties_tail_and_control(tmp_path):
     path = tmp_path / "argmax.py"
     artifact = tmp_path / "argmax.tbin"
     path.write_text(
-        source(
-            "akas.compilation.factories.packed",
-            "packed_webgpu_factory",
+        kernel_source(
             "argmax",
             dict(n=n),
-        )
+            contract='packed',
+            provider='webgpu',
+        ).render()
     )
     tensor.build(path, artifact, provider="webgpu")
     rng = np.random.default_rng(852)
@@ -243,11 +245,7 @@ def test_packed_decode_projection_block_fields(tmp_path, kind, subgroup, unroll,
     tolerance = np.sum(np.abs(decoded * x), axis=1) * 3e-6 + 1e-10
     path = tmp_path / "projection.py"
     artifact = tmp_path / "projection.tbin"
-    text = source(
-        "akas.compilation.factories.packed",
-        "packed_webgpu_factory",
-        "linear",
-        dict(
+    text = kernel_source("linear", dict(
             r=1,
             k=k,
             o=o,
@@ -256,8 +254,7 @@ def test_packed_decode_projection_block_fields(tmp_path, kind, subgroup, unroll,
             gemv_unroll=unroll,
             gemv_chains=unroll,
             gemv_q6_dot=dot,
-        ),
-    )
+        ), contract='packed', provider='webgpu').render()
     if subgroup == "fallback":
         from benchmarks.lfm2.dsl_probes import subgroup_source
 
@@ -339,12 +336,12 @@ def test_q4_decode_schedules_tail_and_paired_accumulators(
             + 1e-7
         )
         expected = activated * references[1]
-    text = source(
-        "akas.compilation.factories.packed",
-        "packed_webgpu_factory",
-        kind,
-        dict(r=1, k=k, o=o, type=2, sg=bool(subgroup), **schedule),
-    )
+    text = kernel_source(
+               kind,
+               dict(r=1, k=k, o=o, type=2, sg=bool(subgroup), **schedule),
+               contract='packed',
+               provider='webgpu',
+           ).render()
     if subgroup == "fallback":
         from benchmarks.lfm2.dsl_probes import subgroup_source
 
@@ -394,12 +391,12 @@ def test_decode_residual_projection_matches_separate_add(tmp_path, encoding, sub
         path = tmp_path / (kind + ".py")
         artifact = path.with_suffix(".tbin")
         path.write_text(
-            source(
-                "akas.compilation.factories.packed",
-                "packed_webgpu_factory",
+            kernel_source(
                 kind,
                 dict(r=1, k=k, o=o, type=encoding, sg=subgroup),
-            )
+                contract='packed',
+                provider='webgpu',
+            ).render()
         )
         tensor.build(path, artifact, provider="webgpu")
         artifacts.append(artifact)
@@ -427,7 +424,7 @@ def test_native_half_unpack_all_bit_patterns(tmp_path):
             "half_conversion_kernel",
             n,
             True,
-            dependencies=("akas.compilation.factories.packed",),
+            dependencies=("akas.ops.definition",),
         )
     )
     tensor.build(path, artifact, provider="webgpu")
@@ -460,9 +457,12 @@ def test_q8_activation_packing_and_integer_dot_reference(tmp_path):
         path = tmp_path / (kind + ".py")
         artifact = path.with_suffix(".tbin")
         path.write_text(
-            source(
-                "akas.compilation.factories.packed", "packed_webgpu_factory", kind, p
-            )
+            kernel_source(
+                kind,
+                p,
+                contract='packed',
+                provider='webgpu',
+            ).render()
         )
         tensor.build(path, artifact, provider="webgpu")
         artifacts.append(artifact)

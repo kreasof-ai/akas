@@ -47,10 +47,8 @@ def backbone_hashes():
     )
 
 
-def _binding_hashes(binding, *, provider="cuda"):
-    names = _modules(
-        "execution.bindings." + binding, "models", "checkpoints", "generation", "text"
-    )
+def runtime_hashes(provider="cuda"):
+    names = _modules("models", "checkpoints", "generation", "text")
     names.update(
         "tensor.runtime." + name
         for name in (
@@ -87,18 +85,9 @@ def _binding_hashes(binding, *, provider="cuda"):
     return result
 
 
-def packed_hashes(provider="cuda"):
-    return _binding_hashes("packed", provider=provider)
-
-
-def block_fp8_hashes():
-    return _binding_hashes("block_fp8")
-
-
-
 def validate_implementation(manifest, expected):
     if manifest.get("implementation") != expected:
-        raise ValueError("dense implementation changed; regenerate the AOT bundle")
+        raise ValueError("program implementation changed; regenerate the AOT bundle")
 
 
 def _compiler_identity(provider):

@@ -12,17 +12,19 @@ GPU = pytest.mark.skipif(
 )
 
 
-def test_cuda_profile_rows_are_explicit():
-    from akas.ops.schedules.packed_selection import valid_rows
-    from akas.execution.bindings.packed.requirements import requirements
-    from test_contracts import fixture
+def test_common_cuda_request_geometries_are_explicit(tmp_path):
+    from benchmarks.lfm2.diagnostic import fixture
+    from akas.models.lfm2.weights import LFM2Checkpoint
+    from akas.models.lfm2.model import compose_program
 
-    assert valid_rows("cuda", (1, 128), "default")
-    assert valid_rows("cuda", (1, 32, 128), "optimized")
-    assert not valid_rows("cuda", (1, 32, 128), "default")
-    assert not valid_rows("cuda", (1, 128, 32), "optimized")
-    with pytest.raises(ValueError, match="CUDA kernel profile"):
-        requirements(fixture(), 512, cuda_profile="typo")
+    checkpoint = LFM2Checkpoint(fixture(tmp_path/"model.gguf"),tokenizer=False)
+    for rows in (1,4,16,64,256):
+        graph = compose_program(checkpoint,rows=rows,chunk=1,max_requests=256,
+                                max_context=128,provider="cuda")
+        assert graph.buffers["mapping"].shape == (rows,)
+        assert graph.buffers["positions"].shape == (256,)
+    with pytest.raises(ValueError,match="batch/capacity"):
+        compose_program(checkpoint,rows=0,chunk=1,max_requests=256,max_context=128)
 
 
 def build(kind, parameters, directory, generator=None):

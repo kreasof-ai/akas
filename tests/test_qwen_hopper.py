@@ -45,7 +45,7 @@ def test_hopper_prefill_attention_preserves_control_bits(
     artifacts = []
     for module, target in [
         ("attention.cuda.quantized", "sm_90"),
-        ("attention.cuda.hopper_prefill", "sm_90a"),
+        ("attention.hardware.hopper.prefill", "sm_90a"),
     ]:
         schedule = (
             p
@@ -284,13 +284,13 @@ def test_wide_hopper_projections_preserve_control_bits(
                 [dict(p, compact=False, columns=64)],
             )
         selected_module, selected_factory, selected_args = (
-            "moe.cuda.hopper",
+            "moe.hardware.hopper.experts",
             "expert_kernel",
             [p],
         )
         if paired == "persistent":
             control_module, control_factory, control_args = (
-                "moe.cuda.hopper",
+                "moe.hardware.hopper.experts",
                 "expert_kernel",
                 [dict(p)],
             )
@@ -305,7 +305,7 @@ def test_wide_hopper_projections_preserve_control_bits(
             ],
         )
         selected_module, selected_factory, selected_args = (
-            "linear.cuda.hopper",
+            "linear.hardware.hopper.projection",
             "make_kernel",
             [p],
         )
@@ -335,7 +335,7 @@ def test_wide_hopper_projections_preserve_control_bits(
                 *args,
                 dependencies=(
                     "tensor.compiler.frontend.source",
-                    "akas.ops.quantization.cuda.fp8_operand",
+                    "akas.quantization.weights.operands",
                 ),
             )
         )
@@ -465,7 +465,7 @@ def test_hopper_query_tiles_preserve_long_window_causality(
         entry.write_text(
             export_source(
                 (
-                    "akas.ops.attention.cuda.hopper"
+                    "akas.ops.attention.hardware.hopper.attention"
                     if kind == "partial"
                     else "akas.ops.attention.cuda.split"
                 ),
@@ -496,7 +496,7 @@ def test_hopper_query_tiles_preserve_long_window_causality(
             ("decode", "attention.cuda.workspace", "decode", dict(slots=s, capacity=cap)),
             (
                 "control",
-                "attention.cuda.hopper",
+                "attention.hardware.hopper.attention",
                 "partial",
                 dict(
                     slots=s,

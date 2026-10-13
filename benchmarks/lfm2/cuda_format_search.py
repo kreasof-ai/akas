@@ -1,5 +1,7 @@
 """Bounded CUDA projection search with checkpoint weights and independent math."""
 
+from akas.compilation.selection import source as kernel_source
+
 from akas.compilation.paths import source_path
 from akas.compilation.paths import tensor_source
 
@@ -32,9 +34,12 @@ def current_source(kind, p):
             if p["r"] == 1
             else fused_source("akas.ops.linear.cuda.packed", "fused_kernel", kind, p)
         )
-    return baseline_source(
-        "akas.compilation.factories.packed", "packed_baseline_factory", kind, p
-    )
+    return kernel_source(
+               kind,
+               p,
+               contract='packed-baseline',
+               provider='cuda',
+           ).render()
 
 
 def compile_source(text, out):
@@ -90,7 +95,7 @@ def search(
             "src/tensor/compiler/search.py",
             "src/tensor/compiler/cuda/schedules.py",
             "src/tensor/compiler/cuda/lowering.py",
-            *('src/akas/compilation/source.py', 'src/akas/ops/attention/cuda/packed.py', 'src/akas/ops/linear/cuda/packed.py', 'src/akas/ops/normalization/cuda/packed.py', 'src/akas/ops/quantization/cuda/ggml.py', 'src/akas/ops/sequence/cuda/packed.py', 'src/akas/ops/vocabulary/cuda/packed.py', 'src/akas/compilation/factories/packed.py', 'src/akas/ops/schedules/packed_parameters.py'),
+            *('src/akas/compilation/source.py', 'src/akas/ops/attention/cuda/packed.py', 'src/akas/ops/linear/cuda/packed.py', 'src/akas/ops/normalization/cuda/packed.py', 'src/akas/ops/quantization/cuda/ggml.py', 'src/akas/ops/sequence/cuda/packed.py', 'src/akas/ops/vocabulary/cuda/packed.py', 'src/akas/ops/definition.py', 'src/akas/ops/schedules/packed_parameters.py'),
         )
     }
     cases = []

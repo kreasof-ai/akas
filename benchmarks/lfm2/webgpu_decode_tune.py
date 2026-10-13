@@ -4,6 +4,8 @@ Each prepared plan visits every matching layer once. This avoids choosing a
 schedule from a single repeatedly cached matrix that fits in GPU cache.
 """
 
+from akas.compilation.selection import source as kernel_source
+
 from pathlib import Path as _Path
 import sys as _sys
 
@@ -89,12 +91,12 @@ def run(model, out, configs=None):
                 path = out / f"{suffix}-{i}.py"
                 artifact = path.with_suffix(".tbin")
                 path.write_text(
-                    source(
-                        "akas.compilation.factories.packed",
-                        "packed_webgpu_factory",
+                    kernel_source(
                         kind,
                         p,
-                    )
+                        contract='packed',
+                        provider='webgpu',
+                    ).render()
                 )
                 tensor.build(path, artifact, provider="webgpu", cache_dir=out / "cache")
                 kernel = device.load(artifact)

@@ -1,5 +1,7 @@
 """Oracle-gated decode search with the complete F16 matrix traffic per sample."""
 
+from akas.compilation.selection import source as kernel_source
+
 from akas.compilation.paths import source_path
 from akas.compilation.paths import tensor_source
 
@@ -160,12 +162,12 @@ def run(model, out, minutes, extended=False):
             path = out / f"baseline-{o}x{k}.py"
             artifact = path.with_suffix(".tbin")
             path.write_text(
-                source(
-                    "akas.compilation.factories.packed",
-                    "packed_webgpu_factory",
+                kernel_source(
                     "linear",
                     dict(r=1, k=k, o=o, type=1, sg=True),
-                )
+                    contract='packed',
+                    provider='webgpu',
+                ).render()
             )
             artifact.unlink(missing_ok=True)
             tensor.build(path, artifact, provider="webgpu", cache_dir=out / "cache")
@@ -265,12 +267,12 @@ def run(model, out, minutes, extended=False):
                     path = out / f"{name}-{index}.py"
                     artifact = path.with_suffix(".tbin")
                     path.write_text(
-                        source(
-                            "akas.compilation.factories.packed",
-                            "packed_webgpu_factory",
+                        kernel_source(
                             kind,
                             p,
-                        )
+                            contract='packed',
+                            provider='webgpu',
+                        ).render()
                     )
                     artifact.unlink(missing_ok=True)
                     tensor.build(

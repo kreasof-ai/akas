@@ -15,6 +15,8 @@ import time
 import numpy as np
 import tensor
 from akas import LFM2
+from akas.benchmarking.session import Session
+from akas.benchmarking.replay import evaluate
 from benchmarks.lfm2.numpy_reference import Reference as NumpyReference
 from benchmarks.lfm2.vulkan_reference import (
     Reference as NativeReference,
@@ -99,9 +101,13 @@ def run(
             tensor.Device(provider="webgpu", max_buffer_size=max_buffer_size) as device,
             LFM2(model, bundle, device, context=512) as engine,
         ):
+            chunk = max((row["chunk"] for row in engine.program["phases"]
+                         if row["phase"] == "prefill"), default=1)
+            session = Session(engine,batch=1,chunk=chunk)
+            session.reset()
             if device.info["adapter"]["backend_type"] != "Vulkan":
                 raise RuntimeError("this report requires the Vulkan adapter")
-            prompt = engine.tokenizer.chat("What is 2 + 2?")
+            prompt = engine.checkpoint.tokenizer.chat("What is 2 + 2?")
             cases = [{"name": "chat", "tokens": prompt, "reset": True}]
             # Native greedy continuation is a shared forced-token fixture.
             native.reset()
@@ -133,11 +139,11 @@ def run(
             first = None
             for i, case in enumerate(cases):
                 if case["reset"]:
-                    engine.reset()
+                    session.reset()
                     native.reset()
                     if numpy is not None:
                         numpy.reset()
-                actual = engine.forward(case["tokens"])
+                actual = evaluate(session,case["tokens"])
                 expected = (
                     numpy.forward(case["tokens"]) if numpy is not None else cached[i]
                 )
@@ -169,7 +175,7 @@ def run(
                 ([1] * 513, "capacity"),
             ):
                 try:
-                    engine.forward(tokens)
+                    evaluate(session,tokens)
                 except ValueError as error:
                     if message not in str(error):
                         raise
@@ -188,13 +194,19 @@ def run(
                         else (("llama_cpp", native), ("tensor", engine))
                     )
                     for name, runner in order:
-                        runner.reset()
+                        (session if runner is engine else runner).reset()
                         start = time.perf_counter()
-                        runner.forward(prefix)
+                        if runner is engine:
+                            evaluate(session,prefix)
+                        else:
+                            runner.forward(prefix)
                         prefill = time.perf_counter() - start
                         start = time.perf_counter()
                         for token in forced:
-                            runner.forward([token])
+                            if runner is engine:
+                                evaluate(session,[token])
+                            else:
+                                runner.forward([token])
                         elapsed = time.perf_counter() - start
                         if repeat:
                             times[name].append(
@@ -214,6 +226,7 @@ def run(
                     }
                 benchmarks.append(row)
                 print("benchmark", length, row["tensor"], row["llama_cpp"], flush=True)
+            session.close()
             generation = engine.generate("What is 2 + 2?", max_tokens=96)
             generation_samples = {"gpu_greedy": [], "host_greedy": []}
             for repeat in range(repeats + 1):
@@ -221,7 +234,7 @@ def run(
                 for gpu in modes:
                     start = time.perf_counter()
                     result = engine.generate(
-                        "What is 2 + 2?", max_tokens=96, gpu_greedy=gpu
+                        "What is 2 + 2?", max_tokens=96, sampling="device" if gpu else "host"
                     )
                     elapsed = time.perf_counter() - start
                     if result != generation:
@@ -241,7 +254,7 @@ def run(
                 ),
                 "platform": platform.platform(),
                 "adapter": device.info,
-                "allocated_bytes": engine.allocated_bytes,
+                "allocated_bytes": session.allocated_bytes,
                 "llama_cpp": {
                     "commit": COMMIT,
                     "release_archive_sha256": RELEASE_SHA256,
@@ -264,7 +277,8 @@ def run(
                 "validation": validation,
                 "benchmarks": benchmarks,
                 "generation": generation,
-                "dispatches": {r: len(plan) for r, plan in engine.plans.items()},
+                "dispatches": {f"b{rows}-t{chunk}": len(engine.batches.select(rows,chunk).forward.plan)
+                               for rows,chunk in {(row["rows"],row["chunk"]) for row in engine.program["phases"]}},
                 "generation_timing": {
                     "protocol": "full generate call, including prompt tokenization/prefill, reset, greedy sampling and completion; model loading excluded",
                     "generated_tokens": len(generation["generated_tokens"]),
@@ -274,7 +288,7 @@ def run(
                         for name, samples in generation_samples.items()
                     },
                 },
-                "implementation": engine.manifest["implementation"],
+                "implementation": engine.program,
             }
             (out / "report.json").write_text(
                 json.dumps(report, indent=2, ensure_ascii=False) + "\n",

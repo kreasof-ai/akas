@@ -177,7 +177,7 @@ def test_padded_short_attention_preserves_parent_accumulation(tmp_path):
         artifact = entry.with_suffix(".tbin")
         entry.write_text(
             export_source(
-                "akas.ops.attention.cuda.hopper",
+                "akas.ops.attention.hardware.hopper.attention",
                 "partial",
                 dict(
                     slots=slots,

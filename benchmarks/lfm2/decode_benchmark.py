@@ -1,5 +1,7 @@
 """Numerical and timing controls for experimental LFM2 decode schedules."""
 
+from akas.compilation.selection import source as kernel_source
+
 from pathlib import Path as _Path
 import sys as _sys
 
@@ -40,12 +42,12 @@ def micro_attention(out, *, implementation="warp"):
         raise ValueError("unknown attention implementation")
     generator = warp_partial_source if implementation == "warp" else partial_source
     serial = compile_source(
-        source(
-            "akas.compilation.factories.packed",
-            "packed_baseline_factory",
+        kernel_source(
             "attention",
             p,
-        ),
+            contract='packed-baseline',
+            provider='cuda',
+        ).render(),
         out / "kernels",
     )
     paths = {

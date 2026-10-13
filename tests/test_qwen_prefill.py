@@ -1,5 +1,7 @@
 """Chunk boundaries, sparse expert packing and prefill state qualification."""
 
+from akas.compilation.selection import source as operation_source
+
 import os
 import numpy as np
 import pytest
@@ -17,13 +19,7 @@ def build(tmp_path, kind, p):
     entry = tmp_path / (kind + ".py")
     artifact = entry.with_suffix(".tbin")
     entry.write_text(
-        export_source(
-            "akas.compilation.factories.block_fp8",
-            "prefill_factory",
-            kind,
-            p,
-            dependencies=("tensor.compiler.frontend.source",),
-        )
+        operation_source(kind, p, contract="block-fp8", phase="prefill", dependencies=('tensor.compiler.frontend.source',)).render()
     )
     build_artifact(
         entry,
@@ -214,12 +210,7 @@ def test_decode_attention_merge_rounds_before_gate(tmp_path):
     entry = tmp_path / "merge.py"
     artifact = entry.with_suffix(".tbin")
     entry.write_text(
-        source(
-            "akas.compilation.factories.block_fp8",
-            "decode_factory",
-            "attention_merge",
-            dict(r=slots, splits=splits),
-        )
+        operation_source('attention_merge', dict(r=slots, splits=splits), contract="block-fp8", phase="decode").render()
     )
     build_artifact(
         entry,

@@ -1,5 +1,7 @@
 """F16 prefill schedule replay with fused FFNs and complete group weight traffic."""
 
+from akas.compilation.selection import source as kernel_source
+
 from akas.compilation.paths import source_path
 from akas.compilation.paths import tensor_source
 
@@ -439,7 +441,7 @@ def run(
         for p in (
             __file__,
             "src/tensor/compiler/webgpu_lowering.py",
-            *('src/akas/compilation/source.py', 'src/akas/ops/attention/webgpu/packed.py', 'src/akas/ops/linear/webgpu/packed.py', 'src/akas/ops/normalization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/storage.py', 'src/akas/ops/reductions/webgpu.py', 'src/akas/ops/sequence/webgpu/packed.py', 'src/akas/ops/vocabulary/webgpu/packed.py', 'src/akas/compilation/factories/packed.py'),
+            *('src/akas/compilation/source.py', 'src/akas/ops/attention/webgpu/packed.py', 'src/akas/ops/linear/webgpu/packed.py', 'src/akas/ops/normalization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/storage.py', 'src/akas/ops/reductions/webgpu.py', 'src/akas/ops/sequence/webgpu/packed.py', 'src/akas/ops/vocabulary/webgpu/packed.py', 'src/akas/ops/definition.py'),
             'src/akas/execution/bindings/packed/resources.py',
         )
     }
@@ -581,12 +583,12 @@ def run(
                         try:
                             path = out / f"{kind}-{r}-{k}-{o}-{i}.py"
                             path.write_text(
-                                source(
-                                    "akas.compilation.factories.packed",
-                                    "packed_webgpu_factory",
+                                kernel_source(
                                     kind,
                                     p,
-                                )
+                                    contract='packed',
+                                    provider='webgpu',
+                                ).render()
                             )
                             artifact = path.with_suffix(".tbin")
                             artifact.unlink(missing_ok=True)

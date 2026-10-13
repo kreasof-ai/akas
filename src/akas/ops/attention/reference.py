@@ -66,7 +66,7 @@ def make_kernel(kind, p):
         encode = backend.reference_writer(d, chunk=chunk)
         read = backend.reference_decoder()
     else:
-        from akas.ops.quantization.webgpu.storage import round_half
+        from akas.quantization.weights.storage import round_half
 
         rounded = round_half()
 

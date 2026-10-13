@@ -1,5 +1,7 @@
 """Exact packed GEMV search over complete model weight traffic and fresh replay."""
 
+from akas.compilation.selection import source as kernel_source
+
 from pathlib import Path as _Path
 import sys as _sys
 
@@ -127,7 +129,7 @@ def run(model, out, encoding=None):
                 sha256=hashlib.sha256(Path(p).read_bytes()).hexdigest(),
                 text=Path(p).read_text(),
             )
-            for p in (__file__, *('src/akas/compilation/source.py', 'src/akas/ops/attention/webgpu/packed.py', 'src/akas/ops/linear/webgpu/packed.py', 'src/akas/ops/normalization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/storage.py', 'src/akas/ops/reductions/webgpu.py', 'src/akas/ops/sequence/webgpu/packed.py', 'src/akas/ops/vocabulary/webgpu/packed.py', 'src/akas/compilation/factories/packed.py'))
+            for p in (__file__, *('src/akas/compilation/source.py', 'src/akas/ops/attention/webgpu/packed.py', 'src/akas/ops/linear/webgpu/packed.py', 'src/akas/ops/normalization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/packed.py', 'src/akas/ops/quantization/webgpu/storage.py', 'src/akas/ops/reductions/webgpu.py', 'src/akas/ops/sequence/webgpu/packed.py', 'src/akas/ops/vocabulary/webgpu/packed.py', 'src/akas/ops/definition.py'))
         },
         protocol="Native packed weights and F32 activations/output, floating dots, no activation quantization. Every matrix in each group streamed with distinct output; 150ms continuous warmup and 7 two-plan GPU timestamp samples. Control and best three independently replayed in rotating order after three warmups; winners checked on every affected weight with three held-out scales. Timestamp period 10ns.",
     )
@@ -178,12 +180,12 @@ def run(model, out, encoding=None):
                     try:
                         path = out / f"{kind}-{k}-{o}-{q}-{len(row['records'])}.py"
                         path.write_text(
-                            source(
-                                "akas.compilation.factories.packed",
-                                "packed_webgpu_factory",
+                            kernel_source(
                                 kind,
                                 p,
-                            )
+                                contract='packed',
+                                provider='webgpu',
+                            ).render()
                         )
                         artifact = path.with_suffix(".tbin")
                         artifact.unlink(missing_ok=True)

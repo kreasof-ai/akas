@@ -126,6 +126,19 @@ class BatchBank:
             self.frames[key] = self._load(record)
         return self.frames[key]
 
+    def select_window(self, count, tokens, *, phase="verify", limit=None, chunks=None):
+        """Use the smallest qualified window that fits the live token budget."""
+        if type(count) is not int or count < 1 or type(tokens) is not int or tokens < 1:
+            raise ValueError("invalid window request")
+        choices = [row for row in self.records if row["phase"] == phase
+                   and row["rows"] >= count and row["chunk"] >= tokens
+                   and (limit is None or row["chunk"] <= limit)
+                   and (chunks is None or row["chunk"] in chunks)]
+        if not choices:
+            raise ValueError("program has no qualified window for this batch")
+        record = min(choices, key=lambda row: (row["chunk"], row["rows"]))
+        return self.select(count, record["chunk"], phase=phase)
+
     def _load(self, record):
         import json
         from pathlib import Path

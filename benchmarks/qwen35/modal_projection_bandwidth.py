@@ -1,7 +1,7 @@
 """Check packed FP8 operands before timing the bounded projection candidates."""
 
 import modal
-from benchmarks.qwen35.modal_h200 import image, volume
+from benchmarks.qwen35.modal_environment import image, volume
 from benchmarks.qwen35.modal_expert_search import search
 
 app = modal.App("tensor-qwen35-h200-projection-bandwidth")

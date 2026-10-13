@@ -24,6 +24,25 @@ CASES = json.loads(
 )
 
 
+@pytest.mark.parametrize("case",[case for case in CASES if case["profile"].endswith("packed")])
+def test_frozen_packed_kernel_parameters_use_uniform_definitions(case):
+    from akas.compilation.selection import source
+
+    provider = case["options"].get("provider","cuda")
+    for record in case["kernels"]:
+        original = record["source"]
+        kind,parameters = original["args"]
+        contract = "packed-baseline" if original["factory"] == "packed_baseline_factory" else "packed"
+        declaration = source(kind,parameters,contract=contract,provider=provider,
+                             target=case["options"].get("target"))
+        assert declaration.module == "akas.ops.definition"
+        spec,schedule,capabilities,implementation = declaration.args
+        assert spec["kind"] == kind
+        assert spec["parameters"] == parameters
+        assert capabilities["provider"] == provider
+        assert implementation["contract"] == contract
+
+
 @pytest.fixture(scope="module")
 def packed_checkpoint(tmp_path_factory):
     from benchmarks.lfm2.diagnostic import fixture
@@ -33,7 +52,10 @@ def packed_checkpoint(tmp_path_factory):
     )
 
 
-@pytest.mark.parametrize("case", CASES)
+# Retired MoE producer inventories are replaced by complete frozen forward
+# contracts and independently qualified physical policies in test_qwen_graph
+# and test_native_pipeline_policy; those fixtures remain unchanged.
+@pytest.mark.parametrize("case", [case for case in CASES if case["profile"].endswith("bf16")])
 def test_profiles_preserve_original_kernel_sources_and_specializations(
     case, packed_checkpoint, monkeypatch
 ):
@@ -81,6 +103,15 @@ def test_profiles_preserve_original_kernel_sources_and_specializations(
         if isinstance(record["source"], dict):
             assert record["source"]["dependencies"] == ["$shared-operation-closure"]
             del record["source"]["dependencies"]
+            if record["source"]["module"] == "akas.compilation.factories.block_fp8":
+                from akas.ops.registry import select
+                original = record["source"]
+                kind, parameters = original["args"]
+                variant = select(kind, parameters, contract="block-fp8", provider="cuda",
+                                 phase=original["factory"].removesuffix("_factory"), target=None)
+                original["module"] = variant.module_name
+                original["factory"] = variant.factory
+                original["args"] = json.loads(json.dumps(variant.source_arguments(parameters)))
             if record["source"]["module"].startswith("akas.ops.ffn."):
                 from activation_parity import old_dispatch
                 original = record["source"]
@@ -94,7 +125,7 @@ def test_profiles_preserve_original_kernel_sources_and_specializations(
                         parameters.pop("r", None)
                 original["module"] = "akas.ops.activation.kernel"
                 original["args"] = json.loads(json.dumps([kind,parameters]))
-            elif record["source"]["module"].startswith("akas.ops.normalization."):
+            elif record["source"]["module"].startswith("akas.ops.normalization.") and record["source"]["module"] != "akas.ops.normalization.kernel":
                 from normalization_parity import migrated_parameters
                 original = record["source"]
                 kind, parameters = original["args"]
@@ -112,6 +143,17 @@ def test_profiles_preserve_original_kernel_sources_and_specializations(
         assert "tensor.compiler.frontend.source" in dependencies
         if not record["source"]["module"].startswith("akas.compilation.factories."):
             assert not any(name.startswith("akas.execution.") for name in dependencies)
+    # The canonical boundary adds routing data, while leaf specialization is
+    # the unchanged numerical contract checked against the original fixture.
+    for record in actual:
+        source = record["source"]
+        if source["module"] == "akas.ops.definition":
+            assert source["factory"] == "define"
+            spec, schedule, capabilities, choice = source["args"]
+            assert choice["provider"] == capabilities["provider"]
+            record["source"] = dict(module=choice["module"], factory=choice["factory"],
+                                    args=[choice["kernel_kind"],
+                                          {**choice["defaults"], **spec["parameters"], **schedule}])
     if dense:
         # The old inventory also emitted unreachable GDN, merge and fused-head
         # kernels. Only actual forward/commit calls enter the common compiler.
@@ -165,11 +207,13 @@ def test_batched_profile_reuses_different_widths_and_vocabularies():
 
 
 def test_fixed_layout_profile_rejects_incompatible_geometry():
-    from akas.compilation.recipes.block_fp8.decode import plan
+    from akas.models.qwen35.model import compose_moe_program
+    from test_qwen_graph import moe_checkpoint
 
-    config = Qwen35Config(("full_attention",), 1024, 1e-6, 10000)
-    with pytest.raises(ValueError, match="width=2048"):
-        plan(SimpleNamespace(config=replace(config, width=1024)))
+    checkpoint = moe_checkpoint()
+    checkpoint.config = replace(checkpoint.config,width=1024)
+    with pytest.raises(ValueError,match="width=2048"):
+        compose_moe_program(checkpoint,rows=2,chunk=1,max_requests=4,max_context=64)
 
 
 @pytest.fixture
