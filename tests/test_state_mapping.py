@@ -260,3 +260,69 @@ def tensor_export():
             mapping.release()
             active.release()
             state.release()
+
+
+@pytest.mark.parametrize("capacity", [1, 4])
+def test_read_only_state_keeps_mapping_after_simplification(capacity):
+    from akas.ops.attention.reference import make_kernel
+    from akas.ops.state.mapping import map_state
+
+    original = make_kernel("rope", dict(r=1, h=1, d=64, theta=10000.0))
+    import tvm
+    from tvm import tirx as ir
+
+    mapped = map_state(original, (2,), rows=1, capacity=capacity)
+    simplified = ir.transform.Simplify()(tvm.IRModule({"main": mapped}))["main"]
+    reads = []
+    ir.stmt_functor.post_order_visit(
+        simplified.body,
+        lambda node: reads.append(node.buffer.name)
+        if isinstance(node, ir.BufferLoad) else None,
+    )
+    assert "mapping" in reads
+
+
+@pytest.mark.parametrize("provider", ["cuda", "webgpu"])
+@pytest.mark.parametrize("capacity", [1, 4])
+def test_read_only_state_compiles_and_uses_mapped_position(tmp_path, provider, capacity):
+    if os.environ.get("AKAS_LFM_REFERENCE_" + provider.upper()) != "1":
+        pytest.skip("enable hardware state-pool qualification")
+    import tensor
+
+    source = tmp_path / "mapped_rope.py"
+    source.write_text(export_kernel(
+        "akas.ops.state.mapping", "make_kernel",
+        "akas.ops.attention.reference", "make_kernel",
+        ("rope", dict(r=1, h=1, d=64, theta=10000.0)), (2,), 1, capacity,
+    ))
+    rng = np.random.default_rng(512)
+    x = rng.normal(size=64).astype("float32")
+    slot = capacity - 1
+    positions = np.zeros(capacity, dtype="int32")
+    positions[slot] = 3
+    angle = 3 * np.exp(-np.log(10000.0) * 2 / 64 * np.arange(32))
+    expected = np.concatenate((
+        x[:32] * np.cos(angle) - x[32:] * np.sin(angle),
+        x[:32] * np.sin(angle) + x[32:] * np.cos(angle),
+    ))
+    with tensor.Device(provider=provider) as device:
+        artifact = source.with_suffix(".tbin")
+        build_artifact(source, artifact, target=device.info["arch"], provider=provider)
+        with device.load(artifact) as kernel:
+            assert "mapping" in {arg["name"] for arg in kernel.manifest["arguments"]}
+            buffers = [device.from_numpy(x), device.zeros((1, 64), "float32"),
+                       device.from_numpy(positions),
+                       device.from_numpy(np.array([slot], dtype="int32"))]
+            try:
+                kernel.launch(*buffers)
+                np.testing.assert_allclose(buffers[1].to_numpy().ravel(), expected,
+                                           rtol=2e-5, atol=2e-5)
+                if capacity == 1:
+                    from akas.memory.transfer import write
+                    previous = buffers[1].to_numpy()
+                    write(device, buffers[3], np.array([-1], dtype="int32"))
+                    kernel.launch(*buffers)
+                    np.testing.assert_array_equal(buffers[1].to_numpy(), previous)
+            finally:
+                for buffer in buffers:
+                    buffer.release()

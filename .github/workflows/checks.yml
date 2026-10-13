@@ -17,7 +17,7 @@ jobs:
       - run: uv run --no-sync python -m pytest
       - run: uv run --no-sync python tools/bootstrap_nvrtc.py --out build/nvrtc-12.9
       - run: uv run --no-sync python tests/support/diagnostic.py --out build/diagnostic.gguf
-      - run: uv run --no-sync python -m akas compile --definition akas.models.lfm2.model:LFM2 --checkpoint build/diagnostic.gguf --out build/diagnostic --config '{"search":false,"geometries":[[1,1],[1,32]],"max_requests":8,"max_context":384,"target":"sm_86"}'
+      - run: uv run --no-sync python -m akas compile --definition akas.models.lfm2.model:LFM2 --checkpoint build/diagnostic.gguf --out build/diagnostic --config '{"search":false,"geometries":[[1,1],[1,32]],"max_requests":1,"max_context":384,"target":"sm_86"}'
       - run: uv run --no-sync python -m akas compile --definition akas.models.lfm2.model:LFM2Reference --checkpoint build/diagnostic.gguf --out build/reference-cuda --config '{"search":false,"geometries":[[4,1],[4,32]],"max_requests":4,"max_context":32,"provider":"cuda","model_options":{"kv_dtype":"fp8"},"target":"sm_86"}'
       - run: uv run --no-sync python tests/support/checkpoint.py --gguf build/diagnostic.gguf --out build/diagnostic-hf
       - run: uv run --no-sync python -m akas compile --definition akas.models.lfm2.model:LFM2Reference --checkpoint build/diagnostic-hf --checkpoint-options '{"tokenizer":false}' --out build/reference-webgpu --config '{"search":false,"geometries":[[4,1],[4,32]],"max_requests":4,"max_context":32,"provider":"webgpu","model_options":{"kv_dtype":"fp8"}}'

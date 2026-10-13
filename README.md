@@ -21,7 +21,7 @@ search runs by default. Choose capacities and geometries for the workload.
 ```sh
 akas compile --definition akas.models.lfm2.model:LFM2 \
   --checkpoint /path/to/model.gguf --out build/model \
-  --config '{"geometries":[[1,1],[1,128]],"max_requests":8,"max_context":4096,"provider":"cuda","target":"sm_89"}'
+  --config '{"geometries":[[1,1],[1,128]],"max_requests":1,"max_context":4096,"provider":"cuda","target":"sm_89"}'
 akas generate --definition akas.models.lfm2.model:LFM2 \
   --model /path/to/model.gguf --bundle build/model --prompt Hello --max-tokens 32
 ```

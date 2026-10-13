@@ -117,6 +117,8 @@ def map_state(kernel, states, *, rows, capacity):
             // stride
         )
 
+    parameter_data = {buffer.data for buffer in kernel.buffer_map.values()}
+
     def guard_writes(node):
         predicates = []
         if isinstance(node, ir.BufferStore):
@@ -125,6 +127,11 @@ def map_state(kernel, states, *, rows, capacity):
                 predicates.append(
                     mapping[logical_row(node.buffer, node.indices, row[2])] >= 0
                 )
+            elif capacity == 1 and node.buffer.data in parameter_data:
+                # A read-only state address folds to zero in a one-slot pool.
+                # Mask external outputs too, retaining mapping in the ABI and
+                # preventing an inactive row from overwriting its output.
+                predicates.append(mapping[0] >= 0)
         elif isinstance(node, ir.Evaluate):
 
             def written_region(call):
@@ -142,6 +149,8 @@ def map_state(kernel, states, *, rows, capacity):
                         predicates.append(
                             mapping[logical_row(load.buffer, load.indices, row[2])] >= 0
                         )
+                    elif capacity == 1 and load.buffer.data in parameter_data:
+                        predicates.append(mapping[0] >= 0)
                 elif (
                     name in ("tirx.tvm_access_ptr", "tir.tvm_access_ptr")
                     and int(call.args[4]) & 2
@@ -149,6 +158,8 @@ def map_state(kernel, states, *, rows, capacity):
                     row = selected.get(call.args[1])
                     if row is not None:
                         predicates.append(mapping[call.args[2] // row[2]] >= 0)
+                    elif capacity == 1 and call.args[1] in parameter_data:
+                        predicates.append(mapping[0] >= 0)
 
             ir.stmt_functor.post_order_visit(node.value, written_region)
         if predicates:
