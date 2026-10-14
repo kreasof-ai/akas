@@ -12,9 +12,9 @@ class CapturedRound:
         self.engine, self.device = engine, engine.target.device
         self.window = engine.window if window is None else window
         self.verifier = engine.target.batch(count, self.window, verify=True)
-        self.repair = engine.proposer.frame(count, self.window)
-        self.draft = engine.proposer.frame(count, 1) if self.window > 2 else None
         self.rows = self.verifier.rows
+        self.repair = engine.proposer.frame(self.rows, self.window)
+        self.draft = engine.proposer.frame(self.rows, 1) if self.window > 2 else None
         self.journal = None
         self.verification_forward = self.verifier.forward
         self.commit_forward = self.verifier.commit_forward
@@ -101,6 +101,7 @@ class CapturedRound:
                 raise ValueError("request cannot decode")
             control[row] = (request.slot,target.positions[request.slot],remaining,
                             request.output[-1],proposer.cached[request.slot])
+        target._materialize(slots, window=None if self.journal is None else self.window)
         write(self.device,self.control,control)
         self.graph.launch()
         result = self.result.to_numpy()[:len(requests)]

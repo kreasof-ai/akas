@@ -70,7 +70,8 @@ class Journal:
             raise
 
     def materialize(self, slots):
-        if not any(self.dirty[slot] for slot in slots):
+        slots = [slot for slot in slots if self.dirty[slot]]
+        if not slots:
             return
         from akas.memory.transfer import write
         if len(slots) > self.frame.rows:

@@ -19,9 +19,9 @@ class MTPHead:
         self.positions[slot] = 0
         self.cached.pop(slot, None)
 
-    def _run(self, slots, sequences, *, chunk, hidden=None):
+    def _run(self, slots, sequences, *, chunk, hidden=None, rows=None):
         self.target._check()
-        frame = self.target.batches.select(len(slots), chunk, phase=self.phase)
+        frame = self.target.batches.select(rows or len(slots), chunk, phase=self.phase)
         frame.prepare(slots, sequences, self.positions)
         frame.write(frame.features["mode"], np.array([int(hidden is None)], dtype="int32"))
         if hidden is not None:
@@ -45,7 +45,7 @@ class MTPHead:
             end = request.offset + len(sequence)
             following = request.prompt[end] if end < len(request.prompt) else prediction
             shifted.append([*sequence[1:], following])
-        proposed = self._run(slots, shifted, chunk=chunk, hidden=teacher.feature("hidden"))
+        proposed = self._run(slots, shifted, chunk=chunk, hidden=teacher.feature("hidden"), rows=teacher.rows)
         self.cached.update(zip(slots, proposed))
 
     def propose(self, requests, limits, *, target):
@@ -63,7 +63,7 @@ class MTPHead:
         slots = [request.slot for request in requests]
         verifier = target.batches.select(len(slots), chunk, phase="verify")
         self.positions[slots] = positions
-        repaired = self._run(slots, outputs, chunk=verifier.chunk, hidden=verifier.feature("hidden"))
+        repaired = self._run(slots, outputs, chunk=verifier.chunk, hidden=verifier.feature("hidden"), rows=verifier.rows)
         self.cached.update(zip(slots, repaired))
 
     def close(self):

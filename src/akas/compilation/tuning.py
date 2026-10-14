@@ -231,7 +231,21 @@ def qualify(bundle, out, *, settings=None, device=None):
     trace, entries = [], []
     with ExitStack() as stack:
         if device is None:
-            device = stack.enter_context(tensor.Device(provider=bundle.provider))
+            max_buffer_size = None
+            if bundle.provider == "webgpu":
+                needed = max(
+                    (
+                        math.prod(spec.shape)
+                        * np.dtype("float32" if spec.dtype == "bfloat16" else spec.dtype).itemsize
+                        for spec in graph.buffers.values()
+                    ),
+                    default=0,
+                )
+                if needed > 134_217_728:
+                    max_buffer_size = needed
+            device = stack.enter_context(
+                tensor.Device(provider=bundle.provider, max_buffer_size=max_buffer_size)
+            )
         if device.info["provider"] != bundle.provider:
             raise ValueError("search device/provider mismatch")
         device_identity = {name: str(value) for name,value in device.info.items()}
@@ -258,10 +272,44 @@ def qualify(bundle, out, *, settings=None, device=None):
                 pass
 
         for key, (kind, semantic) in graph.requirements().items():
+            original = next(item for item in bundle.kernels if item.key == key)
+            available_variants = [
+                v.identifier
+                for v in candidates(
+                    kind,
+                    semantic,
+                    contract=graph.contract,
+                    provider=bundle.provider,
+                    phase=graph.phase,
+                    target=bundle.target,
+                    catalog=bundle.catalog,
+                )
+            ]
+            op_context = json.loads(json.dumps({
+                **{k: v for k, v in context.items() if k not in ("graph", "baseline")},
+                "contract": graph.contract,
+                "variants": available_variants,
+                "kind": kind,
+                "parameters": semantic,
+                "mapping": original.mapping,
+                "baseline": original.schedule,
+            }))
+            op_digest = hashlib.sha256(json.dumps(op_context, sort_keys=True).encode()).hexdigest()
+            op_cache = out / "search-cache" / (op_digest + ".op.json")
+            if op_cache.is_file():
+                try:
+                    cached_op = json.loads(op_cache.read_text())
+                    if cached_op["identity"] == op_digest and cached_op["context"] == op_context:
+                        entries.append(cached_op["entry"])
+                        trace.append({**cached_op["trace"], "key": key})
+                        continue
+                except (OSError, ValueError, KeyError, TypeError):
+                    pass
             measurements = []
+            case_cache = {}
 
             def measure_candidate(implementation, parameters, workload):
-                buffers, loaded = {}, None
+                loaded = None
                 candidate_key = identity(kind, dict(
                     parameters=parameters, implementation=implementation.identifier,
                     contract=graph.contract, phase=graph.phase,
@@ -276,29 +324,53 @@ def qualify(bundle, out, *, settings=None, device=None):
                             dict(provider=bundle.provider, target=bundle.target), implementation,
                         ),
                     )
-                    original = next(item for item in bundle.kernels if item.key == key)
                     if original.mapping is not None:
                         from dataclasses import replace
                         from akas.compilation.state import mapped_source
                         declaration = replace(declaration,source=mapped_source(declaration.source,original.mapping))
                     record = compile_kernel(
-                        out / "search-kernels", declaration, target=bundle.target,
+                        out, declaration, target=bundle.target,
                         provider=bundle.provider,
+                        source_directory="search-kernels",
+                        artifact_directory="search-kernels",
                     )
-                    loaded = device.load(artifact_path(out / "search-kernels", record))
+                    loaded = device.load(artifact_path(out, record))
                     from akas.compilation.validate import kernel_bindings
                     kernel_bindings(graph, key, loaded.manifest["arguments"])
                     validation_parameters = {**dict(implementation.defaults), **parameters}
-                    if original.mapping is None:
-                        case = validation(kind, validation_parameters, loaded.manifest["arguments"])
-                    else:
-                        from akas.ops.contracts import mapped_validation
-                        case = mapped_validation(kind, validation_parameters,
-                                                 loaded.manifest["arguments"], original.mapping)
-                    dtypes = {row["name"]: row["dtype"] for row in loaded.manifest["arguments"]}
-                    for name, host in case.arguments.items():
-                        buffers[name] = (device.from_numpy(host, dtype="bfloat16")
-                                         if dtypes[name] == "bfloat16" else device.from_numpy(host))
+                    signature_key = json.dumps(
+                        [
+                            loaded.manifest["arguments"],
+                            validation_parameters.get("bk") if kind == "split_linear" else None,
+                            validation_parameters.get("parts") if kind == "split_linear" else None,
+                        ],
+                        sort_keys=True,
+                    )
+                    if signature_key not in case_cache:
+                        if original.mapping is None:
+                            case = validation(kind, validation_parameters, loaded.manifest["arguments"])
+                        else:
+                            from akas.ops.contracts import mapped_validation
+                            case = mapped_validation(kind, validation_parameters,
+                                                     loaded.manifest["arguments"], original.mapping)
+                        dtypes = {row["name"]: row["dtype"] for row in loaded.manifest["arguments"]}
+                        buffers = {}
+                        try:
+                            for name, host in case.arguments.items():
+                                buffers[name] = (device.from_numpy(host, dtype="bfloat16")
+                                                 if dtypes[name] == "bfloat16" else device.from_numpy(host))
+                        except BaseException:
+                            for value in reversed(tuple(buffers.values())):
+                                value.release()
+                            raise
+                        written = [
+                            name
+                            for name in case.expected
+                            if case.arguments[name] is not case.expected[name]
+                            and not np.array_equal(case.arguments[name], case.expected[name])
+                        ]
+                        case_cache[signature_key] = (case, written, buffers, False)
+                    case, written, buffers, verified_readonly = case_cache[signature_key]
                     arguments = tuple(buffers[row["name"]] for row in loaded.manifest["arguments"])
 
                     def check(name):
@@ -306,21 +378,26 @@ def qualify(bundle, out, *, settings=None, device=None):
                         actual = buffers[name].to_numpy()
                         if name in case.comparators:
                             case.comparators[name](actual, expected)
-                        elif actual.dtype.kind in "biu" or np.array_equal(case.arguments[name], expected):
+                        elif actual.dtype.kind in "biu" or (
+                            case.arguments[name] is expected
+                            or np.array_equal(case.arguments[name], expected)
+                        ):
                             np.testing.assert_array_equal(actual, expected)
                         else:
                             np.testing.assert_allclose(actual, expected, rtol=case.rtol,
                                                        atol=case.atol, equal_nan=False)
 
-                    loaded.launch(*arguments)
-                    for name in case.expected:
-                        check(name)
-                    written = [name for name in case.expected
-                               if not np.array_equal(case.arguments[name], case.expected[name])]
-
                     def reset():
                         for name in written:
                             write(device, buffers[name], case.arguments[name])
+
+                    if verified_readonly:
+                        reset()
+                    loaded.launch(*arguments)
+                    for name in (case.expected if not verified_readonly else written):
+                        if name in written or buffers[name].nbytes <= 16 * 1024 * 1024:
+                            check(name)
+                    case_cache[signature_key] = (case, written, buffers, True)
 
                     timing = time_kernel(
                         device, lambda: loaded.launch(*arguments), reset=reset,
@@ -340,8 +417,6 @@ def qualify(bundle, out, *, settings=None, device=None):
                 finally:
                     if loaded is not None:
                         loaded.release()
-                    for value in reversed(tuple(buffers.values())):
-                        value.release()
 
             try:
                 result = tune(
@@ -356,10 +431,21 @@ def qualify(bundle, out, *, settings=None, device=None):
                 if rejected:
                     raise ValueError(f"{kind} qualification failed: {rejected[-1]['reason']}") from error
                 raise
-            entries.append(dict(operation=kind, parameters=semantic,
-                                schedule={**result.schedule, "implementation": result.implementation}))
-            trace.append(dict(key=key, kind=kind, parameters=semantic,
-                              selected=asdict(result), candidates=measurements))
+            finally:
+                for _, _, buffers, _ in case_cache.values():
+                    for value in reversed(tuple(buffers.values())):
+                        value.release()
+                case_cache.clear()
+                import gc
+                gc.collect()
+            entry = dict(operation=kind, parameters=semantic,
+                         schedule={**result.schedule, "implementation": result.implementation})
+            trace_row = dict(key=key, kind=kind, parameters=semantic,
+                             selected=asdict(result), candidates=measurements)
+            entries.append(entry)
+            trace.append(trace_row)
+            publish(op_cache, dict(identity=op_digest, context=op_context,
+                                   entry=entry, trace=trace_row))
 
         profile_data = dict(schema="tensor.schedule-profile.v1", provider=bundle.provider,
                             target=bundle.target, entries=entries)

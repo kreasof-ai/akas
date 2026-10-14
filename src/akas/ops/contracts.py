@@ -88,6 +88,7 @@ class ValidationCase:
 
 def sample_arguments(signature, *, seed=17):
     """Deterministic finite inputs; operation recipes constrain indexes/masks."""
+    import math
     import numpy as np
     from tensor.runtime.dtypes import encode_bfloat16, decode_bfloat16
 
@@ -99,13 +100,29 @@ def sample_arguments(signature, *, seed=17):
         shape, dtype = tuple(spec["shape"]), spec["dtype"]
         if any(type(n) is not int or n <= 0 for n in shape):
             raise ValueError("validation requires resolved positive buffer shapes")
+        total = math.prod(shape)
+        period = 1_048_573
         if dtype == "bfloat16":
-            values = rng.normal(0, 0.15, shape).astype("float32")
-            result[spec["name"]] = decode_bfloat16(encode_bfloat16(values))
+            if total <= period:
+                values = rng.normal(0, 0.15, shape).astype("float32")
+                result[spec["name"]] = decode_bfloat16(encode_bfloat16(values))
+            else:
+                tile = decode_bfloat16(
+                    encode_bfloat16(rng.normal(0, 0.15, period).astype("float32"))
+                )
+                result[spec["name"]] = np.resize(tile, shape)
         elif np.dtype(dtype).kind in "iu":
-            result[spec["name"]] = rng.integers(3, 10, shape, dtype=dtype)
+            if total <= period:
+                result[spec["name"]] = rng.integers(3, 10, shape, dtype=dtype)
+            else:
+                tile = rng.integers(3, 10, period, dtype=dtype)
+                result[spec["name"]] = np.resize(tile, shape)
         else:
-            result[spec["name"]] = rng.normal(0, 0.15, shape).astype(dtype)
+            if total <= period:
+                result[spec["name"]] = rng.normal(0, 0.15, shape).astype(dtype)
+            else:
+                tile = rng.normal(0, 0.15, period).astype(dtype)
+                result[spec["name"]] = np.resize(tile, shape)
     return result
 
 
@@ -129,7 +146,9 @@ def mapped_validation(kind, parameters, signature, mapping):
         spec["shape"] = shape
         names.append(spec["name"])
     local = validation(kind, parameters, original)
-    arguments = sample_arguments(signature)
+    arguments = sample_arguments(
+        [spec for spec in signature if spec["name"] in names or spec["name"] == "mapping"]
+    )
     expected = {name: value.copy() for name, value in arguments.items()}
     slots = np.linspace(0, capacity - 1, rows, dtype="int32")[::-1].copy()
     arguments["mapping"][:] = slots

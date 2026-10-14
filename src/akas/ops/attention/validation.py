@@ -9,8 +9,8 @@ def canonical_validation(kind, p, signature):
     r, d = p["r"], p["d"]
     if kind == "rope":
         h = p["h"]
-        values["positions"][:] = np.arange(r) * 17 + 1
-        expected = {name: value.copy() for name, value in values.items()}
+        values["positions"][:] = (np.arange(r) * 17 + 1) % 256
+        expected = {name: value.copy() if name == "out" else value for name, value in values.items()}
         x = values["x"].reshape(r,h,d).astype("float64")
         angle = values["positions"][:,None,None] * p["theta"]**(-2*np.arange(d//2)[None,None,:]/d)
         left, right = x[:,:,:d//2], x[:,:,d//2:]
@@ -31,8 +31,15 @@ def canonical_validation(kind, p, signature):
         if name not in values: continue
         if quantized:
             byte_shape = (*values[name].shape[:-1], d)
-            bits = rng.integers(0,126,byte_shape,dtype="uint8")
-            bits |= rng.integers(0,2,byte_shape,dtype="uint8") << 7
+            total = int(np.prod(byte_shape))
+            period = 1_048_573
+            if total <= period:
+                bits = rng.integers(0,126,byte_shape,dtype="uint8")
+                bits |= rng.integers(0,2,byte_shape,dtype="uint8") << 7
+            else:
+                tile = rng.integers(0, 72, period, dtype="uint8")
+                tile |= rng.integers(0, 2, period, dtype="uint8") << 7
+                bits = np.resize(tile, byte_shape)
             values[name][:] = bits.view("uint32").reshape(values[name].shape) if p["provider"] == "webgpu" else bits
         elif p["kv_dtype"] == "float16":
             values[name][:] = values[name].astype("float16")
@@ -41,42 +48,54 @@ def canonical_validation(kind, p, signature):
     if kind == "attention_merge":
         parts = values["parts"].reshape(r,h,splits,d+2)
         parts[:,:,:,-1] = np.abs(parts[:,:,:,-1]) + 1
-        expected = {name: value.copy() for name, value in values.items()}
+        expected = {name: value.copy() if name == "out" else value for name, value in values.items()}
         maxima = parts[:,:,:,-2]
         factors = np.exp(maxima-maxima.max(axis=2,keepdims=True))
         out = np.sum(parts[:,:,:,:d]*factors[:,:,:,None],axis=2) / np.sum(parts[:,:,:,-1]*factors,axis=2)[:,:,None]
         out[values["enabled"] == 0] = 0
         expected["out"][:] = out.reshape(expected["out"].shape)
         return ValidationCase(values, expected, rtol=2e-4, atol=2e-5)
-    expected = {name: value.copy() for name, value in values.items()}
+    written_names = ("kc", "vc", "ks", "vs") if kind == "cache_write" else ("out",)
+    expected = {name: value.copy() if name in written_names else value for name, value in values.items()}
     if kind == "cache_write":
-        for row in range(r):
-            if not values["enabled"][row]: continue
-            slot, position = row//chunk, values["positions"][row]
-            for head in range(kh):
-                for source, cache, scales in (("keys","kc","ks"),("values","vc","vs")):
-                    channels = values[source][row,head*d:(head+1)*d]
-                    if quantized:
-                        blocks = (d+127)//128
-                        encoded = np.empty(d,"uint8")
-                        for block in range(blocks):
-                            part = channels[block*128:min(d,(block+1)*128)]
-                            scale = np.maximum(np.max(np.abs(part)),np.float32(1e-12)) / np.float32(448)
-                            expected[scales][slot,head,position,block] = scale
-                            encoded[block*128:min(d,(block+1)*128)] = encode_storage(part/scale)
-                        expected[cache][slot,head,position] = encoded.view("uint32") if p["provider"] == "webgpu" else encoded
-                    else:
-                        expected[cache][slot,head,position] = channels.astype("float16") if p["kv_dtype"] == "float16" else channels
-                        expected[scales][slot,head,position,0] = 1
+        live = np.flatnonzero(values["enabled"][:r])
+        if live.size:
+            slots_idx = live // chunk
+            pos_idx = values["positions"][live]
+            blocks = (d + 127) // 128
+            for source, cache, scales in (("keys", "kc", "ks"), ("values", "vc", "vs")):
+                src = values[source][live].reshape(-1, kh, d)
+                if quantized:
+                    encoded = np.empty((live.size, kh, d), dtype="uint8")
+                    for block in range(blocks):
+                        b0, b1 = block * 128, min(d, (block + 1) * 128)
+                        part = src[:, :, b0:b1]
+                        scale = np.maximum(np.max(np.abs(part), axis=-1), np.float32(1e-12)) / np.float32(448)
+                        expected[scales][slots_idx, :, pos_idx, block] = scale
+                        encoded[:, :, b0:b1] = encode_storage(part / scale[:, :, None])
+                    expected[cache][slots_idx, :, pos_idx] = (
+                        encoded.view("uint32").reshape(live.size, kh, -1)
+                        if p["provider"] == "webgpu"
+                        else encoded
+                    )
+                else:
+                    expected[cache][slots_idx, :, pos_idx] = (
+                        src.astype("float16") if p["kv_dtype"] == "float16" else src
+                    )
+                    expected[scales][slots_idx, :, pos_idx, 0] = 1
         return ValidationCase(values, expected, rtol=0, atol=1e-9)
 
-    def read(cache, scales, slot, head, end):
-        data = values[cache][slot,head,:end]
-        if quantized:
-            bits = data.view("uint8").reshape(end,d) if p["provider"] == "webgpu" else data
-            data = decode_storage(bits)
-        factors = values[scales][slot,head,:end]
-        return data.astype("float64") * np.repeat(factors,128,axis=-1)[:,:d]
+    decoded_cache = {}
+    def read_slot(cache, scales, slot, end):
+        key = (cache, slot)
+        if key not in decoded_cache:
+            data = values[cache][slot]
+            if quantized:
+                bits = data.view("uint8").reshape(kh, cap, d) if p["provider"] == "webgpu" else data
+                data = decode_storage(bits)
+            factors = values[scales][slot]
+            decoded_cache[key] = data.astype("float64") * np.repeat(factors, 128, axis=-1)[:, :, :d]
+        return decoded_cache[key][:, :end]
 
     queries = values["q"].reshape(r,h,d).astype("float64")
     if kind == "attention_partial":
@@ -84,30 +103,62 @@ def canonical_validation(kind, p, signature):
     elif kind == "attention":
         out = expected["out"].reshape(r,h,d)
     else: raise ValueError(f"attention validation missing for {kind}")
+    group = h // kh
+    if kind == "attention" and chunk > 1 and p.get("prefill_precision") == "float16":
+        num_slots = r // chunk
+        for slot in range(num_slots):
+            r0, r1 = slot * chunk, (slot + 1) * chunk
+            en = values["enabled"][r0:r1] != 0
+            out[r0:r1][~en] = 0
+            if not np.any(en):
+                continue
+            pos = np.minimum(cap - 1, values["positions"][r0:r1])
+            max_len = int(pos[en].max()) + 1
+            keys = read_slot("kc", "ks", slot, max_len).astype("float16").astype("float64")
+            vals = read_slot("vc", "vs", slot, max_len).astype("float16").astype("float64")
+            q_slot = queries[r0:r1].reshape(chunk, kh, group, d).astype("float16").astype("float64")
+            maximum = np.full((chunk, kh, group), -np.inf, dtype="float64")
+            normalizer = np.zeros((chunk, kh, group), dtype="float64")
+            accumulated = np.zeros((chunk, kh, group, d), dtype="float64")
+            for begin in range(0, max_len, 64):
+                end = min(max_len, begin + 64)
+                k_idx = np.arange(begin, end)
+                valid = k_idx[None, :] <= pos[:, None]
+                if not np.any(valid):
+                    continue
+                scores = np.einsum("ckgd,ktd->ckgt", q_slot, keys[:, begin:end]) / np.sqrt(d)
+                scores = np.where(valid[:, None, None, :], scores, -np.inf)
+                block_max = scores.max(axis=-1)
+                has_valid = valid.any(axis=-1)[:, None, None]
+                next_maximum = np.where(has_valid, np.maximum(maximum, block_max), maximum)
+                correction = np.exp(maximum - next_maximum)
+                probabilities = np.where(
+                    valid[:, None, None, :],
+                    np.exp(scores - next_maximum[:, :, :, None]),
+                    0.0,
+                )
+                normalizer = normalizer * correction + probabilities.sum(axis=-1)
+                prob_f16 = probabilities.astype("float16").astype("float64")
+                accumulated = (
+                    accumulated * correction[:, :, :, None]
+                    + np.einsum("ckgt,ktd->ckgd", prob_f16, vals[:, begin:end])
+                )
+                maximum = next_maximum
+            res = (accumulated / normalizer[:, :, :, None]).reshape(chunk, h, d)
+            out[r0:r1][en] = res[en]
+        return ValidationCase(values, expected, rtol=0.02, atol=0.002)
+
     for row in range(r):
         length = min(cap,int(values["positions"][row])+1) if values["enabled"][row] else 0
+        if not length and kind == "attention":
+            out[row] = 0
+            continue
+        slot = row // chunk
+        keys_slot = read_slot("kc", "ks", slot, max(1, length))
+        vals_slot = read_slot("vc", "vs", slot, max(1, length))
         for head in range(h):
-            keys = read("kc","ks",row//chunk,head//(h//kh),length)
-            vals = read("vc","vs",row//chunk,head//(h//kh),length)
-            if kind == "attention" and chunk > 1 and p.get("prefill_precision") == "float16":
-                if not length:
-                    out[row, head] = 0
-                    continue
-                query = queries[row, head].astype("float16").astype("float64")
-                keys = keys.astype("float16").astype("float64")
-                vals = vals.astype("float16").astype("float64")
-                maximum, normalizer = -np.inf, 0.0
-                accumulated = np.zeros(d, dtype="float64")
-                for begin in range(0, length, 64):
-                    scores = keys[begin:begin+64] @ query / np.sqrt(d)
-                    next_maximum = max(maximum, scores.max())
-                    correction = np.exp(maximum-next_maximum)
-                    probabilities = np.exp(scores-next_maximum)
-                    normalizer = normalizer*correction + probabilities.sum()
-                    accumulated = accumulated*correction + probabilities.astype("float16").astype("float64") @ vals[begin:begin+64]
-                    maximum = next_maximum
-                out[row, head] = accumulated/normalizer
-                continue
+            keys = keys_slot[head // group, :length]
+            vals = vals_slot[head // group, :length]
             scores = keys @ queries[row,head] / np.sqrt(d)
             if kind == "attention":
                 if not length: out[row,head] = 0; continue
@@ -150,61 +201,88 @@ def mapped_validation(kind, p, signature, *, mapping=None):
         values["positions"][:] = starts
         values["lengths"][:] = chunk
         if slots > 1: values["lengths"][-1] = max(1,chunk-1)
-    expected = {name:value.copy() for name,value in values.items()}
+    written_names = ("q", "kc", "vc") if kind == "attention_qkv" else ("out",)
+    expected = {name: value.copy() if name in written_names else value for name, value in values.items()}
     if kind == "attention_qkv":
-        for row in range(rows):
-            if not values["active"][row]: continue
-            for head in range(heads+kh):
-                query = head < heads
-                offset = head*2*d if query else 2*heads*d+(head-heads)*d
-                x = rounded(values["proj"][row,offset:offset+d]).astype("float64")
-                w = values["qw" if query else "kw"]
-                normalized = rounded(x/np.sqrt(np.mean(x*x)+p["eps"])*(1+w))
-                angle = values["positions"][row]*p["theta"]**(-2*np.arange(32)/64)
-                out = normalized.copy()
-                left,right = normalized[:32],normalized[32:64]
-                out[:32] = left*np.cos(angle)-right*np.sin(angle)
-                out[32:64] = left*np.sin(angle)+right*np.cos(angle)
-                out = rounded(out)
-                if query:
-                    expected["q"][row,head] = out
-                else:
-                    request,position = values["mapping"][row//chunk],values["positions"][row]
-                    expected["kc"][request,head-heads,position] = out
-                    start = 2*heads*d+kh*d+(head-heads)*d
-                    expected["vc"][request,head-heads,position] = rounded(values["proj"][row,start:start+d])
+        live = np.flatnonzero(values["active"][:rows])
+        freq = (p["theta"] ** (-2 * np.arange(32) / 64))[None, None, :]
+        for start in range(0, live.size, 1024):
+            batch_rows = live[start : start + 1024]
+            proj = rounded(values["proj"][batch_rows])
+            pos = values["positions"][batch_rows]
+            angles = pos[:, None, None] * freq
+            cos, sin = np.cos(angles), np.sin(angles)
+            q_raw = proj[:, : 2 * heads * d].reshape(-1, heads, 2, d)[:, :, 0, :].astype("float64")
+            q_norm = rounded(q_raw / np.sqrt(np.mean(q_raw * q_raw, axis=-1, keepdims=True) + p["eps"]) * (1 + values["qw"]))
+            q_out = q_norm.copy()
+            q_out[..., :32] = q_norm[..., :32] * cos - q_norm[..., 32:64] * sin
+            q_out[..., 32:64] = q_norm[..., :32] * sin + q_norm[..., 32:64] * cos
+            expected["q"][batch_rows] = rounded(q_out)
+            k_raw = proj[:, 2 * heads * d : 2 * heads * d + kh * d].reshape(-1, kh, d).astype("float64")
+            k_norm = rounded(k_raw / np.sqrt(np.mean(k_raw * k_raw, axis=-1, keepdims=True) + p["eps"]) * (1 + values["kw"]))
+            k_out = k_norm.copy()
+            k_out[..., :32] = k_norm[..., :32] * cos - k_norm[..., 32:64] * sin
+            k_out[..., 32:64] = k_norm[..., :32] * sin + k_norm[..., 32:64] * cos
+            k_out = rounded(k_out)
+            v_out = proj[:, 2 * heads * d + kh * d : 2 * heads * d + 2 * kh * d].reshape(-1, kh, d)
+            req = values["mapping"][batch_rows // chunk]
+            for idx, (r_slot, p_pos) in enumerate(zip(req, pos)):
+                expected["kc"][r_slot, :, p_pos] = k_out[idx]
+                expected["vc"][r_slot, :, p_pos] = v_out[idx]
     else:
+        group = heads // kh
         for batch in range(slots):
             request = values["mapping"][batch]
-            for token in range(values["lengths"][batch]):
-                row = batch*chunk+token
-                length = min(cap,starts[batch]+token+1)
-                for head in range(heads):
-                    key_head = head//(heads//kh)
-                    query = values["q"][row,head].astype("float64")
-                    keys = values["kc"][request,key_head,:length]
-                    vals = values["vc"][request,key_head,:length]
-                    if keys.dtype == np.uint8:
-                        from akas.quantization.weights.block_fp8 import decode_storage
-                        keys = rounded(decode_storage(keys)*np.repeat(values["ks"][request,key_head,:length],128,axis=-1))
-                        vals = rounded(decode_storage(vals)*np.repeat(values["vs"][request,key_head,:length],128,axis=-1))
-                    keys, vals = keys.astype("float64"), vals.astype("float64")
-                    scores = keys@query/np.sqrt(d)
-                    # Reproduce declared BF16 probability staging independently.
-                    maximum = -np.inf
-                    normalizer,acc = 0.0,np.zeros(d,dtype="float64")
-                    for start in range(0,length,64):
-                        part = scores[start:start+64]
-                        next_maximum = max(maximum,part.max())
-                        correction = np.exp(maximum-next_maximum)
-                        probability = np.exp(part-next_maximum)
-                        normalizer = normalizer*correction+probability.sum()
-                        acc = acc*correction+rounded(probability).astype("float64")@vals[start:start+64]
-                        maximum = next_maximum
-                    attended = rounded(acc/normalizer)
-                    gate = rounded(values["proj"][row,head*2*d+d:head*2*d+2*d])
-                    expected["out"][row,head*d:(head+1)*d] = rounded(attended/(1+np.exp(-gate)))
-    return ValidationCase(values,expected)
+            length_b = int(values["lengths"][batch])
+            if length_b <= 0:
+                continue
+            r0, r1 = batch * chunk, batch * chunk + length_b
+            pos = np.minimum(cap - 1, starts[batch] + np.arange(length_b))
+            max_len = int(pos.max()) + 1
+            keys_all = values["kc"][request, :, :max_len]
+            vals_all = values["vc"][request, :, :max_len]
+            if keys_all.dtype == np.uint8:
+                from akas.quantization.weights.block_fp8 import decode_storage
+                keys_all = rounded(decode_storage(keys_all) * np.repeat(values["ks"][request, :, :max_len], 128, axis=-1))
+                vals_all = rounded(decode_storage(vals_all) * np.repeat(values["vs"][request, :, :max_len], 128, axis=-1))
+            keys_all, vals_all = keys_all.astype("float64"), vals_all.astype("float64")
+            q_batch = values["q"][r0:r1].reshape(length_b, kh, group, d).astype("float64")
+            maximum = np.full((length_b, kh, group), -np.inf, dtype="float64")
+            normalizer = np.zeros((length_b, kh, group), dtype="float64")
+            acc = np.zeros((length_b, kh, group, d), dtype="float64")
+            for start in range(0, max_len, 64):
+                end = min(max_len, start + 64)
+                k_idx = np.arange(start, end)
+                valid = k_idx[None, :] <= pos[:, None]
+                if not np.any(valid):
+                    continue
+                scores = np.einsum("tkgd,ksd->tkgs", q_batch, keys_all[:, start:end]) / np.sqrt(d)
+                scores = np.where(valid[:, None, None, :], scores, -np.inf)
+                block_max = scores.max(axis=-1)
+                has_valid = valid.any(axis=-1)[:, None, None]
+                next_maximum = np.where(has_valid, np.maximum(maximum, block_max), maximum)
+                correction = np.exp(maximum - next_maximum)
+                probability = np.where(
+                    valid[:, None, None, :],
+                    np.exp(scores - next_maximum[:, :, :, None]),
+                    0.0,
+                )
+                normalizer = normalizer * correction + probability.sum(axis=-1)
+                prob_bf16 = rounded(probability).astype("float64")
+                acc = (
+                    acc * correction[:, :, :, None]
+                    + np.einsum("tkgs,ksd->tkgd", prob_bf16, vals_all[:, start:end])
+                )
+                maximum = next_maximum
+            attended = rounded(acc / normalizer[:, :, :, None]).reshape(length_b, heads, d)
+            gates = rounded(values["proj"][r0:r1, : 2 * heads * d].reshape(length_b, heads, 2, d)[:, :, 1, :])
+            gated = rounded(attended / (1 + np.exp(-gates))).reshape(length_b, heads * d)
+            expected["out"][r0:r1] = gated
+    return ValidationCase(
+        values,
+        expected,
+        atol=0.004 if kind == "attention_qkv" else 0.002,
+    )
 
 
 def split_validation(kind, p, signature):

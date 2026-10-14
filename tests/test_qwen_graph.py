@@ -334,23 +334,13 @@ def test_proposal_graph_declares_shared_embedding_and_separate_head_state():
     assert checkpoint().storage_specs(branch="all").keys() == (checkpoint().storage_specs().keys() | checkpoint().storage_specs(branch="mtp").keys())
 
 
-@pytest.mark.skipif(os.environ.get("TENSOR_QWEN_CUDA") != "1", reason="shared executor MTP qualification")
-@pytest.mark.parametrize("capture,deferred", [(False,False),(True,False),(True,True)])
-def test_mtp_head_uses_common_verification_and_repair_without_native_runtime(tmp_path, capture, deferred):
-    import tensor
+@pytest.fixture(scope="module")
+def mtp_program(tmp_path_factory):
+    from pathlib import Path
     from akas.compilation.compile import compile_program
     from akas.models.qwen35.model import compose_dense
-    from akas.execution.executor import Executor
-    from akas.models.heads.mtp import MTPHead
-    from akas.generation.speculative.decoding import SpeculativeDecoder
 
     loaded = checkpoint()
-    def definition(checkpoint, *, rows, chunk, max_requests, max_context, provider, phase=None):
-        return compose_dense(checkpoint, slots=rows, chunk=chunk, pool=max_requests,
-                             context=max_context, verify=phase=="verify", draft=phase=="proposal")
-    compile_program(loaded, tmp_path, definition=definition,
-                    geometries=[(2,1),(2,4),(2,4,"verify"),(2,1,"proposal"),(2,4,"proposal")],
-                    max_requests=4, max_context=64, upload_options={"branch":"all"}, round_windows=(4,), deferred=deferred, search=False)
     def upload(device, **options):
         rng = np.random.default_rng(53)
         result = {}
@@ -359,8 +349,86 @@ def test_mtp_head_uses_common_verification_and_repair_without_native_runtime(tmp
             result[name] = device.from_numpy(values, dtype="bfloat16") if dtype=="bfloat16" else device.from_numpy(values)
         return result
     loaded.upload = upload
+    reused = os.environ.get("AKAS_TEST_QWEN_MTP_PROGRAM")
+    if reused and Path(reused).joinpath("program.json").is_file():
+        return loaded, Path(reused)
+    path = Path(reused) if reused else tmp_path_factory.mktemp("qwen-mtp")
+    def definition(checkpoint, *, rows, chunk, max_requests, max_context, provider, phase=None):
+        return compose_dense(checkpoint, slots=rows, chunk=chunk, pool=max_requests,
+                             context=max_context, verify=phase=="verify", draft=phase=="proposal")
+    compile_program(
+        loaded, path, definition=definition,
+        geometries=[
+            (2, 1), (2, 4),
+            (2, 2, "verify"), (1, 4, "verify"), (2, 4, "verify"),
+            (1, 1, "proposal"), (2, 1, "proposal"),
+            (2, 2, "proposal"), (1, 4, "proposal"), (2, 4, "proposal"),
+        ],
+        max_requests=4, max_context=64, upload_options={"branch": "all"},
+        round_windows=(2, 4), deferred=True, search=False,
+    )
+    return loaded, path
+
+
+def _step_speculative_and_baseline(decoder, head, baseline, active_requests):
+    first_expected = baseline.decode(
+        [request.slot for request in active_requests],
+        [request.output[-1] for request in active_requests],
+    )
+    head.cached.update((request.slot, token) for request, token in zip(active_requests, first_expected))
+    emitted = decoder.decode_many(active_requests)
+    expected = [[token] for token in first_expected]
+    previous = list(first_expected)
+    for index in range(1, max(map(len, emitted))):
+        live = [row for row, tokens in enumerate(emitted) if index < len(tokens)]
+        predicted = baseline.decode(
+            [active_requests[row].slot for row in live],
+            [previous[row] for row in live],
+        )
+        for row, token in zip(live, predicted):
+            expected[row].append(token)
+            previous[row] = token
+    assert emitted == expected
+    for request, tokens in zip(active_requests, emitted):
+        request.output.extend(tokens)
+    np.testing.assert_array_equal(decoder.target.positions, baseline.positions)
+    np.testing.assert_array_equal(head.positions, decoder.target.positions)
+    assert not decoder.target.pending
+    return emitted
+
+
+def _assert_persistent_state_matches(target, baseline, slots):
+    np.testing.assert_allclose(
+        target.batches.states["state.0.0"].to_numpy()[slots],
+        baseline.batches.states["state.0.0"].to_numpy()[slots],
+        rtol=1e-5, atol=1e-6,
+    )
+    np.testing.assert_allclose(
+        target.batches.states["state.0.1"].to_numpy()[slots],
+        baseline.batches.states["state.0.1"].to_numpy()[slots],
+        rtol=1e-5, atol=1e-6,
+    )
+    for slot in slots:
+        pos = int(baseline.positions[slot])
+        for kv_name in ("state.1.0", "state.1.1"):
+            np.testing.assert_allclose(
+                target.batches.states[kv_name].to_numpy()[slot, :, :pos, :],
+                baseline.batches.states[kv_name].to_numpy()[slot, :, :pos, :],
+                rtol=1e-5, atol=1e-6,
+            )
+
+
+@pytest.mark.skipif(os.environ.get("TENSOR_QWEN_CUDA") != "1", reason="shared executor MTP qualification")
+@pytest.mark.parametrize("capture,deferred", [(False,False),(True,False),(True,True)])
+def test_mtp_head_uses_common_verification_and_repair_without_native_runtime(mtp_program, capture, deferred):
+    import tensor
+    from akas.execution.executor import Executor
+    from akas.models.heads.mtp import MTPHead
+    from akas.generation.speculative.decoding import SpeculativeDecoder
+
+    loaded, program_path = mtp_program
     with tensor.Device() as device:
-        with Executor.from_program(loaded, tmp_path, device) as target, Executor.from_program(loaded, tmp_path, device) as baseline:
+        with Executor.from_program(loaded, program_path, device) as target, Executor.from_program(loaded, program_path, device) as baseline:
             head = MTPHead(target)
             decoder = SpeculativeDecoder(target, head, window=4, capture=capture, deferred=deferred)
             requests = []
@@ -373,29 +441,127 @@ def test_mtp_head_uses_common_verification_and_repair_without_native_runtime(tmp
             for request, token in zip(requests, first):
                 request.output.append(token)
             for _ in range(2):
-                first_expected = baseline.decode([request.slot for request in requests], [request.output[-1] for request in requests])
-                head.cached.update((request.slot, token) for request,token in zip(requests,first_expected))
-                emitted = decoder.decode_many(requests)
+                emitted = _step_speculative_and_baseline(decoder, head, baseline, requests)
                 assert all(len(tokens) >= 2 for tokens in emitted)
-                expected = [[token] for token in first_expected]
-                previous = list(first_expected)
-                for index in range(1,max(map(len, emitted))):
-                    active = [row for row, tokens in enumerate(emitted) if index < len(tokens)]
-                    predicted = baseline.decode([requests[row].slot for row in active], [previous[row] for row in active])
-                    for row, token in zip(active, predicted):
-                        expected[row].append(token)
-                        previous[row] = token
-                assert emitted == expected
-                for request, tokens in zip(requests, emitted):
-                    request.output.extend(tokens)
-                np.testing.assert_array_equal(target.positions, baseline.positions)
-                np.testing.assert_array_equal(head.positions, target.positions)
-                assert not target.pending
-            target._materialize([request.slot for request in requests])
-            np.testing.assert_allclose(target.batches.states["state.0.0"].to_numpy(), baseline.batches.states["state.0.0"].to_numpy(), rtol=1e-5, atol=1e-6)
+            slots = [request.slot for request in requests]
+            target._materialize(slots)
+            _assert_persistent_state_matches(target, baseline, slots)
             for request in requests:
                 decoder.release(request.slot)
                 baseline.release(request.slot)
+            decoder.close()
+        assert not device._buffers
+
+
+@pytest.mark.skipif(os.environ.get("TENSOR_QWEN_CUDA") != "1", reason="deferred cross-window MTP qualification")
+def test_deferred_speculative_replay_transitions_windows_and_preserves_state(mtp_program):
+    import tensor
+    from akas.execution.executor import Executor
+    from akas.models.heads.mtp import MTPHead
+    from akas.generation.speculative.decoding import SpeculativeDecoder
+
+    loaded, program_path = mtp_program
+    with tensor.Device() as device:
+        with Executor.from_program(loaded, program_path, device) as target, Executor.from_program(loaded, program_path, device) as baseline:
+            head = MTPHead(target)
+            decoder = SpeculativeDecoder(target, head, window=4, capture=True, deferred=True)
+            requests = []
+            for slot, prompt in ((1, [1, 2, 3, 4]), (0, [5, 6])):
+                target.admit_at(slot)
+                head.admit(slot)
+                baseline.admit_at(slot)
+                requests.append(SimpleNamespace(slot=slot, prompt=prompt, offset=0, output=[], limit=20))
+            first = decoder.prefill_batch(requests, [request.prompt for request in requests], 4)
+            assert first == baseline.prefill([request.slot for request in requests], [request.prompt for request in requests], chunk=4)
+            for request, token in zip(requests, first):
+                request.output.append(token)
+
+            # Round 1: window=4, rows=2 -> both slots accept >=2 tokens and become dirty in w4.
+            emitted = _step_speculative_and_baseline(decoder, head, baseline, requests)
+            assert all(len(tokens) >= 2 for tokens in emitted)
+            assert (2, 4) in decoder.rounds
+            assert target.journals[(2, 4)].dirty[requests[0].slot]
+            assert target.journals[(2, 4)].dirty[requests[1].slot]
+
+            materialize_calls = []
+            def track_materialize(window, forward):
+                original_run = forward.run
+                def wrapped():
+                    materialize_calls.append(window)
+                    return original_run()
+                forward.run = wrapped
+            track_materialize(4, target.journals[(2, 4)].forwards["materialize"])
+
+            # Round 2: same window=4, partial batch rows=1 -> shares dirty array, no materialization.
+            emitted = _step_speculative_and_baseline(decoder, head, baseline, [requests[0]])
+            assert len(emitted[0]) >= 2
+            assert (1, 4) in decoder.rounds
+            track_materialize(4, target.journals[(1, 4)].forwards["materialize"])
+            assert materialize_calls == []
+            assert target.journals[(1, 4)].dirty is target.journals[(2, 4)].dirty
+            assert target.journals[(1, 4)].dirty[requests[0].slot]
+            assert target.journals[(2, 4)].dirty[requests[1].slot]
+
+            # Round 3: transition 4 -> 2 for partial batch [requests[0]] by capping its budget to 2.
+            requests[0].limit = len(requests[0].output) + 2
+            emitted = _step_speculative_and_baseline(decoder, head, baseline, [requests[0]])
+            assert len(emitted[0]) == 2
+            assert (2, 2) in decoder.rounds
+            track_materialize(2, target.journals[(2, 2)].forwards["materialize"])
+            assert materialize_calls == [4]
+            assert not target.journals[(2, 4)].dirty[requests[0].slot]
+            assert target.journals[(2, 4)].dirty[requests[1].slot]
+            assert target.journals[(2, 2)].dirty[requests[0].slot]
+
+            # Round 4: transition 2 -> 4 with reordered requests [requests[1], requests[0]] and mixed budgets (4 and 3).
+            requests[0].limit = len(requests[0].output) + 3
+            requests[1].limit = len(requests[1].output) + 4
+            emitted = _step_speculative_and_baseline(decoder, head, baseline, [requests[1], requests[0]])
+            assert all(len(tokens) >= 2 for tokens in emitted)
+            assert materialize_calls == [4, 2]
+            assert not target.journals[(2, 2)].dirty[requests[0].slot]
+
+            # Round 5: window=4 step with mixed budgets (1 and 4): requests[0] emits 1 token (folding w4 in-kernel without host materialize), while requests[1] stays dirty in w4.
+            requests[0].limit = len(requests[0].output) + 1
+            requests[1].limit = len(requests[1].output) + 4
+            emitted = _step_speculative_and_baseline(decoder, head, baseline, [requests[0], requests[1]])
+            assert len(emitted[0]) == 1 and len(emitted[1]) >= 2
+            assert materialize_calls == [4, 2]
+            assert not target.journals[(2, 4)].dirty[requests[0].slot]
+            assert target.journals[(2, 4)].dirty[requests[1].slot]
+            _assert_persistent_state_matches(target, baseline, [requests[0].slot])
+
+            # Make requests[0] dirty again in w4 before releasing its slot, then reuse the slot.
+            requests[0].limit = len(requests[0].output) + 4
+            requests[1].limit = len(requests[1].output) + 4
+            emitted = _step_speculative_and_baseline(decoder, head, baseline, [requests[0], requests[1]])
+            assert all(len(tokens) >= 2 for tokens in emitted)
+            assert target.journals[(2, 4)].dirty[requests[0].slot]
+
+            # Release requests[0] while dirty and reuse its slot for a new request alongside requests[1].
+            reused_slot = requests[0].slot
+            decoder.release(reused_slot)
+            baseline.release(reused_slot)
+            assert not any(journal.dirty[reused_slot] for journal in target.journals.values())
+            new_slot = decoder.admit()
+            assert new_slot == reused_slot
+            baseline.admit_at(new_slot)
+            replacement = SimpleNamespace(slot=new_slot, prompt=[7, 8, 9], offset=0, output=[], limit=6)
+            first_new = decoder.prefill_batch([replacement], [replacement.prompt], 4)
+            assert first_new == baseline.prefill([replacement.slot], [replacement.prompt], chunk=4)
+            replacement.output.append(first_new[0])
+
+            requests[1].limit = len(requests[1].output) + 2
+            replacement.limit = len(replacement.output) + 2
+            emitted = _step_speculative_and_baseline(decoder, head, baseline, [replacement, requests[1]])
+            assert (2, 2) in decoder.rounds
+
+            active_slots = [replacement.slot, requests[1].slot]
+            target._materialize(active_slots)
+            _assert_persistent_state_matches(target, baseline, active_slots)
+            for slot in active_slots:
+                decoder.release(slot)
+                baseline.release(slot)
             decoder.close()
         assert not device._buffers
 

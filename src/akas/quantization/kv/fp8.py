@@ -209,7 +209,11 @@ def portable_scaling():
         )
         quotient = numerator // denominator
         remainder = numerator - quotient * denominator
-        delta = T.cast(remainder * 2, "int32") - T.cast(denominator, "int32")
+        delta = T.if_then_else(
+            shift == -1,
+            T.cast(significand, "int32") - T.cast(denominator, "int32"),
+            T.cast(remainder * 2, "int32") - T.cast(denominator, "int32"),
+        )
         # F32 can round a ratio just beside an E4M3 midpoint onto that midpoint.
         # The interval is half an F32 ULP, expressed in integer ratio units.
         ulp_shift = T.if_then_else(

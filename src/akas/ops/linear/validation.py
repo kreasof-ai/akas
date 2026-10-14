@@ -11,7 +11,7 @@ def validation(kind, p, signature):
     from akas.ops.contracts import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
-    expected = {name: value.copy() for name, value in values.items()}
+    expected = {name: value.copy() if name == "out" else value for name, value in values.items()}
     r, k, o = p["r"], p["k"], p["o"]
     if (p.get("ggml", False) or p.get("type", 0) not in (0, 1)) and "scales" not in values:
         from akas.quantization.weights.ggml import sample_weight
@@ -69,18 +69,20 @@ def validation(kind, p, signature):
     if kind == "split_linear":
         block = p["bk"]
         span = ((k + block - 1) // block + p["parts"] - 1) // p["parts"] * block
+        compute_dtype = "float32" if max(r * k, o * k) > 4_194_304 else "float64"
         for part in range(p["parts"]):
             begin, end = part * span, min(k, (part + 1) * span)
             expected["out"][:, part] = (
-                values["x"][:, begin:end].astype("float64")
-                @ values["w"][:, begin:end].astype("float64").T
+                values["x"][:, begin:end].astype(compute_dtype)
+                @ values["w"][:, begin:end].astype(compute_dtype).T
             )
         return ValidationCase(values, expected)
-    x = values["x"].reshape(r, k).astype("float64")
-    w = values["w"].reshape(o, k).astype("float64")
+    compute_dtype = "float32" if max(r * k, o * k) > 4_194_304 else "float64"
+    x = values["x"].reshape(r, k).astype(compute_dtype)
+    w = values["w"].reshape(o, k).astype(compute_dtype)
     out = x @ w.T
     if kind == "ffn":
-        up = x @ values["w2"].reshape(o, k).astype("float64").T
+        up = x @ values["w2"].reshape(o, k).astype(compute_dtype).T
         out = out / (1 + np.exp(-out)) * up
     elif kind == "linear_add":
         out += values["residual"].reshape(r, o)

@@ -127,7 +127,13 @@ class Executor(DeviceOwner):
         records = getattr(self.batches, "records", ())
         phase = "decode" if chunk == 1 else "prefill"
         rows = [row["rows"] for row in records if row["phase"] == phase and row["chunk"] == chunk]
-        return max(rows) if rows else self.capacity
+        if not rows:
+            return self.capacity if chunk == 1 else min(self.prefill_group_size, self.capacity)
+        if chunk > 1:
+            bounded = [r for r in rows if r <= self.prefill_group_size]
+            if bounded:
+                return max(bounded)
+        return max(rows)
 
     def prefill_geometry(self, requested=32):
         records = getattr(self.batches, "records", ())
@@ -192,7 +198,7 @@ class Executor(DeviceOwner):
         self._check()
         slots, sequences = self._validate_batch(slots, sequences, chunk)
         result = []
-        group_size = min(self.prefill_group_size, self._phase_rows(chunk))
+        group_size = self._phase_rows(chunk)
         for start in range(0, len(slots), group_size):
             stop = start + group_size
             result.extend(
@@ -239,7 +245,9 @@ class Executor(DeviceOwner):
                           if row["phase"] == "prefill_state" and row["chunk"] == chunk]
             intermediate = [i for i in active if begin + chunk < len(prompts[i])] if state_only else []
             if intermediate:
-                group_size = min(self.prefill_group_size, max(row["rows"] for row in state_only))
+                state_rows = [row["rows"] for row in state_only]
+                bounded = [r for r in state_rows if r <= self.prefill_group_size]
+                group_size = max(bounded) if bounded else max(state_rows)
                 for start in range(0, len(intermediate), group_size):
                     indexes = intermediate[start:start + group_size]
                     self._execute_batch([slots[i] for i in indexes],
@@ -353,9 +361,18 @@ class Executor(DeviceOwner):
         from akas.execution.workspace import release
         release(buffers=getattr(self, "weights", {}).values())
 
-    def _materialize(self, slots):
-        for journal in self.journals.values():
-            journal.materialize(slots)
+    def _materialize(self, slots, *, window=None):
+        windows = {}
+        for (rows, journal_window), journal in self.journals.items():
+            if window is None or journal_window != window:
+                windows.setdefault(journal_window, []).append((rows, journal))
+        for candidates in windows.values():
+            dirty = [slot for slot in slots if candidates[0][1].dirty[slot]]
+            if not dirty:
+                continue
+            fit = [pair for pair in candidates if pair[0] >= len(dirty)]
+            _, journal = min(fit) if fit else max(candidates)
+            journal.materialize(dirty)
 
     def close(self):
         if self.closed:
