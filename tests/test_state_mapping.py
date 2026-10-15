@@ -4,13 +4,13 @@ import os
 import numpy as np
 import pytest
 from pathlib import Path
-from akas.compilation.emit import export_kernel
+from support.migration import source as export_kernel
 from akas.compilation.emit import build_artifact
 
 
 def test_state_mapping_rejects_a_copy_spanning_multiple_requests():
     import tilelang.language as T
-    from akas.ops.state.mapping import map_state
+    from akas.compilation.transforms.state import map_state
 
     @T.prim_func
     def kernel(state: T.Tensor((2, 4), "float32"), out: T.Tensor((2, 4), "float32")):
@@ -34,7 +34,7 @@ def test_fp8_cache_state_is_written_to_reordered_request_slots(tmp_path, provide
     source = tmp_path / "mapped.py"
     source.write_text(
         export_kernel(
-            "akas.ops.state.mapping",
+            "akas.compilation.transforms.state",
             "make_kernel",
             "akas.ops.attention.reference",
             "make_kernel",
@@ -81,8 +81,9 @@ def test_native_state_algorithms_preserve_math_with_reordered_pool(tmp_path, kin
     if os.environ.get("TENSOR_QWEN_CUDA") != "1":
         pytest.skip("enable native request mapping qualification")
     import tensor
-    from tensor.compiler.frontend.source import export_source
-    from tensor.runtime.dtypes import decode_bfloat16, encode_bfloat16
+    from support.migration import source as export_source
+    from tensor.runtime.dtypes import decode_bfloat16
+    from tensor.runtime.dtypes import encode_bfloat16
 
     rows, pool = 2, 4
     if kind == "gdn_recurrent":
@@ -90,7 +91,7 @@ def test_native_state_algorithms_preserve_math_with_reordered_pool(tmp_path, kin
         p = dict(slots=rows, heads=2, key=32, value=32, value_tile=16)
         states = (6,)
     else:
-        module = "akas.ops.attention.cuda.prefill"
+        module = "akas.ops.attention.cuda"
         p = dict(slots=rows, chunk=2, capacity=64)
         states = (1, 2)
     paths = []
@@ -100,7 +101,7 @@ def test_native_state_algorithms_preserve_math_with_reordered_pool(tmp_path, kin
             export_source(module, "make_kernel", kind, p, dependencies=())
             if index == 0
             else export_kernel(
-                "akas.ops.state.mapping",
+                "akas.compilation.transforms.state",
                 "make_kernel",
                 module,
                 "make_kernel",
@@ -189,10 +190,10 @@ def test_mapped_restore_flattens_view_indices_using_view_shape(
         accepted=accepted,
         lengths=accepted,
     )
-    from akas.ops.contracts import Implementation
+    from akas.kernels.contracts import Implementation
 
     catalog = (
-        (Implementation("restore", "gdn.cuda.verification", "block-fp8"),)
+        (Implementation("restore", "gdn.cuda.verification", "block-fp8", factory="kernel"),)
         if implementation == "view"
         else None
     )
@@ -229,7 +230,7 @@ def test_inactive_collective_state_writes_cannot_overwrite_live_slot_zero(tmp_pa
 
     source = tmp_path / "mapped.py"
     source.write_text("""import tilelang.language as T
-from akas.ops.state.mapping import map_state
+from akas.compilation.transforms.state import map_state
 
 def tensor_export():
     @T.prim_func
@@ -264,10 +265,10 @@ def tensor_export():
 
 @pytest.mark.parametrize("capacity", [1, 4])
 def test_read_only_state_keeps_mapping_after_simplification(capacity):
-    from akas.ops.attention.reference import make_kernel
-    from akas.ops.state.mapping import map_state
+    from support.migration import factory as _historical_factory
+    from akas.compilation.transforms.state import map_state
 
-    original = make_kernel("rope", dict(r=1, h=1, d=64, theta=10000.0))
+    original = _historical_factory('akas.ops.attention.reference', 'make_kernel', "rope", dict(r=1, h=1, d=64, theta=10000.0))
     import tvm
     from tvm import tirx as ir
 
@@ -291,7 +292,7 @@ def test_read_only_state_compiles_and_uses_mapped_position(tmp_path, provider, c
 
     source = tmp_path / "mapped_rope.py"
     source.write_text(export_kernel(
-        "akas.ops.state.mapping", "make_kernel",
+        "akas.compilation.transforms.state", "make_kernel",
         "akas.ops.attention.reference", "make_kernel",
         ("rope", dict(r=1, h=1, d=64, theta=10000.0)), (2,), 1, capacity,
     ))

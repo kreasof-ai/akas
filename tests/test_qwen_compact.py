@@ -11,7 +11,7 @@ import pytest
 )
 def test_compact_tiles_cover_every_route_once(tmp_path):
     import tensor
-    from tensor.compiler.frontend.source import export_source
+    from support.migration import source as export_source
     from tensor.compiler.build import build_artifact
 
     rows, m = 4096, 64
@@ -68,7 +68,7 @@ def test_compact_tiles_cover_every_route_once(tmp_path):
 def test_compact_experts_match_original_with_shuffled_routes(tmp_path, routed):
     import torch
     import tensor
-    from tensor.compiler.frontend.source import export_source
+    from support.migration import source as export_source
     from tensor.compiler.build import build_artifact
 
     torch.set_num_threads(1)

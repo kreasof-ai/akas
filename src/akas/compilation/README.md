@@ -4,6 +4,26 @@
 phase geometries, request/context bounds and model options. `compile_checkpoint()`
 loads weights through the supplied definition; the CLI defaults to this program path.
 
+Graphs are declared with `akas.graph.Graph`: named buffers describe shapes, dtypes
+and ownership, and ordered operation calls describe computation. Composition needs
+no device or compiler. See the [model guide](../models/README.md) for token models
+and the [residual example](../../../examples/graphs/residual/) for a standalone graph:
+
+```python
+from akas.compilation.compile import produce
+from examples.graphs.residual.config import Config
+from examples.graphs.residual.graph import compose
+
+graph = compose(Config(width=256), rows=4)
+produce(graph, "build/residual", provider="cuda", target="sm_89")
+```
+
+The compiler selects compatible operation implementations and applies graph
+optimizations. Operation registrations and rewrite rules live in each operation's
+`definition.py`; discovery lives in `akas.kernels.registry`. See the
+[operation guide](../ops/README.md) for authoring and the
+[execution guide](../execution/README.md) for running a compiled graph with `Forward`.
+
 | File | Responsibility |
 | --- | --- |
 | `compile.py` | Coordinate phases, state reset, verification commits and publication |
@@ -30,7 +50,7 @@ validated against the loader contract and published last. A failed rebuild leave
 Runtime imports do not require the compiler extra or reference frameworks.
 
 ```sh
-akas compile --definition akas.models.qwen35.model:DenseEngine \
+akas compile --definition akas.models.qwen35.model:Qwen35Dense \
   --checkpoint /path/to/weights --out build/model \
   --config '{"geometries":[[1,1],[1,32]],"max_requests":256,"max_context":4096}'
 ```
@@ -45,5 +65,7 @@ Kernel beam search qualifies schedules inside the selected pipeline. Requested
 geometries are compiled explicitly; this is not one shape-polymorphic kernel.
 
 `liveness.py` derives state-only prefill from declared writes and dependencies.
-It shares already-qualified kernel artifacts with the normal prefill phase. The
-old per-layout recipes, factories and transform directories have been removed.
+It shares already-qualified kernel artifacts with the normal prefill phase.
+
+For automatic program selection and a ready-to-serve result, use
+[the optimization workflow](../optimization/README.md).

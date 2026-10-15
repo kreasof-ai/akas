@@ -1,1 +1,1 @@
-"""normalization components."""
+"""Normalization operation definitions and implementations."""

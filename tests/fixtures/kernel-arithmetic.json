@@ -1,0 +1,985 @@
+{
+  "provenance": "Extracted from the saved pre-refactor source, with only factory signature, constant operation specialization and import relocation normalized.",
+  "kernels": [
+    {
+      "module": "akas.ops.linear.kernel",
+      "factory": "linear",
+      "sha256": "de865d44603bdded68b25e207a2c4e4cf5813b0f7e9e7e25c911efae48651a25",
+      "origin": "akas.ops.linear.reference"
+    },
+    {
+      "module": "akas.ops.linear.kernel",
+      "factory": "packed_linear",
+      "sha256": "27bf2b38bc52a1f483b2ca3c1b22adf30b3f4805e2268f5812f43440cf61799d",
+      "origin": "akas.ops.linear.cuda.packed_baseline"
+    },
+    {
+      "module": "akas.ops.linear.webgpu",
+      "factory": "linear",
+      "sha256": "27902c94236e86c4ef7270543965767b7b02c99cbc06657bf27a9aa00378ffb1",
+      "origin": "akas.ops.linear.webgpu.reference"
+    },
+    {
+      "module": "akas.ops.linear.cuda",
+      "factory": "linear_bf16",
+      "sha256": "04538053ee88dc774db94689a5c8b7595055dc9beb4a9249675b267d9980a22f",
+      "origin": "akas.ops.linear.cuda.bf16_batch"
+    },
+    {
+      "module": "akas.ops.linear.cuda",
+      "factory": "_packed",
+      "sha256": "112e52dbd208a5bbfa80255cae75a87249d9743ec1e9dee2b6dad1d5cad03187",
+      "origin": "akas.ops.linear.cuda.packed"
+    },
+    {
+      "module": "akas.ops.linear.cuda",
+      "factory": "_native_bf16",
+      "sha256": "f15f7f4adc8c7ddd84c579c5dafd05b190c986b9c107b9c2e249701cc1a277c0",
+      "origin": "akas.ops.linear.cuda.block_fp8"
+    },
+    {
+      "module": "akas.ops.linear.cuda",
+      "factory": "gemv_linear_bf16",
+      "sha256": "d7f09110d9e9dce247e2adf4e9d92b718962d595b838fbcd3e74a6909dc538c9",
+      "origin": "akas.ops.linear.cuda.bf16_batch"
+    },
+    {
+      "module": "akas.ops.linear.cuda",
+      "factory": "gemv_native_bf16",
+      "sha256": "5f93e3b2c77e36447f79dd469ceb60d521f1aa45759e78dff3f33d5983dd7719",
+      "origin": "akas.ops.linear.cuda.decode"
+    },
+    {
+      "module": "akas.ops.linear.cuda",
+      "factory": "native_fp8",
+      "sha256": "2f91273213b3f7d17d6001ada8f4b873163f5e8bb307e7a13407e49802f66f6a",
+      "origin": "akas.ops.linear.cuda.decode"
+    },
+    {
+      "module": "akas.ops.linear.cuda",
+      "factory": "gemv_packed",
+      "sha256": "6bae7dc7c36d287a1a2cc0ac9b248a7cad7d3f9f339d6eafc35556bcf2df5ad6",
+      "origin": "akas.ops.linear.cuda.packed"
+    },
+    {
+      "module": "akas.ops.linear.cuda",
+      "factory": "_fused",
+      "sha256": "ee13965ef6c5eca3781a13d46342685056ebeae810aff5b09f2e591c26686e07",
+      "origin": "akas.ops.linear.cuda.packed"
+    },
+    {
+      "module": "akas.ops.linear.cuda",
+      "factory": "full_depth_bf16",
+      "sha256": "6aafe17ffd4a0b7b90eccfac051d0f21226b487dffdd6a7aa9ddcd9907a1508e",
+      "origin": "akas.ops.linear.cuda.block_fp8"
+    },
+    {
+      "module": "akas.ops.linear.cuda",
+      "factory": "partial",
+      "sha256": "62dced3735f0b0baf7c9958ef68f417b379d3b9fe687788b787ebaa75adb1444",
+      "origin": "akas.ops.linear.cuda.split"
+    },
+    {
+      "module": "akas.ops.linear.cuda",
+      "factory": "split",
+      "sha256": "449792707cbc023786e038ab2474dbe20d866f91407cba81160d3e771c6d32f3",
+      "origin": "akas.ops.linear.cuda.split"
+    },
+    {
+      "module": "akas.ops.linear.cuda",
+      "factory": "fp8",
+      "sha256": "9038f6e08fecf2c446f467418308a5e9002ac8e1025d5dc82eab327cc36425c1",
+      "origin": "akas.ops.linear.cuda.block_fp8"
+    },
+    {
+      "module": "akas.ops.linear.kernel",
+      "factory": "cuda_abi",
+      "sha256": "33d3663e6e5b8509d3c25309b731bf4175a5935994072a1481304275b79ff7dc",
+      "origin": "akas.ops.linear.cuda.packed"
+    },
+    {
+      "module": "akas.ops.linear.kernel",
+      "factory": "webgpu_abi",
+      "sha256": "4ccc228760cc687f86ac17d1820c8731d24b2dabd7ffce02ccf2f39c9ab8d4e7",
+      "origin": "akas.ops.linear.webgpu.packed"
+    },
+    {
+      "module": "akas.ops.linear.kernel",
+      "factory": "_epilogue",
+      "sha256": "0c50514c7234a9637f811b4fe154cfd228d587aa8d2cd0a61453f7b4c51c0e8b",
+      "origin": "akas.ops.linear.webgpu.packed"
+    },
+    {
+      "module": "akas.ops.linear.webgpu",
+      "factory": "_packed",
+      "sha256": "e6b1b1f4dbafdfaddeeaff6626965affa15c8bb7a05732c77ac30c40bc0c0029",
+      "origin": "akas.ops.linear.webgpu.packed"
+    },
+    {
+      "module": "akas.ops.linear.webgpu",
+      "factory": "_integer",
+      "sha256": "8219e3159f1f424d39ce9f489d4631a8098131ce2659d74774e4fcc19df224de",
+      "origin": "akas.ops.linear.webgpu.packed"
+    },
+    {
+      "module": "akas.ops.linear.webgpu",
+      "factory": "gemv_packed",
+      "sha256": "fc4d9c4bcff9d7c409c16ac475b98618cad418e4576e3b975e58fa5eb6e6db41",
+      "origin": "akas.ops.linear.webgpu.packed"
+    },
+    {
+      "module": "akas.ops.linear.webgpu",
+      "factory": "q8",
+      "sha256": "e918dd01f0e3403ec22cf250cb8086a0741588b3a1fc816a2986cea188be3f58",
+      "origin": "akas.ops.linear.webgpu.packed"
+    },
+    {
+      "module": "akas.ops.linear.cuda",
+      "factory": "_mma",
+      "sha256": "e3d6b150dede8a6b40e9e8a1d7c4d3858654439c1cf352f56c8169d5eb8cd9e0",
+      "origin": "akas.ops.linear.cuda.block_fp8"
+    },
+    {
+      "module": "akas.ops.moe.cuda",
+      "factory": "decode_fp8_experts",
+      "sha256": "8bd13e7c13c93a19a3ab1c41d9b32886be396f19de14a4afc53e411f50069f18",
+      "origin": "akas.ops.moe.cuda.decode"
+    },
+    {
+      "module": "akas.ops.moe.cuda",
+      "factory": "_bucketed",
+      "sha256": "f3a5ccf502d3e2ad2678a02d67b96163e1a27e099c6100ba793bc0e70e331320",
+      "origin": "akas.ops.moe.cuda.prefill"
+    },
+    {
+      "module": "akas.ops.linear.cuda",
+      "factory": "hopper_gemm_partial",
+      "sha256": "66f57997740917d004f954e45cd19cbe9722ec288b1d963e0c8c24d3e1aaa306",
+      "origin": "akas.ops.linear.hardware.hopper.projection"
+    },
+    {
+      "module": "akas.ops.attention.kernel",
+      "factory": "attention",
+      "sha256": "c05a8d34d3293fc46b41387add7c5b33744089ea9370e5bd9a9f3667cb823996",
+      "origin": "akas.ops.attention.reference"
+    },
+    {
+      "module": "akas.ops.attention.kernel",
+      "factory": "cache_write",
+      "sha256": "50b0a5fe4ad3c5024a817c0a3cfbb68c39b9485522f77ecffac921a40050139d",
+      "origin": "akas.ops.attention.reference"
+    },
+    {
+      "module": "akas.ops.attention.kernel",
+      "factory": "rope",
+      "sha256": "da385bc6ba661551a145741b51e7e5aa12dac31b6561708faa811514660a24a5",
+      "origin": "akas.ops.attention.reference"
+    },
+    {
+      "module": "akas.ops.attention.kernel",
+      "factory": "attention_flat",
+      "sha256": "80b7af7298060228b285c0a39fda27ee81d8438efdc855f6f20f01fd623b6dda",
+      "origin": "akas.ops.attention.cuda.packed_baseline"
+    },
+    {
+      "module": "akas.ops.attention.kernel",
+      "factory": "prepare_flat",
+      "sha256": "0b6b483b0a935c90bd00c3eed88307c8d1eda93d74924ca0e74c849fa2b4436b",
+      "origin": "akas.ops.attention.cuda.packed_baseline"
+    },
+    {
+      "module": "akas.ops.attention.kernel",
+      "factory": "chunk_active",
+      "sha256": "2701d989ebd70945c869ae615b72e58097a0eaa695af41408ab786f4739a691f",
+      "origin": "akas.ops.attention.pipeline"
+    },
+    {
+      "module": "akas.ops.attention.kernel",
+      "factory": "_normalization",
+      "sha256": "c767db4c030ecb59bd1d58bac31890d0a7b7af9b86b4358dfc2d313c7aefeb00",
+      "origin": "akas.ops.normalization.kernel"
+    },
+    {
+      "module": "akas.ops.attention.kernel",
+      "factory": "online_attention",
+      "sha256": "ec9f1802c8b5e4ce423bc455c9b2b2ecccfcd97fc0f72e4e78d7c73675bcd5b6",
+      "origin": "akas.ops.attention.portable"
+    },
+    {
+      "module": "akas.ops.attention.kernel",
+      "factory": "cache_reader",
+      "sha256": "eca4547c316e42b5ba00c24f79f65cc89b57222e280d7d4d8f3841f8959f3928",
+      "origin": "akas.ops.attention.floating"
+    },
+    {
+      "module": "akas.ops.attention.kernel",
+      "factory": "merge_floating",
+      "sha256": "127b85ba342614b55594cff7d5757b52b93d78eabb7b0dfcc09e3f7bb0fe0a65",
+      "origin": "akas.ops.attention.floating"
+    },
+    {
+      "module": "akas.ops.attention.kernel",
+      "factory": "partial_floating",
+      "sha256": "9574d0bd11580dd266ca36e8688c8a5cd37ee6944c7b8c64b3a869274726ae28",
+      "origin": "akas.ops.attention.floating"
+    },
+    {
+      "module": "akas.ops.attention.cuda",
+      "factory": "floating",
+      "sha256": "60d3794b3f355d5708fd5b1db57c46d76a17c07db405876a6e97156ec887089d",
+      "origin": "akas.ops.attention.cuda.floating"
+    },
+    {
+      "module": "akas.ops.attention.cuda",
+      "factory": "mapped_bf16",
+      "sha256": "7ceebf8cdba13299ae8d506109b6a0f023de762ffb7501382abfdfc79b08cc54",
+      "origin": "akas.ops.attention.cuda.bf16_batch"
+    },
+    {
+      "module": "akas.ops.attention.cuda",
+      "factory": "native",
+      "sha256": "70f2d0884490cbf91759f4fcbf56658b375b5720c9e43d4a4f4cebc7604d2dd4",
+      "origin": "akas.ops.attention.cuda.prefill"
+    },
+    {
+      "module": "akas.ops.attention.cuda",
+      "factory": "quantized",
+      "sha256": "53be506e583bb73c7c2fed65279cc7ad7be17368c875a97595da4c26f319b571",
+      "origin": "akas.ops.attention.cuda.quantized"
+    },
+    {
+      "module": "akas.ops.attention.cuda",
+      "factory": "partial_flat",
+      "sha256": "9069e24a69af6ccb53e7578b5e6ee67e7a9419fea677771bdfb6c3cdf6f672fb",
+      "origin": "akas.ops.attention.cuda.packed"
+    },
+    {
+      "module": "akas.ops.attention.cuda",
+      "factory": "grouped_flat",
+      "sha256": "d3af86f78b476b63fb0e6cdeaf4fc3c1c968d5c2583fd1a5e1f1c28f97feaf5f",
+      "origin": "akas.ops.attention.cuda.packed"
+    },
+    {
+      "module": "akas.ops.attention.cuda",
+      "factory": "partial_bf16",
+      "sha256": "f33020900c9fec77be97b1d8ed03287ac2a92b3cf0455742e0e0f9151dc0f34d",
+      "origin": "akas.ops.attention.cuda.decode"
+    },
+    {
+      "module": "akas.ops.attention.cuda",
+      "factory": "partial_quantized",
+      "sha256": "0023874a074de8704190b379282575fab9f2e92b373d2492d35e85e86d54e804",
+      "origin": "akas.ops.attention.cuda.quantized"
+    },
+    {
+      "module": "akas.ops.attention.cuda",
+      "factory": "flat",
+      "sha256": "b67783b622ab81d3e2e712bc11d53881527b7a779c8b9d372f1be4e9265090be",
+      "origin": "akas.ops.attention.cuda.packed"
+    },
+    {
+      "module": "akas.ops.attention.cuda",
+      "factory": "merge_native",
+      "sha256": "a541ae7dd39b47a6eb1c6e672ea92d5da8bc98b37c57c1ccf3a1cdbd98ccdcdc",
+      "origin": "akas.ops.attention.cuda.decode"
+    },
+    {
+      "module": "akas.ops.attention.cuda",
+      "factory": "chunk",
+      "sha256": "9d9d7d2b0c64d71a1634cf5791d3c59168549853ef4969193f6b814d7df2a0c0",
+      "origin": "akas.ops.attention.cuda.split"
+    },
+    {
+      "module": "akas.ops.attention.cuda",
+      "factory": "mapped_fp8",
+      "sha256": "20bc949c0ae79f8123cbcd0e565eb15b9e9779280fec6d7e8b45106c3085ef76",
+      "origin": "akas.ops.attention.cuda.fp8"
+    },
+    {
+      "module": "akas.ops.attention.cuda",
+      "factory": "qkv_mapped_bf16",
+      "sha256": "0a07e4984f8816545372828aef789a48a1258e34a443efc4ea5c5e6fb56c5d4e",
+      "origin": "akas.ops.attention.cuda.bf16_batch"
+    },
+    {
+      "module": "akas.ops.attention.cuda",
+      "factory": "query",
+      "sha256": "a8257342dd2df8db59fc28226d891df08e416b33d443fbd7a9bdb73a585ede45",
+      "origin": "akas.ops.attention.cuda.decode"
+    },
+    {
+      "module": "akas.ops.attention.cuda",
+      "factory": "kv",
+      "sha256": "88bacac6a31cb58b7de7eb939c47b6b96e39d5f26fdf79c3651ecab9e3d8acd0",
+      "origin": "akas.ops.attention.cuda.decode"
+    },
+    {
+      "module": "akas.ops.attention.cuda",
+      "factory": "kv_chunk",
+      "sha256": "afe759c15ae95852b5b0d8a4ac7d42c4b930752cd47baa19010f2b103395291d",
+      "origin": "akas.ops.attention.cuda.prefill"
+    },
+    {
+      "module": "akas.ops.attention.cuda",
+      "factory": "kv_quantized",
+      "sha256": "f1c1eccf9b9bab4060733bf7b623da6ba2afeb7e723010cc89452297e8174ae6",
+      "origin": "akas.ops.attention.cuda.quantized"
+    },
+    {
+      "module": "akas.ops.attention.cuda",
+      "factory": "qkv_mapped_fp8",
+      "sha256": "c641ba0743b75d665dee80f5fcf90333f8c738f9904bc361f2e7f31960ae49d4",
+      "origin": "akas.ops.attention.cuda.fp8"
+    },
+    {
+      "module": "akas.ops.attention.cuda",
+      "factory": "partial",
+      "sha256": "08edf84f64921b06fede076205ebd44ef534c5cc13ac84139775851339c70a56",
+      "origin": "akas.ops.attention.cuda.split"
+    },
+    {
+      "module": "akas.ops.attention.cuda",
+      "factory": "prefill_split_mapped_fp8",
+      "sha256": "405de4f22596b4e1160791362366053a670ffdb6312f0932cd322758a383498d",
+      "origin": "akas.ops.attention.cuda.fp8"
+    },
+    {
+      "module": "akas.ops.attention.cuda",
+      "factory": "decode",
+      "sha256": "db1d31bec8610445f85bf54a6e8f645a5e6b8426c6c35ac258260cfe31718f5f",
+      "origin": "akas.ops.attention.cuda.workspace"
+    },
+    {
+      "module": "akas.ops.attention.cuda",
+      "factory": "hopper_prefill_split_partial",
+      "sha256": "2264ab59d6ba200408d14de4f189c797dd432057a47ae97ee1f945b1668d2517",
+      "origin": "akas.ops.attention.hardware.hopper.attention"
+    },
+    {
+      "module": "akas.ops.attention.cuda",
+      "factory": "attention",
+      "sha256": "cbf341e7923502fb27c11771911eede3768e39298d080f832715a5595a78d845",
+      "origin": "akas.ops.attention.hardware.hopper.prefill"
+    },
+    {
+      "module": "akas.ops.attention.webgpu",
+      "factory": "_score_shuffle",
+      "sha256": "68bff0dfd1ceb4fa4d9c01ec6dc735f23b2510cccd218ab2a67667d3dab6aca4",
+      "origin": "akas.ops.attention.webgpu.packed"
+    },
+    {
+      "module": "akas.ops.attention.webgpu",
+      "factory": "scores",
+      "sha256": "da7e84b28fdc252d350ee59605b6bab2e9932eecc70c18cd47f21a07b34a00e4",
+      "origin": "akas.ops.attention.webgpu.packed"
+    },
+    {
+      "module": "akas.ops.attention.webgpu",
+      "factory": "_attention",
+      "sha256": "0281215f5b5084d2830baf487e225c2ea870bf7eefca8cdd2644e2c0b717b425",
+      "origin": "akas.ops.attention.webgpu.packed"
+    },
+    {
+      "module": "akas.ops.gdn.kernel",
+      "factory": "mapped_conv",
+      "sha256": "21f462e9c8df89eaf8c5e4729fc6f9f846fa6de464427c5b1a4b276f40f4bf96",
+      "origin": "akas.ops.gdn.cuda.bf16_batch"
+    },
+    {
+      "module": "akas.ops.gdn.kernel",
+      "factory": "decode_conv",
+      "sha256": "0fb1a6beac450bdaf8f66d05f872e1fa8fdeff53351ee01511fa417614db9200",
+      "origin": "akas.ops.gdn.cuda.decode"
+    },
+    {
+      "module": "akas.ops.gdn.kernel",
+      "factory": "prefill_conv",
+      "sha256": "cc0e159351d8e78c529774172c4278466b9670d7bd5a5237fa28c32753ac7136",
+      "origin": "akas.ops.gdn.cuda.prefill"
+    },
+    {
+      "module": "akas.ops.gdn.kernel",
+      "factory": "journal_conv",
+      "sha256": "212d63186ade27bcc296dd9e3496e52cb8daea3e07b4724673aa7028e68d08dc",
+      "origin": "akas.ops.gdn.cuda.verification"
+    },
+    {
+      "module": "akas.ops.gdn.kernel",
+      "factory": "mapped_norm",
+      "sha256": "33fabac5f49c8290b604807983736f00f5f2bf3d3ba8562722d14d44b4a6ba47",
+      "origin": "akas.ops.gdn.cuda.bf16_batch"
+    },
+    {
+      "module": "akas.ops.gdn.kernel",
+      "factory": "decode_norm",
+      "sha256": "a48f6c1494ca950ef350f2ca96759d764bd0631c5e7b4219cf2403718f588a66",
+      "origin": "akas.ops.gdn.cuda.decode"
+    },
+    {
+      "module": "akas.ops.gdn.kernel",
+      "factory": "mapped_prepare",
+      "sha256": "fa6a3eff0e5bbe882b50f18bcbe583c4c2b953bff2b82aae7996f87a42fab7f0",
+      "origin": "akas.ops.gdn.cuda.bf16_batch"
+    },
+    {
+      "module": "akas.ops.gdn.kernel",
+      "factory": "decode_prepare",
+      "sha256": "7f52d0d73ef80425d275197b353815a125913564c6d1b7b10c387071dfa4f8a4",
+      "origin": "akas.ops.gdn.cuda.decode"
+    },
+    {
+      "module": "akas.ops.gdn.kernel",
+      "factory": "mapped_scan",
+      "sha256": "196e1ba6ae3dd351ea6d461998786ecfc2db6c2cc2b6e58e10c1693348ad436b",
+      "origin": "akas.ops.gdn.cuda.bf16_batch"
+    },
+    {
+      "module": "akas.ops.gdn.kernel",
+      "factory": "decode_recurrent",
+      "sha256": "1ab1dc33a4453ebad5f1e9260bd490e6483897dcee595f14c79f92012087a857",
+      "origin": "akas.ops.gdn.cuda.decode"
+    },
+    {
+      "module": "akas.ops.gdn.kernel",
+      "factory": "prefill_scan",
+      "sha256": "3ef94c7adcb7f8a6da7249c30862f506e51b167c165f191d772b9cec8236118b",
+      "origin": "akas.ops.gdn.cuda.prefill"
+    },
+    {
+      "module": "akas.ops.gdn.kernel",
+      "factory": "journal_scan",
+      "sha256": "def7d5b341985c761f8f45e8de3b3479139cd30c08bdcf2afd9b75c4ed834e91",
+      "origin": "akas.ops.gdn.cuda.verification"
+    },
+    {
+      "module": "akas.ops.gdn.kernel",
+      "factory": "journal_restore",
+      "sha256": "38e79cb571fe4d4c6597507bfb25c92c28bceda9663a71368754eb81f1338b9d",
+      "origin": "akas.ops.gdn.cuda.verification"
+    },
+    {
+      "module": "akas.ops.gdn.kernel",
+      "factory": "restore",
+      "sha256": "3bbf8e6ddc2cd5067db1f0ca7c5839dd6d71f56afe52ad9c38d4a6b5fe4b4b8b",
+      "origin": "akas.ops.gdn.restore"
+    },
+    {
+      "module": "akas.ops.gdn.kernel",
+      "factory": "conv_commit",
+      "sha256": "56b9c47f5385fea5c3955e5a72bcebed575f14e2afa991ff67fd3c9e60e3ef3d",
+      "origin": "akas.ops.gdn.verification"
+    },
+    {
+      "module": "akas.ops.gdn.kernel",
+      "factory": "defer_accept",
+      "sha256": "99f7ee31140efbbd570ff4cc3a4f0715617ab99fe64b2086703c7387303fbfc1",
+      "origin": "akas.ops.gdn.verification"
+    },
+    {
+      "module": "akas.ops.gdn.kernel",
+      "factory": "defer_clear",
+      "sha256": "ec2709b08c400128694d1b4d3d4df820f788e75250cf5081a821827cd09eb66a",
+      "origin": "akas.ops.gdn.verification"
+    },
+    {
+      "module": "akas.ops.gdn.kernel",
+      "factory": "gdn_deferred",
+      "sha256": "ed571bda02c438cfc51ae00c85ab5c2e06a50698b55b5bf76a4c0e8d3fe15472",
+      "origin": "akas.ops.gdn.verification"
+    },
+    {
+      "module": "akas.ops.gdn.kernel",
+      "factory": "gdn_materialize",
+      "sha256": "378f32a70c8a78e93730372cf9b1a449d06edb3c7c56c686a49fd39bc3d127d4",
+      "origin": "akas.ops.gdn.verification"
+    },
+    {
+      "module": "akas.ops.moe.cuda",
+      "factory": "decode_moe_combine",
+      "sha256": "e44b168f5447edfe724060aa4c9b47f805d462c9776bf131c611a77b42ed889a",
+      "origin": "akas.ops.moe.cuda.decode"
+    },
+    {
+      "module": "akas.ops.moe.cuda",
+      "factory": "decode_moe_groups",
+      "sha256": "01d5de02ea3f4add67052cdd76de50aa2c3e6cecdbe10abb283db9f3046317bd",
+      "origin": "akas.ops.moe.cuda.decode"
+    },
+    {
+      "module": "akas.ops.moe.cuda",
+      "factory": "decode_router",
+      "sha256": "ffeb55103ad2e6ebb8b6a183391995c402b9dd47d7afd42ec81e25e87c1409f4",
+      "origin": "akas.ops.moe.cuda.decode"
+    },
+    {
+      "module": "akas.ops.moe.cuda",
+      "factory": "prefill_expert_routes",
+      "sha256": "9bb80673085becbdb73824ac8a908d4bbe0d77447def463d03bed4b489a33e96",
+      "origin": "akas.ops.moe.cuda.prefill"
+    },
+    {
+      "module": "akas.ops.moe.cuda",
+      "factory": "tile_map",
+      "sha256": "175f176fd439d0a2d8411d2878a3f4242f76db36c9dc05f4b93134776a5a2f0c",
+      "origin": "akas.ops.moe.cuda.compact"
+    },
+    {
+      "module": "akas.ops.moe.cuda",
+      "factory": "partial",
+      "sha256": "9e48ae6092b2e10c7c4b1d1e5d8a9469dbf34a8609732ab795b790f227e6561d",
+      "origin": "akas.ops.moe.cuda.split"
+    },
+    {
+      "module": "akas.ops.moe.cuda",
+      "factory": "hopper_experts_partial",
+      "sha256": "995acb9abcd997f9b95faa9d51fb897532c086a9eb763bb5a2ad50d5ae593a34",
+      "origin": "akas.ops.moe.hardware.hopper.experts"
+    },
+    {
+      "module": "akas.ops.residual.kernel",
+      "factory": "add",
+      "sha256": "f021b90c8b8a3516866fa33ec0f8e68a4eadffc2ff7d2df4bfe5c154b7a1857c",
+      "origin": "akas.ops.residual.kernel"
+    },
+    {
+      "module": "akas.ops.convolution.kernel",
+      "factory": "convolution",
+      "sha256": "87072e3df6bc6bb9666f90b27d5a85a526b5b0e4e3c2ffc84361ffa18814b66e",
+      "origin": "akas.ops.convolution.reference"
+    },
+    {
+      "module": "akas.ops.convolution.kernel",
+      "factory": "convolution_flat",
+      "sha256": "a871b5e631ed7b1e091ad4503403c5d6fd3c4ef2476519d956d5bbf76983ec1d",
+      "origin": "akas.ops.convolution.cuda.packed_baseline"
+    },
+    {
+      "module": "akas.ops.vocabulary.kernel",
+      "factory": "argmax",
+      "sha256": "932b026acfc6d3a8680005ed581c6f8f698f9bc3f4d141831b86ff81131a6649",
+      "origin": "akas.ops.vocabulary.reference"
+    },
+    {
+      "module": "akas.ops.vocabulary.kernel",
+      "factory": "embedding",
+      "sha256": "50ee6a7e8950c654e2981d2ecc0a8e733cd299ddd80093cdabca3b52307e93bc",
+      "origin": "akas.ops.vocabulary.reference"
+    },
+    {
+      "module": "akas.ops.vocabulary.kernel",
+      "factory": "embedding_packed",
+      "sha256": "6c49d16f07d7e9a4962eed6cdf74734c5c8438db05a0f78090c25a6e79a861c2",
+      "origin": "akas.ops.vocabulary.cuda.packed_baseline"
+    },
+    {
+      "module": "akas.ops.vocabulary.kernel",
+      "factory": "_argmax",
+      "sha256": "e606d25c1dac9dd3b8cb4b6e51fa6a3055d7c1507c409366ae428b7fe3c80c12",
+      "origin": "akas.ops.vocabulary.cuda.argmax"
+    },
+    {
+      "module": "akas.ops.vocabulary.kernel",
+      "factory": "native_argmax",
+      "sha256": "7fcdf9788c4237f0dc0b06e307284be045671732da6e8d47bf702e51c9ab9349",
+      "origin": "akas.ops.vocabulary.cuda.decode"
+    },
+    {
+      "module": "akas.ops.vocabulary.kernel",
+      "factory": "native_embedding",
+      "sha256": "5f77a85ec6a2dd517cd4964a9a060bb79d3bd2fb4b5d86d26eb35253ae01f0b1",
+      "origin": "akas.ops.vocabulary.cuda.decode"
+    },
+    {
+      "module": "akas.ops.vocabulary.cuda",
+      "factory": "head_argmax",
+      "sha256": "cc13f8d6103401e243bf9940f93a905f3408d9aaf771572f28ad412c74980580",
+      "origin": "akas.ops.vocabulary.cuda.fused_head"
+    },
+    {
+      "module": "akas.ops.vocabulary.cuda",
+      "factory": "head_linear",
+      "sha256": "0d66f593ef9f9ab38b086219c772e26857db7bb85197d48ee55365f9200e591d",
+      "origin": "akas.ops.vocabulary.cuda.fused_head"
+    },
+    {
+      "module": "akas.ops.vocabulary.cuda",
+      "factory": "bf16",
+      "sha256": "8b4dbf04db80bd25344a130768711285cde72f96ceb601106802d342bea718d4",
+      "origin": "akas.ops.vocabulary.cuda.bf16"
+    },
+    {
+      "module": "akas.ops.vocabulary.cuda",
+      "factory": "speculative",
+      "sha256": "a15b664c94a802142cfe1dc6f7e5432f4df8ea673bfc8d0dca74616261e97c94",
+      "origin": "akas.ops.vocabulary.cuda.speculative"
+    },
+    {
+      "module": "akas.ops.vocabulary.kernel",
+      "factory": "packed_word_embedding",
+      "sha256": "459da078234c8990d882ff1c6e3028c97295ca8e4c52c4fa5eb6352793b04390",
+      "origin": "akas.ops.vocabulary.webgpu.packed"
+    },
+    {
+      "module": "akas.ops.sequence.kernel",
+      "factory": "advance",
+      "sha256": "304210b5a57ce6dccb6975fe6dfed67eb2e2198ee83dbbbb3fad01e80e1811a9",
+      "origin": "akas.ops.sequence.reference"
+    },
+    {
+      "module": "akas.ops.sequence.kernel",
+      "factory": "chunk_controls",
+      "sha256": "45767f57d7b2cbc5528bff726ef0802d97260d1967c70bfb44fdfe3ea70100fd",
+      "origin": "akas.ops.sequence.reference"
+    },
+    {
+      "module": "akas.ops.sequence.kernel",
+      "factory": "chunk_last",
+      "sha256": "5849fd820f3f036fcfb43463bd5c5d3e569f48daa0eea1a9428a459786699aec",
+      "origin": "akas.ops.sequence.reference"
+    },
+    {
+      "module": "akas.ops.sequence.kernel",
+      "factory": "masked_copy",
+      "sha256": "e44bfd9568c96e8b8814de79653b061018c4340fa111a9251a3745ae413ef24d",
+      "origin": "akas.ops.sequence.reference"
+    },
+    {
+      "module": "akas.ops.sequence.kernel",
+      "factory": "next_tokens",
+      "sha256": "1a091548a52fcd98db9d47c3cbf6f171c8f28aebe279b46eed4fdfe0a904df9a",
+      "origin": "akas.ops.sequence.reference"
+    },
+    {
+      "module": "akas.ops.sequence.kernel",
+      "factory": "chunk_tail",
+      "sha256": "ca39e37af60500b9eb64104c909297970a78eb5d27cf61a8b00e6c0722f59d1e",
+      "origin": "akas.ops.sequence.tail"
+    },
+    {
+      "module": "akas.ops.sequence.kernel",
+      "factory": "tail_controls",
+      "sha256": "472459967073e0b8151080ed5d479c2c5009a216edd9d70ae9078d6cbea02e46",
+      "origin": "akas.ops.sequence.tail"
+    },
+    {
+      "module": "akas.ops.control.kernel",
+      "factory": "copy_buffer",
+      "sha256": "8b83eb620202e0b98043e76cfa1ff3aa6bf430f9a0fd0579b29a4432f1ce4226",
+      "origin": "akas.ops.control.copy"
+    },
+    {
+      "module": "akas.ops.control.kernel",
+      "factory": "token_feedback",
+      "sha256": "9964beff61e0af9a01d4a2a20021363b91a215706054b7da5a9efa12ceb9d2a2",
+      "origin": "akas.ops.control.feedback"
+    },
+    {
+      "module": "akas.ops.control.kernel",
+      "factory": "spec_accept",
+      "sha256": "25aedabfc11e2b0d8f3a5195b0c034ff33a334e30d0414f408ff3ba4e27f9c99",
+      "origin": "akas.ops.control.speculative"
+    },
+    {
+      "module": "akas.ops.control.kernel",
+      "factory": "spec_draft",
+      "sha256": "659ec75697801fdf45257f5fc98191ac4bbe34eb4ce0bdd5b19221849c705ff6",
+      "origin": "akas.ops.control.speculative"
+    },
+    {
+      "module": "akas.ops.control.kernel",
+      "factory": "spec_proposal",
+      "sha256": "4f616d66910f2161cf0bb1606b1e298f286faf89bb3fc8916df318f3725f2dbf",
+      "origin": "akas.ops.control.speculative"
+    },
+    {
+      "module": "akas.ops.control.kernel",
+      "factory": "spec_repair",
+      "sha256": "7efacfcbc856353e988a98965f312c683d874538fec5b892c1272d877e722fbc",
+      "origin": "akas.ops.control.speculative"
+    },
+    {
+      "module": "akas.ops.control.kernel",
+      "factory": "spec_result",
+      "sha256": "2aa13ec9f2f69cdae49d3a7222a59494ae2067016ce0dbec86b5017a021d5e37",
+      "origin": "akas.ops.control.speculative"
+    },
+    {
+      "module": "akas.ops.control.kernel",
+      "factory": "spec_setup",
+      "sha256": "0bc8a117985b9faf24c1aa91e75ed57e1f260846b7306f382ff83eee7ef3c9b9",
+      "origin": "akas.ops.control.speculative"
+    },
+    {
+      "module": "akas.ops.indexing.kernel",
+      "factory": "clear_rows",
+      "sha256": "40c60e32d320edc0bc1fc344c7ed49127c5729236815320c927af176f0559d99",
+      "origin": "akas.ops.indexing.rows"
+    },
+    {
+      "module": "akas.ops.mtp.kernel",
+      "factory": "mtp_cast",
+      "sha256": "bff5454fd49a424b9858d55eaa60b887b82b06c9a0b19a8647fcba81a71b71ae",
+      "origin": "akas.ops.mtp.cuda"
+    },
+    {
+      "module": "akas.ops.mtp.kernel",
+      "factory": "mtp_join",
+      "sha256": "6ed3d5940bc5dfb2012b592469b67cf8b664749217c42b2a1dcb29df093f88e5",
+      "origin": "akas.ops.mtp.cuda"
+    },
+    {
+      "module": "akas.ops.activation.kernel",
+      "factory": "_swiglu",
+      "sha256": "ef3d2bbd307325f28057bc332bc3fe231ef59c7f491d2f8b5f8c4a905233f039",
+      "origin": "akas.ops.activation.kernel"
+    },
+    {
+      "module": "akas.ops.normalization.kernel",
+      "factory": "_fragment",
+      "sha256": "41baf157c9fe475dd47c0a3395844154f86271bdb6e024b431c0de56cf739863",
+      "origin": "akas.ops.normalization.kernel"
+    },
+    {
+      "module": "akas.ops.normalization.kernel",
+      "factory": "_parallel",
+      "sha256": "eb73bd8b60cabb11078e71c77f647f54b51c68a6aa91d1122ff9c5fe868a4283",
+      "origin": "akas.ops.normalization.kernel"
+    },
+    {
+      "module": "akas.ops.normalization.kernel",
+      "factory": "_serial",
+      "sha256": "2407482ded303e8b9fa98140a5941329c8a65192b911a1bca2522e7c5592ec07",
+      "origin": "akas.ops.normalization.kernel"
+    },
+    {
+      "module": "akas.ops.sequence.kernel",
+      "factory": "flat_prefill_tail",
+      "sha256": "0926eab136c318d93e12bca411424ff4f1f7c9c989828c244d779151ebb0f41f",
+      "origin": "akas.ops.sequence.cuda.packed"
+    },
+    {
+      "module": "akas.ops.sequence.kernel",
+      "factory": "baseline_last",
+      "sha256": "b8ce299bf2443123d7c55b93ca13fef77cd321bc9b8f8be85ccc6fb6747f05e4",
+      "origin": "akas.ops.sequence.cuda.packed_baseline"
+    },
+    {
+      "module": "akas.ops.sequence.kernel",
+      "factory": "mapped_gather_hidden",
+      "sha256": "7dbc7a4f2e7862d8e10366c65d2ae2ae8f23ad2ce05718cfcb8b2ba9f37e2611",
+      "origin": "akas.ops.sequence.cuda.bf16_batch"
+    },
+    {
+      "module": "akas.ops.sequence.kernel",
+      "factory": "mapped_last_rows",
+      "sha256": "7aa6dd3da592ef1299b7b1faf50fcd7fdab43a95f7c8c524fe96505d8d6a34e5",
+      "origin": "akas.ops.sequence.cuda.bf16_batch"
+    },
+    {
+      "module": "akas.ops.sequence.kernel",
+      "factory": "mapped_store_hidden",
+      "sha256": "bd2a5ab2d5a9a9873b73604b8e5823389c043761957e277c2f214eb6b27557f7",
+      "origin": "akas.ops.sequence.cuda.bf16_batch"
+    },
+    {
+      "module": "akas.ops.sequence.kernel",
+      "factory": "chunk_last_rows",
+      "sha256": "c77bc5c4a21b33e529b7103ccd4933ea83e8b785a147827bb4def62f927669b9",
+      "origin": "akas.ops.sequence.cuda.prefill"
+    },
+    {
+      "module": "akas.ops.sequence.kernel",
+      "factory": "baseline_advance",
+      "sha256": "c727f8215a4ed931bd377a2d739747464a100d7dac1db22ae56d8319aedf1433",
+      "origin": "akas.ops.sequence.cuda.packed_baseline"
+    },
+    {
+      "module": "akas.ops.sequence.kernel",
+      "factory": "chunk_advance",
+      "sha256": "cf1d3cd351387c294ddc01e2e28fd3a2bbd454a3431308d734c43e6ad0c59eda",
+      "origin": "akas.ops.sequence.cuda.prefill"
+    },
+    {
+      "module": "akas.ops.sequence.kernel",
+      "factory": "mapped_controls",
+      "sha256": "ead63ad0ccb4330cc6d5f5f31165cd1aeca11fbfb2819b69d901d6a642f14cb0",
+      "origin": "akas.ops.sequence.cuda.bf16_batch"
+    },
+    {
+      "module": "akas.ops.sequence.kernel",
+      "factory": "controls_chunk_controls",
+      "sha256": "185298df8178f9998769cdcecad75cf8274a87e746190401a6289c871348c688",
+      "origin": "akas.ops.sequence.cuda.prefill"
+    },
+    {
+      "module": "akas.ops.sequence.kernel",
+      "factory": "prefill_tail",
+      "sha256": "7b1e1f434092d410e6f1c2e41aaf964157f302e54a5203f5bf1a2ed6cdb531a2",
+      "origin": "akas.ops.sequence.webgpu.packed"
+    },
+    {
+      "module": "akas.kernels.reductions",
+      "factory": "tree_reduce",
+      "sha256": "78f039ab5a4da089aad41716c85cd18443e3fceae6c6594e356f3540b288c847",
+      "origin": "akas.ops.reductions.webgpu"
+    },
+    {
+      "module": "akas.quantization._shared.e4m3",
+      "factory": "decode_storage",
+      "sha256": "1ee806e4d4aab11f30e63215c4b25ea0dc8a08b258b59e5e536ffe7a59cbd6de",
+      "origin": "akas.quantization.weights.block_fp8"
+    },
+    {
+      "module": "akas.quantization._shared.e4m3",
+      "factory": "encode_storage",
+      "sha256": "466c2468d882fba812c679d184c79da5aa51f487dd4668575597f7f569cc46f0",
+      "origin": "akas.quantization.weights.block_fp8"
+    },
+    {
+      "module": "akas.quantization.weights.fp8.cuda",
+      "factory": "decode",
+      "sha256": "3a8b276dbe12d450b6301230a0f24dc5af870e024dca9aaee7cabdb5f4246862",
+      "origin": "akas.quantization.weights.block_fp8"
+    },
+    {
+      "module": "akas.quantization.weights.fp8.cuda",
+      "factory": "widen",
+      "sha256": "ddbce674ce62425e182c40240ce063bf6f02f08c42977ec4c720251afa12fd3e",
+      "origin": "akas.quantization.weights.operands"
+    },
+    {
+      "module": "akas.quantization.weights.ggml.kernel",
+      "factory": "weight_decoder",
+      "sha256": "f3320364818a8e26b7ff7ae3109f970522869e8ff6394bbac5c894bbf931d048",
+      "origin": "akas.quantization.weights.ggml"
+    },
+    {
+      "module": "akas.quantization.weights.ggml.kernel",
+      "factory": "pair_decoder",
+      "sha256": "f94a6b67ff071b0dfc70286f84dff625237e7a78c7445dbf5b67352441660650",
+      "origin": "akas.quantization.weights.ggml"
+    },
+    {
+      "module": "akas.quantization.weights.ggml.cuda",
+      "factory": "hardware_loads",
+      "sha256": "3a77a719c67c05daeeadb768d6006c3c6ba617fe3f6cacc84539f99b740bd942",
+      "origin": "akas.quantization.weights.ggml"
+    },
+    {
+      "module": "akas.quantization.weights.ggml.cuda",
+      "factory": "packed_dot",
+      "sha256": "24138b6c214589eca5a989b4a669cca2fbc80977cd40472f9a18a49f3c65b027",
+      "origin": "akas.quantization.weights.ggml"
+    },
+    {
+      "module": "akas.quantization.weights.ggml.validation",
+      "factory": "sample_weight",
+      "sha256": "560c74ce7cfeb723c855906dfaab582d35a899019b8b801d849da1703d435c12",
+      "origin": "akas.quantization.weights.ggml"
+    },
+    {
+      "module": "akas.quantization._shared.rounding",
+      "factory": "half_bits",
+      "sha256": "6347b82792066dcb0e4f287cb526f5a7f5d9f94cf8e70e7ea7dab55506e6f90e",
+      "origin": "akas.quantization.weights.storage"
+    },
+    {
+      "module": "akas.quantization._shared.rounding",
+      "factory": "round_half",
+      "sha256": "d4a791e5ad103bbd2e2127d200f19e654ddce13685d64ce3b1e3549d5a9539cf",
+      "origin": "akas.quantization.weights.storage"
+    },
+    {
+      "module": "akas.quantization._shared.packing",
+      "factory": "packed_loads",
+      "sha256": "0eb6a06eea8ef2432fe9d90ef241c7190db7a6687ae86747e9be579448a4cd37",
+      "origin": "akas.quantization.weights.storage"
+    },
+    {
+      "module": "akas.quantization.activations.fp8.cuda",
+      "factory": "quantize",
+      "sha256": "7ed1f019e78e64d1c7b86e87d9a4a52a43fc5440158ef64428f1308f74ab118c",
+      "origin": "akas.quantization.activations.fp8"
+    },
+    {
+      "module": "akas.quantization.activations.q16.validation",
+      "factory": "encode",
+      "sha256": "82554801a3aa5ad9c97a1444a8951f15013bb976c28a64ee1c59e00ee7ff9cf5",
+      "origin": "akas.quantization.activations.q16"
+    },
+    {
+      "module": "akas.quantization.activations.q16.validation",
+      "factory": "decode",
+      "sha256": "3d8ea701306215f605fddc442167fcdb8979f43e0c69b4e0d134036e158a1c64",
+      "origin": "akas.quantization.activations.q16"
+    },
+    {
+      "module": "akas.quantization.activations._shared.packing",
+      "factory": "_quantize",
+      "sha256": "b3d481f585ed3b1439e3f5e71b7ab75746797e9335448a5691025e672a5d0beb",
+      "origin": "akas.quantization.activations.packing"
+    },
+    {
+      "module": "akas.quantization.kv.fp8.cuda",
+      "factory": "writer",
+      "sha256": "ca78018c54d7773ea9205c85c4bd2beeef98b1291a4ef0b8085247fe117701cc",
+      "origin": "akas.quantization.kv.fp8"
+    },
+    {
+      "module": "akas.quantization.kv.fp8.cuda",
+      "factory": "decoder",
+      "sha256": "510f057d5d8e4e3b2349e1abbec18dd7be6ffdaeaa95ebd79d4a77bba56cdad8",
+      "origin": "akas.quantization.kv.fp8"
+    },
+    {
+      "module": "akas.quantization.kv.fp8.cuda",
+      "factory": "packed_decoder",
+      "sha256": "8ecfcc2bb4ff16e7f34976e5023136ac5a6f5317a0e88c368b79ec06d3efbea2",
+      "origin": "akas.quantization.kv.fp8"
+    },
+    {
+      "module": "akas.quantization.kv.fp8.cuda",
+      "factory": "kv_encode",
+      "sha256": "bc0ce81199a7fd92cd8f1fdd5795c4d396ad76515db0a5bfc78228d19004aed8",
+      "origin": "akas.quantization.kv.fp8"
+    },
+    {
+      "module": "akas.quantization.kv.fp8.cuda",
+      "factory": "kv_decode",
+      "sha256": "09c76859d444e268c5e1eecdad8d07ef9072eaab9dc54597dd93b0588f839313",
+      "origin": "akas.quantization.kv.fp8"
+    },
+    {
+      "module": "akas.quantization.kv.fp8.kernel",
+      "factory": "helpers",
+      "sha256": "2140d9260d5690dc85f9b2519cb55d0bb036c19576accd22ac57b6b4060ed98a",
+      "origin": "akas.quantization.kv.fp8"
+    },
+    {
+      "module": "akas.quantization.kv.fp8.kernel",
+      "factory": "portable_scaling",
+      "sha256": "709ad4ae6785c66959821abf239670d34469e3dbbd09feb1a3470168b6c1eb7b",
+      "origin": "akas.quantization.kv.fp8"
+    },
+    {
+      "module": "akas.quantization.kv.fp8.kernel",
+      "factory": "reference_writer",
+      "sha256": "b6b5516025ce0d4b38b69252dad75b08f2340dde1f8702752f479268014e1f6f",
+      "origin": "akas.quantization.kv.fp8"
+    },
+    {
+      "module": "akas.quantization.kv.fp8.kernel",
+      "factory": "reference_decoder",
+      "sha256": "c969e429b31c0b618c7e7a986252d5869e854f61e8a1865d216b6a319737375c",
+      "origin": "akas.quantization.kv.fp8"
+    }
+  ],
+  "constants": [
+    {
+      "module": "akas.quantization.weights.fp8.cuda",
+      "name": "CUDA_SOURCE",
+      "sha256": "470b3b317e046361bb8bd40cd2a327e2fd8c7520aa9683211181ec18c430a3d7",
+      "origin": "akas.quantization.weights.operands"
+    }
+  ]
+}

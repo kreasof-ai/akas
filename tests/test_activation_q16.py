@@ -6,7 +6,8 @@ import pytest
 
 
 def test_q16_encoding_reconstruction_and_zero():
-    from akas.quantization.activations.q16 import encode, decode
+    from akas.quantization.activations.q16.validation import encode
+    from akas.quantization.activations.q16.validation import decode
 
     values = np.random.default_rng(4).normal(size=(4,256)).astype("float32")
     values[0] = 0

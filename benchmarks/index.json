@@ -1,0 +1,4986 @@
+{
+  "schema": "akas.benchmark-index.v1",
+  "runs": [
+    {
+      "id": "20261015161703354638-ebde6663",
+      "started_at": "2026-10-15T16:17:03.354638Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "Qwen/Qwen3.5-0.8B",
+      "runtime": "sglang",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "mtp",
+      "kv_dtype": "bfloat16",
+      "weight_format": "bf16-safetensors",
+      "change": {
+        "kind": "baseline",
+        "description": "Qualify baseline execution; eager probes are not competitive performance measurements",
+        "parent_run": null
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015161703354638-ebde6663/run.json"
+    },
+    {
+      "id": "20261015162931967603-e9773d3c",
+      "started_at": "2026-10-15T16:29:31.967603Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "LiquidAI/LFM2.5-230M",
+      "runtime": "llama",
+      "workload": "standard-v1",
+      "provider": "vulkan",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_k_m",
+      "change": {
+        "kind": "baseline",
+        "description": "Qualify baseline execution; these probes are not tuned performance measurements",
+        "parent_run": null
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015162931967603-e9773d3c/run.json"
+    },
+    {
+      "id": "20261015163142488303-dc61cf16",
+      "started_at": "2026-10-15T16:31:42.488303Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "LiquidAI/LFM2.5-230M",
+      "runtime": "vllm",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "bfloat16",
+      "weight_format": "bf16",
+      "change": {
+        "kind": "baseline",
+        "description": "Qualify baseline execution; these probes are not tuned performance measurements",
+        "parent_run": null
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015163142488303-dc61cf16/run.json"
+    },
+    {
+      "id": "20261015163221936786-eb375283",
+      "started_at": "2026-10-15T16:32:21.936786Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "Qwen/Qwen3.5-0.8B",
+      "runtime": "vllm",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "bfloat16",
+      "weight_format": "bf16",
+      "change": {
+        "kind": "baseline",
+        "description": "Qualify baseline execution; these probes are not tuned performance measurements",
+        "parent_run": null
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015163221936786-eb375283/run.json"
+    },
+    {
+      "id": "20261015163316402787-47cf5480",
+      "started_at": "2026-10-15T16:33:16.402787Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "Qwen/Qwen3.5-0.8B",
+      "runtime": "vllm",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "mtp",
+      "kv_dtype": "bfloat16",
+      "weight_format": "bf16",
+      "change": {
+        "kind": "baseline",
+        "description": "Qualify baseline execution; these probes are not tuned performance measurements",
+        "parent_run": null
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015163316402787-47cf5480/run.json"
+    },
+    {
+      "id": "20261015163400643504-e48413b1",
+      "started_at": "2026-10-15T16:34:00.643504Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "LiquidAI/LFM2.5-230M",
+      "runtime": "sglang",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "bfloat16",
+      "weight_format": "bf16",
+      "change": {
+        "kind": "baseline",
+        "description": "Qualify baseline execution; these probes are not tuned performance measurements",
+        "parent_run": null
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015163400643504-e48413b1/run.json"
+    },
+    {
+      "id": "20261015163438267561-0272565a",
+      "started_at": "2026-10-15T16:34:38.267561Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "Qwen/Qwen3.5-0.8B",
+      "runtime": "sglang",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "bfloat16",
+      "weight_format": "bf16",
+      "change": {
+        "kind": "baseline",
+        "description": "Qualify baseline execution; these probes are not tuned performance measurements",
+        "parent_run": null
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015163438267561-0272565a/run.json"
+    },
+    {
+      "id": "20261015163525266126-6bebc007",
+      "started_at": "2026-10-15T16:35:25.266126Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "Qwen/Qwen3.5-0.8B",
+      "runtime": "sglang",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "mtp",
+      "kv_dtype": "bfloat16",
+      "weight_format": "bf16",
+      "change": {
+        "kind": "baseline",
+        "description": "Qualify baseline execution; these probes are not tuned performance measurements",
+        "parent_run": null
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015163525266126-6bebc007/run.json"
+    },
+    {
+      "id": "20261015163609080115-c695f440",
+      "started_at": "2026-10-15T16:36:09.080115Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "LiquidAI/LFM2.5-230M",
+      "runtime": "llama",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "f16",
+      "change": {
+        "kind": "baseline",
+        "description": "Qualify baseline execution; these probes are not tuned performance measurements",
+        "parent_run": null
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015163609080115-c695f440/run.json"
+    },
+    {
+      "id": "20261015163614594098-9d6a0a5e",
+      "started_at": "2026-10-15T16:36:14.594098Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "LiquidAI/LFM2.5-230M",
+      "runtime": "llama",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "baseline",
+        "description": "Qualify baseline execution; these probes are not tuned performance measurements",
+        "parent_run": null
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015163614594098-9d6a0a5e/run.json"
+    },
+    {
+      "id": "20261015163617646455-af16fded",
+      "started_at": "2026-10-15T16:36:17.646455Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "LiquidAI/LFM2.5-230M",
+      "runtime": "llama",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_k_m",
+      "change": {
+        "kind": "baseline",
+        "description": "Qualify baseline execution; these probes are not tuned performance measurements",
+        "parent_run": null
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015163617646455-af16fded/run.json"
+    },
+    {
+      "id": "20261015163631175988-26cb343f",
+      "started_at": "2026-10-15T16:36:31.175988Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "Qwen/Qwen3.5-0.8B",
+      "runtime": "llama",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "f16",
+      "change": {
+        "kind": "baseline",
+        "description": "Qualify baseline execution; these probes are not tuned performance measurements",
+        "parent_run": null
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015163631175988-26cb343f/run.json"
+    },
+    {
+      "id": "20261015163640146353-cc14cece",
+      "started_at": "2026-10-15T16:36:40.146353Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "Qwen/Qwen3.5-0.8B",
+      "runtime": "llama",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "baseline",
+        "description": "Qualify baseline execution; these probes are not tuned performance measurements",
+        "parent_run": null
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015163640146353-cc14cece/run.json"
+    },
+    {
+      "id": "20261015163648400950-913eb717",
+      "started_at": "2026-10-15T16:36:48.400950Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "Qwen/Qwen3.5-0.8B",
+      "runtime": "llama",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_k_m",
+      "change": {
+        "kind": "baseline",
+        "description": "Qualify baseline execution; these probes are not tuned performance measurements",
+        "parent_run": null
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015163648400950-913eb717/run.json"
+    },
+    {
+      "id": "20261015163654007165-81ed1849",
+      "started_at": "2026-10-15T16:36:54.007165Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "LiquidAI/LFM2.5-230M",
+      "runtime": "llama",
+      "workload": "standard-v1",
+      "provider": "vulkan",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "f16",
+      "change": {
+        "kind": "baseline",
+        "description": "Qualify baseline execution; these probes are not tuned performance measurements",
+        "parent_run": null
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015163654007165-81ed1849/run.json"
+    },
+    {
+      "id": "20261015163701913656-5d2560c1",
+      "started_at": "2026-10-15T16:37:01.913656Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "LiquidAI/LFM2.5-230M",
+      "runtime": "llama",
+      "workload": "standard-v1",
+      "provider": "vulkan",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "baseline",
+        "description": "Qualify baseline execution; these probes are not tuned performance measurements",
+        "parent_run": null
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015163701913656-5d2560c1/run.json"
+    },
+    {
+      "id": "20261015163706965526-751709de",
+      "started_at": "2026-10-15T16:37:06.965526Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "Qwen/Qwen3.5-0.8B",
+      "runtime": "llama",
+      "workload": "standard-v1",
+      "provider": "vulkan",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "f16",
+      "change": {
+        "kind": "baseline",
+        "description": "Qualify baseline execution; these probes are not tuned performance measurements",
+        "parent_run": null
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015163706965526-751709de/run.json"
+    },
+    {
+      "id": "20261015163715513406-ab1f9ac6",
+      "started_at": "2026-10-15T16:37:15.513406Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "Qwen/Qwen3.5-0.8B",
+      "runtime": "llama",
+      "workload": "standard-v1",
+      "provider": "vulkan",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "baseline",
+        "description": "Qualify baseline execution; these probes are not tuned performance measurements",
+        "parent_run": null
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015163715513406-ab1f9ac6/run.json"
+    },
+    {
+      "id": "20261015163724634711-354fd11b",
+      "started_at": "2026-10-15T16:37:24.634711Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "Qwen/Qwen3.5-0.8B",
+      "runtime": "llama",
+      "workload": "standard-v1",
+      "provider": "vulkan",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_k_m",
+      "change": {
+        "kind": "baseline",
+        "description": "Qualify baseline execution; these probes are not tuned performance measurements",
+        "parent_run": null
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015163724634711-354fd11b/run.json"
+    },
+    {
+      "id": "20261015163942089882-df5322f1",
+      "started_at": "2026-10-15T16:39:42.089882Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": null,
+      "change": {
+        "kind": "validation",
+        "description": "Validate total-output accounting and archived incumbent export; packed kernels unchanged",
+        "parent_run": null
+      },
+      "purpose": "benchmark",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 8,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 2,
+      "path": "runs/20261015163942089882-df5322f1/run.json"
+    },
+    {
+      "id": "20261015164233811302-ca52adae",
+      "started_at": "2026-10-15T16:42:33.811302Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "webgpu",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": null,
+      "change": {
+        "kind": "validation",
+        "description": "Validate WebGPU execution after enabling matching NVIDIA Vulkan libraries",
+        "parent_run": null
+      },
+      "purpose": "benchmark",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 8,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015164233811302-ca52adae/run.json"
+    },
+    {
+      "id": "20261015164521481025-c817f9b8",
+      "started_at": "2026-10-15T16:45:21.481025Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "webgpu",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": null,
+      "change": {
+        "kind": "configuration",
+        "description": "Enable the existing WebGPU prepared submission path; kernels unchanged",
+        "parent_run": null
+      },
+      "purpose": "benchmark",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 8,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015164521481025-c817f9b8/run.json"
+    },
+    {
+      "id": "20261015165512907548-25b0d0de",
+      "started_at": "2026-10-15T16:55:12.907548Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "webgpu",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": null,
+      "change": {
+        "kind": "configuration",
+        "description": "Validate prepared WebGPU execution with the pinned Tensor native encoder build",
+        "parent_run": "20261015164521481025-c817f9b8"
+      },
+      "purpose": "benchmark",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 8,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015165512907548-25b0d0de/run.json"
+    },
+    {
+      "id": "20261015165603215052-9f648a2c",
+      "started_at": "2026-10-15T16:56:03.215052Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "LiquidAI/LFM2.5-230M",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "webgpu",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_k_m",
+      "change": {
+        "kind": "validation",
+        "description": "Compare identical tokens and logits across imperative and native prepared WebGPU execution",
+        "parent_run": "20261015165512907548-25b0d0de"
+      },
+      "purpose": "validation",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 8,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015165603215052-9f648a2c/run.json"
+    },
+    {
+      "id": "20261015173801875806-1628094f",
+      "started_at": "2026-10-15T17:38:01.875806Z",
+      "status": "budget_exhausted",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2",
+      "runtime": "akas",
+      "workload": null,
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": null,
+      "change": {
+        "kind": "configuration",
+        "description": "Automatic compilation and serving optimization",
+        "parent_run": null
+      },
+      "purpose": "optimization",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261015173801875806-1628094f/run.json"
+    },
+    {
+      "id": "20261015173923112523-423c9921",
+      "started_at": "2026-10-15T17:39:23.112523Z",
+      "status": "budget_exhausted",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2",
+      "runtime": "akas",
+      "workload": null,
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": null,
+      "change": {
+        "kind": "configuration",
+        "description": "Automatic compilation and serving optimization",
+        "parent_run": null
+      },
+      "purpose": "optimization",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261015173923112523-423c9921/run.json"
+    },
+    {
+      "id": "20261015174044411464-88f1bc9d",
+      "started_at": "2026-10-15T17:40:44.411464Z",
+      "status": "budget_exhausted",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2",
+      "runtime": "akas",
+      "workload": null,
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": null,
+      "change": {
+        "kind": "configuration",
+        "description": "Automatic compilation and serving optimization",
+        "parent_run": null
+      },
+      "purpose": "optimization",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261015174044411464-88f1bc9d/run.json"
+    },
+    {
+      "id": "20261015174354131846-1c268163",
+      "started_at": "2026-10-15T17:43:54.131846Z",
+      "status": "budget_exhausted",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": null,
+      "change": {
+        "kind": "configuration",
+        "description": "Automatic compilation and serving optimization",
+        "parent_run": null
+      },
+      "purpose": "optimization",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 8,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015174354131846-1c268163/run.json"
+    },
+    {
+      "id": "20261015174636407045-e37fd088",
+      "started_at": "2026-10-15T17:46:36.407045Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": null,
+      "change": {
+        "kind": "configuration",
+        "description": "Automatic compilation and serving optimization",
+        "parent_run": null
+      },
+      "purpose": "optimization",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 8,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 3,
+      "path": "runs/20261015174636407045-e37fd088/run.json"
+    },
+    {
+      "id": "20261015174659540843-68be9141",
+      "started_at": "2026-10-15T17:46:59.540843Z",
+      "status": "budget_exhausted",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": null,
+      "change": {
+        "kind": "configuration",
+        "description": "Automatic compilation and serving optimization",
+        "parent_run": "20261015174636407045-e37fd088"
+      },
+      "purpose": "optimization",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 8,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015174659540843-68be9141/run.json"
+    },
+    {
+      "id": "20261015174811803184-0a7ebfd2",
+      "started_at": "2026-10-15T17:48:11.803184Z",
+      "status": "budget_exhausted",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": null,
+      "change": {
+        "kind": "configuration",
+        "description": "Automatic compilation and serving optimization",
+        "parent_run": "20261015174636407045-e37fd088"
+      },
+      "purpose": "optimization",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 8,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015174811803184-0a7ebfd2/run.json"
+    },
+    {
+      "id": "20261015174924060246-21a16eb7",
+      "started_at": "2026-10-15T17:49:24.060246Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": null,
+      "change": {
+        "kind": "configuration",
+        "description": "Automatic compilation and serving optimization",
+        "parent_run": "20261015174636407045-e37fd088"
+      },
+      "purpose": "optimization",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 8,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 2,
+      "path": "runs/20261015174924060246-21a16eb7/run.json"
+    },
+    {
+      "id": "20261015174942801597-cedca389",
+      "started_at": "2026-10-15T17:49:42.801597Z",
+      "status": "budget_exhausted",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": null,
+      "change": {
+        "kind": "configuration",
+        "description": "Automatic compilation and serving optimization",
+        "parent_run": "20261015174636407045-e37fd088"
+      },
+      "purpose": "optimization",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 8,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015174942801597-cedca389/run.json"
+    },
+    {
+      "id": "20261015175552363475-06ec60f3",
+      "started_at": "2026-10-15T17:55:52.363475Z",
+      "status": "budget_exhausted",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": null,
+      "change": {
+        "kind": "configuration",
+        "description": "Automatic compilation and serving optimization",
+        "parent_run": null
+      },
+      "purpose": "optimization",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 8,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015175552363475-06ec60f3/run.json"
+    },
+    {
+      "id": "20261015175740609300-a850fa60",
+      "started_at": "2026-10-15T17:57:40.609300Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": null,
+      "change": {
+        "kind": "configuration",
+        "description": "Automatic compilation and serving optimization",
+        "parent_run": null
+      },
+      "purpose": "optimization",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 8,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 3,
+      "path": "runs/20261015175740609300-a850fa60/run.json"
+    },
+    {
+      "id": "20261015175842908543-ffc91245",
+      "started_at": "2026-10-15T17:58:42.908543Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": null,
+      "change": {
+        "kind": "configuration",
+        "description": "Automatic compilation and serving optimization",
+        "parent_run": "20261015175740609300-a850fa60"
+      },
+      "purpose": "optimization",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 8,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 3,
+      "path": "runs/20261015175842908543-ffc91245/run.json"
+    },
+    {
+      "id": "20261015175901663119-fca2c952",
+      "started_at": "2026-10-15T17:59:01.663119Z",
+      "status": "budget_exhausted",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": null,
+      "change": {
+        "kind": "configuration",
+        "description": "Automatic compilation and serving optimization",
+        "parent_run": "20261015175740609300-a850fa60"
+      },
+      "purpose": "optimization",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 8,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015175901663119-fca2c952/run.json"
+    },
+    {
+      "id": "20261015175949925238-f6422b2e",
+      "started_at": "2026-10-15T17:59:49.925238Z",
+      "status": "budget_exhausted",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": null,
+      "change": {
+        "kind": "configuration",
+        "description": "Automatic compilation and serving optimization",
+        "parent_run": "20261015175740609300-a850fa60"
+      },
+      "purpose": "optimization",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 8,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015175949925238-f6422b2e/run.json"
+    },
+    {
+      "id": "20261015181323386732-bcf0ddb3",
+      "started_at": "2026-10-15T18:13:23.386732Z",
+      "status": "failed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "LiquidAI/LFM2.5-230M",
+      "runtime": "vllm",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "bfloat16",
+      "weight_format": "bf16",
+      "change": {
+        "kind": "baseline",
+        "description": "Measure optimized baseline execution",
+        "parent_run": null
+      },
+      "purpose": "baseline",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015181323386732-bcf0ddb3/run.json"
+    },
+    {
+      "id": "20261015181457693874-cba6d304",
+      "started_at": "2026-10-15T18:14:57.693874Z",
+      "status": "failed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "LiquidAI/LFM2.5-230M",
+      "runtime": "vllm",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "bfloat16",
+      "weight_format": "bf16",
+      "change": {
+        "kind": "baseline",
+        "description": "Measure optimized baseline execution",
+        "parent_run": null
+      },
+      "purpose": "baseline",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015181457693874-cba6d304/run.json"
+    },
+    {
+      "id": "20261015181815641257-391d76bc",
+      "started_at": "2026-10-15T18:18:15.641257Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "LiquidAI/LFM2.5-230M",
+      "runtime": "vllm",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "bfloat16",
+      "weight_format": "bf16",
+      "change": {
+        "kind": "baseline",
+        "description": "Measure optimized baseline execution",
+        "parent_run": null
+      },
+      "purpose": "baseline",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015181815641257-391d76bc/run.json"
+    },
+    {
+      "id": "20261015182238147973-d293f7b3",
+      "started_at": "2026-10-15T18:22:38.147973Z",
+      "status": "failed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.qwen35.model:Qwen35Dense",
+      "runtime": "akas",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "bfloat16",
+      "weight_format": null,
+      "change": {
+        "kind": "configuration",
+        "description": "Automatic compilation and serving optimization",
+        "parent_run": null
+      },
+      "purpose": "optimization",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 5,
+      "path": "runs/20261015182238147973-d293f7b3/run.json"
+    },
+    {
+      "id": "20261015182753403598-66bd0e25",
+      "started_at": "2026-10-15T18:27:53.403598Z",
+      "status": "interrupted",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.qwen35.model:Qwen35Dense",
+      "runtime": "akas",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "mtp",
+      "kv_dtype": "bfloat16",
+      "weight_format": null,
+      "change": {
+        "kind": "configuration",
+        "description": "Automatic compilation and serving optimization",
+        "parent_run": null
+      },
+      "purpose": "optimization",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015182753403598-66bd0e25/run.json"
+    },
+    {
+      "id": "20261015183003881091-fbbe2b3e",
+      "started_at": "2026-10-15T18:30:03.881091Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.qwen35.model:Qwen35Dense",
+      "runtime": "akas",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "bfloat16",
+      "weight_format": null,
+      "change": {
+        "kind": "configuration",
+        "description": "Automatic compilation and serving optimization",
+        "parent_run": null
+      },
+      "purpose": "optimization",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 5,
+      "path": "runs/20261015183003881091-fbbe2b3e/run.json"
+    },
+    {
+      "id": "20261015183046526569-98d3f8df",
+      "started_at": "2026-10-15T18:30:46.526569Z",
+      "status": "budget_exhausted",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.qwen35.model:Qwen35Dense",
+      "runtime": "akas",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "mtp",
+      "kv_dtype": "bfloat16",
+      "weight_format": null,
+      "change": {
+        "kind": "configuration",
+        "description": "Automatic compilation and serving optimization",
+        "parent_run": "20261015183003881091-fbbe2b3e"
+      },
+      "purpose": "optimization",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015183046526569-98d3f8df/run.json"
+    },
+    {
+      "id": "20261015183446838572-0f9dc56e",
+      "started_at": "2026-10-15T18:34:46.838572Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.qwen35.model:Qwen35Dense",
+      "runtime": "akas",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "mtp",
+      "kv_dtype": "bfloat16",
+      "weight_format": null,
+      "change": {
+        "kind": "configuration",
+        "description": "Automatic compilation and serving optimization",
+        "parent_run": "20261015183003881091-fbbe2b3e"
+      },
+      "purpose": "optimization",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 23,
+      "path": "runs/20261015183446838572-0f9dc56e/run.json"
+    },
+    {
+      "id": "20261015183816131904-9da768f7",
+      "started_at": "2026-10-15T18:38:16.131904Z",
+      "status": "budget_exhausted",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.qwen35.model:Qwen35Dense",
+      "runtime": "akas",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "mtp",
+      "kv_dtype": "bfloat16",
+      "weight_format": null,
+      "change": {
+        "kind": "configuration",
+        "description": "Automatic compilation and serving optimization",
+        "parent_run": "20261015183003881091-fbbe2b3e"
+      },
+      "purpose": "optimization",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015183816131904-9da768f7/run.json"
+    },
+    {
+      "id": "20261015183828436683-e2d8d7f9",
+      "started_at": "2026-10-15T18:38:28.436683Z",
+      "status": "budget_exhausted",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.qwen35.model:Qwen35Dense",
+      "runtime": "akas",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "mtp",
+      "kv_dtype": "bfloat16",
+      "weight_format": null,
+      "change": {
+        "kind": "configuration",
+        "description": "Automatic compilation and serving optimization",
+        "parent_run": "20261015183003881091-fbbe2b3e"
+      },
+      "purpose": "optimization",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015183828436683-e2d8d7f9/run.json"
+    },
+    {
+      "id": "20261015183840784278-ae76e500",
+      "started_at": "2026-10-15T18:38:40.784278Z",
+      "status": "budget_exhausted",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.qwen35.model:Qwen35Dense",
+      "runtime": "akas",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "mtp",
+      "kv_dtype": "bfloat16",
+      "weight_format": null,
+      "change": {
+        "kind": "configuration",
+        "description": "Automatic compilation and serving optimization",
+        "parent_run": "20261015183003881091-fbbe2b3e"
+      },
+      "purpose": "optimization",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015183840784278-ae76e500/run.json"
+    },
+    {
+      "id": "20261015183853028818-6a3010db",
+      "started_at": "2026-10-15T18:38:53.028818Z",
+      "status": "budget_exhausted",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.qwen35.model:Qwen35Dense",
+      "runtime": "akas",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "mtp",
+      "kv_dtype": "bfloat16",
+      "weight_format": null,
+      "change": {
+        "kind": "configuration",
+        "description": "Automatic compilation and serving optimization",
+        "parent_run": "20261015183003881091-fbbe2b3e"
+      },
+      "purpose": "optimization",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015183853028818-6a3010db/run.json"
+    },
+    {
+      "id": "20261015183905358278-96c72c1c",
+      "started_at": "2026-10-15T18:39:05.358278Z",
+      "status": "budget_exhausted",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.qwen35.model:Qwen35Dense",
+      "runtime": "akas",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "mtp",
+      "kv_dtype": "bfloat16",
+      "weight_format": null,
+      "change": {
+        "kind": "configuration",
+        "description": "Automatic compilation and serving optimization",
+        "parent_run": "20261015183003881091-fbbe2b3e"
+      },
+      "purpose": "optimization",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015183905358278-96c72c1c/run.json"
+    },
+    {
+      "id": "20261015185054691583-beaa4d23",
+      "started_at": "2026-10-15T18:50:54.691583Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.qwen35.model:Qwen35Dense",
+      "runtime": "akas",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "bfloat16",
+      "weight_format": "bf16",
+      "change": {
+        "kind": "configuration",
+        "description": "Automatic compilation and serving optimization",
+        "parent_run": null
+      },
+      "purpose": "optimization",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 5,
+      "path": "runs/20261015185054691583-beaa4d23/run.json"
+    },
+    {
+      "id": "20261015185525529105-7b0af03f",
+      "started_at": "2026-10-15T18:55:25.529105Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.qwen35.model:Qwen35Dense",
+      "runtime": "akas",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "mtp",
+      "kv_dtype": "bfloat16",
+      "weight_format": "bf16",
+      "change": {
+        "kind": "configuration",
+        "description": "Automatic compilation and serving optimization",
+        "parent_run": "20261015185054691583-beaa4d23"
+      },
+      "purpose": "optimization",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 17,
+      "path": "runs/20261015185525529105-7b0af03f/run.json"
+    },
+    {
+      "id": "20261015185927009873-f299bf6d",
+      "started_at": "2026-10-15T18:59:27.009873Z",
+      "status": "interrupted",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.qwen35.model:Qwen35Dense",
+      "runtime": "akas",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "mtp",
+      "kv_dtype": "bfloat16",
+      "weight_format": null,
+      "change": {
+        "kind": "configuration",
+        "description": "Automatic compilation and serving optimization",
+        "parent_run": "20261015185054691583-beaa4d23"
+      },
+      "purpose": "optimization",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015185927009873-f299bf6d/run.json"
+    },
+    {
+      "id": "20261015185931479577-a0bf43de",
+      "started_at": "2026-10-15T18:59:31.479577Z",
+      "status": "budget_exhausted",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.qwen35.model:Qwen35Dense",
+      "runtime": "akas",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "mtp",
+      "kv_dtype": "bfloat16",
+      "weight_format": null,
+      "change": {
+        "kind": "configuration",
+        "description": "Automatic compilation and serving optimization",
+        "parent_run": "20261015185054691583-beaa4d23"
+      },
+      "purpose": "optimization",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015185931479577-a0bf43de/run.json"
+    },
+    {
+      "id": "20261015190032784189-d6a6a86f",
+      "started_at": "2026-10-15T19:00:32.784189Z",
+      "status": "failed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "LiquidAI/LFM2.5-230M",
+      "runtime": "sglang",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "bfloat16",
+      "weight_format": "bf16",
+      "change": {
+        "kind": "baseline",
+        "description": "Measure optimized baseline execution",
+        "parent_run": null
+      },
+      "purpose": "baseline",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015190032784189-d6a6a86f/run.json"
+    },
+    {
+      "id": "20261015190158921420-161f3275",
+      "started_at": "2026-10-15T19:01:58.921420Z",
+      "status": "failed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "LiquidAI/LFM2.5-230M",
+      "runtime": "sglang",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "bfloat16",
+      "weight_format": "bf16",
+      "change": {
+        "kind": "baseline",
+        "description": "Measure optimized baseline execution",
+        "parent_run": null
+      },
+      "purpose": "baseline",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015190158921420-161f3275/run.json"
+    },
+    {
+      "id": "20261015190359153016-bcd95971",
+      "started_at": "2026-10-15T19:03:59.153016Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "LiquidAI/LFM2.5-230M",
+      "runtime": "sglang",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "bfloat16",
+      "weight_format": "bf16",
+      "change": {
+        "kind": "baseline",
+        "description": "Measure optimized baseline execution",
+        "parent_run": null
+      },
+      "purpose": "baseline",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015190359153016-bcd95971/run.json"
+    },
+    {
+      "id": "20261015190536066752-9e49f8e2",
+      "started_at": "2026-10-15T19:05:36.066752Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "Qwen/Qwen3.5-0.8B",
+      "runtime": "sglang",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "bfloat16",
+      "weight_format": "bf16",
+      "change": {
+        "kind": "baseline",
+        "description": "Measure optimized baseline execution",
+        "parent_run": null
+      },
+      "purpose": "baseline",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015190536066752-9e49f8e2/run.json"
+    },
+    {
+      "id": "20261015190958176695-723ea8a5",
+      "started_at": "2026-10-15T19:09:58.176695Z",
+      "status": "failed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "Qwen/Qwen3.5-0.8B",
+      "runtime": "sglang",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "mtp",
+      "kv_dtype": "bfloat16",
+      "weight_format": "bf16",
+      "change": {
+        "kind": "baseline",
+        "description": "Measure optimized baseline execution",
+        "parent_run": null
+      },
+      "purpose": "baseline",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015190958176695-723ea8a5/run.json"
+    },
+    {
+      "id": "20261015191642427014-b4b32a18",
+      "started_at": "2026-10-15T19:16:42.427014Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "Qwen/Qwen3.5-0.8B",
+      "runtime": "sglang",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "bfloat16",
+      "weight_format": "bf16",
+      "change": {
+        "kind": "baseline",
+        "description": "Measure optimized baseline execution",
+        "parent_run": null
+      },
+      "purpose": "baseline",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015191642427014-b4b32a18/run.json"
+    },
+    {
+      "id": "20261015191740487039-aa1e54db",
+      "started_at": "2026-10-15T19:17:40.487039Z",
+      "status": "failed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "Qwen/Qwen3.5-0.8B",
+      "runtime": "sglang",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "mtp",
+      "kv_dtype": "bfloat16",
+      "weight_format": "bf16",
+      "change": {
+        "kind": "baseline",
+        "description": "Measure optimized baseline execution",
+        "parent_run": null
+      },
+      "purpose": "baseline",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015191740487039-aa1e54db/run.json"
+    },
+    {
+      "id": "20261015191912117158-bf3b040b",
+      "started_at": "2026-10-15T19:19:12.117158Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "Qwen/Qwen3.5-0.8B",
+      "runtime": "vllm",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "bfloat16",
+      "weight_format": "bf16",
+      "change": {
+        "kind": "baseline",
+        "description": "Measure optimized baseline execution",
+        "parent_run": null
+      },
+      "purpose": "baseline",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015191912117158-bf3b040b/run.json"
+    },
+    {
+      "id": "20261015192539972093-e950e0fd",
+      "started_at": "2026-10-15T19:25:39.972093Z",
+      "status": "failed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "Qwen/Qwen3.5-0.8B",
+      "runtime": "vllm",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "mtp",
+      "kv_dtype": "bfloat16",
+      "weight_format": "bf16",
+      "change": {
+        "kind": "baseline",
+        "description": "Measure optimized baseline execution",
+        "parent_run": null
+      },
+      "purpose": "baseline",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015192539972093-e950e0fd/run.json"
+    },
+    {
+      "id": "20261015192832378421-704bee0c",
+      "started_at": "2026-10-15T19:28:32.378421Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "LiquidAI/LFM2.5-230M",
+      "runtime": "llama",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "f16",
+      "change": {
+        "kind": "baseline",
+        "description": "Measure optimized baseline execution",
+        "parent_run": null
+      },
+      "purpose": "baseline",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015192832378421-704bee0c/run.json"
+    },
+    {
+      "id": "20261015193656299664-fe2eba27",
+      "started_at": "2026-10-15T19:36:56.299664Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "LiquidAI/LFM2.5-230M",
+      "runtime": "llama",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "baseline",
+        "description": "Measure optimized baseline execution",
+        "parent_run": null
+      },
+      "purpose": "baseline",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015193656299664-fe2eba27/run.json"
+    },
+    {
+      "id": "20261015194346054741-23180dda",
+      "started_at": "2026-10-15T19:43:46.054741Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "LiquidAI/LFM2.5-230M",
+      "runtime": "llama",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_k_m",
+      "change": {
+        "kind": "baseline",
+        "description": "Measure optimized baseline execution",
+        "parent_run": null
+      },
+      "purpose": "baseline",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015194346054741-23180dda/run.json"
+    },
+    {
+      "id": "20261015195038132061-53344b1f",
+      "started_at": "2026-10-15T19:50:38.132061Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "LiquidAI/LFM2.5-230M",
+      "runtime": "llama",
+      "workload": "standard-v1",
+      "provider": "vulkan",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "f16",
+      "change": {
+        "kind": "baseline",
+        "description": "Measure optimized baseline execution",
+        "parent_run": null
+      },
+      "purpose": "baseline",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015195038132061-53344b1f/run.json"
+    },
+    {
+      "id": "20261015200116000928-e3d9c8e5",
+      "started_at": "2026-10-15T20:01:16.000928Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.qwen35.model:Qwen35Dense",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "bfloat16",
+      "weight_format": "bf16",
+      "change": {
+        "kind": "configuration",
+        "description": "Automatic compilation and serving optimization",
+        "parent_run": null
+      },
+      "purpose": "optimization",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 8,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 32,
+          "output_tokens": 8,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 5,
+      "path": "runs/20261015200116000928-e3d9c8e5/run.json"
+    },
+    {
+      "id": "20261015200645990931-90042dd8",
+      "started_at": "2026-10-15T20:06:45.990931Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.qwen35.model:Qwen35Dense",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "mtp",
+      "kv_dtype": "bfloat16",
+      "weight_format": "bf16",
+      "change": {
+        "kind": "configuration",
+        "description": "Automatic compilation and serving optimization",
+        "parent_run": "20261015200116000928-e3d9c8e5"
+      },
+      "purpose": "optimization",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 8,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 32,
+          "output_tokens": 8,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 17,
+      "path": "runs/20261015200645990931-90042dd8/run.json"
+    },
+    {
+      "id": "20261015201200609359-13d8f2a6",
+      "started_at": "2026-10-15T20:12:00.609359Z",
+      "status": "interrupted",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.qwen35.model:Qwen35Dense",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "mtp",
+      "kv_dtype": "bfloat16",
+      "weight_format": null,
+      "change": {
+        "kind": "configuration",
+        "description": "Automatic compilation and serving optimization",
+        "parent_run": "20261015200116000928-e3d9c8e5"
+      },
+      "purpose": "optimization",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 8,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 32,
+          "output_tokens": 8,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015201200609359-13d8f2a6/run.json"
+    },
+    {
+      "id": "20261015201248016854-f4599c8a",
+      "started_at": "2026-10-15T20:12:48.016854Z",
+      "status": "budget_exhausted",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.qwen35.model:Qwen35Dense",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "mtp",
+      "kv_dtype": "bfloat16",
+      "weight_format": null,
+      "change": {
+        "kind": "configuration",
+        "description": "Automatic compilation and serving optimization",
+        "parent_run": "20261015200116000928-e3d9c8e5"
+      },
+      "purpose": "optimization",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 8,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 32,
+          "output_tokens": 8,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015201248016854-f4599c8a/run.json"
+    },
+    {
+      "id": "20261015201742219174-9ab41fef",
+      "started_at": "2026-10-15T20:17:42.219174Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "LiquidAI/LFM2.5-230M",
+      "runtime": "llama",
+      "workload": "standard-v1",
+      "provider": "vulkan",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "baseline",
+        "description": "Measure optimized baseline execution",
+        "parent_run": null
+      },
+      "purpose": "baseline",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015201742219174-9ab41fef/run.json"
+    },
+    {
+      "id": "20261015202523676529-ef8b1d74",
+      "started_at": "2026-10-15T20:25:23.676529Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "LiquidAI/LFM2.5-230M",
+      "runtime": "llama",
+      "workload": "standard-v1",
+      "provider": "vulkan",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_k_m",
+      "change": {
+        "kind": "baseline",
+        "description": "Measure optimized baseline execution",
+        "parent_run": null
+      },
+      "purpose": "baseline",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015202523676529-ef8b1d74/run.json"
+    },
+    {
+      "id": "20261015203318238732-e053e8f2",
+      "started_at": "2026-10-15T20:33:18.238732Z",
+      "status": "failed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "Qwen/Qwen3.5-0.8B",
+      "runtime": "llama",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "f16",
+      "change": {
+        "kind": "baseline",
+        "description": "Measure optimized baseline execution",
+        "parent_run": null
+      },
+      "purpose": "baseline",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015203318238732-e053e8f2/run.json"
+    },
+    {
+      "id": "20261015203545631500-8005d919",
+      "started_at": "2026-10-15T20:35:45.631500Z",
+      "status": "failed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "Qwen/Qwen3.5-0.8B",
+      "runtime": "llama",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "baseline",
+        "description": "Measure optimized baseline execution",
+        "parent_run": null
+      },
+      "purpose": "baseline",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015203545631500-8005d919/run.json"
+    },
+    {
+      "id": "20261015203748042541-03c9b2e1",
+      "started_at": "2026-10-15T20:37:48.042541Z",
+      "status": "failed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "Qwen/Qwen3.5-0.8B",
+      "runtime": "llama",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_k_m",
+      "change": {
+        "kind": "baseline",
+        "description": "Measure optimized baseline execution",
+        "parent_run": null
+      },
+      "purpose": "baseline",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015203748042541-03c9b2e1/run.json"
+    },
+    {
+      "id": "20261015204006081488-d10b31c0",
+      "started_at": "2026-10-15T20:40:06.081488Z",
+      "status": "failed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "Qwen/Qwen3.5-0.8B",
+      "runtime": "llama",
+      "workload": "standard-v1",
+      "provider": "vulkan",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "f16",
+      "change": {
+        "kind": "baseline",
+        "description": "Measure optimized baseline execution",
+        "parent_run": null
+      },
+      "purpose": "baseline",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015204006081488-d10b31c0/run.json"
+    },
+    {
+      "id": "20261015204305202997-1f0b616b",
+      "started_at": "2026-10-15T20:43:05.202997Z",
+      "status": "failed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "Qwen/Qwen3.5-0.8B",
+      "runtime": "llama",
+      "workload": "standard-v1",
+      "provider": "vulkan",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "baseline",
+        "description": "Measure optimized baseline execution",
+        "parent_run": null
+      },
+      "purpose": "baseline",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015204305202997-1f0b616b/run.json"
+    },
+    {
+      "id": "20261015204556520952-fe8c54f1",
+      "started_at": "2026-10-15T20:45:56.520952Z",
+      "status": "failed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "Qwen/Qwen3.5-0.8B",
+      "runtime": "llama",
+      "workload": "standard-v1",
+      "provider": "vulkan",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_k_m",
+      "change": {
+        "kind": "baseline",
+        "description": "Measure optimized baseline execution",
+        "parent_run": null
+      },
+      "purpose": "baseline",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015204556520952-fe8c54f1/run.json"
+    },
+    {
+      "id": "20261015205432983160-cebe91d1",
+      "started_at": "2026-10-15T20:54:32.983160Z",
+      "status": "failed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "Qwen/Qwen3.5-0.8B",
+      "runtime": "vllm",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "mtp",
+      "kv_dtype": "bfloat16",
+      "weight_format": "bf16",
+      "change": {
+        "kind": "baseline",
+        "description": "Measure optimized baseline execution",
+        "parent_run": null
+      },
+      "purpose": "baseline",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015205432983160-cebe91d1/run.json"
+    },
+    {
+      "id": "20261015210200344123-b240f1f0",
+      "started_at": "2026-10-15T21:02:00.344123Z",
+      "status": "failed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "Qwen/Qwen3.5-0.8B",
+      "runtime": "llama",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "f16",
+      "change": {
+        "kind": "baseline",
+        "description": "Measure optimized baseline execution",
+        "parent_run": null
+      },
+      "purpose": "baseline",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015210200344123-b240f1f0/run.json"
+    },
+    {
+      "id": "20261015211120204768-ca9ae9c9",
+      "started_at": "2026-10-15T21:11:20.204768Z",
+      "status": "failed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "Qwen/Qwen3.5-0.8B",
+      "runtime": "llama",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "baseline",
+        "description": "Measure optimized baseline execution",
+        "parent_run": null
+      },
+      "purpose": "baseline",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015211120204768-ca9ae9c9/run.json"
+    },
+    {
+      "id": "20261015212004566075-2f3bc973",
+      "started_at": "2026-10-15T21:20:04.566075Z",
+      "status": "failed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "Qwen/Qwen3.5-0.8B",
+      "runtime": "llama",
+      "workload": "standard-v1",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_k_m",
+      "change": {
+        "kind": "baseline",
+        "description": "Measure optimized baseline execution",
+        "parent_run": null
+      },
+      "purpose": "baseline",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015212004566075-2f3bc973/run.json"
+    },
+    {
+      "id": "20261015212857450400-a5e9f4cb",
+      "started_at": "2026-10-15T21:28:57.450400Z",
+      "status": "failed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "Qwen/Qwen3.5-0.8B",
+      "runtime": "llama",
+      "workload": "standard-v1",
+      "provider": "vulkan",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "f16",
+      "change": {
+        "kind": "baseline",
+        "description": "Measure optimized baseline execution",
+        "parent_run": null
+      },
+      "purpose": "baseline",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015212857450400-a5e9f4cb/run.json"
+    },
+    {
+      "id": "20261015214155673053-00188f08",
+      "started_at": "2026-10-15T21:41:55.673053Z",
+      "status": "failed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "Qwen/Qwen3.5-0.8B",
+      "runtime": "llama",
+      "workload": "standard-v1",
+      "provider": "vulkan",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "baseline",
+        "description": "Measure optimized baseline execution",
+        "parent_run": null
+      },
+      "purpose": "baseline",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015214155673053-00188f08/run.json"
+    },
+    {
+      "id": "20261015215423483123-d676f19f",
+      "started_at": "2026-10-15T21:54:23.483123Z",
+      "status": "failed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "Qwen/Qwen3.5-0.8B",
+      "runtime": "llama",
+      "workload": "standard-v1",
+      "provider": "vulkan",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_k_m",
+      "change": {
+        "kind": "baseline",
+        "description": "Measure optimized baseline execution",
+        "parent_run": null
+      },
+      "purpose": "baseline",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 4,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 16,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 64,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 256,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261015215423483123-d676f19f/run.json"
+    },
+    {
+      "id": "20261015220725488090-0c5d6cea",
+      "started_at": "2026-10-15T22:07:25.488090Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "standard-v1 matrix",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda+webgpu+vulkan",
+      "mode": "ar",
+      "kv_dtype": null,
+      "weight_format": null,
+      "change": {
+        "kind": "validation",
+        "description": "Prepare bounded AKAS search; record measurement coverage and outstanding qualifications separately",
+        "parent_run": null
+      },
+      "purpose": "readiness",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261015220725488090-0c5d6cea/run.json"
+    },
+    {
+      "id": "20261015221913328814-0c19577a",
+      "started_at": "2026-10-15T22:19:13.328814Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "standard-v1 matrix",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda+webgpu+vulkan",
+      "mode": "ar",
+      "kv_dtype": null,
+      "weight_format": null,
+      "change": {
+        "kind": "validation",
+        "description": "Prepare bounded AKAS search; record measurement coverage and outstanding qualifications separately",
+        "parent_run": null
+      },
+      "purpose": "readiness",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261015221913328814-0c19577a/run.json"
+    },
+    {
+      "id": "20261015222047159813-bcf8337e",
+      "started_at": "2026-10-15T22:20:47.159813Z",
+      "status": "passed",
+      "revision": "b80c3599312b7ce568a5770381ea7a99a0412399",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "standard-v1 matrix",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda+webgpu+vulkan",
+      "mode": "ar",
+      "kv_dtype": null,
+      "weight_format": null,
+      "change": {
+        "kind": "validation",
+        "description": "Prepare bounded AKAS search; record measurement coverage and outstanding qualifications separately",
+        "parent_run": null
+      },
+      "purpose": "readiness",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261015222047159813-bcf8337e/run.json"
+    }
+  ]
+}

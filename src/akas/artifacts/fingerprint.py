@@ -41,6 +41,7 @@ def backbone_hashes():
             "memory",
             "models.blocks",
             "ops",
+            "kernels",
             "quantization",
             "checkpoints.upload",
         )

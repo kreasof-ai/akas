@@ -1,0 +1,19 @@
+optimize b2851ae00524aeb1 cuda chunk=32 window=None allowance=810.0s
+optimize 3d7824fd78938e93 cuda chunk=32 window=2 allowance=494.9s
+optimize 7bd6c25f6119f23f cuda chunk=32 window=2 allowance=494.9s
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/sagemaker-user/akas/src/akas/__main__.py", line 3, in <module>
+    main()
+  File "/home/sagemaker-user/akas/src/akas/cli.py", line 110, in main
+    args.run(args)
+  File "/home/sagemaker-user/akas/src/akas/optimization/context.py", line 216, in command
+    result = optimize(
+             ^^^^^^^^^
+  File "/home/sagemaker-user/akas/src/akas/optimization/supervisor.py", line 450, in optimize
+    result = execute(
+             ^^^^^^^^
+  File "/home/sagemaker-user/akas/src/akas/optimization/supervisor.py", line 174, in execute
+    time.sleep(min(0.2, max(0, end - time.monotonic())))
+KeyboardInterrupt

@@ -7,18 +7,18 @@ import pytest
 
 
 def checkpoint():
-    from akas.models.qwen35.config import DenseConfig
-    from akas.models.qwen35.weights import DenseCheckpoint
+    from akas.models.qwen35.config import Qwen35DenseConfig
+    from akas.models.qwen35.weights import Qwen35DenseCheckpoint
 
-    config = DenseConfig(1024,2048,256,("linear_attention","full_attention"),8,2,256,16,32,128,128,1e-6,1e6,64,4096)
-    value = object.__new__(DenseCheckpoint)
+    config = Qwen35DenseConfig(1024,2048,256,("linear_attention","full_attention"),8,2,256,16,32,128,128,1e-6,1e6,64,4096)
+    value = object.__new__(Qwen35DenseCheckpoint)
     value.config = config
     value.tensors = {name:SimpleNamespace(shape=shape,dtype="F32" if name.endswith(("linear_attn.A_log","linear_attn.norm.weight")) else "BF16") for name,shape in config.expected_tensors().items()}
     return value
 
 
 def test_dense_composition_declares_weights_state_and_commit_without_device():
-    from akas.models.qwen35.model import compose_dense
+    from akas.models.qwen35._composition import compose_dense
 
     graph,commit = compose_dense(checkpoint(),slots=2,chunk=4,pool=4,context=64,verify=True)
     assert graph.phase == "prefill"
@@ -36,7 +36,7 @@ def test_dense_graph_executor_matches_native_plan_and_state(tmp_path):
     import json
     import tensor
     from akas.graph import Graph
-    from akas.models.qwen35.model import compose_dense
+    from akas.models.qwen35._composition import compose_dense
     from akas.compilation.compile import produce
     from akas.execution.forward import Forward
     from akas.execution.batch import Batch
@@ -113,7 +113,7 @@ def test_request_inputs_are_model_independent_and_pad_unused_rows():
 def test_dense_program_runs_public_executor_without_native_binding(tmp_path):
     import tensor
     from akas.compilation.compile import compile_program
-    from akas.models.qwen35.model import compose_dense
+    from akas.models.qwen35._composition import compose_dense
     from akas.execution.executor import Executor
 
     loaded = checkpoint()
@@ -181,11 +181,11 @@ def test_dense_program_runs_public_executor_without_native_binding(tmp_path):
 
 
 def moe_checkpoint(*, layers=("linear_attention", "full_attention")):
-    from akas.models.qwen35.config import Qwen35Config
-    from akas.models.qwen35.weights import Qwen35Checkpoint
+    from akas.models.qwen35.config import Qwen35MoEConfig
+    from akas.models.qwen35.weights import Qwen35MoECheckpoint
 
-    config = Qwen35Config(layers, 64, 1e-6, 1e6, vocab=1024)
-    loaded = object.__new__(Qwen35Checkpoint)
+    config = Qwen35MoEConfig(layers, 64, 1e-6, 1e6, vocab=1024)
+    loaded = object.__new__(Qwen35MoECheckpoint)
     loaded.config = config
     loaded.branch = "text"
     shapes = config.expected_tensors()
@@ -206,8 +206,9 @@ def test_moe_program_preserves_row_local_forward_with_sparse_request_pool(tmp_pa
     from contextlib import ExitStack
     import tensor
     from akas.graph import Graph
-    from akas.compilation.compile import compile_program, produce
-    from akas.models.qwen35.model import compose_moe_program
+    from akas.compilation.compile import compile_program
+    from akas.compilation.compile import produce
+    from akas.models.qwen35._composition import compose_moe_program
     from akas.execution.executor import Executor
     from akas.execution.forward import Forward
     from akas.execution.batch import Batch
@@ -285,15 +286,15 @@ def test_moe_program_preserves_row_local_forward_with_sparse_request_pool(tmp_pa
 
 
 def test_moe_decode_declares_native_storage_and_common_slot_mapping():
-    from akas.models.qwen35.model import compose_moe_decode
+    from akas.models.qwen35._composition import compose_moe_decode
     from akas.compilation.compile import plan
     loaded = moe_checkpoint()
-    from akas.models.qwen35.model import compose_moe_program
+    from akas.models.qwen35._composition import compose_moe_program
     prefill = compose_moe_program(loaded, rows=2, chunk=4, max_requests=4, max_context=32)
     prefill_bundle = plan(prefill)
     assert prefill.request["inputs"]["tokens"] == "chunk.tokens"
     assert any(kernel.kind == "quantize" for kernel in prefill_bundle.kernels)
-    assert any(kernel.kind == "fp8_experts" and kernel.source.args[3]["module"] == "akas.ops.moe.cuda.prefill" for kernel in prefill_bundle.kernels)
+    assert any(kernel.kind == "fp8_experts" and kernel.source.args[3]["module"] == "akas.ops.moe.cuda" for kernel in prefill_bundle.kernels)
     graph = compose_moe_decode(loaded, rows=2, max_requests=4, max_context=32)
     bundle = plan(graph)
     assert graph.request["prediction"] == "tokens"
@@ -308,7 +309,7 @@ def test_moe_decode_declares_native_storage_and_common_slot_mapping():
 @pytest.mark.skipif(os.environ.get("TENSOR_QWEN_CUDA") != "1", reason="automatic native MoE qualification")
 @pytest.mark.parametrize("chunk", [1, 4])
 def test_moe_phases_inherit_kernel_search_without_model_tuning_hooks(tmp_path, chunk):
-    from akas.models.qwen35.model import compose_moe_program
+    from akas.models.qwen35._composition import compose_moe_program
     from akas.compilation.compile import produce
     from akas.compilation.tuning import SearchSettings
 
@@ -321,7 +322,7 @@ def test_moe_phases_inherit_kernel_search_without_model_tuning_hooks(tmp_path, c
 
 
 def test_proposal_graph_declares_shared_embedding_and_separate_head_state():
-    from akas.models.qwen35.model import compose_dense
+    from akas.models.qwen35._composition import compose_dense
 
     graph, _ = compose_dense(checkpoint(), slots=2, chunk=4, pool=4, context=64, draft=True)
     assert "model.language_model.embed_tokens.weight" in graph.buffers
@@ -338,7 +339,7 @@ def test_proposal_graph_declares_shared_embedding_and_separate_head_state():
 def mtp_program(tmp_path_factory):
     from pathlib import Path
     from akas.compilation.compile import compile_program
-    from akas.models.qwen35.model import compose_dense
+    from akas.models.qwen35._composition import compose_dense
 
     loaded = checkpoint()
     def upload(device, **options):
@@ -423,7 +424,7 @@ def _assert_persistent_state_matches(target, baseline, slots):
 def test_mtp_head_uses_common_verification_and_repair_without_native_runtime(mtp_program, capture, deferred):
     import tensor
     from akas.execution.executor import Executor
-    from akas.models.heads.mtp import MTPHead
+    from akas.models.qwen35.mtp import MTPHead
     from akas.generation.speculative.decoding import SpeculativeDecoder
 
     loaded, program_path = mtp_program
@@ -457,7 +458,7 @@ def test_mtp_head_uses_common_verification_and_repair_without_native_runtime(mtp
 def test_deferred_speculative_replay_transitions_windows_and_preserves_state(mtp_program):
     import tensor
     from akas.execution.executor import Executor
-    from akas.models.heads.mtp import MTPHead
+    from akas.models.qwen35.mtp import MTPHead
     from akas.generation.speculative.decoding import SpeculativeDecoder
 
     loaded, program_path = mtp_program
@@ -569,7 +570,7 @@ def test_deferred_speculative_replay_transitions_windows_and_preserves_state(mtp
 def test_direct_moe_composition_preserves_frozen_operation_and_storage_contracts():
     import json
     from pathlib import Path
-    from akas.models.qwen35.model import compose_moe_program
+    from akas.models.qwen35._composition import compose_moe_program
 
     fixture = json.loads((Path(__file__).parent / "fixtures/moe-program-baseline.json").read_text())
     loaded = moe_checkpoint()
@@ -596,7 +597,7 @@ def test_direct_moe_composition_preserves_frozen_operation_and_storage_contracts
 
 
 def test_moe_verification_declares_nonmutating_prefix_journals():
-    from akas.models.qwen35.model import compose_moe_program
+    from akas.models.qwen35._composition import compose_moe_program
     from akas.compilation.compile import plan
 
     graph, commit = compose_moe_program(moe_checkpoint(), rows=2, chunk=4,
@@ -621,7 +622,7 @@ def test_moe_verification_commit_and_discard_preserve_mapped_recurrent_state(tmp
     from contextlib import ExitStack
     import tensor
     from akas.compilation.compile import compile_program
-    from akas.models.qwen35.model import compose_moe_program
+    from akas.models.qwen35._composition import compose_moe_program
     from akas.execution.executor import Executor
 
     loaded = moe_checkpoint(layers=("linear_attention","linear_attention","full_attention"))
@@ -679,12 +680,12 @@ def test_moe_verification_commit_and_discard_preserve_mapped_recurrent_state(tmp
 
 
 def test_moe_proposal_uses_shared_head_and_private_mapped_state():
-    from akas.models.qwen35.weights import Qwen35Checkpoint
-    from akas.models.qwen35.model import compose_moe_program
+    from akas.models.qwen35.weights import Qwen35MoECheckpoint
+    from akas.models.qwen35._composition import compose_moe_program
     from akas.compilation.compile import plan
 
     loaded = moe_checkpoint()
-    mtp = object.__new__(Qwen35Checkpoint)
+    mtp = object.__new__(Qwen35MoECheckpoint)
     mtp.branch, mtp.config = "mtp", loaded.config
     shapes = loaded.config.expected_mtp_tensors()
     mtp.tensors = {}

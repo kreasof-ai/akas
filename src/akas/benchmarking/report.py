@@ -47,6 +47,10 @@ def compare(current, baseline):
         "graphs",
         "target",
         "seed",
+        "mode",
+        "weight_dtype",
+        "activation_dtype",
+        "recurrent_dtype",
     )
     if any(current["metadata"].get(k) != baseline["metadata"].get(k) for k in keys):
         raise ValueError(

@@ -3,7 +3,8 @@
 from concurrent.futures import ThreadPoolExecutor
 from types import SimpleNamespace
 import pytest
-from akas import Engine, EngineConfig
+from akas import Engine
+from akas import EngineConfig
 from test_dense_scheduler import FakeEngine
 
 

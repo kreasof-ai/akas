@@ -3,7 +3,8 @@
 from types import SimpleNamespace
 import numpy as np
 import pytest
-from akas import Engine, EngineConfig
+from akas import Engine
+from akas import EngineConfig
 from akas.generation.speculative.decoding import SpeculativeDecoder
 
 

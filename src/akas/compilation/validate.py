@@ -18,5 +18,8 @@ def kernel_bindings(graph, key, signature):
             spec = graph.buffers[name]
             if argument.get("kind", "buffer") != "buffer":
                 raise ValueError("graph buffer cannot bind a scalar argument")
-            if tuple(argument["shape"]) != spec.shape or argument["dtype"] != spec.dtype:
+            if (
+                tuple(argument["shape"]) != spec.shape
+                or argument["dtype"] != spec.dtype
+            ):
                 raise ValueError(f"candidate changes storage contract for {name}")

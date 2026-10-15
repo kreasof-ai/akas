@@ -29,13 +29,19 @@ akas = "akas.cli:main"
 
 [tool.setuptools.package-data]
 "akas.text" = ["profiles.json"]
+"akas.benchmarking" = ["workloads/*.json"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
 exclude = ["*.ipynb_checkpoints*"]
 
 [dependency-groups]
-dev = ["pytest>=8", "aiohttp>=3.14,<4", "matplotlib>=3.10,<4"]
+dev = [
+    "pytest>=8",
+    "aiohttp>=3.14,<4",
+    "matplotlib>=3.10,<4",
+    "ruff>=0.14",
+]
 
 [tool.uv.sources]
 tensor-workspace = { git = "https://github.com/kreasof-ai/tensor", rev = "274d429ed9945b45ea5b8e492248355e1611a047" }
@@ -44,3 +50,10 @@ tensor-workspace = { git = "https://github.com/kreasof-ai/tensor", rev = "274d42
 testpaths = ["tests"]
 pythonpath = [".", "src"]
 addopts = "-q"
+
+[tool.ruff]
+target-version = "py312"
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["F821"]

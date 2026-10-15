@@ -12,7 +12,7 @@ GPU = pytest.mark.skipif(
 
 
 def build(tmp_path, kind, p):
-    from akas.compilation.emit import export_kernel as export_source
+    from support.migration import source as export_source
     from tensor.compiler.build import build_artifact
 
     entry = tmp_path / (kind + "-" + str(p.get("kv_dtype", "bfloat16")) + ".py")

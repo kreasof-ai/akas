@@ -9,7 +9,7 @@ import pytest
 from akas.artifacts.read import artifact_path
 from akas.artifacts.read import load_kernels
 from akas.memory.layouts import allocate_hybrid_states
-from akas.models.qwen35.weights import DenseCheckpoint
+from akas.models.qwen35.weights import Qwen35DenseCheckpoint
 
 
 class Resource:
@@ -62,7 +62,7 @@ def test_bundle_symlink_cannot_escape(tmp_path):
 
 
 def test_dense_upload_releases_previous_weight_on_later_failure():
-    checkpoint = object.__new__(DenseCheckpoint)
+    checkpoint = object.__new__(Qwen35DenseCheckpoint)
     checkpoint.config = SimpleNamespace(layers=())
     checkpoint.tensors = {
         name: SimpleNamespace(dtype="BF16") for name in ("first", "second")

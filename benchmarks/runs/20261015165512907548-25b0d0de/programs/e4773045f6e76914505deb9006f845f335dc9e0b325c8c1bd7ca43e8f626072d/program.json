@@ -1,0 +1,96 @@
+{
+  "schema": "akas.program.v1",
+  "provider": "webgpu",
+  "target": "webgpu-portable-v1",
+  "config": {
+    "width": 1024,
+    "ff": 2560,
+    "heads": 16,
+    "kv_heads": 8,
+    "layers": [
+      "conv",
+      "conv",
+      "attention",
+      "conv",
+      "attention",
+      "conv",
+      "attention",
+      "conv",
+      "attention",
+      "conv",
+      "attention",
+      "conv",
+      "attention",
+      "conv"
+    ],
+    "vocab": 65536,
+    "conv": 3,
+    "epsilon": 9.999999747378752e-06,
+    "theta": 1000000.0,
+    "max_context": 128000
+  },
+  "max_requests": 1,
+  "max_context": 128,
+  "phases": [
+    {
+      "phase": "decode",
+      "rows": 1,
+      "chunk": 1,
+      "path": "programs/6252eab0d7b147738938f5d85d26efe5/phases/decode-b1-t1.json",
+      "sha256": "74e0c6163dd589c065bff423de4f6233361ced9ecc4304c733070f2dcfe579da",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "feedback": true,
+      "features": {
+        "logits": "logits"
+      }
+    },
+    {
+      "phase": "prefill",
+      "rows": 1,
+      "chunk": 32,
+      "path": "programs/6252eab0d7b147738938f5d85d26efe5/phases/prefill-b1-t32.json",
+      "sha256": "9b58847a4d0d7158f8962e1f6449e144b19f1370705b2f7f2b10d5bc8ac13bca",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "feedback": false,
+      "features": {
+        "logits": "logits"
+      }
+    },
+    {
+      "phase": "prefill_state",
+      "rows": 1,
+      "chunk": 32,
+      "path": "programs/6252eab0d7b147738938f5d85d26efe5/phases/prefill-state-b1-t32.json",
+      "sha256": "bdeb8c652fd32dce2cfabcc52e4b08a69e5fe6c4eeeed7aff73085204341c53c",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "state_only": true
+    }
+  ],
+  "reset": {
+    "path": "programs/6252eab0d7b147738938f5d85d26efe5/phases/reset.json",
+    "sha256": "36358a291c152f33cf725e838e16adda9f38662010959c262235bb76f57cf7f9",
+    "mapping": "mapping"
+  },
+  "rounds": [],
+  "upload_options": {},
+  "model_options": {
+    "kv_dtype": "float16",
+    "optimized": true
+  },
+  "policy": {}
+}

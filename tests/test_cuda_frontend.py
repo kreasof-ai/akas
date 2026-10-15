@@ -35,7 +35,7 @@ def test_algorithms_have_ir_loops_and_only_typed_hardware_externs(
     pytest.importorskip("tilelang")
     import tvm
     from tensor.compiler.frontend.portable import export_spec
-    from akas.compilation.emit import export_kernel as source
+    from support.migration import source as source
 
     path = tmp_path / "kernel.py"
     path.write_text(

@@ -2,7 +2,7 @@
 
 from akas.memory.state import BufferSpec
 from akas.memory.state import allocate_states
-from akas.quantization.kv import get, is_quantized
+from akas.quantization.kv import pair_layout, is_quantized
 
 
 def hybrid_state_specs(
@@ -14,6 +14,7 @@ def hybrid_state_specs(
     zero_recurrent=False,
     zero_cache=False,
     flat=False,
+    provider=None,
 ):
     """Describe persistent state; the request owns prefix and slot resets."""
     quantized = is_quantized(kv_dtype)
@@ -46,7 +47,7 @@ def hybrid_state_specs(
             if quantized:
                 if zero_cache:
                     raise ValueError("zeroed flat cache profile requires FP16")
-                specs = get(kv_dtype).pair_layout(shape)
+                specs = pair_layout(kv_dtype, shape, provider=provider)
                 if flat:
                     from math import prod
 
@@ -66,6 +67,7 @@ def hybrid_state_specs(
 
 
 def allocate_hybrid_states(device, config, capacity, context, **options):
+    options.setdefault("provider", getattr(device, "info", {}).get("provider"))
     return allocate_states(
         device, hybrid_state_specs(config, capacity, context, **options)
     )

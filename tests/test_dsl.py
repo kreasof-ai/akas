@@ -2,6 +2,7 @@
 
 import subprocess
 import sys
+from pathlib import Path
 import pytest
 
 
@@ -12,7 +13,7 @@ def test_common_packed_program_constructs_tirx(rows, chunk, tmp_path):
     import tvm
     from support.diagnostic import fixture
     from akas.models.lfm2.weights import LFM2Checkpoint
-    from akas.models.lfm2.model import compose_program
+    from akas.models.lfm2._composition import program as compose_program
     from akas.compilation.compile import plan
 
     checkpoint = LFM2Checkpoint(fixture(tmp_path/"model.gguf"),tokenizer=False)
@@ -33,16 +34,18 @@ def test_factory_modules_import_without_frontend_or_core_compiler():
             "-c",
             """
 import importlib.abc, sys
+sys.path.insert(0, sys.argv[1])
 class Guard(importlib.abc.MetaPathFinder):
  def find_spec(self, name, path=None, target=None):
   if name.split('.')[0] in {'tilelang','tvm','tvm_ffi','torch','triton'} or name.startswith('tensor.compiler'):
    raise ImportError(name)
 sys.meta_path.insert(0, Guard())
-from akas.ops.definition import define, definition, KernelSpec, Capabilities
-from akas.ops.schedules.packed_parameters import CUDA_PROFILES
+from akas.kernels.definition import define, definition, KernelSpec, Capabilities
+from support.lfm_profiles import CUDA_PROFILES
 from akas.artifacts.schema import identity
 assert len(identity('linear', {'k':256})) == 24
 """,
+            str(Path(__file__).resolve().parent),
         ],
         check=True,
     )

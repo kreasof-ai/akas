@@ -1,6 +1,13 @@
 include LICENSE README.md uv.lock
 recursive-include src/akas *.md
 recursive-include tests *.py *.json
-recursive-include examples/models/residual *.py
+recursive-include examples *.py *.md
+recursive-include docs *.md
 include tools/bootstrap_nvrtc.py
+include tools/audit_ops_structure.py
+include tools/campaign.py
+recursive-include tools/baselines *.py *.md
+include benchmarks/README.md benchmarks/run.schema.json
+recursive-include benchmarks/models *.json
+recursive-include benchmarks/campaigns *.json
 prune src/akas/text/.ipynb_checkpoints

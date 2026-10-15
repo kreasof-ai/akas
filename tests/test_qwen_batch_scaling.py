@@ -13,7 +13,8 @@ import pytest
 @pytest.mark.parametrize("routed", [False, True])
 def test_expert_row_tiles_preserve_small_batch_bits(tmp_path, rows, routed):
     import tensor
-    from test_qwen_kernels import build, build_mma
+    from test_qwen_kernels import build
+    from test_qwen_kernels import build_mma
 
     rng = np.random.default_rng(70921)
     top, k, o, e, parts = 8, 512, 128, 8, 4
@@ -155,7 +156,7 @@ def test_large_logical_dense_projection_preserves_independent_rows(tmp_path, row
 )
 def test_padded_short_attention_preserves_parent_accumulation(tmp_path):
     import tensor, torch
-    from tensor.compiler.frontend.source import export_source
+    from support.migration import source as export_source
     from tensor.compiler.build import build_artifact
     from test_qwen_fp8_kv import quantize
 

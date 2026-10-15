@@ -1,3 +1,4 @@
+from support.migration import historical_source
 """Consolidated normalization retains each numerical and reduction policy."""
 
 import importlib
@@ -25,11 +26,11 @@ def test_normalization_before_after(tmp_path, monkeypatch, provider, contract, k
     if os.environ.get("AKAS_FORWARD_" + provider.upper()) != "1":
         pytest.skip("enable hardware normalization parity")
     import tensor
-    from tensor.compiler.frontend.source import export_source
+    from support.migration import source as export_source
     from tensor.compiler.tuning import measure
     from akas.compilation.emit import build_artifact
-    from akas.ops.registry import select
-    from akas.ops.contracts import sample_arguments
+    from akas.kernels.registry import select
+    from akas.kernels.contracts import sample_arguments
 
     helper = "normalization_baseline_helper"
     module = "normalization_baseline_" + old.replace("/", "_").removesuffix(".py")
@@ -42,7 +43,7 @@ def test_normalization_before_after(tmp_path, monkeypatch, provider, contract, k
     target = "sm_89" if provider == "cuda" else "webgpu-portable-v1"
     variant = select(kind, parameters, provider=provider, target=target, contract=contract)
     definitions = [(module, (kind, parameters), (helper,)),
-                   ("akas.ops." + variant.module, variant.source_arguments(parameters), ())]
+                   (historical_source(variant, parameters)["module"], historical_source(variant, parameters)["args"], ())]
     artifacts = []
     for index, (name, args, dependencies) in enumerate(definitions):
         path = tmp_path / f"kernel-{index}.py"

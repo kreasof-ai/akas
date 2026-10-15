@@ -6,7 +6,7 @@ import pytest
 
 
 def test_single_plane_reference_preserves_exact_integer_sums_and_finite_scales():
-    from akas.quantization.activations.q8 import validation
+    from akas.quantization.activations.q8.validation import validation
     specs = [dict(name="x", shape=[256], dtype="float32"),
              dict(name="out", shape=[64], dtype="uint32"),
              dict(name="scales", shape=[8], dtype="float32"),

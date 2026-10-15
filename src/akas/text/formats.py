@@ -51,13 +51,15 @@ def from_gguf(metadata, *, profile=None):
     types = metadata["tokenizer.ggml.token_type"]
     if len(set(tokens)) != len(tokens) or len(types) != len(tokens):
         raise TokenizerError("duplicate vocabulary token or invalid token types")
-    special = {token: i for i, token in enumerate(tokens) if types[i] in (3, 4)}
+    special = {token: i for i, token in enumerate(tokens) if types[i] == 3}
+    added = {token: i for i, token in enumerate(tokens) if types[i] in (3, 4)}
     return Rules(
         vocab={token: i for i, token in enumerate(tokens)},
         merges=_merges(metadata["tokenizer.ggml.merges"]),
         pattern=pattern,
         ignore_merges=ignore,
-        added=special,
+        normalization=profile.get("normalization"),
+        added=added,
         special=special,
         bos=metadata.get("tokenizer.ggml.bos_token_id"),
         eos=metadata.get("tokenizer.ggml.eos_token_id"),

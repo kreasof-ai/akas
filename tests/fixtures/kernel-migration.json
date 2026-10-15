@@ -1,0 +1,2406 @@
+[
+  {
+    "old_module": "akas.ops.linear.reference",
+    "old_factory": "make_kernel",
+    "kind": "linear",
+    "module": "akas.ops.linear.kernel",
+    "factory": "linear",
+    "uniform": true,
+    "previous_module": "akas.ops.linear.kernel",
+    "previous_factory": "linear"
+  },
+  {
+    "old_module": "akas.ops.linear.cuda.packed_baseline",
+    "old_factory": "make_kernel",
+    "kind": "linear",
+    "module": "akas.ops.linear.kernel",
+    "factory": "packed_linear",
+    "uniform": true,
+    "previous_module": "akas.ops.linear.kernel",
+    "previous_factory": "packed_linear"
+  },
+  {
+    "old_module": "akas.ops.linear.webgpu.reference",
+    "old_factory": "make_kernel",
+    "kind": "linear",
+    "module": "akas.ops.linear.webgpu",
+    "factory": "linear",
+    "uniform": true,
+    "previous_module": "akas.ops.linear.webgpu.baseline",
+    "previous_factory": "linear"
+  },
+  {
+    "old_module": "akas.ops.linear.cuda.bf16_batch",
+    "old_factory": "make_kernel",
+    "kind": "linear",
+    "module": "akas.ops.linear.cuda",
+    "factory": "linear_bf16",
+    "uniform": true,
+    "previous_module": "akas.ops.linear.cuda.gemm",
+    "previous_factory": "linear_bf16"
+  },
+  {
+    "old_module": "akas.ops.linear.cuda.bf16_batch",
+    "old_factory": "make_kernel",
+    "kind": "gemv",
+    "module": "akas.ops.linear.cuda",
+    "factory": "gemv_linear_bf16",
+    "uniform": true,
+    "previous_module": "akas.ops.linear.cuda.gemv",
+    "previous_factory": "linear_bf16"
+  },
+  {
+    "old_module": "akas.ops.linear.cuda.decode",
+    "old_factory": "make_kernel",
+    "kind": "bf16_linear",
+    "module": "akas.ops.linear.cuda",
+    "factory": "gemv_native_bf16",
+    "uniform": true,
+    "previous_module": "akas.ops.linear.cuda.gemv",
+    "previous_factory": "native_bf16"
+  },
+  {
+    "old_module": "akas.ops.linear.cuda.decode",
+    "old_factory": "make_kernel",
+    "kind": "fp8_linear",
+    "module": "akas.ops.linear.cuda",
+    "factory": "native_fp8",
+    "uniform": true,
+    "previous_module": "akas.ops.linear.cuda.gemv",
+    "previous_factory": "native_fp8"
+  },
+  {
+    "old_module": "akas.ops.linear.cuda.split",
+    "old_factory": "make_kernel",
+    "kind": "split_linear",
+    "module": "akas.ops.linear.cuda",
+    "factory": "partial",
+    "uniform": true,
+    "previous_module": "akas.ops.linear.cuda.split",
+    "previous_factory": "partial"
+  },
+  {
+    "old_module": "akas.ops.linear.cuda.split",
+    "old_factory": "make_kernel",
+    "kind": "split_merge",
+    "module": "akas.ops.linear.cuda",
+    "factory": "split",
+    "uniform": true,
+    "previous_module": "akas.ops.linear.cuda.merge",
+    "previous_factory": "split"
+  },
+  {
+    "old_module": "akas.ops.linear.cuda.packed",
+    "old_factory": "make_kernel",
+    "kind": "ffn",
+    "module": "akas.ops.linear.cuda",
+    "factory": "ffn",
+    "uniform": true,
+    "previous_module": "akas.ops.linear.cuda.kernel",
+    "previous_factory": "ffn"
+  },
+  {
+    "old_module": "akas.ops.linear.cuda.packed",
+    "old_factory": "make_kernel",
+    "kind": "linear",
+    "module": "akas.ops.linear.cuda",
+    "factory": "linear",
+    "uniform": true,
+    "previous_module": "akas.ops.linear.cuda.kernel",
+    "previous_factory": "linear"
+  },
+  {
+    "old_module": "akas.ops.linear.cuda.packed",
+    "old_factory": "make_kernel",
+    "kind": "linear_add",
+    "module": "akas.ops.linear.cuda",
+    "factory": "linear_add",
+    "uniform": true,
+    "previous_module": "akas.ops.linear.cuda.kernel",
+    "previous_factory": "linear_add"
+  },
+  {
+    "old_module": "akas.ops.linear.cuda.packed",
+    "old_factory": "projection_abi",
+    "kind": null,
+    "module": "akas.ops.linear.kernel",
+    "factory": "cuda_abi",
+    "uniform": false,
+    "previous_module": "akas.ops.linear._shared.epilogue",
+    "previous_factory": "cuda_abi"
+  },
+  {
+    "old_module": "akas.ops.linear.cuda.packed",
+    "old_factory": "gemv_kernel",
+    "kind": null,
+    "module": "akas.ops.linear.cuda",
+    "factory": "gemv_packed",
+    "uniform": false,
+    "previous_module": "akas.ops.linear.cuda.gemv",
+    "previous_factory": "_packed"
+  },
+  {
+    "old_module": "akas.ops.linear.cuda.packed",
+    "old_factory": "prefill_kernel",
+    "kind": null,
+    "module": "akas.ops.linear.cuda",
+    "factory": "_packed",
+    "uniform": false,
+    "previous_module": "akas.ops.linear.cuda.gemm",
+    "previous_factory": "_packed"
+  },
+  {
+    "old_module": "akas.ops.linear.cuda.packed",
+    "old_factory": "fused_kernel",
+    "kind": null,
+    "module": "akas.ops.linear.cuda",
+    "factory": "_fused",
+    "uniform": false,
+    "previous_module": "akas.ops.linear.cuda.gemv",
+    "previous_factory": "_fused"
+  },
+  {
+    "old_module": "akas.ops.linear.cuda.floating",
+    "old_factory": "make_kernel",
+    "kind": "ffn",
+    "module": "akas.ops.linear.cuda",
+    "factory": "floating_ffn",
+    "uniform": true,
+    "previous_module": "akas.ops.linear.cuda.kernel",
+    "previous_factory": "floating_ffn"
+  },
+  {
+    "old_module": "akas.ops.linear.cuda.floating",
+    "old_factory": "make_kernel",
+    "kind": "linear",
+    "module": "akas.ops.linear.cuda",
+    "factory": "floating_linear",
+    "uniform": true,
+    "previous_module": "akas.ops.linear.cuda.kernel",
+    "previous_factory": "floating_linear"
+  },
+  {
+    "old_module": "akas.ops.linear.cuda.floating",
+    "old_factory": "mma_block_m",
+    "kind": null,
+    "module": "akas.ops.linear.cuda",
+    "factory": "_floating_block_m",
+    "uniform": false,
+    "previous_module": "akas.ops.linear.cuda.gemm",
+    "previous_factory": "_floating_block_m"
+  },
+  {
+    "old_module": "akas.ops.linear.webgpu.packed",
+    "old_factory": "make_kernel",
+    "kind": "ffn",
+    "module": "akas.ops.linear.webgpu",
+    "factory": "ffn",
+    "uniform": true,
+    "previous_module": "akas.ops.linear.webgpu.kernel",
+    "previous_factory": "ffn"
+  },
+  {
+    "old_module": "akas.ops.linear.webgpu.packed",
+    "old_factory": "make_kernel",
+    "kind": "ffn_q16",
+    "module": "akas.ops.linear.webgpu",
+    "factory": "ffn_q16",
+    "uniform": true,
+    "previous_module": "akas.ops.linear.webgpu.kernel",
+    "previous_factory": "ffn_q16"
+  },
+  {
+    "old_module": "akas.ops.linear.webgpu.packed",
+    "old_factory": "make_kernel",
+    "kind": "linear",
+    "module": "akas.ops.linear.webgpu",
+    "factory": "kernel_linear",
+    "uniform": true,
+    "previous_module": "akas.ops.linear.webgpu.kernel",
+    "previous_factory": "linear"
+  },
+  {
+    "old_module": "akas.ops.linear.webgpu.packed",
+    "old_factory": "make_kernel",
+    "kind": "linear_add",
+    "module": "akas.ops.linear.webgpu",
+    "factory": "linear_add",
+    "uniform": true,
+    "previous_module": "akas.ops.linear.webgpu.kernel",
+    "previous_factory": "linear_add"
+  },
+  {
+    "old_module": "akas.ops.linear.webgpu.packed",
+    "old_factory": "make_kernel",
+    "kind": "linear_q16",
+    "module": "akas.ops.linear.webgpu",
+    "factory": "linear_q16",
+    "uniform": true,
+    "previous_module": "akas.ops.linear.webgpu.kernel",
+    "previous_factory": "linear_q16"
+  },
+  {
+    "old_module": "akas.ops.linear.webgpu.packed",
+    "old_factory": "make_kernel",
+    "kind": "linear_q8",
+    "module": "akas.ops.linear.webgpu",
+    "factory": "linear_q8",
+    "uniform": true,
+    "previous_module": "akas.ops.linear.webgpu.kernel",
+    "previous_factory": "linear_q8"
+  },
+  {
+    "old_module": "akas.ops.linear.webgpu.packed",
+    "old_factory": "projection_abi",
+    "kind": null,
+    "module": "akas.ops.linear.kernel",
+    "factory": "webgpu_abi",
+    "uniform": false,
+    "previous_module": "akas.ops.linear._shared.epilogue",
+    "previous_factory": "webgpu_abi"
+  },
+  {
+    "old_module": "akas.ops.linear.webgpu.packed",
+    "old_factory": "projection_epilogue",
+    "kind": null,
+    "module": "akas.ops.linear.kernel",
+    "factory": "_epilogue",
+    "uniform": false,
+    "previous_module": "akas.ops.linear._shared.epilogue",
+    "previous_factory": "_epilogue"
+  },
+  {
+    "old_module": "akas.ops.linear.webgpu.packed",
+    "old_factory": "prefill_kernel",
+    "kind": null,
+    "module": "akas.ops.linear.webgpu",
+    "factory": "_packed",
+    "uniform": false,
+    "previous_module": "akas.ops.linear.webgpu.gemm",
+    "previous_factory": "_packed"
+  },
+  {
+    "old_module": "akas.ops.linear.webgpu.packed",
+    "old_factory": "decode_kernel",
+    "kind": null,
+    "module": "akas.ops.linear.webgpu",
+    "factory": "gemv_packed",
+    "uniform": false,
+    "previous_module": "akas.ops.linear.webgpu.gemv",
+    "previous_factory": "_packed"
+  },
+  {
+    "old_module": "akas.ops.linear.webgpu.packed",
+    "old_factory": "integer_prefill_kernel",
+    "kind": null,
+    "module": "akas.ops.linear.webgpu",
+    "factory": "_integer",
+    "uniform": false,
+    "previous_module": "akas.ops.linear.webgpu.gemm",
+    "previous_factory": "_integer"
+  },
+  {
+    "old_module": "akas.ops.linear.webgpu.packed",
+    "old_factory": "q8_kernel",
+    "kind": null,
+    "module": "akas.ops.linear.webgpu",
+    "factory": "q8",
+    "uniform": true,
+    "previous_module": "akas.ops.linear.webgpu.gemv",
+    "previous_factory": "q8"
+  },
+  {
+    "old_module": "akas.ops.linear.webgpu.floating",
+    "old_factory": "make_kernel",
+    "kind": "ffn",
+    "module": "akas.ops.linear.webgpu",
+    "factory": "floating_ffn",
+    "uniform": true,
+    "previous_module": "akas.ops.linear.webgpu.kernel",
+    "previous_factory": "floating_ffn"
+  },
+  {
+    "old_module": "akas.ops.linear.webgpu.floating",
+    "old_factory": "make_kernel",
+    "kind": "linear",
+    "module": "akas.ops.linear.webgpu",
+    "factory": "floating_linear",
+    "uniform": true,
+    "previous_module": "akas.ops.linear.webgpu.kernel",
+    "previous_factory": "floating_linear"
+  },
+  {
+    "old_module": "akas.ops.linear.floating",
+    "old_factory": "projection_algorithm",
+    "kind": null,
+    "module": "akas.compilation.transforms.projection",
+    "factory": "projection_algorithm",
+    "uniform": false
+  },
+  {
+    "old_module": "akas.ops.linear.floating",
+    "old_factory": "batch_rows",
+    "kind": null,
+    "module": "akas.compilation.transforms.projection",
+    "factory": "batch_rows",
+    "uniform": false
+  },
+  {
+    "old_module": "akas.ops.linear.floating",
+    "old_factory": "column_tiles",
+    "kind": null,
+    "module": "akas.compilation.transforms.projection",
+    "factory": "column_tiles",
+    "uniform": false
+  },
+  {
+    "old_module": "akas.ops.linear.floating",
+    "old_factory": "output_view",
+    "kind": null,
+    "module": "akas.compilation.transforms.projection",
+    "factory": "output_view",
+    "uniform": false
+  },
+  {
+    "old_module": "akas.ops.linear.cuda.block_fp8",
+    "old_factory": "make_kernel",
+    "kind": "bf16_linear",
+    "module": "akas.ops.linear.cuda",
+    "factory": "native_bf16",
+    "uniform": true,
+    "previous_module": "akas.ops.linear.cuda.gemm",
+    "previous_factory": "native_bf16"
+  },
+  {
+    "old_module": "akas.ops.linear.cuda.block_fp8",
+    "old_factory": "make_kernel",
+    "kind": "fp8_linear_mma",
+    "module": "akas.ops.linear.cuda",
+    "factory": "fp8_inline",
+    "uniform": true,
+    "previous_module": "akas.ops.linear.cuda.gemm",
+    "previous_factory": "fp8_inline"
+  },
+  {
+    "old_module": "akas.ops.linear.cuda.block_fp8",
+    "old_factory": "make_kernel",
+    "kind": "fp8_linear_mma_prequantized",
+    "module": "akas.ops.linear.cuda",
+    "factory": "fp8_prequantized",
+    "uniform": true,
+    "previous_module": "akas.ops.linear.cuda.gemm",
+    "previous_factory": "fp8_prequantized"
+  },
+  {
+    "old_module": "akas.ops.linear.cuda.block_fp8",
+    "old_factory": "make_kernel",
+    "kind": "fp8_experts_mma",
+    "module": "akas.ops.moe.cuda",
+    "factory": "fp8_inline",
+    "uniform": true,
+    "previous_module": "akas.ops.moe.cuda.experts",
+    "previous_factory": "fp8_inline"
+  },
+  {
+    "old_module": "akas.ops.linear.cuda.block_fp8",
+    "old_factory": "make_kernel",
+    "kind": "fp8_experts_mma_prequantized",
+    "module": "akas.ops.moe.cuda",
+    "factory": "fp8_prequantized",
+    "uniform": true,
+    "previous_module": "akas.ops.moe.cuda.experts",
+    "previous_factory": "fp8_prequantized"
+  },
+  {
+    "old_module": "akas.ops.linear.cuda.block_fp8",
+    "old_factory": "merge_kernel",
+    "kind": null,
+    "module": "akas.ops.linear.cuda",
+    "factory": "fp8",
+    "uniform": true,
+    "previous_module": "akas.ops.linear.cuda.merge",
+    "previous_factory": "fp8"
+  },
+  {
+    "old_module": "akas.ops.linear.cuda.block_fp8",
+    "old_factory": "bf16_kernel",
+    "kind": null,
+    "module": "akas.ops.linear.cuda",
+    "factory": "_native_bf16",
+    "uniform": false,
+    "previous_module": "akas.ops.linear.cuda.gemm",
+    "previous_factory": "_native_bf16"
+  },
+  {
+    "old_module": "akas.ops.linear.cuda.block_fp8",
+    "old_factory": "bf16_decode_kernel",
+    "kind": null,
+    "module": "akas.ops.linear.cuda",
+    "factory": "full_depth_bf16",
+    "uniform": true,
+    "previous_module": "akas.ops.linear.cuda.gemv",
+    "previous_factory": "full_depth_bf16"
+  },
+  {
+    "old_module": "akas.ops.linear.hardware.hopper.projection",
+    "old_factory": "make_kernel",
+    "kind": null,
+    "module": "akas.ops.linear.cuda",
+    "factory": "hopper_gemm_partial",
+    "uniform": true,
+    "previous_module": "akas.ops.linear.cuda.hopper.gemm",
+    "previous_factory": "partial"
+  },
+  {
+    "old_module": "akas.ops.linear.pipeline",
+    "old_factory": "make_kernel",
+    "kind": "projection_partial",
+    "module": "akas.ops.linear.cuda",
+    "factory": "fp8_prequantized",
+    "uniform": true,
+    "previous_module": "akas.ops.linear.cuda.gemm",
+    "previous_factory": "fp8_prequantized"
+  },
+  {
+    "old_module": "akas.ops.linear.pipeline",
+    "old_factory": "make_kernel",
+    "kind": "projection_merge",
+    "module": "akas.ops.linear.cuda",
+    "factory": "fp8",
+    "uniform": true,
+    "previous_module": "akas.ops.linear.cuda.merge",
+    "previous_factory": "fp8"
+  },
+  {
+    "old_module": "akas.ops.linear.pipeline",
+    "old_factory": "validation",
+    "kind": null,
+    "module": "akas.ops.linear.validation",
+    "factory": "pipeline_validation",
+    "uniform": false,
+    "previous_module": "akas.ops.linear._validation",
+    "previous_factory": "pipeline_validation"
+  },
+  {
+    "old_module": "akas.ops.attention.reference",
+    "old_factory": "cache_storage",
+    "kind": null,
+    "module": "akas.ops.attention.definition",
+    "factory": "cache_storage",
+    "uniform": false,
+    "previous_module": "akas.ops.attention.contracts",
+    "previous_factory": "cache_storage"
+  },
+  {
+    "old_module": "akas.ops.attention.reference",
+    "old_factory": "make_kernel",
+    "kind": "attention",
+    "module": "akas.ops.attention.kernel",
+    "factory": "attention",
+    "uniform": true,
+    "previous_module": "akas.ops.attention.kernel",
+    "previous_factory": "attention"
+  },
+  {
+    "old_module": "akas.ops.attention.reference",
+    "old_factory": "make_kernel",
+    "kind": "cache_write",
+    "module": "akas.ops.attention.kernel",
+    "factory": "cache_write",
+    "uniform": true,
+    "previous_module": "akas.ops.attention.kernel",
+    "previous_factory": "cache_write"
+  },
+  {
+    "old_module": "akas.ops.attention.reference",
+    "old_factory": "make_kernel",
+    "kind": "rope",
+    "module": "akas.ops.attention.kernel",
+    "factory": "rope",
+    "uniform": true,
+    "previous_module": "akas.ops.attention.kernel",
+    "previous_factory": "rope"
+  },
+  {
+    "old_module": "akas.ops.attention.portable",
+    "old_factory": "attention",
+    "kind": null,
+    "module": "akas.ops.attention.kernel",
+    "factory": "online_attention",
+    "uniform": false,
+    "previous_module": "akas.ops.attention._shared.online",
+    "previous_factory": "attention"
+  },
+  {
+    "old_module": "akas.ops.attention.floating",
+    "old_factory": "cache_reader",
+    "kind": null,
+    "module": "akas.ops.attention.kernel",
+    "factory": "cache_reader",
+    "uniform": false,
+    "previous_module": "akas.ops.attention._shared.cache",
+    "previous_factory": "cache_reader"
+  },
+  {
+    "old_module": "akas.ops.attention.floating",
+    "old_factory": "cache_arguments",
+    "kind": null,
+    "module": "akas.ops.attention.kernel",
+    "factory": "cache_arguments",
+    "uniform": false,
+    "previous_module": "akas.ops.attention._shared.cache",
+    "previous_factory": "cache_arguments"
+  },
+  {
+    "old_module": "akas.ops.attention.floating",
+    "old_factory": "make_kernel",
+    "kind": "attention_merge",
+    "module": "akas.ops.attention.kernel",
+    "factory": "merge_floating",
+    "uniform": true,
+    "previous_module": "akas.ops.attention._shared.decode",
+    "previous_factory": "merge_floating"
+  },
+  {
+    "old_module": "akas.ops.attention.floating",
+    "old_factory": "make_kernel",
+    "kind": "attention_partial",
+    "module": "akas.ops.attention.kernel",
+    "factory": "partial_floating",
+    "uniform": true,
+    "previous_module": "akas.ops.attention._shared.decode",
+    "previous_factory": "partial_floating"
+  },
+  {
+    "old_module": "akas.ops.attention.cuda.floating",
+    "old_factory": "make_kernel",
+    "kind": "attention",
+    "module": "akas.ops.attention.cuda",
+    "factory": "floating",
+    "uniform": true,
+    "previous_module": "akas.ops.attention.cuda.prefill",
+    "previous_factory": "floating"
+  },
+  {
+    "old_module": "akas.ops.attention.cuda.floating",
+    "old_factory": "make_kernel",
+    "kind": "attention_merge",
+    "module": "akas.ops.attention.kernel",
+    "factory": "merge_floating",
+    "uniform": true,
+    "previous_module": "akas.ops.attention._shared.decode",
+    "previous_factory": "merge_floating"
+  },
+  {
+    "old_module": "akas.ops.attention.cuda.floating",
+    "old_factory": "make_kernel",
+    "kind": "attention_partial",
+    "module": "akas.ops.attention.kernel",
+    "factory": "partial_floating",
+    "uniform": true,
+    "previous_module": "akas.ops.attention._shared.decode",
+    "previous_factory": "partial_floating"
+  },
+  {
+    "old_module": "akas.ops.attention.cuda.packed",
+    "old_factory": "warp_partial_kernel",
+    "kind": null,
+    "module": "akas.ops.attention.cuda",
+    "factory": "partial_flat",
+    "uniform": false,
+    "previous_module": "akas.ops.attention.cuda.decode",
+    "previous_factory": "partial_flat"
+  },
+  {
+    "old_module": "akas.ops.attention.cuda.packed",
+    "old_factory": "grouped_kernel",
+    "kind": null,
+    "module": "akas.ops.attention.cuda",
+    "factory": "grouped_flat",
+    "uniform": false,
+    "previous_module": "akas.ops.attention.cuda.decode",
+    "previous_factory": "grouped_flat"
+  },
+  {
+    "old_module": "akas.ops.attention.cuda.packed",
+    "old_factory": "merge_kernel",
+    "kind": null,
+    "module": "akas.ops.attention.cuda",
+    "factory": "flat",
+    "uniform": false,
+    "previous_module": "akas.ops.attention.cuda.merge",
+    "previous_factory": "flat"
+  },
+  {
+    "old_module": "akas.ops.attention.cuda.packed",
+    "old_factory": "make_kernel",
+    "kind": "attention_partial",
+    "module": "akas.ops.attention.cuda",
+    "factory": "partitioned_flat",
+    "uniform": true,
+    "previous_module": "akas.ops.attention.cuda.decode",
+    "previous_factory": "partitioned_flat"
+  },
+  {
+    "old_module": "akas.ops.attention.cuda.packed",
+    "old_factory": "make_kernel",
+    "kind": "attention_grouped",
+    "module": "akas.ops.attention.cuda",
+    "factory": "grouped",
+    "uniform": true,
+    "previous_module": "akas.ops.attention.cuda.decode",
+    "previous_factory": "grouped"
+  },
+  {
+    "old_module": "akas.ops.attention.cuda.packed",
+    "old_factory": "make_kernel",
+    "kind": "attention_merge",
+    "module": "akas.ops.attention.cuda",
+    "factory": "merge_partitioned_flat",
+    "uniform": true,
+    "previous_module": "akas.ops.attention.cuda.merge",
+    "previous_factory": "partitioned_flat"
+  },
+  {
+    "old_module": "akas.ops.attention.cuda.packed_baseline",
+    "old_factory": "make_kernel",
+    "kind": "attention",
+    "module": "akas.ops.attention.kernel",
+    "factory": "attention_flat",
+    "uniform": true,
+    "previous_module": "akas.ops.attention.kernel",
+    "previous_factory": "attention_flat"
+  },
+  {
+    "old_module": "akas.ops.attention.cuda.packed_baseline",
+    "old_factory": "make_kernel",
+    "kind": "qkv",
+    "module": "akas.ops.attention.kernel",
+    "factory": "prepare_flat",
+    "uniform": true,
+    "previous_module": "akas.ops.attention.kernel",
+    "previous_factory": "prepare_flat"
+  },
+  {
+    "old_module": "akas.ops.attention.cuda.bf16_batch",
+    "old_factory": "make_kernel",
+    "kind": "attention_qkv",
+    "module": "akas.ops.attention.cuda",
+    "factory": "qkv_mapped_bf16",
+    "uniform": true,
+    "previous_module": "akas.ops.attention.cuda.prepare",
+    "previous_factory": "qkv_mapped_bf16"
+  },
+  {
+    "old_module": "akas.ops.attention.cuda.bf16_batch",
+    "old_factory": "make_kernel",
+    "kind": "attention",
+    "module": "akas.ops.attention.cuda",
+    "factory": "mapped_bf16",
+    "uniform": true,
+    "previous_module": "akas.ops.attention.cuda.prefill",
+    "previous_factory": "mapped_bf16"
+  },
+  {
+    "old_module": "akas.ops.attention.cuda.decode",
+    "old_factory": "make_kernel",
+    "kind": "attention_q",
+    "module": "akas.ops.attention.cuda",
+    "factory": "query",
+    "uniform": true,
+    "previous_module": "akas.ops.attention.cuda.prepare",
+    "previous_factory": "query"
+  },
+  {
+    "old_module": "akas.ops.attention.cuda.decode",
+    "old_factory": "make_kernel",
+    "kind": "attention_kv",
+    "module": "akas.ops.attention.cuda",
+    "factory": "kv",
+    "uniform": true,
+    "previous_module": "akas.ops.attention.cuda.prepare",
+    "previous_factory": "kv"
+  },
+  {
+    "old_module": "akas.ops.attention.cuda.decode",
+    "old_factory": "make_kernel",
+    "kind": "attention_partial",
+    "module": "akas.ops.attention.cuda",
+    "factory": "partial_bf16",
+    "uniform": true,
+    "previous_module": "akas.ops.attention.cuda.decode",
+    "previous_factory": "partial_bf16"
+  },
+  {
+    "old_module": "akas.ops.attention.cuda.decode",
+    "old_factory": "make_kernel",
+    "kind": "attention_merge",
+    "module": "akas.ops.attention.cuda",
+    "factory": "merge_native",
+    "uniform": true,
+    "previous_module": "akas.ops.attention.cuda.merge",
+    "previous_factory": "native"
+  },
+  {
+    "old_module": "akas.ops.attention.cuda.prefill",
+    "old_factory": "make_kernel",
+    "kind": "attention_kv",
+    "module": "akas.ops.attention.cuda",
+    "factory": "kv_chunk",
+    "uniform": true,
+    "previous_module": "akas.ops.attention.cuda.prepare",
+    "previous_factory": "kv_chunk"
+  },
+  {
+    "old_module": "akas.ops.attention.cuda.prefill",
+    "old_factory": "make_kernel",
+    "kind": "attention",
+    "module": "akas.ops.attention.cuda",
+    "factory": "native",
+    "uniform": true,
+    "previous_module": "akas.ops.attention.cuda.prefill",
+    "previous_factory": "native"
+  },
+  {
+    "old_module": "akas.ops.attention.cuda.quantized",
+    "old_factory": "write",
+    "kind": null,
+    "module": "akas.ops.attention.cuda",
+    "factory": "kv_quantized",
+    "uniform": true,
+    "previous_module": "akas.ops.attention.cuda.prepare",
+    "previous_factory": "kv_quantized"
+  },
+  {
+    "old_module": "akas.ops.attention.cuda.quantized",
+    "old_factory": "partial",
+    "kind": null,
+    "module": "akas.ops.attention.cuda",
+    "factory": "partial_quantized",
+    "uniform": true,
+    "previous_module": "akas.ops.attention.cuda.decode",
+    "previous_factory": "partial_quantized"
+  },
+  {
+    "old_module": "akas.ops.attention.cuda.quantized",
+    "old_factory": "attention",
+    "kind": null,
+    "module": "akas.ops.attention.cuda",
+    "factory": "quantized",
+    "uniform": true,
+    "previous_module": "akas.ops.attention.cuda.prefill",
+    "previous_factory": "quantized"
+  },
+  {
+    "old_module": "akas.ops.attention.cuda.quantized",
+    "old_factory": "make_kernel",
+    "kind": "attention_kv",
+    "module": "akas.ops.attention.cuda",
+    "factory": "kv_quantized",
+    "uniform": true,
+    "previous_module": "akas.ops.attention.cuda.prepare",
+    "previous_factory": "kv_quantized"
+  },
+  {
+    "old_module": "akas.ops.attention.cuda.quantized",
+    "old_factory": "make_kernel",
+    "kind": "attention_partial",
+    "module": "akas.ops.attention.cuda",
+    "factory": "partial_quantized",
+    "uniform": true,
+    "previous_module": "akas.ops.attention.cuda.decode",
+    "previous_factory": "partial_quantized"
+  },
+  {
+    "old_module": "akas.ops.attention.cuda.quantized",
+    "old_factory": "make_kernel",
+    "kind": "attention",
+    "module": "akas.ops.attention.cuda",
+    "factory": "quantized",
+    "uniform": true,
+    "previous_module": "akas.ops.attention.cuda.prefill",
+    "previous_factory": "quantized"
+  },
+  {
+    "old_module": "akas.ops.attention.cuda.split",
+    "old_factory": "partial",
+    "kind": null,
+    "module": "akas.ops.attention.cuda",
+    "factory": "partial",
+    "uniform": true,
+    "previous_module": "akas.ops.attention.cuda.prefill_split",
+    "previous_factory": "partial"
+  },
+  {
+    "old_module": "akas.ops.attention.cuda.split",
+    "old_factory": "merge",
+    "kind": null,
+    "module": "akas.ops.attention.cuda",
+    "factory": "chunk",
+    "uniform": true,
+    "previous_module": "akas.ops.attention.cuda.merge",
+    "previous_factory": "chunk"
+  },
+  {
+    "old_module": "akas.ops.attention.cuda.workspace",
+    "old_factory": "decode",
+    "kind": null,
+    "module": "akas.ops.attention.cuda",
+    "factory": "decode",
+    "uniform": true,
+    "previous_module": "akas.ops.attention.cuda.workspace",
+    "previous_factory": "decode"
+  },
+  {
+    "old_module": "akas.ops.attention.hardware.hopper.attention",
+    "old_factory": "partial",
+    "kind": null,
+    "module": "akas.ops.attention.cuda",
+    "factory": "hopper_prefill_split_partial",
+    "uniform": true,
+    "previous_module": "akas.ops.attention.cuda.hopper.prefill_split",
+    "previous_factory": "partial"
+  },
+  {
+    "old_module": "akas.ops.attention.hardware.hopper.prefill",
+    "old_factory": "attention",
+    "kind": null,
+    "module": "akas.ops.attention.cuda",
+    "factory": "attention",
+    "uniform": true,
+    "previous_module": "akas.ops.attention.cuda.hopper.prefill",
+    "previous_factory": "attention"
+  },
+  {
+    "old_module": "akas.ops.attention.pipeline",
+    "old_factory": "active",
+    "kind": null,
+    "module": "akas.ops.attention.kernel",
+    "factory": "chunk_active",
+    "uniform": true,
+    "previous_module": "akas.ops.attention.kernel",
+    "previous_factory": "chunk_active"
+  },
+  {
+    "old_module": "akas.ops.attention.pipeline",
+    "old_factory": "validation",
+    "kind": null,
+    "module": "akas.ops.attention.validation",
+    "factory": "pipeline_validation",
+    "uniform": false,
+    "previous_module": "akas.ops.attention._validation",
+    "previous_factory": "pipeline_validation"
+  },
+  {
+    "old_module": "akas.ops.attention.cuda.fp8",
+    "old_factory": "make_kernel",
+    "kind": "attention_qkv",
+    "module": "akas.ops.attention.cuda",
+    "factory": "qkv_mapped_fp8",
+    "uniform": true,
+    "previous_module": "akas.ops.attention.cuda.prepare",
+    "previous_factory": "qkv_mapped_fp8"
+  },
+  {
+    "old_module": "akas.ops.attention.cuda.fp8",
+    "old_factory": "make_kernel",
+    "kind": "attention",
+    "module": "akas.ops.attention.cuda",
+    "factory": "prefill_split_mapped_fp8",
+    "uniform": true,
+    "previous_module": "akas.ops.attention.cuda.prefill_split",
+    "previous_factory": "mapped_fp8"
+  },
+  {
+    "old_module": "akas.ops.attention.cuda.fp8",
+    "old_factory": "make_kernel",
+    "kind": "attention_merge",
+    "module": "akas.ops.attention.cuda",
+    "factory": "mapped_fp8",
+    "uniform": true,
+    "previous_module": "akas.ops.attention.cuda.merge",
+    "previous_factory": "mapped_fp8"
+  },
+  {
+    "old_module": "akas.ops.attention.webgpu.packed",
+    "old_factory": "score_shuffle",
+    "kind": null,
+    "module": "akas.ops.attention.webgpu",
+    "factory": "_score_shuffle",
+    "uniform": false,
+    "previous_module": "akas.ops.attention.webgpu.scores",
+    "previous_factory": "_score_shuffle"
+  },
+  {
+    "old_module": "akas.ops.attention.webgpu.packed",
+    "old_factory": "attention_scores_kernel",
+    "kind": null,
+    "module": "akas.ops.attention.webgpu",
+    "factory": "scores",
+    "uniform": true,
+    "previous_module": "akas.ops.attention.webgpu.scores",
+    "previous_factory": "scores"
+  },
+  {
+    "old_module": "akas.ops.attention.webgpu.packed",
+    "old_factory": "attention_kernel",
+    "kind": null,
+    "module": "akas.ops.attention.webgpu",
+    "factory": "_attention",
+    "uniform": false,
+    "previous_module": "akas.ops.attention.webgpu.kernel",
+    "previous_factory": "_attention"
+  },
+  {
+    "old_module": "akas.ops.attention.webgpu.packed",
+    "old_factory": "make_kernel",
+    "kind": "attention_scores",
+    "module": "akas.ops.attention.webgpu",
+    "factory": "attention_scores",
+    "uniform": true,
+    "previous_module": "akas.ops.attention.webgpu.scores",
+    "previous_factory": "attention_scores"
+  },
+  {
+    "old_module": "akas.ops.attention.webgpu.packed",
+    "old_factory": "make_kernel",
+    "kind": "attention",
+    "module": "akas.ops.attention.webgpu",
+    "factory": "attention",
+    "uniform": true,
+    "previous_module": "akas.ops.attention.webgpu.kernel",
+    "previous_factory": "attention"
+  },
+  {
+    "old_module": "akas.ops.attention.webgpu.packed",
+    "old_factory": "make_kernel",
+    "kind": "qkv",
+    "module": "akas.ops.attention.webgpu",
+    "factory": "qkv",
+    "uniform": true,
+    "previous_module": "akas.ops.attention.webgpu.prepare",
+    "previous_factory": "qkv"
+  },
+  {
+    "old_module": "akas.ops.gdn.cuda.bf16_batch",
+    "old_factory": "make_kernel",
+    "kind": "gdn_conv",
+    "module": "akas.ops.gdn.kernel",
+    "factory": "mapped_conv",
+    "uniform": true,
+    "previous_module": "akas.ops.gdn.cuda.convolution",
+    "previous_factory": "mapped_conv"
+  },
+  {
+    "old_module": "akas.ops.gdn.cuda.bf16_batch",
+    "old_factory": "make_kernel",
+    "kind": "gdn_norm",
+    "module": "akas.ops.gdn.kernel",
+    "factory": "mapped_norm",
+    "uniform": true,
+    "previous_module": "akas.ops.gdn.cuda.normalization",
+    "previous_factory": "mapped_norm"
+  },
+  {
+    "old_module": "akas.ops.gdn.cuda.bf16_batch",
+    "old_factory": "make_kernel",
+    "kind": "gdn_prepare",
+    "module": "akas.ops.gdn.kernel",
+    "factory": "mapped_prepare",
+    "uniform": true,
+    "previous_module": "akas.ops.gdn.cuda.prepare",
+    "previous_factory": "mapped_prepare"
+  },
+  {
+    "old_module": "akas.ops.gdn.cuda.bf16_batch",
+    "old_factory": "make_kernel",
+    "kind": "gdn_scan",
+    "module": "akas.ops.gdn.kernel",
+    "factory": "mapped_scan",
+    "uniform": true,
+    "previous_module": "akas.ops.gdn.cuda.scan",
+    "previous_factory": "mapped_scan"
+  },
+  {
+    "old_module": "akas.ops.gdn.cuda.decode",
+    "old_factory": "make_kernel",
+    "kind": "gdn_conv",
+    "module": "akas.ops.gdn.kernel",
+    "factory": "decode_conv",
+    "uniform": true,
+    "previous_module": "akas.ops.gdn.cuda.convolution",
+    "previous_factory": "decode_conv"
+  },
+  {
+    "old_module": "akas.ops.gdn.cuda.decode",
+    "old_factory": "make_kernel",
+    "kind": "gdn_norm",
+    "module": "akas.ops.gdn.kernel",
+    "factory": "decode_norm",
+    "uniform": true,
+    "previous_module": "akas.ops.gdn.cuda.normalization",
+    "previous_factory": "decode_norm"
+  },
+  {
+    "old_module": "akas.ops.gdn.cuda.decode",
+    "old_factory": "make_kernel",
+    "kind": "gdn_prepare",
+    "module": "akas.ops.gdn.kernel",
+    "factory": "decode_prepare",
+    "uniform": true,
+    "previous_module": "akas.ops.gdn.cuda.prepare",
+    "previous_factory": "decode_prepare"
+  },
+  {
+    "old_module": "akas.ops.gdn.cuda.decode",
+    "old_factory": "make_kernel",
+    "kind": "gdn_recurrent",
+    "module": "akas.ops.gdn.kernel",
+    "factory": "decode_recurrent",
+    "uniform": true,
+    "previous_module": "akas.ops.gdn.cuda.scan",
+    "previous_factory": "decode_recurrent"
+  },
+  {
+    "old_module": "akas.ops.gdn.cuda.prefill",
+    "old_factory": "make_kernel",
+    "kind": "gdn_conv",
+    "module": "akas.ops.gdn.kernel",
+    "factory": "prefill_conv",
+    "uniform": true,
+    "previous_module": "akas.ops.gdn.cuda.convolution",
+    "previous_factory": "prefill_conv"
+  },
+  {
+    "old_module": "akas.ops.gdn.cuda.prefill",
+    "old_factory": "make_kernel",
+    "kind": "gdn_scan",
+    "module": "akas.ops.gdn.kernel",
+    "factory": "prefill_scan",
+    "uniform": true,
+    "previous_module": "akas.ops.gdn.cuda.scan",
+    "previous_factory": "prefill_scan"
+  },
+  {
+    "old_module": "akas.ops.gdn.cuda.verification",
+    "old_factory": "make_kernel",
+    "kind": "gdn_conv",
+    "module": "akas.ops.gdn.kernel",
+    "factory": "journal_conv",
+    "uniform": true,
+    "previous_module": "akas.ops.gdn.cuda.convolution",
+    "previous_factory": "journal_conv"
+  },
+  {
+    "old_module": "akas.ops.gdn.cuda.verification",
+    "old_factory": "make_kernel",
+    "kind": "gdn_scan",
+    "module": "akas.ops.gdn.kernel",
+    "factory": "journal_scan",
+    "uniform": true,
+    "previous_module": "akas.ops.gdn.cuda.scan",
+    "previous_factory": "journal_scan"
+  },
+  {
+    "old_module": "akas.ops.gdn.cuda.verification",
+    "old_factory": "make_kernel",
+    "kind": "restore",
+    "module": "akas.ops.gdn.kernel",
+    "factory": "journal_restore",
+    "uniform": true,
+    "previous_module": "akas.ops.gdn.cuda.restore",
+    "previous_factory": "journal_restore"
+  },
+  {
+    "old_module": "akas.ops.gdn.restore",
+    "old_factory": "restore_kernel",
+    "kind": null,
+    "module": "akas.ops.gdn.kernel",
+    "factory": "restore",
+    "uniform": true,
+    "previous_module": "akas.ops.gdn.kernel",
+    "previous_factory": "restore"
+  },
+  {
+    "old_module": "akas.ops.gdn.verification",
+    "old_factory": "make_kernel",
+    "kind": "conv_commit",
+    "module": "akas.ops.gdn.kernel",
+    "factory": "conv_commit",
+    "uniform": true,
+    "previous_module": "akas.ops.gdn.cuda.journal",
+    "previous_factory": "conv_commit"
+  },
+  {
+    "old_module": "akas.ops.gdn.verification",
+    "old_factory": "make_kernel",
+    "kind": "defer_accept",
+    "module": "akas.ops.gdn.kernel",
+    "factory": "defer_accept",
+    "uniform": true,
+    "previous_module": "akas.ops.gdn.cuda.journal",
+    "previous_factory": "defer_accept"
+  },
+  {
+    "old_module": "akas.ops.gdn.verification",
+    "old_factory": "make_kernel",
+    "kind": "defer_clear",
+    "module": "akas.ops.gdn.kernel",
+    "factory": "defer_clear",
+    "uniform": true,
+    "previous_module": "akas.ops.gdn.cuda.journal",
+    "previous_factory": "defer_clear"
+  },
+  {
+    "old_module": "akas.ops.gdn.verification",
+    "old_factory": "make_kernel",
+    "kind": "gdn_deferred",
+    "module": "akas.ops.gdn.kernel",
+    "factory": "gdn_deferred",
+    "uniform": true,
+    "previous_module": "akas.ops.gdn.cuda.journal",
+    "previous_factory": "gdn_deferred"
+  },
+  {
+    "old_module": "akas.ops.gdn.verification",
+    "old_factory": "make_kernel",
+    "kind": "gdn_materialize",
+    "module": "akas.ops.gdn.kernel",
+    "factory": "gdn_materialize",
+    "uniform": true,
+    "previous_module": "akas.ops.gdn.cuda.journal",
+    "previous_factory": "gdn_materialize"
+  },
+  {
+    "old_module": "akas.ops.gdn.verification",
+    "old_factory": "validation",
+    "kind": null,
+    "module": "akas.ops.gdn.validation",
+    "factory": "journal_validation",
+    "uniform": false,
+    "previous_module": "akas.ops.gdn._validation",
+    "previous_factory": "journal_validation"
+  },
+  {
+    "old_module": "akas.ops.moe.cuda.decode",
+    "old_factory": "make_kernel",
+    "kind": "fp8_experts",
+    "module": "akas.ops.moe.cuda",
+    "factory": "decode_fp8_experts",
+    "uniform": true,
+    "previous_module": "akas.ops.moe.cuda.experts",
+    "previous_factory": "decode_fp8_experts"
+  },
+  {
+    "old_module": "akas.ops.moe.cuda.decode",
+    "old_factory": "make_kernel",
+    "kind": "moe_combine",
+    "module": "akas.ops.moe.cuda",
+    "factory": "decode_moe_combine",
+    "uniform": true,
+    "previous_module": "akas.ops.moe.cuda.combine",
+    "previous_factory": "decode_moe_combine"
+  },
+  {
+    "old_module": "akas.ops.moe.cuda.decode",
+    "old_factory": "make_kernel",
+    "kind": "moe_groups",
+    "module": "akas.ops.moe.cuda",
+    "factory": "decode_moe_groups",
+    "uniform": true,
+    "previous_module": "akas.ops.moe.cuda.routing",
+    "previous_factory": "decode_moe_groups"
+  },
+  {
+    "old_module": "akas.ops.moe.cuda.decode",
+    "old_factory": "make_kernel",
+    "kind": "router",
+    "module": "akas.ops.moe.cuda",
+    "factory": "decode_router",
+    "uniform": true,
+    "previous_module": "akas.ops.moe.cuda.routing",
+    "previous_factory": "decode_router"
+  },
+  {
+    "old_module": "akas.ops.moe.cuda.prefill",
+    "old_factory": "make_kernel",
+    "kind": "expert_routes",
+    "module": "akas.ops.moe.cuda",
+    "factory": "prefill_expert_routes",
+    "uniform": true,
+    "previous_module": "akas.ops.moe.cuda.routing",
+    "previous_factory": "prefill_expert_routes"
+  },
+  {
+    "old_module": "akas.ops.moe.cuda.prefill",
+    "old_factory": "make_kernel",
+    "kind": "fp8_experts",
+    "module": "akas.ops.moe.cuda",
+    "factory": "prefill_fp8_experts",
+    "uniform": true,
+    "previous_module": "akas.ops.moe.cuda.experts",
+    "previous_factory": "prefill_fp8_experts"
+  },
+  {
+    "old_module": "akas.ops.moe.cuda.prefill",
+    "old_factory": "expert_kernel",
+    "kind": null,
+    "module": "akas.ops.moe.cuda",
+    "factory": "_bucketed",
+    "uniform": false,
+    "previous_module": "akas.ops.moe.cuda.experts",
+    "previous_factory": "_bucketed"
+  },
+  {
+    "old_module": "akas.ops.moe.cuda.compact",
+    "old_factory": "tile_map_kernel",
+    "kind": null,
+    "module": "akas.ops.moe.cuda",
+    "factory": "tile_map",
+    "uniform": true,
+    "previous_module": "akas.ops.moe.cuda.routing",
+    "previous_factory": "tile_map"
+  },
+  {
+    "old_module": "akas.ops.moe.cuda.split",
+    "old_factory": "expert_kernel",
+    "kind": null,
+    "module": "akas.ops.moe.cuda",
+    "factory": "partial",
+    "uniform": true,
+    "previous_module": "akas.ops.moe.cuda.experts_split",
+    "previous_factory": "partial"
+  },
+  {
+    "old_module": "akas.ops.moe.hardware.hopper.experts",
+    "old_factory": "expert_kernel",
+    "kind": null,
+    "module": "akas.ops.moe.cuda",
+    "factory": "hopper_experts_partial",
+    "uniform": true,
+    "previous_module": "akas.ops.moe.cuda.hopper.experts",
+    "previous_factory": "partial"
+  },
+  {
+    "old_module": "akas.ops.moe.pipeline",
+    "old_factory": "make_kernel",
+    "kind": "expert_merge",
+    "module": "akas.ops.linear.cuda",
+    "factory": "fp8",
+    "uniform": true,
+    "previous_module": "akas.ops.linear.cuda.merge",
+    "previous_factory": "fp8"
+  },
+  {
+    "old_module": "akas.ops.moe.pipeline",
+    "old_factory": "make_kernel",
+    "kind": "expert_partial",
+    "module": "akas.ops.moe.cuda.selection",
+    "factory": "expert_partial",
+    "uniform": true
+  },
+  {
+    "old_module": "akas.ops.moe.pipeline",
+    "old_factory": "make_kernel",
+    "kind": "expert_tiles",
+    "module": "akas.ops.moe.cuda",
+    "factory": "tiles",
+    "uniform": true,
+    "previous_module": "akas.ops.moe.cuda.routing",
+    "previous_factory": "tiles"
+  },
+  {
+    "old_module": "akas.ops.moe.pipeline",
+    "old_factory": "tiles",
+    "kind": null,
+    "module": "akas.ops.moe.validation",
+    "factory": "tiles",
+    "uniform": false,
+    "previous_module": "akas.ops.moe._validation",
+    "previous_factory": "tiles"
+  },
+  {
+    "old_module": "akas.ops.moe.pipeline",
+    "old_factory": "validation",
+    "kind": null,
+    "module": "akas.ops.moe.validation",
+    "factory": "pipeline_validation",
+    "uniform": false,
+    "previous_module": "akas.ops.moe._validation",
+    "previous_factory": "pipeline_validation"
+  },
+  {
+    "old_module": "akas.ops.residual.kernel",
+    "old_factory": "make_kernel",
+    "kind": "add",
+    "module": "akas.ops.residual.kernel",
+    "factory": "add",
+    "uniform": true,
+    "previous_module": "akas.ops.residual.kernel",
+    "previous_factory": "add"
+  },
+  {
+    "old_module": "akas.ops.convolution.reference",
+    "old_factory": "make_kernel",
+    "kind": "conv",
+    "module": "akas.ops.convolution.kernel",
+    "factory": "convolution",
+    "uniform": true,
+    "previous_module": "akas.ops.convolution.kernel",
+    "previous_factory": "convolution"
+  },
+  {
+    "old_module": "akas.ops.convolution.cuda.packed_baseline",
+    "old_factory": "make_kernel",
+    "kind": "conv",
+    "module": "akas.ops.convolution.kernel",
+    "factory": "convolution_flat",
+    "uniform": true,
+    "previous_module": "akas.ops.convolution.kernel",
+    "previous_factory": "convolution_flat"
+  },
+  {
+    "old_module": "akas.ops.vocabulary.reference",
+    "old_factory": "make_kernel",
+    "kind": "argmax",
+    "module": "akas.ops.vocabulary.kernel",
+    "factory": "argmax",
+    "uniform": true,
+    "previous_module": "akas.ops.vocabulary.kernel",
+    "previous_factory": "argmax"
+  },
+  {
+    "old_module": "akas.ops.vocabulary.reference",
+    "old_factory": "make_kernel",
+    "kind": "embedding",
+    "module": "akas.ops.vocabulary.kernel",
+    "factory": "embedding",
+    "uniform": true,
+    "previous_module": "akas.ops.vocabulary.kernel",
+    "previous_factory": "embedding"
+  },
+  {
+    "old_module": "akas.ops.vocabulary.cuda.packed_baseline",
+    "old_factory": "make_kernel",
+    "kind": "embedding",
+    "module": "akas.ops.vocabulary.kernel",
+    "factory": "embedding_packed",
+    "uniform": true,
+    "previous_module": "akas.ops.vocabulary.kernel",
+    "previous_factory": "embedding_packed"
+  },
+  {
+    "old_module": "akas.ops.vocabulary.cuda.decode",
+    "old_factory": "make_kernel",
+    "kind": "argmax",
+    "module": "akas.ops.vocabulary.kernel",
+    "factory": "native_argmax",
+    "uniform": true,
+    "previous_module": "akas.ops.vocabulary.cuda.kernel",
+    "previous_factory": "argmax"
+  },
+  {
+    "old_module": "akas.ops.vocabulary.cuda.decode",
+    "old_factory": "make_kernel",
+    "kind": "embedding",
+    "module": "akas.ops.vocabulary.kernel",
+    "factory": "native_embedding",
+    "uniform": true,
+    "previous_module": "akas.ops.vocabulary.cuda.kernel",
+    "previous_factory": "embedding"
+  },
+  {
+    "old_module": "akas.ops.vocabulary.cuda.fused_head",
+    "old_factory": "make_kernel",
+    "kind": "head_argmax",
+    "module": "akas.ops.vocabulary.cuda",
+    "factory": "head_argmax",
+    "uniform": true,
+    "previous_module": "akas.ops.vocabulary.cuda.head",
+    "previous_factory": "head_argmax"
+  },
+  {
+    "old_module": "akas.ops.vocabulary.cuda.fused_head",
+    "old_factory": "make_kernel",
+    "kind": "head_linear",
+    "module": "akas.ops.vocabulary.cuda",
+    "factory": "head_linear",
+    "uniform": true,
+    "previous_module": "akas.ops.vocabulary.cuda.head",
+    "previous_factory": "head_linear"
+  },
+  {
+    "old_module": "akas.ops.vocabulary.webgpu.packed",
+    "old_factory": "make_kernel",
+    "kind": "argmax",
+    "module": "akas.ops.vocabulary.kernel",
+    "factory": "packed_word_argmax",
+    "uniform": true,
+    "previous_module": "akas.ops.vocabulary.webgpu.kernel",
+    "previous_factory": "argmax"
+  },
+  {
+    "old_module": "akas.ops.vocabulary.webgpu.packed",
+    "old_factory": "make_kernel",
+    "kind": "embedding",
+    "module": "akas.ops.vocabulary.kernel",
+    "factory": "packed_word_embedding",
+    "uniform": true,
+    "previous_module": "akas.ops.vocabulary.webgpu.kernel",
+    "previous_factory": "embedding"
+  },
+  {
+    "old_module": "akas.ops.vocabulary.cuda.packed",
+    "old_factory": "make_kernel",
+    "kind": "argmax",
+    "module": "akas.ops.vocabulary.kernel",
+    "factory": "argmax_packed",
+    "uniform": true,
+    "previous_module": "akas.ops.vocabulary.kernel",
+    "previous_factory": "argmax_packed"
+  },
+  {
+    "old_module": "akas.ops.sequence.reference",
+    "old_factory": "make_kernel",
+    "kind": "advance",
+    "module": "akas.ops.sequence.kernel",
+    "factory": "advance",
+    "uniform": true,
+    "previous_module": "akas.ops.sequence.kernel",
+    "previous_factory": "advance"
+  },
+  {
+    "old_module": "akas.ops.sequence.reference",
+    "old_factory": "make_kernel",
+    "kind": "chunk_controls",
+    "module": "akas.ops.sequence.kernel",
+    "factory": "chunk_controls",
+    "uniform": true,
+    "previous_module": "akas.ops.sequence.kernel",
+    "previous_factory": "chunk_controls"
+  },
+  {
+    "old_module": "akas.ops.sequence.reference",
+    "old_factory": "make_kernel",
+    "kind": "chunk_last",
+    "module": "akas.ops.sequence.kernel",
+    "factory": "chunk_last",
+    "uniform": true,
+    "previous_module": "akas.ops.sequence.kernel",
+    "previous_factory": "chunk_last"
+  },
+  {
+    "old_module": "akas.ops.sequence.reference",
+    "old_factory": "make_kernel",
+    "kind": "masked_copy",
+    "module": "akas.ops.sequence.kernel",
+    "factory": "masked_copy",
+    "uniform": true,
+    "previous_module": "akas.ops.sequence.kernel",
+    "previous_factory": "masked_copy"
+  },
+  {
+    "old_module": "akas.ops.sequence.reference",
+    "old_factory": "make_kernel",
+    "kind": "next_tokens",
+    "module": "akas.ops.sequence.kernel",
+    "factory": "next_tokens",
+    "uniform": true,
+    "previous_module": "akas.ops.sequence.kernel",
+    "previous_factory": "next_tokens"
+  },
+  {
+    "old_module": "akas.ops.sequence.tail",
+    "old_factory": "make_kernel",
+    "kind": "chunk_tail",
+    "module": "akas.ops.sequence.kernel",
+    "factory": "chunk_tail",
+    "uniform": true,
+    "previous_module": "akas.ops.sequence.kernel",
+    "previous_factory": "chunk_tail"
+  },
+  {
+    "old_module": "akas.ops.sequence.tail",
+    "old_factory": "make_kernel",
+    "kind": "tail_controls",
+    "module": "akas.ops.sequence.kernel",
+    "factory": "tail_controls",
+    "uniform": true,
+    "previous_module": "akas.ops.sequence.kernel",
+    "previous_factory": "tail_controls"
+  },
+  {
+    "old_module": "akas.ops.control.copy",
+    "old_factory": "make_kernel",
+    "kind": "copy_buffer",
+    "module": "akas.ops.control.kernel",
+    "factory": "copy_buffer",
+    "uniform": true,
+    "previous_module": "akas.ops.control.kernel",
+    "previous_factory": "copy_buffer"
+  },
+  {
+    "old_module": "akas.ops.control.feedback",
+    "old_factory": "make_kernel",
+    "kind": "token_feedback",
+    "module": "akas.ops.control.kernel",
+    "factory": "token_feedback",
+    "uniform": true,
+    "previous_module": "akas.ops.control.kernel",
+    "previous_factory": "token_feedback"
+  },
+  {
+    "old_module": "akas.ops.control.speculative",
+    "old_factory": "make_kernel",
+    "kind": "spec_accept",
+    "module": "akas.ops.control.kernel",
+    "factory": "spec_accept",
+    "uniform": true,
+    "previous_module": "akas.ops.control.cuda.round",
+    "previous_factory": "spec_accept"
+  },
+  {
+    "old_module": "akas.ops.control.speculative",
+    "old_factory": "make_kernel",
+    "kind": "spec_draft",
+    "module": "akas.ops.control.kernel",
+    "factory": "spec_draft",
+    "uniform": true,
+    "previous_module": "akas.ops.control.cuda.round",
+    "previous_factory": "spec_draft"
+  },
+  {
+    "old_module": "akas.ops.control.speculative",
+    "old_factory": "make_kernel",
+    "kind": "spec_proposal",
+    "module": "akas.ops.control.kernel",
+    "factory": "spec_proposal",
+    "uniform": true,
+    "previous_module": "akas.ops.control.cuda.round",
+    "previous_factory": "spec_proposal"
+  },
+  {
+    "old_module": "akas.ops.control.speculative",
+    "old_factory": "make_kernel",
+    "kind": "spec_repair",
+    "module": "akas.ops.control.kernel",
+    "factory": "spec_repair",
+    "uniform": true,
+    "previous_module": "akas.ops.control.cuda.round",
+    "previous_factory": "spec_repair"
+  },
+  {
+    "old_module": "akas.ops.control.speculative",
+    "old_factory": "make_kernel",
+    "kind": "spec_result",
+    "module": "akas.ops.control.kernel",
+    "factory": "spec_result",
+    "uniform": true,
+    "previous_module": "akas.ops.control.cuda.round",
+    "previous_factory": "spec_result"
+  },
+  {
+    "old_module": "akas.ops.control.speculative",
+    "old_factory": "make_kernel",
+    "kind": "spec_setup",
+    "module": "akas.ops.control.kernel",
+    "factory": "spec_setup",
+    "uniform": true,
+    "previous_module": "akas.ops.control.cuda.round",
+    "previous_factory": "spec_setup"
+  },
+  {
+    "old_module": "akas.ops.indexing.rows",
+    "old_factory": "make_kernel",
+    "kind": "clear_rows",
+    "module": "akas.ops.indexing.kernel",
+    "factory": "clear_rows",
+    "uniform": true,
+    "previous_module": "akas.ops.indexing.kernel",
+    "previous_factory": "clear_rows"
+  },
+  {
+    "old_module": "akas.ops.mtp.cuda",
+    "old_factory": "make_kernel",
+    "kind": "mtp_cast",
+    "module": "akas.ops.mtp.kernel",
+    "factory": "mtp_cast",
+    "uniform": true,
+    "previous_module": "akas.ops.mtp.cuda.kernel",
+    "previous_factory": "mtp_cast"
+  },
+  {
+    "old_module": "akas.ops.mtp.cuda",
+    "old_factory": "make_kernel",
+    "kind": "mtp_join",
+    "module": "akas.ops.mtp.kernel",
+    "factory": "mtp_join",
+    "uniform": true,
+    "previous_module": "akas.ops.mtp.cuda.kernel",
+    "previous_factory": "mtp_join"
+  },
+  {
+    "old_module": "akas.ops.activation.kernel",
+    "old_factory": "make_kernel",
+    "kind": "swiglu",
+    "module": "akas.ops.activation.kernel",
+    "factory": "swiglu",
+    "uniform": true,
+    "previous_module": "akas.ops.activation.kernel",
+    "previous_factory": "swiglu"
+  },
+  {
+    "old_module": "akas.ops.activation.kernel",
+    "old_factory": "make_kernel",
+    "kind": "swiglu_experts",
+    "module": "akas.ops.activation.kernel",
+    "factory": "swiglu_experts",
+    "uniform": true,
+    "previous_module": "akas.ops.activation.kernel",
+    "previous_factory": "swiglu_experts"
+  },
+  {
+    "old_module": "akas.ops.normalization.kernel",
+    "old_factory": "make_kernel",
+    "kind": "add_rms",
+    "module": "akas.ops.normalization.kernel",
+    "factory": "add_rms",
+    "uniform": true,
+    "previous_module": "akas.ops.normalization.kernel",
+    "previous_factory": "add_rms"
+  },
+  {
+    "old_module": "akas.ops.normalization.kernel",
+    "old_factory": "make_kernel",
+    "kind": "kvnorm",
+    "module": "akas.ops.normalization.kernel",
+    "factory": "kvnorm",
+    "uniform": true,
+    "previous_module": "akas.ops.normalization.kernel",
+    "previous_factory": "kvnorm"
+  },
+  {
+    "old_module": "akas.ops.normalization.kernel",
+    "old_factory": "make_kernel",
+    "kind": "qnorm",
+    "module": "akas.ops.normalization.kernel",
+    "factory": "qnorm",
+    "uniform": true,
+    "previous_module": "akas.ops.normalization.kernel",
+    "previous_factory": "qnorm"
+  },
+  {
+    "old_module": "akas.ops.normalization.kernel",
+    "old_factory": "make_kernel",
+    "kind": "rms",
+    "module": "akas.ops.normalization.kernel",
+    "factory": "rms",
+    "uniform": true,
+    "previous_module": "akas.ops.normalization.kernel",
+    "previous_factory": "rms"
+  },
+  {
+    "old_module": "akas.ops.sequence.cuda.packed",
+    "old_factory": "make_kernel",
+    "kind": "prefill_tail",
+    "module": "akas.ops.sequence.kernel",
+    "factory": "flat_prefill_tail",
+    "uniform": true,
+    "previous_module": "akas.ops.sequence.cuda.rows",
+    "previous_factory": "flat_prefill_tail"
+  },
+  {
+    "old_module": "akas.ops.sequence.cuda.packed_baseline",
+    "old_factory": "make_kernel",
+    "kind": "advance",
+    "module": "akas.ops.sequence.kernel",
+    "factory": "baseline_advance",
+    "uniform": true,
+    "previous_module": "akas.ops.sequence.cuda.positions",
+    "previous_factory": "baseline_advance"
+  },
+  {
+    "old_module": "akas.ops.sequence.cuda.packed_baseline",
+    "old_factory": "make_kernel",
+    "kind": "last",
+    "module": "akas.ops.sequence.kernel",
+    "factory": "baseline_last",
+    "uniform": true,
+    "previous_module": "akas.ops.sequence.cuda.rows",
+    "previous_factory": "baseline_last"
+  },
+  {
+    "old_module": "akas.ops.sequence.cuda.bf16_batch",
+    "old_factory": "make_kernel",
+    "kind": "controls",
+    "module": "akas.ops.sequence.kernel",
+    "factory": "mapped_controls",
+    "uniform": true,
+    "previous_module": "akas.ops.sequence.cuda.controls",
+    "previous_factory": "mapped_controls"
+  },
+  {
+    "old_module": "akas.ops.sequence.cuda.bf16_batch",
+    "old_factory": "make_kernel",
+    "kind": "gather_hidden",
+    "module": "akas.ops.sequence.kernel",
+    "factory": "mapped_gather_hidden",
+    "uniform": true,
+    "previous_module": "akas.ops.sequence.cuda.rows",
+    "previous_factory": "mapped_gather_hidden"
+  },
+  {
+    "old_module": "akas.ops.sequence.cuda.bf16_batch",
+    "old_factory": "make_kernel",
+    "kind": "last_rows",
+    "module": "akas.ops.sequence.kernel",
+    "factory": "mapped_last_rows",
+    "uniform": true,
+    "previous_module": "akas.ops.sequence.cuda.rows",
+    "previous_factory": "mapped_last_rows"
+  },
+  {
+    "old_module": "akas.ops.sequence.cuda.bf16_batch",
+    "old_factory": "make_kernel",
+    "kind": "store_hidden",
+    "module": "akas.ops.sequence.kernel",
+    "factory": "mapped_store_hidden",
+    "uniform": true,
+    "previous_module": "akas.ops.sequence.cuda.rows",
+    "previous_factory": "mapped_store_hidden"
+  },
+  {
+    "old_module": "akas.ops.sequence.cuda.prefill",
+    "old_factory": "make_kernel",
+    "kind": "advance",
+    "module": "akas.ops.sequence.kernel",
+    "factory": "chunk_advance",
+    "uniform": true,
+    "previous_module": "akas.ops.sequence.cuda.positions",
+    "previous_factory": "chunk_advance"
+  },
+  {
+    "old_module": "akas.ops.sequence.cuda.prefill",
+    "old_factory": "make_kernel",
+    "kind": "controls",
+    "module": "akas.ops.sequence.kernel",
+    "factory": "controls_chunk_controls",
+    "uniform": true,
+    "previous_module": "akas.ops.sequence.cuda.controls",
+    "previous_factory": "chunk_controls"
+  },
+  {
+    "old_module": "akas.ops.sequence.cuda.prefill",
+    "old_factory": "make_kernel",
+    "kind": "last_rows",
+    "module": "akas.ops.sequence.kernel",
+    "factory": "chunk_last_rows",
+    "uniform": true,
+    "previous_module": "akas.ops.sequence.cuda.rows",
+    "previous_factory": "chunk_last_rows"
+  },
+  {
+    "old_module": "akas.ops.sequence.webgpu.packed",
+    "old_factory": "make_kernel",
+    "kind": "prefill_tail",
+    "module": "akas.ops.sequence.kernel",
+    "factory": "prefill_tail",
+    "uniform": true,
+    "previous_module": "akas.ops.sequence.webgpu.rows",
+    "previous_factory": "prefill_tail"
+  },
+  {
+    "old_module": "akas.ops.activation.kernel",
+    "old_factory": "swiglu_kernel",
+    "kind": null,
+    "module": "akas.ops.activation.kernel",
+    "factory": "_swiglu",
+    "uniform": false,
+    "previous_module": "akas.ops.activation.kernel",
+    "previous_factory": "_swiglu"
+  },
+  {
+    "old_module": "akas.ops.normalization.kernel",
+    "old_factory": "rms_kernel",
+    "kind": null,
+    "module": "akas.ops.normalization.kernel",
+    "factory": "_fragment",
+    "uniform": false,
+    "previous_module": "akas.ops.normalization.kernel",
+    "previous_factory": "_fragment"
+  },
+  {
+    "old_module": "akas.ops.normalization.kernel",
+    "old_factory": "rms_width",
+    "kind": null,
+    "module": "akas.ops.normalization.kernel",
+    "factory": "rms_width",
+    "uniform": false,
+    "previous_module": "akas.ops.normalization.kernel",
+    "previous_factory": "rms_width"
+  },
+  {
+    "old_module": "akas.ops.normalization.kernel",
+    "old_factory": "parallel_rms_kernel",
+    "kind": null,
+    "module": "akas.ops.normalization.kernel",
+    "factory": "_parallel",
+    "uniform": false,
+    "previous_module": "akas.ops.normalization.kernel",
+    "previous_factory": "_parallel"
+  },
+  {
+    "old_module": "akas.ops.normalization.kernel",
+    "old_factory": "serial_rms_kernel",
+    "kind": null,
+    "module": "akas.ops.normalization.kernel",
+    "factory": "_serial",
+    "uniform": false,
+    "previous_module": "akas.ops.normalization.kernel",
+    "previous_factory": "_serial"
+  },
+  {
+    "old_module": "akas.ops.normalization.kernel",
+    "old_factory": "normalization_kernel",
+    "kind": null,
+    "module": "akas.ops.attention.kernel",
+    "factory": "_normalization",
+    "uniform": false,
+    "previous_module": "akas.ops.attention.kernel",
+    "previous_factory": "_normalization"
+  },
+  {
+    "old_module": "akas.ops.vocabulary.cuda.argmax",
+    "old_factory": "argmax_kernel",
+    "kind": null,
+    "module": "akas.ops.vocabulary.kernel",
+    "factory": "_argmax",
+    "uniform": false,
+    "previous_module": "akas.ops.vocabulary.kernel",
+    "previous_factory": "_argmax"
+  },
+  {
+    "old_module": "akas.ops.vocabulary.cuda.bf16",
+    "old_factory": "bf16_head_kernel",
+    "kind": null,
+    "module": "akas.ops.vocabulary.cuda",
+    "factory": "bf16",
+    "uniform": true,
+    "previous_module": "akas.ops.vocabulary.cuda.head",
+    "previous_factory": "bf16"
+  },
+  {
+    "old_module": "akas.ops.vocabulary.cuda.speculative",
+    "old_factory": "head_kernel",
+    "kind": null,
+    "module": "akas.ops.vocabulary.cuda",
+    "factory": "speculative",
+    "uniform": true,
+    "previous_module": "akas.ops.vocabulary.cuda.head",
+    "previous_factory": "speculative"
+  },
+  {
+    "old_module": "akas.ops.sequence.tail",
+    "old_factory": "validation",
+    "kind": null,
+    "module": "akas.ops.sequence.validation",
+    "factory": "tail_validation",
+    "uniform": false,
+    "previous_module": "akas.ops.sequence._validation",
+    "previous_factory": "tail_validation"
+  },
+  {
+    "old_module": "akas.ops.control.copy",
+    "old_factory": "validation",
+    "kind": null,
+    "module": "akas.ops.control.validation",
+    "factory": "copy_validation",
+    "uniform": false,
+    "previous_module": "akas.ops.control._validation",
+    "previous_factory": "copy_validation"
+  },
+  {
+    "old_module": "akas.ops.control.feedback",
+    "old_factory": "validation",
+    "kind": null,
+    "module": "akas.ops.control.validation",
+    "factory": "feedback_validation",
+    "uniform": false,
+    "previous_module": "akas.ops.control._validation",
+    "previous_factory": "feedback_validation"
+  },
+  {
+    "old_module": "akas.ops.reductions.webgpu",
+    "old_factory": "tree_reduce",
+    "kind": null,
+    "module": "akas.kernels.reductions",
+    "factory": "tree_reduce",
+    "uniform": false,
+    "previous_module": "akas.ops.reductions.kernel",
+    "previous_factory": "tree_reduce"
+  },
+  {
+    "old_module": "akas.ops.linear.compose",
+    "old_factory": "linear",
+    "kind": null,
+    "module": "akas.ops.linear._composition",
+    "factory": "linear",
+    "uniform": false
+  },
+  {
+    "old_module": "akas.ops.linear.compose",
+    "old_factory": "packed_linear",
+    "kind": null,
+    "module": "akas.ops.linear._composition",
+    "factory": "packed_linear",
+    "uniform": false
+  },
+  {
+    "old_module": "akas.ops.linear.compose",
+    "old_factory": "split_linear",
+    "kind": null,
+    "module": "akas.ops.linear._composition",
+    "factory": "split_linear",
+    "uniform": false
+  },
+  {
+    "old_module": "akas.ops.attention.compose",
+    "old_factory": "fp8_decode_attention",
+    "kind": null,
+    "module": "akas.ops.attention.definition",
+    "factory": "fp8_decode_attention",
+    "uniform": false,
+    "previous_module": "akas.ops.attention._composition",
+    "previous_factory": "fp8_decode_attention"
+  },
+  {
+    "old_module": "akas.ops.attention.compose",
+    "old_factory": "fp8_prefill_attention",
+    "kind": null,
+    "module": "akas.ops.attention.definition",
+    "factory": "fp8_prefill_attention",
+    "uniform": false,
+    "previous_module": "akas.ops.attention._composition",
+    "previous_factory": "fp8_prefill_attention"
+  },
+  {
+    "old_module": "akas.ops.attention.compose",
+    "old_factory": "floating_attention",
+    "kind": null,
+    "module": "akas.ops.attention.definition",
+    "factory": "floating_attention",
+    "uniform": false,
+    "previous_module": "akas.ops.attention._composition",
+    "previous_factory": "floating_attention"
+  },
+  {
+    "old_module": "akas.ops.gdn.compose",
+    "old_factory": "fp8_decode_gdn",
+    "kind": null,
+    "module": "akas.ops.gdn.definition",
+    "factory": "fp8_decode_gdn",
+    "uniform": false,
+    "previous_module": "akas.ops.gdn._composition",
+    "previous_factory": "fp8_decode_gdn"
+  },
+  {
+    "old_module": "akas.ops.gdn.compose",
+    "old_factory": "fp8_prefill_gdn",
+    "kind": null,
+    "module": "akas.ops.gdn.definition",
+    "factory": "fp8_prefill_gdn",
+    "uniform": false,
+    "previous_module": "akas.ops.gdn._composition",
+    "previous_factory": "fp8_prefill_gdn"
+  },
+  {
+    "old_module": "akas.ops.moe.compose",
+    "old_factory": "fp8_decode_moe",
+    "kind": null,
+    "module": "akas.ops.moe.definition",
+    "factory": "fp8_decode_moe",
+    "uniform": false,
+    "previous_module": "akas.ops.moe._composition",
+    "previous_factory": "fp8_decode_moe"
+  },
+  {
+    "old_module": "akas.ops.moe.compose",
+    "old_factory": "fp8_prefill_moe",
+    "kind": null,
+    "module": "akas.ops.moe.definition",
+    "factory": "fp8_prefill_moe",
+    "uniform": false,
+    "previous_module": "akas.ops.moe._composition",
+    "previous_factory": "fp8_prefill_moe"
+  },
+  {
+    "old_module": "akas.quantization.weights.block_fp8",
+    "old_factory": "decode_storage",
+    "kind": null,
+    "module": "akas.quantization._shared.e4m3",
+    "factory": "decode_storage",
+    "uniform": false
+  },
+  {
+    "old_module": "akas.quantization.weights.block_fp8",
+    "old_factory": "encode_storage",
+    "kind": null,
+    "module": "akas.quantization._shared.e4m3",
+    "factory": "encode_storage",
+    "uniform": false
+  },
+  {
+    "old_module": "akas.quantization.weights.block_fp8",
+    "old_factory": "validation",
+    "kind": null,
+    "module": "akas.quantization.weights.fp8.validation",
+    "factory": "validation",
+    "uniform": false,
+    "previous_module": "akas.quantization.weights.fp8.validation",
+    "previous_factory": "validation"
+  },
+  {
+    "old_module": "akas.quantization.weights.block_fp8",
+    "old_factory": "make_kernel",
+    "kind": "e4m3_decode",
+    "module": "akas.quantization.weights.fp8.cuda",
+    "factory": "decode",
+    "uniform": true,
+    "previous_module": "akas.quantization.weights.fp8.cuda",
+    "previous_factory": "decode"
+  },
+  {
+    "old_module": "akas.quantization.weights.operands",
+    "old_factory": "widen",
+    "kind": null,
+    "module": "akas.quantization.weights.fp8.cuda",
+    "factory": "widen",
+    "uniform": true,
+    "previous_module": "akas.quantization.weights.fp8.cuda",
+    "previous_factory": "widen"
+  },
+  {
+    "old_module": "akas.quantization.weights.ggml",
+    "old_factory": "weight_storage",
+    "kind": null,
+    "module": "akas.quantization.weights.ggml.definition",
+    "factory": "weight_storage",
+    "uniform": false,
+    "previous_module": "akas.quantization.weights.ggml.format",
+    "previous_factory": "weight_storage"
+  },
+  {
+    "old_module": "akas.quantization.weights.ggml",
+    "old_factory": "weight_decoder",
+    "kind": null,
+    "module": "akas.quantization.weights.ggml.kernel",
+    "factory": "weight_decoder",
+    "uniform": false,
+    "previous_module": "akas.quantization.weights.ggml.inline",
+    "previous_factory": "weight_decoder"
+  },
+  {
+    "old_module": "akas.quantization.weights.ggml",
+    "old_factory": "pair_decoder",
+    "kind": null,
+    "module": "akas.quantization.weights.ggml.kernel",
+    "factory": "pair_decoder",
+    "uniform": false,
+    "previous_module": "akas.quantization.weights.ggml.inline",
+    "previous_factory": "pair_decoder"
+  },
+  {
+    "old_module": "akas.quantization.weights.ggml",
+    "old_factory": "hardware_loads",
+    "kind": null,
+    "module": "akas.quantization.weights.ggml.cuda",
+    "factory": "hardware_loads",
+    "uniform": false,
+    "previous_module": "akas.quantization.weights.ggml.cuda",
+    "previous_factory": "hardware_loads"
+  },
+  {
+    "old_module": "akas.quantization.weights.ggml",
+    "old_factory": "packed_dot",
+    "kind": null,
+    "module": "akas.quantization.weights.ggml.cuda",
+    "factory": "packed_dot",
+    "uniform": false,
+    "previous_module": "akas.quantization.weights.ggml.cuda",
+    "previous_factory": "packed_dot"
+  },
+  {
+    "old_module": "akas.quantization.weights.ggml",
+    "old_factory": "sample_weight",
+    "kind": null,
+    "module": "akas.quantization.weights.ggml.validation",
+    "factory": "sample_weight",
+    "uniform": false,
+    "previous_module": "akas.quantization.weights.ggml.reference",
+    "previous_factory": "sample_weight"
+  },
+  {
+    "old_module": "akas.quantization.weights.storage",
+    "old_factory": "half_bits",
+    "kind": null,
+    "module": "akas.quantization._shared.rounding",
+    "factory": "half_bits",
+    "uniform": false
+  },
+  {
+    "old_module": "akas.quantization.weights.storage",
+    "old_factory": "round_half",
+    "kind": null,
+    "module": "akas.quantization._shared.rounding",
+    "factory": "round_half",
+    "uniform": false
+  },
+  {
+    "old_module": "akas.quantization.weights.storage",
+    "old_factory": "packed_loads",
+    "kind": null,
+    "module": "akas.quantization._shared.packing",
+    "factory": "packed_loads",
+    "uniform": false
+  },
+  {
+    "old_module": "akas.quantization.activations.fp8",
+    "old_factory": "quantize_kernel",
+    "kind": null,
+    "module": "akas.quantization.activations.fp8.cuda",
+    "factory": "quantize",
+    "uniform": true,
+    "previous_module": "akas.quantization.activations.fp8.cuda",
+    "previous_factory": "quantize"
+  },
+  {
+    "old_module": "akas.quantization.activations.fp8",
+    "old_factory": "validation",
+    "kind": null,
+    "module": "akas.quantization.activations.fp8.validation",
+    "factory": "validation",
+    "uniform": false,
+    "previous_module": "akas.quantization.activations.fp8.validation",
+    "previous_factory": "validation"
+  },
+  {
+    "old_module": "akas.quantization.activations.q8",
+    "old_factory": "validation",
+    "kind": null,
+    "module": "akas.quantization.activations.q8.validation",
+    "factory": "validation",
+    "uniform": false,
+    "previous_module": "akas.quantization.activations.q8.validation",
+    "previous_factory": "validation"
+  },
+  {
+    "old_module": "akas.quantization.activations.q16",
+    "old_factory": "encode",
+    "kind": null,
+    "module": "akas.quantization.activations.q16.validation",
+    "factory": "encode",
+    "uniform": false,
+    "previous_module": "akas.quantization.activations.q16.reference",
+    "previous_factory": "encode"
+  },
+  {
+    "old_module": "akas.quantization.activations.q16",
+    "old_factory": "decode",
+    "kind": null,
+    "module": "akas.quantization.activations.q16.validation",
+    "factory": "decode",
+    "uniform": false,
+    "previous_module": "akas.quantization.activations.q16.reference",
+    "previous_factory": "decode"
+  },
+  {
+    "old_module": "akas.quantization.activations.q16",
+    "old_factory": "validation",
+    "kind": null,
+    "module": "akas.quantization.activations.q16.validation",
+    "factory": "validation",
+    "uniform": false,
+    "previous_module": "akas.quantization.activations.q16.validation",
+    "previous_factory": "validation"
+  },
+  {
+    "old_module": "akas.quantization.activations.packing",
+    "old_factory": "quantize_kernel",
+    "kind": "quantize_q8",
+    "module": "akas.quantization.activations.q8.webgpu",
+    "factory": "quantize",
+    "uniform": true,
+    "previous_module": "akas.quantization.activations.q8.webgpu",
+    "previous_factory": "quantize"
+  },
+  {
+    "old_module": "akas.quantization.activations.packing",
+    "old_factory": "quantize_kernel",
+    "kind": "quantize_q16",
+    "module": "akas.quantization.activations.q16.webgpu",
+    "factory": "quantize",
+    "uniform": true,
+    "previous_module": "akas.quantization.activations.q16.webgpu",
+    "previous_factory": "quantize"
+  },
+  {
+    "old_module": "akas.quantization.kv.fp8",
+    "old_factory": "layout",
+    "kind": null,
+    "module": "akas.quantization.kv.fp8.definition",
+    "factory": "layout",
+    "uniform": false,
+    "previous_module": "akas.quantization.kv.fp8.format",
+    "previous_factory": "layout"
+  },
+  {
+    "old_module": "akas.quantization.kv.fp8",
+    "old_factory": "webgpu_layout",
+    "kind": null,
+    "module": "akas.quantization.kv.fp8.definition",
+    "factory": "webgpu_layout",
+    "uniform": false,
+    "previous_module": "akas.quantization.kv.fp8.format",
+    "previous_factory": "webgpu_layout"
+  },
+  {
+    "old_module": "akas.quantization.kv.fp8",
+    "old_factory": "writer",
+    "kind": null,
+    "module": "akas.quantization.kv.fp8.cuda",
+    "factory": "writer",
+    "uniform": false,
+    "previous_module": "akas.quantization.kv.fp8.cuda",
+    "previous_factory": "writer"
+  },
+  {
+    "old_module": "akas.quantization.kv.fp8",
+    "old_factory": "decoder",
+    "kind": null,
+    "module": "akas.quantization.kv.fp8.cuda",
+    "factory": "decoder",
+    "uniform": false,
+    "previous_module": "akas.quantization.kv.fp8.cuda",
+    "previous_factory": "decoder"
+  },
+  {
+    "old_module": "akas.quantization.kv.fp8",
+    "old_factory": "packed_decoder",
+    "kind": null,
+    "module": "akas.quantization.kv.fp8.cuda",
+    "factory": "packed_decoder",
+    "uniform": false,
+    "previous_module": "akas.quantization.kv.fp8.cuda",
+    "previous_factory": "packed_decoder"
+  },
+  {
+    "old_module": "akas.quantization.kv.fp8",
+    "old_factory": "helpers",
+    "kind": null,
+    "module": "akas.quantization.kv.fp8.kernel",
+    "factory": "helpers",
+    "uniform": false,
+    "previous_module": "akas.quantization.kv.fp8.inline",
+    "previous_factory": "helpers"
+  },
+  {
+    "old_module": "akas.quantization.kv.fp8",
+    "old_factory": "portable_scaling",
+    "kind": null,
+    "module": "akas.quantization.kv.fp8.kernel",
+    "factory": "portable_scaling",
+    "uniform": false,
+    "previous_module": "akas.quantization.kv.fp8.inline",
+    "previous_factory": "portable_scaling"
+  },
+  {
+    "old_module": "akas.quantization.kv.fp8",
+    "old_factory": "reference_writer",
+    "kind": null,
+    "module": "akas.quantization.kv.fp8.kernel",
+    "factory": "reference_writer",
+    "uniform": false,
+    "previous_module": "akas.quantization.kv.fp8.inline",
+    "previous_factory": "reference_writer"
+  },
+  {
+    "old_module": "akas.quantization.kv.fp8",
+    "old_factory": "reference_decoder",
+    "kind": null,
+    "module": "akas.quantization.kv.fp8.kernel",
+    "factory": "reference_decoder",
+    "uniform": false,
+    "previous_module": "akas.quantization.kv.fp8.inline",
+    "previous_factory": "reference_decoder"
+  },
+  {
+    "old_module": "akas.quantization.kv.fp8",
+    "old_factory": "make_kernel",
+    "kind": "kv_encode",
+    "module": "akas.quantization.kv.fp8.cuda",
+    "factory": "kv_encode",
+    "uniform": true,
+    "previous_module": "akas.quantization.kv.fp8.cuda",
+    "previous_factory": "kv_encode"
+  },
+  {
+    "old_module": "akas.quantization.kv.fp8",
+    "old_factory": "make_kernel",
+    "kind": "kv_decode",
+    "module": "akas.quantization.kv.fp8.cuda",
+    "factory": "kv_decode",
+    "uniform": true,
+    "previous_module": "akas.quantization.kv.fp8.cuda",
+    "previous_factory": "kv_decode"
+  },
+  {
+    "old_module": "akas.quantization.activations.packing",
+    "old_factory": "quantize_kernel",
+    "kind": "quantize_q8",
+    "module": "akas.quantization.activations.q8.webgpu",
+    "factory": "quantize",
+    "uniform": true,
+    "previous_module": "akas.quantization.activations.q8.webgpu",
+    "previous_factory": "quantize"
+  },
+  {
+    "old_module": "akas.quantization.activations.packing",
+    "old_factory": "quantize_kernel",
+    "kind": "quantize_q16",
+    "module": "akas.quantization.activations.q16.webgpu",
+    "factory": "quantize",
+    "uniform": true,
+    "previous_module": "akas.quantization.activations.q16.webgpu",
+    "previous_factory": "quantize"
+  },
+  {
+    "old_module": "akas.quantization.activations.packing",
+    "old_factory": "quantize_kernel",
+    "kind": "quantize_q8",
+    "module": "akas.quantization.activations.q8.webgpu",
+    "factory": "quantize",
+    "uniform": true,
+    "previous_module": "akas.quantization.activations.q8.webgpu",
+    "previous_factory": "quantize"
+  },
+  {
+    "old_module": "akas.quantization.activations.packing",
+    "old_factory": "quantize_kernel",
+    "kind": "quantize_q16",
+    "module": "akas.quantization.activations.q16.webgpu",
+    "factory": "quantize",
+    "uniform": true,
+    "previous_module": "akas.quantization.activations.q16.webgpu",
+    "previous_factory": "quantize"
+  },
+  {
+    "old_module": "akas.quantization.activations.fp8",
+    "old_factory": "make_kernel",
+    "kind": "quantize",
+    "module": "akas.quantization.activations.fp8.cuda",
+    "factory": "quantize",
+    "uniform": true,
+    "previous_module": "akas.quantization.activations.fp8.cuda",
+    "previous_factory": "quantize"
+  }
+]

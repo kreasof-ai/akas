@@ -1,1 +1,5 @@
-"""LiquidAI LFM2 configuration and native execution."""
+"""Public model declarations; new models export their names here."""
+
+from akas.models.lfm2.model import LFM2, LFM2Batched, LFM2Reference
+
+__all__ = ["LFM2", "LFM2Reference", "LFM2Batched"]

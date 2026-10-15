@@ -15,7 +15,7 @@ GPU = pytest.mark.skipif(
 def test_common_cuda_request_geometries_are_explicit(tmp_path):
     from support.diagnostic import fixture
     from akas.models.lfm2.weights import LFM2Checkpoint
-    from akas.models.lfm2.model import compose_program
+    from akas.models.lfm2._composition import program as compose_program
 
     checkpoint = LFM2Checkpoint(fixture(tmp_path/"model.gguf"),tokenizer=False)
     for rows in (1,4,16,64,256):
@@ -29,7 +29,7 @@ def test_common_cuda_request_geometries_are_explicit(tmp_path):
 
 def build(kind, parameters, directory, generator=None):
     import tensor
-    from akas.compilation.emit import export_kernel as source
+    from support.migration import source as source
 
     path = directory / (kind + ".py")
     path.write_text((generator or source)(kind, parameters))
@@ -142,7 +142,7 @@ def test_staged_prefill_pairs_and_padding(tmp_path, encoding, rows, kind):
     import torch
     import tensor
     from akas import GGUF
-    from akas.compilation.emit import export_kernel as prefill_source
+    from support.migration import source as prefill_source
 
     g = GGUF(ROOT / "build/lfm2-diagnostic.gguf")
     k, o = 256, 63

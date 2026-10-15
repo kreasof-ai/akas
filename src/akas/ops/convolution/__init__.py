@@ -1,1 +1,1 @@
-"""convolution components."""
+"""Convolution operation definitions and implementations."""

@@ -5,7 +5,8 @@ Run from the checkout: python -m akas serve --factory support.serving:lfm2
 """
 
 from contextlib import contextmanager
-from akas import Engine, EngineConfig
+from akas import Engine
+from akas import EngineConfig
 from akas.serving import Service
 
 
@@ -61,11 +62,11 @@ def qwen35_dense(
 ):
     import tensor
     from akas.text.tokenizer import Tokenizer
-    from akas.models.qwen35.model import DenseEngine
+    from akas.models.qwen35.model import Qwen35Dense
 
     tokenizer = Tokenizer.from_pretrained(checkpoint)
     with tensor.Device() as device:
-        target = DenseEngine(
+        target = Qwen35Dense(
             checkpoint,
             bundle,
             device,
@@ -78,7 +79,7 @@ def qwen35_dense(
         try:
             if mtp:
                 from akas.generation.speculative.decoding import SpeculativeDecoder
-                from akas.models.heads.mtp import MTPHead
+                from akas.models.qwen35.mtp import MTPHead
 
                 model = SpeculativeDecoder(
                     target, MTPHead(target),

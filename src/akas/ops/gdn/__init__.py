@@ -1,1 +1,1 @@
-"""Shared recurrent implementation."""
+"""Gdn operation definitions and implementations."""

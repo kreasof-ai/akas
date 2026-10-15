@@ -1,1 +1,1 @@
-"""vocabulary components."""
+"""Vocabulary operation definitions and implementations."""

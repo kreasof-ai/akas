@@ -36,7 +36,7 @@ def test_projection_policy_declares_shared_quantization_and_split_merge():
 def test_recompute_policy_keeps_operands_and_removes_full_state_snapshots():
     from akas.compilation.policy import lower
     from akas.compilation.compile import plan
-    from akas.models.qwen35.model import compose_moe_program
+    from akas.models.qwen35._composition import compose_moe_program
     from test_qwen_graph import moe_checkpoint
 
     graph, commit = compose_moe_program(
@@ -132,7 +132,7 @@ def test_routed_pipeline_is_numerically_qualified_by_default(tmp_path, settings)
 
 def test_resident_expert_storage_policy_is_uniform_across_all_model_phases():
     from akas.compilation.policy import lower
-    from akas.models.qwen35.model import compose_moe_program
+    from akas.models.qwen35._composition import compose_moe_program
     from test_moe_speculative_program import checkpoint
 
     loaded = checkpoint()

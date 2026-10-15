@@ -1,3 +1,4 @@
+from support.migration import historical_source
 """Consolidated activations retain the old kernels' numerical and launch ABI."""
 
 import importlib
@@ -20,9 +21,9 @@ def test_before_after_activation_storage_and_math(tmp_path, monkeypatch, provide
     if os.environ.get("AKAS_FORWARD_"+provider.upper()) != "1":
         pytest.skip("enable provider for native activation parity")
     import tensor
-    from tensor.compiler.frontend.source import export_source
+    from support.migration import source as export_source
     from tensor.compiler.tuning import measure
-    from akas.ops.registry import select
+    from akas.kernels.registry import select
     from akas.compilation.emit import build_artifact
 
     helper = tmp_path/'activation_baseline_helper.py'
@@ -38,7 +39,7 @@ def test_before_after_activation_storage_and_math(tmp_path, monkeypatch, provide
     if contract=='bf16': params = dict(slots=1,chunk=3,c=257)
     variant = select(kind,params,contract=contract,phase='decode' if contract=='block-fp8' else 'forward',provider=provider,target='sm_89' if provider=='cuda' else 'webgpu-portable-v1')
     definitions = [(module_name,kind,params,('activation_baseline_helper',)),
-                   ('akas.ops.'+variant.module,*variant.source_arguments(params),())]
+                   (historical_source(variant, params)['module'], *historical_source(variant, params)['args'], ())]
     artifacts = []
     for index,(module,operation,parameters,dependencies) in enumerate(definitions):
         path = tmp_path/f'kernel-{index}.py'

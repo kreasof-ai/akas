@@ -10,14 +10,15 @@ import pytest
 
 from akas.compilation import compile_checkpoint
 from akas.compilation import PROFILES
+from support.migration import historical_source
 from akas.compilation.compile import build
 from akas.artifacts.write import checksum
 from akas.artifacts.write import copy
 from akas.artifacts.schema import Bundle
 from akas.artifacts.schema import Kernel
 from akas.models.lfm2.weights import LFM2Checkpoint
-from akas.models.qwen35.config import DenseConfig
-from akas.models.qwen35.config import Qwen35Config
+from akas.models.qwen35.config import Qwen35DenseConfig
+from akas.models.qwen35.config import Qwen35MoEConfig
 
 CASES = json.loads(
     (Path(__file__).parent / "fixtures/compilation-profiles.json").read_text()
@@ -35,7 +36,7 @@ def test_frozen_packed_kernel_parameters_use_uniform_definitions(case):
         contract = "packed-baseline" if original["factory"] == "packed_baseline_factory" else "packed"
         declaration = source(kind,parameters,contract=contract,provider=provider,
                              target=case["options"].get("target"))
-        assert declaration.module == "akas.ops.definition"
+        assert declaration.module == "akas.kernels.definition"
         spec,schedule,capabilities,implementation = declaration.args
         assert spec["kind"] == kind
         assert spec["parameters"] == parameters
@@ -68,10 +69,10 @@ def test_profiles_preserve_original_kernel_sources_and_specializations(
     dense = case["profile"].endswith("bf16")
     if dense:
         from plan_fixture import dense_checkpoint
-        from akas.models.qwen35.model import compose_dense
+        from akas.models.qwen35._composition import compose_dense
         from akas.compilation.compile import plan as graph_plan
         values = {**case["config"], "layers": tuple(case["config"]["layers"])}
-        checkpoint = dense_checkpoint(DenseConfig(**values))
+        checkpoint = dense_checkpoint(Qwen35DenseConfig(**values))
         options = dict(case["options"])
         target = options.pop("target", "sm_89")
         graph, commit = compose_dense(checkpoint, **options)
@@ -85,7 +86,7 @@ def test_profiles_preserve_original_kernel_sources_and_specializations(
             checkpoint = packed_checkpoint
         else:
             values = {**case["config"], "layers": tuple(case["config"]["layers"])}
-            checkpoint = SimpleNamespace(config=Qwen35Config(**values))
+            checkpoint = SimpleNamespace(config=Qwen35MoEConfig(**values))
         plan = module.plan(checkpoint, **case["options"])
     actual = [
         dict(
@@ -104,14 +105,12 @@ def test_profiles_preserve_original_kernel_sources_and_specializations(
             assert record["source"]["dependencies"] == ["$shared-operation-closure"]
             del record["source"]["dependencies"]
             if record["source"]["module"] == "akas.compilation.factories.block_fp8":
-                from akas.ops.registry import select
+                from akas.kernels.registry import select
                 original = record["source"]
                 kind, parameters = original["args"]
                 variant = select(kind, parameters, contract="block-fp8", provider="cuda",
                                  phase=original["factory"].removesuffix("_factory"), target=None)
-                original["module"] = variant.module_name
-                original["factory"] = variant.factory
-                original["args"] = json.loads(json.dumps(variant.source_arguments(parameters)))
+                original.update(historical_source(variant, parameters))
             if record["source"]["module"].startswith("akas.ops.ffn."):
                 from activation_parity import old_dispatch
                 original = record["source"]
@@ -147,13 +146,11 @@ def test_profiles_preserve_original_kernel_sources_and_specializations(
     # the unchanged numerical contract checked against the original fixture.
     for record in actual:
         source = record["source"]
-        if source["module"] == "akas.ops.definition":
+        if source["module"] == "akas.kernels.definition":
             assert source["factory"] == "define"
             spec, schedule, capabilities, choice = source["args"]
             assert choice["provider"] == capabilities["provider"]
-            record["source"] = dict(module=choice["module"], factory=choice["factory"],
-                                    args=[choice["kernel_kind"],
-                                          {**choice["defaults"], **spec["parameters"], **schedule}])
+            record["source"] = historical_source(choice, {**spec["parameters"], **schedule})
     if dense:
         # The old inventory also emitted unreachable GDN, merge and fused-head
         # kernels. Only actual forward/commit calls enter the common compiler.
@@ -167,10 +164,10 @@ def test_profiles_preserve_original_kernel_sources_and_specializations(
 def test_batched_profile_reuses_different_widths_and_vocabularies():
     from akas.compilation.compile import plan
     from akas.compilation.rewrites import deferred_state
-    from akas.models.qwen35.model import compose_dense
+    from akas.models.qwen35._composition import compose_dense
     from plan_fixture import dense_checkpoint
 
-    config = DenseConfig(
+    config = Qwen35DenseConfig(
         width=512,
         intermediate=1024,
         vocab=4096,
@@ -207,7 +204,7 @@ def test_batched_profile_reuses_different_widths_and_vocabularies():
 
 
 def test_fixed_layout_profile_rejects_incompatible_geometry():
-    from akas.models.qwen35.model import compose_moe_program
+    from akas.models.qwen35._composition import compose_moe_program
     from test_qwen_graph import moe_checkpoint
 
     checkpoint = moe_checkpoint()

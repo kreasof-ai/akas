@@ -1,18 +1,100 @@
-"""Independent arithmetic and state qualification for gdn operations."""
+"""Independent numerical and state qualification for gdn."""
+
+
+def journal_validation(kind, p, signature):
+    """Independent delayed-update algebra and journal bookkeeping."""
+    import numpy as np
+    from tensor.runtime.dtypes import decode_bfloat16, encode_bfloat16
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    values = sample_arguments(signature)
+    slots, window, pool = (p["slots"], p["window"], p["pool"])
+    values["mapping"][:] = np.linspace(0, pool - 1, slots, dtype="int32")[::-1]
+    if "lengths" in values:
+        values["lengths"][:] = window
+        if slots > 1:
+            values["lengths"][-1] = max(1, window - 1)
+    if "counts" in values:
+        values["counts"][:] = np.arange(pool) % max(1, window)
+    if "banks" in values:
+        values["banks"][:] = np.arange(pool) % 2
+    for name in ("g", "saved_g"):
+        if name in values:
+            values[name][:] = -np.abs(values[name]) - 0.01
+    for name in ("beta", "saved_b"):
+        if name in values:
+            values[name][:] = 1 / (1 + np.exp(-values[name]))
+    expected = {name: value.copy() for name, value in values.items()}
+    if kind == "defer_accept":
+        for row, slot in enumerate(values["mapping"]):
+            expected["counts"][slot] = max(int(values["lengths"][row]) - 1, 0)
+            expected["banks"][slot] = 1 - values["banks"][slot]
+    elif kind == "defer_clear":
+        expected["counts"][values["mapping"]] = 0
+    elif kind == "conv_commit":
+        channels = p["channels"]
+        for row, slot in enumerate(values["mapping"]):
+            history = expected["state"][slot]
+            for token in range(values["lengths"][row]):
+                current = decode_bfloat16(
+                    encode_bfloat16(values["x"][row * window + token, :channels])
+                )
+                history[:, :2] = history[:, 1:]
+                history[:, 2] = current
+    elif kind in ("gdn_materialize", "gdn_deferred"):
+        for row, slot in enumerate(values["mapping"]):
+            bank = int(values["banks"][slot])
+            matrix = values["state"][slot].astype("float64")
+            for token in range(values["counts"][slot]):
+                matrix *= np.exp(values["saved_g"][bank, slot, token])[:, None, None]
+                matrix += (
+                    values["saved_v"][bank, slot, token]
+                    * values["saved_b"][bank, slot, token, :, None]
+                )[:, :, None] * values["saved_k"][bank, slot, token, :, None, :]
+            if kind == "gdn_materialize":
+                expected["state"][slot] = matrix
+                continue
+            for token in range(window):
+                index = row * window + token
+                if token >= values["lengths"][row]:
+                    expected["out"][index] = 0
+                    continue
+                q, k, v = [
+                    values[name][index].astype("float64") for name in ("q", "k", "v")
+                ]
+                matrix *= np.exp(values["g"][index])[:, None, None]
+                predicted = np.einsum("hvk,hk->hv", matrix, k)
+                correction = v - predicted
+                matrix += (values["beta"][index, :, None] * correction)[:, :, None] * k[
+                    :, None, :
+                ]
+                expected["out"][index] = np.einsum("hvk,hk->hv", matrix, q)
+                if token == 0:
+                    expected["state"][slot] = matrix
+                else:
+                    for name, source in (
+                        ("saved_k", k),
+                        ("saved_v", correction),
+                        ("saved_g", values["g"][index]),
+                        ("saved_b", values["beta"][index]),
+                    ):
+                        expected[name][1 - bank, slot, token - 1] = source
+    else:
+        raise ValueError("unknown deferred-state operation")
+    return ValidationCase(values, expected)
 
 
 def validation(kind, p, signature):
     import numpy as np
     from tensor.runtime.dtypes import decode_bfloat16, encode_bfloat16
-
-    from akas.ops.contracts import ValidationCase, sample_arguments
+    from akas.kernels.contracts import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
 
     def rounded(x):
         return decode_bfloat16(encode_bfloat16(x))
 
-    slots, chunk = p.get("slots", p.get("r", 1)), p.get("chunk", 1)
+    slots, chunk = (p.get("slots", p.get("r", 1)), p.get("chunk", 1))
     rows = slots * chunk
     if "mapping" in values:
         values["mapping"][:] = np.arange(slots)[::-1]
@@ -32,7 +114,10 @@ def validation(kind, p, signature):
         values[decay][:] = -np.abs(values[decay]) - 0.01
         values["beta"][:] = 1 / (1 + np.exp(-values["beta"]))
     written_names = {"out", "state", "checkpoints", "q", "k", "v", "g", "beta"}
-    expected = {name: value.copy() if name in written_names else value for name, value in values.items()}
+    expected = {
+        name: value.copy() if name in written_names else value
+        for name, value in values.items()
+    }
     if kind == "gdn_conv":
         channels = values["out"].shape[-1]
         w = values["w"][:, 0].astype("float64")
@@ -64,7 +149,10 @@ def validation(kind, p, signature):
     elif kind == "restore":
         values["accepted"][:] = np.arange(slots) % (chunk + 1)
         values["lengths"][:] = chunk
-        expected = {name: value.copy() if name in written_names else value for name, value in values.items()}
+        expected = {
+            name: value.copy() if name in written_names else value
+            for name, value in values.items()
+        }
         for batch, count in enumerate(values["accepted"]):
             if count > 0 and (p.get("full_checkpoints", False) or count < chunk):
                 expected["state"][batch] = values["checkpoints"][batch, count - 1]
@@ -76,17 +164,23 @@ def validation(kind, p, signature):
         for begin in range(0, rows, 1024):
             end = min(rows, begin + 1024)
             n = end - begin
-            q = conv[begin:end, : key_heads * d].reshape(n, key_heads, d).astype("float64")
+            q = (
+                conv[begin:end, : key_heads * d]
+                .reshape(n, key_heads, d)
+                .astype("float64")
+            )
             k = (
                 conv[begin:end, key_heads * d : 2 * key_heads * d]
                 .reshape(n, key_heads, d)
                 .astype("float64")
             )
-            q = q / np.sqrt(np.sum(q * q, axis=2, keepdims=True) + 1e-6) * d**-0.5
-            k = k / np.sqrt(np.sum(k * k, axis=2, keepdims=True) + 1e-6)
+            q = q / np.sqrt(np.sum(q * q, axis=2, keepdims=True) + 1e-06) * d ** (-0.5)
+            k = k / np.sqrt(np.sum(k * k, axis=2, keepdims=True) + 1e-06)
             expected["q"][begin:end] = np.repeat(q, heads // key_heads, axis=1)
             expected["k"][begin:end] = np.repeat(k, heads // key_heads, axis=1)
-            expected["v"][begin:end] = conv[begin:end, 2 * key_heads * d :].reshape(n, heads, d)
+            expected["v"][begin:end] = conv[begin:end, 2 * key_heads * d :].reshape(
+                n, heads, d
+            )
         start = channels + heads * d
         a = (
             rounded(
@@ -148,7 +242,9 @@ def validation(kind, p, signature):
                 else values["z"][begin:end]
             ).reshape(n, heads, d)
             output = (
-                x / np.sqrt(np.mean(x * x, axis=2, keepdims=True) + p["eps"]) * values["w"]
+                x
+                / np.sqrt(np.mean(x * x, axis=2, keepdims=True) + p["eps"])
+                * values["w"]
             )
             output *= gate / (1 + np.exp(-gate))
             expected["out"][begin:end] = rounded(output.reshape(n, heads * d))
@@ -168,11 +264,9 @@ VALIDATIONS = {
         "restore",
     )
 }
-from akas.ops.gdn.verification import validation as deferred_validation
-
 VALIDATIONS.update(
     {
-        name: deferred_validation
+        name: journal_validation
         for name in (
             "conv_commit",
             "defer_accept",

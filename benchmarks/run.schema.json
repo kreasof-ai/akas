@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kreasof-ai/akas/benchmarks/run.schema.json",
+  "title": "AKAS benchmark run",
+  "type": "object",
+  "required": [
+    "schema",
+    "id",
+    "started_at",
+    "completed_at",
+    "status",
+    "source",
+    "metadata",
+    "change",
+    "dependencies",
+    "environment",
+    "workload",
+    "results",
+    "search",
+    "artifacts"
+  ],
+  "properties": {
+    "schema": {
+      "const": "akas.benchmark-run.v1"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[0-9]+-[0-9a-f]{8}$"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "status": {
+      "enum": [
+        "running",
+        "passed",
+        "failed",
+        "interrupted",
+        "invalidated",
+        "unsupported",
+        "budget_exhausted"
+      ]
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "revision",
+        "dirty",
+        "tree_sha256",
+        "files"
+      ],
+      "properties": {
+        "revision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "dirty": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "tree_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "files": {
+          "type": "object"
+        }
+      }
+    },
+    "metadata": {
+      "type": "object"
+    },
+    "change": {
+      "type": "object",
+      "required": [
+        "kind",
+        "description",
+        "parent_run"
+      ]
+    },
+    "dependencies": {
+      "type": "object"
+    },
+    "environment": {
+      "type": "object"
+    },
+    "workload": {
+      "type": "object",
+      "required": [
+        "id",
+        "shapes"
+      ],
+      "properties": {
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "shapes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "batch",
+              "prefix_tokens",
+              "output_tokens",
+              "cached_prefix_tokens",
+              "ragged"
+            ]
+          }
+        }
+      }
+    },
+    "results": {
+      "type": "array"
+    },
+    "search": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "program_sha256",
+          "phase",
+          "batch",
+          "chunk",
+          "provider",
+          "target",
+          "contract",
+          "qualification",
+          "profile",
+          "winners"
+        ]
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "sha256",
+          "bytes"
+        ]
+      }
+    }
+  }
+}

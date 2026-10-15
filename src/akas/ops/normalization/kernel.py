@@ -1,13 +1,66 @@
-"""Normalization kernels with explicit layout, precision and reduction policies."""
+"""Shared TileLang computations for normalization."""
 
-from akas.ops.reductions.webgpu import tree_reduce, subgroup_reduce
+from collections.abc import Mapping
+from akas.kernels.definition import KernelSpec
+from akas.kernels.kernel import Tensor, kernel, output
 
 
-def rms_kernel(p):
+def add_rms(spec: KernelSpec, schedule: Mapping[str, object]):
+    from akas.ops.normalization.kernel import _fragment as rms_kernel
+    from akas.ops.normalization.kernel import _parallel as parallel_rms_kernel
+    from akas.ops.normalization.kernel import _serial as serial_rms_kernel
+
+    parameters = {**spec.parameters, **schedule}
+    p = dict(parameters)
+    algorithm = p.pop("algorithm", "fragment")
+    if algorithm == "serial-tree":
+        return serial_rms_kernel(p)
+    if algorithm == "parallel-tree":
+        return parallel_rms_kernel(p, fused=True)
+    if algorithm != "fragment":
+        raise ValueError("unknown normalization reduction: " + algorithm)
+    return rms_kernel({**p, "fused": True})
+
+
+def kvnorm(spec: KernelSpec, schedule: Mapping[str, object]):
+    from akas.ops.attention.kernel import _normalization as normalization_kernel
+
+    parameters = {**spec.parameters, **schedule}
+    p = dict(parameters)
+    algorithm = p.pop("algorithm", "fragment")
+    return normalization_kernel(p, query=False)
+
+
+def qnorm(spec: KernelSpec, schedule: Mapping[str, object]):
+    from akas.ops.attention.kernel import _normalization as normalization_kernel
+
+    parameters = {**spec.parameters, **schedule}
+    p = dict(parameters)
+    algorithm = p.pop("algorithm", "fragment")
+    return normalization_kernel(p, query=True)
+
+
+def rms(spec: KernelSpec, schedule: Mapping[str, object]):
+    from akas.ops.normalization.kernel import _fragment as rms_kernel
+    from akas.ops.normalization.kernel import _parallel as parallel_rms_kernel
+    from akas.ops.normalization.kernel import _serial as serial_rms_kernel
+
+    parameters = {**spec.parameters, **schedule}
+    p = dict(parameters)
+    algorithm = p.pop("algorithm", "fragment")
+    if algorithm == "serial-tree":
+        return serial_rms_kernel(p)
+    if algorithm == "parallel-tree":
+        return parallel_rms_kernel(p, fused=False)
+    if algorithm != "fragment":
+        raise ValueError("unknown normalization reduction: " + algorithm)
+    return rms_kernel({**p, "fused": False})
+
+
+def _fragment(p):
     import tilelang.language as T
-    from tensor.compiler.frontend.source import primitive
 
-    r, c, eps = p["r"], p["c"], p["eps"]
+    r, c, eps = (p["r"], p["c"], p["eps"])
     flat = p.get("flat", False)
     fused = p.get("fused", False)
     separate = p.get("separate_residual", False)
@@ -89,14 +142,45 @@ def rms_kernel(p):
     def separate_output(x, mixed, residual, w, out):
         normalize(x, mixed, residual, w, out)
 
-    arguments = [(p.get("input_name", "x"), shape, source_dtype)]
-    if fused:
-        if separate:
-            arguments.append(("mixed", shape, source_dtype))
-        arguments.append(("residual", shape, residual_dtype))
-    arguments += [("w", (c,), weight_dtype), ("out", shape, output_dtype)]
     algorithm = separate_output if separate else in_place if fused else ordinary
-    return primitive(arguments, algorithm)
+    if fused and separate:
+
+        @kernel(names={"x": p.get("input_name", "x")})
+        def compute(
+            x: Tensor(shape, source_dtype),
+            mixed: Tensor(shape, source_dtype),
+            w: Tensor((c,), weight_dtype),
+        ) -> tuple[Tensor(shape, residual_dtype), Tensor(shape, output_dtype)]:
+            residual = output(shape, residual_dtype, position=2)
+            out = output(shape, output_dtype, position=4)
+            normalize(x, mixed, residual, w, out)
+            return (residual, out)
+
+        return compute
+    if fused and (not separate):
+
+        @kernel(names={"x": p.get("input_name", "x")})
+        def compute(
+            x: Tensor(shape, source_dtype),
+            residual: Tensor(shape, residual_dtype),
+            w: Tensor((c,), weight_dtype),
+        ) -> tuple[Tensor(shape, residual_dtype), Tensor(shape, output_dtype)]:
+            out = output(shape, output_dtype)
+            normalize(x, residual, residual, w, out)
+            return (residual, out)
+
+        return compute
+    if not fused and (not separate):
+
+        @kernel(names={"x": p.get("input_name", "x")})
+        def compute(
+            x: Tensor(shape, source_dtype), w: Tensor((c,), weight_dtype)
+        ) -> Tensor(shape, output_dtype):
+            out = output(shape, output_dtype)
+            normalize(x, x, x, w, out)
+            return out
+
+        return compute
 
 
 def rms_width(c):
@@ -106,12 +190,13 @@ def rms_width(c):
     return 64
 
 
-def parallel_rms_kernel(kind, p):
+def _parallel(p, fused=False):
     import tilelang.language as T
-    from tensor.compiler.frontend.source import primitive
+    from akas.kernels.reductions import tree_reduce
+    from akas.kernels.webgpu import subgroup_reduce
 
-    r, c, eps = p.get("r", 1), p["c"], p["eps"]
-    threads, fused = rms_width(c), kind == "add_rms"
+    r, c, eps = (p.get("r", 1), p["c"], p["eps"])
+    threads = rms_width(c)
     reduce = subgroup_reduce(threads) if p.get("sg") else tree_reduce(threads)
 
     @T.macro
@@ -152,39 +237,42 @@ def parallel_rms_kernel(kind, p):
 
     if fused:
 
-        @T.macro
-        def call(x, mixed, residual, w, out):
+        @kernel
+        def compute(
+            x: Tensor(r * c, "float32"),
+            mixed: Tensor(r * c, "float32"),
+            residual: Tensor(r * c, "float32"),
+            w: Tensor(c, "float32"),
+        ) -> tuple[Tensor(r * c, "float32"), Tensor(r * c, "float32")]:
+            out = output(r * c, "float32")
             normalize(x, w, out, mixed, residual)
+            return (residual, out)
 
-        return primitive(
-            [
-                ("x", r * c, "float32"),
-                ("mixed", r * c, "float32"),
-                ("residual", r * c, "float32"),
-                ("w", c, "float32"),
-                ("out", r * c, "float32"),
-            ],
-            call,
-        )
-    return primitive(
-        [("x", r * c, "float32"), ("w", c, "float32"), ("out", r * c, "float32")],
-        normalize,
-    )
+        return compute
+
+    @kernel
+    def compute(x: Tensor(r * c, "float32"), w: Tensor(c, "float32")) -> Tensor(
+        r * c, "float32"
+    ):
+        out = output(r * c, "float32")
+        normalize(x, w, out)
+        return out
+
+    return compute
 
 
-def serial_rms_kernel(kind, p):
+def _serial(p):
     import tilelang.language as T
-    from akas.ops.reductions.webgpu import tree_reduce
+    from akas.kernels.reductions import tree_reduce
 
-    r, c, eps = p["r"], p["c"], p["eps"]
+    r, c, eps = (p["r"], p["c"], p["eps"])
     reduce = tree_reduce(64)
 
-    @T.prim_func
-    def kernel(
-        x: T.Tensor((r * c,), "float32"),
-        w: T.Tensor((c,), "float32"),
-        out: T.Tensor((r * c,), "float32"),
+    @kernel
+    def compute(x: Tensor((r * c,), "float32"), w: Tensor((c,), "float32")) -> Tensor(
+        (r * c,), "float32"
     ):
+        out = output((r * c,), "float32")
         with T.Kernel(r, threads=64) as row:
             tx = T.get_thread_binding()
             scratch = T.alloc_shared((64,), "float32")
@@ -203,96 +291,6 @@ def serial_rms_kernel(kind, p):
                         * T.rsqrt(scratch[0] / c + eps)
                         * w[tile * 64 + tx]
                     )
+        return out
 
-    return kernel
-
-
-def normalization_kernel(kind, p):
-    import math
-    import tilelang.language as T
-    from tensor.compiler.frontend.source import primitive
-
-    r, h, kh, d, cap = (p[n] for n in ("r", "h", "kh", "d", "cap"))
-    heads = h if kind == "qnorm" else kh
-    eps, angle_scale = p["eps"], math.log(p["theta"]) * 2 / d
-
-    @T.macro
-    def normalize(x, w, out, pos, v=None, vc=None):
-        with T.Kernel(heads, r, threads=64) as (head, row):
-            square = T.alloc_fragment((d,), "float32")
-            total = T.alloc_fragment((1,), "float32")
-            norm = T.alloc_shared((d,), "float32")
-            for i in T.Parallel(d):
-                square[i] = (
-                    x[(row * heads + head) * d + i] * x[(row * heads + head) * d + i]
-                )
-            T.reduce_sum(square, total, dim=0)
-            for i in T.Parallel(d):
-                norm[i] = (
-                    x[(row * heads + head) * d + i] * T.rsqrt(total[0] / d + eps) * w[i]
-                )
-                if kind == "kvnorm":
-                    if row < pos[1]:
-                        vc[((pos[0] + row) * kh + head) * d + i] = v[
-                            (row * kh + head) * d + i
-                        ]
-            for i in T.Parallel(d // 2):
-                angle = T.cast(pos[0] + row, "float32") * T.exp(-angle_scale * i)
-                if kind == "qnorm":
-                    out[(row * heads + head) * d + i] = norm[i] * T.cos(angle) - norm[
-                        i + d // 2
-                    ] * T.sin(angle)
-                    out[(row * heads + head) * d + i + d // 2] = norm[i] * T.sin(
-                        angle
-                    ) + norm[i + d // 2] * T.cos(angle)
-                else:
-                    if row < pos[1]:
-                        out[((pos[0] + row) * heads + head) * d + i] = norm[i] * T.cos(
-                            angle
-                        ) - norm[i + d // 2] * T.sin(angle)
-                        out[((pos[0] + row) * heads + head) * d + i + d // 2] = norm[
-                            i
-                        ] * T.sin(angle) + norm[i + d // 2] * T.cos(angle)
-
-    if kind == "qnorm":
-        return primitive(
-            [
-                ("q", r * h * d, "float32"),
-                ("qw", d, "float32"),
-                ("qo", r * h * d, "float32"),
-                ("pos", 2, "int32"),
-            ],
-            normalize,
-        )
-
-    @T.macro
-    def call(k, v, kw, kc, vc, pos):
-        normalize(k, kw, kc, pos, v, vc)
-
-    return primitive(
-        [
-            ("k", r * kh * d, "float32"),
-            ("v", r * kh * d, "float32"),
-            ("kw", d, "float32"),
-            ("kc", cap * kh * d, "float16"),
-            ("vc", cap * kh * d, "float16"),
-            ("pos", 2, "int32"),
-        ],
-        call,
-    )
-
-
-def make_kernel(kind, parameters):
-    p = dict(parameters)
-    algorithm = p.pop("algorithm", "fragment")
-    if kind in ("qnorm", "kvnorm"):
-        return normalization_kernel(kind, p)
-    if kind not in ("rms", "add_rms"):
-        raise ValueError("unsupported normalization: " + kind)
-    if algorithm == "serial-tree":
-        return serial_rms_kernel(kind, p)
-    if algorithm == "parallel-tree":
-        return parallel_rms_kernel(kind, p)
-    if algorithm != "fragment":
-        raise ValueError("unknown normalization reduction: " + algorithm)
-    return rms_kernel({**p, "fused": kind == "add_rms"})
+    return compute

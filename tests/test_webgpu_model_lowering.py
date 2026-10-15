@@ -21,7 +21,7 @@ NATIVE = pytest.mark.skipif(
 def test_streamed_gemv_fused_tail_and_f32_activation_contract(
     tmp_path, force_fallback, shared_input, depth, unroll, accumulators
 ):
-    from akas.compilation.emit import export_kernel as source
+    from support.migration import source as source
 
     p = dict(
         r=1,
@@ -74,7 +74,7 @@ def test_streamed_gemv_fused_tail_and_f32_activation_contract(
 @NATIVE
 @pytest.mark.parametrize("force_fallback", [False, True])
 def test_fused_attention_active_tail_and_qk_fallback(tmp_path, force_fallback):
-    from akas.compilation.emit import export_kernel as source
+    from support.migration import source as source
 
     h, kh, d, cap = 4, 2, 64, 96
     text = kernel_source("attention", dict(

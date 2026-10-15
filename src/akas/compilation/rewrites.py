@@ -4,11 +4,14 @@
 def token_feedback(graph, inputs, prediction, rows):
     """Make a decode phase replayable without host token copies or readbacks."""
     tokens, lengths = inputs["tokens"], inputs["lengths"]
-    if graph.buffers[tokens].shape != (rows,) or graph.buffers[prediction].shape != (rows,):
+    if graph.buffers[tokens].shape != (rows,) or graph.buffers[prediction].shape != (
+        rows,
+    ):
         return False
     existing = tokens == prediction or any(
         call.kind == "next_tokens" and call.arguments == (prediction, tokens)
-        for call in graph.calls)
+        for call in graph.calls
+    )
     position = inputs.get("positions")
     advance = position is not None and graph.buffers[position].role == "input"
     if existing and not advance:
@@ -29,8 +32,9 @@ def last_rows(plan):
     """
     from dataclasses import replace
     from math import prod
+
     from akas.graph import Call
-    from akas.ops.registry import row_independent
+    from akas.kernels.registry import row_independent
 
     last = next(
         (i for i, call in enumerate(plan.calls) if call.kind == "chunk_last"), None
@@ -126,8 +130,9 @@ def causal_tail(plan, *, tail=8):
     """
     from dataclasses import replace
     from math import prod
+
     from akas.graph import Call
-    from akas.ops.registry import row_independent, graph_outputs
+    from akas.kernels.registry import graph_outputs, row_independent
 
     caches = [i for i, call in enumerate(plan.calls) if call.kind == "cache_write"]
     selectors = [i for i, call in enumerate(plan.calls) if call.kind == "chunk_last"]
@@ -142,7 +147,11 @@ def causal_tail(plan, *, tail=8):
     rows = slots * chunk
     if cache.parameters["r"] != rows or select.parameters["chunk"] != chunk:
         return plan
-    lengths, positions, enabled = select.arguments[-1], cache.arguments[-2], cache.arguments[-1]
+    lengths, positions, enabled = (
+        select.arguments[-1],
+        cache.arguments[-2],
+        cache.arguments[-1],
+    )
 
     def base(name):
         while plan.buffers[name].alias_of is not None:
@@ -156,14 +165,22 @@ def causal_tail(plan, *, tail=8):
         scratch = [name for name in declared if plan.buffers[name].role == "scratch"]
         return scratch[0] if len(scratch) == 1 else None
 
-    suffix = plan.calls[boundary + 1:last]
+    suffix = plan.calls[boundary + 1 : last]
     allowed = {"attention", "attention_partial", "attention_merge", "conv"}
-    if any(call.bindings or (call.kind not in allowed and not row_independent(call)) for call in suffix):
+    if any(
+        call.bindings or (call.kind not in allowed and not row_independent(call))
+        for call in suffix
+    ):
         return plan
-    if tail < 1 + sum(call.parameters.get("length", 3) - 1 for call in suffix if call.kind == "conv"):
+    if tail < 1 + sum(
+        call.parameters.get("length", 3) - 1 for call in suffix if call.kind == "conv"
+    ):
         return plan
     # Query projection/norm/rotation has no consumers in the complete KV path.
-    attention = next((call for call in suffix if call.kind in ("attention", "attention_partial")), None)
+    attention = next(
+        (call for call in suffix if call.kind in ("attention", "attention_partial")),
+        None,
+    )
     if attention is None:
         return plan
     producers, consumers = {}, {}
@@ -175,6 +192,7 @@ def causal_tail(plan, *, tail=8):
             if destination is not None:
                 producers.setdefault(base(destination), []).append(index)
     moved = set()
+
     def query_ancestors(name):
         for index in producers.get(base(name), ()):
             if index >= boundary or index in moved:
@@ -182,11 +200,14 @@ def causal_tail(plan, *, tail=8):
             call = plan.calls[index]
             if call.kind not in ("linear", "rms", "rope"):
                 continue
-            if any(other <= boundary and other != index and other not in moved
-                   for other in consumers.get(base(output(call)), ())):
+            if any(
+                other <= boundary and other != index and other not in moved
+                for other in consumers.get(base(output(call)), ())
+            ):
                 continue
             moved.add(index)
             query_ancestors(call.arguments[0])
+
     query_ancestors(attention.arguments[0])
     cropped_calls = [plan.calls[i] for i in sorted(moved)] + suffix
     if any(output(call) is None for call in cropped_calls):
@@ -195,20 +216,38 @@ def causal_tail(plan, *, tail=8):
     # Attention merge consumes partial buffers but produces only its final output;
     # partial kernels also write statistics. Multiple-output operations require
     # their own declared lowering rather than assuming the final argument alone.
-    if any(call.kind in ("attention_partial", "attention_merge") for call in cropped_calls):
+    if any(
+        call.kind in ("attention_partial", "attention_merge") for call in cropped_calls
+    ):
         return plan
     replacements = {}
     additions = []
-    tail_lengths, tail_positions, tail_active = "tail.lengths", "tail.positions", "tail.active"
-    if any(name in plan.buffers for name in (tail_lengths, tail_positions, tail_active)):
+    tail_lengths, tail_positions, tail_active = (
+        "tail.lengths",
+        "tail.positions",
+        "tail.active",
+    )
+    if any(
+        name in plan.buffers for name in (tail_lengths, tail_positions, tail_active)
+    ):
         return plan
-    replacements.update({positions: tail_positions, enabled: tail_active, lengths: tail_lengths})
+    replacements.update(
+        {positions: tail_positions, enabled: tail_active, lengths: tail_lengths}
+    )
     for call in cropped_calls:
         for name in call.arguments:
             spec = plan.buffers[name]
-            if base(name) in produced or name in replacements or spec.role in ("weight", "state"):
+            if (
+                base(name) in produced
+                or name in replacements
+                or spec.role in ("weight", "state")
+            ):
                 continue
-            if spec.role != "scratch" or spec.dtype != "float32" or prod(spec.shape) % rows:
+            if (
+                spec.role != "scratch"
+                or spec.dtype != "float32"
+                or prod(spec.shape) % rows
+            ):
                 return plan
             target = name + ".tail"
             replacements[name] = target
@@ -219,8 +258,11 @@ def causal_tail(plan, *, tail=8):
             continue
         if spec.role != "scratch" or prod(spec.shape) % rows:
             return plan
-        shape = ((slots * tail * prod(spec.shape) // rows,) if len(spec.shape) == 1
-                 else (spec.shape[0] * tail // chunk, *spec.shape[1:]))
+        shape = (
+            (slots * tail * prod(spec.shape) // rows,)
+            if len(spec.shape) == 1
+            else (spec.shape[0] * tail // chunk, *spec.shape[1:])
+        )
         if prod(shape) != prod(spec.shape) * tail // chunk:
             return plan
         resized[name] = replace(spec, shape=shape)
@@ -230,12 +272,22 @@ def causal_tail(plan, *, tail=8):
     plan.buffer(tail_lengths, (slots,), "int32")
     plan.buffer(tail_positions, (slots * tail,), "int32")
     plan.buffer(tail_active, (slots * tail,), "int32")
-    prefix = [Call("tail_controls", dict(r=slots, chunk=chunk, tail=tail),
-                   (positions, lengths, tail_positions, tail_active, tail_lengths))]
+    prefix = [
+        Call(
+            "tail_controls",
+            dict(r=slots, chunk=chunk, tail=tail),
+            (positions, lengths, tail_positions, tail_active, tail_lengths),
+        )
+    ]
     for source, target, width in additions:
         plan.buffer(target, (slots * tail * width,), "float32")
-        prefix.append(Call("chunk_tail", dict(r=slots, c=width, chunk=chunk, tail=tail),
-                           (source, lengths, target)))
+        prefix.append(
+            Call(
+                "chunk_tail",
+                dict(r=slots, c=width, chunk=chunk, tail=tail),
+                (source, lengths, target),
+            )
+        )
     rewritten = []
     for call in cropped_calls:
         parameters = dict(call.parameters)
@@ -247,18 +299,33 @@ def causal_tail(plan, *, tail=8):
             parameters["r"] = parameters["r"] * tail // chunk
             if "chunk" in parameters:
                 parameters["chunk"] = tail
-        rewritten.append(replace(call, parameters=parameters,
-                                 arguments=tuple(replacements.get(name, name) for name in call.arguments)))
-    select = replace(select, parameters={**select.parameters, "chunk": tail},
-                     arguments=(*select.arguments[:-1], tail_lengths))
-    plan.calls = [*(call for i, call in enumerate(plan.calls[:boundary + 1]) if i not in moved),
-                  *prefix, *rewritten, select, *plan.calls[last + 1:]]
+        rewritten.append(
+            replace(
+                call,
+                parameters=parameters,
+                arguments=tuple(
+                    replacements.get(name, name) for name in call.arguments
+                ),
+            )
+        )
+    select = replace(
+        select,
+        parameters={**select.parameters, "chunk": tail},
+        arguments=(*select.arguments[:-1], tail_lengths),
+    )
+    plan.calls = [
+        *(call for i, call in enumerate(plan.calls[: boundary + 1]) if i not in moved),
+        *prefix,
+        *rewritten,
+        select,
+        *plan.calls[last + 1 :],
+    ]
     return plan
 
 
 def optimize(plan):
     """Apply row pruning and rewrites declared by operation owners."""
-    from akas.ops.registry import rewrites
+    from akas.kernels.registry import rewrites
 
     plan = last_rows(causal_tail(plan))
     for rewrite in rewrites():
@@ -275,48 +342,105 @@ def deferred_state(verification):
     from akas.graph import Graph
 
     graph = Graph.from_metadata(verification.metadata())
-    scans = [call for call in graph.calls if call.kind=="gdn_scan" and call.parameters.get("commit") is False]
+    scans = [
+        call
+        for call in graph.calls
+        if call.kind == "gdn_scan" and call.parameters.get("commit") is False
+    ]
     if not scans:
         return None
     first = scans[0].parameters
-    slots, window, pool = (first[name] for name in ("slots","chunk","pool"))
+    slots, window, pool = (first[name] for name in ("slots", "chunk", "pool"))
     prefix = f"journal.w{window}."
-    counts = graph.buffer(prefix+"counts",(pool,),"int32",role="state")
-    banks = graph.buffer(prefix+"banks",(pool,),"int32",role="state")
-    materialize = Graph(contract="bf16",phase="materialize")
-    mapping = materialize.buffer("mapping",(slots,),"int32",role="input")
-    materialize.buffers.update({name:value for name,value in graph.buffers.items() if value.role=="state"})
-    commit = Graph(contract="bf16",phase="commit")
+    counts = graph.buffer(prefix + "counts", (pool,), "int32", role="state")
+    banks = graph.buffer(prefix + "banks", (pool,), "int32", role="state")
+    materialize = Graph(contract="bf16", phase="materialize")
+    mapping = materialize.buffer("mapping", (slots,), "int32", role="input")
+    materialize.buffers.update(
+        {name: value for name, value in graph.buffers.items() if value.role == "state"}
+    )
+    commit = Graph(contract="bf16", phase="commit")
     replacement = {}
-    common = dict(slots=slots,window=window,pool=pool)
+    common = dict(slots=slots, window=window, pool=pool)
     for scan in scans:
         if scan.bindings:
             raise ValueError("deferred GDN requires its declared ordered ABI")
         p = scan.parameters
-        if tuple(p[name] for name in ("slots","chunk","pool")) != (slots,window,pool):
+        if tuple(p[name] for name in ("slots", "chunk", "pool")) != (
+            slots,
+            window,
+            pool,
+        ):
             raise ValueError("deferred layers must share verification geometry")
-        names = dict(zip(("q","k","v","g","beta","mapping","lengths","state","out"),scan.arguments))
-        shape = (2,pool,window,p["heads"])
-        saved = [graph.buffer(names["state"]+"."+prefix+field,shape+((p["d"],) if field in ("k","v") else ()),"float32",role="state")
-                 for field in ("k","v","g","b")]
-        params = dict(common,heads=p["heads"],d=p["d"],tile=p.get("tile",32))
+        names = dict(
+            zip(
+                ("q", "k", "v", "g", "beta", "mapping", "lengths", "state", "out"),
+                scan.arguments,
+            )
+        )
+        shape = (2, pool, window, p["heads"])
+        saved = [
+            graph.buffer(
+                names["state"] + "." + prefix + field,
+                shape + ((p["d"],) if field in ("k", "v") else ()),
+                "float32",
+                role="state",
+            )
+            for field in ("k", "v", "g", "b")
+        ]
+        params = dict(common, heads=p["heads"], d=p["d"], tile=p.get("tile", 32))
         from akas.graph import Call
-        replacement[id(scan)] = Call("gdn_deferred",params,
-                                     (*scan.arguments,*(value.name for value in saved),counts.name,banks.name),label=scan.label)
+
+        replacement[id(scan)] = Call(
+            "gdn_deferred",
+            params,
+            (
+                *scan.arguments,
+                *(value.name for value in saved),
+                counts.name,
+                banks.name,
+            ),
+            label=scan.label,
+        )
         for value in saved:
             materialize.buffers[value.name] = value
-        materialize("gdn_materialize",params,mapping,names["state"],*saved,counts,banks)
-    convs = [call for call in graph.calls if call.kind=="gdn_conv" and call.parameters.get("commit") is False]
+        materialize(
+            "gdn_materialize", params, mapping, names["state"], *saved, counts, banks
+        )
+    convs = [
+        call
+        for call in graph.calls
+        if call.kind == "gdn_conv" and call.parameters.get("commit") is False
+    ]
     for conv in convs:
-        x,weight,request,lengths,state,out = conv.arguments
-        commit.calls.append(Call("conv_commit",dict(common,channels=conv.parameters["channels"],projection=conv.parameters["projection"]),
-                                 (x,request,lengths,state)))
+        x, weight, request, lengths, state, out = conv.arguments
+        commit.calls.append(
+            Call(
+                "conv_commit",
+                dict(
+                    common,
+                    channels=conv.parameters["channels"],
+                    projection=conv.parameters["projection"],
+                ),
+                (x, request, lengths, state),
+            )
+        )
     scan = scans[0]
-    commit.calls.append(Call("defer_accept",common,(scan.arguments[5],scan.arguments[6],counts.name,banks.name)))
-    materialize("defer_clear",common,mapping,counts)
-    graph.calls = [replacement.get(id(call),call) for call in graph.calls]
+    commit.calls.append(
+        Call(
+            "defer_accept",
+            common,
+            (scan.arguments[5], scan.arguments[6], counts.name, banks.name),
+        )
+    )
+    materialize("defer_clear", common, mapping, counts)
+    graph.calls = [replacement.get(id(call), call) for call in graph.calls]
     used = {name for call in commit.calls for name in call.arguments}
-    commit.buffers = {name:value for name,value in graph.buffers.items() if name in used}
+    commit.buffers = {
+        name: value for name, value in graph.buffers.items() if name in used
+    }
     used = {name for call in materialize.calls for name in call.arguments}
-    materialize.buffers = {name:value for name,value in materialize.buffers.items() if name in used}
-    return graph,commit,materialize,(counts.name,banks.name)
+    materialize.buffers = {
+        name: value for name, value in materialize.buffers.items() if name in used
+    }
+    return graph, commit, materialize, (counts.name, banks.name)

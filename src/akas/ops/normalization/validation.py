@@ -1,23 +1,31 @@
-"""Independent arithmetic and state qualification for normalization operations."""
+"""Independent numerical and state qualification for normalization."""
 
 
 def validation(kind, p, signature):
     import numpy as np
-
-    from akas.ops.contracts import ValidationCase, sample_arguments
+    from akas.kernels.contracts import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     written_names = ("out", "residual") if kind == "add_rms" else ("out",)
-    expected = {name: value.copy() if name in written_names else value for name, value in values.items()}
-    r, c = p["r"], p["c"]
+    expected = {
+        name: value.copy() if name in written_names else value
+        for name, value in values.items()
+    }
+    r, c = (p["r"], p["c"])
     from tensor.runtime.dtypes import decode_bfloat16, encode_bfloat16
 
     def rounded(x):
         return decode_bfloat16(encode_bfloat16(x))
 
-    bf16 = next(row["dtype"] for row in signature if row["name"] == "out") == "bfloat16"
+    bf16 = (
+        next((row["dtype"] for row in signature if row["name"] == "out")) == "bfloat16"
+    )
     source = values.get("x", values.get("residual")).reshape(r, c)
-    other = (values["mixed"] if "mixed" in values else values["residual"]).reshape(r, c) if kind == "add_rms" else None
+    other = (
+        (values["mixed"] if "mixed" in values else values["residual"]).reshape(r, c)
+        if kind == "add_rms"
+        else None
+    )
     res_out = expected["residual"].reshape(r, c) if kind == "add_rms" else None
     out_2d = expected["out"].reshape(r, c)
     w_row = (1 + values["w"] if p.get("zero_centered") else values["w"]).reshape(1, c)

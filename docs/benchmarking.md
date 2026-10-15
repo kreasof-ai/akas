@@ -1,0 +1,181 @@
+# Benchmarking
+
+Use the same workload and measurement rules for AKAS and every baseline.
+Keep results in [benchmark history](../benchmarks/README.md); use this guide to
+run, compare and build on them.
+
+## Choose a workload
+
+[standard-v1](../src/akas/benchmarking/workloads/standard-v1.json) measures ten shapes:
+
+| Active requests | Prompt tokens per request | Total output tokens per request |
+| --- | --- | --- |
+| 1, 4, 16, 64, 256 | 32 or 2048 | 128 |
+
+A prompt starts with an empty cache. Disable prefix sharing, early EOS and CPU
+offload. Use greedy sampling. Give each request a distinct prefix when a runtime
+cannot disable reuse. Long-context and ragged-serving workloads should receive
+their own versioned definitions rather than changing these shapes.
+
+`B` means independent active requests. A runtime's token batch budget, prefill
+chunk size and HTTP concurrency are different quantities; record them separately.
+Provision cache space for prompt + output + speculative guard, rounded to the
+backend's block size. Check actual allocations and device binding limits before
+attempting a large batch.
+
+## Run an AKAS measurement
+
+Compile a model through [the shared compiler](../src/akas/compilation/README.md).
+Then select a small shape before expanding to the full workload:
+
+```sh
+akas bench --definition akas.models.lfm2.model:LFM2 \
+  --checkpoint /path/to/model.gguf --bundles build/bundles \
+  --provider cuda --target sm_89 --kv-dtype float16 \
+  --batches 1 --prompts 32 --generated 128 --prefill-chunk 32 \
+  --graphs --warmup 2 --repeats 5 --out build/report.json \
+  --change "Measure the packed projection schedule"
+```
+
+Omit `--batches` and `--prompts` to select all ten shapes. Match the compiled
+program's request/context capacities, cache precision and geometries. CUDA and
+WebGPU use separate target-qualified programs. Unsupported model/backend
+combinations must remain visible as unsupported results.
+
+Prefill includes the head and first predicted token. Decode measures the remaining
+127 committed tokens. Reports separate input tok/s, decode tok/s, complete-output
+tok/s, TTFT and time per subsequent token. Timings synchronize at both boundaries,
+include required control uploads, and exclude compile, load, reset and warmup.
+The protocol identifier prevents comparison with older reports that counted
+additional decode steps after the first output.
+
+For WebGPU performance, build Tensor with `TENSOR_BUILD_WEBGPU_NATIVE=1`
+and enable `--graphs`. CUDA uses captured replay; WebGPU uses prepared command
+encoding and submission. The record identifies Python versus native prepared
+paths. Keep this execution choice fixed when comparing kernel candidates.
+
+The pinned Tensor dependency supports the optional encoder build below. A C
+compiler is required. Force a fresh build so an existing Python-only wheel is
+not reused; keep the revision aligned with `uv.lock` when upgrading Tensor.
+
+```sh
+TENSOR_BUILD_WEBGPU_NATIVE=1 uv pip install --python .venv/bin/python \
+  --reinstall --no-deps --no-cache \
+  'tensor-workspace @ git+https://github.com/kreasof-ai/tensor@274d429ed9945b45ea5b8e492248355e1611a047'
+```
+
+Use `--check module:callable` to attach independent model correctness evidence.
+Kernel search qualification is recorded separately; a timed model is not
+necessarily accuracy-qualified. Run one GPU measurement process at a time.
+
+## Find a previous result
+
+`akas bench` automatically writes a durable run under `benchmarks/runs/` as well as
+`--out`. Use `--history /path/to/history` to select another archive or
+`--no-history` for disposable local checks. Browse [the generated results
+index](../benchmarks/RESULTS.md), or query:
+
+```sh
+akas history list --hardware L40S
+akas history list --model qwen --runtime akas --status passed --purpose benchmark
+akas history index
+```
+
+A record contains:
+
+| Field | What it establishes |
+| --- | --- |
+| UTC start/end, run ID, status | When the measurement ran and whether it completed |
+| Git commit, source hashes, source snapshot | The actual measured code, including uncommitted files |
+| Runtime/dependency versions and compiler evidence | The installed software and compilation identity |
+| Hardware, provider and target | Which device/backend the result applies to |
+| Workload definition/hash and exact shapes | Prompt, output, batch, cache depth and raggedness |
+| Metadata and program configuration | Checkpoint digest, precision, capacity, chunk size, graphs, policy, seed and timing repetitions |
+| Results and correctness evidence | Raw samples, summaries, failures and independent checks |
+| Search phase, parameters, selected implementation and schedule | The qualified winning geometry for each operation |
+| Change description and parent run | Which kernel, algorithm, schedule or configuration was measured |
+| Artifact paths and SHA256 digests | Where retained evidence lives and whether it changed |
+
+The commit alone is insufficient for a dirty checkout. Every run retains a
+compressed snapshot and per-file hashes of measurement-relevant source. Source
+changes during measurement invalidate the run. A wheel without Git metadata is
+identified by its captured package source and dependencies; its commit remains
+unknown. Do not invent a revision.
+
+Program evidence includes qualified phase schedules and compressed generated
+kernel IR/shader metadata, identifying the compiled kernels that actually ran.
+`run.json` is the authoritative record. `index.json` and `RESULTS.md` can be
+rebuilt. Large compiler traces, binaries and model files belong in `build/` or
+content-addressed external storage. A useful small log or benchmark harness can
+be retained beside its run with a checksum. Keep dates and results out of the
+authoring guides.
+
+## Improve a previous schedule
+
+Export a qualified phase from a passed run:
+
+```sh
+akas history seed RUN_ID --phase decode --batch 64 --chunk 1 \
+  --provider cuda --target sm_89 --out build/incumbent.json
+```
+
+Pass that profile to `akas bench --compile --schedule-profile build/incumbent.json`
+and name the previous record with `--parent-run RUN_ID`. The compiler requalifies
+and retimes the incumbent before comparing new candidates. Previous timings are
+never evidence that a changed kernel remains correct or fast. Provider, target,
+phase and geometry must match; modified evidence or incomplete runs cannot
+supply an incumbent.
+
+An exported profile supplies an incumbent. The compiler separately saves partial
+beam progress and compiled artifacts under the program directory. Keep that
+directory to resume exploration; selected resumed schedules qualify and time
+again. Use [the optimization workflow](optimization.md) for isolated workers,
+wall-clock deadlines, complete-workload selection and a serving deployment.
+A time budget cannot guarantee that a search will beat every alternative.
+
+## Compare runtimes fairly
+
+Pin every runtime and checkpoint revision. Share identical GGUF bytes with
+llama.cpp. Record weight, activation, accumulation, KV and recurrent precision
+separately: BF16 input files can still execute FP16 arithmetic. Quantized FP8 KV
+and integer Q8_0 KV are different experiments.
+
+First run [short baseline probes](../tools/baselines/README.md) for both models and Qwen MTP. Verify exact output
+counts, finite results, cache behavior and greedy AR/MTP equivalence. Eager-mode
+preflight establishes execution, not competitive throughput. Final baselines
+need their optimized graph/attention settings, stable warmups and repeated
+measurements. Record their tuning effort too.
+
+Use fixed native batches for model/kernel throughput. Use a separate serving
+workload for TTFT/TPOT, queueing, latency percentiles and goodput under an arrival
+rate or concurrency limit. Count committed speculative tokens, including draft,
+verification and repair costs. Never compare proposed-token rates with AR
+output-token rates. Record observed acceptance rates and effective GPU batches.
+
+Keep comparisons within matching model, shape, precision and protocol. Report
+AR-to-AR and MTP-to-MTP, then the best mode each runtime offers. Preserve losing,
+OOM, unsupported and interrupted rows alongside wins. Hardware changes require
+new measurements; L40S results are not L4 measurements. MFU and roofline analysis
+explain bottlenecks; throughput and latency under equal quality constraints are
+the performance results.
+
+## Prepare an unattended campaign
+
+Check model-level support before expanding a matrix. An individual codec or
+kernel can support a backend while the complete model graph does not.
+
+| Requested AKAS path | Model-level constraint |
+| --- | --- |
+| LFM2.5 text, safetensors or GGUF | CUDA and WebGPU composition; validate each format/cache/shape combination |
+| LFM2.5 with BF16 source weights | Floating matrix execution uses FP16 with FP32 intermediates; this is not a strict BF16 execution baseline |
+| Qwen3.5 dense text, safetensors or GGUF | CUDA composition with BF16 KV; WebGPU and FP8 KV require implementation |
+| Qwen3.5 dense MTP | Native checkpoint branch exists on CUDA; GGUF MTP is unavailable |
+
+Before a long command, establish usable devices, qualify each requested path,
+verify B256 peak VRAM/RSS, run all baseline probes, and estimate runtime from a
+small representative pilot. Freeze code and workload inputs. Apply explicit
+candidate, family and campaign deadlines, preserve qualified incumbents, and
+record unfinished work as budget exhaustion. Spend additional tuning time on
+measured whole-model bottlenecks rather than allocating an hour to every matrix
+cell. Keep the campaign's limits in its configuration and results, not in
+another dated planning document.

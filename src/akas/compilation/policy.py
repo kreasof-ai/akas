@@ -10,7 +10,7 @@ def lower(graph, commit=None, *, policy=None, provider="cuda", target=None):
     """
     if not policy:
         return graph, commit
-    from akas.ops.registry import planning_rules
+    from akas.kernels.registry import planning_rules
 
     options = dict(policy or {})
     callbacks = {
@@ -28,3 +28,24 @@ def lower(graph, commit=None, *, policy=None, provider="cuda", target=None):
             graph, commit, settings, provider=provider, target=target
         )
     return graph, commit
+
+
+def candidates(graph, *, provider, target, commit=None):
+    """Ask operations for applicable pipeline alternatives, including a baseline."""
+    from akas.kernels.registry import planning_rules
+
+    alternatives = [{}]
+    combined = {}
+    for module in planning_rules():
+        propose = getattr(module, "search_policies", None)
+        if propose is None:
+            continue
+        name = module.__name__.split(".")[-2]
+        choices = propose(graph, commit, provider=provider, target=target)
+        for choice in choices:
+            alternatives.append({name: choice})
+        if choices:
+            combined[name] = choices[0]
+    if len(combined) > 1:
+        alternatives.append(combined)
+    return alternatives

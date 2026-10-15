@@ -1,0 +1,131 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "runtime": "llama",
+    "model": "Qwen/Qwen3.5-0.8B",
+    "mode": "ar",
+    "provider": "cuda",
+    "target": "sm_89",
+    "device": {
+      "name": "NVIDIA L4",
+      "uuid": "GPU-d777b838-7002-124f-aa67-71409daa8935",
+      "driver": "595.91.07",
+      "memory_mib": 23034
+    },
+    "purpose": "preflight",
+    "command": [
+      "/home/sagemaker-user/akas/.venv/bin/python",
+      "-u",
+      "-m",
+      "tools.baselines.llama",
+      "--config",
+      "/home/sagemaker-user/akas/build/baselines/llama-qwen3.5-0.8b-ar-cuda-f16.config.json",
+      "--out",
+      "/home/sagemaker-user/akas/build/baselines/llama-qwen3.5-0.8b-ar-cuda-f16.json"
+    ],
+    "protocol": "baseline-preflight-v1",
+    "checkpoint": "/home/sagemaker-user/akas/build/baselines/checkpoints/qwen-f16.gguf",
+    "checkpoint_sha256": "4cd3e1efde08153536604d1c1a071965dfa589b20c5ce6538bd2807866227b1a",
+    "checkpoint_source": {
+      "repo": "Qwen/Qwen3.5-0.8B",
+      "revision": "2fc06364715b967f1860aea9cf38778875588b17",
+      "conversion": {
+        "repository": "ggml-org/llama.cpp",
+        "revision": "620d2225cc436ab0b001e3200e590e3b286ef9ab",
+        "outtype": "f16",
+        "no_mtp": true
+      }
+    },
+    "model_definition_sha256": "8d5cc67b3775c0bbb05459d8ff6f77679035de707f89bb632b07a251687618b6",
+    "environment": {
+      "CUDA_HOME": "/usr/local/cuda-12.9",
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MAX_JOBS": "1",
+      "VK_ICD_FILENAMES": null,
+      "LD_LIBRARY_PATH": "/usr/local/cuda/lib64",
+      "CUDA_VISIBLE_DEVICES": null
+    },
+    "warmup": 1,
+    "repeats": 1,
+    "graphs": null,
+    "weight_format": "f16",
+    "kv_dtype": "float16",
+    "sampling": {
+      "temperature": 0,
+      "ignore_eos": true,
+      "output_tokens": 128
+    },
+    "runtime_version": null,
+    "runtime_revision": "620d2225cc436ab0b001e3200e590e3b286ef9ab",
+    "configuration": [
+      "/home/sagemaker-user/akas/build/baselines/llama.cpp/build-cuda/bin/llama-server",
+      "-m",
+      "/home/sagemaker-user/akas/build/baselines/checkpoints/qwen-f16.gguf",
+      "-ngl",
+      "99",
+      "--device",
+      "CUDA0",
+      "-c",
+      "2304",
+      "-np",
+      "1",
+      "-b",
+      "2048",
+      "-ub",
+      "512",
+      "-t",
+      "2",
+      "-fa",
+      "on",
+      "--host",
+      "127.0.0.1",
+      "--port",
+      "8817",
+      "--no-webui"
+    ],
+    "error": null,
+    "returncode": 0,
+    "binary_sha256": "a9f4cf2725a1ca7ab3504c32dcb6171e44952bcaacff970948140d7dc1a86e7d"
+  },
+  "results": [
+    {
+      "case": {
+        "batch": 1,
+        "prompt": 32,
+        "generated": 128,
+        "depth": 0,
+        "mixed": false
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "wall_seconds": 1.004565167997498
+        }
+      ],
+      "correctness": {
+        "output_count": true,
+        "full_model_reference": false
+      }
+    },
+    {
+      "case": {
+        "batch": 1,
+        "prompt": 2048,
+        "generated": 128,
+        "depth": 0,
+        "mixed": false
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "wall_seconds": 1.085188566998113
+        }
+      ],
+      "correctness": {
+        "output_count": true,
+        "full_model_reference": false
+      }
+    }
+  ]
+}

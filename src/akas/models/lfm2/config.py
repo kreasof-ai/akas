@@ -1,7 +1,8 @@
 """LFM2 architecture dimensions and supported GGUF geometry."""
 
-from dataclasses import dataclass
 import math
+from dataclasses import dataclass
+
 from akas.checkpoints.gguf import GGUFError
 
 
@@ -111,7 +112,7 @@ def parse_config(gguf):
         get("feed_forward_length"),
         get("attention.head_count"),
         unique.pop(),
-        tuple(("attention" if n else "conv" for n in kv)),
+        tuple("attention" if n else "conv" for n in kv),
         get("vocab_size"),
         get("shortconv.l_cache"),
         get("attention.layer_norm_rms_epsilon"),
@@ -119,23 +120,21 @@ def parse_config(gguf):
         get("context_length"),
     )
     if any(
-        (
-            type(value) is not int or value <= 0
-            for value in (
-                config.width,
-                config.ff,
-                config.heads,
-                config.kv_heads,
-                config.vocab,
-                config.max_context,
-            )
+        type(value) is not int or value <= 0
+        for value in (
+            config.width,
+            config.ff,
+            config.heads,
+            config.kv_heads,
+            config.vocab,
+            config.max_context,
         )
     ):
         raise GGUFError("LFM2 dimensions must be positive integers")
-    if not config.layers or any((type(n) is not int or n < 0 for n in kv)):
+    if not config.layers or any(type(n) is not int or n < 0 for n in kv):
         raise GGUFError("invalid LFM2 layer/head metadata")
     if not all(
-        (math.isfinite(value) and value > 0 for value in (config.epsilon, config.theta))
+        math.isfinite(value) and value > 0 for value in (config.epsilon, config.theta)
     ):
         raise GGUFError("LFM2 normalization/RoPE constants must be finite and positive")
     if (

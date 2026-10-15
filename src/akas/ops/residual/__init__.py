@@ -1,1 +1,1 @@
-"""residual components."""
+"""Residual operation definitions and implementations."""

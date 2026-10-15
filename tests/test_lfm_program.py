@@ -9,7 +9,7 @@ import pytest
 
 from support.diagnostic import fixture
 from akas.models.lfm2.weights import ReferenceCheckpoint
-from akas.models.lfm2.model import compose_program
+from akas.models.lfm2._composition import program as compose_program
 
 
 def test_lfm_phase_bindings_and_pool_layout(tmp_path):
@@ -129,7 +129,9 @@ def test_lfm_packed_program_preserves_weight_bytes_and_mapped_state(tmp_path, pr
 def test_public_definitions_share_executor_and_loader_dispatch(tmp_path):
     from support.checkpoint import export as hf_fixture
     from akas.models.definition import Definition
-    from akas.models.lfm2.model import LFM2, LFM2Batched, LFM2Reference
+    from akas.models.lfm2.model import LFM2
+    from akas.models.lfm2.model import LFM2Batched
+    from akas.models.lfm2.model import LFM2Reference
     from akas.models.lfm2.weights import LFM2Checkpoint
 
     path = fixture(tmp_path / "model.gguf")

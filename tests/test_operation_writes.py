@@ -38,7 +38,8 @@ def test_declared_outputs_match_actual_primitive_writes(contract, kind, paramete
     pytest.importorskip("tilelang")
     from tvm import tirx as ir
     from akas.graph import Call
-    from akas.ops.registry import graph_outputs, select
+    from akas.kernels.registry import graph_outputs
+    from akas.kernels.registry import select
 
     variant = select(kind, parameters, contract=contract, provider="cuda", phase=phase, target="sm_89")
     kernel = variant.make(parameters)

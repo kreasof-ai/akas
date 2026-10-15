@@ -12,7 +12,11 @@ def scratch_slots(forward):
     uses = forward.lifetimes()
     groups, ends = [], []
     scratch = sorted(
-        (name for name, spec in forward.buffers.items() if spec.role == "scratch" and spec.alias_of is None),
+        (
+            name
+            for name, spec in forward.buffers.items()
+            if spec.role == "scratch" and spec.alias_of is None
+        ),
         key=lambda name: uses.get(name, (-1, -1))[0],
     )
     for name in scratch:

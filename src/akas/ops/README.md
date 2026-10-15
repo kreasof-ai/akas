@@ -1,80 +1,92 @@
-# Operations
+# Operations and kernels
 
-Start with an operation's `operation.py`: it declares compatible implementations,
-schedule axes and composition rules. `validation.py` contains independent arithmetic
-and state references. Kernel files construct Tensor/TileLang kernels; compiler
-imports occur inside factories.
+Every operation family now has the same six Python files and this README:
 
-| Area | Responsibility |
-| --- | --- |
-| `linear` | Projection, paired projection fusion and split reductions |
-| `activation` | Dense, packed and expert-row SwiGLU layouts |
-| `normalization`, `residual` | RMS, residual normalization and addition |
-| `attention` | Query/KV preparation, cache access and attention algorithms |
-| `gdn`, `convolution` | Recurrent mixing and causal history |
-| `moe` | Routing, expert projection and weighted/shared combination |
-| `vocabulary`, `sequence` | Embeddings, sampling and row/position controls |
-| `control`, `mtp` | Speculative-round controls, token feedback and head joining |
-| `indexing`, `state` | State row reset and compile-time request mapping |
-
-Weight, activation and KV codecs belong to `quantization/`, independently of model
-families. [KV formats](../quantization/kv/README.md) own storage, metadata and codec
-placement; attention consumes their declared interface.
-
-The registry selects by operation contract, target, provider, phase and geometry.
-The compiler performs numerical qualification and calls Tensor beam search by
-default. A schedule cannot change semantic dimensions or the call's buffer ABI.
-Different prefill/decode algorithms, packed operands and partition reductions remain
-explicit choices; they do not require separate model executors.
-
-Provider directories contain distinct scheduling and operand-layout algorithms.
-They share the definition boundary below and independent operation qualification.
-Model integration uses graph calls and the common compiler; the old family factory
-package has been removed.
-
-## Defining and selecting a kernel
-
-`definition.py` is the common entry for every provider:
-
-```python
-from akas.ops import Capabilities, KernelSpec, define
-
-kernel = define(
-    KernelSpec("linear", {"r": 4, "k": 256, "o": 64}, contract="reference"),
-    {"threads": 64},
-    Capabilities(provider="webgpu", target="webgpu-portable-v1"),
-)
+```text
+ops/<family>/
+    __init__.py
+    definition.py
+    kernel.py
+    cuda.py
+    webgpu.py
+    validation.py
+    README.md
 ```
 
-Models declare graph calls, rather than calling this factory themselves. The
-compiler uses the same entry for ordinary compilation and beam candidates,
-with a resolved implementation declaration. Exported sources hash the selected
-leaf and its imports; they do not require discovery of all operation registrations.
-Semantic dimensions remain separate from schedule choices and cannot be changed
-by tuning. Numerical recipes verify the complete buffer ABI and persistent state.
+| File | Responsibility |
+| --- | --- |
+| `__init__.py` | Package boundary. |
+| `definition.py` | Public graph composition, contracts/effects, execution policies, implementation registrations and tuning eligibility. |
+| `kernel.py` | Shared TileLang computations and inline helpers. |
+| `cuda.py` | CUDA specializations, shared bindings and approved CUDA choices. |
+| `webgpu.py` | WebGPU specializations, shared bindings and approved WebGPU choices. |
+| `validation.py` | Independent numerical/state expectations, including host references. |
 
-`operation.py` owns eligibility and supported search axes, `compose.py` owns
-multi-call operation structure, and `rewrites.py` owns conservative fusions.
-CUDA and WebGPU leaves implement actual algorithm alternatives behind this
-boundary. Hardware-specific algorithms belong to `hardware/<architecture>/`:
-Hopper projection, attention, prefill and expert kernels live in
-their respective operation directories. These paths express real hardware
-requirements rather than creating another model execution pipeline.
+Start with the [beginner authoring guide](../../../docs/operations.md).
+Its complete example uses the actual six-file structure and current discovery API.
 
-Chunk attention policies are owned by `attention/lowering.py`: split-context
-partial/merge stages, a scratch BF16 view of authoritative FP8 KV, and bounded
-Hopper query tiles. `attention/pipeline.py` independently qualifies each physical
-stage. The compiler applies these policies to any matching graph and searches
-supported kernel schedules; executors allocate their scratch from the resulting
-buffer declarations. No runtime graph installer is required.
+## Share a computation or specialize it
 
+Prefer one TileLang body used by both providers. A backend file can bind the same
+shared function; matching structure does not require copying its arithmetic.
+Specialize only when target instructions, physical layouts, launch plans or
+measured performance justify a different implementation. Both versions retain
+one public semantic contract, with explicit masks, precision and state effects.
 
-Activation packing registrations and references live in `quantization/activations/`.
-Weight storage helpers and FP8 operand representations live in
-`quantization/weights/`; operations consume them through explicit codecs.
-Operation-specific buffer output locations are declared as `OUTPUT_ARGUMENTS`, so
-compiler graph passes do not infer write locations from model names.
+| Family | Decision and extension instructions |
+| --- | --- |
+| [activation](activation/README.md) | Shared SwiGLU. |
+| [attention](attention/README.md) | Shared semantics/portable bodies; accelerated backend algorithms. |
+| [control](control/README.md) | Shared copy, feedback and speculative bookkeeping. |
+| [convolution](convolution/README.md) | Shared short convolution. |
+| [gdn](gdn/README.md) | Shared preparation, recurrence and state helpers; explicit execution policy. |
+| [indexing](indexing/README.md) | Shared mapped row operations. |
+| [linear](linear/README.md) | Shared portable projection; specialized accelerated GEMV/GEMM. |
+| [moe](moe/README.md) | Shared routing/combine candidates; specialized expert projection. |
+| [mtp](mtp/README.md) | Shared cast and normalized join; Qwen-specific model wiring stays in models. |
+| [normalization](normalization/README.md) | Shared RMS/fusion with reduction strategy selection. |
+| [residual](residual/README.md) | Shared addition. |
+| [sequence](sequence/README.md) | Shared row, position and control computations. |
+| [vocabulary](vocabulary/README.md) | Shared lookup/selection; accelerated fused-head specialization. |
 
-Default beam search qualifies supported schedules for every compiled operation
-geometry. Physical multi-stage pipelines are selected through explicit operation
-policies; automatic search over different graph pipelines is a separate extension.
+## Write a callable computation
+
+Every standalone device definition uses typed tensor inputs and explicit results
+through `@kernel`. Its `(spec, schedule)` factory binds geometry and tuning, then
+returns the computation. A state input that is mutated is also returned. Fresh
+results use `output(...)`; this is a declaration, not an execution-time allocation.
+See the [functional contract](../../../docs/kernels.md).
+
+A public operation may select a multi-launch algorithm. Split attention has
+partial and merge callables with explicit intermediate layouts. GDN verification
+has explicit tentative-state and commit behavior. Uniform functions do not force
+these plans into one naive kernel.
+
+`definition.py` owns `IMPLEMENTATIONS`, `VALIDATIONS`, output effects and policies.
+The registry discovers these definitions directly. Stable tuning identifiers are
+preserved even when factory paths move. Existing optimized algorithms remain
+eligible under their original contracts, geometry and target restrictions.
+
+## Infrastructure and quantization
+
+Authoring, registry and selection infrastructure lives in
+[kernels](../kernels/README.md), outside operation families. The public
+`from akas.ops import KernelSpec, Capabilities, define` entry remains available.
+Request-state mapping lives in
+[compilation/transforms/state.py](../compilation/transforms/state.py).
+Inline reductions live in [kernel primitives](../kernels/README.md#inline-primitives).
+
+[Quantization](../quantization/README.md) uses the same six-file format package
+structure. It owns encoded storage, packing, metadata and codec rounding. Packed
+lookup and portable packed projection consume a quantization-owned weight reader;
+GGUF parsing consumes quantization's encoding definitions.
+
+## What is validated
+
+The structure is implemented and enforced by
+[structure tests](../../../tests/test_ops_structure.py). Each feature needs
+explicit registration and device qualification on its supported providers. Inspect `definition.py`, backend `IMPLEMENTATIONS`
+and codec `FORMAT.providers` for actual coverage. In particular, the current
+WebGPU compiler profile does not directly accept native uint8/BF16 buffers used
+by several CUDA paths; a counterpart needs compatible storage and conversion.
+Each family README describes its backend choices and qualification requirements.

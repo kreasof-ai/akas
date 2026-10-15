@@ -2,9 +2,11 @@
 
 import os
 from pathlib import Path
+
+from akas.artifacts.fingerprint import _compiler_identity
 from akas.artifacts.schema import Kernel, Source
 from akas.artifacts.write import checksum
-from akas.artifacts.fingerprint import _compiler_identity
+
 
 def needs_build(source, destination, text, target, *, provider="cuda"):
     """Reuse only matching sources, provider, target and compiler implementation."""
@@ -109,8 +111,6 @@ def export_source(module, factory, *args, dependencies=()):
     return export_kernel(module, factory, *args, dependencies=dependencies)
 
 
-
-
 def source_dependencies(module, *, dependencies=()):
     """Hash the selected operation and its transitive source imports."""
     return dependency_closure(module, dependencies)
@@ -120,7 +120,7 @@ def dependency_closure(module, dependencies):
     """Hash the selected factory's imports rather than unrelated executors.
 
     Imports inside factories and macros count too. Codec discovery is dynamic,
-    so its small format package is included when a factory uses the codec API.
+    so local codec sources are included when a factory uses the format API.
     Explicit dependencies cover factories that import a module supplied as data.
     """
     import ast
@@ -142,9 +142,16 @@ def dependency_closure(module, dependencies):
         if path.suffix != ".py":
             continue
         visited.add(name)
-        if name == "akas.quantization.kv.codec":
-            pending.extend("akas.quantization.kv." + p.stem
-                           for p in path.parent.glob("*.py") if p.stem != "__init__")
+        if name == "akas.quantization.formats":
+            # Format lookup imports modules by name. Include local codec sources
+            # so adding/editing a dynamically selected codec invalidates artifacts
+            # without a second, manually maintained registration table.
+            pending.extend(
+                "akas.quantization."
+                + ".".join(p.relative_to(path.parent).with_suffix("").parts)
+                for p in path.parent.rglob("*.py")
+                if p.stem != "__init__"
+            )
         package = name if path.name == "__init__.py" else name.rpartition(".")[0]
         for node in ast.walk(ast.parse(path.read_text())):
             if isinstance(node, ast.Import):
@@ -152,15 +159,18 @@ def dependency_closure(module, dependencies):
             elif isinstance(node, ast.ImportFrom):
                 if node.level:
                     parts = package.split(".")
-                    base = ".".join(parts[:len(parts)-node.level+1])
+                    base = ".".join(parts[: len(parts) - node.level + 1])
                     base += "." + node.module if node.module else ""
                 else:
                     base = node.module or ""
                 imported = [base, *(base + "." + alias.name for alias in node.names)]
             else:
                 continue
-            pending.extend(item for item in imported
-                           if item.startswith(("akas.", "tensor.compiler.")))
+            pending.extend(
+                item
+                for item in imported
+                if item.startswith(("akas.", "tensor.compiler."))
+            )
     return tuple(sorted(visited - {module}))
 
 

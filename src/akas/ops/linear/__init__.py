@@ -1,1 +1,1 @@
-"""Shared linear implementation."""
+"""Linear operation definitions and implementations."""

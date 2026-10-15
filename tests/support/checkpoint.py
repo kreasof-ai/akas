@@ -8,7 +8,8 @@ import argparse
 import json
 from pathlib import Path
 import struct
-from akas.models.lfm2.weights import ReferenceCheckpoint, huggingface_names
+from akas.models.lfm2.weights import ReferenceCheckpoint
+from akas.models.lfm2.weights import huggingface_names
 
 
 def export(gguf, directory, *, dtype="F32"):

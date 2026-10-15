@@ -1,0 +1,9 @@
+{
+  "schema": "akas.matrix-campaign.v1",
+  "models": ["lfm2.5-230m", "qwen3.5-0.8b"],
+  "formats": ["bf16", "f16", "q4_0", "q4_k_m"],
+  "backends": ["cuda", "webgpu"],
+  "caches": ["default", "fp8"],
+  "workload": "standard-v1",
+  "configuration_budget": "1h"
+}

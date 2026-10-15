@@ -25,7 +25,7 @@ def test_hopper_prefill_attention_preserves_control_bits(
     tmp_path, query_rows, threads, joint, decoded, value_splits
 ):
     import torch, tensor
-    from akas.compilation.emit import export_kernel as export_source
+    from support.migration import source as export_source
     from tensor.compiler.build import build_artifact
     from test_qwen_fp8_kv import quantize
 
@@ -82,7 +82,7 @@ def test_hopper_prefill_attention_preserves_control_bits(
         artifact = entry.with_suffix(".tbin")
         entry.write_text(
             export_source(
-                "akas.ops.attention.cuda.workspace",
+                "akas.ops.attention.cuda",
                 "decode",
                 dict(slots=s, capacity=cap),
                 dependencies=("tensor.compiler.frontend.source",),
@@ -158,7 +158,7 @@ def test_wide_hopper_projections_preserve_control_bits(
     if paired in ("warp", "persistent") and not grouped:
         pytest.skip("expert-only candidate")
     import torch, tensor
-    from akas.compilation.emit import export_kernel as export_source
+    from support.migration import source as export_source
     from tensor.compiler.build import build_artifact
 
     rng = np.random.default_rng(721)
@@ -365,7 +365,7 @@ def test_hopper_query_tiles_preserve_long_window_causality(
     tmp_path, chunk, query_tokens, decoded
 ):
     import tensor, torch
-    from akas.compilation.emit import export_kernel as export_source
+    from support.migration import source as export_source
     from tensor.compiler.build import build_artifact
     from test_qwen_fp8_kv import quantize
 

@@ -106,7 +106,8 @@ def test_close_and_mutation_remain_on_owner_thread(executor):
 
 
 def test_scheduler_uses_same_executor_for_all_bindings(executor):
-    from akas import Engine, EngineConfig
+    from akas import Engine
+    from akas import EngineConfig
 
     with Engine(executor, config=EngineConfig(prefill_chunk=2)) as engine:
         requests = [engine.submit([1, 2, 3], max_tokens=4) for _ in range(12)]

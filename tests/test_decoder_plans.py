@@ -10,12 +10,10 @@ from pathlib import Path
 
 import pytest
 
-from plan_fixture import (
-    dense_graph_contract,
-    dense_frozen_contract,
-    moe_graph_contract,
-    moe_frozen_contract,
-)
+from plan_fixture import dense_graph_contract
+from plan_fixture import dense_frozen_contract
+from plan_fixture import moe_graph_contract
+from plan_fixture import moe_frozen_contract
 
 
 @pytest.mark.parametrize(

@@ -61,7 +61,8 @@ def test_prepare_uses_declared_model_and_common_compile_pipeline(tmp_path, monke
 
 @pytest.mark.parametrize("window", [None, 4])
 def test_workload_replay_uses_actual_ids_and_preserves_cohort_counts(tmp_path, monkeypatch, window):
-    from test_qwen_server import Target, Proposer
+    from test_qwen_server import Target
+    from test_qwen_server import Proposer
     import tensor
     settings = prepared(tmp_path)
     class Device:
@@ -73,7 +74,7 @@ def test_workload_replay_uses_actual_ids_and_preserves_cohort_counts(tmp_path, m
         def __exit__(self, *args): pass
     monkeypatch.setattr(tensor, "Device", lambda **options: Device())
     monkeypatch.setattr(research, "definition", lambda name: lambda *args, **kwargs: Model(1))
-    monkeypatch.setattr("akas.models.heads.mtp.MTPHead", lambda target: Proposer())
+    monkeypatch.setattr("akas.models.qwen35.mtp.MTPHead", lambda target: Proposer())
     workload = tmp_path / "workload.json"
     workload.write_text(json.dumps(dict(requests=[dict(prompt_token_ids=[12, 24], output_tokens=5),
                                                   dict(prompt_token_ids=[30], output_tokens=2)])))

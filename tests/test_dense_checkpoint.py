@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 import numpy as np
 
-from akas.models.qwen35.weights import DenseCheckpoint
+from akas.models.qwen35.weights import Qwen35DenseCheckpoint
 
 
 def test_upload_preserves_bfloat16_bits_and_official_float32_values():
@@ -15,7 +15,7 @@ def test_upload_preserves_bfloat16_bits_and_official_float32_values():
         ),
         "model.language_model.norm.weight": np.array([1.25, -0.125], dtype="float32"),
     }
-    checkpoint = object.__new__(DenseCheckpoint)
+    checkpoint = object.__new__(Qwen35DenseCheckpoint)
     checkpoint.tensors = {
         name: SimpleNamespace(dtype="BF16" if raw.dtype == np.uint16 else "F32")
         for name, raw in arrays.items()

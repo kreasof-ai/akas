@@ -1,1 +1,1 @@
-"""Request-mapped row access and state initialization."""
+"""Indexing operation definitions and implementations."""

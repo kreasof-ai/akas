@@ -4,17 +4,18 @@ from dataclasses import replace
 import json
 import os
 from types import SimpleNamespace
-
 import numpy as np
 import pytest
-
 from akas.graph import Graph
 from akas.execution.plan import bind_graph
 from akas.compilation.compile import plan as compile_plan
-from akas.compilation.tuning import Measurement, Workload, tune
-from akas.ops.registry import Implementation, select
-from examples.models.residual.config import Config
-from examples.models.residual.model import compose
+from akas.compilation.tuning import Measurement
+from akas.compilation.tuning import Workload
+from akas.compilation.tuning import tune
+from akas.kernels.registry import Implementation
+from akas.kernels.registry import select
+from examples.graphs.residual.config import Config
+from examples.graphs.residual.graph import compose
 
 
 def test_new_model_uses_both_providers_without_compiler_branches():
@@ -23,7 +24,9 @@ def test_new_model_uses_both_providers_without_compiler_branches():
         bundle = compile_plan(forward, provider=provider, target=target)
         assert len(bundle.kernels) == 2
         assert bundle.manifest["forward"] == forward.metadata()
-        assert bundle.kernels[0].source.args[3]["module"] == f"akas.ops.linear.{provider}.packed"
+        assert (
+            bundle.kernels[0].source.args[3]["module"] == f"akas.ops.linear.{provider}"
+        )
         restored = Graph.from_metadata(json.loads(json.dumps(forward.metadata())))
         assert restored.requirements() == forward.requirements()
 
@@ -61,7 +64,9 @@ def test_recording_and_binding_share_kernel_emitter():
 
 
 def test_hardware_variant_is_qualified_before_routing():
-    generic = Implementation("add", "residual.cuda.packed_baseline", "packed")
+    generic = Implementation(
+        "add", "residual.cuda.packed_baseline", "packed", factory="kernel"
+    )
     hopper = replace(
         generic,
         module="residual.cuda.hopper",
@@ -75,7 +80,9 @@ def test_hardware_variant_is_qualified_before_routing():
     assert select("add", {"c": 64}, target="sm_90a", **options) is generic
     assert select("add", {"c": 128}, target="sm_89", **options) is generic
     with pytest.raises(ValueError, match="no compatible"):
-        select("add", {"c": 128}, target="sm_89", preferred=hopper.module, **options)
+        select(
+            "add", {"c": 128}, target="sm_89", preferred=hopper.identifier, **options
+        )
     with pytest.raises(ValueError, match="ambiguous"):
         select(
             "add",
@@ -95,14 +102,14 @@ def test_existing_fp8_linear_variant_preserves_large_batch_selection():
             phase="decode",
             target="sm_89",
         )
-        assert variant.module == expected
+        assert variant.identifier == expected
         if rows == 16:
-            assert variant.source_arguments(dict(r=rows))[1]["columns"] == 64
+            assert dict(variant.defaults)["columns"] == 64
 
 
 def test_beam_search_rejects_incorrect_and_batch_regressing_candidates():
     baseline = Implementation(
-        "add", "baseline", "packed", space=(("threads", (64, 128)),)
+        "add", "baseline", "packed", space=(("threads", (64, 128)),), factory="kernel"
     )
     fastest_small = replace(baseline, module="small")
     wrong = replace(baseline, module="wrong")
@@ -133,7 +140,7 @@ def test_beam_search_rejects_incorrect_and_batch_regressing_candidates():
         catalog=catalog,
         budget=20,
     )
-    assert result.implementation == stable.module
+    assert result.implementation == stable.identifier
     assert result.score == 0.6
     assert result.trials == 8
     profile = result.profile("add", {"c": 256}, provider="cuda", target="sm_89")
@@ -172,7 +179,7 @@ def test_three_file_model_matches_numpy_on_cuda(tmp_path, rows, graphs):
     import tensor
     from akas.compilation.compile import produce
     from akas.execution.forward import Forward
-    from examples.models.residual.weights import load
+    from examples.graphs.residual.weights import load
 
     config = Config()
     rng = np.random.default_rng(31)
@@ -308,7 +315,6 @@ def test_beam_winner_builds_and_runs_on_representative_cuda_batches(tmp_path):
             assert result.trials == 2
             assert len(result.measurements) == 2
             profile = result.profile("linear", {}, provider="cuda", target="sm_89")
-            # Rebuild from the persisted profile rather than the search's candidate object.
             for rows in (1, 4):
                 selected = profile.select("linear", {}, provider="cuda", target="sm_89")
                 implementation = select(
@@ -339,7 +345,7 @@ def test_forward_failure_releases_only_owned_buffers(tmp_path, monkeypatch):
         released = False
 
         def __init__(self, shape, dtype):
-            self.shape, self.dtype = shape, dtype
+            self.shape, self.dtype = (shape, dtype)
 
         def release(self):
             self.released = True
@@ -363,7 +369,7 @@ def test_forward_failure_releases_only_owned_buffers(tmp_path, monkeypatch):
     with pytest.raises(ValueError, match="bad artifact"):
         Forward(tmp_path, Device(), supplied)
     assert len(allocated) == 1 and allocated[0].released
-    assert not any(value.released for value in supplied.values())
+    assert not any((value.released for value in supplied.values()))
 
 
 def test_forward_import_and_metadata_need_no_compiler():
@@ -374,21 +380,7 @@ def test_forward_import_and_metadata_need_no_compiler():
         [
             sys.executable,
             "-c",
-            """
-import importlib.abc, sys
-class Guard(importlib.abc.MetaPathFinder):
-    def find_spec(self, name, path=None, target=None):
-        if name.startswith(('akas.compilation', 'tensor.compiler')) or name.split('.')[0] in {'torch', 'tilelang', 'tvm', 'tvm_ffi', 'triton'}:
-            raise ImportError(name)
-sys.meta_path.insert(0, Guard())
-from akas.graph import Graph
-from akas.execution.plan import bind_graph
-from akas.execution.forward import Forward
-from examples.models.residual.config import Config
-from examples.models.residual.model import compose
-plan = compose(Config())
-assert Graph.from_metadata(plan.metadata()).requirements() == plan.requirements()
-""",
+            "\nimport importlib.abc, sys\nclass Guard(importlib.abc.MetaPathFinder):\n    def find_spec(self, name, path=None, target=None):\n        if name.startswith(('akas.compilation', 'tensor.compiler')) or name.split('.')[0] in {'torch', 'tilelang', 'tvm', 'tvm_ffi', 'triton'}:\n            raise ImportError(name)\nsys.meta_path.insert(0, Guard())\nfrom akas.graph import Graph\nfrom akas.execution.plan import bind_graph\nfrom akas.execution.forward import Forward\nfrom examples.graphs.residual.config import Config\nfrom examples.graphs.residual.graph import compose\nplan = compose(Config())\nassert Graph.from_metadata(plan.metadata()).requirements() == plan.requirements()\n",
         ],
         check=True,
     )
@@ -398,20 +390,18 @@ def test_new_operation_registration_is_discovered_without_central_table(
     tmp_path, monkeypatch
 ):
     import sys
-    from akas.ops import registry
+    import akas.kernels.registry as registry
 
-    package = tmp_path / "future_op"
-    package.mkdir()
-    (package / "operation.py").write_text(
-        "# registration module supplied below\n"
-    )
-    item = Implementation("future", "future_op.cuda", "new-contract")
+    package = tmp_path / "ops" / "future_op"
+    package.mkdir(parents=True)
+    (package / "definition.py").write_text("# registration module supplied below\n")
+    item = Implementation("future", "future_op.cuda", "new-contract", factory="kernel")
     monkeypatch.setitem(
         sys.modules,
-        "akas.ops.future_op.operation",
+        "akas.ops.future_op.definition",
         SimpleNamespace(IMPLEMENTATIONS=(item,)),
     )
-    monkeypatch.setattr(registry, "__file__", str(tmp_path / "registry.py"))
+    monkeypatch.setattr(registry, "__file__", str(tmp_path / "kernels" / "registry.py"))
     registry.implementations.cache_clear()
     try:
         assert (
@@ -424,7 +414,11 @@ def test_new_operation_registration_is_discovered_without_central_table(
 
 def test_tuning_qualifies_using_workload_geometry():
     variant = Implementation(
-        "linear", "large_only", "packed", accepts=lambda p: p.get("r", 0) >= 16
+        "linear",
+        "large_only",
+        "packed",
+        accepts=lambda p: p.get("r", 0) >= 16,
+        factory="kernel",
     )
     result = tune(
         "linear",
@@ -436,7 +430,7 @@ def test_tuning_qualifies_using_workload_geometry():
         catalog=[variant],
         budget=1,
     )
-    assert result.implementation == "large_only"
+    assert result.implementation == variant.identifier
 
 
 @pytest.mark.parametrize(
@@ -474,7 +468,9 @@ def test_new_model_compiles_to_webgpu_without_device(tmp_path, monkeypatch, rows
     from tensor.artifacts.format import read_artifact
 
     monkeypatch.setenv("TENSOR_NVRTC_HOME", "/cuda-option-must-not-reach-webgpu")
-    manifest = produce(compose(Config(), rows=rows), tmp_path, provider="webgpu", search=False)
+    manifest = produce(
+        compose(Config(), rows=rows), tmp_path, provider="webgpu", search=False
+    )
     for row in manifest["kernels"].values():
         artifact, _ = read_artifact(tmp_path / row["path"])
         assert artifact["provider"] == "webgpu"
@@ -494,7 +490,7 @@ def test_webgpu_prepared_capture_accepts_labeled_forward_calls():
 
 def test_beam_search_keeps_default_when_candidates_regress_a_workload():
     variant = Implementation(
-        "linear", "baseline", "reference", space=(("threads", (32,)),)
+        "linear", "baseline", "reference", space=(("threads", (32,)),), factory="kernel"
     )
 
     def measure(item, parameters, workload):
@@ -519,7 +515,7 @@ def test_beam_search_keeps_default_when_candidates_regress_a_workload():
 
 def test_beam_search_accepts_improvement_when_an_unchanged_workload_ties():
     variant = Implementation(
-        "linear", "baseline", "reference", space=(("threads", (32,)),)
+        "linear", "baseline", "reference", space=(("threads", (32,)),), factory="kernel"
     )
 
     def measure(item, parameters, workload):
@@ -544,7 +540,7 @@ def test_beam_search_accepts_improvement_when_an_unchanged_workload_ties():
 
 def test_operation_owner_can_extend_row_pruning_and_fusion(monkeypatch):
     from akas.compilation.rewrites import optimize
-    from akas.ops.registry import planning_rules
+    from akas.kernels.registry import planning_rules
 
     original = planning_rules()
     forward = Graph(contract="reference")
@@ -554,7 +550,7 @@ def test_operation_owner_can_extend_row_pruning_and_fusion(monkeypatch):
     counts = forward.buffer("counts", (2,), "int32", role="input")
     forward("new_activation", dict(r=4, c=2), x, y)
     forward("chunk_last", dict(r=2, c=2, chunk=2), y, final, counts)
-    assert len(optimize(forward).calls) == 2  # Unknown operation is retained safely.
+    assert len(optimize(forward).calls) == 2
     observed = []
 
     def rewrite(plan):
@@ -562,7 +558,7 @@ def test_operation_owner_can_extend_row_pruning_and_fusion(monkeypatch):
         return plan
 
     monkeypatch.setattr(
-        "akas.ops.registry.planning_rules",
+        "akas.kernels.registry.planning_rules",
         lambda: (
             *original,
             SimpleNamespace(ROW_INDEPENDENT=("new_activation",), REWRITES=(rewrite,)),
@@ -576,8 +572,10 @@ def test_operation_owner_can_extend_row_pruning_and_fusion(monkeypatch):
 
 
 @pytest.mark.parametrize("provider", ["cuda", "webgpu"])
-def test_new_model_searches_by_default_and_reuses_qualified_cache(tmp_path, monkeypatch, provider):
-    if os.environ.get("AKAS_FORWARD_"+provider.upper()) != "1":
+def test_new_model_searches_by_default_and_reuses_qualified_cache(
+    tmp_path, monkeypatch, provider
+):
+    if os.environ.get("AKAS_FORWARD_" + provider.upper()) != "1":
         pytest.skip("enable provider for default search qualification")
     from akas.compilation.compile import produce
     from akas.compilation.tuning import SearchSettings
@@ -588,10 +586,14 @@ def test_new_model_searches_by_default_and_reuses_qualified_cache(tmp_path, monk
     report = manifest["tuning"]
     assert not report["cache_hit"]
     assert len(report["operations"]) == len(graph.requirements())
-    assert all(row["candidates"][0]["status"] == "passed" for row in report["operations"])
-    assert all(row["selected"]["measurements"][0] > 0 for row in report["operations"])
+    assert all(
+        (row["candidates"][0]["status"] == "passed" for row in report["operations"])
+    )
+    assert all((row["selected"]["measurements"][0] > 0 for row in report["operations"]))
+
     def unexpected_measurement(*args, **kwargs):
         pytest.fail("compatible cached qualification must not rerun timing")
+
     monkeypatch.setattr("tensor.compiler.tuning.measure", unexpected_measurement)
     cached = produce(graph, tmp_path, provider=provider, search_settings=settings)
     assert cached["tuning"]["cache_hit"]
@@ -603,17 +605,17 @@ def test_view_lifetime_prevents_scratch_reuse_until_last_alias_read():
 
     graph = Graph(contract="test")
     base = graph.buffer("base", (6,), "float32")
-    view = graph.view("view", base, (2,3))
+    view = graph.view("view", base, (2, 3))
     other = graph.buffer("other", (6,), "float32")
     graph("write", {}, base)
     graph("write", {}, other)
     graph("read", {}, view)
-    assert scratch_slots(graph) == [["base"],["other"]]
+    assert scratch_slots(graph) == [["base"], ["other"]]
     restored = Graph.from_metadata(json.loads(json.dumps(graph.metadata())))
     assert restored.buffers["view"].alias_of == "base"
     assert restored.metadata() == graph.metadata()
-    with pytest.raises(ValueError,match="same dtype and size"):
-        graph.view("bad",base,(7,))
-    foreign = Graph(contract="test").buffer("base",(6,),"float32")
-    with pytest.raises(ValueError,match="another graph"):
-        graph.view("foreign",foreign,(6,))
+    with pytest.raises(ValueError, match="same dtype and size"):
+        graph.view("bad", base, (7,))
+    foreign = Graph(contract="test").buffer("base", (6,), "float32")
+    with pytest.raises(ValueError, match="another graph"):
+        graph.view("foreign", foreign, (6,))

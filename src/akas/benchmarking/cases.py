@@ -2,13 +2,14 @@
 
 from dataclasses import dataclass, asdict
 from itertools import product
+from akas.benchmarking.workload import STANDARD
 
 
 @dataclass(frozen=True)
 class Case:
     batch: int
     prompt: int
-    generated: int = 32
+    generated: int = STANDARD["output_tokens"]
     depth: int = 0
     mixed: bool = False
 
@@ -43,10 +44,10 @@ class Case:
 
 def matrix(
     *,
-    batches=(1, 4, 16, 64, 256),
-    prompts=(32, 2048),
+    batches=tuple(STANDARD["batches"]),
+    prompts=tuple(STANDARD["prefix_tokens"]),
     depths=(0,),
-    generated=32,
+    generated=STANDARD["output_tokens"],
     mixed=False,
 ):
     return [

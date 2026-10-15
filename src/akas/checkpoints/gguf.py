@@ -18,14 +18,8 @@ class GGUFError(ValueError):
 
 
 # GGML type: (name, values per block, bytes per block).
-TYPES = {
-    0: ("F32", 1, 4),
-    1: ("F16", 1, 2),
-    2: ("Q4_0", 32, 18),
-    8: ("Q8_0", 32, 34),
-    12: ("Q4_K", 256, 144),
-    14: ("Q6_K", 256, 210),
-}
+from akas.quantization.weights.ggml.definition import ENCODINGS as TYPES
+
 SCALARS = {
     0: "B",
     1: "b",
@@ -161,88 +155,20 @@ class GGUF:
 
 
 def prepack_q4_0(data):
-    """Aligned signed-byte blocks and an exact F32 scale (36 bytes per block).
+    """Compatibility boundary; numerical storage conversion belongs to GGML."""
+    from akas.quantization.weights.ggml.kernel import prepack_host
 
-    This derived cache doubles Q4_0 storage; it does not change its values.
-    Eight words retain the low-16/high-16 element order, then one scale word.
-    """
-    raw = np.asarray(data, dtype=np.uint8).reshape(-1)
-    if raw.size % 18:
-        raise GGUFError("incomplete Q4_0 cache block")
-    blocks = raw.reshape(-1, 18)
-    result = np.empty((len(blocks), 9), np.uint32)
-    signed = (
-        np.concatenate((blocks[:, 2:] & 15, blocks[:, 2:] >> 4), axis=1).astype(
-            np.int16
-        )
-        - 8
-    ).astype(np.int8)
-    result[:, :8] = signed.view(np.uint32)
-    result[:, 8] = (
-        blocks[:, :2].copy().view("<f2").astype("<f4").reshape(-1).view(np.uint32)
-    )
-    return result.reshape(-1)
+    try:
+        return prepack_host(data)
+    except ValueError as error:
+        raise GGUFError(str(error)) from error
 
 
 def dequantize(data, kind):
-    raw = np.asarray(data, dtype=np.uint8).reshape(-1)
-    if kind not in TYPES:
-        raise GGUFError(f"unsupported GGML type {kind}")
-    _, block, width = TYPES[kind]
-    if raw.size % width:
-        raise GGUFError("incomplete quantized block")
-    if kind in (0, 1):
-        return raw.view("<f4" if kind == 0 else "<f2").astype(np.float32)
-    x = raw.reshape(-1, width)
-    if kind in (2, 8):
-        d = x[:, :2].copy().view("<f2").astype(np.float32)
-        if kind == 8:
-            q = x[:, 2:].view(np.int8).astype(np.float32)
-        else:
-            q = (
-                np.concatenate((x[:, 2:] & 15, x[:, 2:] >> 4), axis=1).astype(
-                    np.float32
-                )
-                - 8
-            )
-        return (d * q).reshape(-1)
-    if kind == 12:
-        d = x[:, :2].copy().view("<f2").astype(np.float32)
-        minimum = x[:, 2:4].copy().view("<f2").astype(np.float32)
-        packed = x[:, 4:16]
-        scales = []
-        mins = []
-        for j in range(8):
-            scales.append(
-                packed[:, j] & 63
-                if j < 4
-                else (packed[:, j + 4] & 15) | ((packed[:, j - 4] >> 6) << 4)
-            )
-            mins.append(
-                packed[:, j + 4] & 63
-                if j < 4
-                else (packed[:, j + 4] >> 4) | ((packed[:, j] >> 6) << 4)
-            )
-        q = x[:, 16:].reshape(-1, 4, 32)
-        q = np.stack((q & 15, q >> 4), axis=2).reshape(-1, 8, 32).astype(np.float32)
-        result = (
-            d[:, None, :] * np.stack(scales, axis=1)[:, :, None] * q
-            - minimum[:, None, :] * np.stack(mins, axis=1)[:, :, None]
-        )
-        return result.reshape(-1)
-    d = x[:, 208:210].copy().view("<f2").astype(np.float32)
-    result = np.empty((len(x), 256), np.float32)
-    for half in range(2):
-        low = x[:, half * 64 : half * 64 + 64]
-        high = x[:, 128 + half * 32 : 160 + half * 32]
-        scales = x[:, 192 + half * 8 : 200 + half * 8].view(np.int8).astype(np.float32)
-        for group in range(4):
-            nibble = low[:, (group % 2) * 32 : (group % 2 + 1) * 32]
-            q = ((nibble & 15) if group < 2 else nibble >> 4) | (
-                ((high >> (2 * group)) & 3) << 4
-            )
-            scale = np.repeat(scales[:, group * 2 : group * 2 + 2], 16, axis=1)
-            result[:, half * 128 + group * 32 : half * 128 + (group + 1) * 32] = (
-                d * scale * (q.astype(np.float32) - 32)
-            )
-    return result.reshape(-1)
+    """Compatibility boundary; numerical storage conversion belongs to GGML."""
+    from akas.quantization.weights.ggml.kernel import decode_host
+
+    try:
+        return decode_host(data, kind)
+    except ValueError as error:
+        raise GGUFError(str(error)) from error

@@ -6,7 +6,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 from akas.models.lfm2.weights import ReferenceCheckpoint
-from akas.models.lfm2.model import LFM2Reference, compose
+from akas.models.lfm2.model import LFM2Reference
+from akas.models.lfm2._composition import compose
 from akas.compilation.compile import plan
 from support.diagnostic import fixture
 from support.checkpoint import export
@@ -53,7 +54,7 @@ def test_all_reference_paths_select_without_model_compiler_branches(
     bundle = plan(forward, provider=provider)
     assert len(bundle.kernels) == len(forward.requirements())
     assert all(
-        kernel.source.module.startswith("akas.ops.") for kernel in bundle.kernels
+        kernel.source.module == "akas.kernels.definition" for kernel in bundle.kernels
     )
     cache = forward.buffers["blk.1.kc"]
     assert cache.shape == (
@@ -195,9 +196,13 @@ def test_reference_builds_webgpu_without_device(checkpoint, tmp_path, kv_dtype):
         kv_dtype=kv_dtype,
         search=False,
     )
-    for record in result["kernels"].values():
-        meta, _ = read_artifact(tmp_path / record["path"])
-        assert meta["provider"] == "webgpu"
+    import json
+
+    for phase in result["phases"]:
+        forward = json.loads((tmp_path / phase["path"]).read_text())
+        for record in forward["kernels"].values():
+            meta, _ = read_artifact(tmp_path / record["path"])
+            assert meta["provider"] == "webgpu"
 
 
 def test_partitioned_weight_upload_reassembles_original_values(checkpoint):
@@ -272,7 +277,7 @@ def test_reference_fp8_bytes_and_scales_match_torch(provider, heads, tmp_path):
     import torch
     import tensor
     from akas.compilation.emit import build_artifact
-    from akas.compilation.emit import export_kernel
+    from support.migration import source as export_kernel
     from akas.quantization.kv import get
 
     rows, d, cap = 4, 64, 8

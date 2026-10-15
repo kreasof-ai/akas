@@ -1,0 +1,15 @@
+Traceback (most recent call last):
+  File "/home/sagemaker-user/akas/tools/baselines/common.py", line 106, in main
+    report.update(run(config))
+                  ^^^^^^^^^^^
+  File "/home/sagemaker-user/akas/tools/baselines/sglang.py", line 45, in run
+    engine = sglang.Engine(**settings)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/sagemaker-user/akas/build/baselines/sglang/lib/python3.12/site-packages/sglang/utils.py", line 384, in __call__
+    return module(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/sagemaker-user/akas/build/baselines/sglang/lib/python3.12/site-packages/sglang/srt/entrypoints/engine.py", line 279, in __init__
+    server_args = self.server_args_class(**kwargs)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: Unexpected keyword argument 'cuda_graph_bs'
+

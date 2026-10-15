@@ -1,0 +1,145 @@
+{
+  "schema": "akas.program.v1",
+  "provider": "cuda",
+  "target": "sm_89",
+  "config": {
+    "width": 1024,
+    "intermediate": 3584,
+    "vocab": 248320,
+    "layers": [
+      "linear_attention",
+      "linear_attention",
+      "linear_attention",
+      "full_attention",
+      "linear_attention",
+      "linear_attention",
+      "linear_attention",
+      "full_attention",
+      "linear_attention",
+      "linear_attention",
+      "linear_attention",
+      "full_attention",
+      "linear_attention",
+      "linear_attention",
+      "linear_attention",
+      "full_attention",
+      "linear_attention",
+      "linear_attention",
+      "linear_attention",
+      "full_attention",
+      "linear_attention",
+      "linear_attention",
+      "linear_attention",
+      "full_attention"
+    ],
+    "heads": 8,
+    "kv_heads": 2,
+    "head_dim": 256,
+    "key_heads": 16,
+    "value_heads": 16,
+    "key_dim": 128,
+    "value_dim": 128,
+    "epsilon": 1e-06,
+    "theta": 10000000,
+    "rotary_dim": 64,
+    "context_limit": 262144
+  },
+  "max_requests": 4,
+  "max_context": 160,
+  "phases": [
+    {
+      "phase": "decode",
+      "rows": 1,
+      "chunk": 1,
+      "path": "programs/841821826a1141c3903f6c7ae2a02bc6/phases/decode-b1-t1.json",
+      "sha256": "ec022e0884f58a6289243b2d6dff80c927d69c28e9a0c5ba134f4e3d1414e887",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "positions": "position",
+        "lengths": "lengths",
+        "head_positions": "head_position",
+        "head_active": "head_active"
+      },
+      "prediction": "predicted",
+      "feedback": true,
+      "features": {
+        "hidden": "normal"
+      }
+    },
+    {
+      "phase": "decode",
+      "rows": 4,
+      "chunk": 1,
+      "path": "programs/841821826a1141c3903f6c7ae2a02bc6/phases/decode-b4-t1.json",
+      "sha256": "6a73ccb0e14bf17d01bc59df01445d2b854c97c49f789a754d7f208ec536f3c8",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "positions": "position",
+        "lengths": "lengths",
+        "head_positions": "head_position",
+        "head_active": "head_active"
+      },
+      "prediction": "predicted",
+      "feedback": true,
+      "features": {
+        "hidden": "normal"
+      }
+    },
+    {
+      "phase": "prefill",
+      "rows": 1,
+      "chunk": 32,
+      "path": "programs/841821826a1141c3903f6c7ae2a02bc6/phases/prefill-b1-t32.json",
+      "sha256": "e2209f86d3b0297adf1782c707aefd9832a5a8e0fe307110244c2219589667e1",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "positions": "position",
+        "lengths": "lengths",
+        "head_positions": "head_position",
+        "head_active": "head_active"
+      },
+      "prediction": "predicted",
+      "feedback": false,
+      "features": {
+        "hidden": "normal"
+      }
+    },
+    {
+      "phase": "prefill",
+      "rows": 4,
+      "chunk": 32,
+      "path": "programs/841821826a1141c3903f6c7ae2a02bc6/phases/prefill-b4-t32.json",
+      "sha256": "237be2e5614d4e3cf0893902e804006b6f24c386a467a6158a11dc9cc3b88a42",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "positions": "position",
+        "lengths": "lengths",
+        "head_positions": "head_position",
+        "head_active": "head_active"
+      },
+      "prediction": "predicted",
+      "feedback": false,
+      "features": {
+        "hidden": "normal"
+      }
+    }
+  ],
+  "reset": {
+    "path": "programs/841821826a1141c3903f6c7ae2a02bc6/phases/reset.json",
+    "sha256": "4747949c5d2ca3db79e6c0aa4a688cd44730bc643b13d7204f0e28e4ddb7d753",
+    "mapping": "mapping"
+  },
+  "rounds": [],
+  "upload_options": {
+    "branch": "text"
+  },
+  "model_options": {
+    "fused_head": false,
+    "kv_dtype": "bfloat16"
+  },
+  "policy": {}
+}

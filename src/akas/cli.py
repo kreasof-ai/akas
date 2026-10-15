@@ -6,9 +6,11 @@ import json
 from pathlib import Path
 import platform
 import subprocess
+import sys
 import time
 from contextlib import nullcontext
 from akas.benchmarking.cases import matrix
+from akas.benchmarking.workload import STANDARD
 from akas.benchmarking.runner import run
 from akas.benchmarking.report import compare, scaling_regressions, table, write_report
 from dataclasses import asdict
@@ -47,11 +49,14 @@ def main():
     generate.add_argument("--device", type=int, default=0)
     generate.set_defaults(run=_generate)
     serve = commands.add_parser("serve", help="serve an Engine supplied by a factory")
-    serve.add_argument(
+    serving_source = serve.add_mutually_exclusive_group(required=True)
+    serving_source.add_argument(
         "--factory",
-        required=True,
         type=_factory,
         help="module:callable yielding Service",
+    )
+    serving_source.add_argument(
+        "--deployment", type=Path, help="qualified deployment produced by akas optimize"
     )
     serve.add_argument(
         "--config", type=_settings, default={}, help="JSON object passed to the factory"
@@ -85,6 +90,21 @@ def main():
     compile_command.set_defaults(run=_compile)
     _benchmark_arguments(
         commands.add_parser("bench", help="native prefill/decode performance matrix")
+    )
+    from akas.benchmarking.history import arguments as history_arguments
+
+    history_arguments(
+        commands.add_parser(
+            "history", help="find benchmark runs and export qualified schedules"
+        )
+    )
+    from akas.optimization.context import arguments as optimization_arguments
+
+    optimization_arguments(
+        commands.add_parser(
+            "optimize",
+            help="compile, qualify and optimize serving from a model and workload",
+        )
     )
     args = parser.parse_args()
     args.run(args)
@@ -158,8 +178,18 @@ def _serve(args):
     from aiohttp import web
     from akas.serving import create_app
 
+    if getattr(args, "deployment", None) is not None:
+        if args.config:
+            raise ValueError(
+                "a deployment already contains its selected inference settings"
+            )
+        from akas.optimization.deployment import service
+
+        factory = partial(service, args.deployment)
+    else:
+        factory = partial(args.factory, **args.config)
     web.run_app(
-        create_app(partial(args.factory, **args.config)),
+        create_app(factory),
         host=args.host,
         port=args.port,
         access_log=None,
@@ -169,14 +199,47 @@ def _serve(args):
 
 def _benchmark_arguments(parser):
     parser.add_argument(
+        "--history",
+        type=Path,
+        default=Path("benchmarks"),
+        help="durable run archive (default: benchmarks)",
+    )
+    parser.add_argument(
+        "--no-history",
+        dest="history",
+        action="store_const",
+        const=None,
+        help="write only the requested report",
+    )
+    parser.add_argument(
+        "--change", help="kernel, algorithm or configuration change being measured"
+    )
+    parser.add_argument(
+        "--change-kind",
+        choices=(
+            "kernel",
+            "algorithm",
+            "schedule",
+            "configuration",
+            "baseline",
+            "validation",
+        ),
+        default="configuration",
+    )
+    parser.add_argument("--parent-run", help="history run this measurement builds on")
+    parser.add_argument(
         "--definition",
         type=_factory,
         required=True,
         help="module:class implementing the session protocol",
     )
     parser.add_argument("--checkpoint", type=Path, required=True)
-    parser.add_argument("--checkpoint-options", type=_settings, default={},
-                        help="JSON options for the model checkpoint reader")
+    parser.add_argument(
+        "--checkpoint-options",
+        type=_settings,
+        default={},
+        help="JSON options for the model checkpoint reader",
+    )
     parser.add_argument(
         "--bundles",
         type=Path,
@@ -202,10 +265,17 @@ def _benchmark_arguments(parser):
         help="WebGPU buffer/binding limit to request from the adapter, in bytes",
     )
     parser.add_argument("--kv-dtype")
-    parser.add_argument("--batches", nargs="+", type=int, default=[1, 4, 16, 64, 256])
-    parser.add_argument("--prompts", nargs="+", type=int, default=[32, 2048])
+    parser.add_argument("--batches", nargs="+", type=int, default=STANDARD["batches"])
+    parser.add_argument(
+        "--prompts", nargs="+", type=int, default=STANDARD["prefix_tokens"]
+    )
     parser.add_argument("--depths", nargs="+", type=int, default=[0])
-    parser.add_argument("--generated", type=int, default=32)
+    parser.add_argument(
+        "--generated",
+        type=int,
+        default=STANDARD["output_tokens"],
+        help="total output tokens per request, including the first prefill prediction",
+    )
     parser.add_argument(
         "--prefill-chunk",
         type=int,
@@ -243,6 +313,10 @@ def _benchmark_arguments(parser):
 
 def checkpoint_digest(path):
     path = Path(path)
+    if path.is_file():
+        from akas.benchmarking.history import digest
+
+        return digest(path)
     files = (
         [path]
         if path.is_file()
@@ -269,6 +343,80 @@ def revision():
 
 
 def _benchmark(args):
+    from akas.benchmarking.history import Recorder
+
+    recorder, latest, programs = None, None, set()
+    if args.history is not None:
+        recorder = Recorder(
+            args.history,
+            dict(
+                runtime="akas",
+                definition=args.definition.__module__ + ":" + args.definition.__name__,
+                checkpoint=str(args.checkpoint.resolve()),
+                provider=args.provider,
+                target=args.target,
+                device=dict(ordinal=args.device),
+                protocol="native-token-step-v2",
+            ),
+            change=args.change,
+            parent=args.parent_run,
+            kind=args.change_kind,
+        )
+
+    def start(metadata):
+        if recorder is not None:
+            metadata["run_id"] = recorder.id
+            recorder.record["metadata"] = dict(metadata)
+
+    def measured(report):
+        nonlocal latest
+        latest = report
+        if recorder is not None:
+            recorder.update(report)
+
+    try:
+        _benchmark_run(args, start=start, measured=measured, program=programs.add)
+    finally:
+        if recorder is not None:
+            error, error_value, _ = sys.exc_info()
+            for directory in sorted(programs):
+                if (directory / "program.json").is_file():
+                    try:
+                        recorder.program(directory)
+                    except (OSError, ValueError, KeyError) as archive_error:
+                        recorder.record["metadata"].setdefault(
+                            "history_errors", []
+                        ).append(str(archive_error))
+            outcome = (
+                "interrupted"
+                if error is KeyboardInterrupt
+                else "failed"
+                if error
+                else None
+            )
+            report = latest or dict(
+                schema="akas.benchmark.v1",
+                metadata=recorder.record["metadata"],
+                results=[
+                    dict(case=case.metadata(), status="error", error=str(error_value))
+                    for case in matrix(
+                        batches=args.batches,
+                        prompts=args.prompts,
+                        depths=args.depths,
+                        generated=args.generated,
+                        mixed=args.mixed,
+                    )
+                ],
+            )
+            if recorder.record["metadata"].get("history_errors"):
+                report["metadata"]["history_errors"] = recorder.record["metadata"][
+                    "history_errors"
+                ]
+                outcome = "failed"
+            recorder.update(report, final=True, status=outcome)
+
+
+def _benchmark_run(args, *, start, measured, program):
     import tensor
 
     cases = matrix(
@@ -284,7 +432,9 @@ def _benchmark(args):
         scaling_regressions([], args.max_scaling_regression)
     capacity = max(case.capacity for case in cases)
     profile = getattr(args.definition, "compilation_profile", "reference")
-    args.kv_dtype = args.kv_dtype or getattr(args.definition, "model_defaults", {}).get("kv_dtype", "float16")
+    args.kv_dtype = args.kv_dtype or getattr(args.definition, "model_defaults", {}).get(
+        "kv_dtype", "float16"
+    )
     chunk = args.prefill_chunk or (
         min(capacity, 128 if args.provider == "cuda" else 32)
         if profile in ("floating", "program")
@@ -317,7 +467,7 @@ def _benchmark(args):
         python=platform.python_version(),
         seed=args.seed,
         timestamp=time.time(),
-        protocol="native-token-step-v1",
+        protocol="native-token-step-v2",
         input="seeded synthetic token IDs; greedy device sampling",
         timing="wall clock, synchronize before/after; compile/load/reset excluded; prefill includes control uploads",
         ttft="prefill to first greedy token, including logits/head/sampling; no network",
@@ -327,29 +477,61 @@ def _benchmark(args):
         warmup=args.warmup,
     )
     results = []
+    start(metadata)
+
+    def publish_report():
+        report = write_report(args.out, metadata, results)
+        measured(report)
+        return report
+
     baseline = json.loads(args.baseline.read_text()) if args.baseline else None
     program_compiled = False
     for batch in dict.fromkeys(args.batches):
         selected = [case for case in cases if case.batch == batch]
-        bundle = args.bundles / (f"{args.provider}-{args.kv_dtype}-program"
-                                  if profile == "program" else f"{args.provider}-{args.kv_dtype}-b{batch}")
+        bundle = args.bundles / (
+            f"{args.provider}-{args.kv_dtype}-program"
+            if profile == "program"
+            else f"{args.provider}-{args.kv_dtype}-b{batch}"
+        )
         try:
+            program(bundle)
             if args.compile and (profile != "program" or not program_compiled):
                 from akas.compilation import compile_checkpoint
 
                 options = (
-                    dict(geometries=list(dict.fromkeys((rows, tokens)
-                             for rows in args.batches for tokens in (1, chunk))),
-                         max_requests=max(args.batches), max_context=capacity,
-                         model_options={"kv_dtype": args.kv_dtype}, schedules=schedules)
-                    if profile == "program" else
-                    dict(batch=batch, capacity=capacity, kv_dtype=args.kv_dtype,
-                         schedules=schedules, prefill_chunk=chunk)
+                    dict(
+                        geometries=list(
+                            dict.fromkeys(
+                                (rows, tokens)
+                                for rows in args.batches
+                                for tokens in (1, chunk)
+                            )
+                        ),
+                        max_requests=max(args.batches),
+                        max_context=capacity,
+                        model_options={"kv_dtype": args.kv_dtype},
+                        schedules=schedules,
+                    )
+                    if profile == "program"
+                    else dict(
+                        batch=batch,
+                        capacity=capacity,
+                        kv_dtype=args.kv_dtype,
+                        schedules=schedules,
+                        prefill_chunk=chunk,
+                    )
                 )
                 compile_checkpoint(
-                    args.definition, args.checkpoint, bundle, profile=profile,
-                    checkpoint_options=args.checkpoint_options if profile == "program" else {"tokenizer": False, **args.checkpoint_options},
-                    provider=args.provider, target=args.target, **options,
+                    args.definition,
+                    args.checkpoint,
+                    bundle,
+                    profile=profile,
+                    checkpoint_options=args.checkpoint_options
+                    if profile == "program"
+                    else {"tokenizer": False, **args.checkpoint_options},
+                    provider=args.provider,
+                    target=args.target,
+                    **options,
                 )
                 program_compiled = profile == "program"
             with tensor.Device(
@@ -357,18 +539,27 @@ def _benchmark(args):
             ) as device:
                 metadata["device"] = device.info
                 from akas.benchmarking.session import Session
+
                 constructor_options = dict(graphs=args.graphs)
                 if profile == "program":
                     constructor_options["checkpoint_options"] = args.checkpoint_options
                 else:
                     constructor_options["tokenizer"] = False
-                with args.definition(args.checkpoint, bundle, device, **constructor_options) as model:
-                    context = Session(model, batch=batch, chunk=chunk) if profile == "program" else nullcontext(model)
+                with args.definition(
+                    args.checkpoint, bundle, device, **constructor_options
+                ) as model:
+                    context = (
+                        Session(model, batch=batch, chunk=chunk)
+                        if profile == "program"
+                        else nullcontext(model)
+                    )
                     with context as session:
                         actual_chunk = getattr(session, "prefill_chunk", chunk)
                         metadata["prefill_chunk"] = actual_chunk
                         metadata["prefill"] = (
-                            "chunked" if actual_chunk > 1 else "serial token-step reference"
+                            "chunked"
+                            if actual_chunk > 1
+                            else "serial token-step reference"
                         )
                         if session.kv_dtype != args.kv_dtype:
                             raise ValueError(
@@ -380,7 +571,9 @@ def _benchmark(args):
                                 flush=True,
                             )
                             try:
-                                evidence = args.check(session, case) if args.check else None
+                                evidence = (
+                                    args.check(session, case) if args.check else None
+                                )
                                 if args.check and (
                                     not isinstance(evidence, dict)
                                     or evidence.get("correct") is not True
@@ -402,7 +595,7 @@ def _benchmark(args):
                                     error=f"{type(error).__name__}: {error}",
                                 )
                             results.append(row)
-                            write_report(args.out, metadata, results)
+                            publish_report()
                             print(table([row]), flush=True)
                             if args.max_scaling_regression is not None:
                                 losses = scaling_regressions(
@@ -425,8 +618,8 @@ def _benchmark(args):
                             error=f"{type(error).__name__}: {error}",
                         )
                     )
-            write_report(args.out, metadata, results)
-    report = write_report(args.out, metadata, results)
+            publish_report()
+    report = publish_report()
     print(table(results))
     if any(row["status"] != "ok" for row in results):
         raise SystemExit(1)

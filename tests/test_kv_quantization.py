@@ -5,12 +5,13 @@ import sys
 from types import SimpleNamespace
 import numpy as np
 import pytest
-
 from akas.memory.state import BufferSpec
 from akas.memory.layouts import hybrid_state_specs
-from akas.quantization.kv import get, is_quantized
-from akas.quantization.kv.codec import Format, Storage
-from akas.ops.registry import select
+from akas.quantization.kv import get, pair_layout
+from akas.quantization.kv import is_quantized
+from akas.quantization.kv.codec import Format
+from akas.quantization.kv.codec import Storage
+from akas.kernels.registry import select
 
 
 @pytest.mark.parametrize("dim", [64, 128, 256, 512])
@@ -21,7 +22,7 @@ def test_fp8_storage_and_scale_layout_are_model_independent(dim):
     assert storage.metadata == (BufferSpec((3, 5, 17, (dim + 127) // 128), "float32"),)
     config = SimpleNamespace(layers=("attention",), kv_heads=5, head_dim=dim)
     assert hybrid_state_specs(config, 3, 17, kv_dtype="fp8")[0] == list(
-        get("fp8").pair_layout(shape)
+        pair_layout("fp8", shape)
     )
     flat = hybrid_state_specs(config, 3, 17, kv_dtype="fp8", flat=True)[0]
     assert flat[0].shape == (3 * 5 * 17 * dim,)
@@ -29,17 +30,19 @@ def test_fp8_storage_and_scale_layout_are_model_independent(dim):
 
 
 def test_another_codec_needs_no_central_dispatch_or_memory_change(monkeypatch):
+
     def layout(shape):
         return Storage(
             BufferSpec(shape[:-1] + ((shape[-1] + 1) // 2,), "uint8"),
             (BufferSpec(shape[:-1] + (2,), "float32"),),
+            ("ranges",),
         )
 
-    codec = Format(
-        "test_int4", layout, (("cuda", "akas.quantization.kv.fp8"),)
-    )
+    codec = Format("test_int4", layout, (("cuda", "akas.quantization.kv.fp8"),))
     monkeypatch.setitem(
-        sys.modules, "akas.quantization.kv.test_int4", SimpleNamespace(FORMAT=codec)
+        sys.modules,
+        "akas.quantization.kv.test_int4.definition",
+        SimpleNamespace(FORMAT=codec),
     )
     assert get("test_int4") is codec
     config = SimpleNamespace(layers=("attention",), kv_heads=3, head_dim=256)
@@ -54,13 +57,12 @@ def test_another_codec_needs_no_central_dispatch_or_memory_change(monkeypatch):
             phase="decode",
             target="sm_89",
         ).module
-        == "attention.cuda.quantized"
+        == "akas.ops.attention.cuda"
     )
     assert (
         select("kv_encode", parameters, contract="kv-pair", target="sm_89").module
-        == "akas.quantization.kv.fp8"
+        == "akas.quantization.kv.fp8.cuda"
     )
-    # This test supplies storage/selection only; it does not claim an INT4 numerical implementation.
 
 
 @pytest.mark.parametrize("name", ["missing", "../../fp8", "format", None])
@@ -91,10 +93,10 @@ def test_standalone_codec_roundtrip_matches_torch_and_preserves_inactive_rows(
 ):
     import tensor
     import torch
-    from akas.compilation.emit import export_kernel
+    from support.migration import source as export_kernel
 
     torch.set_num_threads(1)
-    slots, chunk, capacity = 2, 2, 16
+    slots, chunk, capacity = (2, 2, 16)
     rows = slots * chunk
     rng = np.random.default_rng(912)
     k = rng.normal(size=(rows, heads * dim)).astype("float32")
@@ -113,9 +115,7 @@ def test_standalone_codec_roundtrip_matches_torch_and_preserves_inactive_rows(
     for kind in ("kv_encode", "kv_decode"):
         path = tmp_path / (kind + ".py")
         path.write_text(
-            export_kernel(
-                "akas.quantization.kv.fp8", "make_kernel", kind, parameters
-            )
+            export_kernel("akas.quantization.kv.fp8", "make_kernel", kind, parameters)
         )
         artifacts[kind] = path.with_suffix(".tbin")
         tensor.build(
@@ -175,7 +175,7 @@ def test_standalone_codec_roundtrip_matches_torch_and_preserves_inactive_rows(
                 output.to_numpy(),
             )
             for row in range(rows):
-                slot, position = row // chunk, positions[row]
+                slot, position = (row // chunk, positions[row])
                 if active[row]:
                     np.testing.assert_array_equal(
                         data[slot, :, position], expected_bits[row].numpy()
@@ -192,33 +192,51 @@ def test_standalone_codec_roundtrip_matches_torch_and_preserves_inactive_rows(
 
 
 def test_scalar_codec_does_not_require_packed_attention_helpers(monkeypatch):
-    from akas.quantization.kv.fp8 import layout
-    from akas.quantization.kv import fp8
-    from akas.ops.attention.cuda.quantized import make_kernel
+    from akas.quantization.kv.fp8.definition import layout
+    import akas.quantization.kv.fp8.cuda as fp8
+    from support.migration import factory as _historical_factory
 
-    scalar = SimpleNamespace(writer=fp8.writer, decoder=fp8.decoder)
+    from dataclasses import replace
+
+    scalar = SimpleNamespace(
+        bind=lambda shape: replace(fp8.bind(shape), read_packed=None, packed_dtype=None)
+    )
     codec = Format(
         "scalar_only", layout, (("cuda", "akas.quantization.kv.cuda.scalar_only"),)
     )
     monkeypatch.setitem(
         sys.modules,
-        "akas.quantization.kv.scalar_only",
+        "akas.quantization.kv.scalar_only.definition",
         SimpleNamespace(FORMAT=codec),
     )
-    monkeypatch.setitem(
-        sys.modules, "akas.quantization.kv.cuda.scalar_only", scalar
-    )
+    monkeypatch.setitem(sys.modules, "akas.quantization.kv.cuda.scalar_only", scalar)
     parameters = dict(r=1, capacity=64, kv_dtype="scalar_only")
-    assert make_kernel("attention_partial", parameters) is not None
+    assert (
+        _historical_factory(
+            "akas.ops.attention.cuda.quantized",
+            "make_kernel",
+            "attention_partial",
+            parameters,
+        )
+        is not None
+    )
     with pytest.raises(ValueError, match="packed attention load"):
-        make_kernel("attention_partial", dict(parameters, packed_loads=True))
+        _historical_factory(
+            "akas.ops.attention.cuda.quantized",
+            "make_kernel",
+            "attention_partial",
+            dict(parameters, packed_loads=True),
+        )
 
 
 @pytest.mark.parametrize("chunk", [0, -1, True])
 def test_standalone_kernel_rejects_invalid_chunk(chunk):
-    from akas.quantization.kv.fp8 import make_kernel
+    from support.migration import factory as _historical_factory
 
     with pytest.raises(ValueError, match="positive chunk"):
-        make_kernel(
-            "kv_encode", dict(slots=1, kv_heads=1, d=128, capacity=16, chunk=chunk)
+        _historical_factory(
+            "akas.quantization.kv.fp8",
+            "make_kernel",
+            "kv_encode",
+            dict(slots=1, kv_heads=1, d=128, capacity=16, chunk=chunk),
         )

@@ -199,7 +199,9 @@ class BatchBank:
         from akas.execution.forward import Forward
 
         if self.reset_record is None:
-            raise ValueError("program has no state reset phase")
+            # A stateless model, or a cache masked by logical positions, can
+            # declare no reset work. Slot bookkeeping still belongs to Executor.
+            return
         if self.reset_forward is None:
             manifest = json.loads((Path(self.directory)/self.reset_record["path"]).read_text())
             graph = Graph.from_metadata(manifest["forward"])

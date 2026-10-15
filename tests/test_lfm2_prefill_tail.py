@@ -51,7 +51,7 @@ def test_two_width_three_convolutions_preserve_final_output_and_histories():
 
 def test_tail_specialization_requires_the_measured_shape_and_suffix():
     from types import SimpleNamespace
-    from akas.ops.schedules.packed_selection import prefill_tail_rows
+    from support.lfm_profiles import prefill_tail_rows
 
     cfg = SimpleNamespace(
         width=2048, ff=10752, layers=("conv", "attention", "conv", "conv")

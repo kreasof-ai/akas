@@ -204,3 +204,55 @@ def test_new_gguf_profile_needs_no_parser_or_model_branch():
     tokenizer = Tokenizer.from_gguf(metadata, profile=profile)
     assert tokenizer.encode("ab") == [2]
     assert tokenizer.decode([2]) == "ab"
+
+
+@pytest.mark.parametrize("newline", ["\\n", "\n"])
+def test_chat_template_with_thinking_branch_uses_non_thinking_default(
+    tmp_path, newline
+):
+    import shutil
+
+    shutil.copyfile(FIXTURE / "tokenizer.json", tmp_path / "tokenizer.json")
+    # Generation suffix from Qwen/Qwen3.5-0.8B's published template.
+    template = r"""
+{%- if add_generation_prompt %}
+    {{- '<|im_start|>assistant\n' }}
+    {%- if enable_thinking is defined and enable_thinking is true %}
+        {{- '<think>\n' }}
+    {%- else %}
+        {{- '<think>\n\n</think>\n\n' }}
+    {%- endif %}
+{%- endif %}""".replace("\\n", newline)
+    path = tmp_path / "chat_template.jinja"
+    path.write_text(template)
+    tokenizer = Tokenizer.from_pretrained(tmp_path)
+    assert tokenizer.chat("hello") == tokenizer.encode(
+        "<|im_start|>user\nhello<|im_end|>\n"
+        "<|im_start|>assistant\n<think>\n\n</think>\n\n",
+        add_bos=False,
+        parse_special=True,
+    )
+    # A different default is not silently approximated by this bounded formatter.
+    path.write_text(template.replace("</think>", "</other>"))
+    with pytest.raises(TokenizerError, match="generation prefix"):
+        Tokenizer.from_pretrained(tmp_path).chat("hello")
+
+
+def test_qwen_gguf_profile_normalizes_text_and_keeps_user_tokens_literal():
+    from akas.text.tokenizer import ENCODE_BYTE
+
+    tokens = list(ENCODE_BYTE.values()) + ["<|im_start|>", "<|im_end|>", "<think>"]
+    tokenizer = Tokenizer.from_gguf(
+        {
+            "tokenizer.ggml.model": "gpt2",
+            "tokenizer.ggml.pre": "qwen35",
+            "tokenizer.ggml.tokens": tokens,
+            "tokenizer.ggml.token_type": [1] * 256 + [3, 3, 4],
+            "tokenizer.ggml.merges": [],
+        }
+    )
+    assert tokenizer.encode("e\u0301") == tokenizer.encode("é")
+    assert tokenizer.encode("<think>") == [258]
+    assert "<think>" not in tokenizer.special
+    assert tokenizer.decode([258], skip_special=True) == "<think>"
+    assert tokenizer.decode([256, 257], skip_special=True) == ""

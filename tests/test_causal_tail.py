@@ -8,7 +8,7 @@ import pytest
 from akas.compilation.rewrites import causal_tail
 from akas.graph import Graph
 from akas.models.lfm2.config import Config
-from akas.models.lfm2.model import compose
+from akas.models.lfm2._composition import compose
 
 
 def graph(monkeypatch, provider="cuda", chunk=16):

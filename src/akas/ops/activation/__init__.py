@@ -1,1 +1,1 @@
-"""Activation operations and uniform kernel definitions."""
+"""Activation operation definitions and implementations."""

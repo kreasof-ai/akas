@@ -14,6 +14,8 @@ jobs:
         with:
           version: "0.12.9"
       - run: uv sync --locked --extra compiler
+      - run: uv run --no-sync ruff check src examples
+      - run: uv run --no-sync ruff format --check src/akas/ops src/akas/kernels src/akas/quantization src/akas/models src/akas/compilation
       - run: uv run --no-sync python -m pytest
       - run: uv run --no-sync python tools/bootstrap_nvrtc.py --out build/nvrtc-12.9
       - run: uv run --no-sync python tests/support/diagnostic.py --out build/diagnostic.gguf
@@ -53,7 +55,7 @@ jobs:
                   if fullname.startswith(('akas.compilation', 'tensor.compiler')) or fullname.split('.')[0] in {'torch', 'tilelang', 'tvm', 'tvm_ffi', 'triton'}:
                       raise ImportError(fullname)
           sys.meta_path.insert(0, Guard())
-          from akas import Engine, LFM2, Qwen35Batch
+          from akas import Engine, LFM2, Qwen35MoE
           from akas.models.lfm2.model import LFM2Reference, LFM2Batched
           from akas.benchmarking import Case, matrix
           assert len(matrix()) == 10 and Case(4,32).capacity == 64

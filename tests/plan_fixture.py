@@ -2,16 +2,16 @@
 
 from types import SimpleNamespace
 
-from akas.models.qwen35.config import Qwen35Config
-from akas.models.qwen35.config import DenseConfig
+from akas.models.qwen35.config import Qwen35MoEConfig
+from akas.models.qwen35.config import Qwen35DenseConfig
 
 
 def dense_graph_contract(*, verify=False, draft=False, fused=False):
     """Record direct composition; frozen native graphs provide numerical parity."""
-    from akas.models.qwen35.weights import DenseCheckpoint
-    from akas.models.qwen35.model import compose_dense
+    from akas.models.qwen35.weights import Qwen35DenseCheckpoint
+    from akas.models.qwen35._composition import compose_dense
 
-    config = DenseConfig(
+    config = Qwen35DenseConfig(
         1024,
         2048,
         256,
@@ -28,7 +28,7 @@ def dense_graph_contract(*, verify=False, draft=False, fused=False):
         64,
         4096,
     )
-    checkpoint = object.__new__(DenseCheckpoint)
+    checkpoint = object.__new__(Qwen35DenseCheckpoint)
     checkpoint.config = config
     checkpoint.tensors = {
         name: SimpleNamespace(
@@ -110,9 +110,9 @@ def dense_frozen_contract(value):
 
 
 def dense_checkpoint(config):
-    from akas.models.qwen35.weights import DenseCheckpoint
+    from akas.models.qwen35.weights import Qwen35DenseCheckpoint
 
-    checkpoint = object.__new__(DenseCheckpoint)
+    checkpoint = object.__new__(Qwen35DenseCheckpoint)
     checkpoint.config = config
     checkpoint.tensors = {
         name: SimpleNamespace(
@@ -129,11 +129,11 @@ def dense_checkpoint(config):
 def moe_graph_contract(phase, *, fp8=False):
     """Compare complete direct graphs to the pre-migration operation fixtures."""
     from math import prod
-    from akas.models.qwen35.weights import Qwen35Checkpoint
-    from akas.models.qwen35.model import compose_moe_program
+    from akas.models.qwen35.weights import Qwen35MoECheckpoint
+    from akas.models.qwen35._composition import compose_moe_program
 
-    config = Qwen35Config(("linear_attention", "full_attention"), 48000, 1e-6, 1e6)
-    checkpoint = object.__new__(Qwen35Checkpoint)
+    config = Qwen35MoEConfig(("linear_attention", "full_attention"), 48000, 1e-6, 1e6)
+    checkpoint = object.__new__(Qwen35MoECheckpoint)
     checkpoint.config, checkpoint.branch = config, "text"
     shapes = config.expected_tensors()
     checkpoint.tensors = {}

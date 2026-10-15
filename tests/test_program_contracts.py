@@ -177,22 +177,22 @@ def test_kernel_cache_tracks_codec_changes_without_unrelated_executor_changes(tm
     from akas.artifacts.schema import Source
     from akas.compilation.emit import source_dependencies
 
-    name = "akas.ops.attention.cuda.floating"
+    name = "akas.ops.attention.cuda"
     dependencies = source_dependencies(name)
-    assert "akas.quantization.kv.fp8" in dependencies
+    assert "akas.quantization.kv.fp8.cuda" in dependencies
     assert not any(module.startswith("akas.execution.") for module in dependencies)
-    declaration = Source(name, "make_kernel", ("attention", dict(kv_dtype="fp8")), dependencies=())
+    declaration = Source("akas.kernels.definition", "define", (dict(kind="attention", parameters=dict(kv_dtype="fp8")),), dependencies=(name,))
     baseline = declaration.render()
     original = serializer.find_spec
     workspace = tmp_path / "workspace.py"
     workspace.write_text("# unrelated executor edit\n")
     codec = tmp_path / "fp8.py"
-    codec.write_text(Path(original("akas.quantization.kv.fp8").origin).read_text())
+    codec.write_text(Path(original("akas.quantization.kv.fp8.cuda").origin).read_text())
 
     def locate(module):
         if module == "akas.execution.workspace":
             return SimpleNamespace(origin=str(workspace))
-        if module == "akas.quantization.kv.fp8":
+        if module == "akas.quantization.kv.fp8.cuda":
             return SimpleNamespace(origin=str(codec))
         return original(module)
 

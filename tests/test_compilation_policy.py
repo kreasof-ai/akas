@@ -6,11 +6,11 @@ from akas.compilation.policy import lower
 
 def test_empty_policy_remains_lazy_for_new_model_contract(monkeypatch):
     from akas.graph import Graph
-    import akas.ops.registry
+    import akas.kernels.registry
 
     graph = Graph(contract="new-model")
     monkeypatch.setattr(
-        akas.ops.registry,
+        akas.kernels.registry,
         "planning_rules",
         lambda: pytest.fail("empty policy imported operations"),
     )
@@ -20,7 +20,7 @@ def test_empty_policy_remains_lazy_for_new_model_contract(monkeypatch):
 @pytest.mark.parametrize("phase", [None, "verify", "proposal"])
 def test_projection_routing_recompute_and_hopper_policies_share_program_graphs(phase):
     from test_moe_speculative_program import checkpoint
-    from akas.models.qwen35.model import compose_moe_program
+    from akas.models.qwen35._composition import compose_moe_program
     from akas.compilation.compile import plan
     from akas.artifacts.schema import Source
 
@@ -64,9 +64,9 @@ def test_projection_routing_recompute_and_hopper_policies_share_program_graphs(p
     }
     for declaration in bundle.kernels:
         source = declaration.source
-        if source.module == "akas.ops.state.mapping":
+        if source.module == "akas.compilation.transforms.state":
             source = Source(source.args[0], source.args[1], source.args[2])
-        assert source.module == "akas.ops.definition" and source.factory == "define"
+        assert source.module == "akas.kernels.definition" and source.factory == "define"
     if phase == "verify":
         assert [call.kind for call in commit.calls] == [
             "gdn_conv",

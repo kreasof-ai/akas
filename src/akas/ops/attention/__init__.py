@@ -1,1 +1,1 @@
-"""Shared attention implementation."""
+"""Attention operation definitions and implementations."""

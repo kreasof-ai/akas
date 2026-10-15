@@ -21,15 +21,23 @@ def checkpoints(tmp_path_factory):
 def test_optimized_selection_and_scratch_lifetimes(checkpoints):
     from akas.compilation.buffers import scratch_slots
 
-    config = ReferenceCheckpoint(checkpoints[0], tokenizer=False).config
-    forward = LFM2Batched.definition(config, batch=4, capacity=256, chunk=32)
+    checkpoint = ReferenceCheckpoint(checkpoints[0], tokenizer=False)
+    forward = LFM2Batched.compose(
+        checkpoint, rows=4, chunk=32, max_requests=4, max_context=256
+    ).graph
     bundle = plan(forward)
-    assert {k.source.args[3]["module"] for k in bundle.kernels if k.kind == "linear"} == {
-        "akas.ops.linear.cuda.floating"
-    }
-    assert {k.source.args[3]["module"] for k in bundle.kernels if k.kind == "attention"} == {
-        "akas.ops.attention.cuda.floating"
-    }
+    assert {
+        k.source.args[3]["module"] for k in bundle.kernels if k.kind == "linear"
+    } == {"akas.ops.linear.cuda"}
+    assert {
+        (
+            k.source.args[2][3]["module"]
+            if k.source.module == "akas.compilation.transforms.state"
+            else k.source.args[3]["module"]
+        )
+        for k in bundle.kernels
+        if k.kind == "attention"
+    } == {"akas.ops.attention.cuda"}
     assert forward.buffers["blk.1.kc"].shape[0] == 4
     groups = scratch_slots(forward)
     assert any(len(names) > 1 for names in groups)
@@ -54,14 +62,15 @@ def test_default_prefill_chunk_fits_a_small_context(
 
     def compose_chunk(checkpoint, out, *, definition, **options):
         return definition(
-            checkpoint.config,
-            batch=options["batch"],
-            capacity=options["capacity"],
+            checkpoint,
+            rows=options["max_requests"],
+            chunk=max(chunk for _, chunk in options["geometries"]),
+            max_requests=options["max_requests"],
+            max_context=options["max_context"],
             provider=options["provider"],
-            chunk=options["prefill_chunk"],
-        )
+        ).graph
 
-    monkeypatch.setattr(session, "compile_model", compose_chunk)
+    monkeypatch.setattr(session, "compile_program", compose_chunk)
     forward = compile_checkpoint(
         LFM2Batched,
         checkpoints[0],
@@ -81,15 +90,22 @@ def test_default_prefill_chunk_fits_a_small_context(
 )
 @pytest.mark.parametrize("provider", ["cuda", "webgpu"])
 def test_dispatch_boundaries_keep_optimized_projections(checkpoints, batch, provider):
-    config = ReferenceCheckpoint(checkpoints[0], tokenizer=False).config
+    checkpoint = ReferenceCheckpoint(checkpoints[0], tokenizer=False)
     for chunk in (1, 32):
-        forward = LFM2Batched.definition(
-            config, batch=batch, capacity=256, chunk=chunk, provider=provider
-        )
+        forward = LFM2Batched.compose(
+            checkpoint,
+            rows=batch,
+            chunk=chunk,
+            max_requests=batch,
+            max_context=256,
+            provider=provider,
+        ).graph
         bundle = plan(forward, provider=provider)
-        expected = f"akas.ops.linear.{provider}.floating"
+        expected = f"akas.ops.linear.{provider}"
         assert {
-            k.source.args[3]["module"] for k in bundle.kernels if k.kind in ("linear", "ffn")
+            k.source.args[3]["module"]
+            for k in bundle.kernels
+            if k.kind in ("linear", "ffn")
         } == {expected}
         if chunk > 1:
             # The stateful mixer retains every token; its terminal pointwise
@@ -182,7 +198,7 @@ def test_floating_projection_preserves_partitioned_output(
         pytest.skip("enable provider qualification")
     import tensor
     from akas.compilation.emit import build_artifact
-    from akas.compilation.emit import export_kernel
+    from support.migration import source as export_kernel
 
     p = dict(
         r=rows,
@@ -197,7 +213,7 @@ def test_floating_projection_preserves_partitioned_output(
     )
     source, artifact = tmp_path / "kernel.py", tmp_path / "kernel.tbin"
     source.write_text(
-        export_kernel(f"akas.ops.linear.{provider}.floating", "make_kernel", kind, p)
+        export_kernel(f"akas.ops.linear.{provider}", "make_kernel", kind, p)
     )
     rng = np.random.default_rng(43)
     x = rng.normal(size=(rows, k)).astype("float32")

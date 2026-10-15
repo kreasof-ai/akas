@@ -4,12 +4,16 @@ from types import SimpleNamespace
 import json
 import numpy as np
 import pytest
-from akas.benchmarking import Case, matrix, run
-from akas.benchmarking.report import compare, write_report, table
+from akas.benchmarking import Case
+from akas.benchmarking import matrix
+from akas.benchmarking import run
+from akas.benchmarking.report import compare
+from akas.benchmarking.report import write_report
+from akas.benchmarking.report import table
 
 
 class Session:
-    batch, capacity, allocated_bytes = 4, 100, 1024
+    batch, capacity, allocated_bytes = 4, 1000, 1024
     config = SimpleNamespace(vocab=31)
 
     def __init__(self):
@@ -86,8 +90,10 @@ def test_synchronized_measurements_count_only_executed_tokens():
     assert result["prompt_tokens"] == 14
     assert result["generated_tokens"] == 8
     assert result["summary"]["prefill_tokens_per_second"]["mean"] == 3.5
-    assert result["summary"]["decode_tokens_per_second"]["mean"] == 1
-    assert result["summary"]["decode_tokens_per_second_per_request"]["mean"] == 0.25
+    assert result["decode_tokens"] == 4
+    assert result["summary"]["decode_tokens_per_second"]["mean"] == 0.5
+    assert result["summary"]["decode_tokens_per_second_per_request"]["mean"] == 0.125
+    assert session.calls.count(1) == 3
     assert result["summary"]["ttft_seconds"]["mean"] == 4
     assert len(result["samples"]) == 2
     assert session.calls.count("sync") == 18
@@ -96,7 +102,7 @@ def test_synchronized_measurements_count_only_executed_tokens():
     assert prompts[1] == prompts[3] == prompts[5]
 
 
-@pytest.mark.parametrize("case", [Case(1, 2), Case(4, 95, generated=10)])
+@pytest.mark.parametrize("case", [Case(1, 2), Case(4, 995, generated=10)])
 def test_mismatched_session_is_rejected(case):
     with pytest.raises(ValueError, match="batch/capacity"):
         run(Session(), case)
@@ -108,6 +114,10 @@ def test_invalid_workload_settings_fail_before_measurement():
             Case(*args)
     with pytest.raises(ValueError):
         run(Session(), Case(4, 2), repeats=0)
+    session = Session()
+    with pytest.raises(ValueError, match="two total output"):
+        run(session, Case(4, 2, generated=1))
+    assert session.calls == []
     assert len(matrix()) == 10
     assert {c.batch for c in matrix()} == {1, 4, 16, 64, 256}
     assert {c.prompt for c in matrix()} == {32, 2048}

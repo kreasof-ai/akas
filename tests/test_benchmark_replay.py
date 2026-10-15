@@ -4,7 +4,8 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from akas.benchmarking.replay import evaluate, metrics
+from akas.benchmarking.replay import evaluate
+from akas.benchmarking.replay import metrics
 
 
 def test_zero_reference_and_nonfinite_output_are_unambiguous():

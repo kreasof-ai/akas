@@ -1,0 +1,48 @@
+{
+  "schema": "akas.benchmark-model.v1",
+  "id": "lfm2.5-230m",
+  "model": "LiquidAI/LFM2.5-230M",
+  "aliases": [
+    "lfm"
+  ],
+  "modes": [
+    "ar"
+  ],
+  "weights": {
+    "bf16": {
+      "path": "build/checkpoints/lfm2.5-230m/bf16",
+      "source": {
+        "repo": "LiquidAI/LFM2.5-230M",
+        "revision": "40cb2ad3b3044d5a41eee083a6103c8b523afa45"
+      }
+    },
+    "q4_k_m": {
+      "path": "build/checkpoints/lfm2.5-230m/q4_k_m.gguf",
+      "source": {
+        "repo": "LiquidAI/LFM2.5-230M-GGUF",
+        "revision": "03502067c64ce32ac4fe87b0cec0310a1a13d3e9",
+        "file": "LFM2.5-230M-Q4_K_M.gguf"
+      }
+    },
+    "f16": {
+      "path": "build/checkpoints/lfm2.5-230m/f16.gguf",
+      "source": {
+        "repo": "LiquidAI/LFM2.5-230M-GGUF",
+        "revision": "03502067c64ce32ac4fe87b0cec0310a1a13d3e9",
+        "file": "LFM2.5-230M-F16.gguf"
+      }
+    },
+    "q4_0": {
+      "path": "build/checkpoints/lfm2.5-230m/q4_0.gguf",
+      "source": {
+        "repo": "LiquidAI/LFM2.5-230M-GGUF",
+        "revision": "03502067c64ce32ac4fe87b0cec0310a1a13d3e9",
+        "file": "LFM2.5-230M-Q4_0.gguf"
+      }
+    }
+  },
+  "runtime_options": {
+    "vllm": {},
+    "sglang": {}
+  }
+}

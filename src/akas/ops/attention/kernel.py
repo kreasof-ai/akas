@@ -1,0 +1,810 @@
+"""Shared TileLang computations for attention."""
+
+from collections.abc import Mapping
+from akas.kernels.definition import KernelSpec
+from akas.kernels.kernel import Tensor, kernel, output
+
+
+def cache_reader(p):
+    """Bind the cache layout and codec without coupling them to a backend kernel."""
+    import tilelang.language as T
+    from akas.ops.attention.definition import cache_storage
+
+    storage = cache_storage(p)
+    if p["kv_dtype"] not in ("float16", "float32"):
+        from akas.quantization.kv import get
+
+        from akas.quantization._shared.access import cache_arguments
+
+        shape = (p["r"] // p.get("chunk", 1), p["kh"], p["capacity"], p["d"])
+        codec = get(p["kv_dtype"]).bind(shape, provider=p["provider"])
+        read = cache_arguments(codec.read)
+    else:
+
+        @T.macro
+        def read(cache, metadata, slot, head, position, channel):
+            return (
+                T.cast(cache[slot, head, position, channel], "float32")
+                * metadata[slot, head, position, 0]
+            )
+
+    if len(storage.metadata) != 1:
+        raise ValueError("floating attention requires one metadata buffer per cache")
+    return (storage, read)
+
+
+def cache_arguments(p, storage):
+    r, h, d = (p["r"], p["h"], p["d"])
+    return [
+        ("q", (r, h * d), "float32"),
+        ("kc", storage.values.shape, storage.values.dtype),
+        ("vc", storage.values.shape, storage.values.dtype),
+        ("ks", storage.metadata[0].shape, "float32"),
+        ("vs", storage.metadata[0].shape, "float32"),
+    ]
+
+
+def merge_floating(spec: KernelSpec, schedule: Mapping[str, object]):
+    from akas.ops.attention.kernel import cache_arguments, cache_reader
+
+    p = {**spec.parameters, **schedule}
+    import tilelang.language as T
+
+    r, h, kh, d, cap = (p[n] for n in ("r", "h", "kh", "d", "capacity"))
+    if d != 64:
+        raise ValueError("floating attention requires 64-channel heads")
+    splits = p.get("splits", 16)
+    storage, read = cache_reader(p)
+    controls = [("positions", r, "int32"), ("enabled", r, "int32")]
+
+    @kernel
+    def compute(
+        parts: Tensor(r * h * splits * 66, "float32"), enabled: Tensor(r, "int32")
+    ) -> Tensor(r * h * d, "float32"):
+        out = output(r * h * d, "float32", position=1)
+        with T.Kernel(h * r, threads=128) as index:
+            maxima = T.alloc_fragment((splits,), "float32")
+            maximum = T.alloc_fragment((1,), "float32")
+            sums = T.alloc_fragment((splits,), "float32")
+            normalizer = T.alloc_fragment((1,), "float32")
+            products = T.alloc_fragment((splits, d), "float32")
+            result = T.alloc_fragment((d,), "float32")
+            for i in T.Parallel(splits):
+                maxima[i] = parts[(index * splits + i) * 66 + d]
+            T.reduce_max(maxima, maximum, dim=0)
+            for i in T.Parallel(splits):
+                sums[i] = parts[(index * splits + i) * 66 + d + 1] * T.exp(
+                    maxima[i] - maximum[0]
+                )
+            T.reduce_sum(sums, normalizer, dim=0)
+            for i, j in T.Parallel(splits, d):
+                products[i, j] = parts[(index * splits + i) * 66 + j] * T.exp(
+                    maxima[i] - maximum[0]
+                )
+            T.reduce_sum(products, result, dim=0)
+            for j in T.Parallel(d):
+                out[index * d + j] = T.if_then_else(
+                    enabled[index // h] != 0, result[j] / normalizer[0], 0
+                )
+        return out
+
+    return compute
+
+
+def partial_floating(spec: KernelSpec, schedule: Mapping[str, object]):
+    from akas.ops.attention.kernel import cache_arguments, cache_reader
+
+    p = {**spec.parameters, **schedule}
+    import tilelang.language as T
+
+    r, h, kh, d, cap = (p[n] for n in ("r", "h", "kh", "d", "capacity"))
+    if d != 64:
+        raise ValueError("floating attention requires 64-channel heads")
+    splits = p.get("splits", 16)
+    storage, read = cache_reader(p)
+    controls = [("positions", r, "int32"), ("enabled", r, "int32")]
+    if p["provider"] == "webgpu":
+
+        @T.macro
+        def shuffle(value, offset):
+            return T.call_extern(
+                "float32", "subgroupShuffleXor", value, T.uint32(offset)
+            )
+
+        @T.macro
+        def broadcast(value):
+            tx = T.get_thread_binding()
+            size = T.call_extern("uint32", "tensor_subgroup_size")
+            return T.call_extern(
+                "float32",
+                "subgroupShuffle",
+                value,
+                T.cast(tx % size // 32 * 32, "uint32"),
+            )
+    else:
+
+        @T.macro
+        def shuffle(value, offset):
+            return T.shfl_down(value, offset)
+
+        @T.macro
+        def broadcast(value):
+            return T.shfl_sync(value, 0)
+
+    @kernel
+    def compute(
+        q: Tensor((r, h * d), "float32"),
+        kc: Tensor(storage.values.shape, storage.values.dtype),
+        vc: Tensor(storage.values.shape, storage.values.dtype),
+        ks: Tensor(storage.metadata[0].shape, "float32"),
+        vs: Tensor(storage.metadata[0].shape, "float32"),
+        positions: Tensor(r, "int32"),
+        enabled: Tensor(r, "int32"),
+    ) -> Tensor(r * h * splits * 66, "float32"):
+        out = output(r * h * splits * 66, "float32", position=5)
+        with T.Kernel(h * r, splits, threads=128) as (index, split):
+            head, slot = (index % h, index // h)
+            tx = T.get_thread_binding()
+            lane, warp = (tx % 32, tx // 32)
+            length = T.if_then_else(
+                enabled[slot] != 0, T.min(positions[slot] + 1, cap), 0
+            )
+            span = T.ceildiv(length, splits)
+            begin, end = (split * span, T.min((split + 1) * span, length))
+            maxima = T.alloc_shared((4,), "float32")
+            sums = T.alloc_shared((4,), "float32")
+            values = T.alloc_shared((4, 64), "float32")
+            maximum = T.alloc_var("float32")
+            normalizer = T.alloc_var("float32")
+            a0 = T.alloc_var("float32")
+            a1 = T.alloc_var("float32")
+            maximum, normalizer, a0, a1 = (-T.infinity("float32"), 0, 0, 0)
+            q0, q1 = (q[slot, head * d + lane], q[slot, head * d + lane + 32])
+            for offset in T.serial(T.ceildiv(T.max(end - begin - warp, 0), 4)):
+                token = begin + warp + offset * 4
+                score = T.alloc_var("float32")
+                score = q0 * read(
+                    kc, ks, slot, head // (h // kh), token, lane
+                ) + q1 * read(kc, ks, slot, head // (h // kh), token, lane + 32)
+                for step in T.unroll(5):
+                    score = score + shuffle(score, 16 >> step)
+                score = broadcast(score) * 0.125
+                next_max = T.max(maximum, score)
+                correction, probability = (
+                    T.exp(maximum - next_max),
+                    T.exp(score - next_max),
+                )
+                a0 = a0 * correction + probability * read(
+                    vc, vs, slot, head // (h // kh), token, lane
+                )
+                a1 = a1 * correction + probability * read(
+                    vc, vs, slot, head // (h // kh), token, lane + 32
+                )
+                normalizer = normalizer * correction + probability
+                maximum = next_max
+            values[warp, lane], values[warp, lane + 32] = (a0, a1)
+            if lane == 0:
+                maxima[warp], sums[warp] = (maximum, normalizer)
+            T.sync_threads()
+            if warp == 0:
+                merged_max = T.max(
+                    T.max(maxima[0], maxima[1]), T.max(maxima[2], maxima[3])
+                )
+                total = T.alloc_var("float32")
+                result0 = T.alloc_var("float32")
+                result1 = T.alloc_var("float32")
+                total, result0, result1 = (0, 0, 0)
+                for other in T.unroll(4):
+                    factor = T.if_then_else(
+                        end > begin, T.exp(maxima[other] - merged_max), 0
+                    )
+                    total = total + sums[other] * factor
+                    result0 = result0 + values[other, lane] * factor
+                    result1 = result1 + values[other, lane + 32] * factor
+                base = (index * splits + split) * 66
+                out[base + lane], out[base + lane + 32] = (result0, result1)
+                if lane == 0:
+                    out[base + 64], out[base + 65] = (merged_max, total)
+        return out
+
+    return compute
+
+
+def online_attention(p, read):
+    import tilelang.language as T
+    from akas.kernels.reductions import tree_reduce
+
+    r, h, kh, d, cap = (p[k] for k in ("r", "h", "kh", "d", "capacity"))
+    chunk = p.get("chunk", 1)
+    maximum = tree_reduce(64, "max")
+    total = tree_reduce(64)
+
+    @T.macro
+    def attend(q, kc, vc, ks, vs, out, positions, enabled):
+        with T.Kernel(h, r, threads=64) as (head, row):
+            tx = T.get_thread_binding()
+            scratch = T.alloc_shared((64,), "float32")
+            probabilities = T.alloc_shared((64,), "float32")
+            running_max = T.alloc_shared((1,), "float32")
+            normalizer = T.alloc_shared((1,), "float32")
+            factor = T.alloc_shared((1,), "float32")
+            accum = T.alloc_var("float32")
+            score = T.alloc_var("float32")
+            contribution = T.alloc_var("float32")
+            accum = 0
+            if tx == 0:
+                running_max[0] = -T.infinity("float32")
+                normalizer[0] = 0
+            T.sync_threads()
+            for tile in T.serial(
+                T.ceildiv(T.min(positions[row] + 1, cap), 64)
+                if p.get("optimized")
+                else T.ceildiv(cap, 64)
+            ):
+                position = tile * 64 + tx
+                score = 0
+                if position < cap:
+                    for channel in T.serial(d):
+                        score += q[row, head * d + channel] * read(
+                            kc, ks, row // chunk, head // (h // kh), position, channel
+                        )
+                score = T.if_then_else(
+                    position < cap and position <= positions[row],
+                    score * d ** (-0.5),
+                    T.float32(-1e30),
+                )
+                scratch[tx] = score
+                T.sync_threads()
+                maximum(scratch, tx)
+                if tx == 0:
+                    next_max = T.max(running_max[0], scratch[0])
+                    factor[0] = T.exp(running_max[0] - next_max)
+                    running_max[0] = next_max
+                T.sync_threads()
+                probabilities[tx] = T.if_then_else(
+                    position < cap and position <= positions[row],
+                    T.exp(score - running_max[0]),
+                    0,
+                )
+                scratch[tx] = probabilities[tx]
+                T.sync_threads()
+                total(scratch, tx)
+                if tx == 0:
+                    normalizer[0] = normalizer[0] * factor[0] + scratch[0]
+                T.sync_threads()
+                contribution = 0
+                for i in T.serial(64):
+                    if tile * 64 + i < cap:
+                        contribution += probabilities[i] * read(
+                            vc, vs, row // chunk, head // (h // kh), tile * 64 + i, tx
+                        )
+                accum = accum * factor[0] + contribution
+                T.sync_threads()
+            out[row * h * d + head * d + tx] = T.if_then_else(
+                enabled[row] != 0, accum / normalizer[0], 0
+            )
+
+    return attend
+
+
+def attention(spec: KernelSpec, schedule: Mapping[str, object]):
+    from akas.ops.attention.definition import cache_storage
+
+    p = {**spec.parameters, **schedule}
+    import tilelang.language as T
+    from akas.kernels.reductions import tree_reduce
+
+    r, d = (p["r"], p["d"])
+    if d != 64:
+        raise ValueError("portable reference attention requires 64-channel heads")
+    h, kh, cap = (p["h"], p["kh"], p["capacity"])
+    chunk = p.get("chunk", 1)
+    storage = cache_storage(p)
+    shape, dtype = (storage.values.shape, storage.values.dtype)
+    if len(storage.metadata) != 1:
+        raise ValueError("reference attention requires one metadata buffer per cache")
+    scale_shape = storage.metadata[0].shape
+    quantized = p["kv_dtype"] not in ("float16", "float32")
+    if quantized:
+        from akas.quantization.kv import get
+
+        from akas.quantization._shared.access import cache_arguments, writer_arguments
+
+        codec = get(p["kv_dtype"]).bind(
+            (r // chunk, kh, cap, d), provider=p["provider"], access={"chunk": chunk}
+        )
+        encode = writer_arguments(codec.require("write"))
+        read = cache_arguments(codec.read)
+    else:
+        from akas.quantization._shared.rounding import round_half
+
+        rounded = round_half()
+
+        @T.macro
+        def read(cache, metadata, slot, head, position, channel):
+            return (
+                T.cast(cache[slot, head, position, channel], "float32")
+                * metadata[slot, head, position, 0]
+            )
+
+    total = tree_reduce(64)
+
+    @T.macro
+    def attend(q, kc, vc, ks, vs, out, positions, enabled):
+        with T.Kernel(h, r, threads=64) as (head, row):
+            tx = T.get_thread_binding()
+            scratch = T.alloc_shared((64,), "float32")
+            maximum = T.alloc_shared((1,), "float32")
+            normalizer = T.alloc_shared((1,), "float32")
+            factor = T.alloc_shared((1,), "float32")
+            probability = T.alloc_shared((1,), "float32")
+            accum = T.alloc_var("float32")
+            accum = 0
+            if tx == 0:
+                maximum[0] = -T.infinity("float32")
+                normalizer[0] = 0
+            T.sync_threads()
+            for position in T.serial(
+                cap if p["provider"] == "webgpu" else T.min(positions[row] + 1, cap)
+            ):
+                scratch[tx] = q[row, head * d + tx] * read(
+                    kc, ks, row // chunk, head // (h // kh), position, tx
+                )
+                T.sync_threads()
+                total(scratch, tx)
+                if tx == 0:
+                    score = T.if_then_else(
+                        position <= positions[row],
+                        scratch[0] * d ** (-0.5),
+                        T.float32(-1e30),
+                    )
+                    next_max = T.max(maximum[0], score)
+                    factor[0] = T.exp(maximum[0] - next_max)
+                    probability[0] = T.if_then_else(
+                        position <= positions[row], T.exp(score - next_max), 0
+                    )
+                    normalizer[0] = normalizer[0] * factor[0] + probability[0]
+                    maximum[0] = next_max
+                T.sync_threads()
+                accum = accum * factor[0] + probability[0] * read(
+                    vc, vs, row // chunk, head // (h // kh), position, tx
+                )
+                T.sync_threads()
+            if enabled[row] != 0:
+                out[row * h * d + head * d + tx] = accum / normalizer[0]
+            else:
+                out[row * h * d + head * d + tx] = 0
+
+    if p["provider"] == "webgpu":
+        from akas.ops.attention.kernel import online_attention as attention
+
+        attend = attention(p, read)
+
+    @kernel
+    def compute(
+        q: Tensor((r, h * d), "float32"),
+        kc: Tensor(shape, dtype),
+        vc: Tensor(shape, dtype),
+        ks: Tensor(scale_shape, "float32"),
+        vs: Tensor(scale_shape, "float32"),
+        positions: Tensor(r, "int32"),
+        enabled: Tensor(r, "int32"),
+    ) -> Tensor(r * h * d, "float32"):
+        out = output(r * h * d, "float32", position=5)
+        attend(q, kc, vc, ks, vs, out, positions, enabled)
+        return out
+
+    compiled = compute
+    return compiled.with_attr("tirx.noalias", True) if p.get("optimized") else compiled
+
+
+def cache_write(spec: KernelSpec, schedule: Mapping[str, object]):
+    from akas.ops.attention.definition import cache_storage
+
+    p = {**spec.parameters, **schedule}
+    import tilelang.language as T
+
+    r, d = (p["r"], p["d"])
+    if d != 64:
+        raise ValueError("portable reference attention requires 64-channel heads")
+    h, kh, cap = (p["h"], p["kh"], p["capacity"])
+    chunk = p.get("chunk", 1)
+    storage = cache_storage(p)
+    shape, dtype = (storage.values.shape, storage.values.dtype)
+    if len(storage.metadata) != 1:
+        raise ValueError("reference attention requires one metadata buffer per cache")
+    scale_shape = storage.metadata[0].shape
+    quantized = p["kv_dtype"] not in ("float16", "float32")
+    if quantized:
+        from akas.quantization.kv import get
+
+        from akas.quantization._shared.access import cache_arguments, writer_arguments
+
+        codec = get(p["kv_dtype"]).bind(
+            (r // chunk, kh, cap, d), provider=p["provider"], access={"chunk": chunk}
+        )
+        encode = writer_arguments(codec.require("write"))
+        read = cache_arguments(codec.read)
+    else:
+        from akas.quantization._shared.rounding import round_half
+
+        rounded = round_half()
+
+    @kernel
+    def compute(
+        keys: Tensor((r, kh * d), "float32"),
+        values: Tensor((r, kh * d), "float32"),
+        kc: Tensor(shape, dtype),
+        vc: Tensor(shape, dtype),
+        ks: Tensor(scale_shape, "float32"),
+        vs: Tensor(scale_shape, "float32"),
+        positions: Tensor(r, "int32"),
+        enabled: Tensor(r, "int32"),
+    ) -> tuple[
+        Tensor(shape, dtype),
+        Tensor(shape, dtype),
+        Tensor(scale_shape, "float32"),
+        Tensor(scale_shape, "float32"),
+    ]:
+        with T.Kernel(kh, r, threads=128) as (head, row):
+            tx = T.get_thread_binding()
+            if quantized:
+                encode(
+                    keys, values, row, head, positions[row], kc, vc, ks, vs, tx, enabled
+                )
+            elif enabled[row] != 0:
+                if tx == 0:
+                    ks[row // chunk, head, positions[row], 0] = 1
+                    vs[row // chunk, head, positions[row], 0] = 1
+                if tx < d:
+                    if p["kv_dtype"] == "float16" and p["provider"] == "webgpu":
+                        kc[row // chunk, head, positions[row], tx] = rounded(
+                            keys[row, head * d + tx]
+                        )
+                        vc[row // chunk, head, positions[row], tx] = rounded(
+                            values[row, head * d + tx]
+                        )
+                    else:
+                        kc[row // chunk, head, positions[row], tx] = keys[
+                            row, head * d + tx
+                        ]
+                        vc[row // chunk, head, positions[row], tx] = values[
+                            row, head * d + tx
+                        ]
+        return (kc, vc, ks, vs)
+
+    return compute
+
+
+def rope(spec: KernelSpec, schedule: Mapping[str, object]):
+    import math
+
+    p = {**spec.parameters, **schedule}
+    import tilelang.language as T
+
+    r, d = (p["r"], p["d"])
+    if d != 64:
+        raise ValueError("portable reference attention requires 64-channel heads")
+    h, theta = (p["h"], p["theta"])
+
+    @kernel
+    def compute(
+        x: Tensor((r * h * d,), "float32"), positions: Tensor((r,), "int32")
+    ) -> Tensor((r, h * d), "float32"):
+        out = output((r, h * d), "float32", position=1)
+        with T.Kernel(h, r, threads=64) as (head, row):
+            tx = T.get_thread_binding()
+            half = tx % (d // 2)
+            angle = T.cast(positions[row], "float32") * T.exp(
+                -(math.log(theta) * 2 / d) * half
+            )
+            left = x[(row * h + head) * d + half]
+            right = x[(row * h + head) * d + half + d // 2]
+            out[row, head * d + tx] = T.if_then_else(
+                tx < d // 2,
+                left * T.cos(angle) - right * T.sin(angle),
+                left * T.sin(angle) + right * T.cos(angle),
+            )
+        return out
+
+    return compute
+
+
+def attention_flat(spec: KernelSpec, schedule: Mapping[str, object]):
+    p = {**spec.parameters, **schedule}
+    import tilelang.language as T
+
+    r = p.get("r", 1)
+    h, kh, d, cap = (p["h"], p["kh"], p["d"], p["cap"])
+    if r == 1:
+
+        @kernel
+        def compute(
+            q: Tensor((r * h * d,), "float32"),
+            kc: Tensor((cap * kh * d,), "float16"),
+            vc: Tensor((cap * kh * d,), "float16"),
+            pos: Tensor((2,), "int32"),
+        ) -> Tensor((r * h * d,), "float32"):
+            out = output((r * h * d,), "float32", position=3)
+            with T.Kernel(h, threads=128) as head:
+                dots = T.alloc_fragment((64, d), "float32")
+                scores = T.alloc_fragment((64,), "float32")
+                products = T.alloc_fragment((64, d), "float32")
+                partial = T.alloc_fragment((d,), "float32")
+                result = T.alloc_fragment((d,), "float32")
+                maximum = T.alloc_fragment((1,), "float32")
+                previous = T.alloc_fragment((1,), "float32")
+                normalizer = T.alloc_fragment((1,), "float32")
+                total = T.alloc_fragment((1,), "float32")
+                T.fill(maximum, -T.infinity("float32"))
+                T.clear(result)
+                T.clear(normalizer)
+                for tile in T.serial(T.ceildiv(pos[0] + 1, 64)):
+                    for i, j in T.Parallel(64, d):
+                        dots[i, j] = q[head * d + j] * T.cast(
+                            kc[((tile * 64 + i) * kh + head // (h // kh)) * d + j],
+                            "float32",
+                        )
+                    T.reduce_sum(dots, scores, dim=1)
+                    T.copy(maximum, previous)
+                    for i in T.Parallel(64):
+                        scores[i] = T.if_then_else(
+                            tile * 64 + i <= pos[0],
+                            scores[i] * d ** (-0.5),
+                            -T.infinity("float32"),
+                        )
+                    T.reduce_max(scores, maximum, dim=0, clear=False)
+                    for i in T.Parallel(64):
+                        scores[i] = T.exp(scores[i] - maximum[0])
+                    T.reduce_sum(scores, total, dim=0)
+                    normalizer[0] = (
+                        normalizer[0] * T.exp(previous[0] - maximum[0]) + total[0]
+                    )
+                    for i, j in T.Parallel(64, d):
+                        products[i, j] = scores[i] * T.cast(
+                            vc[((tile * 64 + i) * kh + head // (h // kh)) * d + j],
+                            "float32",
+                        )
+                    T.reduce_sum(products, partial, dim=0)
+                    for j in T.Parallel(d):
+                        result[j] = (
+                            result[j] * T.exp(previous[0] - maximum[0]) + partial[j]
+                        )
+                for j in T.Parallel(d):
+                    out[head * d + j] = result[j] / normalizer[0]
+            return out
+
+        return compute
+
+    @kernel
+    def compute(
+        q: Tensor((r * h * d,), "float32"),
+        kc: Tensor((cap * kh * d,), "float16"),
+        vc: Tensor((cap * kh * d,), "float16"),
+        pos: Tensor((2,), "int32"),
+    ) -> Tensor((r * h * d,), "float32"):
+        out = output((r * h * d,), "float32", position=3)
+        with T.Kernel(T.ceildiv(r, 32), h, threads=128) as (bx, head):
+            query = T.alloc_shared((32, d), "float16")
+            key = T.alloc_shared((64, d), "float16")
+            value = T.alloc_shared((64, d), "float16")
+            prob = T.alloc_shared((32, 64), "float16")
+            scores = T.alloc_fragment((32, 64), "float32")
+            result = T.alloc_fragment((32, d), "float32")
+            maximum = T.alloc_fragment((32,), "float32")
+            previous = T.alloc_fragment((32,), "float32")
+            factor = T.alloc_fragment((32,), "float32")
+            normalizer = T.alloc_fragment((32,), "float32")
+            total = T.alloc_fragment((32,), "float32")
+            for i, j in T.Parallel(32, d):
+                query[i, j] = T.if_then_else(
+                    bx * 32 + i < r, q[((bx * 32 + i) * h + head) * d + j], 0
+                )
+            T.clear(result)
+            T.clear(normalizer)
+            T.fill(maximum, -T.infinity("float32"))
+            for tile in T.serial(T.ceildiv(pos[0] + T.min(r, (bx + 1) * 32), 64)):
+                for i, j in T.Parallel(64, d):
+                    key[i, j] = kc[((tile * 64 + i) * kh + head // (h // kh)) * d + j]
+                    value[i, j] = vc[((tile * 64 + i) * kh + head // (h // kh)) * d + j]
+                T.gemm(query, key, scores, transpose_B=True, clear_accum=True)
+                T.copy(maximum, previous)
+                for i, j in T.Parallel(32, 64):
+                    scores[i, j] = T.if_then_else(
+                        tile * 64 + j <= pos[0] + bx * 32 + i,
+                        scores[i, j] * d ** (-0.5),
+                        -T.infinity("float32"),
+                    )
+                T.reduce_max(scores, maximum, dim=1, clear=False)
+                for i in T.Parallel(32):
+                    factor[i] = T.exp(previous[i] - maximum[i])
+                for i, j in T.Parallel(32, 64):
+                    scores[i, j] = T.exp(scores[i, j] - maximum[i])
+                T.reduce_sum(scores, total, dim=1)
+                for i in T.Parallel(32):
+                    normalizer[i] = normalizer[i] * factor[i] + total[i]
+                for i, j in T.Parallel(32, d):
+                    result[i, j] *= factor[i]
+                T.copy(scores, prob)
+                T.gemm(prob, value, result)
+            for i, j in T.Parallel(32, d):
+                if bx * 32 + i < r:
+                    out[((bx * 32 + i) * h + head) * d + j] = T.if_then_else(
+                        bx * 32 + i < pos[1], result[i, j] / normalizer[i], 0
+                    )
+        return out
+
+    return compute
+
+
+def prepare_flat(spec: KernelSpec, schedule: Mapping[str, object]):
+    import math
+
+    p = {**spec.parameters, **schedule}
+    import tilelang.language as T
+
+    r = p.get("r", 1)
+    h, kh, d, cap = (p["h"], p["kh"], p["d"], p["cap"])
+    eps, theta = (p["eps"], p["theta"])
+
+    @kernel
+    def compute(
+        q: Tensor((r * h * d,), "float32"),
+        k: Tensor((r * kh * d,), "float32"),
+        v: Tensor((r * kh * d,), "float32"),
+        qw: Tensor((d,), "float32"),
+        kw: Tensor((d,), "float32"),
+        kc: Tensor((cap * kh * d,), "float16"),
+        vc: Tensor((cap * kh * d,), "float16"),
+        pos: Tensor((2,), "int32"),
+    ) -> tuple[
+        Tensor((r * h * d,), "float32"),
+        Tensor((cap * kh * d,), "float16"),
+        Tensor((cap * kh * d,), "float16"),
+    ]:
+        qo = output((r * h * d,), "float32", position=5)
+        with T.Kernel(h, r, threads=64) as (head, row):
+            square = T.alloc_fragment((d,), "float32")
+            total = T.alloc_fragment((1,), "float32")
+            norm = T.alloc_shared((d,), "float32")
+            for i in T.Parallel(d):
+                square[i] = q[(row * h + head) * d + i] * q[(row * h + head) * d + i]
+            T.reduce_sum(square, total, dim=0)
+            for i in T.Parallel(d):
+                norm[i] = (
+                    q[(row * h + head) * d + i] * T.rsqrt(total[0] / d + eps) * qw[i]
+                )
+            for i in T.Parallel(d // 2):
+                angle = T.cast(pos[0] + row, "float32") * T.exp(
+                    -(math.log(theta) * 2 / d) * i
+                )
+                qo[(row * h + head) * d + i] = norm[i] * T.cos(angle) - norm[
+                    i + d // 2
+                ] * T.sin(angle)
+                qo[(row * h + head) * d + i + d // 2] = norm[i] * T.sin(angle) + norm[
+                    i + d // 2
+                ] * T.cos(angle)
+            if head < kh:
+                for i in T.Parallel(d):
+                    square[i] = (
+                        k[(row * kh + head) * d + i] * k[(row * kh + head) * d + i]
+                    )
+                T.reduce_sum(square, total, dim=0)
+                for i in T.Parallel(d):
+                    norm[i] = (
+                        k[(row * kh + head) * d + i]
+                        * T.rsqrt(total[0] / d + eps)
+                        * kw[i]
+                    )
+                    if row < pos[1]:
+                        vc[((pos[0] + row) * kh + head) * d + i] = v[
+                            (row * kh + head) * d + i
+                        ]
+                for i in T.Parallel(d // 2):
+                    angle = T.cast(pos[0] + row, "float32") * T.exp(
+                        -(math.log(theta) * 2 / d) * i
+                    )
+                    if row < pos[1]:
+                        kc[((pos[0] + row) * kh + head) * d + i] = norm[i] * T.cos(
+                            angle
+                        ) - norm[i + d // 2] * T.sin(angle)
+                        kc[((pos[0] + row) * kh + head) * d + i + d // 2] = norm[
+                            i
+                        ] * T.sin(angle) + norm[i + d // 2] * T.cos(angle)
+        return (qo, kc, vc)
+
+    return compute
+
+
+def chunk_active(spec: KernelSpec, schedule: Mapping[str, object]):
+    p = {**spec.parameters, **schedule}
+    import tilelang.language as T
+
+    slots, chunk = (p["slots"], p["chunk"])
+
+    @kernel
+    def compute(lengths: Tensor((slots,), "int32")) -> Tensor(
+        (slots * chunk,), "int32"
+    ):
+        out = output((slots * chunk,), "int32")
+        with T.Kernel(T.ceildiv(slots * chunk, 64), threads=64) as block:
+            row = block * 64 + T.get_thread_binding()
+            if row < slots * chunk:
+                out[row] = T.if_then_else(row % chunk < lengths[row // chunk], 1, 0)
+        return out
+
+    return compute
+
+
+def _normalization(p, query):
+    import math
+    import tilelang.language as T
+
+    r, h, kh, d, cap = (p[n] for n in ("r", "h", "kh", "d", "cap"))
+    heads = h if query else kh
+    eps, angle_scale = (p["eps"], math.log(p["theta"]) * 2 / d)
+
+    @T.macro
+    def normalize(x, w, out, pos, v=None, vc=None):
+        with T.Kernel(heads, r, threads=64) as (head, row):
+            square = T.alloc_fragment((d,), "float32")
+            total = T.alloc_fragment((1,), "float32")
+            norm = T.alloc_shared((d,), "float32")
+            for i in T.Parallel(d):
+                square[i] = (
+                    x[(row * heads + head) * d + i] * x[(row * heads + head) * d + i]
+                )
+            T.reduce_sum(square, total, dim=0)
+            for i in T.Parallel(d):
+                norm[i] = (
+                    x[(row * heads + head) * d + i] * T.rsqrt(total[0] / d + eps) * w[i]
+                )
+                if not query:
+                    if row < pos[1]:
+                        vc[((pos[0] + row) * kh + head) * d + i] = v[
+                            (row * kh + head) * d + i
+                        ]
+            for i in T.Parallel(d // 2):
+                angle = T.cast(pos[0] + row, "float32") * T.exp(-angle_scale * i)
+                if query:
+                    out[(row * heads + head) * d + i] = norm[i] * T.cos(angle) - norm[
+                        i + d // 2
+                    ] * T.sin(angle)
+                    out[(row * heads + head) * d + i + d // 2] = norm[i] * T.sin(
+                        angle
+                    ) + norm[i + d // 2] * T.cos(angle)
+                elif row < pos[1]:
+                    out[((pos[0] + row) * heads + head) * d + i] = norm[i] * T.cos(
+                        angle
+                    ) - norm[i + d // 2] * T.sin(angle)
+                    out[((pos[0] + row) * heads + head) * d + i + d // 2] = norm[
+                        i
+                    ] * T.sin(angle) + norm[i + d // 2] * T.cos(angle)
+
+    if query:
+
+        @kernel
+        def compute(
+            q: Tensor(r * h * d, "float32"),
+            qw: Tensor(d, "float32"),
+            pos: Tensor(2, "int32"),
+        ) -> Tensor(r * h * d, "float32"):
+            qo = output(r * h * d, "float32", position=2)
+            normalize(q, qw, qo, pos)
+            return qo
+
+        return compute
+
+    @kernel
+    def compute(
+        k: Tensor(r * kh * d, "float32"),
+        v: Tensor(r * kh * d, "float32"),
+        kw: Tensor(d, "float32"),
+        kc: Tensor(cap * kh * d, "float16"),
+        vc: Tensor(cap * kh * d, "float16"),
+        pos: Tensor(2, "int32"),
+    ) -> tuple[Tensor(cap * kh * d, "float16"), Tensor(cap * kh * d, "float16")]:
+        normalize(k, kw, kc, pos, v, vc)
+        return (kc, vc)
+
+    return compute

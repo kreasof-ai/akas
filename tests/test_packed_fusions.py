@@ -6,9 +6,9 @@ import numpy as np
 import pytest
 
 from akas.graph import Graph
-from akas.ops.linear.operation import fuse_projections
-from akas.ops.linear.rewrites import fuse_residual_projection
-from akas.ops.normalization.rewrites import fuse_residual_normalization
+from akas.ops.linear.definition import fuse_projections
+from akas.ops.linear.definition import fuse_residual_projection
+from akas.ops.normalization.definition import fuse_residual_normalization
 
 
 def projection_graph(encoding=2, rows=1):

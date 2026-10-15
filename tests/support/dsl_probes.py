@@ -3,8 +3,8 @@
 
 def half_conversion_kernel(n, unpack=False):
     import tilelang.language as T
-    from akas.quantization.weights.storage import half_bits
-    from akas.quantization.weights.storage import round_half
+    from akas.quantization._shared.rounding import half_bits
+    from akas.quantization._shared.rounding import round_half
 
     convert = half_bits() if unpack else round_half()
 
@@ -25,7 +25,7 @@ def half_conversion_kernel(n, unpack=False):
 def kernel_with_subgroup_size(kind, parameters, size):
     """Exercise the actual small-subgroup branch, without editing Python source."""
     import tvm
-    from akas.ops.definition import define
+    from akas.kernels.definition import define
 
     ir = tvm.tirx
     kernel = define(dict(kind=kind, parameters=parameters, contract="packed"),
@@ -54,7 +54,7 @@ def kernel_with_subgroup_size(kind, parameters, size):
 
 
 def subgroup_source(kind, parameters, size):
-    from tensor.compiler.frontend.source import export_source
+    from support.migration import source as export_source
 
     return export_source(
         __name__,
@@ -63,9 +63,9 @@ def subgroup_source(kind, parameters, size):
         parameters,
         size,
         dependencies=(
-            "akas.ops.definition",
+            "akas.kernels.definition",
             "akas.checkpoints.gguf",
-            "akas.ops.definition",
+            "akas.kernels.definition",
             "tensor.compiler.frontend.source",
             "tensor.compiler.webgpu.schedules.gemv",
             "tensor.compiler.webgpu.schedules.outer_product",

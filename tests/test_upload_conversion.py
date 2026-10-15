@@ -6,7 +6,8 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from akas.checkpoints.upload import convert_storage, upload_shards
+from akas.checkpoints.upload import convert_storage
+from akas.checkpoints.upload import upload_shards
 
 
 def test_e4m3_resident_conversion_is_exact_for_signed_normal_and_subnormal_values():

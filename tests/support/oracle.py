@@ -6,7 +6,8 @@ Tensor codec/kernel helper. This module is a correctness tool, not a runtime.
 """
 
 import numpy as np
-from support.numpy_reference import Reference, _HalfWeights
+from support.numpy_reference import Reference
+from support.numpy_reference import _HalfWeights
 from akas.models.lfm2.weights import ReferenceCheckpoint
 
 

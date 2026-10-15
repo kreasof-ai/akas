@@ -24,7 +24,7 @@ device with a single control upload and optional final readback, for throughput
 measurement. Both consume the same compiled decode phase.
 
 `generation/speculative/decoding.py` owns the proposer-independent transaction flow.
-`models/heads/mtp.py` supplies one head implementation. Captured rounds and deferred
+`models/qwen35/mtp.py` supplies one head implementation. Captured rounds and deferred
 state use the common executor rather than a separate model runtime.
 
 All model families open the same executor. Legacy numerical bindings, independent

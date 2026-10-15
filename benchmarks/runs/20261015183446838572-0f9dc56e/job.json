@@ -1,0 +1,62 @@
+{
+  "context": {
+    "checkpoint": "/home/sagemaker-user/akas/build/model-smoke/checkpoints/qwen-hf",
+    "definition": "akas.models.qwen35.model:Qwen35Dense",
+    "workload": {
+      "batches": [
+        1,
+        4
+      ],
+      "prefix_tokens": [
+        32
+      ],
+      "output_tokens": 128
+    },
+    "backend": "cuda",
+    "device": 0,
+    "memory_bytes": null,
+    "ttft_ms": null,
+    "tpot_ms": null,
+    "kv_dtype": null,
+    "mode": "mtp"
+  },
+  "identity": "53ecae5bd6606d8707e3dbc6a419191760516ad2060eb52048a367b723839d3b",
+  "checkpoint_sha256": "12c9d5d5a2a7d2dd4447e9274243609dbc43c53d9b593e4be9f6007d68236392",
+  "history": "/home/sagemaker-user/akas/benchmarks",
+  "action": "candidate",
+  "recipe": {
+    "provider": "cuda",
+    "target": "sm_89",
+    "chunk": 32,
+    "prefill_requests": 4,
+    "graphs": true,
+    "trials": 1,
+    "policy": {},
+    "model_options": {
+      "fused_head": false,
+      "kv_dtype": "bfloat16"
+    },
+    "window": 2,
+    "deferred": true,
+    "head": "akas.models.qwen35.mtp:MTPHead",
+    "id": "3edbca1d429090db"
+  },
+  "device": {
+    "ordinal": 0,
+    "name": "NVIDIA L4",
+    "arch": "sm_89",
+    "provider": "cuda",
+    "uuid": "GPU-d777b838-7002-124f-aa67-71409daa8935",
+    "free_bytes": 23659020288,
+    "total_bytes": 24152899584,
+    "driver": "595.91.07"
+  },
+  "cache_sources": [
+    "/home/sagemaker-user/akas/build/optimization-pilots/qwen-mtp-qualified/jobs/9cab6739a85e4162/attempt-0001/program",
+    "/home/sagemaker-user/akas/build/optimization-pilots/qwen-mtp-qualified/jobs/17fe04ac875938cb/attempt-0001/program"
+  ],
+  "reference": "/home/sagemaker-user/akas/build/optimization-pilots/qwen-mtp-qualified/jobs/9cab6739a85e4162/attempt-0001/report.json",
+  "evidence": "/home/sagemaker-user/akas/build/optimization-pilots/qwen-mtp-qualified/jobs/9cab6739a85e4162/attempt-0001/diagnostics.npz",
+  "parent_run": "20261015183003881091-fbbe2b3e",
+  "supervisor_pid": 54235
+}

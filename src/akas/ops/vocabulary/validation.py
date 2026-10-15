@@ -1,30 +1,51 @@
-"""Independent arithmetic and state qualification for vocabulary operations."""
+"""Independent numerical and state qualification for vocabulary."""
+
+
+def quantized_embedding_validation(kind, p, signature):
+    import numpy as np
+    from tensor.runtime.dtypes import encode_bfloat16, decode_bfloat16
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.quantization.weights.ggml.validation import sample_weight
+
+    values = sample_arguments(signature)
+    decoded = sample_weight(
+        values["w"], p["weight_parts"][0]["options"]["encoding"]
+    ).reshape(p["vocab"], p["c"])
+    values["ids"][:] = np.arange(p["r"]) % p["vocab"]
+    if p["r"] >= 3:
+        values["ids"][0], values["ids"][-1] = -1, p["vocab"]
+    expected = {name: value.copy() for name, value in values.items()}
+    selected = decoded[np.clip(values["ids"], 0, p["vocab"] - 1)].copy()
+    selected[(values["ids"] < 0) | (values["ids"] >= p["vocab"])] = 0
+    expected["out"][:] = (
+        decode_bfloat16(encode_bfloat16(selected))
+        if p.get("output_dtype", "bfloat16") == "bfloat16"
+        else selected
+    )
+    return ValidationCase(values, expected, rtol=0, atol=0)
 
 
 def validation(kind, p, signature):
     import numpy as np
-
-    from akas.ops.contracts import ValidationCase, sample_arguments
+    from akas.kernels.contracts import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
-    r, c = p["r"], p.get("c", p.get("vocab"))
+    r, c = (p["r"], p.get("c", p.get("vocab")))
     if kind == "head_linear":
         logits = values["x"].astype("float64") @ values["w"].astype("float64").T
         expected = {name: value.copy() for name, value in values.items()}
         for tile in range(values["maximum"].shape[1]):
-            begin, end = tile * p["n"], min((tile + 1) * p["n"], p["o"])
+            begin, end = (tile * p["n"], min((tile + 1) * p["n"], p["o"]))
             section = logits[:, begin:end]
             expected["maximum"][:, tile] = np.max(section, axis=1)
             expected["index"][:, tile] = begin + np.argmax(section, axis=1)
         return ValidationCase(values, expected)
     if kind == "head_argmax":
-        tiles, vocab = p["tiles"], p["vocab"]
+        tiles, vocab = (p["tiles"], p["vocab"])
         values["index"][:] = np.arange(tiles)[None, :] * ((vocab + tiles - 1) // tiles)
         values["active"][:] = 1
         if r > 1:
             values["active"][-1] = 0
-        # Tied maxima must select the smallest vocabulary index, regardless
-        # of which physical tile contains it.
         if tiles > 1:
             values["maximum"][0, :2] = 1
             values["index"][0, :2] = [7, 3]
@@ -36,9 +57,9 @@ def validation(kind, p, signature):
         expected["predicted"][:] = np.where(values["active"] != 0, winners, -1)
         return ValidationCase(values, expected, rtol=0, atol=0)
     if kind == "embedding":
-        v, start = p.get("v", p.get("vocab")), p.get("start", 0)
+        v, start = (p.get("v", p.get("vocab")), p.get("start", 0))
         if p.get("type", 0) not in (0, 1):
-            from akas.quantization.weights.ggml import sample_weight
+            from akas.quantization.weights.ggml.validation import sample_weight
 
             weight = sample_weight(values["w"], p["type"]).reshape(v, c)
         else:

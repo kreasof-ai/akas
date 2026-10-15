@@ -8,10 +8,10 @@ import pytest
 
 def checkpoint():
     from test_qwen_graph import moe_checkpoint
-    from akas.models.qwen35.weights import Qwen35Checkpoint
+    from akas.models.qwen35.weights import Qwen35MoECheckpoint
 
     loaded = moe_checkpoint()
-    mtp = object.__new__(Qwen35Checkpoint)
+    mtp = object.__new__(Qwen35MoECheckpoint)
     mtp.config, mtp.branch = loaded.config, "mtp"
     shapes = loaded.config.expected_mtp_tensors()
     mtp.tensors = {}
@@ -56,7 +56,7 @@ def checkpoint():
 @pytest.fixture(scope="module")
 def program(tmp_path_factory):
     from akas.compilation.compile import compile_program
-    from akas.models.qwen35.model import compose_moe_program
+    from akas.models.qwen35._composition import compose_moe_program
 
     loaded = checkpoint()
     reused = os.environ.get("AKAS_TEST_MOE_PROGRAM")
@@ -97,7 +97,7 @@ def program(tmp_path_factory):
 def test_moe_proposal_and_repair_match_common_greedy_executor(program, capture):
     import tensor
     from akas.execution.executor import Executor
-    from akas.models.heads.mtp import MTPHead
+    from akas.models.qwen35.mtp import MTPHead
     from akas.generation.speculative.decoding import SpeculativeDecoder
 
     loaded, path = program

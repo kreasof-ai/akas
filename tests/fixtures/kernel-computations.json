@@ -1,0 +1,367 @@
+{
+  "origin": "Numerical launch bodies and inline helpers from the independently saved original migration baseline.",
+  "modules": [
+    {
+      "module": "akas.kernels.reductions",
+      "computations": [
+        "inline:740ca766cc52eec358729e7c525af1cdbc292b5e226a21145d1feca0f32f74e0"
+      ]
+    },
+    {
+      "module": "akas.kernels.webgpu",
+      "computations": [
+        "inline:073c563020e2358aac578094fed0f68f9bccb668b68fbc6167c6d7bba2850b1e",
+        "inline:0dbef03cac768cdbdbe0a6793ca2a717aea4cf81a21a7fb5d71e74c6ce446984",
+        "inline:4193471c2e7dfaa29a0ee3d5922d2977f7f1b9765ff90b8fa71958fbc0d345c2",
+        "inline:58acfe63f34d5db90814300eb4251c4ff03b90a2ea62fa020918f03fe7afd5b0"
+      ]
+    },
+    {
+      "module": "akas.ops.activation.kernel",
+      "computations": [
+        "inline:27ee48462564a04d78911ef93ae14129b0bcd7ea2726d7c53f54a3543f590af2",
+        "launch:3d9002201e1acf3674f7cbac952df1a23ac42e405f66fd848e45b48320f10e6b",
+        "launch:5cfd52709faa9442fd193356d30158bbfb32c8a5280e93cdb5978afde2b0a88f",
+        "launch:cd405744b51111c30b7341c4ad4984f9a529726dbbce5b6104eaa4384b9f88da"
+      ]
+    },
+    {
+      "module": "akas.ops.attention.cuda",
+      "computations": [
+        "launch:0cf46137694273634a93d7681dadb9f1ee662c224c902a8a2fa630d59ff933f9",
+        "launch:14f0347be39f126af2610ae5940d11f823fe8252a02b8b377b8850794a26c857",
+        "launch:1c03e6f3f06b78171a3ea31d4e5e96563523955dbf93e3a0ff9f881e1bddb1e0",
+        "launch:1c840fd24314da15a3f6e7a2af252787bc3d359dd6c088264788b010937851bb",
+        "launch:3c6d03ef9ca782caa79cd48f4b500ab53c448a8694e5e984178146ac77eb354f",
+        "launch:3ca6f1c4578f28d0ae84a5c693a9d23e140dabde0002e45d1db3728b604eb1a2",
+        "launch:4384ebe33ce4ebd06ed3927b3fb3bf2e96b903028acab096ab1b63d3005b1fe1",
+        "launch:44e62f89597f3cb7e4698caa7a2948e048632219e07ea0ffca524d809d086222",
+        "launch:462ef7f39c1d05f333f9f7e57c44f47da71fec57a16f248ae8f8caabf35347b2",
+        "launch:4d35191c1e3fe3d047d1f890771174cb633ba74bb38766f84089d76a80130efe",
+        "launch:528b943b4311f594753fe2ee093386076edcb769cbfeaf304860190dcd3bb2ce",
+        "launch:5f6263fe7c4ab828f938c91d7bb1dff84f7c01015e2bf6d3800761b353da8002",
+        "launch:642e84f2455cf7bf91b16c763cc5ad2dd0d944da9c8add735bf03171193db092",
+        "launch:6b64c37d1db143e3f23099b85d5861b37dac1cb7727bd92c3ce1ffbad062286b",
+        "launch:7c74b3cd16006593dc8b47d63dcdcabf38090014e4dfa000e939983d286a12a8",
+        "launch:b07ae3b5c0ca175c933f0333c8bc72dfe54a6edee414dc8283e49aaab11d3edc",
+        "launch:b34f825d150554eddf01c61c3576be98813e3587d96fbefab87b0aa1193f2815",
+        "launch:b5e78617c2f3444b5b225d56b372036e3613bfa83da7b473446468e0033a56c2",
+        "launch:c0b40fff2dabcca51c0fa5a97e59ac496036ea3f0a0daf05c0b35149958bfa56",
+        "launch:c73e40b658196a0d4ce159763c77b25cb06994fcad96837659b1eb756bf2056c",
+        "launch:c95878730d5ea9a23a59c7006f612a10a3bb2e2c784d147a1a13907c7ed021a3",
+        "launch:e1c3e5fbccc9717e2e1dcd497f84da5b4c5f3d7496acba1674aa9b92c1ab0d9a",
+        "launch:f2042a958e61a325fa4be832cff431acb17373cc9946902f05e9af7cc4bdf11f"
+      ]
+    },
+    {
+      "module": "akas.ops.attention.kernel",
+      "computations": [
+        "inline:09c8f93de2ee2cfc4a1b140fc5c2b14b047b4e1d2d3f7f8b321b9b6278c7a319",
+        "inline:255b1e8124b86fa958a1149d35ac61f5cd7340438582ee4bd028f5c64f49b3d7",
+        "inline:5d7377563afabcec2481cd6ae0ac3fcb9a68ab34b89bcf68d5dbfec649d2d7b4",
+        "inline:c3dd441725b125d2d2e14d807835f8c604fe8d6c62acc6a8026229190c1c1f94",
+        "inline:f76f60c3740f471d6c87a369c4e01f3640d50a40c55ea14601bdca0c0e042afd",
+        "launch:2480c6067372e3b81980c14e14ec0b23169c3813a21e98faf1d4dae77e3c50e5",
+        "launch:2c91ad0aed722937010781b61394809540f78843a7b5dcf063e8541dd748e845",
+        "launch:54aaa3312be80667b58cad09ce1199bc1e2d3a65f35a190c80463493af3bfd7e",
+        "launch:574a01949bf987c62720b5e2141c8be9ec23e9966cb4a1eec1099206205d3f15",
+        "launch:5a31e5c31ce9b971aa2a8c8078dcb6724261820a866a4650e4393e13fd843e22",
+        "launch:6c29d270af64a9ddcacae3512cf49115416c436d2753a869708a4c6f6fe274da",
+        "launch:6cbb8fae84f0528494f3c5cdb4fcc764308af54d61d3a86910dc530cb34a9ef0",
+        "launch:817a445f758cb1ee9d35da20cbe16b786f064c575f4df42419c291f2bfada493",
+        "launch:9cff3ba83fa67b4f35a07ee17e877dac1e341afae6b6660d6a83f2dcc0b15661",
+        "launch:c1d6c6df418807aeea95f48dfdd95fd7a097a32ddb1ca2297fad4c1465b9554a",
+        "launch:d3ff3864c0e3b637deeca83bdb6ff0b0167feba69e74d8f6af87649034052036"
+      ]
+    },
+    {
+      "module": "akas.ops.attention.webgpu",
+      "computations": [
+        "inline:075700114fa7e6420290909cb3f6486fbe79c38093d9fbaa91cd4a107aaa06ed",
+        "inline:0dbef03cac768cdbdbe0a6793ca2a717aea4cf81a21a7fb5d71e74c6ce446984",
+        "inline:df212e63a767683f3467b062530d9e2e0e63b8948aeb99e767117f9b2d958a15",
+        "launch:866e1f24f604719e390a7bc48c92fa1c41b5862fd4e970df108e58373d21e17b",
+        "launch:d4f5b6c830db48ebf7f44aa4914b6fb90e4ba5abf85a3842e83fefb270a574e6"
+      ]
+    },
+    {
+      "module": "akas.ops.control.kernel",
+      "computations": [
+        "launch:215956dcf5ab81fc3c375832d451660bc9211fe787ae881ca28510bb2fc966f4",
+        "launch:2a4fc7a9a638db585fd4da5cc96c66d776336ae5894cf7da1daaee345c28bd97",
+        "launch:52f96051353ad7a56a1328d3a5d2c6c6299214348676e8c12930df958add4784",
+        "launch:88aa42b9b8a9fa8e09c8420ee2e8a9e36dc5113af60194719ce4d034ca3082f7",
+        "launch:891a13bcf4e18c1d50a72c458a4cdefed21d83eff09644698712dbeef45c14ac",
+        "launch:946c62ed6ee28643bff093367140bf38c66d4f406b6561cfe8cc40afc592a211",
+        "launch:98a08e0a42221eb2983a2e07e5552e058c8f952d8320508e758d114b52064721",
+        "launch:c1cccc205b947d3192bdbf8bed3a07dfd7fd0923f222fa29ea241041d43a34a6"
+      ]
+    },
+    {
+      "module": "akas.ops.convolution.kernel",
+      "computations": [
+        "launch:2a4ecbf5dc0686cfae775dc54b00c693f9b7b30def357d25784215cba7fda8c4",
+        "launch:e7c0a5d645c826cb3071b654fac370a8f5872c0b5e6ae82c336126ffc89a57d4"
+      ]
+    },
+    {
+      "module": "akas.ops.gdn.kernel",
+      "computations": [
+        "launch:0854ae057c378bd1a654cc3fcd68270ee52fdfc36b49b13500bf4b58ffd13854",
+        "launch:0e46af7034646e551cb01176b1ae9a272e677efa3b547e4736a5e67f819a0fad",
+        "launch:293e67100e70ce817b27a3bcff55961af571820b52f8b2e72aa603673ed0fdb6",
+        "launch:3396fb9bf750759b54f03c9e614394482b9aaff87757079ef6057c6e67423a77",
+        "launch:3679dba7f64ad7a3f76afcc41dad6f08ca2887901c59eaeb257dc9bb6dbf7c36",
+        "launch:3cf36d64493a08b598e4f804865d5a9bedbb43eeb574ef0d03b7cea04a22ed66",
+        "launch:5680cb79f62b319d083cbf73a82370306cabcea76918ddb9e4153a6db74c8d14",
+        "launch:5d053303581831861b4beb655dc0f18526bde1f55195d94329004f7587a4b371",
+        "launch:6f806f0e5c71ccb058b71d3f124d78319fbdf006d58b99cacafba01118ff76d4",
+        "launch:7b06f46701748a955d9f1010265d1214775e2db00ab5497da2661fc7be82769b",
+        "launch:9e13304edd5d6214a3da17a7ce983147c6003efa72219c1da9deb6d8577647c6",
+        "launch:a0b17e4135770f8192c691b9791c42d276cfa7cf8c275e7ac789f94829211c60",
+        "launch:a5e79d087d9ec2332953beb528b5e8c5cf03a1ab4d623102fef77e1226d3ea31",
+        "launch:b546bfb95f0ef2f53249ebccaed84b4698dfa63679f7268cef87d39cc56ccbea",
+        "launch:ba7b74a18e5152f0bd820482ddaeff3221e297ecd35d793b34608b5ce251ccb6",
+        "launch:bc5a3256baf9423d3762c1649772e350e039d411f524a4e11f40e3b5deacd17d",
+        "launch:c1da85b19c110f8caa9f0e6e444b3d9db25a3a991fba4ca3bfd15c9a33596f14",
+        "launch:cf2d3c7a036c80a0b91e3bb80353f77866d31cc8d33d8e63aa3b9ab99b3a95b5",
+        "launch:d24c817efedab646a3ff28aa31cca728276ce1b925be7c72af4a7b3125933851",
+        "launch:dc34175e2f4ec3fd69a3fa1f22b3eb27ec83e28ae3d9fb57df6f45501e52b175",
+        "launch:e23019f5dac092d8ecfce5715bdb51f13bdfa19783a832796d0c8bae7f9a3d1d",
+        "launch:f98f4b345e98480766383733a16ef92f89310cca58c9584cc619fe4426f939f8",
+        "launch:fd0a65537fd14679d80e5989a7fdfd4603ac51b9e4656f6f5f6524945114baee"
+      ]
+    },
+    {
+      "module": "akas.ops.indexing.kernel",
+      "computations": [
+        "launch:a145d8c5bc3a49211798a8068f71d306853ffa2d9d062eb6338ef31c2c5afcc5"
+      ]
+    },
+    {
+      "module": "akas.ops.linear.cuda",
+      "computations": [
+        "inline:0eb13840f06e309ad5a08e1f55d93ff919e645e83d546be2cee8dca54dfdb1ac",
+        "inline:a05d90a2e97f17f44a87cc1eec1d772d006bd954541f830079da6fef79fec5a5",
+        "launch:158b64f8b186d23c9ccddd7f7758883d95d2a86e232071989c7c6e695d3d60d8",
+        "launch:33853a29b7cd210436a5d2f0920dcafd19a2dc97859aed8a1dbc94f9827fcad6",
+        "launch:3c92f549cf0eaf9caaea3c11a7484754fb51fea9398a045029296f32fe24448d",
+        "launch:4847f4dda58609509c420808c88308c929cf5c3a3753292d1ae7e34fbc0f5f75",
+        "launch:6386dff6a16214179b94de5621e96e8830d5835e491d75e18238db34ef4e640e",
+        "launch:65a7ec01e43a03d1a230872ecc672a52aa5f8fa10d9df51e561495f491426297",
+        "launch:6b2e6f94e748dc3f1b8c7234aead49ae6cda67ab2671771ce0e802b383316244",
+        "launch:705a830c931b001bb43ea2e1214a2a11bfd411e51f89101ce21e8fa6a1fdccba",
+        "launch:7b36025f5391295a40e1a32d46b5dda61d794b58756adce6cd9c1b0febefabb3",
+        "launch:85f8677b45ddef3334642a43ae3ffa77c30e3531d175bc113bc0a0067584452d",
+        "launch:864907b5e4f3a5a8502131e174a23c1f1e3d42ff67bc3e47358848b8b309b947",
+        "launch:89ecd5f1bba0eb3f62b2b4956a1c9466dfe85cf2f4dfda9c0718115b77a9d7e4",
+        "launch:8d1aaa169cbd92ab206a61adc909f55091e0bc442e7fd58e84d784b11ff16432",
+        "launch:c32e762203f1502ee37bba885b3b2d343ffe9f6a21b1af377975b7e11a675495",
+        "launch:c8a5e5f3ed9a78f8eef2a05ac98d4de61eca30d743e55b8682aff679b1a07852",
+        "launch:d4b779f5eb0b5a2003942263529157500d9a34da819658767ae6b980faf89fb1",
+        "launch:dc559da38078616646f86ffe4b230ea487b4862a414e72d59b984a65a3063168"
+      ]
+    },
+    {
+      "module": "akas.ops.linear.kernel",
+      "computations": [
+        "inline:914a5af00c6576bc3a6daf7449482c657c74ae485491645292248f2d44bf1fd9",
+        "launch:27d166f7126368a40270a81e0ecec85841cbbd6e92c7bb6bdc4458ea186989ce",
+        "launch:41c0fb311c57d3e04c9b13e3661872af5ffe7f1636970f2c34f2d1489d823500",
+        "launch:a1eec05f7af12e80b7e55795b9098e946cb1c2bbb165a01e1c2ff0b4e05a7c37"
+      ]
+    },
+    {
+      "module": "akas.ops.linear.webgpu",
+      "computations": [
+        "inline:0dbef03cac768cdbdbe0a6793ca2a717aea4cf81a21a7fb5d71e74c6ce446984",
+        "inline:28f3d3087af247d4f5b1de30011fed49c6b713b22868bca6c2e1f02744042b0e",
+        "inline:3884e782fa64981b1e51810821073d121c6a9660e7c1a2b3ef84a516817317cb",
+        "inline:513b68aa40fe2ff19e4d56007e0ca7401ea9f41706b930c6cd9be81406dab59e",
+        "inline:5ee9c6a83336531647613fe395304c595ef3b9dd5b16ce5941f49e8bfc214eea",
+        "inline:68b0e4c557ec91d16823fd9585d0665f42bb3306dc21704b34d947848a9c7d3c",
+        "inline:6a4f819f2efa13d71b76a5b7149b4d84fea2131aef263f33c5737c100b6879e4",
+        "inline:79627c605e26cb92f4f2f3d9fb2de5589300dde4c8130ce53318c9bd803bb341",
+        "inline:822e6168c0d628960ec6affceef2fb56c3cab3b048c84ea9fd75d927d5546880",
+        "inline:b5cf39f9edcc1b14153ce6551652de9e0617e82c2a51a6019c49c7e8fb01d816",
+        "inline:c16daba15f301cc795586172a9a0ae4577e88f898572958dde6b63c22b9a133f",
+        "inline:dd37080a847d59b736864d9b3c4e69d9334e5eb94a0b48633db0b083863c68d6",
+        "inline:f770417ed912af3dfb0a567985d499b7d00cbaf8b2c5574e0a070ec5ec0cc9c8",
+        "inline:ff92db9e69870558b9830885ccf29229e835b018ccf6787cfa95cdeb89503b06",
+        "launch:125925cd27dfff30f0778cd88d13441464b0cb567c0f5b3c53f9d7c06768a889",
+        "launch:99361867fdf721f320d619e1d60c4ca3ffbad37f1ccf88e04f84345af04ccb10",
+        "launch:9a63170de00246449cfe4ff0f7c44d8110906a82ffc85f926078963639aab65a"
+      ],
+      "related_modules": [
+        "akas.quantization.weights.ggml.webgpu"
+      ]
+    },
+    {
+      "module": "akas.ops.moe.cuda",
+      "computations": [
+        "inline:c6b6140995dc4c95e96a2c08f567ccf55e572af713824031f60593a109b93c50",
+        "inline:cc3a63492fd511a72c82fd6eeac1a8b3803d0252e6bff5059ec999739079c2ae",
+        "launch:45b3c1c7ac88461b7543c3333b4b400508e56e7aa3886efb27c57cd834ed0102",
+        "launch:48457ffcd2e531b9e99c5d814b333e742197f3ac2464513c0de4db43f37ba106",
+        "launch:661d027d2cfec876beb4973048be2967a0031255c2f5640f77fb9718d4c4219b",
+        "launch:7094bb1aae1371b683560d6bf83b86f4a7ea4907e64165dea32169794affa0ee",
+        "launch:7aca59d44dc475204afbe1c45e3e1c278e4476b88cb22d59192cbe43cc84b560",
+        "launch:9b3418508f40517589c6f5eec1c6f367fe7f0b057a0829675ef9f247b48af627",
+        "launch:9c8d680632bd611c13add47d741d795b1c0ea827a226df02d39dccfafc4b55e1",
+        "launch:be793eae3439ecae256d0c5c17596df6f4073e5748846b90b4e6cfb408768304",
+        "launch:e1e4cd971df29375b126fe3e0a8bf6b2d9898fe16836248355ffdc6594763c17",
+        "launch:e3002ec8c6211cd6a93b22ff2ca5a87283708d5a72397ae05d1eb29d8110645f",
+        "launch:f664d1da4242d3cbe644d396fc0997ecc135e9902e843b8fc23ec50bce66209f"
+      ]
+    },
+    {
+      "module": "akas.ops.mtp.kernel",
+      "computations": [
+        "launch:70cd928fd32eb865f02d3b14d2334d0ca21af085f224ad9c249649aa8780e432",
+        "launch:ce3269c683ef34590f1c1c276727e9950f07ba5b6068d295f55a2f40b39e4708"
+      ]
+    },
+    {
+      "module": "akas.ops.normalization.kernel",
+      "computations": [
+        "inline:195490459109150ba0f903188d9a0bbdca211319856fe11aa120b9f40d687ac5",
+        "inline:4ea2e7b2ffe55fe002ea26a6edfbe6eaec2336ea5160d6ef676ce080f261a5e6",
+        "inline:d06f75fdc95288592e9b0f413ca9d49cf3ee0fc1d8db9ba8bea3718e6eba08e4",
+        "launch:3fb5f124909a6aceae47eea58d839debb5195a51bd4542989ee4f5f7d181ba6e",
+        "launch:60a9091363150a6cb3fe090e5751e720b56458b628059a404ee1ed3ea5318351",
+        "launch:69bfb3b048c37a568a3773258f701cd47a89f7bcefce41a57306fe04014e6fda"
+      ]
+    },
+    {
+      "module": "akas.ops.residual.kernel",
+      "computations": [
+        "launch:c18caab601ac83ac4a3a2c3da2405f393436e0ae05ededa8fe9d0b39ee5163e7"
+      ]
+    },
+    {
+      "module": "akas.ops.sequence.kernel",
+      "computations": [
+        "launch:1a6d7347240ae525015ecd715dadb7ebaad26426353eae893a0a7297f05c96e4",
+        "launch:24541878f9647595fd452e4de3a1dc1f550e005a90eaa7cad480d8d70af641e4",
+        "launch:27113cfddb0e0e21f07d2f52061b2ae2842e0d239754864eb66650fa2dd1ba27",
+        "launch:2d5aaaa08e637dae6856d26e7dd3330d61e699d0a9724b73f2d36ce19e385687",
+        "launch:33dc9cc1fe0919ac6130e85a9d641c884cbccc189db1b60f1507b83049d7bf96",
+        "launch:3b053a1e3e9e1a0c6ae3237d940af37d4a666468b69686dacb56b9b38a67e7c6",
+        "launch:44e4cf9efadec16bdaf71a88cbf57d14c9b5bd56087ac6d8f0616d85e58a2cb9",
+        "launch:56f88798bf3f69959e6947d23b949dc447565356ea6669cfb48229f22fc00def",
+        "launch:571ff9415459e4fde72a2c5829405ed980ef597c321163321e81569bb8f3fe48",
+        "launch:581d26a25b671c454e769d9023fc816fba498ad23ff45daa9efaa2f31f9a7b15",
+        "launch:968fef520f4f279765464d6fcd18189205956079968e6be43c6aa4fc0369dfc2",
+        "launch:9d3acdd0a17d15bd80b97b9bb0681027c14310c822f33a2931ecb65d255332df",
+        "launch:b82433be2ad25eb3307261710418323ffc8a831c49e859e809c80a20ec517586",
+        "launch:b8abe55ea4f976403e40372f332e4726f1d72ad7b7d811e3595e776c8e991999",
+        "launch:c33eb7b8a282496480937021bdad107fd36bf3bc5f3c37c82b4c40ab2cfe07a9",
+        "launch:d180783b277d77fbb59eaa9738f8c913224f428d307c8cc2654f03ee80ca7836",
+        "launch:dc710543482a7d1ebd1af0c8f882677d3f37c4cd2f59d1d514102f2df226e6c2",
+        "launch:f35015eb1c692fc7be92670c3fe4a0b02dcde72e08a3cd7fe4c6db7072ba903a"
+      ]
+    },
+    {
+      "module": "akas.ops.vocabulary.cuda",
+      "computations": [
+        "launch:28e61ce151e584b3f4be67a0b0fe55c59982fde2f23d477d4b4b9288fa5ad41e",
+        "launch:6015ef32739bdf3305f1b446af962980f463746c21041ff2c6972eae0e9ff5b5",
+        "launch:aba51ac4a17469d972af10b1163a274fb9adfcc8da2fcaccba7859b48dd6529f"
+      ]
+    },
+    {
+      "module": "akas.ops.vocabulary.kernel",
+      "computations": [
+        "launch:13ac8b6a57ad4bb940fa4780d72b6b10be055115a0a07d3c08133a1bb33d7c7b",
+        "launch:165534311037346379d3485ba005d2b72a8c5ece99a3b07c3e5f9c59e9d632fd",
+        "launch:260b288c1f0222e4246f66fb684f63382d82f7f4d1b0ff01e93fff72012549fd",
+        "launch:44708b45d64d66e1227e47de2e30d62648c6394f7e417968137543acfbd3e928",
+        "launch:4dae97ff8a2aedb690668ed4c4ace5ea0faf384d8222553937f59f5b01776c21",
+        "launch:97c08d2c6a8229d5496ac591145990abd07669446d6257d408e2e9854287da7d",
+        "launch:ebd2bdc387c8b6c39efc4b8ba2a760b35af16b6eb4e4ff115fcb6c9d84642272"
+      ]
+    },
+    {
+      "module": "akas.quantization._shared.packing",
+      "computations": [
+        "inline:27306038c91d3d254093f13da902a334ca7d1f92e3dab5a67304c720d104952f",
+        "inline:28b213088bdcfd162eea90905d1e1469c4dbe64ae88a3b2c399937c4e029bb2a",
+        "inline:d119bf7a0465d793ecd81d6a0eeb3e054caf25c28be1a7e3a399a7ba2a1c124c"
+      ]
+    },
+    {
+      "module": "akas.quantization._shared.rounding",
+      "computations": [
+        "inline:6af93550a6b46728f3b5018094a3fd9eac4c4f06ced7351f6a9e1c4a8a43b4a6",
+        "inline:9e001904bbb67f6788e8cf38e531c3433f06b08d46c9c582fbf7886076e9928b"
+      ]
+    },
+    {
+      "module": "akas.quantization.activations._shared.packing",
+      "computations": [
+        "inline:661a592ceef48ed83f64bd68698dc0eb7fac2360f44e428fd92d491ef1d9f453",
+        "inline:e5a9c5e65e979fc87fa88eff5f885bf66c01c0475acf527a669091007d1e2329",
+        "launch:50c17d97f6b46ca633300357f51861642efe1b2ab81250cc8f2e6091558ee13c"
+      ]
+    },
+    {
+      "module": "akas.quantization.activations.fp8.cuda",
+      "computations": [
+        "launch:3f01ea966dae9ce92dcca8f05782e490f512cea9414c31950fccfb74d4f27c50"
+      ]
+    },
+    {
+      "module": "akas.quantization.kv.fp8.cuda",
+      "computations": [
+        "inline:153ac83c3f5fd7642ecbdd77b53386ebad90944ec7d5ebdf5a4c2a3ebb0a1eb4",
+        "inline:5ae0d8d18790f6360484fb87398f891ecc3ac134b65a6022ea68c7cc626bdebd",
+        "inline:acfa6cb0eb0655b6106f65bd4c509527bc3e2b7de56864c60db1b321b27aef31",
+        "launch:de746e67aafc9d0012fc0a3183248da6c5590a677193d0fe9e48a6800550020b",
+        "launch:f0db070623714673dcc49d5d4a48ef0b0605e08d63fb9a79a7e0d98e58c1a90b"
+      ]
+    },
+    {
+      "module": "akas.quantization.kv.fp8.kernel",
+      "computations": [
+        "inline:2160f247422eecfaf7802ffb747ad13e8b6dd4eb2be77cba7084bc055ae33e8f",
+        "inline:2d67facae4ee83d4adc81e4392eb11d3c61fbc513eeae4d0840dd8420e0486c6",
+        "inline:766de8e3a7310eee89875b8d540ae09eecaf875015daa745598ef9fb4e31f035",
+        "inline:de3ebd1d50010cfe8d3351d8ee135691a1b0ca33ad3eb7709994e9dbaa439ba7",
+        "inline:e6ec09fd1516ad97a5a5783069140fb719e6fb5cab30c8c47305af0619eeb6b7",
+        "inline:f44c8fd88c0d71da6f03609c5b097ea48fec468a5045235abc701d1702619377"
+      ],
+      "related_modules": [
+        "akas.quantization._shared.e4m3"
+      ]
+    },
+    {
+      "module": "akas.quantization.weights.fp8.cuda",
+      "computations": [
+        "launch:03bd46793dc6b649c74fad582bd15b83d2abf9b8699e64fd7f739120202bd6f3",
+        "launch:5548e0e24ec658c281dbf6e66b0a7c8551e09f963654b14dfd8cadb2add9a66f"
+      ]
+    },
+    {
+      "module": "akas.quantization.weights.ggml.cuda",
+      "computations": [
+        "inline:57614fc5f1272151039319b0eacfa4dbfc94114d9d42fbbed9056b6add237faf",
+        "inline:644f59ca5dbfbfa9c5e856b2032c24f7e1ffacb2ef6177b0c7b0aec0433a6080",
+        "inline:69392b991aba4bb8acaf71c48114c6d861debdb9f6a4fde000d39cff7b3a71ee",
+        "inline:cff3dd0a7a810975d00a77528a008e48e4b1466782a99a4320408130808d798a"
+      ]
+    },
+    {
+      "module": "akas.quantization.weights.ggml.kernel",
+      "computations": [
+        "inline:176d5e9f15861c995ec27bdd411a2244f459857052b40442772292f95eac1144",
+        "inline:255af0346fb00bfaed040874f27eab9c3639867a73c5972a5b2695971f2fe5c8",
+        "inline:6ca759abbbf98410887ba003da161c7a6a31853951da28846b3b45645faa8a4a",
+        "inline:c981895be71addc646cd5b6a65000786b36533fc7911f181489384217c927a31",
+        "inline:f27c6c8fd3bf5d61abf11bdd8439805f13a4a2ceee32b55e634ece9698d64853"
+      ],
+      "related_modules": [
+        "akas.quantization.weights.ggml.cuda"
+      ]
+    }
+  ]
+}

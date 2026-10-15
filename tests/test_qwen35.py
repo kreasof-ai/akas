@@ -7,8 +7,8 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from akas.models.qwen35.weights import Qwen35Checkpoint
-from akas.models.qwen35.weights import Qwen35Config
+from akas.models.qwen35.weights import Qwen35MoECheckpoint
+from akas.models.qwen35.config import Qwen35MoEConfig
 
 
 def config():
@@ -60,7 +60,7 @@ def cfg():
 
 
 def test_resident_memory_includes_all_eight_full_contexts(cfg):
-    c = Qwen35Config.from_json(cfg)
+    c = Qwen35MoEConfig.from_json(cfg)
     memory = c.state_bytes(slots=8, context=48000)
     assert memory["kv"] == 7_864_320_000
     assert memory["recurrent"] == 503_316_480
@@ -92,7 +92,7 @@ def test_unsupported_variants_are_rejected(cfg, change):
     if change == "bias":
         cfg["text_config"]["attention_bias"] = True
     with pytest.raises(ValueError):
-        Qwen35Config.from_json(cfg)
+        Qwen35MoEConfig.from_json(cfg)
 
 
 @pytest.fixture
@@ -104,7 +104,7 @@ def checkpoint(tmp_path, monkeypatch, cfg):
         "model.language_model.test.weight": (128, 128),
         "model.language_model.test.weight_scale_inv": (1, 1),
     }
-    monkeypatch.setattr(Qwen35Config, "expected_tensors", lambda self: shapes)
+    monkeypatch.setattr(Qwen35MoEConfig, "expected_tensors", lambda self: shapes)
     (tmp_path / "config.json").write_text(json.dumps(cfg))
     header = {}
     raw = bytearray()
@@ -130,7 +130,7 @@ def checkpoint(tmp_path, monkeypatch, cfg):
 
 def test_checkpoint_native_bytes_are_preserved(checkpoint):
     path, _, _, _ = checkpoint
-    c = Qwen35Checkpoint(path)
+    c = Qwen35MoECheckpoint(path)
     assert c.weight_bytes == 16394
     np.testing.assert_array_equal(
         c.read("model.language_model.test.weight"), np.full((128, 128), 2, "uint8")
@@ -165,12 +165,12 @@ def test_malformed_checkpoint_rejected_before_gpu_allocation(checkpoint, defect)
     write()
     (path / "model.safetensors.index.json").write_text(json.dumps(index))
     with pytest.raises(ValueError):
-        Qwen35Checkpoint(path)
+        Qwen35MoECheckpoint(path)
 
 
 def test_partial_gpu_upload_frees_prior_allocations(checkpoint):
     path, _, _, _ = checkpoint
-    c = Qwen35Checkpoint(path)
+    c = Qwen35MoECheckpoint(path)
     closed = []
 
     def empty(shape, dtype):
@@ -190,13 +190,13 @@ def test_partial_gpu_upload_frees_prior_allocations(checkpoint):
 def test_mtp_branch_requires_supported_configuration(checkpoint):
     path, _, _, _ = checkpoint
     with pytest.raises(ValueError, match="one decoder layer"):
-        Qwen35Checkpoint(path, branch="mtp")
+        Qwen35MoECheckpoint(path, branch="mtp")
     with pytest.raises(ValueError, match="branch must be"):
-        Qwen35Checkpoint(path, branch="vision")
+        Qwen35MoECheckpoint(path, branch="vision")
 
 
 def test_mtp_contract_shares_embedding_and_head(cfg):
-    c = Qwen35Config.from_json(cfg)
+    c = Qwen35MoEConfig.from_json(cfg)
     shapes = c.expected_mtp_tensors()
     assert shapes["mtp.fc.weight"] == (2048, 4096)
     assert shapes["mtp.layers.0.self_attn.q_proj.weight"] == (8192, 2048)
@@ -222,10 +222,10 @@ def test_mtp_branch_reads_native_bytes_and_rejects_missing_tensors(
         header[mtp_name] = header.pop(name)
         index["weight_map"][mtp_name] = index["weight_map"].pop(name)
         shapes[mtp_name] = tuple(header[mtp_name]["shape"])
-    monkeypatch.setattr(Qwen35Config, "expected_mtp_tensors", lambda self: shapes)
+    monkeypatch.setattr(Qwen35MoEConfig, "expected_mtp_tensors", lambda self: shapes)
     write()
     (path / "model.safetensors.index.json").write_text(json.dumps(index))
-    c = Qwen35Checkpoint(path, branch="mtp")
+    c = Qwen35MoECheckpoint(path, branch="mtp")
     assert c.weight_bytes == 16394
     np.testing.assert_array_equal(
         c.read("mtp.test.weight"), np.full((128, 128), 2, "uint8")
@@ -233,4 +233,4 @@ def test_mtp_branch_reads_native_bytes_and_rejects_missing_tensors(
     del index["weight_map"]["mtp.norm.weight"]
     (path / "model.safetensors.index.json").write_text(json.dumps(index))
     with pytest.raises(ValueError, match="mtp tensor set mismatch"):
-        Qwen35Checkpoint(path, branch="mtp")
+        Qwen35MoECheckpoint(path, branch="mtp")

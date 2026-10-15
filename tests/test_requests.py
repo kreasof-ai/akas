@@ -11,7 +11,9 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from akas import Engine, EngineConfig, LFM2
+from akas import Engine
+from akas import EngineConfig
+from akas import LFM2
 from akas.benchmarking.session import Session
 
 
@@ -196,7 +198,8 @@ def test_shared_engine_schedules_and_reclaims_request_slots(fixture_bundle):
 
 @GPU
 def test_shared_http_serves_lfm2_with_real_cuda_resources(fixture_bundle):
-    from aiohttp.test_utils import TestClient,TestServer
+    from aiohttp.test_utils import TestClient
+    from aiohttp.test_utils import TestServer
     from akas.serving import create_app
     from support.serving import lfm2
     path,bundle=fixture_bundle

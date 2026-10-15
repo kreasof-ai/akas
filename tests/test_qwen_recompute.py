@@ -12,7 +12,7 @@ import pytest
 @pytest.mark.parametrize("chunk", [64, 128])
 def test_recompute_matches_every_frozen_prefix(tmp_path, chunk):
     import tensor
-    from tensor.compiler.frontend.source import export_source
+    from support.migration import source as export_source
     from akas.compilation.selection import source as operation_source
     from tensor.compiler.build import build_artifact
 
@@ -36,7 +36,7 @@ def test_recompute_matches_every_frozen_prefix(tmp_path, chunk):
         ),
         ("conv", "operation", "prefill", ("gdn_conv", dict(slots=s, chunk=c))),
         *(
-            (name, "akas.ops.gdn.cuda.recompute", name, (dict(slots=s, chunk=c),))
+            (name, "akas.ops.gdn.kernel", name, (dict(slots=s, chunk=c),))
             for name in ("save_scan", "save_conv", "restore_scan", "restore_conv")
         ),
     ):
@@ -145,16 +145,17 @@ def test_recompute_matches_every_frozen_prefix(tmp_path, chunk):
 )
 def test_c64_input_copy_at_int32_bitcount_boundary(tmp_path):
     import tensor
-    from tensor.compiler.frontend.source import export_source
+    from support.migration import source as export_source
     from akas.compilation.selection import source as operation_source
     from tensor.compiler.build import build_artifact
-    from tensor.runtime.dtypes import encode_bfloat16, decode_bfloat16
+    from tensor.runtime.dtypes import encode_bfloat16
+    from tensor.runtime.dtypes import decode_bfloat16
 
     source = tmp_path / "save_conv.py"
     artifact = source.with_suffix(".tbin")
     source.write_text(
         export_source(
-            "akas.ops.gdn.cuda.recompute",
+            "akas.ops.gdn.kernel",
             "save_conv",
             dict(slots=64, chunk=128),
             dependencies=("tensor.compiler.frontend.source",),
@@ -188,7 +189,7 @@ def test_c64_input_copy_at_int32_bitcount_boundary(tmp_path):
 )
 def test_c64_short_snapshot_restore_without_flat_bitcount_view(tmp_path):
     import tensor
-    from tensor.compiler.frontend.source import export_source
+    from support.migration import source as export_source
     from akas.compilation.selection import source as operation_source
     from tensor.compiler.build import build_artifact
 

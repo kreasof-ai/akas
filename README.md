@@ -7,7 +7,7 @@ generation and serving. Tensor provides compilation and device execution.
 Use Python 3.12. `uv.lock` pins Tensor to a published Git revision.
 
 ```sh
-uv sync --locked --extra compiler
+uv sync --locked --extra compiler --extra serving
 uv run --no-sync python tools/bootstrap_nvrtc.py --out build/nvrtc-12.9
 export TENSOR_NVRTC_HOME="$PWD/build/nvrtc-12.9"
 ```
@@ -15,8 +15,19 @@ export TENSOR_NVRTC_HOME="$PWD/build/nvrtc-12.9"
 The compiler is needed to build programs. Precompiled programs run without compiler
 packages. Optional extras are `webgpu`, `serving`, `reference`, and `cloud`.
 
-Compile a checkpoint using a model definition and the shared compiler. Kernel beam
-search runs by default. Choose capacities and geometries for the workload.
+Optimize a serving deployment by giving the checkpoint, workload and time budget.
+AKAS detects the model/backend and chooses inference settings:
+
+```sh
+akas optimize --model /path/to/model.gguf --workload standard-v1 \
+  --budget 30m --out build/deployment
+akas serve --deployment build/deployment/deployment.json
+```
+
+Install the `serving` extra for this workflow. See the
+[optimization guide](docs/optimization.md) for resource constraints, measurements
+and resuming a search. To control compilation directly, use the model definition
+and shared compiler. Kernel beam search runs by default:
 
 ```sh
 akas compile --definition akas.models.lfm2.model:LFM2 \
@@ -37,13 +48,16 @@ shared HTTP server with a caller-supplied service factory.
 The package layout is documented beside the implementation:
 
 - [Models](src/akas/models/README.md): architecture, checkpoint mapping and composition.
-- [Planning](src/akas/planning/README.md): graph composition and optimization.
-- [Operations](src/akas/ops/README.md): uniform kernel definitions and hardware choices.
-- [Compilation](src/akas/compilation/README.md): program building and default tuning.
+- [Quantization](src/akas/quantization/README.md): format-owned storage, codecs and kernels.
+- [Operations](src/akas/ops/README.md): shared TileLang kernels, backend decisions and a beginner authoring guide.
+- [Compilation](src/akas/compilation/README.md): graph composition, optimization, program building and default tuning.
+- [Optimization](src/akas/optimization/README.md): autonomous compilation, serving measurement and deployment selection.
+- [Benchmarking](src/akas/benchmarking/README.md): measurements, reproducible run history and schedule reuse.
 - [Execution](src/akas/execution/README.md): shared request state and phase execution.
 
-[The three-file residual model](examples/models/residual/) demonstrates composition
-using existing operations. `tests/support` contains synthetic checkpoints and
+[The complete bigram model](examples/models/bigram/) demonstrates the uniform
+model declaration and request lifecycle. [The residual graph](examples/graphs/residual/)
+demonstrates standalone numerical composition using existing operations. `tests/support` contains synthetic checkpoints and
 independent numerical oracles used by core tests.
 
 ```sh
@@ -51,5 +65,6 @@ uv run --no-sync python -m pytest
 uv build
 ```
 
-Historical experiments and reports are excluded from this repository. Daily
-performance measurement lives in `src/akas/benchmarking`.
+Read the [guides](docs/README.md) to extend the engine.
+[Benchmark history](benchmarks/README.md) records measurements by source, hardware,
+workload and configuration, with qualified schedules available for later searches.

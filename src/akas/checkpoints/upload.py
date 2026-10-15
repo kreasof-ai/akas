@@ -3,9 +3,7 @@
 import ctypes as ct
 import mmap
 from types import MappingProxyType
-
 import numpy as np
-
 from akas.checkpoints.safetensors import upload_bits
 
 DTYPES = {"BF16": "bfloat16", "F32": "float32", "F16": "float16", "F8_E4M3": "uint8"}
@@ -19,7 +17,9 @@ def upload_packed(device, checkpoint):
             if info.type in (0, 1):
                 raw = raw.view(np.float32 if info.type == 0 else np.float16)
             elif device.info["provider"] == "webgpu":
-                raw = raw.view(np.uint32)
+                from akas.quantization._shared.packing import pack_words
+
+                raw = pack_words(raw)
             weights[name] = device.from_numpy(np.ascontiguousarray(raw))
     except BaseException:
         for buffer in weights.values():
@@ -33,12 +33,14 @@ def convert_storage(raw, source_dtype, target_dtype):
     if target_dtype not in ("float16", "float32"):
         raise ValueError("numeric weight conversion requires float16 or float32")
     if source_dtype == "F8_E4M3":
-        from akas.quantization.weights.block_fp8 import decode_storage
-        if np.any((raw & 127) == 127):
+        from akas.quantization._shared.e4m3 import decode_storage
+
+        if np.any(raw & 127 == 127):
             raise ValueError("resident FP8 storage must be finite")
         values = decode_storage(raw)
     elif source_dtype == "BF16":
         from tensor.runtime.dtypes import decode_bfloat16
+
         values = decode_bfloat16(raw.view("uint16"))
     elif source_dtype in ("F16", "F32"):
         values = raw.view(DTYPES[source_dtype])
@@ -60,14 +62,18 @@ def upload_shards(device, tensors, wanted, layouts, *, conversions=None):
         if group_dtypes.setdefault(group, dtype) != dtype:
             raise ValueError("grouped weight storage has inconsistent source dtypes")
         source_width = 2 if dtype in ("BF16", "F16") else 4 if dtype == "F32" else 1
-        if group in conversions and (conversions[group] not in ("float16", "float32") or offset % source_width):
+        if group in conversions and (
+            conversions[group] not in ("float16", "float32") or offset % source_width
+        ):
             raise ValueError("invalid numeric weight conversion or group offset")
     buffers = {}
     try:
         for name in wanted:
             group, _, shape = layouts[name]
             if group not in buffers:
-                buffers[group] = device.empty(shape, conversions.get(group, DTYPES[tensors[name].dtype]))
+                buffers[group] = device.empty(
+                    shape, conversions.get(group, DTYPES[tensors[name].dtype])
+                )
         for shard in sorted({tensors[name].shard for name in wanted}):
             with (
                 shard.open("rb") as stream,
@@ -85,9 +91,21 @@ def upload_shards(device, tensors, wanted, layouts, *, conversions=None):
                         data = view
                         destination_offset = offset
                         if group in conversions:
-                            data = convert_storage(view.copy(), info.dtype, conversions[group])
-                            source_width = 2 if info.dtype in ("BF16", "F16") else 4 if info.dtype == "F32" else 1
-                            destination_offset = offset // source_width * np.dtype(conversions[group]).itemsize
+                            data = convert_storage(
+                                view.copy(), info.dtype, conversions[group]
+                            )
+                            source_width = (
+                                2
+                                if info.dtype in ("BF16", "F16")
+                                else 4
+                                if info.dtype == "F32"
+                                else 1
+                            )
+                            destination_offset = (
+                                offset
+                                // source_width
+                                * np.dtype(conversions[group]).itemsize
+                            )
                         device._check()
                         device.driver.call(
                             "cuMemcpyHtoD_v2",

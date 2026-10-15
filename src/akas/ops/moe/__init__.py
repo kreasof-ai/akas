@@ -1,1 +1,1 @@
-"""Shared moe implementation."""
+"""Moe operation definitions and implementations."""

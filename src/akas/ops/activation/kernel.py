@@ -1,20 +1,49 @@
-"""Shared normalization and activations; geometry and precision are parameters."""
+"""Shared TileLang computations for activation."""
+
+from collections.abc import Mapping
+from akas.kernels.definition import KernelSpec
+from akas.kernels.kernel import Tensor, kernel, output
 
 
-def swiglu_kernel(p):
+def swiglu(spec: KernelSpec, schedule: Mapping[str, object]):
+    from akas.ops.activation.kernel import _swiglu as swiglu_kernel
+
+    p = {**spec.parameters, **schedule}
+    parameters = dict(p)
+    if parameters.get("packed"):
+        parameters["r"] = p.get("slots", p.get("r", 1)) * p.get("chunk", 1)
+    return swiglu_kernel(parameters)
+
+
+def swiglu_experts(spec: KernelSpec, schedule: Mapping[str, object]):
+    from akas.ops.activation.kernel import _swiglu as swiglu_kernel
+
+    p = {**spec.parameters, **schedule}
+    parameters = dict(p)
+    if parameters.get("packed"):
+        parameters["r"] = p.get("slots", p.get("r", 1)) * p.get("chunk", 1)
+    return swiglu_kernel(parameters)
+
+
+def _swiglu(p):
     import tilelang.language as T
-    from tensor.compiler.frontend.source import primitive
 
-    r, c = p["r"], p["c"]
-    flat, packed = p.get("flat", False), p.get("packed", False)
+    r, c = (p["r"], p["c"])
+    flat, packed = (p.get("flat", False), p.get("packed", False))
     expert_rows = p.get("expert_rows", False)
     top = p.get("top", 1)
     rounded = p.get("round_inputs", False)
     input_dtype = p.get("input_dtype", "float32")
     output_dtype = p.get("output_dtype", input_dtype)
     round_dtype = p.get("round_dtype", output_dtype)
-    input_shape = (r, top, c) if expert_rows else ((r * c,) if flat else (r, (2 if packed else 1) * c))
-    output_shape = (r, top, c) if expert_rows else ((r * c,) if flat else (r, c))
+    input_shape = (
+        (r, top, c)
+        if expert_rows
+        else (r * c,)
+        if flat
+        else (r, (2 if packed else 1) * c)
+    )
+    output_shape = (r, top, c) if expert_rows else (r * c,) if flat else (r, c)
     if flat and packed:
         raise ValueError("packed SwiGLU uses a two-dimensional projection")
 
@@ -65,23 +94,47 @@ def swiglu_kernel(p):
                     if column < c:
                         element(g, u, out, row, column)
 
-    @T.macro
-    def joined(x, out):
-        separate(x, x, out)
-
     names = p.get("input_names", ("g", "u"))
-    arguments = [("x" if packed else names[0], input_shape, input_dtype)]
     if not packed:
-        arguments.append((names[1], input_shape, input_dtype))
-    arguments.append(("out", output_shape, output_dtype))
-    return primitive(arguments, joined if packed else separate)
 
+        @kernel(names={"g": "x" if packed else names[0], "u": names[1]})
+        def compute(
+            g: Tensor(input_shape, input_dtype), u: Tensor(input_shape, input_dtype)
+        ) -> Tensor(output_shape, output_dtype):
+            out = output(output_shape, output_dtype)
+            if expert_rows:
+                with T.Kernel(r, top, T.ceildiv(c, 256), threads=256) as (
+                    row,
+                    rank,
+                    tile,
+                ):
+                    for lane in T.Parallel(256):
+                        column = tile * 256 + lane
+                        if column < c:
+                            element(g, u, out, row * top + rank, column)
+            elif flat:
+                with T.Kernel(T.ceildiv(r * c, 256), threads=256) as block:
+                    for lane in T.Parallel(256):
+                        i = block * 256 + lane
+                        if i < r * c:
+                            element(g, u, out, i // c, i % c)
+            else:
+                with T.Kernel(r, T.ceildiv(c, 256), threads=256) as (row, tile):
+                    for lane in T.Parallel(256):
+                        column = tile * 256 + lane
+                        if column < c:
+                            element(g, u, out, row, column)
+            return out
 
+        return compute
+    if not not packed and packed:
 
-def make_kernel(kind, p):
-    if kind not in ("swiglu", "swiglu_experts"):
-        raise ValueError("unsupported activation: " + kind)
-    parameters = dict(p)
-    if parameters.get("packed"):
-        parameters["r"] = p.get("slots", p.get("r", 1)) * p.get("chunk", 1)
-    return swiglu_kernel(parameters)
+        @kernel(names={"x": "x" if packed else names[0]})
+        def compute(x: Tensor(input_shape, input_dtype)) -> Tensor(
+            output_shape, output_dtype
+        ):
+            out = output(output_shape, output_dtype)
+            separate(x, x, out)
+            return out
+
+        return compute

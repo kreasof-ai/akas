@@ -5,8 +5,8 @@ from akas.compilation.selection import source as kernel_source
 import os
 import numpy as np
 import pytest
-from akas.ops.schedules.packed_selection import valid_rows
-from akas.ops.schedules.packed_selection import webgpu_parameters
+from support.lfm_profiles import valid_rows
+from support.lfm_profiles import webgpu_parameters
 
 
 @pytest.mark.parametrize("chunk", [32, 64, 128])
@@ -152,7 +152,7 @@ def test_common_prefill_qualified_chunks_and_final_readback(chunks,count,expecte
 @pytest.mark.parametrize("layout,fma", [("km", True), ("mk", False)])
 def test_mixed_activation_outer_product_fusion_and_tails(tmp_path, kind, layout, fma):
     import tensor
-    from akas.compilation.emit import export_kernel as source
+    from support.migration import source as source
     from support.projection_reference import reference
 
     r, k, o = 35, 129, 33
@@ -218,7 +218,7 @@ def test_short_half_fma_chains_against_explicit_rounding(
     tmp_path, kind, unroll, magnitude, group_order
 ):
     import tensor
-    from akas.compilation.emit import export_kernel as source
+    from support.migration import source as source
 
     r, k, o = 35, 37, 34
     rng = np.random.default_rng(1683)
@@ -301,7 +301,7 @@ def test_short_half_fma_chains_against_explicit_rounding(
 )
 def test_parallel_prefill_rms_matches_independent_reduction(tmp_path):
     import tensor
-    from akas.compilation.emit import export_kernel as source
+    from support.migration import source as source
 
     r, c = 35, 2048
     rng = np.random.default_rng(1725)
@@ -360,7 +360,7 @@ def test_packed_outer_product_rounding_fusion_and_output_tail(
     import tensor
     from akas.checkpoints.gguf import TYPES
     from akas.checkpoints.gguf import dequantize
-    from akas.compilation.emit import export_kernel as source
+    from support.migration import source as source
     from support.projection_reference import reference
 
     r, k, o = 35, 288 if encoding == 2 else 256, 34

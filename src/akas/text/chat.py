@@ -14,6 +14,22 @@ def generation_prefix(template, default=None):
         )
         if match:
             return match[2].replace("\\n", "\n")
+        # Some templates append a thinking-mode branch after the assistant role.
+        # The single-user API uses that template's explicit non-thinking default.
+        match = regex.search(
+            r"""(?x)
+            \{%-?\s*if\s+add_generation_prompt\s*-?%\}\s*
+            \{\{-?\s*(?P<role_quote>["'])(?P<role><\|im_start\|>assistant(?:\\n|\n))(?P=role_quote)\s*-?\}\}\s*
+            \{%-?\s*if\s+enable_thinking\s+is\s+defined\s+and\s+enable_thinking\s+is\s+true\s*-?%\}\s*
+            \{\{-?\s*(?P<think_quote>["'])<think>(?:\\n|\n)(?P=think_quote)\s*-?\}\}\s*
+            \{%-?\s*else\s*-?%\}\s*
+            \{\{-?\s*(?P<default_quote>["'])(?P<default><think>(?:\\n|\n){2}</think>(?:\\n|\n){2})(?P=default_quote)\s*-?\}\}\s*
+            \{%-?\s*endif\s*-?%\}\s*\{%-?\s*endif\s*-?%\}\s*\Z
+            """,
+            template,
+        )
+        if match:
+            return (match["role"] + match["default"]).replace("\\n", "\n")
     return None
 
 

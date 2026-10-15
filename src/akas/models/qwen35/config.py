@@ -1,12 +1,13 @@
 """Architecture dimensions and checkpoint constraints for dense and MoE Qwen."""
 
 from __future__ import annotations
-from dataclasses import dataclass
+
 import math
+from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
-class Qwen35Config:
+class Qwen35MoEConfig:
     layers: tuple[str, ...]
     context_limit: int
     epsilon: float
@@ -25,6 +26,22 @@ class Qwen35Config:
     experts: int = 256
     top_k: int = 8
     expert_width: int = 512
+
+    @property
+    def qkv_width(self):
+        return 2 * self.key_heads * self.key_dim + self.value_heads * self.value_dim
+
+    @property
+    def value_width(self):
+        return self.value_heads * self.value_dim
+
+    @property
+    def theta(self):
+        return self.rope_theta
+
+    @classmethod
+    def from_gguf(cls, gguf):
+        return parse_gguf(gguf, moe=True)
 
     @classmethod
     def from_json(cls, value):
@@ -47,7 +64,7 @@ class Qwen35Config:
 
 
 @dataclass(frozen=True)
-class DenseConfig:
+class Qwen35DenseConfig:
     width: int
     intermediate: int
     vocab: int
@@ -67,6 +84,10 @@ class DenseConfig:
     @classmethod
     def from_json(cls, value):
         return parse_dense_config(value)
+
+    @classmethod
+    def from_gguf(cls, gguf):
+        return parse_gguf(gguf, moe=False)
 
     @property
     def qkv_width(self):
@@ -139,7 +160,7 @@ def parse_moe_config(value):
         raise ValueError("invalid Qwen35 numeric configuration")
     if text.get("mlp_only_layers") or text.get("layer_scale", False):
         raise ValueError("unsupported Qwen35 decoder variant")
-    return Qwen35Config(layers, limit, epsilon, theta)
+    return Qwen35MoEConfig(layers, limit, epsilon, theta)
 
 
 def parse_dense_config(value):
@@ -156,7 +177,7 @@ def parse_dense_config(value):
         or (not rope["mrope_interleaved"])
     ):
         raise ValueError("unsupported dense Qwen variant")
-    result = DenseConfig(
+    result = Qwen35DenseConfig(
         text["hidden_size"],
         text["intermediate_size"],
         text["vocab_size"],
@@ -184,3 +205,121 @@ def parse_dense_config(value):
     ):
         raise ValueError("unsupported dense Qwen geometry")
     return result
+
+
+def parse_gguf(gguf, *, moe):
+    """Read Qwen geometry from GGUF, independently of its weight encoding."""
+    from akas.checkpoints.gguf import GGUFError
+
+    metadata = gguf.metadata
+    architecture = "qwen35moe" if moe else "qwen35"
+    if metadata.get("general.architecture") != architecture:
+        raise GGUFError(f"requires the {architecture} GGUF architecture")
+
+    def integer(name, default=None):
+        value = metadata.get(architecture + "." + name, default)
+        if type(value) is not int or value <= 0:
+            raise GGUFError(f"invalid {architecture}.{name}")
+        return value
+
+    count = integer("block_count")
+    extra = metadata.get(architecture + ".nextn_predict_layers", 0)
+    if type(extra) is not int or not 0 <= extra < count:
+        raise GGUFError("invalid Qwen GGUF MTP layer count")
+    count -= extra
+    recurrent = metadata.get(architecture + ".attention.recurrent_layers")
+    if recurrent is None:
+        interval = integer("full_attention_interval", 4)
+        recurrent = [(index + 1) % interval != 0 for index in range(count)] + [
+            False
+        ] * extra
+    if (
+        not isinstance(recurrent, (tuple, list))
+        or len(recurrent) != count + extra
+        or any(type(flag) is not bool for flag in recurrent)
+    ):
+        raise GGUFError("invalid Qwen GGUF recurrent layer array")
+    layers = tuple(
+        "linear_attention" if flag else "full_attention" for flag in recurrent[:count]
+    )
+    width = integer("embedding_length")
+    vocab = len(metadata.get("tokenizer.ggml.tokens", ()))
+    if not vocab:
+        vocab = integer("vocab_size")
+    epsilon = metadata.get(architecture + ".attention.layer_norm_rms_epsilon")
+    theta = metadata.get(architecture + ".rope.freq_base")
+    if any(
+        type(value) not in (float, int) or not math.isfinite(value) or value <= 0
+        for value in (epsilon, theta)
+    ):
+        raise GGUFError("invalid Qwen GGUF norm or rotary parameters")
+    heads, kv_heads = (
+        integer("attention.head_count"),
+        integer("attention.head_count_kv"),
+    )
+    dim, value_dim = integer("attention.key_length"), integer("attention.value_length")
+    key_heads, value_heads = integer("ssm.group_count"), integer("ssm.time_step_rank")
+    state_dim = integer("ssm.state_size")
+    rotary = integer("rope.dimension_count")
+    if (
+        dim != 256
+        or value_dim != dim
+        or rotary != 64
+        or state_dim != 128
+        or integer("ssm.conv_kernel") != 4
+        or heads % kv_heads
+        or value_heads % key_heads
+        or integer("ssm.inner_size") != value_heads * state_dim
+        or metadata.get(architecture + ".rope.dimension_sections") != [11, 11, 10, 0]
+        or "full_attention" not in layers
+    ):
+        raise GGUFError("unsupported Qwen GGUF attention geometry")
+    context = integer("context_length")
+    if moe:
+        experts, top = integer("expert_count"), integer("expert_used_count")
+        expert_width = integer("expert_feed_forward_length")
+        shared = integer("expert_shared_feed_forward_length", expert_width)
+        if top > experts or shared != expert_width:
+            raise GGUFError("unsupported Qwen GGUF expert geometry")
+        return Qwen35MoEConfig(
+            layers,
+            context,
+            epsilon,
+            theta,
+            width,
+            vocab,
+            heads,
+            kv_heads,
+            dim,
+            rotary,
+            key_heads,
+            value_heads,
+            state_dim,
+            state_dim,
+            4,
+            experts,
+            top,
+            expert_width,
+        )
+    return Qwen35DenseConfig(
+        width,
+        integer("feed_forward_length"),
+        vocab,
+        layers,
+        heads,
+        kv_heads,
+        dim,
+        key_heads,
+        value_heads,
+        state_dim,
+        state_dim,
+        epsilon,
+        theta,
+        rotary,
+        context,
+    )
+
+
+# Compatibility for existing imports and stored definition paths.
+Qwen35Config = Qwen35MoEConfig
+DenseConfig = Qwen35DenseConfig

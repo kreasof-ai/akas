@@ -1,21 +1,28 @@
 """Qwen checkpoint inventory, raw storage constraints and projection layouts."""
 
 from __future__ import annotations
-from functools import cached_property
-from akas.checkpoints.upload import upload_shards
-from akas.checkpoints.upload import upload_concatenated
-from akas.models.qwen35.config import Qwen35Config
+
 from collections import Counter
+from functools import cached_property
 from pathlib import Path
-from akas.checkpoints.safetensors import inspect_tensors
-from akas.checkpoints.safetensors import read_tensor
+
+from akas.checkpoints.safetensors import inspect_tensors, read_tensor
 from akas.checkpoints.safetensors import json_document as _json
+from akas.checkpoints.upload import upload_concatenated, upload_shards
+from akas.models.qwen35.config import Qwen35DenseConfig, Qwen35MoEConfig
 
 
-class Qwen35Checkpoint:
-    """Validate the complete text checkpoint before allocating GPU weights."""
+class Qwen35MoECheckpoint:
+    """Validate the MoE text checkpoint before allocating GPU weights."""
 
     storage = {"F8_E4M3": ("uint8", 1), "BF16": ("uint16", 2), "F32": ("float32", 4)}
+
+    def __new__(cls, directory, *, branch="text"):
+        if Path(directory).is_file() or Path(directory).suffix.lower() == ".gguf":
+            from ._gguf import Checkpoint
+
+            return Checkpoint(directory, moe=True, branch=branch)
+        return super().__new__(cls)
 
     @cached_property
     def tokenizer(self):
@@ -26,7 +33,7 @@ class Qwen35Checkpoint:
     def __init__(self, directory, *, branch="text"):
         self.directory = Path(directory).resolve()
         value = _json((self.directory / "config.json").read_bytes())
-        self.config = Qwen35Config.from_json(value)
+        self.config = Qwen35MoEConfig.from_json(value)
         if branch not in ("text", "mtp"):
             raise ValueError("checkpoint branch must be text or mtp")
         self.branch = branch
@@ -92,7 +99,7 @@ class Qwen35Checkpoint:
 
     @property
     def weight_bytes(self):
-        return sum((info.nbytes for info in self.tensors.values()))
+        return sum(info.nbytes for info in self.tensors.values())
 
     def inventory(self):
         counts, sizes = (Counter(), Counter())
@@ -169,7 +176,7 @@ class Qwen35Checkpoint:
         """Use the same grouped storage declaration for graphs and transfers."""
         wanted = list(self.tensors) if names is None else list(names)
         if len(set(wanted)) != len(wanted) or any(
-            (n not in self.tensors for n in wanted)
+            n not in self.tensors for n in wanted
         ):
             raise ValueError("unknown or duplicate requested checkpoint tensor")
         layouts = {}
@@ -187,7 +194,7 @@ class Qwen35Checkpoint:
             else:
                 layouts[name] = (name, 0, info.shape)
         if pack_experts:
-            counts = Counter((v[0] for v in layouts.values()))
+            counts = Counter(v[0] for v in layouts.values())
             for group, count in counts.items():
                 if ".mlp.experts." in group and count != self.config.experts:
                     raise ValueError(
@@ -221,10 +228,16 @@ class Qwen35Checkpoint:
         }
 
 
-from akas.models.qwen35.config import DenseConfig
+class Qwen35DenseCheckpoint:
+    """Read the dense text checkpoint and its existing MTP weights."""
 
+    def __new__(cls, directory):
+        if Path(directory).is_file() or Path(directory).suffix.lower() == ".gguf":
+            from ._gguf import Checkpoint
 
-class DenseCheckpoint:
+            return Checkpoint(directory, moe=False)
+        return super().__new__(cls)
+
     def program_upload_options(self, weights, *, model_options):
         """Select the checkpoint branch from the program's declared weights."""
         return {
@@ -241,7 +254,7 @@ class DenseCheckpoint:
 
     def __init__(self, directory):
         self.directory = Path(directory).resolve()
-        self.config = DenseConfig.from_json(
+        self.config = Qwen35DenseConfig.from_json(
             _json((self.directory / "config.json").read_bytes())
         )
         index = _json((self.directory / "model.safetensors.index.json").read_bytes())[
@@ -488,6 +501,14 @@ def expected_mtp_tensors(config):
 def expected_tensors(config):
     return (
         expected_moe_tensors(config)
-        if isinstance(config, Qwen35Config)
+        if isinstance(config, Qwen35MoEConfig)
         else expected_dense_tensors(config)
     )
+
+
+# Compatibility for existing imports and stored definition paths.
+Qwen35Checkpoint = Qwen35MoECheckpoint
+DenseCheckpoint = Qwen35DenseCheckpoint
+# These config names were also importable from this module.
+Qwen35Config = Qwen35MoEConfig
+DenseConfig = Qwen35DenseConfig

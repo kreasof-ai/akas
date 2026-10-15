@@ -4,10 +4,10 @@ from types import SimpleNamespace
 
 from akas.artifacts.schema import identity
 from akas.execution.plan import KernelPlan
-from akas.ops.linear.compose import linear
-from akas.ops.linear.compose import split_linear
-from akas.ops.normalization.operation import rms_norm
-from akas.quantization.activations.cache import ActivationCache
+from akas.ops.linear.definition import linear
+from akas.ops.linear.definition import split_linear
+from akas.ops.normalization.definition import rms_norm
+from akas.compilation.quantization import FP8ActivationCache
 
 
 class Plan:
@@ -85,7 +85,7 @@ def test_quantized_scratch_reuses_reads_and_invalidates_all_overwritten_aliases(
     unused = SimpleNamespace(shape=(4, 128))
     sources = dict(first=source, alias=source, other=unused)
     outputs = {name: (object(), object()) for name in sources}
-    cache = ActivationCache(sources, outputs, rows=4)
+    cache = FP8ActivationCache(sources, outputs, rows=4)
     selected = kernel("x", "out", "scales")
     parameters = dict(r=4, k=128, top=8)
     plan = Plan()
@@ -114,8 +114,9 @@ def test_single_split_borrows_output_and_multi_split_emits_merge():
     source = object()
     weight = SimpleNamespace(shape=(64, 128))
     output = SimpleNamespace(pointer=123, dtype="float32")
-    output.view = lambda shape: SimpleNamespace(pointer=output.pointer, shape=shape,
-                                               dtype=output.dtype, owner=output)
+    output.view = lambda shape: SimpleNamespace(
+        pointer=output.pointer, shape=shape, dtype=output.dtype, owner=output
+    )
     scratch = object()
     views = []
     split_linear(

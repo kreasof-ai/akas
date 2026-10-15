@@ -7,10 +7,12 @@ from threading import get_ident
 import time
 from types import SimpleNamespace
 
-from aiohttp.test_utils import TestClient, TestServer
+from aiohttp.test_utils import TestClient
+from aiohttp.test_utils import TestServer
 import pytest
 
-from akas import Engine, EngineConfig
+from akas import Engine
+from akas import EngineConfig
 from akas.serving import Service
 from akas.serving import create_app
 

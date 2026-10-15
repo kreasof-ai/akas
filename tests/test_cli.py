@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 import json
 import sys
+import pytest
 from akas.cli import main
 
 
@@ -177,7 +178,7 @@ def test_benchmark_compiles_one_program_bank_for_all_requested_batches(monkeypat
     monkeypatch.setattr(cli, "table", lambda rows: "")
     monkeypatch.setattr(cli, "write_report", lambda out, metadata, results:
                         dict(metadata=metadata, results=results))
-    monkeypatch.setattr(sys, "argv", ["akas", "bench", "--definition", "foreign:Model",
+    monkeypatch.setattr(sys, "argv", ["akas", "bench", "--history", str(tmp_path / "history"), "--definition", "foreign:Model",
         "--checkpoint", str(checkpoint), "--bundles", str(tmp_path / "bank"),
         "--compile", "--batches", "1", "4", "--prompts", "4", "--generated", "2",
         "--prefill-chunk", "4", "--checkpoint-options", '{"tokenizer":false}',
@@ -190,3 +191,39 @@ def test_benchmark_compiles_one_program_bank_for_all_requested_batches(monkeypat
     assert options["checkpoint_options"] == {"tokenizer": False}
     assert len(opened) == 2 and opened[0][0] == opened[1][0]
     assert all(options["checkpoint_options"] == {"tokenizer": False} for _, options in opened)
+    recorded = json.loads(next((tmp_path / "history/runs").glob("*/run.json")).read_text())
+    assert recorded["status"] == "passed" and len(recorded["results"]) == 2
+
+
+def test_benchmark_records_device_startup_failure(monkeypatch, tmp_path):
+    import tensor
+    from akas import cli
+
+    class Model:
+        pass
+
+    def unavailable(*args, **options):
+        raise RuntimeError("adapter unavailable")
+
+    monkeypatch.setattr(tensor, "Device", unavailable)
+    monkeypatch.setattr(cli, "_factory", lambda value: Model)
+    monkeypatch.setattr(sys, "argv", ["akas", "bench", "--definition", "test:Model",
+        "--checkpoint", str(tmp_path / "weights"), "--bundles", str(tmp_path / "bank"),
+        "--batches", "1", "--prompts", "32", "--out", str(tmp_path / "report.json"),
+        "--history", str(tmp_path / "history")])
+    with pytest.raises(RuntimeError, match="adapter unavailable"):
+        cli.main()
+    recorded = json.loads(next((tmp_path / "history/runs").glob("*/run.json")).read_text())
+    assert recorded["status"] == "failed"
+    assert recorded["results"][0]["error"] == "adapter unavailable"
+
+
+def test_checkpoint_file_identity_depends_on_bytes_not_filename(tmp_path):
+    import hashlib
+    from akas.cli import checkpoint_digest
+
+    first, renamed = tmp_path / "original.gguf", tmp_path / "renamed.gguf"
+    first.write_bytes(b"same checkpoint bytes")
+    renamed.write_bytes(first.read_bytes())
+    assert checkpoint_digest(first) == checkpoint_digest(renamed)
+    assert checkpoint_digest(first) == hashlib.sha256(first.read_bytes()).hexdigest()

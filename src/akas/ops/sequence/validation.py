@@ -1,13 +1,45 @@
-"""Independent arithmetic and state qualification for sequence operations."""
+"""Independent numerical and state qualification for sequence."""
+
+
+def tail_validation(kind, p, signature):
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    values = sample_arguments(signature)
+    rows, chunk, tail = (p["r"], p["chunk"], p["tail"])
+    values["lengths"][:] = np.resize(
+        np.asarray([chunk, 0, min(chunk, 2), max(0, chunk - 1)], dtype="int32"), rows
+    )
+    if "positions" in values:
+        values["positions"][:] = np.arange(rows * chunk, dtype="int32") + 17
+    expected = {name: value.copy() for name, value in values.items()}
+    if kind == "chunk_tail":
+        inputs = values["x"].reshape(rows, chunk, p["c"])
+        out = np.zeros((rows, tail, p["c"]), dtype="float32")
+        for row, length in enumerate(values["lengths"]):
+            count = min(length, tail)
+            out[row, :count] = inputs[row, max(length - tail, 0) : length]
+        expected["out"][:] = out.reshape(values["out"].shape)
+    else:
+        outpositions = np.zeros((rows, tail), dtype="int32")
+        outactive = np.zeros((rows, tail), dtype="int32")
+        positions = values["positions"].reshape(rows, chunk)
+        for row, length in enumerate(values["lengths"]):
+            count = min(length, tail)
+            outpositions[row, :count] = positions[row, max(length - tail, 0) : length]
+            outactive[row, :count] = 1
+        expected["outpositions"][:] = outpositions.reshape(values["outpositions"].shape)
+        expected["outactive"][:] = outactive.reshape(values["outactive"].shape)
+        expected["outlengths"][:] = np.minimum(values["lengths"], tail)
+    return ValidationCase(values, expected, rtol=0, atol=0)
 
 
 def validation(kind, p, signature):
     import numpy as np
-
-    from akas.ops.contracts import ValidationCase, sample_arguments
+    from akas.kernels.contracts import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
-    r, chunk = p.get("r", p.get("slots", 1)), p.get("chunk", 1)
+    r, chunk = (p.get("r", p.get("slots", 1)), p.get("chunk", 1))
     if "enabled" in values:
         values["enabled"][:] = chunk
         if r > 1:
@@ -44,12 +76,17 @@ def validation(kind, p, signature):
         ).reshape(-1)
     elif kind == "last_rows":
         x = values["x"].reshape(r, chunk, p.get("c", p.get("width")))
-        out = x[np.arange(r), np.maximum(values["lengths"] - (0 if p.get("all_tokens", False) else 1), 0)].copy()
+        out = x[
+            np.arange(r),
+            np.maximum(values["lengths"] - (0 if p.get("all_tokens", False) else 1), 0),
+        ].copy()
         out[values["lengths"] == 0] = 0
         expected["out"][:] = out.reshape(expected["out"].shape)
     elif kind == "advance":
         if "position" in values:
-            expected["position"] += np.maximum(values["lengths"] - (0 if p.get("all_tokens", False) else 1), 0)
+            expected["position"] += np.maximum(
+                values["lengths"] - (0 if p.get("all_tokens", False) else 1), 0
+            )
             expected["active"][:] = values["lengths"] > 0
         else:
             expected["positions"] += np.where(
@@ -76,7 +113,8 @@ def validation(kind, p, signature):
     elif kind == "chunk_last":
         x = values["x"].reshape(r, chunk, p["c"])
         expected["out"][:] = x[
-            np.arange(r), np.maximum(values["lengths"] - (0 if p.get("all_tokens", False) else 1), 0)
+            np.arange(r),
+            np.maximum(values["lengths"] - (0 if p.get("all_tokens", False) else 1), 0),
         ].reshape(expected["out"].shape)
     else:
         raise ValueError(f"missing control validation for {kind}")

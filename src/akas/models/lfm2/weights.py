@@ -1,8 +1,7 @@
 """Validate an LFM2 GGUF checkpoint and upload its packed weights."""
 
+from akas.checkpoints.gguf import GGUF, GGUFError
 from akas.checkpoints.upload import upload_packed
-from akas.checkpoints.gguf import GGUF
-from akas.checkpoints.gguf import GGUFError
 from akas.models.lfm2.config import Config
 from akas.text.tokenizer import Tokenizer
 
@@ -109,18 +108,26 @@ class ReferenceCheckpoint:
 
     def program_upload_options(self, weights, *, model_options):
         matrices = tensor_shapes(self.config, output="output.weight" in self.names)
-        dtypes = {spec.dtype for name, spec in weights.items()
-                  if len(matrices[name.split(".part")[0]]) == 2
-                  and not name.endswith("conv.weight")}
+        dtypes = {
+            spec.dtype
+            for name, spec in weights.items()
+            if len(matrices[name.split(".part")[0]]) == 2
+            and (not name.endswith("conv.weight"))
+        }
         if len(dtypes) != 1:
-            raise ValueError("floating checkpoint requires one matrix storage precision")
-        return dict(matrix_dtype=dtypes.pop(),
-                    max_weight_bytes=model_options.get("max_weight_bytes", 64 * 1024 * 1024))
+            raise ValueError(
+                "floating checkpoint requires one matrix storage precision"
+            )
+        return dict(
+            matrix_dtype=dtypes.pop(),
+            max_weight_bytes=model_options.get("max_weight_bytes", 64 * 1024 * 1024),
+        )
 
     def __init__(self, path, *, tokenizer=True):
-        from pathlib import Path
         import json
-        from akas.checkpoints.safetensors import tensor_index, inspect_float_tensors
+        from pathlib import Path
+
+        from akas.checkpoints.safetensors import inspect_float_tensors, tensor_index
 
         self.path = Path(path)
         self.gguf = None
@@ -165,7 +172,7 @@ class ReferenceCheckpoint:
         try:
             for name in self.names:
                 values = self.read(name)
-                if values.ndim == 2 and not name.endswith("conv.weight"):
+                if values.ndim == 2 and (not name.endswith("conv.weight")):
                     values = values.astype(matrix_dtype)
                 for part in partitions(name, values.shape, max_bytes=max_weight_bytes):
                     selected = (
@@ -189,7 +196,7 @@ def huggingface_names(config, *, output=False):
     if output:
         names["output.weight"] = "lm_head.weight"
     for i, kind in enumerate(config.layers):
-        prefix, hf = f"blk.{i}.", f"model.layers.{i}."
+        prefix, hf = (f"blk.{i}.", f"model.layers.{i}.")
         mapped = {
             "attn_norm": "operator_norm",
             "ffn_norm": "ffn_norm",
@@ -229,13 +236,15 @@ class PackedWeights:
 
     def __init__(self, graph, checkpoint, *, provider):
         from math import prod
-        from akas.quantization.weights.ggml import weight_storage
+
+        from akas.quantization.weights.ggml.definition import weight_storage
 
         self.checkpoint = checkpoint
         self.buffers = {}
         for name, info in checkpoint.gguf.tensors.items():
-            count, dtype = weight_storage(info.type, prod(info.shape),
-                                          packed_words=provider == "webgpu")
+            count, dtype = weight_storage(
+                info.type, prod(info.shape), packed_words=provider == "webgpu"
+            )
             self.buffers[name] = graph.buffer(name, (count,), dtype, role="weight")
 
     def __getitem__(self, name):

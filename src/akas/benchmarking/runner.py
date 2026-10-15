@@ -32,6 +32,9 @@ def run(session, case, *, repeats=5, warmup=1, seed=17, clock=time.perf_counter)
         raise ValueError("positive repeats and nonnegative warmup required")
     if session.batch != case.batch or case.capacity > session.capacity:
         raise ValueError("case does not fit session batch/capacity")
+    if case.generated < 2:
+        raise ValueError("decode throughput requires at least two total output tokens")
+    decode_steps = case.generated - 1  # Prefill already predicts the first token.
     rng = np.random.default_rng(seed)
     prompts = [
         rng.integers(0, session.config.vocab, n, dtype="int32") for n in case.lengths
@@ -58,7 +61,7 @@ def run(session, case, *, repeats=5, warmup=1, seed=17, clock=time.perf_counter)
             timed(lambda: session.prefill(context, read=False)) if case.depth else 0.0
         )
         pp = timed(lambda: session.prefill(prompts, read=False))
-        tg = timed(lambda: session.decode(case.generated, read=False))
+        tg = timed(lambda: session.decode(decode_steps, read=False))
         if iteration >= warmup:
             samples.append(
                 dict(
@@ -66,10 +69,11 @@ def run(session, case, *, repeats=5, warmup=1, seed=17, clock=time.perf_counter)
                     prefill_seconds=pp,
                     decode_seconds=tg,
                     prefill_tokens_per_second=sum(case.lengths) / pp,
-                    decode_tokens_per_second=case.batch * case.generated / tg,
-                    decode_tokens_per_second_per_request=case.generated / tg,
+                    decode_tokens_per_second=case.batch * decode_steps / tg,
+                    decode_tokens_per_second_per_request=decode_steps / tg,
+                    output_tokens_per_second=case.batch * case.generated / (pp + tg),
                     ttft_seconds=pp,
-                    inter_token_seconds=tg / case.generated,
+                    inter_token_seconds=tg / decode_steps,
                 )
             )
     summary = {
@@ -85,6 +89,7 @@ def run(session, case, *, repeats=5, warmup=1, seed=17, clock=time.perf_counter)
         warmup=warmup,
         prompt_tokens=sum(case.lengths),
         generated_tokens=case.batch * case.generated,
+        decode_tokens=case.batch * decode_steps,
         allocated_bytes=session.allocated_bytes,
         samples=samples,
         summary=summary,

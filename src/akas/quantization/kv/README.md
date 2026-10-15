@@ -1,53 +1,30 @@
 # KV quantization
 
-KV formats are independent of model definitions, attention algorithms and weight
-quantization. `format.py` describes payload/metadata storage and discovers a
-format's `FORMAT` definition from its named module. It imports no compiler.
+Each cache format follows the same six-file pattern as operations:
 
 ```text
-kv_quantization/
-├── format.py          # Format/Storage contracts and lazy discovery
-├── fp8.py             # Existing E4M3 block-128 layout and provider declaration
-├── cuda/fp8.py        # Inline pair encoder, scalar decoder and packed decoder
-├── kernels.py         # Standalone kv_encode/kv_decode operations
-└── implementations.py # Register standalone operations under the kv-pair ABI
+fp8/
+    __init__.py
+    definition.py
+    kernel.py
+    cuda.py
+    webgpu.py
+    validation.py
+    README.md
 ```
 
-To add a codec, provide `<name>.py` with `FORMAT = Format(name, layout, providers)`
-and a provider module. `layout(logical_shape)` returns `Storage(payload,
-metadata)` using `BufferSpec`s. K and V store separate metadata; persistent-state
-ordering is K payload, V payload, K metadata, V metadata. The format owns packed
-storage dimensions and metadata precision. Shared memory allocation asks the
-format for this layout rather than assuming FP8 scales.
+[codec.py](codec.py) supplies scope-specific lookup, unquantized dtype checks and
+`pair_layout(name, shape, provider=...)`. Persistent state order is K values,
+V values, K metadata, V metadata; each cache owns its metadata independently.
+Provider selection reaches physical allocation, including packed WebGPU words.
+This K/V pairing convenience is not part of the generic format contract.
 
-The current CUDA pair ABI accepts one metadata buffer per cache. Its provider
-implements `writer(head_dim, value_offset=0)`, returning an inline macro with
-arguments `(keys, values, row, head, slot, position, kc, vc, ks, vs)`, and
-`decoder()`, returning a macro `(cache, metadata, slot, head, position, channel)`.
-Keys arrive prepared in BF16; values arrive as an FP32 projection and the existing
-FP8 encoder rounds them through BF16. A codec defines its own encoding and
-metadata lookup. The decoder returns a floating-point value. For compatible
-packed attention loads, declare `PACKED_DTYPE` and supply `packed_decoder()`;
-unsupported representations should reject that fast path. Layouts with more
-metadata buffers need another compatible operation ABI and attention binding.
+[FP8](fp8/README.md) provides shared scalar/tile access, writing and standalone
+pair conversions on CUDA and WebGPU. Native prepared-key writing and packed
+attention loads are additional CUDA capabilities with explicit geometry limits.
 
-Attention owns normalization, rotary transforms, masks, cache positions and
-reductions. `attention/cuda/quantized.py` delegates storage and conversion to the
-selected codec. Existing split, workspace and Hopper paths delegate FP8 conversion
-as well, while retaining their qualified FP8 layouts. Their hardware/layout
-qualification is separate from format availability.
+Attention owns masks, rotary transforms, cache positions and computation.
+Quantization owns payload packing, scales, rounding and access. Add a package
+with a local `FORMAT`; no central format-name table needs editing.
 
-The existing `kv_dtype="fp8"` option, block size, rounding, scales and cache ABI
-are preserved. Standalone encode/decode kernels exercise dimensions 128/256/512
-and one/three KV heads; FP8 encoding currently requires channels divisible by
-128. The fixed Qwen attention geometry and other providers' codec support are
-separate work. Choosing another codec does not make an incompatible attention
-layout valid automatically.
-
-The LFM reference path adds portable `reference_writer` / `reference_decoder`
-helpers over F32 projections, including 64-channel partial blocks. A descriptor
-may provide a `layouts` mapping, selected by `storage(shape, provider=...)`. FP8
-on WebGPU packs four payload bytes per `uint32`; scales retain logical block
-shape. CUDA reference payloads use bytes. The original optimized CUDA writer
-still has its qualified multiple-of-128 channel contract. Backend availability
-does not make an existing attention ABI compatible with a new provider.
+See the [quantization guide](../README.md) for the common binding and file roles.

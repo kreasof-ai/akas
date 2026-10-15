@@ -1,1 +1,1 @@
-"""Device control operations for composed replay plans."""
+"""Control operation definitions and implementations."""

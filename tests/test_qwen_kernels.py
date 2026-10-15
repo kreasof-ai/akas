@@ -15,7 +15,7 @@ GPU = pytest.mark.skipif(
 
 def build(tmp_path, kind, p):
     from tensor.compiler.build import build_artifact
-    from akas.compilation.emit import export_kernel as source
+    from support.migration import source as source
 
     entry = tmp_path / (kind + ".py")
     entry.write_text(
@@ -34,7 +34,7 @@ def build(tmp_path, kind, p):
 
 def build_mma(tmp_path, factory, *args):
     from tensor.compiler.build import build_artifact
-    from tensor.compiler.frontend.source import export_source
+    from support.migration import source as export_source
 
     entry = tmp_path / (factory + str(len(list(tmp_path.glob("*.py")))) + ".py")
     entry.write_text(
@@ -201,7 +201,8 @@ def test_every_e4m3_storage_bit_against_torch(tmp_path):
 def test_native_fp8_block_linear_against_independent_quantized_matmul(tmp_path, r):
     import tensor
     import torch
-    from tensor.runtime.dtypes import decode_bfloat16, encode_bfloat16
+    from tensor.runtime.dtypes import decode_bfloat16
+    from tensor.runtime.dtypes import encode_bfloat16
 
     torch.set_num_threads(1)
     rng = np.random.default_rng(1841 + r)

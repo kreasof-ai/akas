@@ -5,7 +5,7 @@ import os
 import numpy as np
 import pytest
 
-from akas.ops.sequence.tail import validation
+from akas.ops.sequence.validation import tail_validation as validation
 
 
 def test_suffix_reference_preserves_empty_short_and_full_rows():

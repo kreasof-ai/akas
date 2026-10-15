@@ -1,1 +1,1 @@
-"""mtp components."""
+"""Mtp operation definitions and implementations."""

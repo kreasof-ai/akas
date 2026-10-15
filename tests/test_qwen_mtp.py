@@ -12,7 +12,7 @@ def test_mtp_join_and_cast_match_independent_bf16_reference(tmp_path):
     import tensor
     import torch
     from tensor.compiler.build import build_artifact
-    from tensor.compiler.frontend.source import export_source
+    from support.migration import source as export_source
 
     torch.set_num_threads(1)
     r, c, eps = 8, 2048, 1e-6

@@ -13,7 +13,7 @@ GPU = pytest.mark.skipif(
 
 
 def build(tmp_path, kind, p):
-    from akas.compilation.emit import export_kernel as export_source
+    from support.migration import source as export_source
     from tensor.compiler.build import build_artifact
 
     entry = tmp_path / (kind + ".py")
@@ -184,7 +184,7 @@ def test_causal_chunk_attention_matches_independent_dense_attention(tmp_path, kv
 @GPU
 def test_decode_attention_merge_rounds_before_gate(tmp_path):
     import tensor, torch
-    from akas.compilation.emit import export_kernel as source
+    from support.migration import source as source
     from tensor.compiler.build import build_artifact
 
     slots, splits = 8, 16
@@ -233,7 +233,7 @@ def test_decode_attention_merge_rounds_before_gate(tmp_path):
 @pytest.mark.parametrize("routed", [False, True])
 def test_large_expert_tiles_preserve_hot_experts_and_tail_rows(tmp_path, routed):
     import torch, tensor
-    from akas.compilation.emit import export_kernel as export_source
+    from support.migration import source as export_source
     from tensor.compiler.build import build_artifact
 
     torch.set_num_threads(1)

@@ -1,0 +1,64 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "optimization",
+    "protocol": "native-token-step-v2",
+    "model": "akas.models.lfm2.model:LFM2",
+    "definition": "akas.models.lfm2.model:LFM2",
+    "provider": "cuda",
+    "target": "sm_89",
+    "mode": "ar",
+    "kv_dtype": "float16",
+    "graphs": false,
+    "checkpoint": "/home/sagemaker-user/akas/build/model-smoke/checkpoints/lfm-gguf/LFM2.5-230M-Q4_K_M.gguf",
+    "checkpoint_sha256": "7bbd90384d3deffe4c646ec9643b212802d32d4ce417c90a1ec9282100650062",
+    "campaign_identity": "45639cb67798fe635ec5aa9555a48c79beca0845805f0fe40f063da525da54fa",
+    "recipe": {
+      "provider": "cuda",
+      "target": "sm_89",
+      "chunk": 32,
+      "prefill_requests": 1,
+      "graphs": false,
+      "trials": 1,
+      "policy": {},
+      "model_options": {
+        "kv_dtype": "float16",
+        "optimized": true
+      },
+      "window": null,
+      "deferred": false,
+      "head": null,
+      "id": "0c73902e13b7ef52"
+    },
+    "device": {
+      "ordinal": 0,
+      "name": "NVIDIA L4",
+      "arch": "sm_89",
+      "provider": "cuda",
+      "uuid": "GPU-d777b838-7002-124f-aa67-71409daa8935",
+      "free_bytes": 23659020288,
+      "total_bytes": 24152899584,
+      "driver": "595.91.07"
+    },
+    "qualification": "independent operation references; model outputs preserved against campaign baseline",
+    "warmup": 1,
+    "repeats": 3,
+    "seed": 17,
+    "run_id": "20261015174354131846-1c268163",
+    "error": "worker wall-clock deadline exceeded"
+  },
+  "results": [
+    {
+      "case": {
+        "batch": 1,
+        "prompt": 32,
+        "generated": 8,
+        "depth": 0,
+        "mixed": false
+      },
+      "status": "error",
+      "error": "worker wall-clock deadline exceeded"
+    }
+  ]
+}

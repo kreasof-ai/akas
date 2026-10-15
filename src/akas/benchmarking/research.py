@@ -65,7 +65,7 @@ def validate(prepared):
     return prepared
 
 
-def run_case(prepared, *, batch=1, prompt=32, generated=32, depth=0, mixed=False,
+def run_case(prepared, *, batch=1, prompt=32, generated=128, depth=0, mixed=False,
              repeats=3, warmup=1, out=None):
     import tensor
     from akas.benchmarking.cases import Case
@@ -97,7 +97,7 @@ def run_workload(prepared, workload, *, window=None, capture=False, deferred=Fal
     from akas.config import EngineConfig
     from akas.engine import Engine
     from akas.generation.speculative.decoding import SpeculativeDecoder
-    from akas.models.heads.mtp import MTPHead
+    from akas.models.qwen35.mtp import MTPHead
 
     validate(prepared)
     workload = Path(workload)
@@ -161,7 +161,7 @@ def main(*, model_definition, preset=None, description=None):
     parser.add_argument("--chunk", type=int, default=preset.get("chunk", 128))
     parser.add_argument("--context", type=int, default=preset.get("context", 4096))
     parser.add_argument("--prompt", type=int, default=preset.get("prompt", 32))
-    parser.add_argument("--generated", type=int, default=preset.get("generated", 32))
+    parser.add_argument("--generated", type=int, default=preset.get("generated", 128))
     parser.add_argument("--depth", type=int, default=0)
     parser.add_argument("--mixed", action="store_true")
     parser.add_argument("--windows", type=int, nargs="*", default=preset.get("windows", []))

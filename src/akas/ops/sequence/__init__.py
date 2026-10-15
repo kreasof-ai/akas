@@ -1,1 +1,1 @@
-"""sequence components."""
+"""Sequence operation definitions and implementations."""
