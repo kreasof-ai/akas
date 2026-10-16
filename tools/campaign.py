@@ -180,6 +180,10 @@ def run(specification, out, *, budget, slice_seconds, history):
             raise
         finally:
             save()
+            from tools.campaign_report import export
+
+            destination = export(path, history=history)
+            print("Campaign report:", destination / "README.md", flush=True)
         return state
 
 

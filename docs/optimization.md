@@ -147,6 +147,12 @@ repeating the same command resumes the remaining allowance. Finite searches may
 finish earlier. `campaign.json` retains per-configuration status and deployment
 paths. An unsupported entry is not a measured zero-throughput result.
 
+Each invocation also writes a durable [campaign report](../benchmarks/reports/README.md)
+under `benchmarks/reports/`. It includes all requested shapes and configurations,
+available baseline tables, failures, CSV exports and selected kernel schedules.
+The report retains its own snapshot and measurement data for regeneration after
+build directories are cleaned. See [reporting commands](benchmarking.md#find-a-previous-result).
+
 Run the [baseline measurements](../tools/baselines/README.md) and memory/model
 qualification before starting a long matrix. The supplied specification expresses
 the requested coverage; it does not imply that every model supports every path.

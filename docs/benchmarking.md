@@ -70,6 +70,32 @@ necessarily accuracy-qualified. Run one GPU measurement process at a time.
 
 ## Find a previous result
 
+The [campaign report index](../benchmarks/reports/README.md) provides complete
+tables for a matrix: all requested configurations and shapes, available baseline
+prefill/decode and burst rates, qualification failures, latency, settings and
+selected kernel schedules. Reports live in `benchmarks/reports/`; compiled
+programs and temporary build logs remain in `build/`.
+
+The matrix runner generates these reports when an invocation finishes or is
+interrupted gracefully. Export an existing campaign with:
+
+```sh
+python -m tools.campaign_report --campaign build/standard-campaign/campaign.json
+```
+
+Each report keeps its campaign snapshot and portable `report.json`. Its Markdown,
+CSV tables and selected schedules can be regenerated after cleaning build files:
+
+```sh
+python -m tools.campaign_report --render benchmarks/reports/REPORT_ID/report.json
+```
+
+Baseline selection uses matching full-workload records completed before the
+campaign began. Failed profiles retain their measured values and qualification
+status. Missing measurements remain empty. Timing protocol labels distinguish
+native engine invocations, HTTP bursts and native kernel phases; the tables do
+not manufacture speedups across these boundaries.
+
 `akas bench` automatically writes a durable run under `benchmarks/runs/` as well as
 `--out`. Use `--history /path/to/history` to select another archive or
 `--no-history` for disposable local checks. Browse [the generated results
