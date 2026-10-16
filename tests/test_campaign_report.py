@@ -9,7 +9,7 @@ import shutil
 import pytest
 
 from akas.benchmarking.history import digest, write
-from tools.campaign_report import export, read, render
+from tools.campaign_report import check, export, read, render, validate
 
 
 @pytest.fixture
@@ -276,6 +276,95 @@ def test_report_rejects_changed_measurement_evidence(campaign_evidence):
     (history / "runs/winner/report.json").write_text("{}")
     with pytest.raises(ValueError, match="checksum mismatch"):
         export(campaign, history=history)
+
+
+def test_archive_check_is_read_only_and_independent_of_build(campaign_evidence):
+    campaign, history, build = campaign_evidence
+    export(campaign, history=history)
+    shutil.rmtree(build)
+    before = {p: p.read_bytes() for p in history.rglob("*") if p.is_file()}
+    check(history)
+    assert before == {p: p.read_bytes() for p in history.rglob("*") if p.is_file()}
+
+
+@pytest.mark.parametrize(
+    "change, message",
+    [
+        ("edit_table", "Generated report differs"),
+        ("delete_csv", "standard bundle"),
+        ("extra_report", "standard bundle"),
+        ("extra_directory", "Unexpected report entry"),
+        ("extra_documentation", "Performance documentation belongs"),
+        ("stale_index", "Report index differs"),
+        ("changed_snapshot", "Generated report differs"),
+        ("wrong_directory", "campaign identity"),
+    ],
+)
+def test_archive_check_rejects_nonstandard_publication(
+    campaign_evidence, change, message
+):
+    campaign, history, _ = campaign_evidence
+    out = export(campaign, history=history)
+    if change == "edit_table":
+        with (out / "COMPARISON.md").open("a") as stream:
+            stream.write("\nUnrecorded performance claim.\n")
+    elif change == "delete_csv":
+        (out / "measurements.csv").unlink()
+    elif change == "extra_report":
+        (out / "NOTES.md").write_text("Additional results")
+    elif change == "extra_directory":
+        (history / "reports/unstructured").mkdir()
+    elif change == "extra_documentation":
+        (history / "RESULTS-NEW.md").write_text("Additional results")
+    elif change == "stale_index":
+        (history / "reports/README.md").write_text("Missing campaign")
+    elif change == "changed_snapshot":
+        write(out / "campaign.json", {})
+    elif change == "wrong_directory":
+        out.rename(out.with_name("arbitrary"))
+    with pytest.raises(ValueError, match=message):
+        check(history)
+
+
+@pytest.mark.parametrize(
+    "change, message",
+    [
+        ("schema", "Unsupported report schema"),
+        ("missing_field", "Missing report fields"),
+        ("missing_shape", "workload shapes"),
+        ("duplicate_shape", "workload shapes"),
+        ("missing_metric", "Missing measurement fields"),
+        ("invalid_metric", "Invalid measurement value"),
+        ("missing_akas", "AKAS matrix"),
+        ("missing_baseline", "baseline matrix"),
+        ("duplicate_profile", "Duplicate report profile"),
+    ],
+)
+def test_report_contract_rejects_incomplete_data(campaign_evidence, change, message):
+    campaign, history, _ = campaign_evidence
+    data = read(export(campaign, history=history) / "report.json")
+    if change == "schema":
+        data["schema"] = "unknown.v2"
+    elif change == "missing_field":
+        del data["evidence"]
+    elif change == "missing_shape":
+        data["profiles"][0]["measurements"].pop()
+    elif change == "duplicate_shape":
+        data["profiles"][0]["measurements"].append(
+            data["profiles"][0]["measurements"][0]
+        )
+    elif change == "missing_metric":
+        del data["profiles"][0]["measurements"][0]["prefill_tok_s"]
+    elif change == "invalid_metric":
+        data["profiles"][0]["measurements"][0]["prefill_tok_s"] = float("nan")
+    elif change == "missing_akas":
+        data["profiles"] = [p for p in data["profiles"] if p["kind"] != "akas"]
+    elif change == "missing_baseline":
+        data["profiles"] = [p for p in data["profiles"] if p["runtime"] != "vllm"]
+    elif change == "duplicate_profile":
+        data["profiles"].append(data["profiles"][0])
+    with pytest.raises(ValueError, match=message):
+        validate(data)
 
 
 @pytest.mark.parametrize("interrupted", [False, True])

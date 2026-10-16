@@ -12,6 +12,11 @@
 - `reports/<UTC>-<campaign>/` contains complete campaign tables, baseline data,
   CSV exports, source and runtime settings, and selected kernel schedules.
 
+Publish performance results through these generated records and report bundles.
+The [report format](../docs/benchmarking.md#find-a-previous-result) defines the
+required files and provenance. CI runs `python -m tools.campaign_report --check`
+to verify complete coverage and reject edited tables or arbitrary report pages.
+
 Keep model files, executables and disposable compiler logs in `build/`. Retain
 small evidence files beside their run with checksums. Records describe measured
 hardware only; an L4 result does not establish L40S performance.

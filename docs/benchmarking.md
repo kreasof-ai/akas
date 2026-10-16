@@ -70,6 +70,13 @@ necessarily accuracy-qualified. Run one GPU measurement process at a time.
 
 ## Find a previous result
 
+All published performance results use the generated archive described below.
+Individual measurements use `akas.benchmark-run.v1` records; campaign reports use
+`akas.campaign-report.v1`. Record a focused kernel experiment as an individual run
+with its change description and parent run. Use a campaign for workload-wide
+tables and baseline comparisons. Do not add dated result pages, handwritten
+performance tables or research logs to the authoring guides.
+
 The [campaign report index](../benchmarks/reports/README.md) provides complete
 tables for a matrix: all requested configurations and shapes, available baseline
 prefill/decode and burst rates, qualification failures, latency, settings and
@@ -95,6 +102,39 @@ campaign began. Failed profiles retain their measured values and qualification
 status. Missing measurements remain empty. Timing protocol labels distinguish
 native engine invocations, HTTP bursts and native kernel phases; the tables do
 not manufacture speedups across these boundaries.
+
+Every campaign uses `reports/<start-UTC>-<campaign-identity>/` with this same bundle:
+
+| File | Contents |
+| --- | --- |
+| `README.md` | Date, measured commit/source tree, hardware/software, settings, coverage and outcomes |
+| `COMPARISON.md` | Prefill, decode and complete-output tables for every requested shape |
+| `AKAS.md`, `BASELINES.md` | Every configuration, phase protocol, latency, qualification and evidence link |
+| `CANDIDATES.md` | Every search attempt, its budget, outcome and failure reason |
+| `measurements.csv` | All requested AKAS and baseline configuration/shape rows |
+| `candidate-measurements.csv`, `candidates.csv` | Measured search candidates and every attempt, including failures |
+| `SCHEDULES.json` | Selected implementations, parameters, geometries and qualification evidence |
+| `report.json`, `campaign.json` | Portable versioned report data and exact campaign snapshot |
+
+Generate these files with `tools.campaign_report`; edit the underlying records
+only through the measurement tools. Keep sealed historical evidence unchanged.
+Use the shared renderer for presentation changes and regenerate existing tables.
+An incompatible data change requires a new schema version and explicit support
+for older reports. New shapes belong in a versioned workload definition, which
+the report expands without removing missing or unsupported configurations.
+
+Before publishing, run the same read-only check used by CI:
+
+```sh
+python -m tools.campaign_report --check
+```
+
+The check rejects unknown schemas, missing configurations or shapes, missing
+metrics, added report files, handwritten changes to generated tables and a stale
+report index. It regenerates the archive in temporary storage and compares every
+file; it does not compile models or run benchmarks. Keep benchmark documentation
+under `benchmarks/` limited to its guide entry point, generated indexes and these
+report bundles. Sealed files under `runs/` remain measurement evidence.
 
 `akas bench` automatically writes a durable run under `benchmarks/runs/` as well as
 `--out`. Use `--history /path/to/history` to select another archive or

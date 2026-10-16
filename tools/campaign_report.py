@@ -11,11 +11,27 @@ import math
 import os
 from pathlib import Path
 import statistics
+import tempfile
 
 from akas.benchmarking.history import digest, write
 from akas.optimization.context import workload
 
 SCHEMA = "akas.campaign-report.v1"
+REPORT_FILES = frozenset(
+    (
+        "README.md",
+        "COMPARISON.md",
+        "AKAS.md",
+        "BASELINES.md",
+        "CANDIDATES.md",
+        "measurements.csv",
+        "candidate-measurements.csv",
+        "candidates.csv",
+        "SCHEDULES.json",
+        "campaign.json",
+        "report.json",
+    )
+)
 METRICS = (
     "prefill_tok_s",
     "decode_tok_s",
@@ -158,6 +174,21 @@ def blank_rows(requested, status, reason):
             **dict.fromkeys(METRICS),
         )
         for b, p in itertools.product(requested["batches"], requested["prefix_tokens"])
+    ]
+
+
+def baseline_combinations(state, model):
+    formats = state["specification"]["formats"]
+    return [
+        (runtime, "cuda", "bf16", mode)
+        for runtime in ("vllm", "sglang")
+        for mode in model["modes"]
+        if "bf16" in formats
+    ] + [
+        ("llama", provider, fmt, "ar")
+        for provider in ("cuda", "vulkan")
+        for fmt in formats
+        if fmt != "bf16"
     ]
 
 
@@ -362,19 +393,7 @@ def collect(campaign, history):
         ):
             selected[key] = item["id"]
     for model_id, model in state["models"].items():
-        combinations = [
-            (runtime, "cuda", "bf16", mode)
-            for runtime in ("vllm", "sglang")
-            for mode in model["modes"]
-            if "bf16" in state["specification"]["formats"]
-        ]
-        combinations += [
-            ("llama", provider, fmt, "ar")
-            for provider in ("cuda", "vulkan")
-            for fmt in state["specification"]["formats"]
-            if fmt != "bf16"
-        ]
-        for runtime, provider, weight, mode in combinations:
+        for runtime, provider, weight, mode in baseline_combinations(state, model):
             key = (model["model"], runtime, provider, weight, mode)
             data = record(history, selected[key]) if key in selected else None
             if data and (
@@ -485,6 +504,7 @@ def table_rows(profiles):
 
 
 def render(data, out, history):
+    validate(data)
     out = Path(out).resolve()
     history = Path(history).resolve()
     out.mkdir(parents=True, exist_ok=True)
@@ -883,9 +903,127 @@ def export(campaign, *, history="benchmarks", out=None):
     return destination
 
 
+def validate(data):
+    """Require the versioned report contract before rendering or publishing."""
+    if data.get("schema") != SCHEMA:
+        raise ValueError(f"Unsupported report schema: {data.get('schema')!r}")
+    required = {
+        "generated_at",
+        "campaign",
+        "campaign_sha256",
+        "workload",
+        "profiles",
+        "attempts",
+        "evidence",
+        "schedules",
+    }
+    missing = required - data.keys()
+    if missing:
+        raise ValueError(f"Missing report fields: {sorted(missing)}")
+    requested = data["workload"]
+    expected = {
+        (b, p, requested["output_tokens"])
+        for b, p in itertools.product(requested["batches"], requested["prefix_tokens"])
+    }
+    identifiers = set()
+    for profile in data["profiles"]:
+        name = profile["id"]
+        if name in identifiers:
+            raise ValueError(f"Duplicate report profile: {name}")
+        identifiers.add(name)
+        rows = profile["measurements"]
+        actual = {(r["batch"], r["prefix"], r["output"]) for r in rows}
+        if actual != expected or len(rows) != len(expected):
+            raise ValueError(f"Incomplete or duplicate workload shapes: {name}")
+        for row in rows:
+            required_row = {*METRICS, "status", "qualification", "phase_protocol"}
+            if required_row - row.keys():
+                raise ValueError(f"Missing measurement fields: {name}")
+            if any(
+                row[k] is not None
+                and (
+                    not isinstance(row[k], (int, float))
+                    or isinstance(row[k], bool)
+                    or not math.isfinite(row[k])
+                    or row[k] < 0
+                )
+                for k in METRICS
+            ):
+                raise ValueError(f"Invalid measurement value: {name}")
+    expected_akas = set(identity_map(data["campaign"]))
+    actual_akas = {p["id"] for p in data["profiles"] if p["kind"] == "akas"}
+    if expected_akas != actual_akas:
+        raise ValueError("Report does not cover the complete requested AKAS matrix")
+    expected_baselines = {
+        "baseline-" + "-".join((model_id, *combination))
+        for model_id, model in data["campaign"]["models"].items()
+        for combination in baseline_combinations(data["campaign"], model)
+    }
+    actual_baselines = {p["id"] for p in data["profiles"] if p["kind"] == "baseline"}
+    if expected_baselines != actual_baselines:
+        raise ValueError("Report does not cover the complete baseline matrix")
+    if any(p["kind"] not in {"akas", "baseline"} for p in data["profiles"]):
+        raise ValueError("Unsupported report profile kind")
+
+
+def check(history="benchmarks"):
+    """Read-only audit of the canonical report layout and generated content."""
+    history = Path(history).resolve()
+    reports = history / "reports"
+    allowed_guides = {history / "README.md", history / "RESULTS.md"}
+    for path in history.rglob("*.md"):
+        relative = path.relative_to(history)
+        if ".ipynb_checkpoints" in relative.parts:
+            continue
+        if relative.parts[0] in {"runs", "reports"} or path in allowed_guides:
+            continue
+        raise ValueError(
+            f"Performance documentation belongs in generated reports: {path}"
+        )
+    with tempfile.TemporaryDirectory(prefix="akas-report-check-") as temporary:
+        staged_history = Path(temporary) / "benchmarks"
+        for folder in sorted(reports.iterdir()):
+            if folder.name == ".ipynb_checkpoints":
+                continue
+            if folder.name == "README.md" and folder.is_file():
+                continue
+            if not folder.is_dir() or not (folder / "report.json").is_file():
+                raise ValueError(f"Unexpected report entry: {folder}")
+            if {
+                p.name for p in folder.iterdir() if p.name != ".ipynb_checkpoints"
+            } != REPORT_FILES:
+                raise ValueError(
+                    f"Report files differ from the standard bundle: {folder}"
+                )
+            data = read(folder / "report.json")
+            if folder != report_directory(data["campaign"], history):
+                raise ValueError(
+                    f"Report directory does not match campaign identity: {folder}"
+                )
+            staged = staged_history / "reports" / folder.name
+            render(data, staged, staged_history)
+            for name in sorted(REPORT_FILES):
+                if (folder / name).read_bytes() != (staged / name).read_bytes():
+                    raise ValueError(
+                        f"Generated report differs; regenerate it: {folder / name}"
+                    )
+        index(staged_history)
+        if (reports / "README.md").read_bytes() != (
+            staged_history / "reports/README.md"
+        ).read_bytes():
+            raise ValueError(
+                "Report index differs; regenerate it with tools.campaign_report"
+            )
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument(
+        "--check",
+        action="store_true",
+        help="verify the canonical report archive without writing",
+    )
     source.add_argument(
         "--campaign", type=Path, help="completed or interrupted matrix campaign.json"
     )
@@ -897,6 +1035,10 @@ def main():
     parser.add_argument("--history", type=Path, default=Path("benchmarks"))
     parser.add_argument("--out", type=Path)
     args = parser.parse_args()
+    if args.check:
+        check(args.history)
+        print("Benchmark report format and generated content verified.")
+        return
     if args.render:
         destination = args.out or args.render.parent
         render(read(args.render), destination, args.history)
