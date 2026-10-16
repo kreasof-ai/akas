@@ -127,7 +127,7 @@ def _swiglu(p):
             return out
 
         return compute
-    if not not packed and packed:
+    if packed:
 
         @kernel(names={"x": "x" if packed else names[0]})
         def compute(x: Tensor(input_shape, input_dtype)) -> Tensor(

@@ -179,19 +179,17 @@ def _attention(p):
                 out[(row * h + head) * d + tx] = result / scratch[0]
 
     if split:
-        if not not True:
+        @kernel
+        def compute(
+            q: Tensor(h * cap, "float32"),
+            vc: Tensor(cap * kh * d, "float16"),
+            pos: Tensor(2, "int32"),
+        ) -> Tensor(r * h * d, "float32"):
+            out = output(r * h * d, "float32", position=2)
+            attention(q, vc, out, pos)
+            return out
 
-            @kernel
-            def compute(
-                q: Tensor(h * cap, "float32"),
-                vc: Tensor(cap * kh * d, "float16"),
-                pos: Tensor(2, "int32"),
-            ) -> Tensor(r * h * d, "float32"):
-                out = output(r * h * d, "float32", position=2)
-                attention(q, vc, out, pos)
-                return out
-
-            return compute
+        return compute
     if not split:
 
         @kernel

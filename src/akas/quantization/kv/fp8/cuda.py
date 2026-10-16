@@ -160,7 +160,6 @@ def kv_encode(spec: KernelSpec, schedule: Mapping[str, object]):
         return (kc, vc, ks, vs)
 
     return compute
-    raise ValueError("unknown KV codec operation: kv_encode")
 
 
 def kv_decode(spec: KernelSpec, schedule: Mapping[str, object]):
@@ -211,7 +210,6 @@ def kv_decode(spec: KernelSpec, schedule: Mapping[str, object]):
         return (keys, values)
 
     return compute
-    raise ValueError("unknown KV codec operation: kv_decode")
 
 
 BLOCK = 128

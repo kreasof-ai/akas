@@ -1094,25 +1094,23 @@ def hopper_prefill_split_partial(spec: KernelSpec, schedule: Mapping[str, object
                     )
 
     if decoded:
-        if not not True:
+        @kernel
+        def compute(
+            q: Tensor((rows, 16, d), "bfloat16"),
+            kc: Tensor((r, 2, cap, d), "bfloat16"),
+            vc: Tensor((r, 2, cap, d), "bfloat16"),
+            positions: Tensor((r,), "int32"),
+            lengths: Tensor((r,), "int32"),
+        ) -> tuple[
+            Tensor((r, 2, splits, chunk * 8, d), "float32"),
+            Tensor((r, 2, splits, chunk * 8, 2), "float32"),
+        ]:
+            out = output((r, 2, splits, chunk * 8, d), "float32")
+            stats = output((r, 2, splits, chunk * 8, 2), "float32")
+            algorithm(q, kc, vc, kc, vc, positions, lengths, out, stats)
+            return (out, stats)
 
-            @kernel
-            def compute(
-                q: Tensor((rows, 16, d), "bfloat16"),
-                kc: Tensor((r, 2, cap, d), "bfloat16"),
-                vc: Tensor((r, 2, cap, d), "bfloat16"),
-                positions: Tensor((r,), "int32"),
-                lengths: Tensor((r,), "int32"),
-            ) -> tuple[
-                Tensor((r, 2, splits, chunk * 8, d), "float32"),
-                Tensor((r, 2, splits, chunk * 8, 2), "float32"),
-            ]:
-                out = output((r, 2, splits, chunk * 8, d), "float32")
-                stats = output((r, 2, splits, chunk * 8, 2), "float32")
-                algorithm(q, kc, vc, kc, vc, positions, lengths, out, stats)
-                return (out, stats)
-
-            return compute
+        return compute
     if not decoded:
 
         @kernel
