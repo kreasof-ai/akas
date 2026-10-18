@@ -41,6 +41,12 @@ def test_packed_moe_declaration_and_backend_graphs(tmp_path, dense_layers):
                 "uint8" if provider == "cuda" else "uint32"
             )
             assert graph.buffers["positions"].shape == (4,)
+            caches = [
+                spec
+                for name, spec in graph.buffers.items()
+                if name.endswith((".kc", ".vc"))
+            ]
+            assert caches and all(spec.dtype == "float16" for spec in caches)
 
 
 @pytest.mark.parametrize(

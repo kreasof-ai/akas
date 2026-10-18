@@ -36,8 +36,9 @@ For a hybrid model, logical KV bytes are
 `2 × attention_layers × B × context × kv_heads × head_dimension × bytes_per_value`.
 Count only attention layers; short-convolution layers retain fixed-size recurrent
 state. Add that state, packed weights, cache metadata, scratch and backend
-allocations separately. Use physical storage width when planning VRAM: FP16-rounded
-values in FP32 WebGPU buffers occupy four bytes each.
+allocations separately. Use physical buffer storage width when planning VRAM.
+Native FP16 caches occupy two bytes per value on CUDA and WebGPU; the latter
+requires `shader-f16` support from the adapter.
 
 ## Run an AKAS measurement
 

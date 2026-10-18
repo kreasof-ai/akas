@@ -96,9 +96,9 @@ the MoE bank's weight traffic across tokens.
 
 The QAD Q4_0 checkpoint can contain other encodings for particular tensors,
 including the tied embedding/output matrix. The reader preserves each tensor's
-actual encoding. KV values requested as FP16 currently occupy FP32 buffers on
-WebGPU after FP16 rounding; report physical allocation separately from numerical
-precision. Check the [benchmark guide](../../../docs/benchmarking.md) for the
+actual encoding. FP16 KV uses native two-byte buffers on both backends; WebGPU
+requires the adapter's `shader-f16` feature. Report physical allocation separately
+from numerical precision. Check the [benchmark guide](../../../docs/benchmarking.md) for the
 single-user long-context workload and memory measurements.
 
 GGUF upload releases mapped host pages after each tensor transfer. WebGPU uploads

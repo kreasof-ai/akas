@@ -15,9 +15,8 @@ def cache_storage(p):
     shape = (p["r"] // p.get("chunk", 1), p["kh"], p["capacity"], p["d"])
     if p["kv_dtype"] not in ("float16", "float32"):
         return get(p["kv_dtype"]).storage(shape, provider=p["provider"])
-    dtype = "float32" if p["provider"] == "webgpu" else p["kv_dtype"]
     return Storage(
-        BufferSpec(shape, dtype),
+        BufferSpec(shape, p["kv_dtype"]),
         (BufferSpec((*shape[:-1], 1), "float32"),),
         ("scales",),
     )
