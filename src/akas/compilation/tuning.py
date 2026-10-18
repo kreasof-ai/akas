@@ -523,6 +523,15 @@ def qualify(bundle, out, *, settings=None, device=None):
                         sort_keys=True,
                     )
                     if signature_key not in case_cache:
+                        # A changed storage ABI or split-reduction tile needs a
+                        # new expectation. Keep only the current case: retaining
+                        # every large weight/cache fixture makes search memory
+                        # grow with its candidate budget. Same-ABI candidates
+                        # still reuse their expensive reference computation.
+                        for _, _, previous_buffers, _ in case_cache.values():
+                            for value in reversed(tuple(previous_buffers.values())):
+                                value.release()
+                        case_cache.clear()
                         if original.mapping is None:
                             case = validation(
                                 kind,
