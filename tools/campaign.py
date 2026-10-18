@@ -78,7 +78,9 @@ def run(specification, out, *, budget, slice_seconds, history):
                     "campaign source, specification, model declarations or total budget changed; use a new output directory"
                 )
         else:
-            print("Indexing checkpoints and building 48-workload matrix...", flush=True)
+            print(
+                "Indexing checkpoints and building the requested matrix...", flush=True
+            )
             state = dict(
                 schema="akas.matrix-campaign.v1",
                 identity=fingerprint,

@@ -9,6 +9,8 @@ All throughput and displayed latency values are medians over the retained repeti
 
 Profile status: **budget_exhausted**; qualification: **passed**; effective KV dtype: `float16`. Evidence: [20261016075804599992-469ebb3b](../../runs/20261016075804599992-469ebb3b/run.json).
 
+Peak device GiB: 7.6; peak host process RSS GiB: 1.9. Loading and in-process compilation are included in host RSS.
+
 worker wall-clock deadline exceeded; ValueError: model logits differ from qualified baseline: b1-p2048; ValueError: model logits differ from qualified baseline: b4-p2048; ValueError: model logits differ from qualified baseline: b16-p2048; ValueError: model logits differ from qualified baseline: b64-p2048
 
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null, "id": "9f34d665a4a48c1b", "model_options": {"kv_dtype": "float16", "optimized": true}, "policy": {}, "prefill_requests": 32, "provider": "cuda", "target": "sm_89", "trials": 1, "window": null}`.
@@ -30,6 +32,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 ## lfm2.5-230m / akas / bf16 / cuda / fp8 / ar
 
 Profile status: **budget_exhausted**; qualification: **passed**; effective KV dtype: `fp8`. Evidence: [20261015231748568768-a50eb4e9](../../runs/20261015231748568768-a50eb4e9/run.json).
+
+Peak device GiB: 4.4; peak host process RSS GiB: 1.8. Loading and in-process compilation are included in host RSS.
 
 worker wall-clock deadline exceeded; ValueError: deployment HTTP output differs from qualified model execution; ValueError: model logits differ from qualified baseline: b1-p32; ValueError: model logits differ from qualified baseline: b4-p32; ValueError: model logits differ from qualified baseline: b16-p2048; ValueError: model logits differ from qualified baseline: b64-p2048
 
@@ -53,6 +57,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 
 Profile status: **failed**; qualification: **not_measured**; effective KV dtype: `float16`. Evidence: —.
 
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
+
 worker exited with code -9
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -73,6 +79,8 @@ worker exited with code -9
 
 Profile status: **budget_exhausted**; qualification: **not_measured**; effective KV dtype: `fp8`. Evidence: —.
 
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
+
 worker wall-clock deadline exceeded
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -92,6 +100,8 @@ worker wall-clock deadline exceeded
 ## lfm2.5-230m / akas / f16 / cuda / default / ar
 
 Profile status: **budget_exhausted**; qualification: **passed**; effective KV dtype: `float16`. Evidence: [20261016002444872634-811c1d3e](../../runs/20261016002444872634-811c1d3e/run.json).
+
+Peak device GiB: 7.6; peak host process RSS GiB: 2.3. Loading and in-process compilation are included in host RSS.
 
 worker wall-clock deadline exceeded
 
@@ -115,6 +125,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 
 Profile status: **budget_exhausted**; qualification: **passed**; effective KV dtype: `fp8`. Evidence: [20261016005416083372-d372212b](../../runs/20261016005416083372-d372212b/run.json).
 
+Peak device GiB: 4.4; peak host process RSS GiB: 2.3. Loading and in-process compilation are included in host RSS.
+
 worker wall-clock deadline exceeded; ValueError: model logits differ from qualified baseline: b1-p32
 
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null, "id": "94654911ffcd8725", "model_options": {"kv_dtype": "fp8", "optimized": true}, "policy": {}, "prefill_requests": 32, "provider": "cuda", "target": "sm_89", "trials": 1, "window": null}`.
@@ -137,6 +149,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 
 Profile status: **failed**; qualification: **not_measured**; effective KV dtype: `float16`. Evidence: —.
 
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
+
 worker exited with code -9
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -157,6 +171,8 @@ worker exited with code -9
 
 Profile status: **budget_exhausted**; qualification: **not_measured**; effective KV dtype: `fp8`. Evidence: —.
 
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
+
 worker wall-clock deadline exceeded
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -176,6 +192,8 @@ worker wall-clock deadline exceeded
 ## lfm2.5-230m / akas / q4_0 / cuda / default / ar
 
 Profile status: **budget_exhausted**; qualification: **passed**; effective KV dtype: `float16`. Evidence: [20261016015927998274-7ddf908d](../../runs/20261016015927998274-7ddf908d/run.json).
+
+Peak device GiB: 7.2; peak host process RSS GiB: 1.9. Loading and in-process compilation are included in host RSS.
 
 worker wall-clock deadline exceeded; ValueError: model logits differ from qualified baseline: b1-p2048
 
@@ -199,6 +217,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 
 Profile status: **budget_exhausted**; qualification: **passed**; effective KV dtype: `fp8`. Evidence: [20261016022905326483-ef0875a1](../../runs/20261016022905326483-ef0875a1/run.json).
 
+Peak device GiB: 4.1; peak host process RSS GiB: 1.7. Loading and in-process compilation are included in host RSS.
+
 worker wall-clock deadline exceeded; ValueError: model logits differ from qualified baseline: b1-p32; ValueError: greedy output differs from baseline for B64/P2048
 
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null, "id": "94654911ffcd8725", "model_options": {"kv_dtype": "fp8", "optimized": true}, "policy": {}, "prefill_requests": 32, "provider": "cuda", "target": "sm_89", "trials": 1, "window": null}`.
@@ -221,6 +241,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 
 Profile status: **failed**; qualification: **not_measured**; effective KV dtype: `float16`. Evidence: —.
 
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
+
 worker exited with code -9
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -241,6 +263,8 @@ worker exited with code -9
 
 Profile status: **budget_exhausted**; qualification: **not_measured**; effective KV dtype: `fp8`. Evidence: —.
 
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
+
 worker wall-clock deadline exceeded
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -260,6 +284,8 @@ worker wall-clock deadline exceeded
 ## lfm2.5-230m / akas / q4_k_m / cuda / default / ar
 
 Profile status: **budget_exhausted**; qualification: **passed**; effective KV dtype: `float16`. Evidence: [20261016055802779617-648452b2](../../runs/20261016055802779617-648452b2/run.json).
+
+Peak device GiB: 7.3; peak host process RSS GiB: 1.8. Loading and in-process compilation are included in host RSS.
 
 worker wall-clock deadline exceeded
 
@@ -283,6 +309,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 
 Profile status: **budget_exhausted**; qualification: **passed**; effective KV dtype: `fp8`. Evidence: [20261016040424195157-872d6ba4](../../runs/20261016040424195157-872d6ba4/run.json).
 
+Peak device GiB: 4.1; peak host process RSS GiB: 1.8. Loading and in-process compilation are included in host RSS.
+
 worker wall-clock deadline exceeded; ValueError: model logits differ from qualified baseline: b1-p32
 
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null, "id": "94654911ffcd8725", "model_options": {"kv_dtype": "fp8", "optimized": true}, "policy": {}, "prefill_requests": 32, "provider": "cuda", "target": "sm_89", "trials": 1, "window": null}`.
@@ -305,6 +333,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 
 Profile status: **failed**; qualification: **not_measured**; effective KV dtype: `float16`. Evidence: —.
 
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
+
 worker exited with code -9
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -324,6 +354,8 @@ worker exited with code -9
 ## lfm2.5-230m / akas / q4_k_m / webgpu / fp8 / ar
 
 Profile status: **budget_exhausted**; qualification: **not_measured**; effective KV dtype: `fp8`. Evidence: —.
+
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
 
 worker wall-clock deadline exceeded
 
@@ -345,6 +377,8 @@ worker wall-clock deadline exceeded
 
 Profile status: **budget_exhausted**; qualification: **not_measured**; effective KV dtype: `bfloat16`. Evidence: —.
 
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
+
 worker exited with code -9; worker wall-clock deadline exceeded
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -364,6 +398,8 @@ worker exited with code -9; worker wall-clock deadline exceeded
 ## qwen3.5-0.8b / akas / bf16 / cuda / default / mtp
 
 Profile status: **failed**; qualification: **not_measured**; effective KV dtype: `bfloat16`. Evidence: —.
+
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
 
 worker exited with code -9
 
@@ -385,6 +421,8 @@ worker exited with code -9
 
 Profile status: **unsupported**; qualification: **unsupported**; effective KV dtype: `unrecorded`. Evidence: —.
 
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
+
 dense native attention currently requires BF16 KV
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -404,6 +442,8 @@ dense native attention currently requires BF16 KV
 ## qwen3.5-0.8b / akas / bf16 / cuda / fp8 / mtp
 
 Profile status: **unsupported**; qualification: **unsupported**; effective KV dtype: `unrecorded`. Evidence: —.
+
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
 
 dense native attention currently requires BF16 KV
 
@@ -425,6 +465,8 @@ dense native attention currently requires BF16 KV
 
 Profile status: **unsupported**; qualification: **unsupported**; effective KV dtype: `unrecorded`. Evidence: —.
 
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
+
 native BF16 kernels currently require CUDA
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -444,6 +486,8 @@ native BF16 kernels currently require CUDA
 ## qwen3.5-0.8b / akas / bf16 / webgpu / default / mtp
 
 Profile status: **unsupported**; qualification: **unsupported**; effective KV dtype: `unrecorded`. Evidence: —.
+
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
 
 native BF16 kernels currently require CUDA
 
@@ -465,6 +509,8 @@ native BF16 kernels currently require CUDA
 
 Profile status: **unsupported**; qualification: **unsupported**; effective KV dtype: `unrecorded`. Evidence: —.
 
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
+
 native BF16 kernels currently require CUDA
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -484,6 +530,8 @@ native BF16 kernels currently require CUDA
 ## qwen3.5-0.8b / akas / bf16 / webgpu / fp8 / mtp
 
 Profile status: **unsupported**; qualification: **unsupported**; effective KV dtype: `unrecorded`. Evidence: —.
+
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
 
 native BF16 kernels currently require CUDA
 
@@ -505,6 +553,8 @@ native BF16 kernels currently require CUDA
 
 Profile status: **failed**; qualification: **not_measured**; effective KV dtype: `bfloat16`. Evidence: —.
 
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
+
 GGUF head uses fused dequantization followed by argmax; fused_head is a native BF16 option; worker exited with code -9
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -524,6 +574,8 @@ GGUF head uses fused dequantization followed by argmax; fused_head is a native B
 ## qwen3.5-0.8b / akas / f16 / cuda / default / mtp
 
 Profile status: **unsupported**; qualification: **unsupported**; effective KV dtype: `unrecorded`. Evidence: —.
+
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
 
 Qwen GGUF MTP is not implemented; no supported speculative head for this checkpoint/backend
 
@@ -545,6 +597,8 @@ Qwen GGUF MTP is not implemented; no supported speculative head for this checkpo
 
 Profile status: **unsupported**; qualification: **unsupported**; effective KV dtype: `unrecorded`. Evidence: —.
 
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
+
 dense native attention currently requires BF16 KV
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -564,6 +618,8 @@ dense native attention currently requires BF16 KV
 ## qwen3.5-0.8b / akas / f16 / cuda / fp8 / mtp
 
 Profile status: **unsupported**; qualification: **unsupported**; effective KV dtype: `unrecorded`. Evidence: —.
+
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
 
 dense native attention currently requires BF16 KV
 
@@ -585,6 +641,8 @@ dense native attention currently requires BF16 KV
 
 Profile status: **unsupported**; qualification: **unsupported**; effective KV dtype: `unrecorded`. Evidence: —.
 
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
+
 native BF16 kernels currently require CUDA
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -604,6 +662,8 @@ native BF16 kernels currently require CUDA
 ## qwen3.5-0.8b / akas / f16 / webgpu / default / mtp
 
 Profile status: **unsupported**; qualification: **unsupported**; effective KV dtype: `unrecorded`. Evidence: —.
+
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
 
 native BF16 kernels currently require CUDA
 
@@ -625,6 +685,8 @@ native BF16 kernels currently require CUDA
 
 Profile status: **unsupported**; qualification: **unsupported**; effective KV dtype: `unrecorded`. Evidence: —.
 
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
+
 native BF16 kernels currently require CUDA
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -644,6 +706,8 @@ native BF16 kernels currently require CUDA
 ## qwen3.5-0.8b / akas / f16 / webgpu / fp8 / mtp
 
 Profile status: **unsupported**; qualification: **unsupported**; effective KV dtype: `unrecorded`. Evidence: —.
+
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
 
 native BF16 kernels currently require CUDA
 
@@ -665,6 +729,8 @@ native BF16 kernels currently require CUDA
 
 Profile status: **failed**; qualification: **not_measured**; effective KV dtype: `bfloat16`. Evidence: —.
 
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
+
 GGUF head uses fused dequantization followed by argmax; fused_head is a native BF16 option; worker exited with code -9
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -684,6 +750,8 @@ GGUF head uses fused dequantization followed by argmax; fused_head is a native B
 ## qwen3.5-0.8b / akas / q4_0 / cuda / default / mtp
 
 Profile status: **unsupported**; qualification: **unsupported**; effective KV dtype: `unrecorded`. Evidence: —.
+
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
 
 Qwen GGUF MTP is not implemented; no supported speculative head for this checkpoint/backend
 
@@ -705,6 +773,8 @@ Qwen GGUF MTP is not implemented; no supported speculative head for this checkpo
 
 Profile status: **unsupported**; qualification: **unsupported**; effective KV dtype: `unrecorded`. Evidence: —.
 
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
+
 dense native attention currently requires BF16 KV
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -724,6 +794,8 @@ dense native attention currently requires BF16 KV
 ## qwen3.5-0.8b / akas / q4_0 / cuda / fp8 / mtp
 
 Profile status: **unsupported**; qualification: **unsupported**; effective KV dtype: `unrecorded`. Evidence: —.
+
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
 
 dense native attention currently requires BF16 KV
 
@@ -745,6 +817,8 @@ dense native attention currently requires BF16 KV
 
 Profile status: **unsupported**; qualification: **unsupported**; effective KV dtype: `unrecorded`. Evidence: —.
 
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
+
 native BF16 kernels currently require CUDA
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -764,6 +838,8 @@ native BF16 kernels currently require CUDA
 ## qwen3.5-0.8b / akas / q4_0 / webgpu / default / mtp
 
 Profile status: **unsupported**; qualification: **unsupported**; effective KV dtype: `unrecorded`. Evidence: —.
+
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
 
 native BF16 kernels currently require CUDA
 
@@ -785,6 +861,8 @@ native BF16 kernels currently require CUDA
 
 Profile status: **unsupported**; qualification: **unsupported**; effective KV dtype: `unrecorded`. Evidence: —.
 
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
+
 native BF16 kernels currently require CUDA
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -804,6 +882,8 @@ native BF16 kernels currently require CUDA
 ## qwen3.5-0.8b / akas / q4_0 / webgpu / fp8 / mtp
 
 Profile status: **unsupported**; qualification: **unsupported**; effective KV dtype: `unrecorded`. Evidence: —.
+
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
 
 native BF16 kernels currently require CUDA
 
@@ -825,6 +905,8 @@ native BF16 kernels currently require CUDA
 
 Profile status: **failed**; qualification: **not_measured**; effective KV dtype: `bfloat16`. Evidence: —.
 
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
+
 GGUF head uses fused dequantization followed by argmax; fused_head is a native BF16 option; worker exited with code -9
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -844,6 +926,8 @@ GGUF head uses fused dequantization followed by argmax; fused_head is a native B
 ## qwen3.5-0.8b / akas / q4_k_m / cuda / default / mtp
 
 Profile status: **unsupported**; qualification: **unsupported**; effective KV dtype: `unrecorded`. Evidence: —.
+
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
 
 Qwen GGUF MTP is not implemented; no supported speculative head for this checkpoint/backend
 
@@ -865,6 +949,8 @@ Qwen GGUF MTP is not implemented; no supported speculative head for this checkpo
 
 Profile status: **unsupported**; qualification: **unsupported**; effective KV dtype: `unrecorded`. Evidence: —.
 
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
+
 dense native attention currently requires BF16 KV
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -884,6 +970,8 @@ dense native attention currently requires BF16 KV
 ## qwen3.5-0.8b / akas / q4_k_m / cuda / fp8 / mtp
 
 Profile status: **unsupported**; qualification: **unsupported**; effective KV dtype: `unrecorded`. Evidence: —.
+
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
 
 dense native attention currently requires BF16 KV
 
@@ -905,6 +993,8 @@ dense native attention currently requires BF16 KV
 
 Profile status: **unsupported**; qualification: **unsupported**; effective KV dtype: `unrecorded`. Evidence: —.
 
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
+
 native BF16 kernels currently require CUDA
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -924,6 +1014,8 @@ native BF16 kernels currently require CUDA
 ## qwen3.5-0.8b / akas / q4_k_m / webgpu / default / mtp
 
 Profile status: **unsupported**; qualification: **unsupported**; effective KV dtype: `unrecorded`. Evidence: —.
+
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
 
 native BF16 kernels currently require CUDA
 
@@ -945,6 +1037,8 @@ native BF16 kernels currently require CUDA
 
 Profile status: **unsupported**; qualification: **unsupported**; effective KV dtype: `unrecorded`. Evidence: —.
 
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
+
 native BF16 kernels currently require CUDA
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -964,6 +1058,8 @@ native BF16 kernels currently require CUDA
 ## qwen3.5-0.8b / akas / q4_k_m / webgpu / fp8 / mtp
 
 Profile status: **unsupported**; qualification: **unsupported**; effective KV dtype: `unrecorded`. Evidence: —.
+
+Peak device GiB: —; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
 
 native BF16 kernels currently require CUDA
 

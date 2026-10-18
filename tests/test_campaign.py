@@ -236,3 +236,15 @@ def test_speculative_prefill_has_the_exact_teacher_geometry():
         if not phase and t > 1:
             assert (b, t, "proposal") in shapes
     assert all(len(s) == 2 for s in geometries(data, {**recipe, "window": None}))
+
+
+def test_large_prefill_tiles_keep_a_short_prompt_geometry():
+    from akas.optimization.planning import geometries
+
+    data = dict(batches=[1], prefix_tokens=[32, 2048, 130944], output_tokens=128)
+    recipe = dict(chunk=512, prefill_requests=1, window=None)
+    assert geometries(data, recipe) == [(1, 1), (1, 32), (1, 512)]
+    speculative = geometries(data, {**recipe, "window": 4})
+    assert (1, 32, "proposal") in speculative
+    assert (1, 512, "proposal") in speculative
+    assert (1, 4, "verify") in speculative

@@ -480,6 +480,11 @@ def _benchmark_run(args, *, start, measured, program):
     start(metadata)
 
     def publish_report():
+        import resource
+
+        metadata["cpu_peak_rss_bytes"] = (
+            resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024
+        )
         report = write_report(args.out, metadata, results)
         measured(report)
         return report
@@ -504,7 +509,7 @@ def _benchmark_run(args, *, start, measured, program):
                             dict.fromkeys(
                                 (rows, tokens)
                                 for rows in args.batches
-                                for tokens in (1, chunk)
+                                for tokens in (1, min(chunk, min(args.prompts)), chunk)
                             )
                         ),
                         max_requests=max(args.batches),

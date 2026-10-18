@@ -58,6 +58,11 @@ include required control uploads, and exclude compile, load, reset and warmup.
 The protocol identifier prevents comparison with older reports that counted
 additional decode steps after the first output.
 
+Native reports also retain process peak host RSS, including loading and any
+in-process compilation. Packed expert validation decodes small coefficient tiles;
+it does not expand the entire model on the CPU. GGUF uploads release mapped
+pages after transfer, and WebGPU submits writes in bounded staging batches.
+
 For WebGPU performance, build Tensor with `TENSOR_BUILD_WEBGPU_NATIVE=1`
 and enable `--graphs`. CUDA uses captured replay; WebGPU uses prepared command
 encoding and submission. The record identifies Python versus native prepared
@@ -215,7 +220,7 @@ llama.cpp. Record weight, activation, accumulation, KV and recurrent precision
 separately: BF16 input files can still execute FP16 arithmetic. Quantized FP8 KV
 and integer Q8_0 KV are different experiments.
 
-First run [short baseline probes](../tools/baselines/README.md) for both models and Qwen MTP. Verify exact output
+First run [short baseline probes](../tools/baselines/README.md) for the selected models and generation modes. Verify exact output
 counts, finite results, cache behavior and greedy AR/MTP equivalence. Eager-mode
 preflight establishes execution, not competitive throughput. Final baselines
 need their optimized graph/attention settings, stable warmups and repeated
@@ -247,7 +252,7 @@ kernel can support a backend while the complete model graph does not.
 | Qwen3.5 dense MTP | Native checkpoint branch exists on CUDA; GGUF MTP is unavailable |
 
 Before a long command, establish usable devices, qualify each requested path,
-verify B256 peak VRAM/RSS, run all baseline probes, and estimate runtime from a
+verify peak VRAM/RSS at the largest requested shape, run all baseline probes, and estimate runtime from a
 small representative pilot. Freeze code and workload inputs. Apply explicit
 candidate, family and campaign deadlines, preserve qualified incumbents, and
 record unfinished work as budget exhaustion. Spend additional tuning time on

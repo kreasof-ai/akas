@@ -74,6 +74,7 @@ def campaign_evidence(tmp_path):
                 mode="ar",
                 kv_dtype="float16",
                 weight_format="bf16",
+                cpu_peak_rss_bytes=256 * 1024**2,
                 error="greedy mismatch" if status == "failed" else None,
             ),
             search=[
@@ -223,6 +224,8 @@ def test_all_shapes_and_failed_baseline_values_are_visible(campaign_evidence):
         for r in unsupported["measurements"]
     )
     assert "backend absent" in (out / "AKAS.md").read_text()
+    assert "peak host process RSS GiB: 0.2" in (out / "AKAS.md").read_text()
+    assert "peak host process RSS GiB: 0.2" in (out / "BASELINES.md").read_text()
     with (out / "measurements.csv").open() as f:
         rows = list(csv.DictReader(f))
     assert len(rows) == 8 and sum(r["burst_output_tok_s"] == "" for r in rows) == 4

@@ -9,6 +9,8 @@ All throughput and displayed latency values are medians over the retained repeti
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `float16`. Evidence: [20261018130852567320-14df8906](../../runs/20261018130852567320-14df8906/run.json).
 
+Peak device GiB: 7.5; peak host process RSS GiB: 1.7. Loading and in-process compilation are included in host RSS.
+
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null, "id": "9f34d665a4a48c1b", "model_options": {"kv_dtype": "float16", "optimized": true}, "policy": {}, "prefill_requests": 32, "provider": "cuda", "target": "sm_89", "trials": 1, "window": null}`.
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -28,6 +30,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 ## lfm2.5-230m / akas / bf16 / cuda / fp8 / ar
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `fp8`. Evidence: [20261018131006740252-43da420a](../../runs/20261018131006740252-43da420a/run.json).
+
+Peak device GiB: 4.3; peak host process RSS GiB: 1.7. Loading and in-process compilation are included in host RSS.
 
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null, "id": "94654911ffcd8725", "model_options": {"kv_dtype": "fp8", "optimized": true}, "policy": {}, "prefill_requests": 32, "provider": "cuda", "target": "sm_89", "trials": 1, "window": null}`.
 
@@ -49,6 +53,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `float16`. Evidence: [20261018131122206190-b71485b2](../../runs/20261018131122206190-b71485b2/run.json).
 
+Peak device GiB: 14.0; peak host process RSS GiB: 2.0. Loading and in-process compilation are included in host RSS.
+
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null, "id": "a60d051026a6a775", "model_options": {"kv_dtype": "float16", "optimized": true}, "policy": {}, "prefill_requests": 32, "provider": "webgpu", "target": "webgpu-portable-v1", "trials": 1, "window": null}`.
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -68,6 +74,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 ## lfm2.5-230m / akas / bf16 / webgpu / fp8 / ar
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `fp8`. Evidence: [20261018131330864843-039fb80c](../../runs/20261018131330864843-039fb80c/run.json).
+
+Peak device GiB: 4.4; peak host process RSS GiB: 2.0. Loading and in-process compilation are included in host RSS.
 
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null, "id": "74d933f0b09e199a", "model_options": {"kv_dtype": "fp8", "optimized": true}, "policy": {}, "prefill_requests": 32, "provider": "webgpu", "target": "webgpu-portable-v1", "trials": 1, "window": null}`.
 
@@ -89,6 +97,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `float16`. Evidence: [20261018131544975070-4cbc5243](../../runs/20261018131544975070-4cbc5243/run.json).
 
+Peak device GiB: 7.5; peak host process RSS GiB: 2.0. Loading and in-process compilation are included in host RSS.
+
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null, "id": "9f34d665a4a48c1b", "model_options": {"kv_dtype": "float16", "optimized": true}, "policy": {}, "prefill_requests": 32, "provider": "cuda", "target": "sm_89", "trials": 1, "window": null}`.
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -108,6 +118,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 ## lfm2.5-230m / akas / f16 / cuda / fp8 / ar
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `fp8`. Evidence: [20261018131656581346-a1667c54](../../runs/20261018131656581346-a1667c54/run.json).
+
+Peak device GiB: 4.3; peak host process RSS GiB: 2.0. Loading and in-process compilation are included in host RSS.
 
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null, "id": "94654911ffcd8725", "model_options": {"kv_dtype": "fp8", "optimized": true}, "policy": {}, "prefill_requests": 32, "provider": "cuda", "target": "sm_89", "trials": 1, "window": null}`.
 
@@ -129,6 +141,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `float16`. Evidence: [20261018131810905834-8f8a2aba](../../runs/20261018131810905834-8f8a2aba/run.json).
 
+Peak device GiB: 14.0; peak host process RSS GiB: 2.3. Loading and in-process compilation are included in host RSS.
+
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null, "id": "a60d051026a6a775", "model_options": {"kv_dtype": "float16", "optimized": true}, "policy": {}, "prefill_requests": 32, "provider": "webgpu", "target": "webgpu-portable-v1", "trials": 1, "window": null}`.
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -148,6 +162,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 ## lfm2.5-230m / akas / f16 / webgpu / fp8 / ar
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `fp8`. Evidence: [20261018132021967816-affcd720](../../runs/20261018132021967816-affcd720/run.json).
+
+Peak device GiB: 4.4; peak host process RSS GiB: 2.5. Loading and in-process compilation are included in host RSS.
 
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null, "id": "74d933f0b09e199a", "model_options": {"kv_dtype": "fp8", "optimized": true}, "policy": {}, "prefill_requests": 32, "provider": "webgpu", "target": "webgpu-portable-v1", "trials": 1, "window": null}`.
 
@@ -169,6 +185,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `float16`. Evidence: [20261018132230646310-93a139e8](../../runs/20261018132230646310-93a139e8/run.json).
 
+Peak device GiB: 7.2; peak host process RSS GiB: 1.4. Loading and in-process compilation are included in host RSS.
+
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null, "id": "9f34d665a4a48c1b", "model_options": {"kv_dtype": "float16", "optimized": true}, "policy": {}, "prefill_requests": 32, "provider": "cuda", "target": "sm_89", "trials": 1, "window": null}`.
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -188,6 +206,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 ## lfm2.5-230m / akas / q4_0 / cuda / fp8 / ar
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `fp8`. Evidence: [20261018132342934575-aca09c85](../../runs/20261018132342934575-aca09c85/run.json).
+
+Peak device GiB: 4.0; peak host process RSS GiB: 1.4. Loading and in-process compilation are included in host RSS.
 
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null, "id": "94654911ffcd8725", "model_options": {"kv_dtype": "fp8", "optimized": true}, "policy": {}, "prefill_requests": 32, "provider": "cuda", "target": "sm_89", "trials": 1, "window": null}`.
 
@@ -209,6 +229,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `float16`. Evidence: [20261018132454970187-edf9a076](../../runs/20261018132454970187-edf9a076/run.json).
 
+Peak device GiB: 13.6; peak host process RSS GiB: 1.8. Loading and in-process compilation are included in host RSS.
+
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null, "id": "a60d051026a6a775", "model_options": {"kv_dtype": "float16", "optimized": true}, "policy": {}, "prefill_requests": 32, "provider": "webgpu", "target": "webgpu-portable-v1", "trials": 1, "window": null}`.
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -228,6 +250,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 ## lfm2.5-230m / akas / q4_0 / webgpu / fp8 / ar
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `fp8`. Evidence: [20261018132713680721-e2e2fd23](../../runs/20261018132713680721-e2e2fd23/run.json).
+
+Peak device GiB: 4.1; peak host process RSS GiB: 1.8. Loading and in-process compilation are included in host RSS.
 
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null, "id": "74d933f0b09e199a", "model_options": {"kv_dtype": "fp8", "optimized": true}, "policy": {}, "prefill_requests": 32, "provider": "webgpu", "target": "webgpu-portable-v1", "trials": 1, "window": null}`.
 
@@ -249,6 +273,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `float16`. Evidence: [20261018132935164249-1ec690bc](../../runs/20261018132935164249-1ec690bc/run.json).
 
+Peak device GiB: 7.2; peak host process RSS GiB: 1.4. Loading and in-process compilation are included in host RSS.
+
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null, "id": "9f34d665a4a48c1b", "model_options": {"kv_dtype": "float16", "optimized": true}, "policy": {}, "prefill_requests": 32, "provider": "cuda", "target": "sm_89", "trials": 1, "window": null}`.
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -268,6 +294,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 ## lfm2.5-230m / akas / q4_k_m / cuda / fp8 / ar
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `fp8`. Evidence: [20261018133054198297-56a5e435](../../runs/20261018133054198297-56a5e435/run.json).
+
+Peak device GiB: 4.0; peak host process RSS GiB: 1.4. Loading and in-process compilation are included in host RSS.
 
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null, "id": "94654911ffcd8725", "model_options": {"kv_dtype": "fp8", "optimized": true}, "policy": {}, "prefill_requests": 32, "provider": "cuda", "target": "sm_89", "trials": 1, "window": null}`.
 
@@ -289,6 +317,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `float16`. Evidence: [20261018133213394457-6422e80a](../../runs/20261018133213394457-6422e80a/run.json).
 
+Peak device GiB: 13.6; peak host process RSS GiB: 1.8. Loading and in-process compilation are included in host RSS.
+
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null, "id": "a60d051026a6a775", "model_options": {"kv_dtype": "float16", "optimized": true}, "policy": {}, "prefill_requests": 32, "provider": "webgpu", "target": "webgpu-portable-v1", "trials": 1, "window": null}`.
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -308,6 +338,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 ## lfm2.5-230m / akas / q4_k_m / webgpu / fp8 / ar
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `fp8`. Evidence: [20261018133440998595-e60f24f2](../../runs/20261018133440998595-e60f24f2/run.json).
+
+Peak device GiB: 4.1; peak host process RSS GiB: 1.8. Loading and in-process compilation are included in host RSS.
 
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null, "id": "74d933f0b09e199a", "model_options": {"kv_dtype": "fp8", "optimized": true}, "policy": {}, "prefill_requests": 32, "provider": "webgpu", "target": "webgpu-portable-v1", "trials": 1, "window": null}`.
 
@@ -329,6 +361,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `bfloat16`. Evidence: [20261018133711475982-66e2695e](../../runs/20261018133711475982-66e2695e/run.json).
 
+Peak device GiB: 13.5; peak host process RSS GiB: 1.4. Loading and in-process compilation are included in host RSS.
+
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null, "id": "b4805ec444a95869", "model_options": {"fused_head": false, "kv_dtype": "bfloat16"}, "policy": {}, "prefill_requests": 32, "provider": "cuda", "target": "sm_89", "trials": 1, "window": null}`.
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -348,6 +382,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 ## qwen3.5-0.8b / akas / bf16 / cuda / default / mtp
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `bfloat16`. Evidence: [20261018133859638625-0eef8c58](../../runs/20261018133859638625-0eef8c58/run.json).
+
+Peak device GiB: 16.3; peak host process RSS GiB: 1.7. Loading and in-process compilation are included in host RSS.
 
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": "akas.models.qwen35.mtp:MTPHead", "id": "3d7824fd78938e93", "model_options": {"fused_head": false, "kv_dtype": "bfloat16"}, "policy": {}, "prefill_requests": 32, "provider": "cuda", "target": "sm_89", "trials": 1, "window": 2}`.
 
@@ -369,6 +405,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": "akas
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `fp8`. Evidence: [20261018134119261822-597c8bda](../../runs/20261018134119261822-597c8bda/run.json).
 
+Peak device GiB: 10.4; peak host process RSS GiB: 1.4. Loading and in-process compilation are included in host RSS.
+
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null, "id": "fd5803b380a76562", "model_options": {"fused_head": false, "kv_dtype": "fp8"}, "policy": {}, "prefill_requests": 32, "provider": "cuda", "target": "sm_89", "trials": 1, "window": null}`.
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -389,6 +427,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `fp8`. Evidence: [20261018134325570980-469e5ae3](../../runs/20261018134325570980-469e5ae3/run.json).
 
+Peak device GiB: 12.7; peak host process RSS GiB: 1.7. Loading and in-process compilation are included in host RSS.
+
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": "akas.models.qwen35.mtp:MTPHead", "id": "072957e893c43afb", "model_options": {"fused_head": false, "kv_dtype": "fp8"}, "policy": {}, "prefill_requests": 32, "provider": "cuda", "target": "sm_89", "trials": 1, "window": 2}`.
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -408,6 +448,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": "akas
 ## qwen3.5-0.8b / akas / bf16 / webgpu / default / ar
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `float16`. Evidence: [20261018134601703707-d59fcdfa](../../runs/20261018134601703707-d59fcdfa/run.json).
+
+Peak device GiB: 13.4; peak host process RSS GiB: 3.5. Loading and in-process compilation are included in host RSS.
 
 fused_head is a native CUDA BF16 option
 
@@ -431,6 +473,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `float16`. Evidence: [20261018134847189946-c5bec17a](../../runs/20261018134847189946-c5bec17a/run.json).
 
+Peak device GiB: 15.1; peak host process RSS GiB: 3.7. Loading and in-process compilation are included in host RSS.
+
 fused_head is a native CUDA BF16 option
 
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": "akas.models.qwen35.mtp:MTPHead", "id": "d663818e41f437c9", "model_options": {"fused_head": false, "kv_dtype": "float16"}, "policy": {}, "prefill_requests": 32, "provider": "webgpu", "target": "webgpu-portable-v1", "trials": 1, "window": 2}`.
@@ -452,6 +496,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": "akas
 ## qwen3.5-0.8b / akas / bf16 / webgpu / fp8 / ar
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `fp8`. Evidence: [20261018135254888257-4722a5b7](../../runs/20261018135254888257-4722a5b7/run.json).
+
+Peak device GiB: 10.4; peak host process RSS GiB: 3.6. Loading and in-process compilation are included in host RSS.
 
 fused_head is a native CUDA BF16 option
 
@@ -475,6 +521,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `fp8`. Evidence: [20261018135534665929-102701fc](../../runs/20261018135534665929-102701fc/run.json).
 
+Peak device GiB: 11.5; peak host process RSS GiB: 3.7. Loading and in-process compilation are included in host RSS.
+
 fused_head is a native CUDA BF16 option
 
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": "akas.models.qwen35.mtp:MTPHead", "id": "ca10f00dab2b2095", "model_options": {"fused_head": false, "kv_dtype": "fp8"}, "policy": {}, "prefill_requests": 32, "provider": "webgpu", "target": "webgpu-portable-v1", "trials": 1, "window": 2}`.
@@ -496,6 +544,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": "akas
 ## qwen3.5-0.8b / akas / f16 / cuda / default / ar
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `bfloat16`. Evidence: [20261018135933378298-423b61d0](../../runs/20261018135933378298-423b61d0/run.json).
+
+Peak device GiB: 13.5; peak host process RSS GiB: 4.1. Loading and in-process compilation are included in host RSS.
 
 GGUF head uses fused dequantization followed by argmax; fused_head is a native BF16 option
 
@@ -519,6 +569,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `bfloat16`. Evidence: [20261018140456927334-1cf13a3a](../../runs/20261018140456927334-1cf13a3a/run.json).
 
+Peak device GiB: 16.2; peak host process RSS GiB: 4.4. Loading and in-process compilation are included in host RSS.
+
 GGUF head uses fused dequantization followed by argmax; fused_head is a native BF16 option
 
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": "akas.models.qwen35.mtp:MTPHead", "id": "3d7824fd78938e93", "model_options": {"fused_head": false, "kv_dtype": "bfloat16"}, "policy": {}, "prefill_requests": 32, "provider": "cuda", "target": "sm_89", "trials": 1, "window": 2}`.
@@ -540,6 +592,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": "akas
 ## qwen3.5-0.8b / akas / f16 / cuda / fp8 / ar
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `fp8`. Evidence: [20261018141112684266-3eb5b891](../../runs/20261018141112684266-3eb5b891/run.json).
+
+Peak device GiB: 10.4; peak host process RSS GiB: 4.1. Loading and in-process compilation are included in host RSS.
 
 GGUF head uses fused dequantization followed by argmax; fused_head is a native BF16 option
 
@@ -563,6 +617,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `fp8`. Evidence: [20261018141518118717-e1387382](../../runs/20261018141518118717-e1387382/run.json).
 
+Peak device GiB: 12.6; peak host process RSS GiB: 4.4. Loading and in-process compilation are included in host RSS.
+
 GGUF head uses fused dequantization followed by argmax; fused_head is a native BF16 option
 
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": "akas.models.qwen35.mtp:MTPHead", "id": "072957e893c43afb", "model_options": {"fused_head": false, "kv_dtype": "fp8"}, "policy": {}, "prefill_requests": 32, "provider": "cuda", "target": "sm_89", "trials": 1, "window": 2}`.
@@ -584,6 +640,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": "akas
 ## qwen3.5-0.8b / akas / f16 / webgpu / default / ar
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `float16`. Evidence: [20261018142118202879-02440bd9](../../runs/20261018142118202879-02440bd9/run.json).
+
+Peak device GiB: 13.4; peak host process RSS GiB: 6.1. Loading and in-process compilation are included in host RSS.
 
 GGUF head uses fused dequantization followed by argmax; fused_head is a native BF16 option
 
@@ -607,6 +665,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `float16`. Evidence: [20261018142401278788-e1b20739](../../runs/20261018142401278788-e1b20739/run.json).
 
+Peak device GiB: 15.1; peak host process RSS GiB: 6.2. Loading and in-process compilation are included in host RSS.
+
 GGUF head uses fused dequantization followed by argmax; fused_head is a native BF16 option
 
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": "akas.models.qwen35.mtp:MTPHead", "id": "d663818e41f437c9", "model_options": {"fused_head": false, "kv_dtype": "float16"}, "policy": {}, "prefill_requests": 32, "provider": "webgpu", "target": "webgpu-portable-v1", "trials": 1, "window": 2}`.
@@ -628,6 +688,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": "akas
 ## qwen3.5-0.8b / akas / f16 / webgpu / fp8 / ar
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `fp8`. Evidence: [20261018142738044876-56415fb5](../../runs/20261018142738044876-56415fb5/run.json).
+
+Peak device GiB: 10.4; peak host process RSS GiB: 6.1. Loading and in-process compilation are included in host RSS.
 
 GGUF head uses fused dequantization followed by argmax; fused_head is a native BF16 option
 
@@ -651,6 +713,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `fp8`. Evidence: [20261018143024873596-fc39ef42](../../runs/20261018143024873596-fc39ef42/run.json).
 
+Peak device GiB: 11.5; peak host process RSS GiB: 6.2. Loading and in-process compilation are included in host RSS.
+
 GGUF head uses fused dequantization followed by argmax; fused_head is a native BF16 option
 
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": "akas.models.qwen35.mtp:MTPHead", "id": "ca10f00dab2b2095", "model_options": {"fused_head": false, "kv_dtype": "fp8"}, "policy": {}, "prefill_requests": 32, "provider": "webgpu", "target": "webgpu-portable-v1", "trials": 1, "window": 2}`.
@@ -672,6 +736,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": "akas
 ## qwen3.5-0.8b / akas / q4_0 / cuda / default / ar
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `bfloat16`. Evidence: [20261018143407909404-6fe39872](../../runs/20261018143407909404-6fe39872/run.json).
+
+Peak device GiB: 12.5; peak host process RSS GiB: 2.2. Loading and in-process compilation are included in host RSS.
 
 GGUF head uses fused dequantization followed by argmax; fused_head is a native BF16 option
 
@@ -695,6 +761,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `bfloat16`. Evidence: [20261018143824470622-2fc170e3](../../runs/20261018143824470622-2fc170e3/run.json).
 
+Peak device GiB: 15.2; peak host process RSS GiB: 2.5. Loading and in-process compilation are included in host RSS.
+
 GGUF head uses fused dequantization followed by argmax; fused_head is a native BF16 option
 
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": "akas.models.qwen35.mtp:MTPHead", "id": "3d7824fd78938e93", "model_options": {"fused_head": false, "kv_dtype": "bfloat16"}, "policy": {}, "prefill_requests": 32, "provider": "cuda", "target": "sm_89", "trials": 1, "window": 2}`.
@@ -716,6 +784,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": "akas
 ## qwen3.5-0.8b / akas / q4_0 / cuda / fp8 / ar
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `fp8`. Evidence: [20261018144310958228-59226851](../../runs/20261018144310958228-59226851/run.json).
+
+Peak device GiB: 9.4; peak host process RSS GiB: 2.2. Loading and in-process compilation are included in host RSS.
 
 GGUF head uses fused dequantization followed by argmax; fused_head is a native BF16 option
 
@@ -739,6 +809,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `fp8`. Evidence: [20261018144546940645-b9caf87b](../../runs/20261018144546940645-b9caf87b/run.json).
 
+Peak device GiB: 11.6; peak host process RSS GiB: 2.5. Loading and in-process compilation are included in host RSS.
+
 GGUF head uses fused dequantization followed by argmax; fused_head is a native BF16 option
 
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": "akas.models.qwen35.mtp:MTPHead", "id": "072957e893c43afb", "model_options": {"fused_head": false, "kv_dtype": "fp8"}, "policy": {}, "prefill_requests": 32, "provider": "cuda", "target": "sm_89", "trials": 1, "window": 2}`.
@@ -760,6 +832,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": "akas
 ## qwen3.5-0.8b / akas / q4_0 / webgpu / default / ar
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `float16`. Evidence: [20261018144907492049-2f845f93](../../runs/20261018144907492049-2f845f93/run.json).
+
+Peak device GiB: 12.3; peak host process RSS GiB: 2.9. Loading and in-process compilation are included in host RSS.
 
 GGUF head uses fused dequantization followed by argmax; fused_head is a native BF16 option
 
@@ -783,6 +857,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `float16`. Evidence: [20261018145209029629-85607bc4](../../runs/20261018145209029629-85607bc4/run.json).
 
+Peak device GiB: 14.0; peak host process RSS GiB: 2.9. Loading and in-process compilation are included in host RSS.
+
 GGUF head uses fused dequantization followed by argmax; fused_head is a native BF16 option
 
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": "akas.models.qwen35.mtp:MTPHead", "id": "d663818e41f437c9", "model_options": {"fused_head": false, "kv_dtype": "float16"}, "policy": {}, "prefill_requests": 32, "provider": "webgpu", "target": "webgpu-portable-v1", "trials": 1, "window": 2}`.
@@ -804,6 +880,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": "akas
 ## qwen3.5-0.8b / akas / q4_0 / webgpu / fp8 / ar
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `fp8`. Evidence: [20261018145559662873-743978c8](../../runs/20261018145559662873-743978c8/run.json).
+
+Peak device GiB: 9.3; peak host process RSS GiB: 2.8. Loading and in-process compilation are included in host RSS.
 
 GGUF head uses fused dequantization followed by argmax; fused_head is a native BF16 option
 
@@ -827,6 +905,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `fp8`. Evidence: [20261018145840104186-24d4d259](../../runs/20261018145840104186-24d4d259/run.json).
 
+Peak device GiB: 10.5; peak host process RSS GiB: 2.9. Loading and in-process compilation are included in host RSS.
+
 GGUF head uses fused dequantization followed by argmax; fused_head is a native BF16 option
 
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": "akas.models.qwen35.mtp:MTPHead", "id": "ca10f00dab2b2095", "model_options": {"fused_head": false, "kv_dtype": "fp8"}, "policy": {}, "prefill_requests": 32, "provider": "webgpu", "target": "webgpu-portable-v1", "trials": 1, "window": 2}`.
@@ -848,6 +928,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": "akas
 ## qwen3.5-0.8b / akas / q4_k_m / cuda / default / ar
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `bfloat16`. Evidence: [20261018150214725744-e6b064ad](../../runs/20261018150214725744-e6b064ad/run.json).
+
+Peak device GiB: 12.5; peak host process RSS GiB: 2.3. Loading and in-process compilation are included in host RSS.
 
 GGUF head uses fused dequantization followed by argmax; fused_head is a native BF16 option
 
@@ -871,6 +953,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `bfloat16`. Evidence: [20261018150729812014-9634f119](../../runs/20261018150729812014-9634f119/run.json).
 
+Peak device GiB: 15.2; peak host process RSS GiB: 2.6. Loading and in-process compilation are included in host RSS.
+
 GGUF head uses fused dequantization followed by argmax; fused_head is a native BF16 option
 
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": "akas.models.qwen35.mtp:MTPHead", "id": "3d7824fd78938e93", "model_options": {"fused_head": false, "kv_dtype": "bfloat16"}, "policy": {}, "prefill_requests": 32, "provider": "cuda", "target": "sm_89", "trials": 1, "window": 2}`.
@@ -892,6 +976,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": "akas
 ## qwen3.5-0.8b / akas / q4_k_m / cuda / fp8 / ar
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `fp8`. Evidence: [20261018151237223272-af03ee15](../../runs/20261018151237223272-af03ee15/run.json).
+
+Peak device GiB: 9.5; peak host process RSS GiB: 2.2. Loading and in-process compilation are included in host RSS.
 
 GGUF head uses fused dequantization followed by argmax; fused_head is a native BF16 option
 
@@ -915,6 +1001,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `fp8`. Evidence: [20261018151512909614-9b31261c](../../runs/20261018151512909614-9b31261c/run.json).
 
+Peak device GiB: 11.7; peak host process RSS GiB: 2.6. Loading and in-process compilation are included in host RSS.
+
 GGUF head uses fused dequantization followed by argmax; fused_head is a native BF16 option
 
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": "akas.models.qwen35.mtp:MTPHead", "id": "072957e893c43afb", "model_options": {"fused_head": false, "kv_dtype": "fp8"}, "policy": {}, "prefill_requests": 32, "provider": "cuda", "target": "sm_89", "trials": 1, "window": 2}`.
@@ -936,6 +1024,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": "akas
 ## qwen3.5-0.8b / akas / q4_k_m / webgpu / default / ar
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `float16`. Evidence: [20261018151836127904-b7ab440e](../../runs/20261018151836127904-b7ab440e/run.json).
+
+Peak device GiB: 12.4; peak host process RSS GiB: 2.9. Loading and in-process compilation are included in host RSS.
 
 GGUF head uses fused dequantization followed by argmax; fused_head is a native BF16 option
 
@@ -959,6 +1049,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `float16`. Evidence: [20261018152156367296-42537605](../../runs/20261018152156367296-42537605/run.json).
 
+Peak device GiB: 14.1; peak host process RSS GiB: 3.0. Loading and in-process compilation are included in host RSS.
+
 GGUF head uses fused dequantization followed by argmax; fused_head is a native BF16 option
 
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": "akas.models.qwen35.mtp:MTPHead", "id": "d663818e41f437c9", "model_options": {"fused_head": false, "kv_dtype": "float16"}, "policy": {}, "prefill_requests": 32, "provider": "webgpu", "target": "webgpu-portable-v1", "trials": 1, "window": 2}`.
@@ -981,6 +1073,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": "akas
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `fp8`. Evidence: [20261018152555702528-5964692d](../../runs/20261018152555702528-5964692d/run.json).
 
+Peak device GiB: 9.4; peak host process RSS GiB: 2.9. Loading and in-process compilation are included in host RSS.
+
 GGUF head uses fused dequantization followed by argmax; fused_head is a native BF16 option
 
 Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null, "id": "d1f846ef7dd64675", "model_options": {"fused_head": false, "kv_dtype": "fp8"}, "policy": {}, "prefill_requests": 32, "provider": "webgpu", "target": "webgpu-portable-v1", "trials": 1, "window": null}`.
@@ -1002,6 +1096,8 @@ Selected recipe: `{"chunk": 32, "deferred": false, "graphs": true, "head": null,
 ## qwen3.5-0.8b / akas / q4_k_m / webgpu / fp8 / mtp
 
 Profile status: **complete**; qualification: **passed**; effective KV dtype: `fp8`. Evidence: [20261018152842513121-97464fc5](../../runs/20261018152842513121-97464fc5/run.json).
+
+Peak device GiB: 10.6; peak host process RSS GiB: 2.9. Loading and in-process compilation are included in host RSS.
 
 GGUF head uses fused dequantization followed by argmax; fused_head is a native BF16 option
 

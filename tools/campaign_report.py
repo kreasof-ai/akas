@@ -636,11 +636,18 @@ def render(data, out, history):
             "",
         ]
         for p in profiles:
+            meta = (
+                data["evidence"].get(p.get("selected_run_id"), {}).get("metadata", {})
+            )
+            host = meta.get("cpu_peak_rss_bytes")
+            device = p.get("peak_device_bytes")
             lines += [
                 f'<a id="{p["id"]}"></a>',
                 f"## {p['model_id']} / {p['runtime']} / {p['weight_format']} / {p['provider']} / {p['cache_request']} / {p['mode']}",
                 "",
                 f"Profile status: **{p['status']}**; qualification: **{p['qualifying_status']}**; effective KV dtype: `{p.get('kv_dtype') or 'unrecorded'}`. Evidence: {evidence_link(p.get('selected_run_id'), out, history)}.",
+                "",
+                f"Peak device GiB: {fmt(device / 2**30) if device is not None else '—'}; peak host process RSS GiB: {fmt(host / 2**30) if host is not None else '—'}. Loading and in-process compilation are included in host RSS.",
                 "",
             ]
             if p.get("error"):

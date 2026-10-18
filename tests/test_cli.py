@@ -193,6 +193,7 @@ def test_benchmark_compiles_one_program_bank_for_all_requested_batches(monkeypat
     assert all(options["checkpoint_options"] == {"tokenizer": False} for _, options in opened)
     recorded = json.loads(next((tmp_path / "history/runs").glob("*/run.json")).read_text())
     assert recorded["status"] == "passed" and len(recorded["results"]) == 2
+    assert recorded["metadata"]["cpu_peak_rss_bytes"] > 0
 
 
 def test_benchmark_records_device_startup_failure(monkeypatch, tmp_path):

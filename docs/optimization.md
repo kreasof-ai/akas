@@ -85,6 +85,9 @@ new candidates still run complete model and HTTP checks with fresh timings.
 Program and serving alternatives receive a cheap qualification pass first.
 Larger kernel-search budgets then refine the best measured configuration,
 retaining its selected chunk, grouping, policy and speculative mode.
+Programs retain a smaller prefill geometry for the workload's shortest prompt.
+The executor chooses among qualified geometries so a larger throughput tile
+does not force short prompts to execute a padded full tile.
 
 ## Stop and resume
 
@@ -158,8 +161,9 @@ qualification before starting a long matrix. The supplied specification expresse
 the requested coverage; it does not imply that every model supports every path.
 Model-level constraints remain in the [benchmark guide](benchmarking.md).
 
-The supplied matrix caps each configuration at one hour in total, including
-continuations. That ceiling is declared as `configuration_budget` in its JSON.
+Each matrix declares its per-configuration ceiling as `configuration_budget`
+in its JSON, including continuations. The standard matrix uses one hour; the
+single-user long-context matrix allows 48 hours for each of its two backends.
 The overall four-day allowance is an upper limit, not a requested run duration;
 this matrix can finish sooner. After a hard interruption, the coordinator
 conservatively charges its last reserved allowance when exact elapsed time is

@@ -9,6 +9,8 @@ All throughput and displayed latency values are medians over the retained repeti
 
 Profile status: **passed**; qualification: **passed**; effective KV dtype: `bfloat16`. Evidence: [20261015181815641257-391d76bc](../../runs/20261015181815641257-391d76bc/run.json).
 
+Peak device GiB: 19.2; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
+
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
 | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
 | 1 | 32 | 128 | request-phase-v1 | 2,889.6 | 454.2 | — | — | 439.9 | 11.1 | 2.2 | 3 | passed | [20261015181815641257-391d76bc](../../runs/20261015181815641257-391d76bc/run.json) |
@@ -26,6 +28,8 @@ Profile status: **passed**; qualification: **passed**; effective KV dtype: `bflo
 ## lfm2.5-230m / sglang / bf16 / cuda / default / ar
 
 Profile status: **passed**; qualification: **passed**; effective KV dtype: `bfloat16`. Evidence: [20261015190359153016-bcd95971](../../runs/20261015190359153016-bcd95971/run.json).
+
+Peak device GiB: 19.8; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
 | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
@@ -45,6 +49,8 @@ Profile status: **passed**; qualification: **passed**; effective KV dtype: `bflo
 
 Profile status: **passed**; qualification: **passed**; effective KV dtype: `float16`. Evidence: [20261015192832378421-704bee0c](../../runs/20261015192832378421-704bee0c/run.json).
 
+Peak device GiB: 7.5; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
+
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
 | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
 | 1 | 32 | 128 | llama-server-eval-v1 | 5,315.6 | 407.5 | — | — | 397.6 | — | — | 3 | passed | [20261015192832378421-704bee0c](../../runs/20261015192832378421-704bee0c/run.json) |
@@ -62,6 +68,8 @@ Profile status: **passed**; qualification: **passed**; effective KV dtype: `floa
 ## lfm2.5-230m / llama / q4_0 / cuda / default / ar
 
 Profile status: **passed**; qualification: **passed**; effective KV dtype: `float16`. Evidence: [20261015193656299664-fe2eba27](../../runs/20261015193656299664-fe2eba27/run.json).
+
+Peak device GiB: 7.2; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
 | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
@@ -81,6 +89,8 @@ Profile status: **passed**; qualification: **passed**; effective KV dtype: `floa
 
 Profile status: **passed**; qualification: **passed**; effective KV dtype: `float16`. Evidence: [20261015194346054741-23180dda](../../runs/20261015194346054741-23180dda/run.json).
 
+Peak device GiB: 7.2; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
+
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
 | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
 | 1 | 32 | 128 | llama-server-eval-v1 | 6,632.1 | 727.1 | — | — | 704.9 | — | — | 3 | passed | [20261015194346054741-23180dda](../../runs/20261015194346054741-23180dda/run.json) |
@@ -98,6 +108,8 @@ Profile status: **passed**; qualification: **passed**; effective KV dtype: `floa
 ## lfm2.5-230m / llama / f16 / vulkan / default / ar
 
 Profile status: **passed**; qualification: **passed**; effective KV dtype: `float16`. Evidence: [20261015195038132061-53344b1f](../../runs/20261015195038132061-53344b1f/run.json).
+
+Peak device GiB: 7.4; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
 | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
@@ -117,6 +129,8 @@ Profile status: **passed**; qualification: **passed**; effective KV dtype: `floa
 
 Profile status: **passed**; qualification: **passed**; effective KV dtype: `float16`. Evidence: [20261015201742219174-9ab41fef](../../runs/20261015201742219174-9ab41fef/run.json).
 
+Peak device GiB: 7.1; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
+
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
 | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
 | 1 | 32 | 128 | llama-server-eval-v1 | 4,018.6 | 678.3 | — | — | 641.6 | — | — | 3 | passed | [20261015201742219174-9ab41fef](../../runs/20261015201742219174-9ab41fef/run.json) |
@@ -134,6 +148,8 @@ Profile status: **passed**; qualification: **passed**; effective KV dtype: `floa
 ## lfm2.5-230m / llama / q4_k_m / vulkan / default / ar
 
 Profile status: **passed**; qualification: **passed**; effective KV dtype: `float16`. Evidence: [20261015202523676529-ef8b1d74](../../runs/20261015202523676529-ef8b1d74/run.json).
+
+Peak device GiB: 7.0; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
 | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
@@ -153,6 +169,8 @@ Profile status: **passed**; qualification: **passed**; effective KV dtype: `floa
 
 Profile status: **passed**; qualification: **passed**; effective KV dtype: `bfloat16`. Evidence: [20261015191912117158-bf3b040b](../../runs/20261015191912117158-bf3b040b/run.json).
 
+Peak device GiB: 19.2; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
+
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
 | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
 | 1 | 32 | 128 | request-phase-v1 | 924.1 | 146.9 | — | — | 142.4 | 34.6 | 6.8 | 3 | passed | [20261015191912117158-bf3b040b](../../runs/20261015191912117158-bf3b040b/run.json) |
@@ -170,6 +188,8 @@ Profile status: **passed**; qualification: **passed**; effective KV dtype: `bflo
 ## qwen3.5-0.8b / vllm / bf16 / cuda / default / mtp
 
 Profile status: **failed**; qualification: **unqualified**; effective KV dtype: `bfloat16`. Evidence: [20261015205432983160-cebe91d1](../../runs/20261015205432983160-cebe91d1/run.json).
+
+Peak device GiB: 20.4; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
 
 B64/P32: greedy outputs changed between repetitions
 
@@ -191,6 +211,8 @@ B64/P32: greedy outputs changed between repetitions
 
 Profile status: **passed**; qualification: **passed**; effective KV dtype: `bfloat16`. Evidence: [20261015190536066752-9e49f8e2](../../runs/20261015190536066752-9e49f8e2/run.json).
 
+Peak device GiB: 20.5; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
+
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
 | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
 | 1 | 32 | 128 | sglang-scheduler-phase-v1 | 1,189.1 | 148.8 | — | — | 145.2 | — | — | 3 | passed | [20261015190536066752-9e49f8e2](../../runs/20261015190536066752-9e49f8e2/run.json) |
@@ -208,6 +230,8 @@ Profile status: **passed**; qualification: **passed**; effective KV dtype: `bflo
 ## qwen3.5-0.8b / sglang / bf16 / cuda / default / mtp
 
 Profile status: **failed**; qualification: **unqualified**; effective KV dtype: `bfloat16`. Evidence: [20261015190958176695-723ea8a5](../../runs/20261015190958176695-723ea8a5/run.json).
+
+Peak device GiB: 20.8; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
 
 ValueError: MTP output differs from the matching AR probe
 
@@ -229,6 +253,8 @@ ValueError: MTP output differs from the matching AR probe
 
 Profile status: **failed**; qualification: **unqualified**; effective KV dtype: `float16`. Evidence: [20261015210200344123-b240f1f0](../../runs/20261015210200344123-b240f1f0/run.json).
 
+Peak device GiB: 13.9; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
+
 B64/P32: greedy outputs changed between repetitions; B256/P32: greedy outputs changed between repetitions
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -248,6 +274,8 @@ B64/P32: greedy outputs changed between repetitions; B256/P32: greedy outputs ch
 ## qwen3.5-0.8b / llama / q4_0 / cuda / default / ar
 
 Profile status: **failed**; qualification: **unqualified**; effective KV dtype: `float16`. Evidence: [20261015211120204768-ca9ae9c9](../../runs/20261015211120204768-ca9ae9c9/run.json).
+
+Peak device GiB: 12.8; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
 
 B4/P32: greedy outputs changed between repetitions; B16/P32: greedy outputs changed between repetitions; B16/P2048: greedy outputs changed between repetitions; B64/P32: greedy outputs changed between repetitions; B64/P2048: greedy outputs changed between repetitions; B256/P32: greedy outputs changed between repetitions; B256/P2048: greedy outputs changed between repetitions
 
@@ -269,6 +297,8 @@ B4/P32: greedy outputs changed between repetitions; B16/P32: greedy outputs chan
 
 Profile status: **failed**; qualification: **unqualified**; effective KV dtype: `float16`. Evidence: [20261015212004566075-2f3bc973](../../runs/20261015212004566075-2f3bc973/run.json).
 
+Peak device GiB: 12.9; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
+
 B4/P32: greedy outputs changed between repetitions; B16/P32: greedy outputs changed between repetitions; B16/P2048: greedy outputs changed between repetitions; B64/P32: greedy outputs changed between repetitions; B64/P2048: greedy outputs changed between repetitions; B256/P32: greedy outputs changed between repetitions; B256/P2048: greedy outputs changed between repetitions
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -288,6 +318,8 @@ B4/P32: greedy outputs changed between repetitions; B16/P32: greedy outputs chan
 ## qwen3.5-0.8b / llama / f16 / vulkan / default / ar
 
 Profile status: **failed**; qualification: **unqualified**; effective KV dtype: `float16`. Evidence: [20261015212857450400-a5e9f4cb](../../runs/20261015212857450400-a5e9f4cb/run.json).
+
+Peak device GiB: 13.7; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
 
 B64/P32: greedy outputs changed between repetitions; B256/P32: greedy outputs changed between repetitions
 
@@ -309,6 +341,8 @@ B64/P32: greedy outputs changed between repetitions; B256/P32: greedy outputs ch
 
 Profile status: **failed**; qualification: **unqualified**; effective KV dtype: `float16`. Evidence: [20261015214155673053-00188f08](../../runs/20261015214155673053-00188f08/run.json).
 
+Peak device GiB: 12.7; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
+
 B16/P32: greedy outputs changed between repetitions; B64/P32: greedy outputs changed between repetitions; B64/P2048: greedy outputs changed between repetitions; B256/P32: greedy outputs changed between repetitions; B256/P2048: greedy outputs changed between repetitions
 
 | B | Prefix | Output | Phase protocol | Prefill tok/s | Decode tok/s | Native output tok/s | Engine output tok/s | Burst output tok/s | TTFT ms | TPOT ms | Repeats | Qualification | Evidence |
@@ -328,6 +362,8 @@ B16/P32: greedy outputs changed between repetitions; B64/P32: greedy outputs cha
 ## qwen3.5-0.8b / llama / q4_k_m / vulkan / default / ar
 
 Profile status: **failed**; qualification: **unqualified**; effective KV dtype: `float16`. Evidence: [20261015215423483123-d676f19f](../../runs/20261015215423483123-d676f19f/run.json).
+
+Peak device GiB: 12.7; peak host process RSS GiB: —. Loading and in-process compilation are included in host RSS.
 
 B16/P32: greedy outputs changed between repetitions; B64/P32: greedy outputs changed between repetitions; B256/P32: greedy outputs changed between repetitions
 

@@ -341,19 +341,18 @@ def worker_allowance(budget, remaining, jobs, *, reference, provider):
 
 
 def geometries(data, recipe):
-    """Match proposal buffers to target prefill frames and verifier frames."""
+    """Keep short prompts unpadded and match every speculative teacher frame."""
     batches = sorted({1, *data["batches"]})
     groups = sorted({1, min(max(data["batches"]), recipe["prefill_requests"])})
     chunk, window = recipe["chunk"], recipe["window"]
+    prefills = sorted({chunk, min(chunk, min(data["prefix_tokens"]))} - {1})
     result = [(b, 1) for b in batches]
-    if chunk > 1:
-        result.extend((g, chunk) for g in groups)
+    result.extend((g, tokens) for tokens in prefills for g in groups)
     if window is not None:
         result.extend((b, window, "verify") for b in batches)
         result.extend((b, 1, "proposal") for b in batches)
         result.extend((b, window, "proposal") for b in batches)
-        if chunk > 1:
-            result.extend((g, chunk, "proposal") for g in groups)
+        result.extend((g, tokens, "proposal") for tokens in prefills for g in groups)
     return list(dict.fromkeys(result))
 
 
