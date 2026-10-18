@@ -17,6 +17,7 @@ def compose(
     """Compose a chunk of tokens per slot with masked, persistent state."""
     from akas.graph import Graph
     from akas.models.lfm2.weights import tensor_shapes
+    from akas.models.lfm2.config import LFM2MoEConfig
     from akas.ops.attention.definition import cache_storage
 
     capacity = min(4096, config.max_context) if capacity is None else capacity
@@ -212,11 +213,44 @@ def compose(
             mixed = linear(p + "operator_output", mixed, p + "attn_output.weight", c, c)
         hidden = residual(p + "residual", hidden, mixed)
         normalized = norm(p + "ffn_normalized", hidden, p + "ffn_norm.weight")
-        gate = linear(p + "gate", normalized, p + "ffn_gate.weight", c, config.ff)
-        up = linear(p + "up", normalized, p + "ffn_up.weight", c, config.ff)
-        activated = scratch(p + "activated", config.ff)
-        plan("swiglu", dict(r=b, c=config.ff), gate, up, activated)
-        mixed = linear(p + "ffn_output", activated, p + "ffn_down.weight", config.ff, c)
+        if isinstance(config, LFM2MoEConfig) and i >= config.dense_layers:
+            from akas.ops.moe.definition import routed_moe
+            from akas.quantization.weights import Weight
+
+            router = linear(
+                p + "router", normalized, p + "ffn_gate_inp.weight", c, config.experts
+            )
+            expert_weights = {}
+            for part, shape in (
+                ("gate", (config.experts, config.expert_width, c)),
+                ("up", (config.experts, config.expert_width, c)),
+                ("down", (config.experts, c, config.expert_width)),
+            ):
+                name = p + "ffn_" + part + "_exps.weight"
+                expert_weights[part] = Weight(
+                    shape, (weights[name],), weights.parts(name)
+                )
+            mixed = routed_moe(
+                plan,
+                normalized.view((b, c)),
+                router.view((b, config.experts)),
+                weights[p + "exp_probs_b.bias"],
+                expert_weights,
+                top=config.top_k,
+                scale=config.routing_scale,
+                normalize=config.normalize_routes,
+                provider=provider,
+                active=row_active,
+                prefix=p + "moe.",
+            ).view((b * c,))
+        else:
+            gate = linear(p + "gate", normalized, p + "ffn_gate.weight", c, config.ff)
+            up = linear(p + "up", normalized, p + "ffn_up.weight", c, config.ff)
+            activated = scratch(p + "activated", config.ff)
+            plan("swiglu", dict(r=b, c=config.ff), gate, up, activated)
+            mixed = linear(
+                p + "ffn_output", activated, p + "ffn_down.weight", config.ff, c
+            )
         hidden = residual(p + "output", hidden, mixed)
     if chunk > 1:
         final = scratch("last_hidden", c, rows=batch)

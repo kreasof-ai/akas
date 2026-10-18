@@ -96,11 +96,26 @@ class Config:
         return parse_config(gguf)
 
 
-def parse_config(gguf):
+@dataclass(frozen=True)
+class LFM2MoEConfig(Config):
+    experts: int
+    top_k: int
+    expert_width: int
+    dense_layers: int
+    routing_scale: float = 1.0
+    normalize_routes: bool = True
+
+    @classmethod
+    def from_gguf(cls, gguf):
+        return parse_config(gguf, moe=True)
+
+
+def parse_config(gguf, *, moe=False):
     m = gguf.metadata
-    if m.get("general.architecture") != "lfm2":
-        raise GGUFError("requires the LFM2 architecture")
-    get = lambda name: m["lfm2." + name]
+    architecture = "lfm2moe" if moe else "lfm2"
+    if m.get("general.architecture") != architecture:
+        raise GGUFError(f"requires the {architecture} architecture")
+    get = lambda name: m[architecture + "." + name]
     kv = get("attention.head_count_kv")
     if not isinstance(kv, list) or len(kv) != get("block_count"):
         raise GGUFError("requires per-layer attention metadata")
@@ -146,6 +161,28 @@ def parse_config(gguf):
         or (config.conv != 3)
     ):
         raise GGUFError("unsupported LFM2 head/convolution configuration")
+    if moe:
+        from dataclasses import asdict
+
+        config = LFM2MoEConfig(
+            **asdict(config),
+            experts=get("expert_count"),
+            top_k=get("expert_used_count"),
+            expert_width=get("expert_feed_forward_length"),
+            dense_layers=get("leading_dense_block_count"),
+        )
+        if (
+            any(
+                type(v) is not int or v < 1
+                for v in (config.experts, config.top_k, config.expert_width)
+            )
+            or config.top_k > config.experts
+            or config.expert_width % 32
+            or type(config.dense_layers) is not int
+            or not 0 <= config.dense_layers < len(config.layers)
+            or get("expert_gating_func") != 2
+        ):
+            raise GGUFError("unsupported LFM2 sigmoid MoE routing configuration")
     from akas.models.lfm2.weights import validate_tensors
 
     validate_tensors(config, gguf)

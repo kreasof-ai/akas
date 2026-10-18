@@ -2,11 +2,13 @@
 
 from akas.checkpoints.gguf import GGUF, GGUFError
 from akas.checkpoints.upload import upload_packed
-from akas.models.lfm2.config import Config
+from akas.models.lfm2.config import Config, LFM2MoEConfig
 from akas.text.tokenizer import Tokenizer
 
 
 class LFM2Checkpoint:
+    config_type = Config
+
     def __new__(cls, path, *, tokenizer=True):
         from pathlib import Path
 
@@ -16,7 +18,7 @@ class LFM2Checkpoint:
 
     def __init__(self, path, *, tokenizer=True):
         self.gguf = GGUF(path)
-        self.config = Config.from_gguf(self.gguf)
+        self.config = self.config_type.from_gguf(self.gguf)
         validate_tensors(self.config, self.gguf)
         self.tokenizer = Tokenizer.from_gguf(self.gguf.metadata) if tokenizer else None
 
@@ -39,6 +41,19 @@ class LFM2Checkpoint:
         return upload_packed(device, self.gguf)
 
 
+class LFM2MoECheckpoint(LFM2Checkpoint):
+    """Original packed LFM2 MoE tensors, including sigmoid selection biases."""
+
+    config_type = LFM2MoEConfig
+
+    def __new__(cls, path, *, tokenizer=True):
+        from pathlib import Path
+
+        if not Path(path).is_file():
+            raise ValueError("LFM2 MoE currently requires a GGUF checkpoint")
+        return object.__new__(cls)
+
+
 def tensor_shapes(config, *, output=False):
     expected = {
         "token_embd.weight": (config.vocab, config.width),
@@ -54,11 +69,27 @@ def tensor_shapes(config, *, output=False):
             {
                 p + "attn_norm.weight": (c,),
                 p + "ffn_norm.weight": (c,),
-                p + "ffn_gate.weight": (f, c),
-                p + "ffn_up.weight": (f, c),
-                p + "ffn_down.weight": (c, f),
             }
         )
+        if isinstance(config, LFM2MoEConfig) and layer >= config.dense_layers:
+            e, f = config.experts, config.expert_width
+            expected.update(
+                {
+                    p + "ffn_gate_inp.weight": (e, c),
+                    p + "exp_probs_b.bias": (e,),
+                    p + "ffn_gate_exps.weight": (e, f, c),
+                    p + "ffn_up_exps.weight": (e, f, c),
+                    p + "ffn_down_exps.weight": (e, c, f),
+                }
+            )
+        else:
+            expected.update(
+                {
+                    p + "ffn_gate.weight": (f, c),
+                    p + "ffn_up.weight": (f, c),
+                    p + "ffn_down.weight": (c, f),
+                }
+            )
         if kind == "conv":
             expected.update(
                 {
@@ -255,3 +286,15 @@ class PackedWeights:
 
     def parameters(self, name):
         return {"ggml": True, "type": self.checkpoint.gguf.tensors[name].type}
+
+    def parts(self, name):
+        from math import prod
+
+        info = self.checkpoint.gguf.tensors[name]
+        return (
+            dict(
+                rows=prod(info.shape[:-1]),
+                format="ggml",
+                options={"encoding": info.type},
+            ),
+        )

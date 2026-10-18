@@ -43,6 +43,14 @@ def test_mapped_tensor_shape_and_row(tmp_path):
         g.row("matrix", 2)
 
 
+def test_discarding_uploaded_pages_preserves_checkpoint_values(tmp_path):
+    g = GGUF(container(tmp_path / "matrix.gguf"))
+    before = g.packed("matrix").copy()
+    g.discard("matrix")
+    np.testing.assert_array_equal(g.packed("matrix"), before)
+    np.testing.assert_array_equal(g.row("matrix", 1), np.arange(4, 8))
+
+
 @pytest.mark.parametrize(
     "kwargs",
     [

@@ -6,6 +6,98 @@ from akas.ops.moe.validation import pipeline_validation as pipeline_validation
 from akas.ops.moe.validation import VALIDATIONS
 
 
+def routed_moe(
+    graph,
+    x,
+    logits,
+    bias,
+    weights,
+    *,
+    top,
+    active,
+    prefix,
+    scale=1.0,
+    normalize=True,
+    provider="cuda",
+):
+    """Sigmoid/bias routing over encoded experts without a shared branch."""
+    rows, width = x.shape
+    experts, hidden, _ = weights["gate"].shape
+    ids = graph.buffer(prefix + "ids", (rows, top), "int32")
+    probability = graph.buffer(prefix + "probability", (rows, top), "float32")
+    graph(
+        "biased_router",
+        dict(r=rows, experts=experts, top=top, scale=scale, normalize=normalize),
+        logits,
+        bias,
+        ids,
+        probability,
+    )
+    counts = graph.buffer(prefix + "counts", (experts,), "int32")
+    routes = graph.buffer(prefix + "routes", (experts, rows), "int32")
+    graph(
+        "quantized_routes",
+        dict(r=rows, experts=experts, top=top),
+        ids,
+        active,
+        counts,
+        routes,
+    )
+
+    def projection(part, source, routed):
+        weight = weights[part]
+        out = graph.buffer(prefix + part, (rows, top, weight.shape[1]), "float32")
+        routing = (ids, counts) if rows == 1 else (counts, routes)
+        graph(
+            "quantized_experts",
+            dict(
+                r=rows,
+                top=top,
+                experts=experts,
+                o=weight.shape[1],
+                k=weight.shape[2],
+                input_dtype=x.dtype,
+                round_inputs=provider == "cuda",
+                routed_input=routed,
+                weight_parts=weight.parts,
+            ),
+            source,
+            *weight.buffers,
+            *routing,
+            out,
+        )
+        return out
+
+    gate = projection("gate", x, False)
+    up = projection("up", x, False)
+    activation = graph.buffer(prefix + "activation", (rows, top, hidden), "float32")
+    graph(
+        "swiglu_experts",
+        dict(
+            r=rows,
+            c=hidden,
+            top=top,
+            expert_rows=True,
+            input_dtype="float32",
+            output_dtype="float32",
+        ),
+        gate,
+        up,
+        activation,
+    )
+    expert_out = projection("down", activation, True)
+    out = graph.buffer(prefix + "out", (rows, width), "float32")
+    graph(
+        "routed_combine",
+        dict(r=rows, top=top, c=width),
+        expert_out,
+        probability,
+        active,
+        out,
+    )
+    return out
+
+
 def encoded_moe(graph, x, weights, *, config, prefix, active):
     """Route tokens into packed experts and the shared gated expert."""
     from akas.ops.linear.definition import project
@@ -768,4 +860,46 @@ IMPLEMENTATIONS += tuple(
         factory="quantized_routes",
     )
     for provider in ("cuda", "webgpu")
+)
+
+for _contract in ("reference",):
+    OUTPUT_ARGUMENTS[_contract].update(
+        {
+            "biased_router": OutputABI((2, 3), ("ids", "weights")),
+            "routed_combine": OutputABI((-1,), ("out",)),
+            "quantized_routes": OutputABI((2, 3), ("counts", "routes")),
+            "quantized_experts": OutputABI((-1,), ("out",)),
+        }
+    )
+
+from .validation import routed_validation
+
+VALIDATIONS.update(
+    {name: routed_validation for name in ("biased_router", "routed_combine")}
+)
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        kind, "akas.ops.moe.kernel", "reference", provider=provider, factory=kind
+    )
+    for provider in ("cuda", "webgpu")
+    for kind in ("biased_router", "routed_combine", "quantized_routes")
+)
+IMPLEMENTATIONS += (
+    Implementation(
+        "quantized_experts",
+        "akas.ops.moe.cuda",
+        "reference",
+        factory="quantized_experts",
+        defaults=(("block_m", 16),),
+        space=(("block_m", (16, 32)),),
+    ),
+    Implementation(
+        "quantized_experts",
+        "akas.ops.moe.kernel",
+        "reference",
+        provider="webgpu",
+        factory="portable_experts",
+        defaults=(("columns", 4), ("block_k", 128)),
+        space=(("columns", (4, 8)), ("block_k", (128, 256))),
+    ),
 )

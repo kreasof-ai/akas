@@ -92,23 +92,31 @@ def validation(kind, p, signature):
     if (
         p.get("ggml", False) or p.get("type", 0) not in (0, 1)
     ) and "scales" not in values:
-        from akas.quantization.weights.ggml.validation import sample_weight
+        from akas.quantization.weights.ggml.validation import sample_weight, decode_rows
 
         x = values["x"].reshape(r, k)
-        weight = sample_weight(values["w"], p["type"]).reshape(o, k)
+        sample_weight(values["w"], p["type"], decode=False)
         if r > 1:
             x = x.astype("float16").astype("float32")
-            weight = weight.astype("float16").astype("float32")
-        out = x.astype("float64") @ weight.astype("float64").T
         if kind == "ffn":
-            other = sample_weight(values["w2"], p["type"], seed=32).reshape(o, k)
+            sample_weight(values["w2"], p["type"], seed=32, decode=False)
+        x = x.astype("float64")
+        out = np.empty((r, o), dtype="float64")
+        for start in range(0, o, 128):
+            stop = min(o, start + 128)
+            weight = decode_rows(values["w"], p["type"], k, start, stop)
             if r > 1:
-                other = other.astype("float16").astype("float32")
-            up = x.astype("float64") @ other.astype("float64").T
-            out = out / (1 + np.exp(-out)) * up
-        elif kind == "linear_add":
-            out += values["residual"].reshape(r, o)
-        expected = {name: value.copy() for name, value in values.items()}
+                weight = weight.astype("float16")
+            section = x @ weight.astype("float64").T
+            if kind == "ffn":
+                other = decode_rows(values["w2"], p["type"], k, start, stop)
+                if r > 1:
+                    other = other.astype("float16")
+                up = x @ other.astype("float64").T
+                section = section / (1 + np.exp(-section)) * up
+            elif kind == "linear_add":
+                section += values["residual"].reshape(r, o)[:, start:stop]
+            out[:, start:stop] = section
         expected["out"][:] = out.reshape(values["out"].shape)
         return ValidationCase(values, expected)
     if "scales" in values:

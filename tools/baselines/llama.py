@@ -82,7 +82,8 @@ def run(config):
         process = subprocess.Popen(
             command, stdout=None, stderr=None, start_new_session=False
         )
-        until = time.monotonic() + 120
+        startup_seconds = config.get("deadline_seconds", 120)
+        until = time.monotonic() + startup_seconds
         while True:
             if process.poll() is not None:
                 raise RuntimeError(f"llama-server exited: {process.returncode}")
@@ -91,7 +92,7 @@ def run(config):
                     break
             except Exception:
                 if time.monotonic() > until:
-                    raise TimeoutError("server startup exceeded 120s")
+                    raise TimeoutError(f"server startup exceeded {startup_seconds}s")
                 time.sleep(0.25)
         from concurrent.futures import ThreadPoolExecutor
 

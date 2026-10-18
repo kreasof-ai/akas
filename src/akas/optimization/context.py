@@ -8,7 +8,7 @@ import math
 from pathlib import Path
 import re
 
-from akas.benchmarking.workload import STANDARD
+from akas.benchmarking.workload import load
 
 
 def identity(value):
@@ -76,15 +76,7 @@ def discover(checkpoint, definition=None):
 
 
 def workload(value="standard-v1"):
-    data = (
-        dict(value)
-        if isinstance(value, dict)
-        else (
-            dict(STANDARD)
-            if str(value) == "standard-v1"
-            else json.loads(Path(value).read_text())
-        )
-    )
+    data = dict(value) if isinstance(value, dict) else load(value)
     for key in ("batches", "prefix_tokens"):
         values = data.get(key)
         if (
@@ -164,7 +156,9 @@ def arguments(parser):
         help="local safetensors directory or GGUF checkpoint",
     )
     parser.add_argument(
-        "--workload", default="standard-v1", help="standard-v1 or a workload JSON file"
+        "--workload",
+        default="standard-v1",
+        help="packaged workload ID or a workload JSON file",
     )
     parser.add_argument(
         "--budget",

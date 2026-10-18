@@ -21,6 +21,7 @@ def upload_packed(device, checkpoint):
 
                 raw = pack_words(raw)
             weights[name] = device.from_numpy(np.ascontiguousarray(raw))
+            checkpoint.discard(name)
     except BaseException:
         for buffer in weights.values():
             buffer.release()

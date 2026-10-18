@@ -112,6 +112,7 @@ def main():
         optimized=args.optimized,
         warmup=1,
         repeats=args.repeats or (3 if args.optimized else 1),
+        deadline_seconds=args.seconds,
     )
     if args.optimized or args.workload:
         from akas.optimization.context import workload
@@ -123,17 +124,21 @@ def main():
             ],
             output_tokens=requested["output_tokens"],
         )
-    hf_config = json.loads(
-        (root / model["weights"]["bf16"]["path"] / "config.json").read_text()
-    )
-    config["vocab"] = hf_config.get("text_config", hf_config)["vocab_size"]
     if args.runtime == "llama":
+        from akas.checkpoints.gguf import GGUF
+
+        config["vocab"] = len(GGUF(checkpoint).metadata["tokenizer.ggml.tokens"])
         config.update(
             binary=str(work / f"llama.cpp/build-{args.provider}/bin/llama-server"),
             runtime_revision=subprocess.check_output(
                 ["git", "-C", str(work / "llama.cpp"), "rev-parse", "HEAD"], text=True
             ).strip(),
         )
+    else:
+        hf_config = json.loads(
+            (root / model["weights"]["bf16"]["path"] / "config.json").read_text()
+        )
+        config["vocab"] = hf_config.get("text_config", hf_config)["vocab_size"]
     metadata = dict(
         runtime=args.runtime,
         model=model["model"],

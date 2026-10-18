@@ -1,7 +1,11 @@
 """LFM2 declarations following the common composition contract."""
 
 from akas.models.definition import Composition, Definition
-from akas.models.lfm2.weights import LFM2Checkpoint, ReferenceCheckpoint
+from akas.models.lfm2.weights import (
+    LFM2Checkpoint,
+    LFM2MoECheckpoint,
+    ReferenceCheckpoint,
+)
 
 
 def compose(
@@ -41,6 +45,12 @@ def compose(
 class LFM2(Definition):
     checkpoint_architectures = ("lfm2",)
     checkpoint_type = LFM2Checkpoint
+    model_defaults = {"kv_dtype": "float16", "optimized": True}
+
+
+class LFM2MoE(Definition):
+    checkpoint_architectures = ("lfm2moe",)
+    checkpoint_type = LFM2MoECheckpoint
     model_defaults = {"kv_dtype": "float16", "optimized": True}
 
 

@@ -44,12 +44,14 @@ Use `<Family><Variant>` for model declarations, with matching `Config` and
 | --- | --- | --- |
 | `Qwen35Dense` | `Qwen35DenseConfig` | `Qwen35DenseCheckpoint` |
 | `Qwen35MoE` | `Qwen35MoEConfig` | `Qwen35MoECheckpoint` |
+| `LFM2MoE` | `LFM2MoEConfig` | `LFM2MoECheckpoint` |
 
 `DenseEngine`, `Qwen35Batch`, `DenseConfig`, `Qwen35Config`, `DenseCheckpoint`
 and `Qwen35Checkpoint` remain compatibility aliases in their original modules;
-new code should use the explicit variant names. The current LFM2 declarations
-implement dense models; this does not classify the whole LFM2 family as dense
-or add support for its MoE variants. Vision composition and multimodal naming
+new code should use the explicit variant names. `LFM2` selects dense LFM2;
+`LFM2MoE` selects `lfm2moe` GGUF checkpoints. They share the family composition
+and executor, while the reader validates each variant's tensor inventory.
+Vision composition and multimodal naming
 remain future work; these Qwen declarations compose the text model.
 
 | File | Responsibility |
@@ -77,6 +79,24 @@ compiler, tuner or executor.
 The current MTP implementation is Qwen-specific and lives in `qwen35/mtp.py`.
 `generation/speculative/` retains its existing proposer orchestration. This
 iteration introduces no general speculative-head framework.
+
+## LFM2 MoE checkpoints
+
+`from akas.models.lfm2 import LFM2MoE` selects the packed GGUF reader for LFM2 MoE.
+The configuration declares leading dense layers, expert dimensions and top-k
+routing. Selection uses sigmoid probabilities plus learned expert biases;
+combination uses the unbiased probabilities, normalized with an epsilon of 1e-6.
+There is no shared expert branch. Router and combination computations are shared
+across CUDA and WebGPU. Expert coefficients remain encoded and decode inside
+the consuming projection. CUDA keeps its GEMV decode and grouped tensor-core
+prefill specialization; WebGPU uses a portable projection with bounded tiles.
+
+The QAD Q4_0 checkpoint can contain other encodings for particular tensors,
+including the tied embedding/output matrix. The reader preserves each tensor's
+actual encoding. KV values requested as FP16 currently occupy FP32 buffers on
+WebGPU after FP16 rounding; report physical allocation separately from numerical
+precision. Check the [benchmark guide](../../../docs/benchmarking.md) for the
+single-user long-context workload and memory measurements.
 
 ## Qwen checkpoint formats
 

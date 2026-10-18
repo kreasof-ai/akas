@@ -19,6 +19,7 @@ def quantized_experts(spec, schedule):
     storage, read = (binding.storage.values, binding.read)
     routed = p.get("routed_input", False)
     shape = (rows, top, depth) if routed else (rows, depth)
+    input_dtype = p.get("input_dtype", "bfloat16")
     bm, bn, bk = (p.get("block_m", 16), 64, 32)
 
     @T.macro
@@ -32,7 +33,7 @@ def quantized_experts(spec, schedule):
 
         @kernel
         def compute(
-            x: Tensor(shape, "bfloat16"),
+            x: Tensor(shape, input_dtype),
             w: Tensor(storage.shape, storage.dtype),
             ids: Tensor((rows, top), "int32"),
             counts: Tensor((experts,), "int32"),
@@ -77,7 +78,7 @@ def quantized_experts(spec, schedule):
 
         @kernel
         def compute(
-            x: Tensor(shape, "bfloat16"),
+            x: Tensor(shape, input_dtype),
             w: Tensor(storage.shape, storage.dtype),
             counts: Tensor((experts,), "int32"),
             routes: Tensor((experts, rows), "int32"),

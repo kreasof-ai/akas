@@ -22,7 +22,9 @@ def field(value):
         return 4, struct.pack("<I", value)
     if type(value) is float:
         return 6, struct.pack("<f", value)
-    if isinstance(value, (tuple, list)) and value:
+    if isinstance(value, (tuple, list)):
+        if not value:
+            return 9, struct.pack("<IQ", 8, 0)
         rows = [field(item) for item in value]
         assert len({kind for kind, _ in rows}) == 1
         return 9, struct.pack("<IQ", rows[0][0], len(rows)) + b"".join(

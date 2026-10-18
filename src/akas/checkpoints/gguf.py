@@ -136,6 +136,22 @@ class GGUF:
         begin = self.data_offset + info.offset
         return self._bytes[begin : begin + info.nbytes]
 
+    def discard(self, name):
+        """Release mapped host pages after a completed transfer, without changing bytes.
+
+        Later inspection can fault the read-only data back in. Keeping one
+        uploaded tensor resident avoids a checkpoint-sized process RSS peak.
+        """
+        import mmap
+
+        if hasattr(mmap, "MADV_DONTNEED"):
+            info = self.tensors[name]
+            begin = self.data_offset + info.offset
+            page = begin // mmap.PAGESIZE * mmap.PAGESIZE
+            self._bytes._mmap.madvise(
+                mmap.MADV_DONTNEED, page, begin + info.nbytes - page
+            )
+
     def array(self, name, *, dtype=np.float32):
         info = self.tensors[name]
         return (

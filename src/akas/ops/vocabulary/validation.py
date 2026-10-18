@@ -60,18 +60,32 @@ def validation(kind, p, signature):
         return ValidationCase(values, expected, rtol=0, atol=0)
     if kind == "embedding":
         v, start = (p.get("v", p.get("vocab")), p.get("start", 0))
-        if p.get("type", 0) not in (0, 1):
-            from akas.quantization.weights.ggml.validation import sample_weight
-
-            weight = sample_weight(values["w"], p["type"]).reshape(v, c)
-        else:
-            weight = values["w"].reshape(v, c)
         token_name = "tokens" if "tokens" in values else "ids"
         values[token_name][:] = start + np.arange(r) % v
-        expected = {name: value.copy() for name, value in values.items()}
-        expected["out"][:] = weight[values[token_name] - start].reshape(
-            expected["out"].shape
-        )
+        expected = {
+            name: value.copy() if name == "out" else value
+            for name, value in values.items()
+        }
+        if p.get("type", 0) not in (0, 1):
+            from akas.quantization.weights.ggml.validation import (
+                sample_weight,
+                decode_rows,
+            )
+
+            sample_weight(values["w"], p["type"], decode=False)
+            selected = np.empty((r, c), dtype="float32")
+            for row, token in enumerate(values[token_name].reshape(-1)):
+                selected[row] = decode_rows(
+                    values["w"],
+                    p["type"],
+                    c,
+                    int(token) - start,
+                    int(token) - start + 1,
+                )[0]
+        else:
+            weight = values["w"].reshape(v, c)
+            selected = weight[values[token_name] - start]
+        expected["out"][:] = selected.reshape(expected["out"].shape)
     else:
         active_name = "enabled" if "enabled" in values else "active"
         output_name = "out" if "out" in values else "tokens"

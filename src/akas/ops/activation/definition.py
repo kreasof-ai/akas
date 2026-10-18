@@ -125,3 +125,15 @@ IMPLEMENTATIONS = (
         name="activation.kernel",
     ),
 )
+
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        "swiglu_experts",
+        "akas.ops.activation.kernel",
+        "reference",
+        provider=provider,
+        factory="swiglu_experts",
+        defaults=(("expert_rows", True),),
+    )
+    for provider in ("cuda", "webgpu")
+)

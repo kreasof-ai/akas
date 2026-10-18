@@ -48,9 +48,21 @@ the consuming tile; the model is not expanded to BF16 or requantized to FP8.
 `block_m` is a qualified beam-search axis.
 
 `quantized_routes` is shared integer bookkeeping with CUDA execution and WebGPU
-shader coverage. Full packed-expert execution remains CUDA-only because the
-current graph uses native BF16 activations. This distinction is explicit in the
+shader coverage. Qwen's packed-expert graph remains CUDA-only because it uses
+native BF16 activations. This distinction is explicit in the
 registrations and [GGUF tests](../../../../tests/test_qwen_gguf.py).
+
+`routed_moe` composes sigmoid routing with selection biases and no shared expert.
+Its FP32 activation contract runs on CUDA and WebGPU; `biased_router` and
+`routed_combine` share the same callable bodies. CUDA reuses the packed GEMV and
+grouped GEMM projections. WebGPU uses `portable_experts`, which fuses coefficient
+decoding into bounded reduction tiles. These are registered implementations of
+the same `quantized_experts` operation. LFM2 MoE uses this composition.
+
+Expert qualification keeps the synthetic bank packed and decodes at most 128
+output rows at a time for the independent host expectation. Immutable inputs
+share their original arrays. Validation memory therefore includes the packed
+input bank and small working tiles, without a full floating expert-bank copy.
 
 ## How to extend
 

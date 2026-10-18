@@ -12,6 +12,15 @@ run, compare and build on them.
 | --- | --- | --- |
 | 1, 4, 16, 64, 256 | 32 or 2048 | 128 |
 
+For single-user inference, use
+[single-user-long-context-v1](../src/akas/benchmarking/workloads/single-user-long-context-v1.json):
+B1 with prompts of 32, 512, 2,048, 8,192, 16,384, 32,768, 65,536 and 130,944
+tokens, each generating 128 tokens. The largest case fills a 131,072-token total
+context window. The [matching campaign](../benchmarks/campaigns/single-user-long-context-v1.json)
+selects the pinned LFM2.5-24B-A2B QAD Q4_0 GGUF on CUDA and WebGPU; its external
+baseline is llama.cpp on CUDA and Vulkan using identical checkpoint bytes.
+Workload IDs and JSON paths are accepted by the optimizer and baseline tools.
+
 A prompt starts with an empty cache. Disable prefix sharing, early EOS and CPU
 offload. Use greedy sampling. Give each request a distinct prefix when a runtime
 cannot disable reuse. Long-context and ragged-serving workloads should receive

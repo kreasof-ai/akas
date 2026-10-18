@@ -4,7 +4,7 @@
 def encoded_validation(kind, p, signature):
     import numpy as np
     from akas.kernels.contracts import ValidationCase, sample_arguments
-    from akas.quantization.weights.ggml.validation import sample_weight
+    from akas.quantization.weights.ggml.validation import sample_weight, decode_rows
 
     values = sample_arguments(signature)
     rows, top, experts = p["r"], p["top"], p["experts"]
@@ -30,20 +30,58 @@ def encoded_validation(kind, p, signature):
     if "routes" in values:
         values["routes"][:] = routes
     columns, depth = p["o"], p["k"]
-    decoded = (
-        sample_weight(values["w"], p["weight_parts"][0]["options"]["encoding"])
-        .reshape(experts, columns, depth)
-        .astype("float16")
-        .astype("float64")
-    )
-    x = values["x"].astype("float16").astype("float64")
-    expected = {name: value.copy() for name, value in values.items()}
-    for row in range(rows):
-        for rank, expert in enumerate(ids[row]):
-            if active[row]:
-                source = x[row, rank] if p.get("routed_input") else x[row]
-                expected["out"][row, rank] = decoded[expert] @ source
+    encoding = p["weight_parts"][0]["options"]["encoding"]
+    sample_weight(values["w"], encoding, decode=False)
+    dtype = "float16" if p.get("round_inputs", True) else "float32"
+    x = values["x"].astype(dtype).astype("float64")
+    expected = {
+        name: value.copy() if name == "out" else value for name, value in values.items()
+    }
+    for expert in np.unique(ids[active != 0]):
+        owners, ranks = np.where((ids == expert) & (active[:, None] != 0))
+        source = x[owners, ranks] if p.get("routed_input") else x[owners]
+        for start in range(0, columns, 128):
+            stop = min(columns, start + 128)
+            decoded = decode_rows(
+                values["w"],
+                encoding,
+                depth,
+                expert * columns + start,
+                expert * columns + stop,
+            )
+            decoded = decoded.astype(dtype).astype("float64")
+            expected["out"][owners, ranks, start:stop] = source @ decoded.T
     return ValidationCase(values, expected, rtol=0.002, atol=0.0002)
+
+
+def routed_validation(kind, p, signature):
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    values = sample_arguments(signature)
+    if kind == "biased_router":
+        values["logits"][0] = 0  # Exercise bias selection and deterministic ties.
+        values["bias"][:] = np.arange(p["experts"])[::-1] % 3 * 0.1
+        scores = 1 / (1 + np.exp(-values["logits"].astype("float64")))
+        order = np.argsort(-(scores + values["bias"]), axis=1, kind="stable")[
+            :, : p["top"]
+        ]
+        chosen = np.take_along_axis(scores, order, axis=1)
+        if p.get("normalize", True):
+            chosen /= chosen.sum(axis=1, keepdims=True) + 1e-6
+        expected = {name: value.copy() for name, value in values.items()}
+        expected["ids"][:] = order
+        expected["weights"][:] = chosen * p.get("scale", 1.0)
+    else:
+        values["active"][:] = 1
+        if p["r"] > 1:
+            values["active"][-1] = 0
+        expected = {name: value.copy() for name, value in values.items()}
+        expected["out"][:] = (values["experts"] * values["weights"][:, :, None]).sum(
+            axis=1
+        )
+        expected["out"][values["active"] == 0] = 0
+    return ValidationCase(values, expected, rtol=1e-5, atol=1e-6)
 
 
 def tiles(counts, m, size):

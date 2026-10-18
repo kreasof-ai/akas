@@ -168,10 +168,7 @@ class Reference:
                 mix = project(p + "attn_output.weight", attn)
             hidden = hidden + mix
             x = norm(p + "ffn_norm.weight", hidden)
-            gate = project(p + "ffn_gate.weight", x)
-            up = project(p + "ffn_up.weight", x)
-            activated = gate / (1 + np.exp(-gate)) * up
-            hidden = hidden + project(p + "ffn_down.weight", activated)
+            hidden = hidden + self.feed_forward(i, x, project)
         final = norm("token_embd_norm.weight", hidden[-1:])
         self.position += count
         projection_half = head_half
@@ -180,3 +177,10 @@ class Reference:
             final,
             single=not head_half,
         )[0]
+
+    def feed_forward(self, layer, x, project):
+        prefix = f"blk.{layer}."
+        gate = project(prefix + "ffn_gate.weight", x)
+        up = project(prefix + "ffn_up.weight", x)
+        activated = gate / (1 + np.exp(-gate)) * up
+        return project(prefix + "ffn_down.weight", activated)
