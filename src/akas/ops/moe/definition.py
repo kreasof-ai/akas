@@ -43,11 +43,19 @@ def routed_moe(
         counts,
         routes,
     )
+    tiles = ()
+    if rows > 1:
+        capacity = (rows * top + 3) // 4 + experts
+        tiles = tuple(
+            graph.buffer(prefix + name, (5, capacity), "int32")
+            for name in ("tile_experts", "tile_rows")
+        )
+        graph("expert_tile_map", dict(r=rows, experts=experts, top=top), counts, *tiles)
 
     def projection(part, source, routed):
         weight = weights[part]
         out = graph.buffer(prefix + part, (rows, top, weight.shape[1]), "float32")
-        routing = (ids, counts) if rows == 1 else (counts, routes)
+        routing = (ids, counts) if rows == 1 else (counts, routes, *tiles)
         graph(
             "quantized_experts",
             dict(
@@ -58,6 +66,7 @@ def routed_moe(
                 k=weight.shape[2],
                 input_dtype=x.dtype,
                 round_inputs=provider == "cuda",
+                tile_map=rows > 1,
                 routed_input=routed,
                 weight_parts=weight.parts,
             ),
@@ -869,20 +878,27 @@ for _contract in ("reference",):
             "routed_combine": OutputABI((-1,), ("out",)),
             "quantized_routes": OutputABI((2, 3), ("counts", "routes")),
             "quantized_experts": OutputABI((-1,), ("out",)),
+            "expert_tile_map": OutputABI((1, 2), ("tile_experts", "tile_rows")),
         }
     )
 
-from .validation import routed_validation
+from .validation import routed_validation, tile_validation
 
 VALIDATIONS.update(
     {name: routed_validation for name in ("biased_router", "routed_combine")}
 )
+VALIDATIONS["expert_tile_map"] = tile_validation
 IMPLEMENTATIONS += tuple(
     Implementation(
         kind, "akas.ops.moe.kernel", "reference", provider=provider, factory=kind
     )
     for provider in ("cuda", "webgpu")
-    for kind in ("biased_router", "routed_combine", "quantized_routes")
+    for kind in (
+        "biased_router",
+        "routed_combine",
+        "quantized_routes",
+        "expert_tile_map",
+    )
 )
 IMPLEMENTATIONS += (
     Implementation(
@@ -890,6 +906,7 @@ IMPLEMENTATIONS += (
         "akas.ops.moe.cuda",
         "reference",
         factory="quantized_experts",
+        accepts=lambda p: not p.get("tile_map", False),
         defaults=(("block_m", 16), ("columns", 64), ("block_k", 32)),
         space=(
             ("block_m", (16, 32)),
@@ -903,12 +920,47 @@ IMPLEMENTATIONS += (
         "reference",
         provider="webgpu",
         factory="portable_experts",
+        accepts=lambda p: not p.get("tile_map", False),
         defaults=(("columns", 4), ("block_k", 128)),
         space=(("columns", (4, 8)), ("block_k", (128, 256))),
     ),
 )
 
 IMPLEMENTATIONS += (
+    Implementation(
+        "quantized_experts",
+        "akas.ops.moe.webgpu",
+        "reference",
+        provider="webgpu",
+        factory="register_experts",
+        priority=40,
+        accepts=lambda p: p["r"] > 1 and p.get("tile_map", False),
+        defaults=(("block_m", 16), ("columns", 32), ("block_k", 32), ("rhs_pad", 1)),
+        space=(
+            ("block_m", (16, 32, 8, 4)),
+            ("columns", (32, 64)),
+            ("block_k", (32, 64)),
+            ("rhs_pad", (1, 0, 4)),
+            ("dot_width", (4, 1)),
+            ("micro_cols", (2, 1)),
+            ("lhs_transpose", (True, False)),
+            ("lhs_pad", (1, 0)),
+        ),
+    ),
+    Implementation(
+        "quantized_experts",
+        "akas.ops.moe.cuda",
+        "reference",
+        factory="compact_experts",
+        priority=40,
+        accepts=lambda p: p["r"] > 1 and p.get("tile_map", False),
+        defaults=(("block_m", 16), ("columns", 64), ("block_k", 32)),
+        space=(
+            ("block_m", (16, 32, 64)),
+            ("columns", (32, 64, 128)),
+            ("block_k", (32, 64, 128)),
+        ),
+    ),
     Implementation(
         "quantized_experts",
         "akas.ops.moe.cuda",
@@ -933,7 +985,7 @@ IMPLEMENTATIONS += (
         provider="webgpu",
         factory="tiled_experts",
         priority=30,
-        accepts=lambda p: p["r"] > 1,
+        accepts=lambda p: p["r"] > 1 and not p.get("tile_map", False),
         defaults=(("block_m", 8), ("columns", 32), ("block_k", 32), ("rhs_pad", 1)),
         space=(
             ("block_m", (4, 8, 16, 32)),

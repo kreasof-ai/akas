@@ -513,6 +513,10 @@ def qualify(bundle, out, *, settings=None, device=None):
                     signature_key = json.dumps(
                         [
                             loaded.manifest["arguments"],
+                            {
+                                name: validation_parameters[name]
+                                for name, _ in implementation.defaults
+                            },
                             validation_parameters.get("bk")
                             if kind == "split_linear"
                             else None,
@@ -523,8 +527,9 @@ def qualify(bundle, out, *, settings=None, device=None):
                         sort_keys=True,
                     )
                     if signature_key not in case_cache:
-                        # A changed storage ABI or split-reduction tile needs a
-                        # new expectation. Keep only the current case: retaining
+                        # A changed storage ABI, implementation precision default
+                        # or split-reduction tile needs a new expectation. Keep
+                        # only the current case: retaining
                         # every large weight/cache fixture makes search memory
                         # grow with its candidate budget. Same-ABI candidates
                         # still reuse their expensive reference computation.

@@ -25992,6 +25992,98 @@
       ],
       "search_phases": 0,
       "path": "runs/20261018182929491589-3c9ed91b/run.json"
+    },
+    {
+      "id": "20261018185658136301-a4b36902",
+      "started_at": "2026-10-18T18:56:58.136301Z",
+      "status": "passed",
+      "revision": "487445aa28e7b0a924e74212a0045ab2601bbd46",
+      "dirty": false,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": null,
+      "change": {
+        "kind": "algorithm",
+        "description": "Validate representative short, 8K and maximum-context LFM2 MoE workloads before the full optimization campaign",
+        "parent_run": null
+      },
+      "purpose": "benchmark",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 8192,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 130944,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 4,
+      "path": "runs/20261018185658136301-a4b36902/run.json"
+    },
+    {
+      "id": "20261018190549653410-e57eaf7f",
+      "started_at": "2026-10-18T19:05:49.653410Z",
+      "status": "interrupted",
+      "revision": "487445aa28e7b0a924e74212a0045ab2601bbd46",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "webgpu",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": null,
+      "change": {
+        "kind": "algorithm",
+        "description": "Validate representative short, 8K and maximum-context LFM2 MoE workloads before the full optimization campaign",
+        "parent_run": null
+      },
+      "purpose": "benchmark",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 8192,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 130944,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 4,
+      "path": "runs/20261018190549653410-e57eaf7f/run.json"
     }
   ]
 }

@@ -5,6 +5,159 @@ from .definition import IMPLEMENTATIONS as _CHOICES
 IMPLEMENTATIONS = tuple((choice for choice in _CHOICES if choice.provider == "webgpu"))
 
 
+def register_experts(spec, schedule):
+    """Grouped expert tiles with warp-aligned columns and private accumulators."""
+    import tilelang.language as T
+    from tensor.compiler.webgpu.schedules.registers import registers, vector
+    from akas.kernels.kernel import Tensor, kernel, output
+    from akas.quantization.weights import bind_parts
+
+    p = {**spec.parameters, **schedule}
+    rows, top, experts, columns, depth = (
+        p[n] for n in ("r", "top", "experts", "o", "k")
+    )
+    bm, bn, bk = p.get("block_m", 16), p.get("columns", 32), p.get("block_k", 32)
+    pad = p.get("rhs_pad", 1)
+    dot_width = p.get("dot_width", 4)
+    micro_cols = p.get("micro_cols", 2)
+    if bm < 128 // (bn // micro_cols):
+        micro_cols = 1
+    nr = bn // micro_cols
+    row_stride = 128 // nr
+    transpose = p.get("lhs_transpose", True)
+    lhs_pad = p.get("lhs_pad", 1) if transpose else 0
+    if (
+        bn not in (32, 64)
+        or bm not in (4, 8, 16, 32)
+        or bm % row_stride
+        or bk not in (32, 64)
+    ):
+        raise ValueError("invalid register expert tile")
+    if (
+        micro_cols not in (1, 2)
+        or lhs_pad not in (0, 1)
+        or pad not in (0, 1, 4)
+        or 4 * ((bm + lhs_pad) * bk + bk * (bn + pad)) > 32768
+    ):
+        raise ValueError("register expert tile exceeds portable workgroup storage")
+    if dot_width not in (1, 4):
+        raise ValueError("register expert dot width must be one or four")
+    micro_rows = bm // row_stride
+    groups = (rows * top + bm - 1) // bm + experts
+    capacity = (rows * top + 3) // 4 + experts
+    layout = bm.bit_length() - 3
+    binding = bind_parts(p["weight_parts"], depth, provider="webgpu")
+    storage, read = binding.storage.values, binding.read
+    routed = p.get("routed_input", False)
+    shape = (rows, top, depth) if routed else (rows, depth)
+    lhs_shape = (bk, bm + lhs_pad) if transpose else (bm, bk)
+
+    @T.macro
+    def update(acc: T.Ref, left, right):
+        if dot_width == 1:
+            acc = acc + left * right
+        else:
+            acc = acc + T.call_extern("float32", "dot", left, right)
+
+    def accumulate(lhs, rhs, accum, kk, tx):
+        right = [
+            T.bind(
+                vector(
+                    [
+                        rhs[kk * dot_width + lane, tx % nr + j * nr]
+                        for lane in range(dot_width)
+                    ]
+                )
+            )
+            for j in range(micro_cols)
+        ]
+        left = [
+            T.bind(
+                vector(
+                    [
+                        lhs[kk * dot_width + lane, tx // nr + i * row_stride]
+                        if transpose
+                        else lhs[tx // nr + i * row_stride, kk * dot_width + lane]
+                        for lane in range(dot_width)
+                    ]
+                )
+            )
+            for i in range(micro_rows)
+        ]
+        for i in range(micro_rows):
+            for j in range(micro_cols):
+                update(accum[i, j][0], left[i], right[j])
+
+    @T.macro
+    def store(out, routes, counts, value, expert, bx, by, tx, i, j):
+        index = by * bm + tx // nr + i * row_stride
+        if index < counts[expert] and bx * bn + tx % nr + j * nr < columns:
+            route = routes[expert, index]
+            out[route // top, route % top, bx * bn + tx % nr + j * nr] = value
+
+    def stores(out, routes, counts, accum, expert, bx, by, tx):
+        for i in range(micro_rows):
+            for j in range(micro_cols):
+                store(out, routes, counts, accum[i, j][0], expert, bx, by, tx, i, j)
+
+    @kernel
+    def compute(
+        x: Tensor(shape, "float32"),
+        w: Tensor(storage.shape, storage.dtype),
+        counts: Tensor((experts,), "int32"),
+        routes: Tensor((experts, rows), "int32"),
+        tile_experts: Tensor((5, capacity), "int32"),
+        tile_rows: Tensor((5, capacity), "int32"),
+    ) -> Tensor((rows, top, columns), "float32"):
+        out = output((rows, top, columns), "float32")
+        with T.Kernel(T.ceildiv(columns, bn), groups, threads=128) as (bx, group):
+            expert = tile_experts[layout, group]
+            by = tile_rows[layout, group]
+            if expert >= 0 and by * bm < counts[expert]:
+                tx = T.get_thread_binding()
+                lhs = T.alloc_shared(lhs_shape, "float32")
+                rhs = T.alloc_shared((bk, bn + pad), "float32")
+                accum = registers((micro_rows, micro_cols))
+                for tile in T.serial(T.ceildiv(depth, bk)):
+                    for i, j in T.Parallel(bm, bk):
+                        index = by * bm + i
+                        route = T.max(routes[expert, T.min(index, rows - 1)], 0)
+                        source = T.alloc_var("float32")
+                        if routed:
+                            source = x[
+                                route // top,
+                                route % top,
+                                T.min(tile * bk + j, depth - 1),
+                            ]
+                        else:
+                            source = x[route // top, T.min(tile * bk + j, depth - 1)]
+                        value = T.if_then_else(
+                            index < counts[expert] and tile * bk + j < depth, source, 0
+                        )
+                        if transpose:
+                            lhs[j, i] = value
+                        else:
+                            lhs[i, j] = value
+                    for i, j in T.Parallel(bn, bk):
+                        rhs[j, i] = T.if_then_else(
+                            bx * bn + i < columns and tile * bk + j < depth,
+                            read(
+                                (w,),
+                                expert * columns + T.min(bx * bn + i, columns - 1),
+                                T.min(tile * bk + j, depth - 1),
+                            ),
+                            0,
+                        )
+                    T.sync_threads()
+                    for kk in T.serial(bk // dot_width):
+                        accumulate(lhs, rhs, accum, kk, tx)
+                    T.sync_threads()
+                stores(out, routes, counts, accum, expert, bx, by, tx)
+        return out
+
+    return compute
+
+
 def tiled_experts(spec, schedule):
     """Reuse each decoded weight tile across compact rows of the same expert."""
     import tilelang.language as T

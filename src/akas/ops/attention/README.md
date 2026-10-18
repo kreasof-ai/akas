@@ -40,6 +40,14 @@ compilation, execution and performance.
 
 Shared preparation/cache/online/floating-decode functions are in `kernel.py`. CUDA decode, prefill, partial/merge and Hopper variants are together in `cuda.py`; subgroup score/value algorithms are in `webgpu.py`. The split/decoded-cache policy is `definition.lower`.
 
+WebGPU's `tiled_prefill` shares key/value tiles across query rows and grouped
+heads. It performs online softmax per key tile and retains the output
+accumulators in private registers. Query rows, key rows, staging precision,
+padding and dot width are qualified search axes. Native FP16 KV permits half
+staging without changing stored values; other cache formats use FP32 staging.
+The launch stays within 32 KiB of workgroup storage. Decode and ineligible
+prefill shapes continue through their registered attention implementations.
+
 Long-context RoPE declares `position_limit`. Beyond 8K, it uses split inverse
 frequencies and compensated angle reduction before sine/cosine. CUDA uses fused
 multiply-add for product errors; WebGPU splits operands because fused rounding

@@ -22,7 +22,9 @@ baseline is llama.cpp on CUDA and Vulkan using identical checkpoint bytes.
 Workload IDs and JSON paths are accepted by the optimizer and baseline tools.
 
 A prompt starts with an empty cache. Disable prefix sharing, early EOS and CPU
-offload. Use greedy sampling. Give each request a distinct prefix when a runtime
+offload. Use greedy sampling with repetition penalty 1 and presence/frequency
+penalties 0; set these explicitly rather than inheriting server defaults.
+Give each request a distinct prefix when a runtime
 cannot disable reuse. Long-context and ragged-serving workloads should receive
 their own versioned definitions rather than changing these shapes.
 

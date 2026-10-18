@@ -45,8 +45,9 @@ results, immutable inputs, state and buffer layouts before its timing can count.
 Qualification is scoped to the compiled workload; it does not imply peak performance
 at every other shape.
 Search keeps one numerical fixture per operation at a time. Candidates sharing
-its storage ABI reuse it; switching layouts releases the preceding fixture and
-device buffers before constructing another. Longer searches therefore do not
+its storage ABI and declared precision reuse it; switching layouts or precision
+defaults releases the preceding fixture and device buffers before constructing
+another. Longer searches therefore do not
 accumulate a copy of large reference weights or KV buffers for each layout.
 
 Each program build writes separate immutable phase/kernel paths. `program.json` is

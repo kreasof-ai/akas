@@ -863,3 +863,30 @@ IMPLEMENTATIONS = (
         name="attention.hardware.hopper.prefill",
     ),
 )
+
+IMPLEMENTATIONS += (
+    Implementation(
+        "attention",
+        "akas.ops.attention.webgpu",
+        "reference",
+        provider="webgpu",
+        priority=40,
+        factory="tiled_prefill",
+        name="attention.webgpu.tiled_prefill",
+        accepts=lambda p: (
+            p.get("optimized", False)
+            and p.get("chunk", 1) >= 4
+            and p["chunk"] % 4 == 0
+            and p["d"] == 64
+            and p["h"] % p["kh"] == 0
+            and p["h"] // p["kh"] in (1, 2, 4, 8)
+        ),
+        space=(
+            ("block_q", (4, 8, 16)),
+            ("block_k", (16, 32)),
+            ("key_pad", (0, 1)),
+            ("shared_dtype", ("float16", "float32")),
+            ("dot_width", (4, 1)),
+        ),
+    ),
+)

@@ -142,8 +142,13 @@ both backends, allowing enough time per slice to repeat the longest prompts:
 
 ```sh
 python -m tools.campaign --spec benchmarks/campaigns/single-user-long-context-v1.json \
-  --budget 4d --slice 2h --out build/single-user-long-context
+  --budget 4d --slice 4h --out build/single-user-long-context
 ```
+
+Size a slice from measured runtime: one candidate repeats every shape through
+native phases, the scheduler and HTTP serving, as well as compiling and checking
+numerics. It can take much longer than one native capacity probe. A larger slice
+gives those checks room to finish within the campaign's total budget.
 
 The specification contains workload requirements, not kernel hyperparameters.
 `--mode ar|mtp` and `--kv-cache float16|bfloat16|fp8` apply the same requirements

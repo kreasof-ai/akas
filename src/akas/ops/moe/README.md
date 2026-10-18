@@ -56,16 +56,21 @@ registrations and [GGUF tests](../../../../tests/test_qwen_gguf.py).
 Its FP32 activation contract runs on CUDA and WebGPU; `biased_router` and
 `routed_combine` share the same callable bodies. CUDA reuses the packed GEMV and
 grouped GEMM projections, with a warp-local decode reduction candidate. CUDA
-prefill search varies route rows, output columns and reduction depth per tile,
-retaining the original geometry as its default. WebGPU's `tiled_experts` reuses
-decoded coefficients across compact token routes; its
-search axes cover row/column/depth tiles and shared-memory padding. `warp_experts`
+prefill search varies route rows, output columns and reduction depth per tile.
+For prefill, the shared `expert_tile_map(counts)` returns expert IDs and local
+tile indices for each supported row tile. Empty experts produce no active work;
+one map serves gate, up and down projections on both providers. The map is
+independent of the selected geometry, so search can reuse its validation inputs.
+CUDA's `compact_experts` keeps tensor-core matrix tiles. WebGPU's
+`register_experts` shares decoded coefficient tiles and keeps accumulators in
+private registers. Its search axes include row/column/depth tiles, per-thread
+microtiles, vector dot width and shared-memory layout/padding. `warp_experts`
 uses subgroup reductions for decode. `portable_experts` remains a fallback with
 bounded reduction tiles. These are registered implementations of the same
 `quantized_experts` operation. LFM2 MoE uses this composition.
-WebGPU tile selection accounts for shared tiles and fragment storage within the
-portable compiler's 32 KiB workgroup budget; oversized combinations are rejected
-before lowering.
+WebGPU tile selection respects the portable compiler's 32 KiB workgroup budget;
+oversized combinations are rejected before lowering. The older `tiled_experts`
+and `portable_experts` implementations retain their original counts/routes ABI.
 
 Expert qualification keeps the synthetic bank packed and decodes at most 128
 output rows at a time for the independent host expectation. Immutable inputs

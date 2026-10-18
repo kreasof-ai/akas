@@ -101,6 +101,26 @@ print(json.dumps(dict(peak_bytes=int(fields['VmHWM'].split()[0])*1024,
 CASES = [
     ("biased_router", dict(r=3, experts=8, top=4)),
     ("routed_combine", dict(r=3, top=4, c=128)),
+    ("expert_tile_map", dict(r=33, experts=64, top=4)),
+    (
+        "attention",
+        dict(
+            r=8,
+            h=4,
+            kh=1,
+            d=64,
+            capacity=64,
+            chunk=4,
+            kv_dtype="float16",
+            optimized=True,
+        ),
+    ),
+    (
+        "attention",
+        dict(
+            r=8, h=4, kh=1, d=64, capacity=64, chunk=4, kv_dtype="fp8", optimized=True
+        ),
+    ),
     ("rope", dict(r=4, h=32, d=64, theta=10000000.0, position_limit=131072)),
 ] + [
     (
@@ -129,13 +149,17 @@ def test_moe_kernel_device_qualification(tmp_path, provider, kind, parameters):
     import tensor
     from akas.compilation.selection import source
     from akas.compilation.emit import build_artifact
-    from akas.kernels.registry import validation
+    from akas.kernels.registry import validation, select
     from tensor.artifacts.format import read_artifact
 
     parameters = {**parameters, "round_inputs": provider == "cuda"}
-    if kind == "rope":
+    if kind in ("rope", "attention"):
         parameters["provider"] = provider
     target = "sm_89" if provider == "cuda" else "webgpu-portable-v1"
+    implementation = select(
+        kind, parameters, contract="reference", provider=provider, target=target
+    )
+    parameters = {**dict(implementation.defaults), **parameters}
     entry, artifact = tmp_path / "kernel.py", tmp_path / "kernel.tbin"
     entry.write_text(
         source(
@@ -175,6 +199,17 @@ def test_moe_kernel_device_qualification(tmp_path, provider, kind, parameters):
                 rtol=case.rtol,
                 atol=case.atol,
             )
+        if kind == "expert_tile_map":
+            from akas.memory.transfer import write
+
+            named = {
+                argument["name"]: buffer
+                for argument, buffer in zip(meta["arguments"], buffers)
+            }
+            write(device, named["counts"], np.zeros_like(case.arguments["counts"]))
+            kernel.launch(*buffers)
+            np.testing.assert_array_equal(named["tile_experts"].to_numpy(), -1)
+            np.testing.assert_array_equal(named["tile_rows"].to_numpy(), 0)
 
 
 @pytest.mark.parametrize("columns,block_k", [(32, 64), (64, 128), (128, 128)])
@@ -192,6 +227,7 @@ def test_cuda_prefill_expert_tile_shapes(tmp_path, columns, block_k, routed):
             o=128,
             input_dtype="float32",
             routed_input=routed,
+            tile_map=True,
             columns=columns,
             block_k=block_k,
             block_m=32,
@@ -219,6 +255,7 @@ def test_webgpu_prefill_expert_tile_shapes(
             o=128,
             input_dtype="float32",
             routed_input=routed,
+            tile_map=True,
             columns=columns,
             block_k=block_k,
             block_m=block_m,

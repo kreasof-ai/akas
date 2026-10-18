@@ -1,6 +1,35 @@
 """Independent numerical and state qualification for moe."""
 
 
+def tile_tables(counts, capacity):
+    import numpy as np
+
+    experts = np.full((5, capacity), -1, dtype="int32")
+    rows = np.zeros_like(experts)
+    for layout, block in enumerate((4, 8, 16, 32, 64)):
+        sizes = (counts + block - 1) // block
+        selected = np.repeat(np.arange(len(counts)), sizes)
+        local = np.concatenate([np.arange(size) for size in sizes])
+        experts[layout, : len(selected)] = selected
+        rows[layout, : len(local)] = local
+    return experts, rows
+
+
+def tile_validation(kind, p, signature):
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    values = sample_arguments(signature)
+    ids = (np.arange(p["r"])[:, None] + np.arange(p["top"])[None, :]) % p["experts"]
+    if p["r"] > 1:
+        ids = ids[:-1]
+    values["counts"][:] = np.bincount(ids.reshape(-1), minlength=p["experts"])
+    experts, rows = tile_tables(values["counts"], values["tile_experts"].shape[1])
+    return ValidationCase(
+        values, {**values, "tile_experts": experts, "tile_rows": rows}, rtol=0, atol=0
+    )
+
+
 def encoded_validation(kind, p, signature):
     import numpy as np
     from akas.kernels.contracts import ValidationCase, sample_arguments
@@ -29,6 +58,9 @@ def encoded_validation(kind, p, signature):
     values["counts"][:] = counts
     if "routes" in values:
         values["routes"][:] = routes
+    if "tile_experts" in values:
+        tiles, tile_rows = tile_tables(counts, values["tile_experts"].shape[1])
+        values["tile_experts"][:], values["tile_rows"][:] = tiles, tile_rows
     columns, depth = p["o"], p["k"]
     encoding = p["weight_parts"][0]["options"]["encoding"]
     sample_weight(values["w"], encoding, decode=False)

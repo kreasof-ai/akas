@@ -5,6 +5,321 @@ from akas.kernels.definition import KernelSpec
 from akas.kernels.kernel import Tensor, kernel, output
 
 
+def tiled_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
+    """Share KV tiles across query rows and grouped heads with online softmax."""
+    import tilelang.language as T
+    from tensor.compiler.webgpu.schedules.registers import registers, vector
+    from akas.ops.attention.kernel import cache_reader
+
+    p = {**spec.parameters, **schedule}
+    rows, heads, kh, d, cap = (p[n] for n in ("r", "h", "kh", "d", "capacity"))
+    chunk = p.get("chunk", 1)
+    group = heads // kh
+    bk, pad = p.get("block_k", 32), p.get("key_pad", 1)
+    dot_width = p.get("dot_width", 4)
+    dtype = p.get(
+        "shared_dtype", "float16" if p["kv_dtype"] == "float16" else "float32"
+    )
+    bm = p.get("block_q", min(8, chunk))
+    if dtype not in ("float16", "float32") or (
+        dtype == "float16" and p["kv_dtype"] != "float16"
+    ):
+        raise ValueError("half staging requires native half KV")
+    scalar_bytes = 2 if dtype == "float16" else 4
+
+    def shared_bytes(q):
+        return 4 * q * group * (d + 32) + scalar_bytes * (d * (bk + pad) + bk * d)
+
+    while "block_q" not in p and bm > 4 and shared_bytes(bm) > 32768:
+        bm //= 2
+    if (
+        d != 64
+        or group not in (1, 2, 4, 8)
+        or bm not in (4, 8, 16)
+        or chunk % bm
+        or rows % chunk
+        or bk not in (16, 32)
+        or pad not in (0, 1)
+        or dot_width not in (1, 4)
+        or shared_bytes(bm) > 32768
+    ):
+        raise ValueError("unsupported tiled WebGPU attention geometry")
+    storage, read = cache_reader(p)
+    scale_shape = storage.metadata[0].shape
+
+    def reduction(maximum):
+        @T.macro
+        def reduce(value: T.Ref, scratch, row, head, lane):
+            if T.call_extern("uint32", "tensor_subgroup_size") >= 32:
+                for step in T.unroll(5):
+                    other = T.call_extern(
+                        "float32", "subgroupShuffleXor", value, T.uint32(16 >> step)
+                    )
+                    if maximum:
+                        value = T.max(value, other)
+                    else:
+                        value = value + other
+            else:
+                scratch[row, head, lane] = value
+                T.sync_threads()
+                for step in T.unroll(5):
+                    if lane < (16 >> step):
+                        if maximum:
+                            scratch[row, head, lane] = T.max(
+                                scratch[row, head, lane],
+                                scratch[row, head, lane + (16 >> step)],
+                            )
+                        else:
+                            scratch[row, head, lane] += scratch[
+                                row, head, lane + (16 >> step)
+                            ]
+                    T.sync_threads()
+                value = scratch[row, head, 0]
+                T.sync_threads()
+
+        return reduce
+
+    maximum, total = reduction(True), reduction(False)
+
+    def query_dot(queries, keys, i, warp, channel, lane):
+        left = vector(
+            [queries[i, warp, channel * dot_width + j] for j in range(dot_width)]
+        )
+        right = vector(
+            [
+                T.cast(keys[channel * dot_width + j, lane], "float32")
+                for j in range(dot_width)
+            ]
+        )
+        return (
+            left * right
+            if dot_width == 1
+            else T.call_extern("float32", "dot", left, right)
+        )
+
+    def value_dot(scores, values, i, warp, key, lane):
+        left = vector([scores[i, warp, key * dot_width + j] for j in range(dot_width)])
+        right = vector(
+            [
+                T.cast(values[key * dot_width + j, lane], "float32")
+                for j in range(dot_width)
+            ]
+        )
+        return (
+            left * right
+            if dot_width == 1
+            else T.call_extern("float32", "dot", left, right)
+        )
+
+    def span(positions, enabled, base):
+        last = T.int32(-1)
+        for i in range(bm):
+            row = T.min(base + i, rows - 1)
+            last = T.max(last, T.if_then_else(enabled[row] != 0, positions[row], -1))
+        return T.max(0, T.min(last + 1, cap))
+
+    @T.macro
+    def probabilities(
+        queries,
+        keys,
+        scores,
+        positions,
+        enabled,
+        running_max: T.Ref,
+        normalizer: T.Ref,
+        correction: T.Ref,
+        base,
+        tile,
+        warp,
+        lane,
+        i,
+    ):
+        row = T.min(base + i, rows - 1)
+        valid = (
+            base + i < rows
+            and enabled[row] != 0
+            and lane < bk
+            and tile * bk + lane < cap
+            and tile * bk + lane <= positions[row]
+        )
+        score = T.alloc_var("float32")
+        score = 0
+        if valid:
+            for channel in T.serial(d // dot_width):
+                score += query_dot(queries, keys, i, warp, channel, lane)
+        score = T.if_then_else(valid, score * 0.125, -T.infinity("float32"))
+        peak = T.alloc_var("float32")
+        peak = score
+        maximum(peak, scores, i, warp, lane)
+        next_max = T.alloc_var("float32")
+        next_max = T.max(running_max, peak)
+        correction = T.if_then_else(
+            running_max == -T.infinity("float32"), 0, T.exp(running_max - next_max)
+        )
+        probability = T.alloc_var("float32")
+        probability = T.if_then_else(valid, T.exp(score - next_max), 0)
+        norm = T.alloc_var("float32")
+        norm = probability
+        total(norm, scores, i, warp, lane)
+        normalizer = normalizer * correction + norm
+        running_max = next_max
+        scores[i, warp, lane] = probability
+
+    def make_probabilities(
+        queries,
+        keys,
+        scores,
+        positions,
+        enabled,
+        maxima,
+        norms,
+        factors,
+        base,
+        tile,
+        warp,
+        lane,
+    ):
+        for i in range(bm):
+            probabilities(
+                queries,
+                keys,
+                scores,
+                positions,
+                enabled,
+                maxima[i,][0],
+                norms[i,][0],
+                factors[i,][0],
+                base,
+                tile,
+                warp,
+                lane,
+                i,
+            )
+
+    @T.macro
+    def update_values(
+        acc0: T.Ref, acc1: T.Ref, correction, scores, values, warp, lane, i
+    ):
+        acc0 = acc0 * correction
+        acc1 = acc1 * correction
+        for key in T.serial(bk // dot_width):
+            acc0 += value_dot(scores, values, i, warp, key, lane)
+            acc1 += value_dot(scores, values, i, warp, key, lane + 32)
+
+    def accumulate(accum, factors, scores, values, warp, lane):
+        for i in range(bm):
+            update_values(
+                accum[i, 0][0],
+                accum[i, 1][0],
+                factors[i,][0],
+                scores,
+                values,
+                warp,
+                lane,
+                i,
+            )
+
+    @T.macro
+    def store(out, enabled, value, norm, base, head, lane, i, side):
+        row = base + i
+        if row < rows:
+            out[(row * heads + head) * d + lane + side * 32] = T.if_then_else(
+                enabled[row] != 0, value / T.max(norm, T.float32(1e-20)), 0
+            )
+
+    def stores(out, enabled, accum, norms, base, head, lane):
+        for i in range(bm):
+            for side in range(2):
+                store(
+                    out,
+                    enabled,
+                    accum[i, side][0],
+                    norms[i,][0],
+                    base,
+                    head,
+                    lane,
+                    i,
+                    side,
+                )
+
+    def initialize_maxima(maxima):
+        for i in range(bm):
+            set_maximum(maxima[i,][0])
+
+    @T.macro
+    def set_maximum(value: T.Ref):
+        value = -T.infinity("float32")
+
+    @kernel
+    def compute(
+        q: Tensor((rows, heads * d), "float32"),
+        kc: Tensor(storage.values.shape, storage.values.dtype),
+        vc: Tensor(storage.values.shape, storage.values.dtype),
+        ks: Tensor(scale_shape, "float32"),
+        vs: Tensor(scale_shape, "float32"),
+        positions: Tensor((rows,), "int32"),
+        enabled: Tensor((rows,), "int32"),
+    ) -> Tensor((rows * heads * d,), "float32"):
+        out = output((rows * heads * d,), "float32", position=5)
+        with T.Kernel(kh, T.ceildiv(rows, bm), threads=group * 32) as (kv_head, block):
+            tx = T.get_thread_binding()
+            warp, lane = tx // 32, tx % 32
+            base = block * bm
+            slot = base // chunk
+            length = span(positions, enabled, base)
+            queries = T.alloc_shared((bm, group, d), "float32")
+            keys = T.alloc_shared((d, bk + pad), dtype)
+            values = T.alloc_shared((bk, d), dtype)
+            scores = T.alloc_shared((bm, group, 32), "float32")
+            maxima, norms, factors = (
+                registers((bm,)),
+                registers((bm,)),
+                registers((bm,)),
+            )
+            accum = registers((bm, 2))
+            initialize_maxima(maxima)
+            for i, channel in T.Parallel(bm * group, d):
+                queries[i // group, i % group, channel] = q[
+                    (base + i // group), (kv_head * group + i % group) * d + channel
+                ]
+            T.sync_threads()
+            for tile in T.serial(T.truncdiv(length + bk - 1, bk)):
+                for key, channel in T.Parallel(bk, d):
+                    position = tile * bk + key
+                    keys[channel, key] = T.if_then_else(
+                        position < length,
+                        read(kc, ks, slot, kv_head, position, channel),
+                        0,
+                    )
+                    values[key, channel] = T.if_then_else(
+                        position < length,
+                        read(vc, vs, slot, kv_head, position, channel),
+                        0,
+                    )
+                T.sync_threads()
+                make_probabilities(
+                    queries,
+                    keys,
+                    scores,
+                    positions,
+                    enabled,
+                    maxima,
+                    norms,
+                    factors,
+                    base,
+                    tile,
+                    warp,
+                    lane,
+                )
+                T.sync_threads()
+                accumulate(accum, factors, scores, values, warp, lane)
+                T.sync_threads()
+            stores(out, enabled, accum, norms, base, kv_head * group + warp, lane)
+        return out
+
+    return compute.with_attr("tirx.noalias", True)
+
+
 def _attention(p):
     import tilelang.language as T
     from akas.ops.attention.webgpu import _score_shuffle as score_shuffle

@@ -1,6 +1,42 @@
 """Shared TileLang computations for moe."""
 
 
+def expert_tile_map(spec, schedule):
+    """Build compact expert-row tasks for every supported projection tile width."""
+    import tilelang.language as T
+    from akas.kernels.kernel import Tensor, kernel, output
+
+    p = {**spec.parameters, **schedule}
+    rows, top, experts = p["r"], p["top"], p["experts"]
+    capacity = (rows * top + 3) // 4 + experts
+
+    @kernel
+    def compute(
+        counts: Tensor((experts,), "int32"),
+    ) -> tuple[Tensor((5, capacity), "int32"), Tensor((5, capacity), "int32")]:
+        tile_experts = output((5, capacity), "int32")
+        tile_rows = output((5, capacity), "int32")
+        with T.Kernel(5, threads=32) as layout:
+            if T.get_thread_binding() == 0:
+                cursor = T.alloc_var("int32")
+                cursor = 0
+                for expert in T.serial(experts):
+                    # Keep the numerator nonnegative for empty experts. This
+                    # also avoids signed floor-division correction in WGSL.
+                    size = T.truncdiv(counts[expert] + (4 << layout) - 1, 4 << layout)
+                    for block in T.serial(size):
+                        tile_experts[layout, cursor] = expert
+                        tile_rows[layout, cursor] = block
+                        cursor += 1
+                for index in T.serial(capacity):
+                    if index >= cursor:
+                        tile_experts[layout, index] = -1
+                        tile_rows[layout, index] = 0
+        return tile_experts, tile_rows
+
+    return compute
+
+
 def quantized_routes(spec, schedule):
     """Deterministic compact token routes, shared independently of weight format."""
     import tilelang.language as T
