@@ -63,6 +63,9 @@ search axes cover row/column/depth tiles and shared-memory padding. `warp_expert
 uses subgroup reductions for decode. `portable_experts` remains a fallback with
 bounded reduction tiles. These are registered implementations of the same
 `quantized_experts` operation. LFM2 MoE uses this composition.
+WebGPU tile selection accounts for shared tiles and fragment storage within the
+portable compiler's 32 KiB workgroup budget; oversized combinations are rejected
+before lowering.
 
 Expert qualification keeps the synthetic bank packed and decodes at most 128
 output rows at a time for the independent host expectation. Immutable inputs

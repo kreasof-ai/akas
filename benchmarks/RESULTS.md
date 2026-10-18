@@ -4,6 +4,7 @@ Generated from run records. See [the benchmark guide](https://github.com/kreasof
 
 | UTC | Hardware | Runtime / model | Backend / weights / mode / KV | Shapes (B/P/O) | Purpose | Status | Source | Record |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-10-18T18:29:29.491589Z | NVIDIA L4 | llama / LiquidAI/LFM2.5-24B-A2B | vulkan / q4_0 / ar / float16 | 1/32/128, 1/512/128, 1/2048/128, 1/8192/128, 1/16384/128, 1/32768/128, 1/65536/128, 1/130944/128 | baseline | passed | bc414030f7 + snapshot | [run](runs/20261018182929491589-3c9ed91b/run.json) |
 | 2026-10-18T18:16:00.137734Z | NVIDIA L4 | llama / LiquidAI/LFM2.5-24B-A2B | cuda / q4_0 / ar / float16 | 1/32/128, 1/512/128, 1/2048/128, 1/8192/128, 1/16384/128, 1/32768/128, 1/65536/128, 1/130944/128 | baseline | passed | bc414030f7 + snapshot | [run](runs/20261018181600137734-a22a5da2/run.json) |
 | 2026-10-18T18:12:22.188276Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | webgpu / unspecified / ar / float16 | 1/32/128, 1/2048/128 | benchmark | failed | 10713dbafc + snapshot | [run](runs/20261018181222188276-f71c7c65/run.json) |
 | 2026-10-18T18:07:04.200750Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / unspecified / ar / float16 | 1/32/128, 1/2048/128 | benchmark | passed | 10713dbafc + snapshot | [run](runs/20261018180704200750-be030940/run.json) |

@@ -25911,6 +25911,87 @@
       ],
       "search_phases": 0,
       "path": "runs/20261018181600137734-a22a5da2/run.json"
+    },
+    {
+      "id": "20261018182929491589-3c9ed91b",
+      "started_at": "2026-10-18T18:29:29.491589Z",
+      "status": "passed",
+      "revision": "bc414030f76a26811a37b9cfab3db2f20390de23",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "LiquidAI/LFM2.5-24B-A2B",
+      "runtime": "llama",
+      "workload": "custom",
+      "provider": "vulkan",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "baseline",
+        "description": "Measure optimized baseline execution",
+        "parent_run": null
+      },
+      "purpose": "baseline",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 512,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 8192,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 16384,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 32768,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 65536,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 130944,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261018182929491589-3c9ed91b/run.json"
     }
   ]
 }

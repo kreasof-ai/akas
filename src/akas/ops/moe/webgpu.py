@@ -24,6 +24,10 @@ def tiled_experts(spec, schedule):
         or pad not in (0, 1, 4)
     ):
         raise ValueError("invalid grouped WebGPU expert tile")
+    # Portable lowering budgets fragment storage alongside the shared tiles.
+    workgroup_bytes = 4 * (bm * bk + bk * (bn + pad) + bm * bn)
+    if workgroup_bytes > 32768:
+        raise ValueError("grouped WebGPU expert tile exceeds 32 KiB workgroup storage")
     binding = bind_parts(p["weight_parts"], depth, provider="webgpu")
     storage, read = binding.storage.values, binding.read
     routed = p.get("routed_input", False)

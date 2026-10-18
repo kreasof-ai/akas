@@ -200,9 +200,13 @@ def test_cuda_prefill_expert_tile_shapes(tmp_path, columns, block_k, routed):
     )
 
 
-@pytest.mark.parametrize("block_m,columns,block_k", [(4, 32, 32), (32, 64, 64)])
+@pytest.mark.parametrize(
+    "block_m,columns,block_k,pad", [(4, 32, 32, 1), (32, 64, 32, 1), (32, 64, 64, 0)]
+)
 @pytest.mark.parametrize("routed", [False, True])
-def test_webgpu_prefill_expert_tile_shapes(tmp_path, block_m, columns, block_k, routed):
+def test_webgpu_prefill_expert_tile_shapes(
+    tmp_path, block_m, columns, block_k, pad, routed
+):
     test_moe_kernel_device_qualification(
         tmp_path,
         "webgpu",
@@ -218,6 +222,7 @@ def test_webgpu_prefill_expert_tile_shapes(tmp_path, block_m, columns, block_k, 
             columns=columns,
             block_k=block_k,
             block_m=block_m,
+            rhs_pad=pad,
             weight_parts=({"rows": 512, "format": "ggml", "options": {"encoding": 2}},),
         ),
     )
