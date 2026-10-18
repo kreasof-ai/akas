@@ -890,8 +890,12 @@ IMPLEMENTATIONS += (
         "akas.ops.moe.cuda",
         "reference",
         factory="quantized_experts",
-        defaults=(("block_m", 16),),
-        space=(("block_m", (16, 32)),),
+        defaults=(("block_m", 16), ("columns", 64), ("block_k", 32)),
+        space=(
+            ("block_m", (16, 32)),
+            ("columns", (32, 64, 128)),
+            ("block_k", (32, 64, 128)),
+        ),
     ),
     Implementation(
         "quantized_experts",

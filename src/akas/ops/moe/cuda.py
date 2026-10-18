@@ -20,7 +20,11 @@ def quantized_experts(spec, schedule):
     routed = p.get("routed_input", False)
     shape = (rows, top, depth) if routed else (rows, depth)
     input_dtype = p.get("input_dtype", "bfloat16")
-    bm, bn, bk = (p.get("block_m", 16), 64, 32)
+    bm, bn, bk = (
+        p.get("block_m", 16),
+        p.get("columns", 64),
+        p.get("block_k", 32),
+    )
 
     @T.macro
     def activation(x, route, channel):
