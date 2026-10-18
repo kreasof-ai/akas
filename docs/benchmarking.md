@@ -32,6 +32,13 @@ Provision cache space for prompt + output + speculative guard, rounded to the
 backend's block size. Check actual allocations and device binding limits before
 attempting a large batch.
 
+For a hybrid model, logical KV bytes are
+`2 × attention_layers × B × context × kv_heads × head_dimension × bytes_per_value`.
+Count only attention layers; short-convolution layers retain fixed-size recurrent
+state. Add that state, packed weights, cache metadata, scratch and backend
+allocations separately. Use physical storage width when planning VRAM: FP16-rounded
+values in FP32 WebGPU buffers occupy four bytes each.
+
 ## Run an AKAS measurement
 
 Compile a model through [the shared compiler](../src/akas/compilation/README.md).
@@ -246,7 +253,8 @@ kernel can support a backend while the complete model graph does not.
 
 | Requested AKAS path | Model-level constraint |
 | --- | --- |
-| LFM2.5 text, safetensors or GGUF | CUDA and WebGPU composition; validate each format/cache/shape combination |
+| LFM2.5 dense text, safetensors or GGUF | CUDA and WebGPU composition; validate each format/cache/shape combination |
+| LFM2 MoE text, GGUF | Packed expert execution on CUDA and WebGPU; safetensors MoE loading is not implemented |
 | LFM2.5 with BF16 source weights | Floating matrix execution uses FP16 with FP32 intermediates; this is not a strict BF16 execution baseline |
 | Qwen3.5 dense text, safetensors or GGUF | CUDA composition with BF16 KV; WebGPU and FP8 KV require implementation |
 | Qwen3.5 dense MTP | Native checkpoint branch exists on CUDA; GGUF MTP is unavailable |

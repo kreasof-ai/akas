@@ -137,6 +137,14 @@ python -m tools.campaign --spec benchmarks/campaigns/standard-v1.json \
   --budget 4d --slice 30m --out build/standard-campaign
 ```
 
+For the single-user LFM2 MoE workload, use its pinned QAD Q4_0 checkpoint and
+both backends, allowing enough time per slice to repeat the longest prompts:
+
+```sh
+python -m tools.campaign --spec benchmarks/campaigns/single-user-long-context-v1.json \
+  --budget 4d --slice 2h --out build/single-user-long-context
+```
+
 The specification contains workload requirements, not kernel hyperparameters.
 `--mode ar|mtp` and `--kv-cache float16|bfloat16|fp8` apply the same requirements
 to an individual `akas optimize` run. Without those restrictions it evaluates
