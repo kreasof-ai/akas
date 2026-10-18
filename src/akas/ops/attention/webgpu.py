@@ -179,6 +179,7 @@ def _attention(p):
                 out[(row * h + head) * d + tx] = result / scratch[0]
 
     if split:
+
         @kernel
         def compute(
             q: Tensor(h * cap, "float32"),
@@ -380,10 +381,7 @@ def qkv_mapped_webgpu(spec: KernelSpec, schedule: Mapping[str, object]):
                     vals_v[j] = T.cast(
                         proj[
                             row,
-                            2 * heads * d
-                            + kh * d
-                            + T.max(head - heads, 0) * d
-                            + j,
+                            2 * heads * d + kh * d + T.max(head - heads, 0) * d + j,
                         ],
                         "float16",
                     )
@@ -427,23 +425,15 @@ def qkv_mapped_webgpu(spec: KernelSpec, schedule: Mapping[str, object]):
                     for i in T.serial(4):
                         ch = tx * 4 + i
                         word_k = word_k | (
-                            encode_scaled(
-                                T.cast(rotated[ch], "float32"), scales_k[blk]
-                            )
+                            encode_scaled(T.cast(rotated[ch], "float32"), scales_k[blk])
                             << (i * 8)
                         )
                         word_v = word_v | (
-                            encode_scaled(
-                                T.cast(vals_v[ch], "float32"), scales_v[blk]
-                            )
+                            encode_scaled(T.cast(vals_v[ch], "float32"), scales_v[blk])
                             << (i * 8)
                         )
-                    kc[mapping[row // chunk], head - heads, positions[row], tx] = (
-                        word_k
-                    )
-                    vc[mapping[row // chunk], head - heads, positions[row], tx] = (
-                        word_v
-                    )
+                    kc[mapping[row // chunk], head - heads, positions[row], tx] = word_k
+                    vc[mapping[row // chunk], head - heads, positions[row], tx] = word_v
             return (kc, vc, ks, vs, q)
 
         return compute
@@ -572,9 +562,7 @@ def mapped_webgpu(spec: KernelSpec, schedule: Mapping[str, object]):
             t = row % chunk
             request = mapping[batch]
             valid_row = (request >= 0) & (t < lengths[batch])
-            count = T.if_then_else(
-                valid_row, T.min(cap, positions[batch] + t + 1), 0
-            )
+            count = T.if_then_else(valid_row, T.min(cap, positions[batch] + t + 1), 0)
             kv_head = head // group
             scratch = T.alloc_shared((256,), "float32")
             running_max = T.alloc_shared((1,), "float32")
@@ -621,9 +609,7 @@ def mapped_webgpu(spec: KernelSpec, schedule: Mapping[str, object]):
                 gate = T.cast(
                     T.cast(proj[row, head * 2 * d + d + tx], "float16"), "float32"
                 )
-                normal = T.cast(
-                    T.cast(acc / normalizer[0], "float16"), "float32"
-                )
+                normal = T.cast(T.cast(acc / normalizer[0], "float16"), "float32")
                 out[row, head * d + tx] = normal / (1 + T.exp(-gate))
             else:
                 out[row, head * d + tx] = 0

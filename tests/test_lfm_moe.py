@@ -5,6 +5,7 @@ import os
 import json
 import subprocess
 import sys
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -57,6 +58,9 @@ def test_invalid_moe_geometry_and_missing_bias_rejected(tmp_path, mutation):
         )
 
 
+@pytest.mark.skipif(
+    not Path("/proc/self/status").is_file(), reason="Linux RSS accounting"
+)
 def test_real_expert_geometry_validation_has_bounded_host_memory():
     """The 64-expert bank must stay packed while its reference uses small tiles."""
     script = """
@@ -91,6 +95,7 @@ print(json.dumps(dict(peak_bytes=int(fields['VmHWM'].split()[0])*1024,
 CASES = [
     ("biased_router", dict(r=3, experts=8, top=4)),
     ("routed_combine", dict(r=3, top=4, c=128)),
+    ("rope", dict(r=4, h=32, d=64, theta=10000000.0, position_limit=131072)),
 ] + [
     (
         "quantized_experts",
@@ -105,7 +110,7 @@ CASES = [
             weight_parts=({"rows": 512, "format": "ggml", "options": {"encoding": 2}},),
         ),
     )
-    for rows in (1, 5)
+    for rows in (1, 5, 33)
     for routed in (False, True)
 ]
 
@@ -122,6 +127,8 @@ def test_moe_kernel_device_qualification(tmp_path, provider, kind, parameters):
     from tensor.artifacts.format import read_artifact
 
     parameters = {**parameters, "round_inputs": provider == "cuda"}
+    if kind == "rope":
+        parameters["provider"] = provider
     target = "sm_89" if provider == "cuda" else "webgpu-portable-v1"
     entry, artifact = tmp_path / "kernel.py", tmp_path / "kernel.tbin"
     entry.write_text(
@@ -132,6 +139,21 @@ def test_moe_kernel_device_qualification(tmp_path, provider, kind, parameters):
     build_artifact(entry, artifact, provider=provider, target=target)
     meta, _ = read_artifact(artifact)
     case = validation(kind, parameters, meta["arguments"])
+    if kind == "rope":
+        case.arguments["positions"][:] = [0, 8191, 65535, 131071]
+        x = case.arguments["x"].reshape(4, 32, 64).astype("float64")
+        angles = case.arguments["positions"][:, None, None] * 10000000.0 ** (
+            -2 * np.arange(32)[None, None, :] / 64
+        )
+        left, right = x[:, :, :32], x[:, :, 32:]
+        expected = np.concatenate(
+            (
+                left * np.cos(angles) - right * np.sin(angles),
+                left * np.sin(angles) + right * np.cos(angles),
+            ),
+            axis=-1,
+        )
+        case.expected["out"][:] = expected.reshape(case.expected["out"].shape)
     with tensor.Device(provider=provider) as device, ExitStack() as stack:
         buffers = []
         for argument in meta["arguments"]:

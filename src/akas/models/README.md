@@ -89,7 +89,10 @@ combination uses the unbiased probabilities, normalized with an epsilon of 1e-6.
 There is no shared expert branch. Router and combination computations are shared
 across CUDA and WebGPU. Expert coefficients remain encoded and decode inside
 the consuming projection. CUDA keeps its GEMV decode and grouped tensor-core
-prefill specialization; WebGPU uses a portable projection with bounded tiles.
+prefill specialization. WebGPU shares decoded weight tiles across grouped token
+routes and uses subgroup reductions for decode, retaining portable fallbacks.
+The model declares larger prefill chunk candidates so the optimizer can amortize
+the MoE bank's weight traffic across tokens.
 
 The QAD Q4_0 checkpoint can contain other encodings for particular tensors,
 including the tied embedding/output matrix. The reader preserves each tensor's
@@ -97,6 +100,11 @@ actual encoding. KV values requested as FP16 currently occupy FP32 buffers on
 WebGPU after FP16 rounding; report physical allocation separately from numerical
 precision. Check the [benchmark guide](../../../docs/benchmarking.md) for the
 single-user long-context workload and memory measurements.
+
+GGUF upload releases mapped host pages after each tensor transfer. WebGPU uploads
+also submit queued writes in bounded batches; pending staging is limited by the
+batch budget plus the largest tensor. The checkpoint is never expanded into a
+full floating expert bank for upload or numerical qualification.
 
 ## Qwen checkpoint formats
 

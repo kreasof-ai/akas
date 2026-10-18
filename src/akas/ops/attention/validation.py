@@ -141,7 +141,10 @@ def canonical_validation(kind, p, signature):
     r, d = (p["r"], p["d"])
     if kind == "rope":
         h = p["h"]
-        values["positions"][:] = (np.arange(r) * 17 + 1) % 256
+        limit = p.get("position_limit", 256)
+        values["positions"][:] = (np.arange(r) * 17 + 1) % limit
+        if limit > 8192:
+            values["positions"][-1] = limit - 1
         expected = {
             name: value.copy() if name == "out" else value
             for name, value in values.items()
@@ -294,6 +297,9 @@ def canonical_validation(kind, p, signature):
                 .astype("float16")
                 .astype("float64")
             )
+            q_heads = np.ascontiguousarray(q_slot.transpose(1, 0, 2, 3)).reshape(
+                kh, chunk * group, d
+            )
             maximum = np.full((chunk, kh, group), -np.inf, dtype="float64")
             normalizer = np.zeros((chunk, kh, group), dtype="float64")
             accumulated = np.zeros((chunk, kh, group, d), dtype="float64")
@@ -303,9 +309,9 @@ def canonical_validation(kind, p, signature):
                 valid = k_idx[None, :] <= pos[:, None]
                 if not np.any(valid):
                     continue
-                scores = np.einsum(
-                    "ckgd,ktd->ckgt", q_slot, keys[:, begin:end]
-                ) / np.sqrt(d)
+                scores = (q_heads @ keys[:, begin:end].transpose(0, 2, 1)).reshape(
+                    kh, chunk, group, end - begin
+                ).transpose(1, 0, 2, 3) / np.sqrt(d)
                 scores = np.where(valid[:, None, None, :], scores, -np.inf)
                 block_max = scores.max(axis=-1)
                 has_valid = valid.any(axis=-1)[:, None, None]
@@ -320,9 +326,15 @@ def canonical_validation(kind, p, signature):
                 )
                 normalizer = normalizer * correction + probabilities.sum(axis=-1)
                 prob_f16 = probabilities.astype("float16").astype("float64")
-                accumulated = accumulated * correction[:, :, :, None] + np.einsum(
-                    "ckgt,ktd->ckgd", prob_f16, vals[:, begin:end]
+                prob_heads = np.ascontiguousarray(
+                    prob_f16.transpose(1, 0, 2, 3)
+                ).reshape(kh, chunk * group, end - begin)
+                contribution = (
+                    (prob_heads @ vals[:, begin:end])
+                    .reshape(kh, chunk, group, d)
+                    .transpose(1, 0, 2, 3)
                 )
+                accumulated = accumulated * correction[:, :, :, None] + contribution
                 maximum = next_maximum
             res = (accumulated / normalizer[:, :, :, None]).reshape(chunk, h, d)
             out[r0:r1][en] = res[en]
@@ -340,6 +352,9 @@ def canonical_validation(kind, p, signature):
             keys = read_slot("kc", "ks", slot, max_len)
             vals = read_slot("vc", "vs", slot, max_len)
             q_slot = queries[r0:r1].reshape(chunk, kh, group, d)
+            q_heads = np.ascontiguousarray(q_slot.transpose(1, 0, 2, 3)).reshape(
+                kh, chunk * group, d
+            )
             maximum = np.full((chunk, kh, group), -np.inf, dtype="float64")
             normalizer = np.zeros((chunk, kh, group), dtype="float64")
             accumulated = np.zeros((chunk, kh, group, d), dtype="float64")
@@ -349,9 +364,9 @@ def canonical_validation(kind, p, signature):
                 valid = k_idx[None, :] <= pos[:, None]
                 if not np.any(valid):
                     continue
-                scores = np.einsum(
-                    "ckgd,ktd->ckgt", q_slot, keys[:, begin:end]
-                ) / np.sqrt(d)
+                scores = (q_heads @ keys[:, begin:end].transpose(0, 2, 1)).reshape(
+                    kh, chunk, group, end - begin
+                ).transpose(1, 0, 2, 3) / np.sqrt(d)
                 scores = np.where(valid[:, None, None, :], scores, -np.inf)
                 block_max = scores.max(axis=-1)
                 has_valid = valid.any(axis=-1)[:, None, None]
@@ -365,9 +380,15 @@ def canonical_validation(kind, p, signature):
                     0.0,
                 )
                 normalizer = normalizer * correction + probabilities.sum(axis=-1)
-                accumulated = accumulated * correction[:, :, :, None] + np.einsum(
-                    "ckgt,ktd->ckgd", probabilities, vals[:, begin:end]
+                prob_heads = np.ascontiguousarray(
+                    probabilities.transpose(1, 0, 2, 3)
+                ).reshape(kh, chunk * group, end - begin)
+                contribution = (
+                    (prob_heads @ vals[:, begin:end])
+                    .reshape(kh, chunk, group, d)
+                    .transpose(1, 0, 2, 3)
                 )
+                accumulated = accumulated * correction[:, :, :, None] + contribution
                 maximum = next_maximum
             res = (accumulated / normalizer[:, :, :, None]).reshape(chunk, h, d)
             out[r0:r1][en] = res[en]
@@ -617,7 +638,11 @@ def mapped_validation(kind, p, signature, *, mapping=None):
             mask = np.zeros(act_u8.shape[:-1], dtype=bool)
             live_rows = np.flatnonzero(values["active"][:rows])
             if live_rows.size:
-                mask[values["mapping"][live_rows // chunk], :, values["positions"][live_rows]] = True
+                mask[
+                    values["mapping"][live_rows // chunk],
+                    :,
+                    values["positions"][live_rows],
+                ] = True
             np.testing.assert_array_equal(act_u8[~mask], ref_u8[~mask])
             if np.any(mask):
                 np.testing.assert_array_less(diff[mask], 4)

@@ -40,6 +40,13 @@ compilation, execution and performance.
 
 Shared preparation/cache/online/floating-decode functions are in `kernel.py`. CUDA decode, prefill, partial/merge and Hopper variants are together in `cuda.py`; subgroup score/value algorithms are in `webgpu.py`. The split/decoded-cache policy is `definition.lower`.
 
+Long-context RoPE declares `position_limit`. Beyond 8K, it uses split inverse
+frequencies and compensated angle reduction before sine/cosine. CUDA uses fused
+multiply-add for product errors; WebGPU splits operands because fused rounding
+is not guaranteed there. Exact bit-pattern constants avoid loss through WGSL
+decimal formatting. Both implement the same rotation and qualify against a
+double-precision host reference, including the final context position.
+
 ## How to extend
 
 State query/cache shapes, mask semantics, cache mutations and output gating before
@@ -61,6 +68,11 @@ tests](../../../../tests/test_attention_pipeline.py), [KV
 tests](../../../../tests/test_kv_quantization.py) and [WebGPU lowering
 tests](../../../../tests/test_webgpu_model_lowering.py). Benchmark the complete
 preparation/attention/merge plan.
+
+Host prefill qualification computes online softmax in bounded key tiles. Batched
+matrix products reuse query groups without constructing a full query-by-context
+score matrix. The reference retains each implementation's declared operand and
+probability precision, including FP16 rounding between tensor-core tiles.
 
 For mapped native attention, only live rows of a freshly returned output are
 defined. Padding rows are not borrowed state and need not preserve old buffer

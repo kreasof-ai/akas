@@ -47,31 +47,51 @@ def quantized_experts(spec, schedule):
                 scratch = T.alloc_shared((128,), "float32")
                 accum = T.alloc_var("float32")
                 accum = 0
-                for tile in T.serial(T.ceildiv(depth, 128)):
-                    source[tx] = T.if_then_else(
-                        tile * 128 + tx < depth, activation(x, rank, tile * 128 + tx), 0
-                    )
-                    T.sync_threads()
-                    for step in T.unroll(4):
-                        channel = tile * 128 + step * 32 + lane
+                if p.get("warp_shuffle", False):
+                    for tile in T.serial(T.ceildiv(depth, 32)):
+                        channel = tile * 32 + lane
                         if channel < depth and bx * 4 + warp < columns:
                             coefficient = T.cast(
                                 read((w,), expert * columns + bx * 4 + warp, channel),
                                 "float16",
                             )
                             accum += T.cast(
-                                source[step * 32 + lane], "float32"
+                                T.cast(activation(x, rank, channel), "float16"),
+                                "float32",
                             ) * T.cast(coefficient, "float32")
+                    for step in T.unroll(5):
+                        accum += T.shfl_down(accum, 16 >> step)
+                else:
+                    for tile in T.serial(T.ceildiv(depth, 128)):
+                        source[tx] = T.if_then_else(
+                            tile * 128 + tx < depth,
+                            activation(x, rank, tile * 128 + tx),
+                            0,
+                        )
+                        T.sync_threads()
+                        for step in T.unroll(4):
+                            channel = tile * 128 + step * 32 + lane
+                            if channel < depth and bx * 4 + warp < columns:
+                                coefficient = T.cast(
+                                    read(
+                                        (w,), expert * columns + bx * 4 + warp, channel
+                                    ),
+                                    "float16",
+                                )
+                                accum += T.cast(
+                                    source[step * 32 + lane], "float32"
+                                ) * T.cast(coefficient, "float32")
+                        T.sync_threads()
+                    scratch[tx] = accum
                     T.sync_threads()
-                scratch[tx] = accum
-                T.sync_threads()
-                for step in T.unroll(5):
-                    if lane < 16 >> step:
-                        scratch[tx] += scratch[tx + (16 >> step)]
-                    T.sync_threads()
+                    for step in T.unroll(5):
+                        if lane < 16 >> step:
+                            scratch[tx] += scratch[tx + (16 >> step)]
+                        T.sync_threads()
+                    accum = scratch[tx]
                 if lane == 0 and bx * 4 + warp < columns:
                     out[0, rank, bx * 4 + warp] = T.if_then_else(
-                        counts[expert] > 0, scratch[tx], 0
+                        counts[expert] > 0, accum, 0
                     )
             return out
     else:
@@ -122,6 +142,11 @@ def quantized_experts(spec, schedule):
             return out
 
     return compute
+
+
+def quantized_experts_warp(spec, schedule):
+    """Decode specialization with cached vector loads and warp-local reductions."""
+    return quantized_experts(spec, {**schedule, "warp_shuffle": True})
 
 
 def decode_moe_combine(spec: KernelSpec, schedule: Mapping[str, object]):

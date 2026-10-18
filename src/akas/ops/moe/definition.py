@@ -903,3 +903,39 @@ IMPLEMENTATIONS += (
         space=(("columns", (4, 8)), ("block_k", (128, 256))),
     ),
 )
+
+IMPLEMENTATIONS += (
+    Implementation(
+        "quantized_experts",
+        "akas.ops.moe.cuda",
+        "reference",
+        factory="quantized_experts_warp",
+        priority=30,
+        accepts=lambda p: p["r"] == 1,
+    ),
+    Implementation(
+        "quantized_experts",
+        "akas.ops.moe.webgpu",
+        "reference",
+        provider="webgpu",
+        factory="warp_experts",
+        priority=30,
+        accepts=lambda p: p["r"] == 1,
+    ),
+    Implementation(
+        "quantized_experts",
+        "akas.ops.moe.webgpu",
+        "reference",
+        provider="webgpu",
+        factory="tiled_experts",
+        priority=30,
+        accepts=lambda p: p["r"] > 1,
+        defaults=(("block_m", 8), ("columns", 32), ("block_k", 32), ("rhs_pad", 1)),
+        space=(
+            ("block_m", (8, 16)),
+            ("columns", (32, 64)),
+            ("block_k", (32, 64)),
+            ("rhs_pad", (0, 1, 4)),
+        ),
+    ),
+)

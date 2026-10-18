@@ -285,9 +285,7 @@ def gated_delta(
     recurrent = graph.buffer(
         prefix + "recurrent", (rows, config.value_heads, config.key_dim), "float32"
     )
-    normalized = graph.buffer(
-        prefix + "normalized", (rows, config.value_width), dtype
-    )
+    normalized = graph.buffer(prefix + "normalized", (rows, config.value_width), dtype)
     matrix, history = states
     conv_args = (
         projected,

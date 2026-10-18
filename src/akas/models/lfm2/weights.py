@@ -121,7 +121,7 @@ def validate_tensors(config, gguf):
     for name, shape in expected.items():
         if gguf.tensors[name].shape != shape:
             raise GGUFError(f"{name}: incompatible LFM2 tensor shape")
-        if len(shape) == 1 or name.endswith("conv.weight"):
+        if len(shape) == 1 or name.endswith(("conv.weight", "ffn_gate_inp.weight")):
             if gguf.tensors[name].type != 0:
                 raise GGUFError(f"{name}: requires float32 auxiliary weights")
 

@@ -310,10 +310,26 @@ class Checkpoint:
                 )
                 p = hf + "self_attn."
                 for target, source, shape in (
-                    ("q_proj.weight", "attn_q.weight", (2 * c.heads * c.head_dim, c.width)),
-                    ("k_proj.weight", "attn_k.weight", (c.kv_heads * c.head_dim, c.width)),
-                    ("v_proj.weight", "attn_v.weight", (c.kv_heads * c.head_dim, c.width)),
-                    ("o_proj.weight", "attn_output.weight", (c.width, c.heads * c.head_dim)),
+                    (
+                        "q_proj.weight",
+                        "attn_q.weight",
+                        (2 * c.heads * c.head_dim, c.width),
+                    ),
+                    (
+                        "k_proj.weight",
+                        "attn_k.weight",
+                        (c.kv_heads * c.head_dim, c.width),
+                    ),
+                    (
+                        "v_proj.weight",
+                        "attn_v.weight",
+                        (c.kv_heads * c.head_dim, c.width),
+                    ),
+                    (
+                        "o_proj.weight",
+                        "attn_output.weight",
+                        (c.width, c.heads * c.head_dim),
+                    ),
                 ):
                     tensor(p + target, gg + source, shape, mtp=True)
                 join(

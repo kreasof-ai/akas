@@ -55,9 +55,12 @@ registrations and [GGUF tests](../../../../tests/test_qwen_gguf.py).
 `routed_moe` composes sigmoid routing with selection biases and no shared expert.
 Its FP32 activation contract runs on CUDA and WebGPU; `biased_router` and
 `routed_combine` share the same callable bodies. CUDA reuses the packed GEMV and
-grouped GEMM projections. WebGPU uses `portable_experts`, which fuses coefficient
-decoding into bounded reduction tiles. These are registered implementations of
-the same `quantized_experts` operation. LFM2 MoE uses this composition.
+grouped GEMM projections, with a warp-local decode reduction candidate. WebGPU's
+`tiled_experts` reuses decoded coefficients across compact token routes; its
+search axes cover row/column/depth tiles and shared-memory padding. `warp_experts`
+uses subgroup reductions for decode. `portable_experts` remains a fallback with
+bounded reduction tiles. These are registered implementations of the same
+`quantized_experts` operation. LFM2 MoE uses this composition.
 
 Expert qualification keeps the synthetic bank packed and decodes at most 128
 output rows at a time for the independent host expectation. Immutable inputs

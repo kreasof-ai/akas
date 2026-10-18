@@ -1094,6 +1094,7 @@ def hopper_prefill_split_partial(spec: KernelSpec, schedule: Mapping[str, object
                     )
 
     if decoded:
+
         @kernel
         def compute(
             q: Tensor((rows, 16, d), "bfloat16"),
@@ -1808,8 +1809,8 @@ def mapped_bf16(spec: KernelSpec, schedule: Mapping[str, object]):
                                 T.cast(result[i, j] / normalizer[i], "bfloat16"),
                                 "float32",
                             )
-                            out[row, (head * group + i % group) * d + j] = (
-                                value_out / (1 + T.exp(-gate))
+                            out[row, (head * group + i % group) * d + j] = value_out / (
+                                1 + T.exp(-gate)
                             )
             return out
 

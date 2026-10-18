@@ -75,8 +75,7 @@ def compose_dense(
         checkpoint.graph_weights(
             graph, provider=provider, branch="mtp" if draft else "text"
         )
-        if getattr(checkpoint, "storage_format", None) == "ggml"
-        or provider == "webgpu"
+        if getattr(checkpoint, "storage_format", None) == "ggml" or provider == "webgpu"
         else {
             name: graph.buffer(name, shape, dtype, role="weight")
             for name, (shape, dtype) in checkpoint.storage_specs(

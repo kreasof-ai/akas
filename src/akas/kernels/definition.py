@@ -167,9 +167,7 @@ def define(spec, schedule=None, capabilities=None, implementation=None):
             )
             body = tirx.stmt_functor.substitute(body, vmap)
             sig = getattr(prim, "__akas_signature__", None)
-            prim = tirx.PrimFunc(
-                prim.params, body, prim.ret_type, new_map, prim.attrs
-            )
+            prim = tirx.PrimFunc(prim.params, body, prim.ret_type, new_map, prim.attrs)
             if sig is not None:
                 prim.__akas_signature__ = sig
     return prim

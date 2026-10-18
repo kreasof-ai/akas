@@ -572,6 +572,8 @@ def rope(spec: KernelSpec, schedule: Mapping[str, object]):
     import math
 
     p = {**spec.parameters, **schedule}
+    if p.get("position_limit", 0) > 8192:
+        return precise_rope(spec, schedule)
     import tilelang.language as T
 
     r, d = (p["r"], p["d"])
@@ -590,6 +592,112 @@ def rope(spec: KernelSpec, schedule: Mapping[str, object]):
             angle = T.cast(positions[row], "float32") * T.exp(
                 -(math.log(theta) * 2 / d) * half
             )
+            left = x[(row * h + head) * d + half]
+            right = x[(row * h + head) * d + half + d // 2]
+            out[row, head * d + tx] = T.if_then_else(
+                tx < d // 2,
+                left * T.cos(angle) - right * T.sin(angle),
+                left * T.sin(angle) + right * T.cos(angle),
+            )
+        return out
+
+    return compute
+
+
+def precise_rope(spec: KernelSpec, schedule: Mapping[str, object]):
+    import math
+    import struct
+
+    p = {**spec.parameters, **schedule}
+    import tilelang.language as T
+
+    r, d = (p["r"], p["d"])
+    if d != 64:
+        raise ValueError("portable reference attention requires 64-channel heads")
+    h, theta = (p["h"], p["theta"])
+    precise = p.get("position_limit", 0) > 8192
+    fma = "fma" if p.get("provider") == "webgpu" else "fmaf"
+
+    def single(value):
+        return struct.unpack("<f", struct.pack("<f", value))[0]
+
+    frequencies = tuple(theta ** (-2 * i / d) for i in range(d // 2))
+    high = tuple(single(value) for value in frequencies)
+    low = tuple(single(value - rounded) for value, rounded in zip(frequencies, high))
+    tau_high = single(2 * math.pi)
+    tau_low = single(2 * math.pi - tau_high)
+
+    def exact(value):
+        if p.get("provider") == "webgpu":
+            bits = struct.unpack("<I", struct.pack("<f", value))[0]
+            # Keep bit patterns opaque to TIR constant folding and WGSL printers.
+            return T.call_extern("float32", "bitcast<f32>", T.uint32(bits))
+        return T.float32(value)
+
+    def constant(index, values):
+        value = exact(values[-1])
+        for i in range(len(values) - 2, -1, -1):
+            value = T.if_then_else(index == i, exact(values[i]), value)
+        return value
+
+    @T.macro
+    def product_error(integer, coefficient, rounded):
+        high_integer = integer >> 6 << 6
+        a_high = T.cast(high_integer, "float32")
+        a_low = T.cast(integer - high_integer, "float32")
+        b_high = T.reinterpret(
+            "float32", T.reinterpret("uint32", coefficient) & T.uint32(0xFFFFF000)
+        )
+        b_low = coefficient - b_high
+        return (
+            (a_high * b_high - rounded) + a_high * b_low + a_low * b_high
+        ) + a_low * b_low
+
+    @kernel
+    def compute(
+        x: Tensor((r * h * d,), "float32"), positions: Tensor((r,), "int32")
+    ) -> Tensor((r, h * d), "float32"):
+        out = output((r, h * d), "float32", position=1)
+        with T.Kernel(h, r, threads=64) as (head, row):
+            tx = T.get_thread_binding()
+            half = tx % (d // 2)
+            angle = T.alloc_var("float32")
+            if precise:
+                position = T.cast(positions[row], "float32")
+                frequency = T.alloc_var("float32")
+                leading = T.alloc_var("float32")
+                trailing = T.alloc_var("float32")
+                turns = T.alloc_var("int32")
+                frequency = constant(half, high)
+                leading = position * frequency
+                if p.get("provider") == "webgpu":
+                    trailing = product_error(
+                        positions[row], frequency, leading
+                    ) + position * constant(half, low)
+                    turns = T.cast(T.floor(leading / (2 * math.pi) + 0.5), "int32")
+                    removed = T.alloc_var("float32")
+                    remainder = T.alloc_var("float32")
+                    removed = T.cast(turns, "float32") * exact(tau_high)
+                    remainder = product_error(turns, exact(tau_high), removed)
+                    angle = (leading - removed) + (
+                        trailing - remainder - T.cast(turns, "float32") * exact(tau_low)
+                    )
+                else:
+                    trailing = T.call_extern(
+                        "float32", fma, position, frequency, -leading
+                    ) + position * constant(half, low)
+                    turns = T.cast(T.floor(leading / (2 * math.pi) + 0.5), "int32")
+                    angle = T.call_extern(
+                        "float32",
+                        fma,
+                        -T.cast(turns, "float32"),
+                        T.float32(tau_high),
+                        leading,
+                    ) + (trailing - T.cast(turns, "float32") * tau_low)
+            else:
+                angle = T.cast(positions[row], "float32") * T.exp(
+                    -(math.log(theta) * 2 / d) * half
+                )
             left = x[(row * h + head) * d + half]
             right = x[(row * h + head) * d + half + d // 2]
             out[row, head * d + tx] = T.if_then_else(

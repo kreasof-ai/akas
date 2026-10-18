@@ -175,8 +175,34 @@ def compose(
                 scratch(p + "qr", h * d, matrix=True),
                 scratch(p + "kr", kh * d, matrix=True),
             )
-            plan("rope", dict(r=b, h=h, d=d, theta=config.theta), q, qr, row_positions)
-            plan("rope", dict(r=b, h=kh, d=d, theta=config.theta), k, kr, row_positions)
+            plan(
+                "rope",
+                dict(
+                    r=b,
+                    h=h,
+                    d=d,
+                    theta=config.theta,
+                    provider=provider,
+                    position_limit=capacity,
+                ),
+                q,
+                qr,
+                row_positions,
+            )
+            plan(
+                "rope",
+                dict(
+                    r=b,
+                    h=kh,
+                    d=d,
+                    theta=config.theta,
+                    provider=provider,
+                    position_limit=capacity,
+                ),
+                k,
+                kr,
+                row_positions,
+            )
             params = dict(
                 r=b,
                 h=h,
@@ -217,8 +243,14 @@ def compose(
             from akas.ops.moe.definition import routed_moe
             from akas.quantization.weights import Weight
 
-            router = linear(
-                p + "router", normalized, p + "ffn_gate_inp.weight", c, config.experts
+            # Router logits choose discrete experts; preserve their F32 operands.
+            router = scratch(p + "router", config.experts)
+            plan(
+                "linear",
+                dict(r=b, k=c, o=config.experts),
+                normalized,
+                weights[p + "ffn_gate_inp.weight"],
+                router,
             )
             expert_weights = {}
             for part, shape in (

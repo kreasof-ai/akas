@@ -9,19 +9,54 @@ from akas.checkpoints.safetensors import upload_bits
 DTYPES = {"BF16": "bfloat16", "F32": "float32", "F16": "float16", "F8_E4M3": "uint8"}
 
 
+class UploadBatch:
+    """Bound asynchronous WebGPU staging; CUDA transfers already complete inline."""
+
+    def __init__(self, device, limit=64 * 1024**2):
+        self.device, self.limit, self.pending = device, limit, 0
+        self.plan = None
+
+    def __enter__(self):
+        if self.device.info["provider"] == "webgpu":
+            self.plan = self.device.prepare_plan(())
+        return self
+
+    def add(self, size):
+        if self.plan is not None:
+            self.pending += size
+            if self.pending >= self.limit:
+                self.flush()
+
+    def flush(self):
+        if self.plan is not None and self.pending:
+            # An empty public plan submits queued writes without running a kernel.
+            self.plan.launch()
+            self.device.synchronize()
+            self.pending = 0
+
+    def __exit__(self, *error):
+        try:
+            self.flush()
+        finally:
+            if self.plan is not None:
+                self.plan.close()
+
+
 def upload_packed(device, checkpoint):
     weights = {}
     try:
-        for name, info in checkpoint.tensors.items():
-            raw = checkpoint.packed(name)
-            if info.type in (0, 1):
-                raw = raw.view(np.float32 if info.type == 0 else np.float16)
-            elif device.info["provider"] == "webgpu":
-                from akas.quantization._shared.packing import pack_words
+        with UploadBatch(device) as transfers:
+            for name, info in checkpoint.tensors.items():
+                raw = checkpoint.packed(name)
+                if info.type in (0, 1):
+                    raw = raw.view(np.float32 if info.type == 0 else np.float16)
+                elif device.info["provider"] == "webgpu":
+                    from akas.quantization._shared.packing import pack_words
 
-                raw = pack_words(raw)
-            weights[name] = device.from_numpy(np.ascontiguousarray(raw))
-            checkpoint.discard(name)
+                    raw = pack_words(raw)
+                weights[name] = device.from_numpy(np.ascontiguousarray(raw))
+                transfers.add(raw.nbytes)
+                checkpoint.discard(name)
     except BaseException:
         for buffer in weights.values():
             buffer.release()

@@ -369,9 +369,7 @@ def attend(
         width=width,
         name=prefix + "projection",
     )
-    query = graph.buffer(
-        prefix + "query", (rows, config.heads, config.head_dim), dtype
-    )
+    query = graph.buffer(prefix + "query", (rows, config.heads, config.head_dim), dtype)
     attended = graph.buffer(
         prefix + "attended", (rows, config.heads * config.head_dim), dtype
     )
@@ -448,12 +446,10 @@ OUTPUT_ARGUMENTS["bf16"].update(
     {
         "attention_qkv": lambda call: OutputABI(
             (6, 7, 8, 9, 10)
-            if call.parameters.get("kv_dtype") == "fp8"
-            or len(call.arguments) == 11
+            if call.parameters.get("kv_dtype") == "fp8" or len(call.arguments) == 11
             else (6, 7, 8),
             ("kc", "vc", "ks", "vs", "q")
-            if call.parameters.get("kv_dtype") == "fp8"
-            or len(call.arguments) == 11
+            if call.parameters.get("kv_dtype") == "fp8" or len(call.arguments) == 11
             else ("kc", "vc", "q"),
         ),
         "attention": OutputABI((-1,), ("out",)),
