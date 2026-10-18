@@ -42,6 +42,8 @@ def compose_dense(
     chunk=1,
     pool=256,
     context=4096,
+    provider="cuda",
+    kv_dtype=None,
     verify=False,
     fused_head=False,
     draft=False,
@@ -56,6 +58,9 @@ def compose_dense(
     from akas.graph import Graph
     from akas.memory.layouts import hybrid_state_specs
 
+    act_dtype = "float16" if provider == "webgpu" else "bfloat16"
+    if kv_dtype is None or (provider == "webgpu" and kv_dtype == "bfloat16"):
+        kv_dtype = act_dtype
     graph = Graph(contract="bf16", phase="prefill" if chunk > 1 else "decode")
     commit = Graph(contract="bf16", phase=graph.phase)
     from dataclasses import replace
@@ -68,9 +73,10 @@ def compose_dense(
     namespace = "proposal." if draft else ""
     weights = (
         checkpoint.graph_weights(
-            graph, provider="cuda", branch="mtp" if draft else "text"
+            graph, provider=provider, branch="mtp" if draft else "text"
         )
         if getattr(checkpoint, "storage_format", None) == "ggml"
+        or provider == "webgpu"
         else {
             name: graph.buffer(name, shape, dtype, role="weight")
             for name, (shape, dtype) in checkpoint.storage_specs(
@@ -86,8 +92,9 @@ def compose_dense(
             for name, value in weights.items()
         }
         embedding = "model.language_model.embed_tokens.weight"
-        shape, dtype = checkpoint.storage_specs()[embedding]
-        weights[embedding] = graph.buffer(embedding, shape, dtype, role="weight")
+        if embedding not in weights:
+            shape, dtype = checkpoint.storage_specs()[embedding]
+            weights[embedding] = graph.buffer(embedding, shape, dtype, role="weight")
     states = {
         layer: [
             graph.buffer(
@@ -98,7 +105,9 @@ def compose_dense(
             )
             for index, spec in enumerate(specs)
         ]
-        for layer, specs in hybrid_state_specs(config, pool, context).items()
+        for layer, specs in hybrid_state_specs(
+            config, pool, context, kv_dtype=kv_dtype, provider=provider
+        ).items()
     }
     owner = SimpleNamespace(
         config=config,
@@ -111,7 +120,7 @@ def compose_dense(
     )
     if draft:
         owner.hidden = graph.buffer(
-            "proposal.saved_hidden", (pool, config.width), "bfloat16", role="state"
+            "proposal.saved_hidden", (pool, config.width), act_dtype, role="state"
         )
     from akas.ops.attention.definition import attend
     from akas.ops.gdn.definition import gated_delta
@@ -162,7 +171,7 @@ def compose_dense(
         flat_positions=flat_positions,
         active=active,
     )
-    residual = graph.buffer(namespace + "residual", (rows, config.width), "bfloat16")
+    residual = graph.buffer(namespace + "residual", (rows, config.width), act_dtype)
     from akas.ops.vocabulary.definition import embed
 
     embed(
@@ -177,7 +186,7 @@ def compose_dense(
     features = {}
     if draft:
         hidden = graph.buffer(
-            "proposal.hidden", (rows, config.width), "bfloat16", role="input"
+            "proposal.hidden", (rows, config.width), act_dtype, role="input"
         )
         mode = graph.buffer("proposal.mode", (1,), "int32", role="input")
         graph(
@@ -188,7 +197,7 @@ def compose_dense(
             mode,
             hidden,
         )
-        joined = graph.buffer("proposal.join", (rows, 2 * config.width), "bfloat16")
+        joined = graph.buffer("proposal.join", (rows, 2 * config.width), act_dtype)
         graph(
             "mtp_join",
             dict(r=rows, c=config.width, eps=config.epsilon),
@@ -216,6 +225,7 @@ def compose_dense(
             epsilon=config.epsilon,
             name=namespace + block.prefix + "input_normal",
             residual=None if previous is None else residual,
+            dtype=act_dtype,
         )
         prefix = block.mixer_prefix
         if block.mixer == "linear_attention":
@@ -229,6 +239,7 @@ def compose_dense(
                 prefix=prefix,
                 verify=verify,
                 commit=commit,
+                dtype=act_dtype,
             )
         else:
             mixed = attend(
@@ -240,6 +251,7 @@ def compose_dense(
                 config=config,
                 prefix=prefix,
                 context=context,
+                dtype=act_dtype,
             )
         normal = normalize(
             graph,
@@ -248,6 +260,7 @@ def compose_dense(
             epsilon=config.epsilon,
             name=namespace + block.prefix + "post_normal",
             residual=residual,
+            dtype=act_dtype,
         )
         prefix = block.feed_forward_prefix
         if block.feed_forward == "moe":
@@ -270,7 +283,7 @@ def compose_dense(
             name=prefix + "projection",
         )
         activated = graph.buffer(
-            prefix + "activated", (rows, config.intermediate), "bfloat16"
+            prefix + "activated", (rows, config.intermediate), act_dtype
         )
         graph("swiglu", dict(common, c=config.intermediate), projected, activated)
         previous = project(
@@ -288,11 +301,12 @@ def compose_dense(
         name=namespace + "normal",
         residual=residual,
         role="output",
+        dtype=act_dtype,
     )
     features["hidden"] = normal.name
     head_input = normal
     if not verify:
-        head_input = graph.buffer(namespace + "last", (slots, config.width), "bfloat16")
+        head_input = graph.buffer(namespace + "last", (slots, config.width), act_dtype)
         graph(
             "last_rows",
             dict(common, c=config.width),

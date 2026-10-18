@@ -169,6 +169,12 @@ def mapped_validation(kind, parameters, signature, mapping):
         spec["shape"] = shape
         names.append(spec["name"])
     local = validation(kind, parameters, original)
+    written_local = {
+        name
+        for name in local.expected
+        if local.arguments[name] is not local.expected[name]
+        and not np.array_equal(local.arguments[name], local.expected[name])
+    }
     arguments = sample_arguments(
         [
             spec
@@ -176,19 +182,24 @@ def mapped_validation(kind, parameters, signature, mapping):
             if spec["name"] in names or spec["name"] == "mapping"
         ]
     )
-    expected = {name: value.copy() for name, value in arguments.items()}
+    expected = {
+        name: value.copy() if name in written_local else value
+        for name, value in arguments.items()
+    }
     slots = np.linspace(0, capacity - 1, rows, dtype="int32")[::-1].copy()
     arguments["mapping"][:] = slots
-    expected["mapping"][:] = slots
-    for name in local.arguments:
+    for name in list(local.arguments):
         if name in names:
             initial = arguments[name].reshape(capacity, -1)
-            result = expected[name].reshape(capacity, -1)
             initial[slots] = local.arguments[name].reshape(rows, -1)
-            result[slots] = local.expected[name].reshape(rows, -1)
+            if name in written_local:
+                result = expected[name].reshape(capacity, -1)
+                result[slots] = local.expected[name].reshape(rows, -1)
         else:
             arguments[name] = local.arguments[name]
             expected[name] = local.expected[name]
+        local.arguments.pop(name, None)
+        local.expected.pop(name, None)
     return ValidationCase(
         arguments, expected, local.rtol, local.atol, local.comparators
     )

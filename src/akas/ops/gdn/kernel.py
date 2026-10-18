@@ -64,6 +64,66 @@ def mapped_conv(spec: KernelSpec, schedule: Mapping[str, object]):
     return compute
 
 
+def mapped_conv_f16(spec: KernelSpec, schedule: Mapping[str, object]):
+    p = {**spec.parameters, **schedule}
+    import tilelang.language as T
+
+    r = p.get("r", 1)
+    slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
+    rows = slots * chunk
+    c, projection = (p["channels"], p["projection"])
+    dtype = p.get("dtype", "float16")
+
+    @kernel
+    def compute(
+        x: Tensor((rows, projection), "float32"),
+        w: Tensor((c, 1, 4), dtype),
+        mapping: Tensor((slots,), "int32"),
+        lengths: Tensor((slots,), "int32"),
+        state: Tensor((pool, c, 3), "float32"),
+    ) -> tuple[Tensor((pool, c, 3), "float32"), Tensor((rows, c), "float32")]:
+        out = output((rows, c), "float32")
+        with T.Kernel(slots, T.ceildiv(c, 256), threads=256) as (batch, tile):
+            request = mapping[batch]
+            if request >= 0:
+                for j in T.Parallel(256):
+                    col = tile * 256 + j
+                    if col < c:
+                        h0 = T.alloc_var("float32")
+                        h1 = T.alloc_var("float32")
+                        h2 = T.alloc_var("float32")
+                        h0 = state[request, col, 0]
+                        h1 = state[request, col, 1]
+                        h2 = state[request, col, 2]
+                        for t in T.serial(chunk):
+                            if t < lengths[batch]:
+                                current = T.cast(
+                                    T.cast(x[batch * chunk + t, col], dtype),
+                                    "float32",
+                                )
+                                value = h0 * T.cast(
+                                    w[col, 0, 0], "float32"
+                                ) + h1 * T.cast(w[col, 0, 1], "float32")
+                                value += h2 * T.cast(
+                                    w[col, 0, 2], "float32"
+                                ) + current * T.cast(w[col, 0, 3], "float32")
+                                out[batch * chunk + t, col] = T.cast(
+                                    value / (1 + T.exp(-value)), dtype
+                                )
+                                h0 = h1
+                                h1 = h2
+                                h2 = current
+                            else:
+                                out[batch * chunk + t, col] = 0
+                        if p.get("commit", True):
+                            state[request, col, 0] = h0
+                            state[request, col, 1] = h1
+                            state[request, col, 2] = h2
+        return (state, out)
+
+    return compute
+
+
 def decode_conv(spec: KernelSpec, schedule: Mapping[str, object]):
     p = {**spec.parameters, **schedule}
     import tilelang.language as T
@@ -257,6 +317,50 @@ def conv_commit(spec: KernelSpec, schedule: Mapping[str, object]):
     return compute
 
 
+def conv_commit_f16(spec: KernelSpec, schedule: Mapping[str, object]):
+    p = {**spec.parameters, **schedule}
+    import tilelang.language as T
+
+    slots, window, pool = (p[n] for n in ("slots", "window", "pool"))
+    heads, d, tile = (p.get("heads", 16), p.get("d", 128), p.get("tile", 32))
+    channels, projection = (p["channels"], p["projection"])
+    dtype = p.get("dtype", "float16")
+
+    @kernel
+    def compute(
+        x: Tensor((slots * window, projection), "float32"),
+        mapping: Tensor((slots,), "int32"),
+        lengths: Tensor((slots,), "int32"),
+        state: Tensor((pool, channels, 3), "float32"),
+    ) -> Tensor((pool, channels, 3), "float32"):
+        with T.Kernel(slots, T.ceildiv(channels, 256), threads=256) as (batch, tile):
+            request = mapping[batch]
+            if request >= 0:
+                for j in T.Parallel(256):
+                    col = tile * 256 + j
+                    if col < channels:
+                        h0 = T.alloc_var("float32")
+                        h1 = T.alloc_var("float32")
+                        h2 = T.alloc_var("float32")
+                        h0 = state[request, col, 0]
+                        h1 = state[request, col, 1]
+                        h2 = state[request, col, 2]
+                        for t in T.serial(window):
+                            if t < lengths[batch]:
+                                h0 = h1
+                                h1 = h2
+                                h2 = T.cast(
+                                    T.cast(x[batch * window + t, col], dtype),
+                                    "float32",
+                                )
+                        state[request, col, 0] = h0
+                        state[request, col, 1] = h1
+                        state[request, col, 2] = h2
+        return state
+
+    return compute
+
+
 def defer_accept(spec: KernelSpec, schedule: Mapping[str, object]):
     p = {**spec.parameters, **schedule}
     import tilelang.language as T
@@ -312,7 +416,11 @@ def gdn_deferred(spec: KernelSpec, schedule: Mapping[str, object]):
     import tilelang.language as T
 
     slots, window, pool = (p[n] for n in ("slots", "window", "pool"))
-    heads, d, tile = (p.get("heads", 16), p.get("d", 128), p.get("tile", 32))
+    heads, d, tile = (
+        p.get("heads", 16),
+        p.get("d", 128),
+        p.get("webgpu_tile", p.get("tile", 32)),
+    )
     rows = slots * window
 
     @kernel
@@ -415,7 +523,11 @@ def gdn_materialize(spec: KernelSpec, schedule: Mapping[str, object]):
     import tilelang.language as T
 
     slots, window, pool = (p[n] for n in ("slots", "window", "pool"))
-    heads, d, tile = (p.get("heads", 16), p.get("d", 128), p.get("tile", 32))
+    heads, d, tile = (
+        p.get("heads", 16),
+        p.get("d", 128),
+        p.get("webgpu_tile", p.get("tile", 32)),
+    )
 
     @kernel
     def compute(
@@ -466,9 +578,6 @@ def mapped_norm(spec: KernelSpec, schedule: Mapping[str, object]):
     r = p.get("r", 1)
     slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
     rows = slots * chunk
-    slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
-    slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
-    slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
     heads, d, channels, projection, eps = (
         p[n] for n in ("heads", "d", "channels", "projection", "eps")
     )
@@ -491,6 +600,49 @@ def mapped_norm(spec: KernelSpec, schedule: Mapping[str, object]):
             for j in T.Parallel(d):
                 gate = T.cast(
                     T.cast(proj[row, channels + head * d + j], "bfloat16"), "float32"
+                )
+                out[row, head * d + j] = (
+                    values[j]
+                    * T.rsqrt(total[0] / d + eps)
+                    * w[j]
+                    * gate
+                    / (1 + T.exp(-gate))
+                )
+        return out
+
+    return compute
+
+
+def mapped_norm_f16(spec: KernelSpec, schedule: Mapping[str, object]):
+    p = {**spec.parameters, **schedule}
+    import tilelang.language as T
+
+    r = p.get("r", 1)
+    slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
+    rows = slots * chunk
+    heads, d, channels, projection, eps = (
+        p[n] for n in ("heads", "d", "channels", "projection", "eps")
+    )
+    dtype = p.get("dtype", "float16")
+
+    @kernel
+    def compute(
+        x: Tensor((rows, heads, d), "float32"),
+        proj: Tensor((rows, projection), "float32"),
+        w: Tensor((d,), "float32"),
+    ) -> Tensor((rows, heads * d), dtype):
+        out = output((rows, heads * d), dtype)
+        with T.Kernel(rows, heads, threads=128) as (row, head):
+            values = T.alloc_fragment((d,), "float32")
+            squares = T.alloc_fragment((d,), "float32")
+            total = T.alloc_fragment((1,), "float32")
+            for j in T.Parallel(d):
+                values[j] = T.cast(T.cast(x[row, head, j], dtype), "float32")
+                squares[j] = values[j] * values[j]
+            T.reduce_sum(squares, total, dim=0)
+            for j in T.Parallel(d):
+                gate = T.cast(
+                    T.cast(proj[row, channels + head * d + j], dtype), "float32"
                 )
                 out[row, head * d + j] = (
                     values[j]
@@ -546,7 +698,6 @@ def mapped_prepare(spec: KernelSpec, schedule: Mapping[str, object]):
     r = p.get("r", 1)
     slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
     rows = slots * chunk
-    slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
     heads, kh, d, channels, projection = (
         p[n] for n in ("heads", "key_heads", "d", "channels", "projection")
     )
@@ -605,6 +756,82 @@ def mapped_prepare(spec: KernelSpec, schedule: Mapping[str, object]):
                             T.cast(
                                 proj[row, channels + value_width + heads + head],
                                 "bfloat16",
+                            ),
+                            "float32",
+                        )
+                    )
+                )
+        return (q, k, v, g, beta)
+
+    return compute
+
+
+def mapped_prepare_f16(spec: KernelSpec, schedule: Mapping[str, object]):
+    p = {**spec.parameters, **schedule}
+    import tilelang.language as T
+
+    r = p.get("r", 1)
+    slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
+    rows = slots * chunk
+    heads, kh, d, channels, projection = (
+        p[n] for n in ("heads", "key_heads", "d", "channels", "projection")
+    )
+    value_width = heads * d
+    dtype = p.get("dtype", "float16")
+
+    @kernel
+    def compute(
+        conv: Tensor((rows, channels), "float32"),
+        proj: Tensor((rows, projection), "float32"),
+        dt: Tensor((heads,), dtype),
+        A: Tensor((heads,), "float32"),
+    ) -> tuple[
+        Tensor((rows, heads, d), "float32"),
+        Tensor((rows, heads, d), "float32"),
+        Tensor((rows, heads, d), "float32"),
+        Tensor((rows, heads), "float32"),
+        Tensor((rows, heads), "float32"),
+    ]:
+        q = output((rows, heads, d), "float32")
+        k = output((rows, heads, d), "float32")
+        v = output((rows, heads, d), "float32")
+        g = output((rows, heads), "float32")
+        beta = output((rows, heads), "float32")
+        with T.Kernel(rows, heads, threads=128) as (row, head):
+            qq = T.alloc_fragment((d,), "float32")
+            kk = T.alloc_fragment((d,), "float32")
+            qs = T.alloc_fragment((d,), "float32")
+            ks = T.alloc_fragment((d,), "float32")
+            qt = T.alloc_fragment((1,), "float32")
+            kt = T.alloc_fragment((1,), "float32")
+            for j in T.Parallel(d):
+                qq[j] = conv[row, head // (heads // kh) * d + j]
+                kk[j] = conv[row, kh * d + head // (heads // kh) * d + j]
+                qs[j] = qq[j] * qq[j]
+                ks[j] = kk[j] * kk[j]
+            T.reduce_sum(qs, qt, dim=0)
+            T.reduce_sum(ks, kt, dim=0)
+            for j in T.Parallel(d):
+                q[row, head, j] = (
+                    qq[j] * T.rsqrt(qt[0] + T.float32(1e-06)) * d ** (-0.5)
+                )
+                k[row, head, j] = kk[j] * T.rsqrt(kt[0] + T.float32(1e-06))
+                v[row, head, j] = conv[row, 2 * kh * d + head * d + j]
+            for j in T.Parallel(1):
+                a = T.cast(
+                    T.cast(proj[row, channels + value_width + head], dtype),
+                    "float32",
+                ) + T.cast(dt[head], "float32")
+                g[row, head] = -T.exp(A[head]) * (
+                    T.max(a, 0) + T.log(1 + T.exp(-T.abs(a)))
+                )
+                beta[row, head] = 1 / (
+                    1
+                    + T.exp(
+                        -T.cast(
+                            T.cast(
+                                proj[row, channels + value_width + heads + head],
+                                dtype,
                             ),
                             "float32",
                         )
@@ -880,9 +1107,11 @@ def mapped_scan(spec: KernelSpec, schedule: Mapping[str, object]):
     r = p.get("r", 1)
     slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
     rows = slots * chunk
-    slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
-    slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
-    heads, d, tile = (p["heads"], p["d"], p.get("tile", 32))
+    heads, d, tile = (
+        p["heads"],
+        p["d"],
+        p.get("webgpu_tile", p.get("tile", 32)),
+    )
 
     @kernel
     def compute(

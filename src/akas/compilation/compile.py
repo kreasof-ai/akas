@@ -545,7 +545,12 @@ def compile_program(
             )
             feature = verification.buffers[phase["features"]["hidden"]]
             width = prod(feature.shape) // (phase["rows"] * window)
-            controls = round_controls(slots=phase["rows"], window=window, width=width)
+            controls = round_controls(
+                slots=phase["rows"],
+                window=window,
+                width=width,
+                dtype=feature.dtype,
+            )
             filename = f"{generation}/rounds/control-b{phase['rows']}-w{window}.json"
             control_bundle = plan(
                 controls,

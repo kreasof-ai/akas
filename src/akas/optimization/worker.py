@@ -63,6 +63,7 @@ def candidate(job, output):
     limit = max(data["prefix_tokens"]) + data["output_tokens"] + (recipe["window"] or 0)
     windows = () if recipe["window"] is None else (recipe["window"],)
     geometries = plan_geometries(data, recipe)
+    skip_autotune = os.environ.get("AKAS_SKIP_AUTOTUNE") == "1"
     metadata = dict(
         runtime="akas",
         purpose="optimization",
@@ -80,8 +81,12 @@ def candidate(job, output):
         recipe=recipe,
         device=job["device"],
         qualification="independent operation references; model outputs preserved against campaign baseline",
-        warmup=1,
-        repeats=3,
+        warmup=int(
+            os.environ.get("AKAS_BENCHMARK_WARMUP", "0" if skip_autotune else "1")
+        ),
+        repeats=int(
+            os.environ.get("AKAS_BENCHMARK_REPEATS", "1" if skip_autotune else "3")
+        ),
         seed=17,
     )
     recorder = Recorder(
@@ -216,7 +221,12 @@ def candidate(job, output):
                 policy=recipe["policy"],
                 round_windows=windows,
                 deferred=recipe["deferred"],
-                search_settings=SearchSettings(budget=recipe["trials"]),
+                search=not skip_autotune,
+                search_settings=(
+                    SearchSettings(budget=1, width=1, warmup=0, samples=1, repeats=1)
+                    if recipe["trials"] == 1
+                    else SearchSettings(budget=recipe["trials"])
+                ),
                 schedules=schedules,
                 device=device,
             )

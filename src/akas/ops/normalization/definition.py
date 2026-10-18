@@ -29,10 +29,12 @@ def rms_norm(
     emit(kind, parameters, label=label, **bindings)
 
 
-def normalize(graph, x, weight, *, epsilon, name, residual=None, role="scratch"):
+def normalize(
+    graph, x, weight, *, epsilon, name, residual=None, role="scratch", dtype="bfloat16"
+):
     """Compose ordinary RMS or residual fusion with explicit buffer ownership."""
     rows, width = x.shape
-    out = graph.buffer(name, (rows, width), "bfloat16", role=role)
+    out = graph.buffer(name, (rows, width), dtype, role=role)
     parameters = dict(r=rows, c=width, eps=epsilon)
     if residual is None:
         graph("rms", parameters, residual=x, w=weight, out=out)
@@ -290,6 +292,40 @@ IMPLEMENTATIONS = (
         "reference",
         provider="webgpu",
         defaults=(("algorithm", "parallel-tree"),),
+        factory="add_rms",
+        name="normalization.kernel",
+    ),
+    Implementation(
+        "rms",
+        "akas.ops.normalization.kernel",
+        "bf16",
+        provider="webgpu",
+        defaults=(
+            ("zero_centered", True),
+            ("round_inputs", True),
+            ("input_name", "residual"),
+            ("input_dtype", "float16"),
+            ("residual_dtype", "float16"),
+            ("output_dtype", "float16"),
+            ("weight_dtype", "float16"),
+        ),
+        factory="rms",
+        name="normalization.kernel",
+    ),
+    Implementation(
+        "add_rms",
+        "akas.ops.normalization.kernel",
+        "bf16",
+        provider="webgpu",
+        defaults=(
+            ("zero_centered", True),
+            ("round_inputs", True),
+            ("input_name", "x"),
+            ("input_dtype", "float32"),
+            ("residual_dtype", "float16"),
+            ("output_dtype", "float16"),
+            ("weight_dtype", "float16"),
+        ),
         factory="add_rms",
         name="normalization.kernel",
     ),

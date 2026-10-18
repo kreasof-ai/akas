@@ -354,7 +354,9 @@ def projected_workspace(graph, rows, config, *, prefix="", splits=None, gated=Tr
     }
 
 
-def attend(graph, x, weights, states, controls, *, config, prefix, context):
+def attend(
+    graph, x, weights, states, controls, *, config, prefix, context, dtype="bfloat16"
+):
     """Compose packed Q/K/V projection and mapped causal attention."""
     from akas.ops.linear.definition import project
 
@@ -368,10 +370,10 @@ def attend(graph, x, weights, states, controls, *, config, prefix, context):
         name=prefix + "projection",
     )
     query = graph.buffer(
-        prefix + "query", (rows, config.heads, config.head_dim), "bfloat16"
+        prefix + "query", (rows, config.heads, config.head_dim), dtype
     )
     attended = graph.buffer(
-        prefix + "attended", (rows, config.heads * config.head_dim), "bfloat16"
+        prefix + "attended", (rows, config.heads * config.head_dim), dtype
     )
     parameters = dict(
         common,
@@ -380,8 +382,8 @@ def attend(graph, x, weights, states, controls, *, config, prefix, context):
         d=config.head_dim,
         capacity=context,
         eps=config.epsilon,
+        **({"kv_dtype": "fp8"} if len(states) == 4 else {}),
     )
-    keys, values = states
     graph(
         "attention_qkv",
         dict(parameters, theta=config.theta),
@@ -391,16 +393,14 @@ def attend(graph, x, weights, states, controls, *, config, prefix, context):
         controls["mapping"],
         controls["flat_positions"],
         controls["active"],
-        keys,
-        values,
+        *states,
         query,
     )
     graph(
         "attention",
         parameters,
         query,
-        keys,
-        values,
+        *states,
         projected,
         controls["mapping"],
         controls["positions"],
@@ -446,7 +446,16 @@ for _contract in ("bf16", "block-fp8"):
     )
 OUTPUT_ARGUMENTS["bf16"].update(
     {
-        "attention_qkv": OutputABI((6, 7, 8), ("kc", "vc", "q")),
+        "attention_qkv": lambda call: OutputABI(
+            (6, 7, 8, 9, 10)
+            if call.parameters.get("kv_dtype") == "fp8"
+            or len(call.arguments) == 11
+            else (6, 7, 8),
+            ("kc", "vc", "ks", "vs", "q")
+            if call.parameters.get("kv_dtype") == "fp8"
+            or len(call.arguments) == 11
+            else ("kc", "vc", "q"),
+        ),
         "attention": OutputABI((-1,), ("out",)),
     }
 )
@@ -627,8 +636,18 @@ IMPLEMENTATIONS = (
         "attention_qkv",
         "akas.ops.attention.cuda",
         "bf16",
+        accepts=lambda p: not is_quantized(p.get("kv_dtype", "bfloat16")),
         factory="qkv_mapped_bf16",
         name="attention.cuda.bf16_batch",
+    ),
+    Implementation(
+        "attention_qkv",
+        "akas.ops.attention.cuda",
+        "bf16",
+        priority=20,
+        accepts=lambda p: is_quantized(p.get("kv_dtype", "bfloat16")),
+        factory="qkv_mapped_fp8",
+        name="attention.cuda.fp8",
     ),
     Implementation(
         "attention",
@@ -636,6 +655,22 @@ IMPLEMENTATIONS = (
         "bf16",
         factory="mapped_bf16",
         name="attention.cuda.bf16_batch",
+    ),
+    Implementation(
+        "attention_qkv",
+        "akas.ops.attention.webgpu",
+        "bf16",
+        provider="webgpu",
+        factory="qkv_mapped_webgpu",
+        name="attention.webgpu.bf16_batch",
+    ),
+    Implementation(
+        "attention",
+        "akas.ops.attention.webgpu",
+        "bf16",
+        provider="webgpu",
+        factory="mapped_webgpu",
+        name="attention.webgpu.bf16_batch",
     ),
     Implementation(
         "attention_kv",

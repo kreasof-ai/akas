@@ -68,6 +68,7 @@ def run(specification, out, *, budget, slice_seconds, history):
     cap = duration(spec.get("configuration_budget", "1h"))
     out = Path(out).resolve()
     out.mkdir(parents=True, exist_ok=True)
+    print(f"Campaign directory: {out}", flush=True)
     with lock(out / ".lock"):
         path = out / "campaign.json"
         if path.exists():
@@ -77,6 +78,7 @@ def run(specification, out, *, budget, slice_seconds, history):
                     "campaign source, specification, model declarations or total budget changed; use a new output directory"
                 )
         else:
+            print("Indexing checkpoints and building 48-workload matrix...", flush=True)
             state = dict(
                 schema="akas.matrix-campaign.v1",
                 identity=fingerprint,
@@ -111,7 +113,12 @@ def run(specification, out, *, budget, slice_seconds, history):
         state["status"] = "running"
         save()
         try:
-            while time.monotonic() - started + previous_spent < budget:
+            import os
+
+            skip_autotune = os.environ.get("AKAS_SKIP_AUTOTUNE") == "1"
+            while skip_autotune or (
+                time.monotonic() - started + previous_spent < budget
+            ):
                 if (
                     source_identity(root)["tree_sha256"] != frozen["source"]
                     or declarations(spec, root) != models
@@ -120,12 +127,19 @@ def run(specification, out, *, budget, slice_seconds, history):
                 ):
                     state["status"] = "invalidated"
                     raise ValueError("campaign inputs changed during execution")
+                terminal = (
+                    ("complete", "unsupported", "failed", "budget_exhausted")
+                    if skip_autotune
+                    else ("complete", "unsupported", "failed")
+                )
                 unfinished = [
-                    e
-                    for e in state["entries"]
-                    if e.get("status") not in ("complete", "unsupported", "failed")
+                    e for e in state["entries"] if e.get("status") not in terminal
                 ]
-                pending = [e for e in unfinished if e.get("spent_seconds", 0) < cap]
+                pending = [
+                    e
+                    for e in unfinished
+                    if skip_autotune or e.get("spent_seconds", 0) < cap
+                ]
                 if not pending:
                     state["status"] = (
                         "configuration_budgets_exhausted" if unfinished else "complete"
@@ -133,9 +147,17 @@ def run(specification, out, *, budget, slice_seconds, history):
                     break
                 # Give each configuration a first pass before deepening one.
                 entry = min(pending, key=lambda e: e.get("spent_seconds", 0))
-                remaining = budget - (time.monotonic() - started + previous_spent)
-                allowance = min(
-                    slice_seconds, remaining, cap - entry.get("spent_seconds", 0)
+                remaining = (
+                    budget
+                    if skip_autotune
+                    else budget - (time.monotonic() - started + previous_spent)
+                )
+                allowance = (
+                    slice_seconds
+                    if skip_autotune
+                    else min(
+                        slice_seconds, remaining, cap - entry.get("spent_seconds", 0)
+                    )
                 )
                 print(entry["id"], f"allowance={allowance:.1f}s", flush=True)
                 save()
@@ -180,6 +202,10 @@ def run(specification, out, *, budget, slice_seconds, history):
             raise
         finally:
             save()
+            import sys
+
+            if str(root) not in sys.path:
+                sys.path.insert(0, str(root))
             from tools.campaign_report import export
 
             destination = export(path, history=history)
@@ -209,7 +235,25 @@ def main():
         action="store_true",
         help="show the requested matrix without running GPU work",
     )
+    parser.add_argument(
+        "--no-autotune",
+        action="store_true",
+        help="qualify the default schedule and first graph recipe without beam search",
+    )
+    parser.add_argument(
+        "--shape-timeout",
+        default=None,
+        help="maximum seconds per (batch, prefix) shape measurement, e.g. 15s",
+    )
     args = parser.parse_args()
+    if args.no_autotune:
+        import os
+
+        os.environ["AKAS_SKIP_AUTOTUNE"] = "1"
+    if args.shape_timeout is not None:
+        import os
+
+        os.environ["AKAS_SHAPE_TIMEOUT"] = str(duration(args.shape_timeout))
     if args.list:
         print(
             json.dumps(entries(json.loads(args.spec.read_text()), Path.cwd()), indent=2)

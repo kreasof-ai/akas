@@ -295,6 +295,376 @@ def attention_scores(spec: KernelSpec, schedule: Mapping[str, object]):
     return attention_scores_kernel(KernelSpec("scores", p), {})
 
 
+def qkv_mapped_webgpu(spec: KernelSpec, schedule: Mapping[str, object]):
+    p = {**spec.parameters, **schedule}
+    import tilelang.language as T
+
+    r = p.get("r", 1)
+    slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
+    rows = slots * chunk
+    heads, kh, d, cap, eps, theta = (
+        p[n] for n in ("heads", "kv_heads", "d", "capacity", "eps", "theta")
+    )
+    projection = 2 * heads * d + 2 * kh * d
+    if p.get("kv_dtype") == "fp8":
+        from akas.kernels.reductions import tree_reduce
+        from akas.quantization._shared.e4m3 import portable_scaling
+
+        portable_scale, encode_scaled = portable_scaling()
+        maximum = tree_reduce(128, "max")
+
+        @kernel
+        def compute(
+            proj: Tensor((rows, projection), "float32"),
+            qw: Tensor((d,), "float16"),
+            kw: Tensor((d,), "float16"),
+            mapping: Tensor((slots,), "int32"),
+            positions: Tensor((rows,), "int32"),
+            active: Tensor((rows,), "int32"),
+            kc: Tensor((pool, kh, cap, d // 4), "uint32"),
+            vc: Tensor((pool, kh, cap, d // 4), "uint32"),
+            ks: Tensor((pool, kh, cap, 2), "float32"),
+            vs: Tensor((pool, kh, cap, 2), "float32"),
+        ) -> tuple[
+            Tensor((pool, kh, cap, d // 4), "uint32"),
+            Tensor((pool, kh, cap, d // 4), "uint32"),
+            Tensor((pool, kh, cap, 2), "float32"),
+            Tensor((pool, kh, cap, 2), "float32"),
+            Tensor((rows, heads, d), "float16"),
+        ]:
+            q = output((rows, heads, d), "float16")
+            with T.Kernel(rows, heads + kh, threads=256) as (row, head):
+                tx = T.get_thread_binding()
+                normal = T.alloc_shared((d,), "float16")
+                rotated = T.alloc_shared((d,), "float16")
+                vals_v = T.alloc_shared((d,), "float16")
+                scratch_k = T.alloc_shared((128,), "float32")
+                scratch_v = T.alloc_shared((128,), "float32")
+                scales_k = T.alloc_shared((2,), "float32")
+                scales_v = T.alloc_shared((2,), "float32")
+                squares = T.alloc_fragment((d,), "float32")
+                total = T.alloc_fragment((1,), "float32")
+                for j in T.Parallel(d):
+                    offset = T.if_then_else(
+                        head < heads, head * 2 * d, 2 * heads * d + (head - heads) * d
+                    )
+                    value = T.cast(T.cast(proj[row, offset + j], "float16"), "float32")
+                    squares[j] = value * value
+                T.reduce_sum(squares, total, dim=0)
+                for j in T.Parallel(d):
+                    offset = T.if_then_else(
+                        head < heads, head * 2 * d, 2 * heads * d + (head - heads) * d
+                    )
+                    value = T.cast(T.cast(proj[row, offset + j], "float16"), "float32")
+                    weight = T.if_then_else(head < heads, qw[j], kw[j])
+                    normal[j] = (
+                        value
+                        * T.rsqrt(total[0] / d + eps)
+                        * (1 + T.cast(weight, "float32"))
+                    )
+                T.sync_threads()
+                for j in T.Parallel(d):
+                    value = T.alloc_var("float32")
+                    value = T.cast(normal[j], "float32")
+                    if j < 64:
+                        angle = positions[row] * T.exp(
+                            T.cast(-2 * (j % 32), "float32")
+                            / 64
+                            * T.log(T.float32(theta))
+                        )
+                        pair = T.cast(normal[(j + 32) % 64], "float32")
+                        value = value * T.cos(angle) + T.if_then_else(
+                            j < 32, -pair, pair
+                        ) * T.sin(angle)
+                    rotated[j] = value
+                    vals_v[j] = T.cast(
+                        proj[
+                            row,
+                            2 * heads * d
+                            + kh * d
+                            + T.max(head - heads, 0) * d
+                            + j,
+                        ],
+                        "float16",
+                    )
+                    if (active[row] != 0) & (head < heads):
+                        q[row, head, j] = rotated[j]
+                T.sync_threads()
+                for block in T.serial(2):
+                    if tx < 128:
+                        scratch_k[tx] = T.abs(
+                            T.cast(rotated[block * 128 + tx], "float32")
+                        )
+                        scratch_v[tx] = T.abs(
+                            T.cast(vals_v[block * 128 + tx], "float32")
+                        )
+                    T.sync_threads()
+                    maximum(scratch_k, tx)
+                    maximum(scratch_v, tx)
+                    if tx == 0:
+                        scales_k[block] = portable_scale(scratch_k[0])
+                        scales_v[block] = portable_scale(scratch_v[0])
+                        if (active[row] != 0) & (head >= heads):
+                            ks[
+                                mapping[row // chunk],
+                                head - heads,
+                                positions[row],
+                                block,
+                            ] = scales_k[block]
+                            vs[
+                                mapping[row // chunk],
+                                head - heads,
+                                positions[row],
+                                block,
+                            ] = scales_v[block]
+                    T.sync_threads()
+                if (tx < 64) & (active[row] != 0) & (head >= heads):
+                    word_k = T.alloc_var("uint32")
+                    word_v = T.alloc_var("uint32")
+                    word_k = 0
+                    word_v = 0
+                    blk = tx // 32
+                    for i in T.serial(4):
+                        ch = tx * 4 + i
+                        word_k = word_k | (
+                            encode_scaled(
+                                T.cast(rotated[ch], "float32"), scales_k[blk]
+                            )
+                            << (i * 8)
+                        )
+                        word_v = word_v | (
+                            encode_scaled(
+                                T.cast(vals_v[ch], "float32"), scales_v[blk]
+                            )
+                            << (i * 8)
+                        )
+                    kc[mapping[row // chunk], head - heads, positions[row], tx] = (
+                        word_k
+                    )
+                    vc[mapping[row // chunk], head - heads, positions[row], tx] = (
+                        word_v
+                    )
+            return (kc, vc, ks, vs, q)
+
+        return compute
+
+    @kernel
+    def compute(
+        proj: Tensor((rows, projection), "float32"),
+        qw: Tensor((d,), "float16"),
+        kw: Tensor((d,), "float16"),
+        mapping: Tensor((slots,), "int32"),
+        positions: Tensor((rows,), "int32"),
+        active: Tensor((rows,), "int32"),
+        kc: Tensor((pool, kh, cap, d), "float16"),
+        vc: Tensor((pool, kh, cap, d), "float16"),
+    ) -> tuple[
+        Tensor((pool, kh, cap, d), "float16"),
+        Tensor((pool, kh, cap, d), "float16"),
+        Tensor((rows, heads, d), "float16"),
+    ]:
+        q = output((rows, heads, d), "float16")
+        with T.Kernel(rows, heads + kh, threads=256) as (row, head):
+            if active[row] != 0:
+                values = T.alloc_shared((d,), "float16")
+                squares = T.alloc_fragment((d,), "float32")
+                total = T.alloc_fragment((1,), "float32")
+                for j in T.Parallel(d):
+                    raw = T.cast(
+                        T.cast(
+                            proj[
+                                row,
+                                T.if_then_else(
+                                    head < heads,
+                                    head * 2 * d,
+                                    2 * heads * d + (head - heads) * d,
+                                )
+                                + j,
+                            ],
+                            "float16",
+                        ),
+                        "float32",
+                    )
+                    squares[j] = raw * raw
+                T.reduce_sum(squares, total, dim=0)
+                for j in T.Parallel(d):
+                    raw = T.cast(
+                        T.cast(
+                            proj[
+                                row,
+                                T.if_then_else(
+                                    head < heads,
+                                    head * 2 * d,
+                                    2 * heads * d + (head - heads) * d,
+                                )
+                                + j,
+                            ],
+                            "float16",
+                        ),
+                        "float32",
+                    )
+                    weight = T.if_then_else(head < heads, qw[j], kw[j])
+                    values[j] = (
+                        raw
+                        * T.rsqrt(total[0] / d + eps)
+                        * (1 + T.cast(weight, "float32"))
+                    )
+                for j in T.Parallel(d):
+                    value = T.alloc_var("float32")
+                    value = T.cast(values[j], "float32")
+                    if j < 64:
+                        angle = positions[row] * T.exp(
+                            T.cast(-2 * (j % 32), "float32")
+                            / 64
+                            * T.log(T.float32(theta))
+                        )
+                        pair = T.cast(values[(j + 32) % 64], "float32")
+                        value = value * T.cos(angle) + T.if_then_else(
+                            j < 32, -pair, pair
+                        ) * T.sin(angle)
+                    if head < heads:
+                        q[row, head, j] = value
+                    else:
+                        kc[mapping[row // chunk], head - heads, positions[row], j] = (
+                            value
+                        )
+                        vc[mapping[row // chunk], head - heads, positions[row], j] = (
+                            T.cast(
+                                proj[
+                                    row, 2 * heads * d + kh * d + (head - heads) * d + j
+                                ],
+                                "float16",
+                            )
+                        )
+        return (kc, vc, q)
+
+    return compute
+
+
+def mapped_webgpu(spec: KernelSpec, schedule: Mapping[str, object]):
+    p = {**spec.parameters, **schedule}
+    import tilelang.language as T
+    from akas.kernels.reductions import tree_reduce
+
+    r = p.get("r", 1)
+    slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
+    rows = slots * chunk
+    heads, kh, d, cap = (p[n] for n in ("heads", "kv_heads", "d", "capacity"))
+    group = heads // kh
+    projection = 2 * heads * d + 2 * kh * d
+    reduce_sum = tree_reduce(256)
+    quantized = p.get("kv_dtype") == "fp8"
+    if quantized:
+        from akas.quantization.kv.fp8.kernel import reference_decoder
+
+        read_kv = reference_decoder(provider="webgpu")
+    else:
+
+        @T.macro
+        def read_kv(cache, metadata, slot, head, pos, ch):
+            return T.cast(cache[slot, head, pos, ch], "float32")
+
+    @T.macro
+    def body(q, kc, vc, ks, vs, proj, mapping, positions, lengths, out):
+        with T.Kernel(rows, heads, threads=256) as (row, head):
+            tx = T.get_thread_binding()
+            batch = row // chunk
+            t = row % chunk
+            request = mapping[batch]
+            valid_row = (request >= 0) & (t < lengths[batch])
+            count = T.if_then_else(
+                valid_row, T.min(cap, positions[batch] + t + 1), 0
+            )
+            kv_head = head // group
+            scratch = T.alloc_shared((256,), "float32")
+            running_max = T.alloc_shared((1,), "float32")
+            normalizer = T.alloc_shared((1,), "float32")
+            factor = T.alloc_shared((1,), "float32")
+            prob = T.alloc_shared((1,), "float32")
+            acc = T.alloc_var("float32")
+            acc = 0
+            q_val = T.cast(q[row, head, tx], "float32")
+            if tx == 0:
+                running_max[0] = -T.infinity("float32")
+                normalizer[0] = 0
+            T.sync_threads()
+            for pos in T.serial(count):
+                r_slot = T.max(request, 0)
+                k_val = T.cast(
+                    T.cast(read_kv(kc, ks, r_slot, kv_head, pos, tx), "float16"),
+                    "float32",
+                )
+                v_val = T.cast(
+                    T.cast(read_kv(vc, vs, r_slot, kv_head, pos, tx), "float16"),
+                    "float32",
+                )
+                scratch[tx] = q_val * k_val
+                T.sync_threads()
+                reduce_sum(scratch, tx)
+                if tx == 0:
+                    score = scratch[0] * d ** (-0.5)
+                    next_max = T.max(running_max[0], score)
+                    factor[0] = T.if_then_else(
+                        running_max[0] > -T.infinity("float32"),
+                        T.exp(running_max[0] - next_max),
+                        0,
+                    )
+                    prob[0] = T.cast(
+                        T.cast(T.exp(score - next_max), "float16"), "float32"
+                    )
+                    normalizer[0] = normalizer[0] * factor[0] + prob[0]
+                    running_max[0] = next_max
+                T.sync_threads()
+                acc = acc * factor[0] + prob[0] * v_val
+                T.sync_threads()
+            if valid_row:
+                gate = T.cast(
+                    T.cast(proj[row, head * 2 * d + d + tx], "float16"), "float32"
+                )
+                normal = T.cast(
+                    T.cast(acc / normalizer[0], "float16"), "float32"
+                )
+                out[row, head * d + tx] = normal / (1 + T.exp(-gate))
+            else:
+                out[row, head * d + tx] = 0
+
+    if quantized:
+
+        @kernel
+        def compute(
+            q: Tensor((rows, heads, d), "float16"),
+            kc: Tensor((pool, kh, cap, d // 4), "uint32"),
+            vc: Tensor((pool, kh, cap, d // 4), "uint32"),
+            ks: Tensor((pool, kh, cap, 2), "float32"),
+            vs: Tensor((pool, kh, cap, 2), "float32"),
+            proj: Tensor((rows, projection), "float32"),
+            mapping: Tensor((slots,), "int32"),
+            positions: Tensor((slots,), "int32"),
+            lengths: Tensor((slots,), "int32"),
+        ) -> Tensor((rows, heads * d), "float16"):
+            out = output((rows, heads * d), "float16")
+            body(q, kc, vc, ks, vs, proj, mapping, positions, lengths, out)
+            return out
+
+        return compute
+
+    @kernel
+    def compute(
+        q: Tensor((rows, heads, d), "float16"),
+        kc: Tensor((pool, kh, cap, d), "float16"),
+        vc: Tensor((pool, kh, cap, d), "float16"),
+        proj: Tensor((rows, projection), "float32"),
+        mapping: Tensor((slots,), "int32"),
+        positions: Tensor((slots,), "int32"),
+        lengths: Tensor((slots,), "int32"),
+    ) -> Tensor((rows, heads * d), "float16"):
+        out = output((rows, heads * d), "float16")
+        body(q, kc, vc, kc, vc, proj, mapping, positions, lengths, out)
+        return out
+
+    return compute
+
+
 from .kernel import (
     attention as shared_attention,
     attention_flat,

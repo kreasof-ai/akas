@@ -24,9 +24,9 @@ def validation(kind, p, signature):
     else:
         inputs = [v.reshape(r, c) for name, v in values.items() if name != "out"]
         gate_all, up_all = inputs
-    out_bf16 = (
-        next((row["dtype"] for row in signature if row["name"] == "out")) == "bfloat16"
-    )
+    out_dtype = next((row["dtype"] for row in signature if row["name"] == "out"))
+    out_bf16 = out_dtype == "bfloat16"
+    out_f16 = out_dtype == "float16"
     out_2d = expected["out"].reshape(r, c)
     from tensor.runtime.dtypes import decode_bfloat16, encode_bfloat16
 
@@ -34,11 +34,17 @@ def validation(kind, p, signature):
         end = min(r, begin + 1024)
         gate, up = (gate_all[begin:end], up_all[begin:end])
         if p.get("round_inputs"):
-            gate = decode_bfloat16(encode_bfloat16(gate))
-            up = decode_bfloat16(encode_bfloat16(up))
+            if out_f16 or p.get("round_dtype") == "float16":
+                gate = gate.astype("float16").astype("float32")
+                up = up.astype("float16").astype("float32")
+            else:
+                gate = decode_bfloat16(encode_bfloat16(gate))
+                up = decode_bfloat16(encode_bfloat16(up))
         gate_f64 = gate.astype("float64")
         out = gate_f64 / (1 + np.exp(-gate_f64)) * up
         if out_bf16:
             out = decode_bfloat16(encode_bfloat16(out))
+        elif out_f16:
+            out = out.astype("float16").astype("float32")
         out_2d[begin:end] = out
     return ValidationCase(values, expected)

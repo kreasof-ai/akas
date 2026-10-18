@@ -1,0 +1,205 @@
+{
+  "schema": "akas.program.v1",
+  "provider": "cuda",
+  "target": "sm_89",
+  "config": {
+    "width": 1024,
+    "intermediate": 3584,
+    "vocab": 248320,
+    "layers": [
+      "linear_attention",
+      "linear_attention",
+      "linear_attention",
+      "full_attention",
+      "linear_attention",
+      "linear_attention",
+      "linear_attention",
+      "full_attention",
+      "linear_attention",
+      "linear_attention",
+      "linear_attention",
+      "full_attention",
+      "linear_attention",
+      "linear_attention",
+      "linear_attention",
+      "full_attention",
+      "linear_attention",
+      "linear_attention",
+      "linear_attention",
+      "full_attention",
+      "linear_attention",
+      "linear_attention",
+      "linear_attention",
+      "full_attention"
+    ],
+    "heads": 8,
+    "kv_heads": 2,
+    "head_dim": 256,
+    "key_heads": 16,
+    "value_heads": 16,
+    "key_dim": 128,
+    "value_dim": 128,
+    "epsilon": 1e-06,
+    "theta": 10000000,
+    "rotary_dim": 64,
+    "context_limit": 262144
+  },
+  "max_requests": 256,
+  "max_context": 2176,
+  "phases": [
+    {
+      "phase": "decode",
+      "rows": 1,
+      "chunk": 1,
+      "path": "programs/fd3555f425ac4ae4a2e559ac41543fb2/phases/decode-b1-t1.json",
+      "sha256": "3056a7a33066711b8dc78a5ae616a92c685a34e0a251f75b7b2e9d152d6957d5",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "positions": "position",
+        "lengths": "lengths",
+        "head_positions": "head_position",
+        "head_active": "head_active"
+      },
+      "prediction": "predicted",
+      "feedback": true,
+      "features": {
+        "hidden": "normal"
+      }
+    },
+    {
+      "phase": "decode",
+      "rows": 4,
+      "chunk": 1,
+      "path": "programs/fd3555f425ac4ae4a2e559ac41543fb2/phases/decode-b4-t1.json",
+      "sha256": "484692a3cd936d06ec9ed06d94a7212bc131570985e1efe45528d514bcc2c980",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "positions": "position",
+        "lengths": "lengths",
+        "head_positions": "head_position",
+        "head_active": "head_active"
+      },
+      "prediction": "predicted",
+      "feedback": true,
+      "features": {
+        "hidden": "normal"
+      }
+    },
+    {
+      "phase": "decode",
+      "rows": 16,
+      "chunk": 1,
+      "path": "programs/fd3555f425ac4ae4a2e559ac41543fb2/phases/decode-b16-t1.json",
+      "sha256": "04ec4bb98ef9f8e17c1632248929c213f8422e274ef602a6c54886fb9c316fe3",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "positions": "position",
+        "lengths": "lengths",
+        "head_positions": "head_position",
+        "head_active": "head_active"
+      },
+      "prediction": "predicted",
+      "feedback": true,
+      "features": {
+        "hidden": "normal"
+      }
+    },
+    {
+      "phase": "decode",
+      "rows": 64,
+      "chunk": 1,
+      "path": "programs/fd3555f425ac4ae4a2e559ac41543fb2/phases/decode-b64-t1.json",
+      "sha256": "7b088fe8a18a899604b6574147826c64abe4a0d0a95d53bbc39f853587d4e281",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "positions": "position",
+        "lengths": "lengths",
+        "head_positions": "head_position",
+        "head_active": "head_active"
+      },
+      "prediction": "predicted",
+      "feedback": true,
+      "features": {
+        "hidden": "normal"
+      }
+    },
+    {
+      "phase": "decode",
+      "rows": 256,
+      "chunk": 1,
+      "path": "programs/fd3555f425ac4ae4a2e559ac41543fb2/phases/decode-b256-t1.json",
+      "sha256": "14bfd56ab573f9ebaead92560b55f0fe1669f4565dbf5080850a61dcf7505ec6",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "positions": "position",
+        "lengths": "lengths",
+        "head_positions": "head_position",
+        "head_active": "head_active"
+      },
+      "prediction": "predicted",
+      "feedback": true,
+      "features": {
+        "hidden": "normal"
+      }
+    },
+    {
+      "phase": "prefill",
+      "rows": 1,
+      "chunk": 32,
+      "path": "programs/fd3555f425ac4ae4a2e559ac41543fb2/phases/prefill-b1-t32.json",
+      "sha256": "b7114ec79c2dd905e031dd6b92adc922a36a3194ed9e27b07a50f9134dbd36ba",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "positions": "position",
+        "lengths": "lengths",
+        "head_positions": "head_position",
+        "head_active": "head_active"
+      },
+      "prediction": "predicted",
+      "feedback": false,
+      "features": {
+        "hidden": "normal"
+      }
+    },
+    {
+      "phase": "prefill",
+      "rows": 32,
+      "chunk": 32,
+      "path": "programs/fd3555f425ac4ae4a2e559ac41543fb2/phases/prefill-b32-t32.json",
+      "sha256": "3bdf1bb723f4e9b6458e14c72bf1567cf04df6451729308b4056d591c1c2a21f",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "positions": "position",
+        "lengths": "lengths",
+        "head_positions": "head_position",
+        "head_active": "head_active"
+      },
+      "prediction": "predicted",
+      "feedback": false,
+      "features": {
+        "hidden": "normal"
+      }
+    }
+  ],
+  "reset": {
+    "path": "programs/fd3555f425ac4ae4a2e559ac41543fb2/phases/reset.json",
+    "sha256": "02e805bbcd7e339594202be5f820f884d1ea31109bc0ed37fac188aeee2eefcb",
+    "mapping": "mapping"
+  },
+  "rounds": [],
+  "upload_options": {
+    "branch": "text"
+  },
+  "model_options": {
+    "fused_head": false,
+    "kv_dtype": "fp8"
+  },
+  "policy": {}
+}

@@ -1,0 +1,82 @@
+{
+  "context": {
+    "checkpoint": "/home/sagemaker-user/akas/build/model-smoke/checkpoints/qwen-hf",
+    "definition": "akas.models.qwen35.model:Qwen35Dense",
+    "workload": {
+      "schema": "akas.workload.v1",
+      "id": "standard-v1",
+      "description": "Text inference at fixed active request counts, short and medium prompts.",
+      "batches": [
+        1,
+        4,
+        16,
+        64,
+        256
+      ],
+      "prefix_tokens": [
+        32,
+        2048
+      ],
+      "output_tokens": 128,
+      "cached_prefix_tokens": 0,
+      "early_eos": false,
+      "sampling": {
+        "temperature": 0
+      },
+      "prefix_cache": false,
+      "cpu_offload": false,
+      "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+      "metrics": [
+        "prefill_tokens_per_second",
+        "decode_tokens_per_second",
+        "ttft_seconds",
+        "inter_token_seconds",
+        "peak_vram_bytes"
+      ]
+    },
+    "backend": "cuda",
+    "device": 0,
+    "memory_bytes": null,
+    "ttft_ms": null,
+    "tpot_ms": null,
+    "kv_dtype": "fp8",
+    "mode": "ar"
+  },
+  "identity": "898a0b07ab91f2ed3451046976732f473f4b230ffc1e4666976d9e1f3478e2c5",
+  "checkpoint_sha256": "12c9d5d5a2a7d2dd4447e9274243609dbc43c53d9b593e4be9f6007d68236392",
+  "history": "/home/sagemaker-user/akas/benchmarks",
+  "action": "candidate",
+  "recipe": {
+    "provider": "cuda",
+    "target": "sm_89",
+    "chunk": 32,
+    "prefill_requests": 32,
+    "graphs": true,
+    "trials": 1,
+    "policy": {},
+    "model_options": {
+      "fused_head": false,
+      "kv_dtype": "fp8"
+    },
+    "window": null,
+    "deferred": false,
+    "head": null,
+    "id": "fd5803b380a76562"
+  },
+  "device": {
+    "ordinal": 0,
+    "name": "NVIDIA L4",
+    "arch": "sm_89",
+    "provider": "cuda",
+    "uuid": "GPU-b03cd627-998c-2476-6169-f62b483e2c27",
+    "free_bytes": 23659020288,
+    "total_bytes": 24152899584,
+    "driver": "595.91.07"
+  },
+  "cache_sources": [
+    "/home/sagemaker-user/akas/build/shared-program-cache",
+    "/home/sagemaker-user/akas/build/campaign-full/qwen3.5-0.8b-bf16-cuda-default-ar/jobs/b4805ec444a95869/attempt-0001/program",
+    "/home/sagemaker-user/akas/build/campaign-full/qwen3.5-0.8b-bf16-cuda-default-mtp/jobs/3d7824fd78938e93/attempt-0001/program"
+  ],
+  "supervisor_pid": 460657
+}

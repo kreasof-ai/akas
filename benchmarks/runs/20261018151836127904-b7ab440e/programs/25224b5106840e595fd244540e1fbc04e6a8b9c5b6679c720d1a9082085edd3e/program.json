@@ -1,0 +1,203 @@
+{
+  "schema": "akas.program.v1",
+  "provider": "webgpu",
+  "target": "webgpu-portable-v1",
+  "config": {
+    "width": 1024,
+    "intermediate": 3584,
+    "vocab": 248320,
+    "layers": [
+      "linear_attention",
+      "linear_attention",
+      "linear_attention",
+      "full_attention",
+      "linear_attention",
+      "linear_attention",
+      "linear_attention",
+      "full_attention",
+      "linear_attention",
+      "linear_attention",
+      "linear_attention",
+      "full_attention",
+      "linear_attention",
+      "linear_attention",
+      "linear_attention",
+      "full_attention",
+      "linear_attention",
+      "linear_attention",
+      "linear_attention",
+      "full_attention",
+      "linear_attention",
+      "linear_attention",
+      "linear_attention",
+      "full_attention"
+    ],
+    "heads": 8,
+    "kv_heads": 2,
+    "head_dim": 256,
+    "key_heads": 16,
+    "value_heads": 16,
+    "key_dim": 128,
+    "value_dim": 128,
+    "epsilon": 9.999999974752427e-07,
+    "theta": 10000000.0,
+    "rotary_dim": 64,
+    "context_limit": 262144
+  },
+  "max_requests": 256,
+  "max_context": 2176,
+  "phases": [
+    {
+      "phase": "decode",
+      "rows": 1,
+      "chunk": 1,
+      "path": "programs/8430ea41495641f8a089176044bb8cef/phases/decode-b1-t1.json",
+      "sha256": "666cc23e404f73ef0929371592ecb9b287d4b5fe40b2e61d8783c9f337b4f9b6",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "positions": "position",
+        "lengths": "lengths",
+        "head_positions": "head_position",
+        "head_active": "head_active"
+      },
+      "prediction": "predicted",
+      "feedback": true,
+      "features": {
+        "hidden": "normal"
+      }
+    },
+    {
+      "phase": "decode",
+      "rows": 4,
+      "chunk": 1,
+      "path": "programs/8430ea41495641f8a089176044bb8cef/phases/decode-b4-t1.json",
+      "sha256": "c6d2a5edd78aeef05a3c2935141c48e269e72bbe066e267117c6efa3d7ff9c99",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "positions": "position",
+        "lengths": "lengths",
+        "head_positions": "head_position",
+        "head_active": "head_active"
+      },
+      "prediction": "predicted",
+      "feedback": true,
+      "features": {
+        "hidden": "normal"
+      }
+    },
+    {
+      "phase": "decode",
+      "rows": 16,
+      "chunk": 1,
+      "path": "programs/8430ea41495641f8a089176044bb8cef/phases/decode-b16-t1.json",
+      "sha256": "39e9473fa6e5e94e04c48d739af474b646aaea33e111f611a91b9b99ee0d6d46",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "positions": "position",
+        "lengths": "lengths",
+        "head_positions": "head_position",
+        "head_active": "head_active"
+      },
+      "prediction": "predicted",
+      "feedback": true,
+      "features": {
+        "hidden": "normal"
+      }
+    },
+    {
+      "phase": "decode",
+      "rows": 64,
+      "chunk": 1,
+      "path": "programs/8430ea41495641f8a089176044bb8cef/phases/decode-b64-t1.json",
+      "sha256": "3a81dcadd54586d35d2d9f6180fd79a25d5c1b47399c6ed6264f6bc181c58452",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "positions": "position",
+        "lengths": "lengths",
+        "head_positions": "head_position",
+        "head_active": "head_active"
+      },
+      "prediction": "predicted",
+      "feedback": true,
+      "features": {
+        "hidden": "normal"
+      }
+    },
+    {
+      "phase": "decode",
+      "rows": 256,
+      "chunk": 1,
+      "path": "programs/8430ea41495641f8a089176044bb8cef/phases/decode-b256-t1.json",
+      "sha256": "30b52de764c8cf1d20f0bc709b0aa4294f6a16c6631a52a3030818840991a4db",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "positions": "position",
+        "lengths": "lengths",
+        "head_positions": "head_position",
+        "head_active": "head_active"
+      },
+      "prediction": "predicted",
+      "feedback": true,
+      "features": {
+        "hidden": "normal"
+      }
+    },
+    {
+      "phase": "prefill",
+      "rows": 1,
+      "chunk": 32,
+      "path": "programs/8430ea41495641f8a089176044bb8cef/phases/prefill-b1-t32.json",
+      "sha256": "c49e55e54274fdb5482700fb42771e3fe54b6cd4560bb35048840d0dcfa18445",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "positions": "position",
+        "lengths": "lengths",
+        "head_positions": "head_position",
+        "head_active": "head_active"
+      },
+      "prediction": "predicted",
+      "feedback": false,
+      "features": {
+        "hidden": "normal"
+      }
+    },
+    {
+      "phase": "prefill",
+      "rows": 32,
+      "chunk": 32,
+      "path": "programs/8430ea41495641f8a089176044bb8cef/phases/prefill-b32-t32.json",
+      "sha256": "99dfb5a2aa297a55c3720d09be65bfbe92d02b9a75bcce68a4af83184ab12ce3",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "positions": "position",
+        "lengths": "lengths",
+        "head_positions": "head_position",
+        "head_active": "head_active"
+      },
+      "prediction": "predicted",
+      "feedback": false,
+      "features": {
+        "hidden": "normal"
+      }
+    }
+  ],
+  "reset": {
+    "path": "programs/8430ea41495641f8a089176044bb8cef/phases/reset.json",
+    "sha256": "68d6292d1f263863c24df1995f60c529b49c97ff1370fa98e33a46bbc6b3e49a",
+    "mapping": "mapping"
+  },
+  "rounds": [],
+  "upload_options": {},
+  "model_options": {
+    "fused_head": false,
+    "kv_dtype": "float16"
+  },
+  "policy": {}
+}

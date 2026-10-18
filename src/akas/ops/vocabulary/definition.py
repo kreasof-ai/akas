@@ -116,6 +116,14 @@ IMPLEMENTATIONS = (
         name="vocabulary.cuda.decode",
     ),
     Implementation(
+        "argmax",
+        "akas.ops.vocabulary.kernel",
+        "bf16",
+        provider="webgpu",
+        factory="native_argmax",
+        name="vocabulary.cuda.decode",
+    ),
+    Implementation(
         "head_linear",
         "akas.ops.vocabulary.cuda",
         "bf16",

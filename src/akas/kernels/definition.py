@@ -119,4 +119,57 @@ def define(spec, schedule=None, capabilities=None, implementation=None):
     factory = getattr(
         import_module(implementation["module"]), implementation["factory"]
     )
-    return factory(bound, schedule)
+    prim = factory(bound, schedule)
+    if (
+        capabilities.provider == "webgpu"
+        and hasattr(prim, "params")
+        and hasattr(prim, "buffer_map")
+    ):
+        from tvm import tirx
+
+        reserved = {"active", "target"}
+        if any(
+            str(prim.buffer_map[p].data.name) in reserved
+            for p in prim.params
+            if p in prim.buffer_map
+        ):
+            new_map, vmap, bmap = {}, {}, {}
+            for p in prim.params:
+                if p not in prim.buffer_map:
+                    continue
+                b = prim.buffer_map[p]
+                if str(b.data.name) in reserved:
+                    nd = tirx.Var(str(b.data.name) + "_buf", b.data.type_annotation)
+                    nb = tirx.decl_buffer(
+                        b.shape,
+                        b.dtype,
+                        name=str(b.name),
+                        data=nd,
+                        strides=b.strides,
+                        elem_offset=b.elem_offset,
+                        scope=b.scope(),
+                    )
+                    vmap[b.data] = nd
+                    bmap[b] = nb
+                    new_map[p] = nb
+                else:
+                    new_map[p] = b
+
+            def _replace(op):
+                if isinstance(op, tirx.BufferLoad) and op.buffer in bmap:
+                    return tirx.BufferLoad(bmap[op.buffer], op.indices)
+                if isinstance(op, tirx.BufferStore) and op.buffer in bmap:
+                    return tirx.BufferStore(bmap[op.buffer], op.value, op.indices)
+                return None
+
+            body = tirx.stmt_functor.ir_transform(
+                prim.body, None, _replace, ["tirx.BufferLoad", "tirx.BufferStore"]
+            )
+            body = tirx.stmt_functor.substitute(body, vmap)
+            sig = getattr(prim, "__akas_signature__", None)
+            prim = tirx.PrimFunc(
+                prim.params, body, prim.ret_type, new_map, prim.attrs
+            )
+            if sig is not None:
+                prim.__akas_signature__ = sig
+    return prim

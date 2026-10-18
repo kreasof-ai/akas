@@ -156,14 +156,15 @@ def mapped_gather_hidden(spec: KernelSpec, schedule: Mapping[str, object]):
     slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
     rows = slots * chunk
     c = p["c"]
+    dtype = p.get("dtype", "bfloat16")
 
     @kernel
     def compute(
-        saved: Tensor((pool, c), "bfloat16"),
+        saved: Tensor((pool, c), dtype),
         mapping: Tensor((slots,), "int32"),
         mode: Tensor((1,), "int32"),
-    ) -> Tensor((rows, c), "bfloat16"):
-        out = output((rows, c), "bfloat16")
+    ) -> Tensor((rows, c), dtype):
+        out = output((rows, c), dtype)
         with T.Kernel(slots, T.ceildiv(c, 256), threads=256) as (batch, tile):
             if (mode[0] != 0) & (mapping[batch] >= 0):
                 for j in T.Parallel(256):
@@ -182,16 +183,14 @@ def mapped_last_rows(spec: KernelSpec, schedule: Mapping[str, object]):
     r = p.get("r", 1)
     slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
     rows = slots * chunk
-    slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
-    slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
-    slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
     c = p["c"]
+    dtype = p.get("dtype", "bfloat16")
 
     @kernel
     def compute(
-        x: Tensor((rows, c), "bfloat16"), lengths: Tensor((slots,), "int32")
-    ) -> Tensor((slots, c), "bfloat16"):
-        out = output((slots, c), "bfloat16")
+        x: Tensor((rows, c), dtype), lengths: Tensor((slots,), "int32")
+    ) -> Tensor((slots, c), dtype):
+        out = output((slots, c), dtype)
         with T.Kernel(slots, T.ceildiv(c, 256), threads=256) as (batch, tile):
             for j in T.Parallel(256):
                 col = tile * 256 + j
@@ -213,16 +212,16 @@ def mapped_store_hidden(spec: KernelSpec, schedule: Mapping[str, object]):
     r = p.get("r", 1)
     slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
     rows = slots * chunk
-    slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
     c = p["c"]
+    dtype = p.get("dtype", "bfloat16")
 
     @kernel
     def compute(
-        x: Tensor((slots, c), "bfloat16"),
+        x: Tensor((slots, c), dtype),
         mapping: Tensor((slots,), "int32"),
         lengths: Tensor((slots,), "int32"),
-    ) -> Tensor((pool, c), "bfloat16"):
-        saved = output((pool, c), "bfloat16")
+    ) -> Tensor((pool, c), dtype):
+        saved = output((pool, c), dtype)
         with T.Kernel(slots, T.ceildiv(c, 256), threads=256) as (batch, tile):
             if (mapping[batch] >= 0) & (lengths[batch] > 0):
                 for j in T.Parallel(256):

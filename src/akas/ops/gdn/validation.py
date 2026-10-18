@@ -33,11 +33,15 @@ def journal_validation(kind, p, signature):
         expected["counts"][values["mapping"]] = 0
     elif kind == "conv_commit":
         channels = p["channels"]
+        f16 = p.get("dtype") == "float16"
         for row, slot in enumerate(values["mapping"]):
             history = expected["state"][slot]
             for token in range(values["lengths"][row]):
-                current = decode_bfloat16(
-                    encode_bfloat16(values["x"][row * window + token, :channels])
+                raw = values["x"][row * window + token, :channels]
+                current = (
+                    raw.astype("float16").astype("float32")
+                    if f16
+                    else decode_bfloat16(encode_bfloat16(raw))
                 )
                 history[:, :2] = history[:, 1:]
                 history[:, 2] = current
@@ -90,8 +94,14 @@ def validation(kind, p, signature):
     from akas.kernels.contracts import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
+    f16 = (
+        any(row["dtype"] == "float16" for row in signature)
+        or p.get("dtype") == "float16"
+    )
 
     def rounded(x):
+        if f16:
+            return np.asarray(x, dtype="float16").astype("float32")
         return decode_bfloat16(encode_bfloat16(x))
 
     slots, chunk = (p.get("slots", p.get("r", 1)), p.get("chunk", 1))

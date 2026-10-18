@@ -288,8 +288,89 @@ class Qwen35DenseCheckpoint:
             for name, info in self.tensors.items()
             if branch == "all" or name.startswith("mtp.") == (branch == "mtp")
         }
+        if getattr(device, "info", {}).get("provider") == "webgpu":
+            import numpy as np
+            from math import prod
+            from tensor.runtime.dtypes import decode_bfloat16
+
+            if branch == "mtp":
+                emb = "model.language_model.embed_tokens.weight"
+                selected[emb] = self.tensors[emb]
+            result = {}
+            try:
+                for name, info in selected.items():
+                    raw = self.read(name)
+                    if info.dtype == "BF16":
+                        values = decode_bfloat16(raw).astype("float16")
+                    else:
+                        values = raw.astype("float32", copy=False)
+                    if len(info.shape) == 2:
+                        values = values.reshape((prod(info.shape),))
+                    result[name] = device.from_numpy(np.ascontiguousarray(values))
+                return result
+            except BaseException:
+                for buffer in result.values():
+                    buffer.release()
+                raise
         groups = dense_groups(self.config, branch)
         return upload_concatenated(device, selected, self.read, groups)
+
+    def graph_weights(self, graph, *, provider, branch="text"):
+        if branch not in ("text", "mtp", "all"):
+            raise ValueError("invalid checkpoint branch")
+        from math import prod
+        from akas.quantization.weights import Weight
+
+        selected = {
+            name: info
+            for name, info in self.tensors.items()
+            if branch == "all" or name.startswith("mtp.") == (branch == "mtp")
+        }
+        if branch == "mtp":
+            emb = "model.language_model.embed_tokens.weight"
+            selected[emb] = self.tensors[emb]
+        buffers = {}
+        result = {}
+        for name, info in selected.items():
+            shape = tuple(info.shape)
+            if len(shape) == 2:
+                buf = graph.buffer(name, (prod(shape),), "float16", role="weight")
+                buffers[name] = buf
+                result[name] = Weight(
+                    shape,
+                    (buf,),
+                    (
+                        dict(
+                            rows=shape[0],
+                            format="ggml",
+                            options={"encoding": 1},
+                            row_order=None,
+                            column_order=None,
+                        ),
+                    ),
+                )
+            else:
+                dtype = "float32" if info.dtype == "F32" else "float16"
+                buf = graph.buffer(name, shape, dtype, role="weight")
+                buffers[name] = buf
+                result[name] = buf
+        for destination, names, _ in dense_groups(self.config, branch):
+            shapes = [tuple(selected[name].shape) for name in names]
+            result[destination] = Weight(
+                (sum(s[0] for s in shapes), *shapes[0][1:]),
+                tuple(buffers[name] for name in names),
+                tuple(
+                    dict(
+                        rows=s[0],
+                        format="ggml",
+                        options={"encoding": 1},
+                        row_order=None,
+                        column_order=None,
+                    )
+                    for s in shapes
+                ),
+            )
+        return result
 
     def storage_specs(self, *, branch="text"):
         if branch not in ("text", "mtp", "all"):

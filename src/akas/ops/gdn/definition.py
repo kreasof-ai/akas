@@ -244,7 +244,17 @@ def separate_workspace(graph, rows, config, *, prefix=""):
 
 
 def gated_delta(
-    graph, x, weights, states, controls, *, config, prefix, verify=False, commit=None
+    graph,
+    x,
+    weights,
+    states,
+    controls,
+    *,
+    config,
+    prefix,
+    verify=False,
+    commit=None,
+    dtype="bfloat16",
 ):
     """Compose mapped recurrent mixing and its accepted-prefix replay journal."""
     from akas.ops.linear.definition import project
@@ -276,7 +286,7 @@ def gated_delta(
         prefix + "recurrent", (rows, config.value_heads, config.key_dim), "float32"
     )
     normalized = graph.buffer(
-        prefix + "normalized", (rows, config.value_width), "bfloat16"
+        prefix + "normalized", (rows, config.value_width), dtype
     )
     matrix, history = states
     conv_args = (
@@ -664,5 +674,85 @@ IMPLEMENTATIONS = (
         required=("full_checkpoints",),
         factory="restore",
         name="gdn.restore",
+    ),
+    Implementation(
+        "conv_commit",
+        "akas.ops.gdn.kernel",
+        "bf16",
+        provider="webgpu",
+        defaults=(("dtype", "float16"),),
+        factory="conv_commit_f16",
+        name="gdn.verification",
+    ),
+    Implementation(
+        "defer_accept",
+        "akas.ops.gdn.kernel",
+        "bf16",
+        provider="webgpu",
+        factory="defer_accept",
+        name="gdn.verification",
+    ),
+    Implementation(
+        "defer_clear",
+        "akas.ops.gdn.kernel",
+        "bf16",
+        provider="webgpu",
+        factory="defer_clear",
+        name="gdn.verification",
+    ),
+    Implementation(
+        "gdn_deferred",
+        "akas.ops.gdn.kernel",
+        "bf16",
+        provider="webgpu",
+        defaults=(("webgpu_tile", 8),),
+        factory="gdn_deferred",
+        name="gdn.verification",
+    ),
+    Implementation(
+        "gdn_materialize",
+        "akas.ops.gdn.kernel",
+        "bf16",
+        provider="webgpu",
+        defaults=(("webgpu_tile", 8),),
+        factory="gdn_materialize",
+        name="gdn.verification",
+    ),
+    Implementation(
+        "gdn_conv",
+        "akas.ops.gdn.kernel",
+        "bf16",
+        provider="webgpu",
+        defaults=(("dtype", "float16"),),
+        factory="mapped_conv_f16",
+        name="gdn.cuda.bf16_batch",
+    ),
+    Implementation(
+        "gdn_prepare",
+        "akas.ops.gdn.kernel",
+        "bf16",
+        provider="webgpu",
+        defaults=(("dtype", "float16"),),
+        factory="mapped_prepare_f16",
+        name="gdn.cuda.bf16_batch",
+    ),
+    Implementation(
+        "gdn_norm",
+        "akas.ops.gdn.kernel",
+        "bf16",
+        provider="webgpu",
+        defaults=(("dtype", "float16"),),
+        factory="mapped_norm_f16",
+        name="gdn.cuda.bf16_batch",
+    ),
+    Implementation(
+        "gdn_scan",
+        "akas.ops.gdn.kernel",
+        "bf16",
+        provider="webgpu",
+        defaults=(("webgpu_tile", 8),),
+        semantic_keys=("slots", "chunk", "pool", "heads", "d", "commit"),
+        factory="mapped_scan",
+        name="gdn.cuda.bf16_batch",
     ),
 )

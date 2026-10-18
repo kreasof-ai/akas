@@ -39,10 +39,17 @@ def compose(
                 raise ValueError(
                     "GGUF head uses fused dequantization followed by argmax; fused_head is a native BF16 option"
                 )
-        if provider != "cuda":
-            raise ValueError("native BF16 kernels currently require CUDA")
-        if model_options.pop("kv_dtype", "bfloat16") != "bfloat16":
-            raise ValueError("dense native attention currently requires BF16 KV")
+        if provider not in ("cuda", "webgpu"):
+            raise ValueError("Qwen3.5 requires CUDA or WebGPU")
+        if provider == "webgpu" and model_options.get("fused_head"):
+            raise ValueError("fused_head is a native CUDA BF16 option")
+        kv_dtype = model_options.pop("kv_dtype", "bfloat16")
+        if provider == "webgpu" and kv_dtype == "bfloat16":
+            kv_dtype = "float16"
+        if (provider == "cuda" and kv_dtype not in ("bfloat16", "fp8")) or (
+            provider == "webgpu" and kv_dtype not in ("float16", "fp8")
+        ):
+            raise ValueError(f"unsupported Qwen KV dtype {kv_dtype!r} for {provider}")
         if phase not in (None, "decode", "prefill", "verify", "proposal"):
             raise ValueError("unknown Qwen phase")
         result = compose_dense(
@@ -51,6 +58,8 @@ def compose(
             chunk=chunk,
             pool=max_requests,
             context=max_context,
+            provider=provider,
+            kv_dtype=kv_dtype,
             verify=phase == "verify",
             draft=phase == "proposal",
             **model_options,

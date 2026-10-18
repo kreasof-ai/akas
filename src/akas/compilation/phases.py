@@ -29,7 +29,7 @@ def graphs(definition, config, phases, options):
         yield phase, graph
 
 
-def round_controls(*, slots, window, width):
+def round_controls(*, slots, window, width, dtype="bfloat16"):
     """Declare device controls between proposal, verification, and repair phases."""
     from akas.graph import Graph
 
@@ -60,7 +60,7 @@ def round_controls(*, slots, window, width):
             )
     for phase in ("verify", "repair"):
         fields[phase + ".hidden"] = graph.buffer(
-            phase + ".hidden", (slots * window, width), "bfloat16", role="input"
+            phase + ".hidden", (slots * window, width), dtype, role="input"
         )
 
     def inputs(phase, *names):

@@ -19,12 +19,25 @@ def projection_validation(kind, p, signature):
         decoded = restore_order(decoded, 1, part.get("column_order"))
         weights.append(decoded)
     x = values["x"]
-    expected = {name: value.copy() for name, value in values.items()}
-    expected["out"][:] = (
-        x.astype("float16").astype("float64")
-        @ np.concatenate(weights).astype("float16").astype("float64").T
-    )
-    return ValidationCase(values, expected, rtol=0.002, atol=0.0002)
+    expected = {
+        name: value.copy() if name == "out" else value for name, value in values.items()
+    }
+    webgpu_gemv = p["r"] == 1 and any(row["dtype"] == "uint32" for row in signature)
+    x_f = x.astype("float16").astype("float64")
+    col = 0
+    for weight in weights:
+        rows = weight.shape[0]
+        for start in range(0, rows, 4096):
+            stop = min(rows, start + 4096)
+            w_slice = weight[start:stop]
+            w_part = (
+                w_slice.astype("float64")
+                if webgpu_gemv
+                else w_slice.astype("float16").astype("float64")
+            )
+            expected["out"][:, col + start : col + stop] = x_f @ w_part.T
+        col += rows
+    return ValidationCase(values, expected, rtol=0.002, atol=0.002)
 
 
 def pipeline_validation(kind, p, signature):

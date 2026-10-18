@@ -14,7 +14,9 @@ def quantized_embedding_validation(kind, p, signature):
     values["ids"][:] = np.arange(p["r"]) % p["vocab"]
     if p["r"] >= 3:
         values["ids"][0], values["ids"][-1] = -1, p["vocab"]
-    expected = {name: value.copy() for name, value in values.items()}
+    expected = {
+        name: value.copy() if name == "out" else value for name, value in values.items()
+    }
     selected = decoded[np.clip(values["ids"], 0, p["vocab"] - 1)].copy()
     selected[(values["ids"] < 0) | (values["ids"] >= p["vocab"])] = 0
     expected["out"][:] = (

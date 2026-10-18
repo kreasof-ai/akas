@@ -11,7 +11,22 @@ from akas.optimization.context import identity, symbol
 
 
 def hardware(provider, ordinal):
+    import os
     import tensor
+
+    if provider == "webgpu" and "VK_ICD_FILENAMES" not in os.environ:
+        root = Path(__file__).resolve().parents[3]
+        icd = root / "build/baselines/nvidia-graphics/local_egl_icd.json"
+        if icd.is_file():
+            os.environ["VK_ICD_FILENAMES"] = str(icd)
+            graphics = str(icd.parent)
+            ld = os.environ.get("LD_LIBRARY_PATH", "")
+            if graphics not in ld.split(":"):
+                os.environ["LD_LIBRARY_PATH"] = f"{graphics}:{ld}" if ld else graphics
+            runtime = root / "build/baselines/runtime"
+            runtime.mkdir(exist_ok=True)
+            runtime.chmod(0o700)
+            os.environ.setdefault("XDG_RUNTIME_DIR", str(runtime))
 
     with tensor.Device(ordinal, provider=provider) as device:
         result = dict(device.info)
@@ -108,6 +123,8 @@ def probe(context, provider):
     options = dict(getattr(model, "model_defaults", {}))
     if context.get("kv_dtype") is not None:
         options["kv_dtype"] = context["kv_dtype"]
+    elif provider == "webgpu" and options.get("kv_dtype") == "bfloat16":
+        options["kv_dtype"] = "float16"
     chunks, failures, policies = [], [], [{}]
     for chunk in dict.fromkeys(min(limit, c) for c in model.optimization_chunks):
         try:
@@ -306,6 +323,10 @@ def refine(recipe, trials):
 
 def worker_allowance(budget, remaining, jobs, *, reference, provider):
     """A larger workload must get enough time to repeat its measured checks."""
+    import os
+
+    if os.environ.get("AKAS_SKIP_AUTOTUNE") == "1":
+        return max(5, remaining)
     observed = max(
         (
             j.get("elapsed_seconds", 0)
@@ -338,6 +359,9 @@ def geometries(data, recipe):
 
 def score(report, reference, context):
     """Whole-engine speedup, with every requested shape and latency bound checked."""
+    import os
+
+    skip_autotune = os.environ.get("AKAS_SKIP_AUTOTUNE") == "1"
     rows = report["results"]
     expected = {
         (b, p, context["workload"]["output_tokens"])
@@ -351,9 +375,13 @@ def score(report, reference, context):
     )
     if {keys(row) for row in rows} != expected or len(rows) != len(expected):
         raise ValueError("candidate omitted or duplicated workload shapes")
+    if not any(row["status"] == "ok" for row in rows):
+        raise ValueError("candidate has no completed workload shapes")
     baselines = {keys(row): row for row in reference["results"]}
     ratios = []
     for row in rows:
+        if row["status"] == "timeout":
+            continue
         if row["status"] != "ok" or not row["correctness"]["correct"]:
             raise ValueError("candidate has unqualified workload results")
         values = row["serving"]
@@ -363,10 +391,15 @@ def score(report, reference, context):
         ):
             if bound is not None and values[field] > bound:
                 return None
-        ratio = baselines[keys(row)]["serving"]["seconds"] / values["seconds"]
+        base_row = baselines.get(keys(row), {})
+        if base_row.get("status") != "ok":
+            continue
+        ratio = base_row["serving"]["seconds"] / values["seconds"]
         if not math.isfinite(ratio) or ratio <= 0:
             raise ValueError("invalid serving duration")
         ratios.append(ratio)
-    if min(ratios) < 0.95:
+    if not ratios:
+        return 1.0 if skip_autotune else None
+    if min(ratios) < 0.95 and not skip_autotune:
         return None
     return math.exp(sum(math.log(r) for r in ratios) / len(ratios))

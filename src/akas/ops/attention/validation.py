@@ -327,6 +327,51 @@ def canonical_validation(kind, p, signature):
             res = (accumulated / normalizer[:, :, :, None]).reshape(chunk, h, d)
             out[r0:r1][en] = res[en]
         return ValidationCase(values, expected, rtol=0.02, atol=0.002)
+    if kind == "attention":
+        num_slots = r // chunk
+        for slot in range(num_slots):
+            r0, r1 = (slot * chunk, (slot + 1) * chunk)
+            en = values["enabled"][r0:r1] != 0
+            out[r0:r1][~en] = 0
+            if not np.any(en):
+                continue
+            pos = np.minimum(cap - 1, values["positions"][r0:r1])
+            max_len = int(pos[en].max()) + 1
+            keys = read_slot("kc", "ks", slot, max_len)
+            vals = read_slot("vc", "vs", slot, max_len)
+            q_slot = queries[r0:r1].reshape(chunk, kh, group, d)
+            maximum = np.full((chunk, kh, group), -np.inf, dtype="float64")
+            normalizer = np.zeros((chunk, kh, group), dtype="float64")
+            accumulated = np.zeros((chunk, kh, group, d), dtype="float64")
+            for begin in range(0, max_len, 64):
+                end = min(max_len, begin + 64)
+                k_idx = np.arange(begin, end)
+                valid = k_idx[None, :] <= pos[:, None]
+                if not np.any(valid):
+                    continue
+                scores = np.einsum(
+                    "ckgd,ktd->ckgt", q_slot, keys[:, begin:end]
+                ) / np.sqrt(d)
+                scores = np.where(valid[:, None, None, :], scores, -np.inf)
+                block_max = scores.max(axis=-1)
+                has_valid = valid.any(axis=-1)[:, None, None]
+                next_maximum = np.where(
+                    has_valid, np.maximum(maximum, block_max), maximum
+                )
+                correction = np.exp(maximum - next_maximum)
+                probabilities = np.where(
+                    valid[:, None, None, :],
+                    np.exp(scores - next_maximum[:, :, :, None]),
+                    0.0,
+                )
+                normalizer = normalizer * correction + probabilities.sum(axis=-1)
+                accumulated = accumulated * correction[:, :, :, None] + np.einsum(
+                    "ckgt,ktd->ckgd", probabilities, vals[:, begin:end]
+                )
+                maximum = next_maximum
+            res = (accumulated / normalizer[:, :, :, None]).reshape(chunk, h, d)
+            out[r0:r1][en] = res[en]
+        return ValidationCase(values, expected, rtol=0.02, atol=0.002)
     for row in range(r):
         length = (
             min(cap, int(values["positions"][row]) + 1) if values["enabled"][row] else 0
@@ -366,8 +411,13 @@ def mapped_validation(kind, p, signature, *, mapping=None):
     import numpy as np
     from tensor.runtime.dtypes import decode_bfloat16, encode_bfloat16
     from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.quantization._shared.e4m3 import decode_storage, encode_storage
+
+    f16 = any(row["dtype"] == "float16" for row in signature)
 
     def rounded(x):
+        if f16:
+            return np.asarray(x, dtype="float16").astype("float32")
         return decode_bfloat16(encode_bfloat16(x))
 
     values = sample_arguments(signature)
@@ -388,7 +438,26 @@ def mapped_validation(kind, p, signature, *, mapping=None):
         values["lengths"][:] = chunk
         if slots > 1:
             values["lengths"][-1] = max(1, chunk - 1)
-    written_names = ("q", "kc", "vc") if kind == "attention_qkv" else ("out",)
+    if "ks" in values:
+        rng = np.random.default_rng(29)
+        for name in ("kc", "vc"):
+            byte_shape = (*values[name].shape[:-1], d)
+            period = 1048573
+            tile = rng.integers(0, 72, period, dtype="uint8")
+            tile |= rng.integers(0, 2, period, dtype="uint8") << 7
+            bits = np.resize(tile, byte_shape)
+            values[name][:] = (
+                bits.view("uint32").reshape(values[name].shape)
+                if values[name].dtype == np.uint32
+                else bits
+            )
+        for name in ("ks", "vs"):
+            values[name][:] = 0.125
+    written_names = (
+        (("q", "kc", "vc", "ks", "vs") if "ks" in values else ("q", "kc", "vc"))
+        if kind == "attention_qkv"
+        else ("out",)
+    )
     expected = {
         name: value.copy() if name in written_names else value
         for name, value in values.items()
@@ -435,8 +504,29 @@ def mapped_validation(kind, p, signature, *, mapping=None):
             ].reshape(-1, kh, d)
             req = values["mapping"][batch_rows // chunk]
             for idx, (r_slot, p_pos) in enumerate(zip(req, pos)):
-                expected["kc"][r_slot, :, p_pos] = k_out[idx]
-                expected["vc"][r_slot, :, p_pos] = v_out[idx]
+                if "ks" in expected:
+                    for source, cache, metadata in (
+                        (k_out[idx], "kc", "ks"),
+                        (v_out[idx], "vc", "vs"),
+                    ):
+                        encoded = np.empty((kh, d), dtype="uint8")
+                        for block in range(d // 128):
+                            part = source[:, block * 128 : (block + 1) * 128]
+                            scale = np.maximum(
+                                np.max(np.abs(part), axis=-1), np.float32(1e-12)
+                            ) / np.float32(448)
+                            expected[metadata][r_slot, :, p_pos, block] = scale
+                            encoded[:, block * 128 : (block + 1) * 128] = (
+                                encode_storage(part / scale[:, None])
+                            )
+                        expected[cache][r_slot, :, p_pos] = (
+                            encoded.view("uint32").reshape(kh, d // 4)
+                            if expected[cache].dtype == np.uint32
+                            else encoded
+                        )
+                else:
+                    expected["kc"][r_slot, :, p_pos] = k_out[idx]
+                    expected["vc"][r_slot, :, p_pos] = v_out[idx]
     else:
         group = heads // kh
         for batch in range(slots):
@@ -449,15 +539,23 @@ def mapped_validation(kind, p, signature, *, mapping=None):
             max_len = int(pos.max()) + 1
             keys_all = values["kc"][request, :, :max_len]
             vals_all = values["vc"][request, :, :max_len]
-            if keys_all.dtype == np.uint8:
-                from akas.quantization._shared.e4m3 import decode_storage
-
+            if keys_all.dtype in (np.uint8, np.uint32):
+                k_bits = (
+                    keys_all.view("uint8").reshape(kh, max_len, d)
+                    if keys_all.dtype == np.uint32
+                    else keys_all
+                )
+                v_bits = (
+                    vals_all.view("uint8").reshape(kh, max_len, d)
+                    if vals_all.dtype == np.uint32
+                    else vals_all
+                )
                 keys_all = rounded(
-                    decode_storage(keys_all)
+                    decode_storage(k_bits)
                     * np.repeat(values["ks"][request, :, :max_len], 128, axis=-1)
                 )
                 vals_all = rounded(
-                    decode_storage(vals_all)
+                    decode_storage(v_bits)
                     * np.repeat(values["vs"][request, :, :max_len], 128, axis=-1)
                 )
             keys_all, vals_all = (
@@ -510,6 +608,21 @@ def mapped_validation(kind, p, signature, *, mapping=None):
             )
             expected["out"][r0:r1] = gated
     comparators = {}
+    if kind == "attention_qkv" and "ks" in expected:
+
+        def check_kc(actual, reference):
+            act_u8 = actual.view("uint8").reshape(expected["kc"].shape[:-1] + (d,))
+            ref_u8 = reference.view("uint8").reshape(expected["kc"].shape[:-1] + (d,))
+            diff = np.abs(act_u8.astype("int16") - ref_u8.astype("int16"))
+            mask = np.zeros(act_u8.shape[:-1], dtype=bool)
+            live_rows = np.flatnonzero(values["active"][:rows])
+            if live_rows.size:
+                mask[values["mapping"][live_rows // chunk], :, values["positions"][live_rows]] = True
+            np.testing.assert_array_equal(act_u8[~mask], ref_u8[~mask])
+            if np.any(mask):
+                np.testing.assert_array_less(diff[mask], 4)
+
+        comparators["kc"] = check_kc
     if kind == "attention":
         # This callable returns a fresh tensor. Padding rows are unspecified;
         # they are not borrowed state whose previous contents must survive.

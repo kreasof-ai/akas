@@ -110,4 +110,18 @@ IMPLEMENTATIONS = (
         factory="swiglu_experts",
         name="activation.kernel:encoded-experts",
     ),
+    Implementation(
+        "swiglu",
+        "akas.ops.activation.kernel",
+        "bf16",
+        provider="webgpu",
+        defaults=(
+            ("packed", True),
+            ("output_dtype", "float16"),
+            ("round_dtype", "float16"),
+            ("round_inputs", True),
+        ),
+        factory="swiglu",
+        name="activation.kernel",
+    ),
 )

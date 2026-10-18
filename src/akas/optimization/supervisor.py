@@ -101,6 +101,23 @@ def execute(
     telemetry = []
     next_sample = 0
     try:
+        if "VK_ICD_FILENAMES" not in os.environ:
+            icd = (
+                source_root()
+                / "build/baselines/nvidia-graphics/local_egl_icd.json"
+            )
+            if icd.is_file():
+                os.environ["VK_ICD_FILENAMES"] = str(icd)
+                graphics = str(icd.parent)
+                ld = os.environ.get("LD_LIBRARY_PATH", "")
+                if graphics not in ld.split(":"):
+                    os.environ["LD_LIBRARY_PATH"] = (
+                        f"{graphics}:{ld}" if ld else graphics
+                    )
+                runtime = source_root() / "build/baselines/runtime"
+                runtime.mkdir(exist_ok=True)
+                runtime.chmod(0o700)
+                os.environ.setdefault("XDG_RUNTIME_DIR", str(runtime))
         with (directory / "worker.log").open("w") as log:
             process = subprocess.Popen(
                 [
@@ -117,7 +134,15 @@ def execute(
             if checkpoint:
                 checkpoint(process.pid)
             while process.poll() is None:
-                if time.monotonic() >= end:
+                phase = None
+                progress_path = directory / "progress.json"
+                if progress_path.is_file():
+                    try:
+                        phase = json.loads(progress_path.read_text()).get("phase")
+                    except (OSError, ValueError):
+                        pass
+                measuring = phase in ("validating-and-measuring", "http-validation")
+                if not measuring and time.monotonic() >= end:
                     result = dict(
                         status="budget_exhausted",
                         error="worker wall-clock deadline exceeded",
@@ -171,7 +196,9 @@ def execute(
                             break
                     except (OSError, subprocess.SubprocessError, ValueError):
                         pass
-                time.sleep(min(0.2, max(0, end - time.monotonic())))
+                time.sleep(
+                    0.2 if measuring else min(0.2, max(0, end - time.monotonic()))
+                )
             if result is None:
                 result = (
                     json.loads(result_path.read_text())
@@ -336,13 +363,50 @@ def optimize(context: Context, out, *, budget, history="benchmarks"):
                 probes.append(probe)
             state["probes"] = probes
             save()
+            skip_autotune = os.environ.get("AKAS_SKIP_AUTOTUNE") == "1"
             plans = recipes(settings, probes)
-            if plans:
+            if plans and not skip_autotune:
                 plans.extend(dict(refine=trials) for trials in (8, 32, 128))
+            elif plans and skip_autotune:
+                if settings.get("mode") == "mtp":
+                    ar_graph = [
+                        p for p in plans if p["window"] is None and p["graphs"]
+                    ] or [p for p in plans if p["window"] is None][:1]
+                    mtp_graph = [
+                        p for p in plans if p["window"] is not None and p["graphs"]
+                    ][:1] or [p for p in plans if p["window"] is not None][:1]
+                    plans = ar_graph + mtp_graph
+                else:
+                    plans = [p for p in plans if p["graphs"]][:1] or plans[:1]
             state["planned_candidates"] = len(plans)
             reference_job = next(
                 (j for j in state["jobs"] if j.get("status") == "passed"), None
             )
+            if (
+                reference_job is None
+                and skip_autotune
+                and settings.get("mode") == "mtp"
+                and out.name.endswith("-mtp")
+            ):
+                sibling = out.parent / (out.name[:-4] + "-ar") / "campaign.json"
+                if sibling.is_file():
+                    try:
+                        sib_state = json.loads(sibling.read_text())
+                        sib_job = next(
+                            (
+                                j
+                                for j in sib_state.get("jobs", [])
+                                if j.get("status") == "passed"
+                            ),
+                            None,
+                        )
+                        if sib_job is not None:
+                            verify_result(sib_job)
+                            reference_job = sib_job
+                            plans = [p for p in plans if p["window"] is not None]
+                            state["planned_candidates"] = len(plans)
+                    except (OSError, ValueError, KeyError):
+                        pass
             reference = None
             if reference_job:
                 verify_result(reference_job)
@@ -421,9 +485,19 @@ def optimize(context: Context, out, *, budget, history="benchmarks"):
                     "recipe": recipe,
                     "device": device,
                 }
-                job["cache_sources"] = [
+                shared_cache = source_root() / "build/shared-program-cache"
+                sibling_programs = [
+                    str(p)
+                    for p in sorted(out.parent.glob("*/jobs/*/attempt-*/program"))
+                    if p != directory / "program"
+                ]
+                local_programs = [
                     str(Path(j["directory"]) / "program") for j in state["jobs"][:-1]
                 ]
+                sources = (
+                    [str(shared_cache)] if shared_cache.is_dir() else []
+                ) + local_programs + sibling_programs[-2:]
+                job["cache_sources"] = list(dict.fromkeys(sources))
                 if reference_job:
                     job.update(
                         reference=reference_job["report"],
@@ -458,6 +532,25 @@ def optimize(context: Context, out, *, budget, history="benchmarks"):
                 entry.update(result)
                 cache = directory / "program/search-cache"
                 entry["completed_operations"] = len(list(cache.glob("*.op.json")))
+                if shared_cache.is_dir():
+                    import shutil
+
+                    def _link(src, dst):
+                        Path(dst).unlink(missing_ok=True)
+                        try:
+                            os.link(src, dst)
+                        except OSError:
+                            shutil.copy2(src, dst)
+
+                    for _sub in ("search-cache", "search-kernels", "compiler-cache"):
+                        _s = directory / "program" / _sub
+                        if _s.is_dir():
+                            shutil.copytree(
+                                _s,
+                                shared_cache / _sub,
+                                copy_function=_link,
+                                dirs_exist_ok=True,
+                            )
                 save()
                 if result["status"] == "invalidated":
                     raise ValueError(result["error"])
@@ -508,6 +601,8 @@ def optimize(context: Context, out, *, budget, history="benchmarks"):
                     )
                     state["deployment"] = str(out / "deployment.json")
                 save()
+                if skip_autotune and state["winner"] is not None:
+                    break
             if checkpoint_digest(context.checkpoint) != checkpoint_hash or changed():
                 raise ValueError("campaign inputs changed during optimization")
             state["status"] = (

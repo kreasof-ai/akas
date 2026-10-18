@@ -6,7 +6,11 @@ def validation(kind, parameters, signature):
     from tensor.runtime.dtypes import decode_bfloat16, encode_bfloat16
     from akas.kernels.contracts import ValidationCase, sample_arguments
 
+    f16 = any(row["dtype"] == "float16" for row in signature)
+
     def rounded(values):
+        if f16:
+            return np.asarray(values, dtype="float16").astype("float32")
         return decode_bfloat16(encode_bfloat16(values))
 
     values = sample_arguments(signature)

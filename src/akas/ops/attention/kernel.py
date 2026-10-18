@@ -216,6 +216,98 @@ def online_attention(p, read):
 
     r, h, kh, d, cap = (p[k] for k in ("r", "h", "kh", "d", "capacity"))
     chunk = p.get("chunk", 1)
+    if p.get("optimized") and p.get("provider") == "webgpu" and d == 64:
+
+        @T.macro
+        def shuffle(value, offset):
+            return T.call_extern(
+                "float32", "subgroupShuffleXor", value, T.uint32(offset)
+            )
+
+        @T.macro
+        def broadcast(value):
+            tx = T.get_thread_binding()
+            size = T.call_extern("uint32", "tensor_subgroup_size")
+            return T.call_extern(
+                "float32",
+                "subgroupShuffle",
+                value,
+                T.cast(tx % size // 32 * 32, "uint32"),
+            )
+
+        @T.macro
+        def attend_fast(q, kc, vc, ks, vs, out, positions, enabled):
+            with T.Kernel(h, r, threads=128) as (head, row):
+                tx = T.get_thread_binding()
+                lane, warp = (tx % 32, tx // 32)
+                length = T.if_then_else(
+                    enabled[row] != 0, T.min(positions[row] + 1, cap), 0
+                )
+                maxima = T.alloc_shared((4,), "float32")
+                sums = T.alloc_shared((4,), "float32")
+                values = T.alloc_shared((4, 64), "float32")
+                maximum = T.alloc_var("float32")
+                normalizer = T.alloc_var("float32")
+                a0 = T.alloc_var("float32")
+                a1 = T.alloc_var("float32")
+                maximum, normalizer, a0, a1 = (-T.infinity("float32"), 0, 0, 0)
+                q0, q1 = (
+                    q[row, head * d + lane],
+                    q[row, head * d + lane + 32],
+                )
+                for offset in T.serial(T.ceildiv(T.max(length - warp, 0), 4)):
+                    token = warp + offset * 4
+                    score = T.alloc_var("float32")
+                    score = q0 * read(
+                        kc, ks, row // chunk, head // (h // kh), token, lane
+                    ) + q1 * read(
+                        kc, ks, row // chunk, head // (h // kh), token, lane + 32
+                    )
+                    for step in T.unroll(5):
+                        score = score + shuffle(score, 16 >> step)
+                    score = broadcast(score) * 0.125
+                    next_max = T.max(maximum, score)
+                    correction, probability = (
+                        T.exp(maximum - next_max),
+                        T.exp(score - next_max),
+                    )
+                    a0 = a0 * correction + probability * read(
+                        vc, vs, row // chunk, head // (h // kh), token, lane
+                    )
+                    a1 = a1 * correction + probability * read(
+                        vc, vs, row // chunk, head // (h // kh), token, lane + 32
+                    )
+                    normalizer = normalizer * correction + probability
+                    maximum = next_max
+                values[warp, lane], values[warp, lane + 32] = (a0, a1)
+                if lane == 0:
+                    maxima[warp], sums[warp] = (maximum, normalizer)
+                T.sync_threads()
+                if warp == 0:
+                    merged_max = T.max(
+                        T.max(maxima[0], maxima[1]), T.max(maxima[2], maxima[3])
+                    )
+                    total = T.alloc_var("float32")
+                    result0 = T.alloc_var("float32")
+                    result1 = T.alloc_var("float32")
+                    total, result0, result1 = (0, 0, 0)
+                    for other in T.unroll(4):
+                        factor = T.if_then_else(
+                            length > 0, T.exp(maxima[other] - merged_max), 0
+                        )
+                        total = total + sums[other] * factor
+                        result0 = result0 + values[other, lane] * factor
+                        result1 = result1 + values[other, lane + 32] * factor
+                    base = row * h * d + head * d
+                    out[base + lane] = T.if_then_else(
+                        enabled[row] != 0, result0 / total, 0
+                    )
+                    out[base + lane + 32] = T.if_then_else(
+                        enabled[row] != 0, result1 / total, 0
+                    )
+
+        return attend_fast
+
     maximum = tree_reduce(64, "max")
     total = tree_reduce(64)
 

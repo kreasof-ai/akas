@@ -13,14 +13,15 @@ class Checkpoint:
     storage_format = "ggml"
 
     def __init__(self, path, *, moe, branch="text"):
-        if branch != "text":
-            raise GGUFError("Qwen GGUF currently supports the text trunk, not MTP")
+        if branch not in ("text", "mtp"):
+            raise GGUFError("Qwen GGUF branch must be text or mtp")
         self.gguf = GGUF(path)
         self.config = (Qwen35MoEConfig if moe else Qwen35DenseConfig).from_gguf(
             self.gguf
         )
-        self.branch = "text"
+        self.branch = branch
         self.groups, self.auxiliary, self.orders = {}, {}, {}
+        self.mtp_groups, self.mtp_used = {}, set()
         self._declare(moe)
         self.tensors = {name: self.gguf.tensors[name] for name in self.used}
 
@@ -45,6 +46,7 @@ class Checkpoint:
             offset_norm=False,
             order=None,
             column_order=None,
+            mtp=False,
         ):
             if source not in self.gguf.tensors:
                 raise GGUFError(f"missing Qwen GGUF tensor: {source}")
@@ -56,9 +58,11 @@ class Checkpoint:
                 allowed.add(tuple(dim for dim in shape if dim != 1))
             if info.shape not in allowed:
                 raise GGUFError(f"{source}: expected {shape}, found {info.shape}")
-            self.used.add(source)
+            target_used = self.mtp_used if mtp else self.used
+            target_groups = self.mtp_groups if mtp else self.groups
+            target_used.add(source)
             self.physical_shapes[source] = tuple(shape)
-            self.groups[canonical] = (source,)
+            target_groups[canonical] = (source,)
             self.group_shapes[canonical] = tuple(shape)
             self.orders[source] = (order, column_order)
             if auxiliary:
@@ -78,10 +82,11 @@ class Checkpoint:
                     canonical.endswith(".A_log"),
                 )
 
-        def join(canonical, names):
-            sources = tuple(self.groups[name][0] for name in names)
+        def join(canonical, names, *, mtp=False):
+            target_groups = self.mtp_groups if mtp else self.groups
+            sources = tuple(target_groups[name][0] for name in names)
             depth = self.group_shapes[names[0]][-1]
-            self.groups[canonical] = sources
+            target_groups[canonical] = sources
             self.group_shapes[canonical] = (
                 sum(self.group_shapes[name][0] for name in names),
                 depth,
@@ -270,6 +275,78 @@ class Checkpoint:
         extra = self.gguf.metadata.get(
             self.gguf.metadata["general.architecture"] + ".nextn_predict_layers", 0
         )
+        if extra and not moe:
+            gg = f"blk.{len(c.layers)}."
+            hf = "mtp.layers.0."
+            if gg + "nextn.eh_proj.weight" in self.gguf.tensors:
+                self.mtp_used.add("token_embd.weight")
+                self.mtp_groups[embedding] = self.groups[embedding]
+                if self.head_name != embedding:
+                    self.mtp_used.add("output.weight")
+                    self.mtp_groups[self.head_name] = self.groups[self.head_name]
+                for target, source in (
+                    ("mtp.norm.weight", gg + "nextn.shared_head_norm.weight"),
+                    ("mtp.pre_fc_norm_embedding.weight", gg + "nextn.enorm.weight"),
+                    ("mtp.pre_fc_norm_hidden.weight", gg + "nextn.hnorm.weight"),
+                    (hf + "input_layernorm.weight", gg + "attn_norm.weight"),
+                    (
+                        hf + "post_attention_layernorm.weight",
+                        gg + "post_attention_norm.weight",
+                    ),
+                ):
+                    tensor(
+                        target,
+                        source,
+                        (c.width,),
+                        auxiliary=True,
+                        offset_norm=True,
+                        mtp=True,
+                    )
+                tensor(
+                    "mtp.fc.weight",
+                    gg + "nextn.eh_proj.weight",
+                    (c.width, 2 * c.width),
+                    mtp=True,
+                )
+                p = hf + "self_attn."
+                for target, source, shape in (
+                    ("q_proj.weight", "attn_q.weight", (2 * c.heads * c.head_dim, c.width)),
+                    ("k_proj.weight", "attn_k.weight", (c.kv_heads * c.head_dim, c.width)),
+                    ("v_proj.weight", "attn_v.weight", (c.kv_heads * c.head_dim, c.width)),
+                    ("o_proj.weight", "attn_output.weight", (c.width, c.heads * c.head_dim)),
+                ):
+                    tensor(p + target, gg + source, shape, mtp=True)
+                join(
+                    p + "input.weight",
+                    tuple(p + part + "_proj.weight" for part in ("q", "k", "v")),
+                    mtp=True,
+                )
+                for part in ("q", "k"):
+                    tensor(
+                        p + part + "_norm.weight",
+                        gg + "attn_" + part + "_norm.weight",
+                        (c.head_dim,),
+                        auxiliary=True,
+                        offset_norm=True,
+                        mtp=True,
+                    )
+                p = hf + "mlp."
+                for part, shape in (
+                    ("gate", (c.intermediate, c.width)),
+                    ("up", (c.intermediate, c.width)),
+                    ("down", (c.width, c.intermediate)),
+                ):
+                    tensor(
+                        p + part + "_proj.weight",
+                        gg + "ffn_" + part + ".weight",
+                        shape,
+                        mtp=True,
+                    )
+                join(
+                    p + "input.weight",
+                    tuple(p + part + "_proj.weight" for part in ("gate", "up")),
+                    mtp=True,
+                )
         allowed = {
             name
             for name in unexpected
@@ -284,16 +361,22 @@ class Checkpoint:
             )
 
     def graph_weights(self, graph, *, provider, branch="text"):
-        if branch != "text":
+        if branch not in ("text", "mtp"):
+            raise GGUFError("Qwen GGUF branch must be text or mtp")
+        if branch == "mtp" and not self.mtp_groups:
             raise GGUFError("Qwen GGUF MTP is not implemented")
         from akas.quantization import get
         from akas.quantization.weights import Weight
 
+        used = self.mtp_used if branch == "mtp" else self.used
+        groups = self.mtp_groups if branch == "mtp" else self.groups
         buffers = {}
-        for name in sorted(self.used):
+        for name in sorted(used):
             info = self.gguf.tensors[name]
             if name in self.auxiliary:
                 shape, dtype, *_ = self.auxiliary[name]
+                if provider == "webgpu" and dtype == "bfloat16":
+                    dtype = "float16"
             else:
                 storage = get("weights", "ggml").storage(
                     self.physical_shapes[name], provider=provider, encoding=info.type
@@ -301,7 +384,7 @@ class Checkpoint:
                 shape, dtype = storage.values.shape, storage.values.dtype
             buffers[name] = graph.buffer(name, shape, dtype, role="weight")
         result = {}
-        for name, sources in self.groups.items():
+        for name, sources in groups.items():
             if len(sources) == 1 and sources[0] in self.auxiliary:
                 result[name] = buffers[sources[0]]
             else:
@@ -350,24 +433,40 @@ class Checkpoint:
         return arrays[0] if len(arrays) == 1 else np.concatenate(arrays, axis=0)
 
     def program_upload_options(self, weights, *, model_options):
-        if set(weights) != self.used:
-            raise GGUFError("compiled Qwen GGUF weights differ from the text inventory")
-        return {}
+        if set(weights) == self.used:
+            return {}
+        if self.mtp_used and set(weights) == (self.used | self.mtp_used):
+            return {"branch": "all"}
+        raise GGUFError("compiled Qwen GGUF weights differ from the text inventory")
 
-    def upload(self, device):
+    def upload(self, device, *, branch="text"):
         import numpy as np
         from akas.quantization._shared.packing import pack_words
 
+        if branch not in ("text", "mtp", "all"):
+            raise GGUFError("invalid Qwen GGUF upload branch")
+        wanted = (
+            self.used
+            if branch == "text"
+            else (self.used | self.mtp_used)
+            if branch == "all"
+            else self.mtp_used
+        )
         result = {}
         try:
-            for name in sorted(self.used):
+            for name in sorted(wanted):
                 info = self.gguf.tensors[name]
                 if name in self.auxiliary:
                     values = self.read(name)
                     dtype = self.auxiliary[name][1]
-                    result[name] = device.from_numpy(
-                        values, **({"dtype": dtype} if dtype == "bfloat16" else {})
-                    )
+                    if device.info["provider"] == "webgpu" and dtype == "bfloat16":
+                        result[name] = device.from_numpy(
+                            np.ascontiguousarray(values.astype("float16"))
+                        )
+                    else:
+                        result[name] = device.from_numpy(
+                            values, **({"dtype": dtype} if dtype == "bfloat16" else {})
+                        )
                 else:
                     raw = self.gguf.packed(name)
                     if info.type in (0, 1):

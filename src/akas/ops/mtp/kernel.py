@@ -10,10 +10,11 @@ def mtp_cast(spec: KernelSpec, schedule: Mapping[str, object]):
     import tilelang.language as T
 
     r, c = (p["r"], p["c"])
+    dtype = p.get("dtype", "bfloat16")
 
     @kernel
-    def compute(x: Tensor((r, c), "float32")) -> Tensor((r, c), "bfloat16"):
-        out = output((r, c), "bfloat16")
+    def compute(x: Tensor((r, c), "float32")) -> Tensor((r, c), dtype):
+        out = output((r, c), dtype)
         with T.Kernel(r, T.ceildiv(c, 256), threads=256) as (b, tile):
             for j in T.Parallel(256):
                 if tile * 256 + j < c:
@@ -29,15 +30,16 @@ def mtp_join(spec: KernelSpec, schedule: Mapping[str, object]):
 
     r, c = (p["r"], p["c"])
     eps = p["eps"]
+    dtype = p.get("dtype", "bfloat16")
 
     @kernel
     def compute(
-        embedding: Tensor((r, c), "bfloat16"),
-        hidden: Tensor((r, c), "bfloat16"),
-        embedding_weight: Tensor((c,), "bfloat16"),
-        hidden_weight: Tensor((c,), "bfloat16"),
-    ) -> Tensor((r, 2 * c), "bfloat16"):
-        out = output((r, 2 * c), "bfloat16")
+        embedding: Tensor((r, c), dtype),
+        hidden: Tensor((r, c), dtype),
+        embedding_weight: Tensor((c,), dtype),
+        hidden_weight: Tensor((c,), dtype),
+    ) -> Tensor((r, 2 * c), dtype):
+        out = output((r, 2 * c), dtype)
         with T.Kernel(r, threads=256) as b:
             values = T.alloc_fragment((2, c), "float32")
             squares = T.alloc_fragment((2, c), "float32")

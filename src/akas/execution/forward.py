@@ -32,7 +32,7 @@ class Forward:
                 requirements=self.definition.requirements(),
             )
             self.plan = bind_graph(self.definition, device, self.kernels, self.buffers)
-            if graphs:
+            if graphs or getattr(device, "info", {}).get("provider") == "webgpu":
                 self.graph = self.plan.capture(
                     resources=tuple(self.buffers.values())
                     + tuple(self.kernels.values())

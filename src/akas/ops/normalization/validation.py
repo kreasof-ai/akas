@@ -14,12 +14,15 @@ def validation(kind, p, signature):
     r, c = (p["r"], p["c"])
     from tensor.runtime.dtypes import decode_bfloat16, encode_bfloat16
 
+    out_dtype = next((row["dtype"] for row in signature if row["name"] == "out"))
+    bf16 = out_dtype == "bfloat16"
+    f16 = out_dtype == "float16"
+
     def rounded(x):
+        if f16:
+            return np.asarray(x, dtype="float16").astype("float32")
         return decode_bfloat16(encode_bfloat16(x))
 
-    bf16 = (
-        next((row["dtype"] for row in signature if row["name"] == "out")) == "bfloat16"
-    )
     source = values.get("x", values.get("residual")).reshape(r, c)
     other = (
         (values["mixed"] if "mixed" in values else values["residual"]).reshape(r, c)
@@ -36,12 +39,12 @@ def validation(kind, p, signature):
             if p.get("round_inputs"):
                 x = rounded(x)
             x = x + other[begin:end]
-            if bf16:
+            if bf16 or f16:
                 x = rounded(x)
             res_out[begin:end] = x
         out = x / np.sqrt(np.mean(x * x, axis=1, keepdims=True) + p["eps"])
         out *= w_row
-        if bf16:
+        if bf16 or f16:
             out = rounded(out)
         out_2d[begin:end] = out
     return ValidationCase(values, expected)

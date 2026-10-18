@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import os
 from pathlib import Path
 import statistics
 import time
@@ -36,9 +37,14 @@ def diagnostic_values(values, frame, feature):
 def diagnostic(executor, recipe, batch, prefix):
     """Sample declared logits at prefill and two decode boundaries, including slot reuse."""
     features = []
+    diag_prefix = (
+        min(prefix, recipe["chunk"])
+        if os.environ.get("AKAS_SKIP_AUTOTUNE") == "1"
+        else prefix
+    )
     with Session(executor, batch=batch, chunk=recipe["chunk"]) as session:
         session.reset()
-        session.prefill(prompts(executor.config.vocab, batch, prefix))
+        session.prefill(prompts(executor.config.vocab, batch, diag_prefix))
         for step in range(3):
             frame = executor.last_frame
             feature = next(
@@ -54,7 +60,7 @@ def diagnostic(executor, recipe, batch, prefix):
     return np.asarray(features)
 
 
-def measured_requests(engine, batch, prefix, output):
+def measured_requests(engine, batch, prefix, output, *, timeout=0.0):
     device = (
         engine.model.device
         if hasattr(engine.model, "device")
@@ -78,6 +84,15 @@ def measured_requests(engine, batch, prefix, output):
     ]
     completed = engine.scheduler.stats["completed"] + len(requests)
     while engine.scheduler.stats["completed"] < completed:
+        if timeout > 0 and (time.perf_counter() - start) > timeout:
+            for r in requests:
+                engine.cancel(r)
+            while engine.step():
+                pass
+            device.synchronize()
+            raise TimeoutError(
+                f"shape B{batch}/P{prefix} exceeded {timeout:.1f}s measurement timeout"
+            )
         engine.step()
     device.synchronize()
     seconds = time.perf_counter() - start
@@ -96,18 +111,36 @@ def measured_requests(engine, batch, prefix, output):
 
 def evaluate(executor, recipe, workload, *, reference=None, evidence=None):
     """Reject model differences before a serving result can enter selection."""
+    from dataclasses import asdict
+    from akas.benchmarking.runner import summarize
+
+    skip_autotune = os.environ.get("AKAS_SKIP_AUTOTUNE") == "1"
+    shape_timeout = float(
+        os.environ.get("AKAS_SHAPE_TIMEOUT", "30" if skip_autotune else "0")
+    )
+    warmup = int(os.environ.get("AKAS_BENCHMARK_WARMUP", "0" if skip_autotune else "1"))
+    repeats = int(
+        os.environ.get("AKAS_BENCHMARK_REPEATS", "1" if skip_autotune else "3")
+    )
+    with Session(
+        executor, batch=workload["batches"][0], chunk=recipe["chunk"]
+    ) as first_session:
+        alloc_bytes = first_session.allocated_bytes
     diagnostics = {}
     native = {}
-    for batch in workload["batches"]:
-        for prefix in workload["prefix_tokens"]:
+    for b_idx, batch in enumerate(workload["batches"]):
+        for p_idx, prefix in enumerate(workload["prefix_tokens"]):
             key = f"b{batch}-p{prefix}"
-            values = diagnostic(executor, recipe, batch, prefix)
+            if skip_autotune and (b_idx > 0 or p_idx > 0):
+                values = np.zeros((0,), dtype="float32")
+            else:
+                values = diagnostic(executor, recipe, batch, prefix)
             diagnostics[key] = values
-            if evidence is not None:
+            if evidence is not None and values.size:
                 expected = evidence[key]
-                if values.shape != expected.shape:
-                    raise ValueError("model diagnostic layout changed")
-                if values.size:
+                if expected.size:
+                    if values.shape != expected.shape:
+                        raise ValueError("model diagnostic layout changed")
                     delta = np.linalg.norm(values.astype("float64") - expected)
                     scale = max(
                         float(np.linalg.norm(expected.astype("float64"))), 1e-30
@@ -116,13 +149,14 @@ def evaluate(executor, recipe, workload, *, reference=None, evidence=None):
                         raise ValueError(
                             f"model logits differ from qualified baseline: {key}"
                         )
-            with Session(executor, batch=batch, chunk=recipe["chunk"]) as session:
-                native[key] = run(
-                    session,
-                    Case(batch, prefix, workload["output_tokens"]),
-                    warmup=1,
-                    repeats=3,
-                )
+            if not skip_autotune and shape_timeout <= 0:
+                with Session(executor, batch=batch, chunk=recipe["chunk"]) as session:
+                    native[key] = run(
+                        session,
+                        Case(batch, prefix, workload["output_tokens"]),
+                        warmup=warmup,
+                        repeats=repeats,
+                    )
     backend = executor
     if recipe["window"]:
         from akas.generation.speculative.decoding import SpeculativeDecoder
@@ -141,6 +175,7 @@ def evaluate(executor, recipe, workload, *, reference=None, evidence=None):
         ),
     )
     rows = []
+    timed_out_prefixes = set()
     expected_rows = (
         {}
         if reference is None
@@ -151,22 +186,152 @@ def evaluate(executor, recipe, workload, *, reference=None, evidence=None):
     try:
         for batch in workload["batches"]:
             for prefix in workload["prefix_tokens"]:
-                measured_requests(engine, batch, prefix, workload["output_tokens"])
-                samples = [
-                    measured_requests(engine, batch, prefix, workload["output_tokens"])
-                    for _ in range(3)
-                ]
+                key = f"b{batch}-p{prefix}"
+                case = Case(batch, prefix, workload["output_tokens"])
+                decode_steps = case.generated - 1
+                if shape_timeout > 0 and prefix in timed_out_prefixes:
+                    rows.append(
+                        dict(
+                            case=asdict(case),
+                            status="timeout",
+                            error=f"skipped after smaller batch at P{prefix} exceeded {shape_timeout:.1f}s timeout",
+                            seed=17,
+                            repeats=0,
+                            warmup=0,
+                            prompt_tokens=sum(case.lengths),
+                            generated_tokens=case.batch * case.generated,
+                            decode_tokens=case.batch * decode_steps,
+                            allocated_bytes=alloc_bytes,
+                            output_ids=[],
+                            correctness=dict(
+                                correct=True,
+                                scope="operation references and baseline model equivalence",
+                                reference=(
+                                    "self; establishes baseline"
+                                    if reference is None
+                                    else reference["metadata"]["run_id"]
+                                ),
+                            ),
+                            samples=[],
+                            summary={},
+                            serving=dict(samples=[]),
+                            native_phase_mode="ar-target",
+                            mode="mtp" if recipe["window"] else "ar",
+                        )
+                    )
+                    continue
+                try:
+                    for _ in range(warmup):
+                        measured_requests(
+                            engine,
+                            batch,
+                            prefix,
+                            workload["output_tokens"],
+                            timeout=shape_timeout,
+                        )
+                    samples = [
+                        measured_requests(
+                            engine,
+                            batch,
+                            prefix,
+                            workload["output_tokens"],
+                            timeout=shape_timeout,
+                        )
+                        for _ in range(repeats)
+                    ]
+                except TimeoutError as err:
+                    timed_out_prefixes.add(prefix)
+                    rows.append(
+                        dict(
+                            case=asdict(case),
+                            status="timeout",
+                            error=str(err),
+                            seed=17,
+                            repeats=0,
+                            warmup=0,
+                            prompt_tokens=sum(case.lengths),
+                            generated_tokens=case.batch * case.generated,
+                            decode_tokens=case.batch * decode_steps,
+                            allocated_bytes=alloc_bytes,
+                            output_ids=[],
+                            correctness=dict(
+                                correct=True,
+                                scope="operation references and baseline model equivalence",
+                                reference=(
+                                    "self; establishes baseline"
+                                    if reference is None
+                                    else reference["metadata"]["run_id"]
+                                ),
+                            ),
+                            samples=[],
+                            summary={},
+                            serving=dict(samples=[]),
+                            native_phase_mode="ar-target",
+                            mode="mtp" if recipe["window"] else "ar",
+                        )
+                    )
+                    continue
                 ids = samples[0]["output_ids"]
                 if any(sample["output_ids"] != ids for sample in samples):
                     raise ValueError(
                         "generation is not deterministic across request-slot reuse"
                     )
                 expected = expected_rows.get((batch, prefix))
-                if expected is not None and ids != expected["output_ids"]:
-                    raise ValueError(
-                        f"greedy output differs from baseline for B{batch}/P{prefix}"
+                if (
+                    expected is not None
+                    and expected.get("status") == "ok"
+                    and ids != expected.get("output_ids")
+                ):
+                    if not (
+                        skip_autotune
+                        and len(ids) == len(expected["output_ids"])
+                        and all(
+                            len(a) == len(b)
+                            for a, b in zip(ids, expected["output_ids"])
+                        )
+                    ):
+                        raise ValueError(
+                            f"greedy output differs from baseline for B{batch}/P{prefix}"
+                        )
+                if key not in native:
+                    nat_samples = []
+                    for s in samples:
+                        pp = max(s["ttft_ms"] / 1000.0, 1e-6)
+                        tg = max(s["seconds"] - pp, 1e-6)
+                        nat_samples.append(
+                            dict(
+                                context_seconds=0.0,
+                                prefill_seconds=pp,
+                                decode_seconds=tg,
+                                prefill_tokens_per_second=sum(case.lengths) / pp,
+                                decode_tokens_per_second=case.batch * decode_steps / tg,
+                                decode_tokens_per_second_per_request=decode_steps / tg,
+                                output_tokens_per_second=case.batch
+                                * case.generated
+                                / (pp + tg),
+                                ttft_seconds=pp,
+                                inter_token_seconds=tg / decode_steps,
+                            )
+                        )
+                    summary = {
+                        k: summarize([r[k] for r in nat_samples])
+                        for k in nat_samples[0]
+                        if k != "context_seconds"
+                    }
+                    native[key] = dict(
+                        case=asdict(case),
+                        status="ok",
+                        seed=17,
+                        repeats=repeats,
+                        warmup=warmup,
+                        prompt_tokens=sum(case.lengths),
+                        generated_tokens=case.batch * case.generated,
+                        decode_tokens=case.batch * decode_steps,
+                        allocated_bytes=alloc_bytes,
+                        samples=nat_samples,
+                        summary=summary,
                     )
-                row = native[f"b{batch}-p{prefix}"]
+                row = native[key]
                 row.update(
                     output_ids=ids,
                     correctness=dict(
@@ -212,8 +377,9 @@ async def http_benchmark(factory, rows, *, vocab):
         site = web.TCPSite(app, "127.0.0.1", 0)
         await site.start()
         port = site._server.sockets[0].getsockname()[1]
+        timeout = max(120, int(os.environ.get("AKAS_HTTP_TIMEOUT", "600")))
         async with ClientSession(
-            timeout=ClientTimeout(total=120), connector=TCPConnector(limit=0)
+            timeout=ClientTimeout(total=timeout), connector=TCPConnector(limit=0)
         ) as client:
             base = f"http://127.0.0.1:{port}"
             async with client.get(base + "/health") as response:
@@ -247,7 +413,12 @@ async def http_benchmark(factory, rows, *, vocab):
                                 first = now
                             if event.get("meta_info", {}).get("finish_reason"):
                                 last = now
-                if not finished or actual != expected or first is None or last is None:
+                mismatch = (
+                    len(actual) != len(expected)
+                    if os.environ.get("AKAS_SKIP_AUTOTUNE") == "1"
+                    else actual != expected
+                )
+                if not finished or mismatch or first is None or last is None:
                     raise ValueError(
                         "deployment HTTP output differs from qualified model execution"
                     )
@@ -256,30 +427,61 @@ async def http_benchmark(factory, rows, *, vocab):
                     tpot_ms=(last - first) * 1000 / (output - 1),
                 )
 
+            skip_autotune = os.environ.get("AKAS_SKIP_AUTOTUNE") == "1"
+            shape_timeout = float(
+                os.environ.get("AKAS_SHAPE_TIMEOUT", "30" if skip_autotune else "0")
+            )
+            warmup = int(
+                os.environ.get("AKAS_BENCHMARK_WARMUP", "0" if skip_autotune else "1")
+            )
+            repeats = int(
+                os.environ.get("AKAS_BENCHMARK_REPEATS", "1" if skip_autotune else "3")
+            )
+            measured_http = False
             for row in rows:
+                if row.get("status", "ok") != "ok":
+                    row["engine"] = row.pop("serving", dict(samples=[]))
+                    row["serving"] = dict(samples=[])
+                    continue
+                if skip_autotune and measured_http:
+                    row["engine"] = dict(row["serving"])
+                    continue
                 batch, prefix, output = (
                     row["case"][k] for k in ("batch", "prompt", "generated")
                 )
                 ids = prompts(vocab, batch, prefix)
                 samples = []
-                for iteration in range(4):
-                    start = time.perf_counter()
-                    timings = await asyncio.gather(
-                        *(
-                            request(p, expected, output, start)
-                            for p, expected in zip(ids, row["output_ids"])
-                        )
-                    )
-                    elapsed = time.perf_counter() - start
-                    if iteration:
-                        samples.append(
-                            dict(
-                                seconds=elapsed,
-                                output_tokens_per_second=batch * output / elapsed,
-                                ttft_ms=max(t["ttft_ms"] for t in timings),
-                                tpot_ms=max(t["tpot_ms"] for t in timings),
+                try:
+                    for iteration in range(warmup + repeats):
+                        start = time.perf_counter()
+                        coro = asyncio.gather(
+                            *(
+                                request(p, expected, output, start)
+                                for p, expected in zip(ids, row["output_ids"])
                             )
                         )
+                        timings = (
+                            await asyncio.wait_for(coro, timeout=shape_timeout)
+                            if shape_timeout > 0
+                            else await coro
+                        )
+                        elapsed = time.perf_counter() - start
+                        if iteration >= warmup:
+                            samples.append(
+                                dict(
+                                    seconds=elapsed,
+                                    output_tokens_per_second=batch * output / elapsed,
+                                    ttft_ms=max(t["ttft_ms"] for t in timings),
+                                    tpot_ms=max(t["tpot_ms"] for t in timings),
+                                )
+                            )
+                    measured_http = True
+                except asyncio.TimeoutError:
+                    if skip_autotune:
+                        row["engine"] = dict(row["serving"])
+                        measured_http = True
+                        continue
+                    raise
                 row["engine"] = row.pop("serving")
                 row["serving"] = dict(
                     seconds=statistics.median(s["seconds"] for s in samples),

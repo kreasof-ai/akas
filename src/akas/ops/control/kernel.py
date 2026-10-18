@@ -116,14 +116,15 @@ def spec_repair(spec: KernelSpec, schedule: Mapping[str, object]):
 
     slots, window = (p["slots"], p["window"])
     width = p["width"]
+    dtype = p.get("dtype", "bfloat16")
 
     @kernel
     def compute(
         control: Tensor((slots, 5), "int32"),
         result: Tensor((slots, window + 2), "int32"),
-        target_hidden: Tensor((slots * window, width), "bfloat16"),
+        target_hidden: Tensor((slots * window, width), dtype),
     ) -> tuple[
-        Tensor((slots * window, width), "bfloat16"),
+        Tensor((slots * window, width), dtype),
         Tensor((slots,), "int32"),
         Tensor((slots,), "int32"),
         Tensor((slots,), "int32"),
@@ -132,7 +133,7 @@ def spec_repair(spec: KernelSpec, schedule: Mapping[str, object]):
         Tensor((slots,), "int32"),
         Tensor((1,), "int32"),
     ]:
-        hidden = output((slots * window, width), "bfloat16")
+        hidden = output((slots * window, width), dtype)
         mapping = output((slots,), "int32")
         position = output((slots,), "int32")
         lengths = output((slots,), "int32")

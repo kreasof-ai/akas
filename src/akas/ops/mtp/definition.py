@@ -31,4 +31,22 @@ IMPLEMENTATIONS = (
         factory="mtp_cast",
         name="mtp.cuda",
     ),
+    Implementation(
+        "mtp_join",
+        "akas.ops.mtp.kernel",
+        "bf16",
+        provider="webgpu",
+        defaults=(("dtype", "float16"),),
+        factory="mtp_join",
+        name="mtp.cuda",
+    ),
+    Implementation(
+        "mtp_cast",
+        "akas.ops.mtp.kernel",
+        "bf16",
+        provider="webgpu",
+        defaults=(("dtype", "float16"),),
+        factory="mtp_cast",
+        name="mtp.cuda",
+    ),
 )

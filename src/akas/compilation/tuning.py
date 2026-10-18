@@ -190,6 +190,11 @@ def tune(
     )
     if len(variants) == 1 and not variants[0].space and best is not None:
         return best
+    import os
+
+    if budget == 1 and os.environ.get("AKAS_SKIP_AUTOTUNE") == "1" and best is not None:
+        return best
+    resumed = bool(events)
     trials = 0
     while trials < budget:
         try:
@@ -259,7 +264,7 @@ def tune(
 
     # Resumed timings steer exploration; the selected schedule must qualify and
     # time again before it can replace the current, freshly measured baseline.
-    if checkpoint is not None and best.trials:
+    if resumed and best.trials:
         candidate = by_family[best.implementation]
         measurements = tuple(
             measure(candidate, {**parameters, **w.parameters, **best.schedule}, w)
@@ -575,6 +580,17 @@ def qualify(bundle, out, *, settings=None, device=None):
                             or np.array_equal(case.arguments[name], expected)
                         ):
                             np.testing.assert_array_equal(actual, expected)
+                        elif actual.size > 4_194_304:
+                            flat_a = actual.reshape(-1)
+                            flat_e = expected.reshape(-1)
+                            for start in range(0, flat_a.size, 4_194_304):
+                                np.testing.assert_allclose(
+                                    flat_a[start : start + 4_194_304],
+                                    flat_e[start : start + 4_194_304],
+                                    rtol=case.rtol,
+                                    atol=case.atol,
+                                    equal_nan=False,
+                                )
                         else:
                             np.testing.assert_allclose(
                                 actual,
