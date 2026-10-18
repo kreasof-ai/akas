@@ -18,7 +18,7 @@ def tiled_experts(spec, schedule):
     bm, bn, bk = p.get("block_m", 8), p.get("columns", 32), p.get("block_k", 32)
     pad = p.get("rhs_pad", 1)
     if (
-        bm not in (8, 16)
+        bm not in (4, 8, 16, 32)
         or bn not in (32, 64)
         or bk not in (32, 64)
         or pad not in (0, 1, 4)

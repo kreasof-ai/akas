@@ -200,6 +200,29 @@ def test_cuda_prefill_expert_tile_shapes(tmp_path, columns, block_k, routed):
     )
 
 
+@pytest.mark.parametrize("block_m,columns,block_k", [(4, 32, 32), (32, 64, 64)])
+@pytest.mark.parametrize("routed", [False, True])
+def test_webgpu_prefill_expert_tile_shapes(tmp_path, block_m, columns, block_k, routed):
+    test_moe_kernel_device_qualification(
+        tmp_path,
+        "webgpu",
+        "quantized_experts",
+        dict(
+            r=33,
+            top=2,
+            experts=4,
+            k=256,
+            o=128,
+            input_dtype="float32",
+            routed_input=routed,
+            columns=columns,
+            block_k=block_k,
+            block_m=block_m,
+            weight_parts=({"rows": 512, "format": "ggml", "options": {"encoding": 2}},),
+        ),
+    )
+
+
 @pytest.mark.parametrize("provider", ["cuda", "webgpu"])
 def test_moe_model_prefill_decode_and_slot_reuse(tmp_path, provider):
     if os.environ.get("AKAS_LFM_MOE_" + provider.upper()) != "1":

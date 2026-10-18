@@ -936,7 +936,7 @@ IMPLEMENTATIONS += (
         accepts=lambda p: p["r"] > 1,
         defaults=(("block_m", 8), ("columns", 32), ("block_k", 32), ("rhs_pad", 1)),
         space=(
-            ("block_m", (8, 16)),
+            ("block_m", (4, 8, 16, 32)),
             ("columns", (32, 64)),
             ("block_k", (32, 64)),
             ("rhs_pad", (0, 1, 4)),
