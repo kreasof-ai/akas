@@ -26340,6 +26340,76 @@
       "shapes": [],
       "search_phases": 0,
       "path": "runs/20261019130004962838-99232203/run.json"
+    },
+    {
+      "id": "20261019130423423044-7e70c999",
+      "started_at": "2026-10-19T13:04:23.423044Z",
+      "status": "failed",
+      "revision": "491c50c5b91900bfaceccfe43850add8d15737ef",
+      "dirty": false,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "validation",
+        "description": "Qualify compact expert tiles, tiled WebGPU prefill and bounded-memory search at full model context",
+        "parent_run": null
+      },
+      "purpose": "preflight",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261019130423423044-7e70c999/run.json"
+    },
+    {
+      "id": "20261019131227326137-b0127fa8",
+      "started_at": "2026-10-19T13:12:27.326137Z",
+      "status": "passed",
+      "revision": "491c50c5b91900bfaceccfe43850add8d15737ef",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "validation",
+        "description": "Qualify compact expert tiles, tiled WebGPU prefill and bounded-memory search at full model context",
+        "parent_run": null
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 8192,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 130944,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 5,
+      "path": "runs/20261019131227326137-b0127fa8/run.json"
     }
   ]
 }

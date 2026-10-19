@@ -1,0 +1,6 @@
+RESOURCE {"provider": "cuda", "peak_rss_bytes": 3424849920, "seconds": 341.0666352940025}
+Traceback (most recent call last):
+  File "/home/sagemaker-user/akas/build/lfm-moe/qualify-adaptive.py", line 32, in <module>
+    assert forward['kernels'][op['key']]['schedule'] == expected, f"Compiled schedule differs from qualified winner: {op['kind']}"
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+KeyError: '08b6d0950f4c3806c55b7fa7'

@@ -4,6 +4,8 @@ Generated from run records. See [the benchmark guide](../docs/benchmarking.md).
 
 | UTC | Hardware | Runtime / model | Backend / weights / mode / KV | Shapes (B/P/O) | Purpose | Status | Source | Record |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-10-19T13:12:27.326137Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / ar / float16 | 1/32/128, 1/8192/128, 1/130944/128 | preflight | passed | 491c50c5b9 + snapshot | [run](runs/20261019131227326137-b0127fa8/run.json) |
+| 2026-10-19T13:04:23.423044Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / ar / float16 |  | preflight | failed | 491c50c5b9 | [run](runs/20261019130423423044-7e70c999/run.json) |
 | 2026-10-19T13:00:04.962838Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | webgpu / q4_0 / ar / float16 |  | preflight | interrupted | 3dab352cc8 + snapshot | [run](runs/20261019130004962838-99232203/run.json) |
 | 2026-10-19T12:29:42.203747Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / ar / float16 | 1/32/128, 1/8192/128, 1/130944/128 | preflight | passed | 7bd2befec0 + snapshot | [run](runs/20261019122942203747-eb3739b1/run.json) |
 | 2026-10-18T20:51:49.441721Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / ar / float16 |  | preflight | failed | 7bd2befec0 + snapshot | [run](runs/20261018205149441721-3b17aaee/run.json) |
