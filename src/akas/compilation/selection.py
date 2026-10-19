@@ -1,5 +1,7 @@
 """Resolve operation-owned choices into serializable Tensor source declarations."""
 
+import json
+
 from akas.artifacts.schema import Source
 from akas.kernels.definition import definition
 
@@ -65,7 +67,14 @@ def kernels(
             {}
             if schedules is None
             else dict(
-                schedules.select(kind, parameters, provider=provider, target=target)
+                schedules.select(
+                    kind,
+                    # Profiles persist JSON arrays while graph declarations can
+                    # use tuples, including nested packed-weight descriptors.
+                    json.loads(json.dumps(parameters)),
+                    provider=provider,
+                    target=target,
+                )
             )
         )
         preferred = schedule.pop("implementation", None)

@@ -1,0 +1,13 @@
+running batch=1 prompt=32 depth=0 kv=float16
+batch  prompt  depth     pp tok/s     tg tok/s   tg/request   TTFT ms
+    1      32      0         91.9         77.3         77.3     348.3
+running batch=1 prompt=8192 depth=0 kv=float16
+batch  prompt  depth     pp tok/s     tg tok/s   tg/request   TTFT ms
+    1    8192      0       1520.3         79.9         79.9    5388.2
+running batch=1 prompt=130944 depth=0 kv=float16
+batch  prompt  depth     pp tok/s     tg tok/s   tg/request   TTFT ms
+    1  130944      0       1212.4         27.9         27.9  107999.5
+batch  prompt  depth     pp tok/s     tg tok/s   tg/request   TTFT ms
+    1      32      0         91.9         77.3         77.3     348.3
+    1    8192      0       1520.3         79.9         79.9    5388.2
+    1  130944      0       1212.4         27.9         27.9  107999.5

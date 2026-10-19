@@ -26270,6 +26270,76 @@
       "shapes": [],
       "search_phases": 0,
       "path": "runs/20261018205149441721-3b17aaee/run.json"
+    },
+    {
+      "id": "20261019122942203747-eb3739b1",
+      "started_at": "2026-10-19T12:29:42.203747Z",
+      "status": "passed",
+      "revision": "7bd2befec004b622cc74bc11f6ef5d1558426d0c",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "validation",
+        "description": "Qualify compact expert tiles, tiled WebGPU prefill and bounded-memory search at full model context",
+        "parent_run": null
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 8192,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 130944,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 5,
+      "path": "runs/20261019122942203747-eb3739b1/run.json"
+    },
+    {
+      "id": "20261019130004962838-99232203",
+      "started_at": "2026-10-19T13:00:04.962838Z",
+      "status": "interrupted",
+      "revision": "3dab352cc803ac62d7073e77e5e5b47603e0edf9",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "webgpu",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "validation",
+        "description": "Qualify compact expert tiles, tiled WebGPU prefill and bounded-memory search at full model context",
+        "parent_run": null
+      },
+      "purpose": "preflight",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261019130004962838-99232203/run.json"
     }
   ]
 }

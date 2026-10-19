@@ -14,6 +14,63 @@ from akas.kernels.registry import candidates
 
 
 @pytest.mark.parametrize("provider", ["cuda", "webgpu"])
+def test_saved_profile_selects_nested_packed_weight_parameters(tmp_path, provider):
+    from tensor.compiler.search import ScheduleProfile
+    from akas.compilation.selection import kernels
+
+    target = "sm_89" if provider == "cuda" else "webgpu-portable-v1"
+    parameters = dict(
+        r=33,
+        top=2,
+        experts=4,
+        k=256,
+        o=128,
+        tile_map=True,
+        input_dtype="float32",
+        weight_parts=({"rows": 512, "format": "ggml", "options": {"encoding": 2}},),
+    )
+    path = tmp_path / "profile.json"
+    path.write_text(
+        json.dumps(
+            dict(
+                schema="tensor.schedule-profile.v1",
+                provider=provider,
+                target=target,
+                entries=[
+                    dict(
+                        operation="quantized_experts",
+                        parameters=parameters,
+                        schedule=dict(block_m=32, columns=64, block_k=64),
+                    )
+                ],
+            )
+        )
+    )
+    profile = ScheduleProfile(json.loads(path.read_text()))
+
+    def selected(p):
+        return kernels(
+            {"experts": ("quantized_experts", p)},
+            contract="reference",
+            provider=provider,
+            target=target,
+            schedules=profile,
+            record_implementation=True,
+        )[0]
+
+    declaration = selected(parameters)
+    assert declaration.schedule["block_m"] == 32
+    assert declaration.schedule["columns"] == declaration.schedule["block_k"] == 64
+    assert declaration.source.args[1]["block_m"] == 32
+    assert isinstance(parameters["weight_parts"], tuple)
+    changed = {
+        **parameters,
+        "weight_parts": ({"rows": 512, "format": "ggml", "options": {"encoding": 8}},),
+    }
+    assert "block_m" not in selected(changed).schedule
+
+
+@pytest.mark.parametrize("provider", ["cuda", "webgpu"])
 def test_same_definition_api_passes_only_resolved_leaf_arguments(provider, monkeypatch):
     choice = Implementation(
         "project",
