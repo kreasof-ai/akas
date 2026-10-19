@@ -130,6 +130,26 @@ def tune(
             )
         )
         by_family[item.identifier] = item
+    # Continue from the qualified incumbent instead of restarting its family
+    # at the first value of every axis. Other implementation families keep
+    # their own seeds so a different algorithm can still win.
+    if (
+        baseline is not None
+        and len(set(baseline_modules)) == 1
+        and baseline_modules[0] in by_family
+    ):
+        family = baseline_modules[0]
+        defaults = dict(by_family[family].defaults)
+        axes = spaces[family]
+        incumbent = {
+            axis: baseline.get(axis, defaults.get(axis, values[0]))
+            for axis, values in axes.items()
+        }
+        if all(value in axes[axis] for axis, value in incumbent.items()):
+            seeds = [
+                dict(family=family, **incumbent),
+                *(seed for seed in seeds if seed["family"] != family),
+            ]
     search = ScheduleSearch(seeds, spaces=spaces, width=width)
     events = []
     signature = None
@@ -516,6 +536,7 @@ def qualify(bundle, out, *, settings=None, device=None):
                             {
                                 name: validation_parameters[name]
                                 for name, _ in implementation.defaults
+                                if name not in dict(implementation.space)
                             },
                             validation_parameters.get("bk")
                             if kind == "split_linear"
@@ -527,9 +548,9 @@ def qualify(bundle, out, *, settings=None, device=None):
                         sort_keys=True,
                     )
                     if signature_key not in case_cache:
-                        # A changed storage ABI, implementation precision default
-                        # or split-reduction tile needs a new expectation. Keep
-                        # only the current case: retaining
+                        # Same-ABI matrix tiles reuse their reference. Precision
+                        # defaults and split-reduction boundaries need a new
+                        # expectation. Keep only the current case: retaining
                         # every large weight/cache fixture makes search memory
                         # grow with its candidate budget. Same-ABI candidates
                         # still reuse their expensive reference computation.

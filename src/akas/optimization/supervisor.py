@@ -13,7 +13,7 @@ import time
 
 from akas.benchmarking.history import digest, source_identity, utc, write, rebuild_index
 from akas.optimization.context import Context, identity, source_root
-from akas.optimization.planning import recipes, refine, score, software
+from akas.optimization.planning import recipes, refine, score, search_order, software
 
 
 @contextmanager
@@ -102,10 +102,7 @@ def execute(
     next_sample = 0
     try:
         if "VK_ICD_FILENAMES" not in os.environ:
-            icd = (
-                source_root()
-                / "build/baselines/nvidia-graphics/local_egl_icd.json"
-            )
+            icd = source_root() / "build/baselines/nvidia-graphics/local_egl_icd.json"
             if icd.is_file():
                 os.environ["VK_ICD_FILENAMES"] = str(icd)
                 graphics = str(icd.parent)
@@ -366,7 +363,7 @@ def optimize(context: Context, out, *, budget, history="benchmarks"):
             skip_autotune = os.environ.get("AKAS_SKIP_AUTOTUNE") == "1"
             plans = recipes(settings, probes)
             if plans and not skip_autotune:
-                plans.extend(dict(refine=trials) for trials in (8, 32, 128))
+                plans = search_order(plans, settings["workload"])
             elif plans and skip_autotune:
                 if settings.get("mode") == "mtp":
                     ar_graph = [
@@ -495,8 +492,10 @@ def optimize(context: Context, out, *, budget, history="benchmarks"):
                     str(Path(j["directory"]) / "program") for j in state["jobs"][:-1]
                 ]
                 sources = (
-                    [str(shared_cache)] if shared_cache.is_dir() else []
-                ) + local_programs + sibling_programs[-2:]
+                    ([str(shared_cache)] if shared_cache.is_dir() else [])
+                    + local_programs
+                    + sibling_programs[-2:]
+                )
                 job["cache_sources"] = list(dict.fromkeys(sources))
                 if reference_job:
                     job.update(

@@ -312,6 +312,23 @@ def recipes(context, probes):
     return plans
 
 
+def search_order(plans, workload):
+    """Refine viable long-prefill choices before replaying costly small chunks."""
+    if not plans:
+        return []
+    refinements = [dict(refine=trials) for trials in (8, 32, 128)]
+    if max(workload["prefix_tokens"]) <= 8192:
+        return [*plans, *refinements]
+    defaults = {}
+    for plan in plans:
+        defaults.setdefault(plan["provider"], plan["chunk"])
+    large, small = [], []
+    for plan in plans:
+        destination = large if plan["chunk"] >= defaults[plan["provider"]] else small
+        destination.append(plan)
+    return [*large, *refinements, *small]
+
+
 def refine(recipe, trials):
     """Deepen the current winner while retaining its program and serving choices."""
     if trials <= recipe["trials"]:

@@ -47,8 +47,9 @@ at every other shape.
 Search keeps one numerical fixture per operation at a time. Candidates sharing
 its storage ABI and declared precision reuse it; switching layouts or precision
 defaults releases the preceding fixture and device buffers before constructing
-another. Longer searches therefore do not
-accumulate a copy of large reference weights or KV buffers for each layout.
+another. Matrix tile changes reuse the same fixture. Longer searches therefore
+do not accumulate reference weights or KV buffers for each layout. A supplied
+schedule starts exploration from its saved geometry and is qualified again.
 
 Each program build writes separate immutable phase/kernel paths. `program.json` is
 validated against the loader contract and published last. A failed rebuild leaves the previously published program usable.

@@ -85,6 +85,9 @@ new candidates still run complete model and HTTP checks with fresh timings.
 Program and serving alternatives receive a cheap qualification pass first.
 Larger kernel-search budgets then refine the best measured configuration,
 retaining its selected chunk, grouping, policy and speculative mode.
+For long-context workloads, larger prefill choices and refinement run before
+costly small-chunk alternatives. Saved kernel geometries seed new exploration;
+each selected candidate is qualified again.
 Programs retain a smaller prefill geometry for the workload's shortest prompt.
 The executor chooses among qualified geometries so a larger throughput tile
 does not force short prompts to execute a padded full tile.

@@ -310,3 +310,127 @@ def test_moe_model_prefill_decode_and_slot_reuse(tmp_path, provider):
             np.testing.assert_array_equal(
                 executor.batches.states["blk.0.conv_state"].to_numpy()[slot], 0
             )
+
+
+@pytest.mark.parametrize("provider", ["cuda", "webgpu"])
+def test_expert_search_reuses_reference_across_tiles(tmp_path, monkeypatch, provider):
+    if os.environ.get("AKAS_LFM_MOE_" + provider.upper()) != "1":
+        pytest.skip("opt-in LFM2 MoE search qualification")
+    from akas.graph import Graph
+    from akas.compilation.compile import produce
+    from akas.compilation.tuning import SearchSettings
+    from akas.kernels import registry
+
+    rows, top, experts, depth, columns = 33, 2, 4, 256, 128
+    parameters = dict(
+        r=rows,
+        top=top,
+        experts=experts,
+        k=depth,
+        o=columns,
+        tile_map=True,
+        input_dtype="float32",
+        routed_input=False,
+        round_inputs=provider == "cuda",
+        weight_parts=(
+            {"rows": experts * columns, "format": "ggml", "options": {"encoding": 2}},
+        ),
+    )
+    raw_bytes = experts * columns * depth // 32 * 18
+    capacity = (rows * top + 3) // 4 + experts
+    layouts = [
+        ("x", (rows, depth), "float32", "input"),
+        (
+            "w",
+            (raw_bytes if provider == "cuda" else raw_bytes // 4,),
+            "uint8" if provider == "cuda" else "uint32",
+            "weight",
+        ),
+        ("counts", (experts,), "int32", "input"),
+        ("routes", (experts, rows), "int32", "input"),
+        ("tile_experts", (5, capacity), "int32", "input"),
+        ("tile_rows", (5, capacity), "int32", "input"),
+        ("out", (rows, top, columns), "float32", "output"),
+    ]
+    graph = Graph(contract="reference", phase="prefill")
+    buffers = [
+        graph.buffer(name, shape, dtype, role=role)
+        for name, shape, dtype, role in layouts
+    ]
+    graph("quantized_experts", parameters, *buffers)
+    reference = registry.validation
+    constructions = []
+
+    def counted(kind, p, signature):
+        constructions.append((kind, dict(p)))
+        return reference(kind, p, signature)
+
+    monkeypatch.setattr(registry, "validation", counted)
+    result = produce(
+        graph,
+        tmp_path,
+        provider=provider,
+        search_settings=SearchSettings(
+            budget=2, width=1, warmup=0, samples=1, repeats=1
+        ),
+    )
+    operation = result["tuning"]["operations"][0]
+    assert operation["selected"]["trials"] == 2
+    assert len(operation["candidates"]) >= 3
+    assert len(constructions) == 1, [
+        (p.get("block_m"), p.get("columns")) for _, p in constructions
+    ]
+
+
+def test_attention_search_keeps_precision_references_distinct(tmp_path, monkeypatch):
+    if os.environ.get("AKAS_LFM_MOE_CUDA") != "1":
+        pytest.skip("opt-in CUDA attention search qualification")
+    from akas.graph import Graph
+    from akas.compilation.compile import produce
+    from akas.compilation.tuning import SearchSettings
+    from akas.kernels import registry
+
+    p = dict(
+        r=8,
+        h=4,
+        kh=1,
+        d=64,
+        capacity=64,
+        chunk=4,
+        kv_dtype="float16",
+        provider="cuda",
+        optimized=True,
+    )
+    graph = Graph(contract="reference", phase="prefill")
+    layouts = [
+        ("q", (8, 256), "float32"),
+        ("kc", (2, 1, 64, 64), "float16"),
+        ("vc", (2, 1, 64, 64), "float16"),
+        ("ks", (2, 1, 64, 1), "float32"),
+        ("vs", (2, 1, 64, 1), "float32"),
+        ("out", (2048,), "float32"),
+        ("positions", (8,), "int32"),
+        ("enabled", (8,), "int32"),
+    ]
+    args = [
+        graph.buffer(n, s, d, role="output" if n == "out" else "input")
+        for n, s, d in layouts
+    ]
+    graph("attention", p, *args)
+    reference = registry.validation
+    precision = []
+
+    def counted(kind, parameters, signature):
+        precision.append(parameters.get("prefill_precision", "float32"))
+        return reference(kind, parameters, signature)
+
+    monkeypatch.setattr(registry, "validation", counted)
+    produce(
+        graph,
+        tmp_path,
+        provider="cuda",
+        search_settings=SearchSettings(
+            budget=2, width=1, warmup=0, samples=1, repeats=1
+        ),
+    )
+    assert {"float16", "float32"} <= set(precision)

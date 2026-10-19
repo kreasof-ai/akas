@@ -444,3 +444,62 @@ def test_real_checkpoint_compiles_qualifies_and_serves_without_manual_settings(
         optimize(
             intent, tmp_path / "optimized", budget=30, history=tmp_path / "history"
         )
+
+
+@pytest.mark.parametrize("extra_family", [False, True])
+def test_search_starts_from_saved_geometry(monkeypatch, extra_family):
+    monkeypatch.delenv("AKAS_SKIP_AUTOTUNE", raising=False)
+    choice = Implementation(
+        "add",
+        "linear.fake",
+        "reference",
+        factory="kernel",
+        defaults=(("tile", 16),),
+        space=(("tile", (16, 32, 64)),),
+        variant="saved",
+    )
+    measured = []
+
+    def measure(implementation, p, workload):
+        tile = p.get("tile", 16)
+        measured.append((implementation.identifier, tile))
+        return Measurement({16: 4.0, 32: 2.0, 64: 1.0}[tile], True)
+
+    result = tune(
+        "add",
+        dict(c=256),
+        [Workload("shape")],
+        measure,
+        contract="reference",
+        provider="cuda",
+        target="sm_89",
+        catalog=(replace(choice, variant="fallback"), choice)
+        if extra_family
+        else (choice,),
+        baseline=dict(implementation=choice.identifier, tile=64),
+        budget=1,
+        width=1,
+    )
+    assert measured == [(choice.identifier, 64), (choice.identifier, 64)]
+    assert result.schedule["tile"] == 64
+
+
+def test_long_context_search_refines_before_costly_small_prefills():
+    from akas.optimization.planning import search_order
+
+    plans = [
+        dict(id=str(chunk), provider="cuda", chunk=chunk)
+        for chunk in (256, 512, 1024, 128, 32, 1)
+    ]
+    ordered = search_order(plans, dict(prefix_tokens=[32, 130944]))
+    markers = [i for i, p in enumerate(ordered) if "refine" in p]
+    assert [ordered[i]["refine"] for i in markers] == [8, 32, 128]
+    assert max(i for i, p in enumerate(ordered) if p.get("chunk", 0) >= 256) < min(
+        markers
+    )
+    assert max(markers) < min(
+        i for i, p in enumerate(ordered) if p.get("chunk", 256) < 256
+    )
+    assert {p["id"] for p in ordered if "id" in p} == {p["id"] for p in plans}
+    regular = search_order(plans, dict(prefix_tokens=[32, 2048]))
+    assert regular[: len(plans)] == plans
