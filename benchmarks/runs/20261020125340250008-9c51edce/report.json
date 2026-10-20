@@ -1,0 +1,40 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "kernel",
+    "protocol": "kv-precision-probe-v1",
+    "provider": "cuda",
+    "device": {
+      "name": "NVIDIA L4",
+      "provider": "cuda"
+    },
+    "kv_dtype": "float16",
+    "chunk": 4096,
+    "model": "akas.models.lfm2.model:LFM2MoE",
+    "checkpoint": "build/checkpoints/lfm2.5-24b-a2b/q4_0.gguf",
+    "checkpoint_sha256": "d1c03f73ecaf61017d70419eec9e5dc0b05d50ae26c23d522829b934fbabf8a5",
+    "qualification": "Fixed prose repeated to exact prefix lengths; eight identical F16-generated teacher-forced continuation tokens; distribution drift and top-1 agreement, not a corpus accuracy claim",
+    "checks": [
+      {
+        "prefix": 32,
+        "teacher_forced_steps": 8,
+        "prompt_sha256": "d93336cba91d40f9d95c0f2884507cf203dfd7d767b076722c413ff0f879fdc2",
+        "output_text": ". In spring, the peas and lettuce"
+      },
+      {
+        "prefix": 8192,
+        "teacher_forced_steps": 8,
+        "prompt_sha256": "4b2d8ddd9a569f290cd94fd5dadadc6e439e7918ff683cf3f8fe78cf343699b8",
+        "output_text": " community library holds science workshops on Saturday."
+      },
+      {
+        "prefix": 130944,
+        "teacher_forced_steps": 8,
+        "prompt_sha256": "b02f1ceea9758aed7af75193d7925d83e2c2c0047b105878b196965af36311f8",
+        "output_text": "</think>\n\nThe user is asking for a"
+      }
+    ]
+  },
+  "results": []
+}

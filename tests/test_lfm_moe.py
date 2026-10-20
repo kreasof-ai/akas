@@ -199,6 +199,17 @@ def test_moe_kernel_device_qualification(tmp_path, provider, kind, parameters):
                 rtol=case.rtol,
                 atol=case.atol,
             )
+        if kind == "quantized_routes":
+            from akas.memory.transfer import write
+
+            named = {
+                argument["name"]: buffer
+                for argument, buffer in zip(meta["arguments"], buffers)
+            }
+            write(device, named["active"], np.zeros_like(case.arguments["active"]))
+            kernel.launch(*buffers)
+            np.testing.assert_array_equal(named["counts"].to_numpy(), 0)
+            np.testing.assert_array_equal(named["routes"].to_numpy(), -1)
         if kind == "expert_tile_map":
             from akas.memory.transfer import write
 
@@ -662,3 +673,77 @@ def test_prepared_kernel_timing_restores_mutable_state(tmp_path, provider):
     trials = result["tuning"]["operations"][0]["candidates"]
     assert trials and all(t["status"] == "passed" for t in trials)
     assert all(t["timing"]["execution"] == "prepared-plan" for t in trials)
+
+
+def test_cuda_packed_expert_preserves_continuous_accumulation(tmp_path):
+    if os.environ.get("AKAS_LFM_MOE_CUDA") != "1":
+        pytest.skip("opt-in packed expert summation qualification")
+    import tensor
+    from tensor.artifacts.format import read_artifact
+    from akas.compilation.emit import build_artifact
+    from akas.compilation.selection import source
+    from akas.kernels.registry import validation
+    from akas.quantization.weights.ggml.validation import decode_rows
+
+    p = dict(
+        r=1,
+        top=2,
+        experts=4,
+        k=2048,
+        o=7,
+        input_dtype="float32",
+        routed_input=True,
+        round_inputs=True,
+        weight_parts=({"rows": 28, "format": "ggml", "options": {"encoding": 2}},),
+    )
+    entry, artifact = tmp_path / "kernel.py", tmp_path / "kernel.tbin"
+    entry.write_text(
+        source(
+            "quantized_experts",
+            p,
+            contract="reference",
+            provider="cuda",
+            target="sm_89",
+        ).render()
+    )
+    build_artifact(entry, artifact, provider="cuda", target="sm_89")
+    metadata, _ = read_artifact(artifact)
+    case = validation("quantized_experts", p, metadata["arguments"])
+    expected = np.zeros((1, 2, 7), dtype="float32")
+    # Independent per-lane simulation: F16 products are exact in F32; round
+    # every addition, and retain the accumulator across 256-channel tiles.
+    for rank, expert in enumerate(case.arguments["ids"][0]):
+        weight = (
+            decode_rows(
+                case.arguments["w"], 2, 2048, int(expert) * 7, (int(expert) + 1) * 7
+            )
+            .astype("float16")
+            .astype("float32")
+        )
+        activation = case.arguments["x"][0, rank].astype("float16").astype("float32")
+        total = np.zeros((7, 32), dtype="float32")
+        lane = np.arange(32)
+        for tile in range(8):
+            base = tile * 256 + lane // 4 * 32 + lane % 4 * 4
+            for offset in (0, 1, 2, 3, 16, 17, 18, 19):
+                index = base + offset
+                total += activation[index] * weight[:, index]
+        for step in (16, 8, 4, 2, 1):
+            total[:, :step] += total[:, step : step * 2]
+        expected[0, rank] = total[:, 0]
+    with tensor.Device(provider="cuda") as device, ExitStack() as stack:
+        buffers = {
+            name: device.from_numpy(array) for name, array in case.arguments.items()
+        }
+        for buffer in buffers.values():
+            stack.callback(buffer.release)
+        module = stack.enter_context(device.load(artifact))
+        module.launch(*[buffers[a["name"]] for a in metadata["arguments"]])
+        np.testing.assert_array_equal(buffers["out"].to_numpy(), expected)
+
+
+@pytest.mark.parametrize("rows", [33, 4096])
+def test_cuda_parallel_route_compaction(tmp_path, rows):
+    test_moe_kernel_device_qualification(
+        tmp_path, "cuda", "quantized_routes", dict(r=rows, top=4, experts=64)
+    )

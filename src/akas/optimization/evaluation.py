@@ -167,19 +167,20 @@ def evaluate(executor, recipe, workload, *, reference=None, evidence=None):
                             warmup=warmup,
                             repeats=repeats,
                         )
-    except TimeoutError as error:
+    except BaseException as error:
         error.results = list(native.values())
         error.results.append(
             dict(
                 case=dict(
                     batch=batch, prompt=prefix, generated=workload["output_tokens"]
                 ),
-                status="timeout",
+                status="timeout" if isinstance(error, TimeoutError) else "error",
                 error=str(error),
                 samples=[],
                 summary={},
             )
         )
+        error.diagnostics = diagnostics
         raise
     backend = executor
     if recipe["window"]:
@@ -307,8 +308,9 @@ def evaluate(executor, recipe, workload, *, reference=None, evidence=None):
                     )
                     continue
                 ids = samples[0]["output_ids"]
+                validation_error = None
                 if any(sample["output_ids"] != ids for sample in samples):
-                    raise ValueError(
+                    validation_error = (
                         "generation is not deterministic across request-slot reuse"
                     )
                 expected = expected_rows.get((batch, prefix))
@@ -325,9 +327,7 @@ def evaluate(executor, recipe, workload, *, reference=None, evidence=None):
                             for a, b in zip(ids, expected["output_ids"])
                         )
                     ):
-                        raise ValueError(
-                            f"greedy output differs from baseline for B{batch}/P{prefix}"
-                        )
+                        validation_error = f"greedy output differs from baseline for B{batch}/P{prefix}"
                 if key not in native:
                     nat_samples = []
                     for s in samples:
@@ -370,7 +370,7 @@ def evaluate(executor, recipe, workload, *, reference=None, evidence=None):
                 row.update(
                     output_ids=ids,
                     correctness=dict(
-                        correct=True,
+                        correct=validation_error is None,
                         scope="operation references and baseline model equivalence",
                         reference=(
                             "self; establishes baseline"
@@ -394,8 +394,34 @@ def evaluate(executor, recipe, workload, *, reference=None, evidence=None):
                     mode="mtp" if recipe["window"] else "ar",
                 )
                 rows.append(row)
+                if validation_error is not None:
+                    row.update(status="error", error=validation_error)
+                    row["serving"]["samples"] = samples
+                    if expected is not None:
+                        row["correctness"]["expected_output_ids"] = expected.get(
+                            "output_ids"
+                        )
+                    raise ValueError(validation_error)
         stats = dict(engine.scheduler.stats)
         speculation = dict(backend.stats) if recipe["window"] else None
+    except BaseException as error:
+        # Native phases precede serving validation. Keep their measurements
+        # even when a later shape fails determinism or model equivalence.
+        retained = list(getattr(error, "results", rows))
+        seen = {(r["case"]["batch"], r["case"]["prompt"]) for r in retained}
+        for measured in native.values():
+            identity = (measured["case"]["batch"], measured["case"]["prompt"])
+            if identity not in seen:
+                measured.update(
+                    status="error",
+                    error="model validation incomplete",
+                    correctness=dict(
+                        correct=False, scope="model validation incomplete"
+                    ),
+                )
+                retained.append(measured)
+        error.results, error.diagnostics = retained, diagnostics
+        raise
     finally:
         engine.close()
     return rows, diagnostics, dict(scheduler=stats, speculation=speculation)

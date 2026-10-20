@@ -252,7 +252,9 @@ def packed_dot_half(shape):
     Keep the original GGUF bytes. A word view provides aligned loads and a
     funnel shift joins the alternating halfword-aligned Q4 blocks. No derived
     cache or fully dequantized matrix is allocated. ``offset`` selects one
-    routed activation row from the caller's flat activation view.
+    routed activation row from the caller's flat activation view. The final
+    ``previous`` argument carries the lane accumulator across tiles, preserving
+    continuous F32 FMA order instead of summing separately rounded tile dots.
     """
     import tilelang.language as T
     from math import prod
@@ -262,7 +264,7 @@ def packed_dot_half(shape):
     row_bytes = depth // 32 * 18
 
     @T.macro
-    def dot(encoded, x, offset, tile, lane, row):
+    def dot(encoded, x, offset, tile, lane, row, previous):
         words = T.view(encoded[0], (words_count,), dtype="uint32")
         base = row * row_bytes + (tile * 8 + lane // 4) * 18
         scale = T.cast(
@@ -286,7 +288,7 @@ def packed_dot_half(shape):
             lo[component] = T.cast(T.cast(x[j + component], "float16"), "float32")
             hi[component] = T.cast(T.cast(x[j + 16 + component], "float16"), "float32")
         result = T.alloc_var("float32")
-        result = 0
+        result = previous
         for component in T.unroll(4):
             coefficient = T.cast(
                 T.cast(

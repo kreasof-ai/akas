@@ -988,6 +988,19 @@ IMPLEMENTATIONS += tuple(
 )
 
 
+def _mma_cache_supported(p):
+    if p.get("kv_dtype") == "float16":
+        return p.get("unit_scales", False)
+    from akas.quantization.formats import get
+
+    try:
+        return get("kv", p.get("kv_dtype")).supports(
+            "read_packed", (p["r"], p["kh"], p["capacity"], p["d"]), provider="cuda"
+        )
+    except ValueError:
+        return False
+
+
 IMPLEMENTATIONS += (
     Implementation(
         "attention_partial",
@@ -1002,8 +1015,7 @@ IMPLEMENTATIONS += (
         accepts=lambda p: (
             p.get("optimized", False)
             and p.get("d") == 64
-            and p.get("kv_dtype") == "float16"
-            and p.get("unit_scales", False)
+            and _mma_cache_supported(p)
             and p["h"] % p["kh"] == 0
             and p["h"] // p["kh"] in (2, 4, 8, 16)
             and p["capacity"] >= 4096

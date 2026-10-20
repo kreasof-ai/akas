@@ -659,3 +659,83 @@ def test_shape_timeout_keeps_independent_native_phase_measurements(monkeypatch):
     assert measured == [32, 64]
     assert all(row["summary"] == {"native": True} for row in rows)
     assert [s["timeout"] for s in settings if "timeout" in s] == [2, 2]
+
+
+@pytest.mark.parametrize("failure", ["greedy", "determinism"])
+def test_rejected_generation_retains_native_and_serving_evidence(monkeypatch, failure):
+    from dataclasses import asdict
+    from types import SimpleNamespace
+    import numpy as np
+    from akas.optimization import evaluation
+
+    closed, calls = [], {}
+
+    class Session:
+        allocated_bytes = 1
+
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+    def measured(engine, batch, prefix, output, **kwargs):
+        calls[prefix] = calls.get(prefix, 0) + 1
+        token = 5 if prefix == 64 and (failure == "greedy" or calls[prefix] % 2) else 4
+        return dict(
+            seconds=1,
+            output_tokens_per_second=4,
+            ttft_ms=100,
+            tpot_ms=300,
+            output_ids=[[1, 2, 3, token]],
+        )
+
+    monkeypatch.delenv("AKAS_SKIP_AUTOTUNE", raising=False)
+    monkeypatch.setenv("AKAS_BENCHMARK_WARMUP", "0")
+    monkeypatch.setenv("AKAS_BENCHMARK_REPEATS", "2")
+    monkeypatch.setattr(evaluation, "Session", Session)
+    monkeypatch.setattr(
+        evaluation,
+        "run",
+        lambda session, case, **kw: dict(
+            case=asdict(case), status="ok", summary={"native": case.prompt}, samples=[]
+        ),
+    )
+    monkeypatch.setattr(evaluation, "diagnostic", lambda *a, **k: np.ones((3, 1, 4)))
+    monkeypatch.setattr(
+        evaluation,
+        "Engine",
+        lambda *a, **k: SimpleNamespace(
+            scheduler=SimpleNamespace(stats={}), close=lambda: closed.append(True)
+        ),
+    )
+    monkeypatch.setattr(evaluation, "measured_requests", measured)
+    reference = dict(
+        metadata=dict(run_id="reference"),
+        results=[
+            dict(case=dict(batch=1, prompt=p), status="ok", output_ids=[[1, 2, 3, 4]])
+            for p in (32, 64, 96)
+        ],
+    )
+    with pytest.raises(ValueError) as caught:
+        evaluation.evaluate(
+            SimpleNamespace(),
+            dict(chunk=32, window=None, prefill_requests=1),
+            dict(batches=[1], prefix_tokens=[32, 64, 96], output_tokens=4),
+            reference=reference,
+        )
+    rows = caught.value.results
+    assert [r["summary"] for r in rows] == [{"native": p} for p in (32, 64, 96)]
+    assert rows[0]["correctness"]["correct"]
+    assert rows[1]["status"] == "error" and not rows[1]["correctness"]["correct"]
+    assert rows[1]["correctness"]["expected_output_ids"] == [[1, 2, 3, 4]]
+    outputs = [s["output_ids"] for s in rows[1]["serving"]["samples"]]
+    assert len(outputs) == 2 and outputs[0] == [[1, 2, 3, 5]]
+    if failure == "determinism":
+        assert outputs[1] != outputs[0]
+    assert rows[2]["error"] == "model validation incomplete"
+    assert set(caught.value.diagnostics) == {"b1-p32", "b1-p64", "b1-p96"}
+    assert closed == [True] and 96 not in calls

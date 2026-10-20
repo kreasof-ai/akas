@@ -89,7 +89,9 @@ existing attention ABIs while using the same tuple readers and writers.
 `format.supports(capability, shape, provider=..., **options)` checks a specific
 encoding and geometry without importing its compiler. A backend may refine its
 capability inventory with a compiler-free `supports` function. For example,
-CUDA GGML's `dot_half` requires Q4_0 and a channel count divisible by 256;
+CUDA GGML's `dot_half(encoded, x, offset, tile, lane, row, previous)` returns the
+updated F32 lane accumulator after one 256-channel tile. Carry `previous` across
+tiles to preserve summation order. It requires Q4_0 and a channel count divisible by 256;
 unavailable specializations keep the ordinary reader path. Unpermuted single
 weight pieces retain packed capabilities through `bind_parts`.
 

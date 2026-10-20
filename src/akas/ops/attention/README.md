@@ -56,11 +56,15 @@ contracts together. Grouped decode shares each KV tile across query heads and
 updates online softmax per tile. Its value depends on the provider and shape;
 compatible implementations remain available for measured selection.
 
-CUDA's native-half `mma_partial` shares a KV tile across a group of query heads
+CUDA's `mma_partial` shares a staged FP16 KV tile across a group of query heads
 and uses tensor-core QK/PV products. Queries and probabilities round to FP16;
 softmax statistics and accumulated values stay F32. The `unit_scales` contract
-selects this path only when native cache scales are one. Other cache contracts
-retain their compatible implementations.
+selects direct native loads only when cache scales are one. Encoded caches with
+`read_packed` stage encoded tiles and their metadata, then decode each tile to
+FP16 once before QK/PV. FP8 remains FP8 in persistent storage; its per-position
+scales apply during decoding, never as one global factor. Unsupported codecs
+retain their compatible implementations. Report native F16 KV and FP8 KV as
+separate precision configurations, including numerical drift versus F16.
 
 Complete groups of four key tiles use `T.Pipelined`. At most four final tiles
 use guarded loads, keeping unused or nonfinite future cache entries out of PV.

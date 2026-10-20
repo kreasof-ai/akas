@@ -20,9 +20,14 @@ def test_attention_declares_geometry_that_changes_its_reference():
         dict(d=64, kv_dtype="float16", unit_scales=True, h=4, kh=1, capacity=8192)
     )
 
+    params = dict(r=1, d=64, kv_dtype="fp8", h=4, kh=1, capacity=8192, optimized=True)
+    assert decode.accepts(params)
+    assert not decode.accepts({**params, "kv_dtype": "float32"})
+
 
 @pytest.mark.parametrize("key_rows", [64, 128])
-def test_cuda_grouped_mma_decode_padding_and_inactive(tmp_path, key_rows):
+@pytest.mark.parametrize("kv_dtype", ["float16", "fp8"])
+def test_cuda_grouped_mma_decode_padding_and_inactive(tmp_path, key_rows, kv_dtype):
     if os.environ.get("AKAS_LFM_MOE_CUDA") != "1":
         pytest.skip("opt-in native-half GQA qualification")
     import tensor
@@ -40,8 +45,8 @@ def test_cuda_grouped_mma_decode_padding_and_inactive(tmp_path, key_rows):
         capacity=8192,
         splits=16,
         chunk=1,
-        kv_dtype="float16",
-        unit_scales=True,
+        kv_dtype=kv_dtype,
+        unit_scales=kv_dtype == "float16",
         provider="cuda",
         optimized=True,
         key_rows=key_rows,
@@ -76,14 +81,31 @@ def test_cuda_grouped_mma_decode_padding_and_inactive(tmp_path, key_rows):
             atol=case.atol,
         )
         for length in (32, 65, 8191, 8192):
-            keys = case.arguments["kc"].copy()
-            values = case.arguments["vc"].copy()
+            encoded_keys = case.arguments["kc"].copy()
+            encoded_values = case.arguments["vc"].copy()
+            if kv_dtype == "fp8":
+                from akas.quantization._shared.e4m3 import decode_storage
+
+                keys = (decode_storage(encoded_keys) * case.arguments["ks"]).astype(
+                    "float16"
+                )
+                values = (decode_storage(encoded_values) * case.arguments["vs"]).astype(
+                    "float16"
+                )
+                encoded_keys[:, :, length:] = 127
+                encoded_values[:, :, length:] = 127
+                for name in ("ks", "vs"):
+                    scales = case.arguments[name].copy()
+                    scales[:, :, length:] = np.nan
+                    write(device, buffers[name], scales)
+            else:
+                keys, values = encoded_keys, encoded_values
             # Padding may be stale or nonfinite; zero-probability rows must
             # still produce finite output. The second request is disabled.
             keys[:, :, length:] = np.nan
             values[:, :, length:] = np.nan
-            write(device, buffers["kc"], keys)
-            write(device, buffers["vc"], values)
+            write(device, buffers["kc"], encoded_keys)
+            write(device, buffers["vc"], encoded_values)
             write(
                 device,
                 buffers["positions"],

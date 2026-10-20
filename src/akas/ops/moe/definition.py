@@ -1022,3 +1022,16 @@ IMPLEMENTATIONS += (
         ),
     ),
 )
+
+
+IMPLEMENTATIONS += (
+    Implementation(
+        "quantized_routes",
+        "akas.ops.moe.cuda",
+        "reference",
+        factory="parallel_routes",
+        name="moe.cuda.parallel_routes",
+        priority=30,
+        accepts=lambda p: p["r"] > 1,
+    ),
+)

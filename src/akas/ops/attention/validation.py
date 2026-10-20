@@ -423,8 +423,16 @@ def canonical_validation(kind, p, signature):
                 if values["enabled"][row]
                 else 0
             )
-            keys = read_slot("kc", "ks", row, max(1, length))
-            vals = read_slot("vc", "vs", row, max(1, length))
+            keys = (
+                read_slot("kc", "ks", row, max(1, length))
+                .astype("float16")
+                .astype(compute_dtype)
+            )
+            vals = (
+                read_slot("vc", "vs", row, max(1, length))
+                .astype("float16")
+                .astype(compute_dtype)
+            )
             span = ((length + tile - 1) // tile + splits - 1) // splits * tile
             for head in range(h):
                 scores = keys[head // group, :length] @ queries[row, head] * (d**-0.5)

@@ -89,7 +89,15 @@ to FP16 and accumulates in F32. Block decoding and packed loads belong to
 `quantization/weights`, rather than this operation. A single unpermuted piece
 with that capability can use the packed path; other layouts keep the general
 expert implementation. This avoids allocating a dequantized expert bank or a
-second weight cache. Thread count remains a measured schedule choice.
+second weight cache. The codec receives the previous lane accumulator on every
+tile, preserving continuous F32 summation. Adding independently rounded tile
+dots can change a later router decision even when early model diagnostics pass.
+Thread count remains a measured schedule choice.
+
+CUDA's `parallel_routes` compacts rows with warp prefix sums and one shared
+cursor per expert. It preserves token/rank order and initializes unused entries
+to -1, including fully inactive batches. The shared implementation retains the
+same route-table contract for other providers.
 
 ## How to extend
 

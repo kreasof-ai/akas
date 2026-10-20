@@ -6,7 +6,7 @@ from akas.kernels.kernel import Tensor, kernel, output
 
 
 def mma_partial(spec: KernelSpec, schedule: Mapping[str, object]):
-    """Share native-half KV across grouped query heads and use tensor-core QK/PV."""
+    """Stage native or encoded KV once per GQA tile for tensor-core QK/PV."""
     p = {**spec.parameters, **schedule}
     import tilelang.language as T
 
@@ -17,16 +17,28 @@ def mma_partial(spec: KernelSpec, schedule: Mapping[str, object]):
     group = h // kh
     qm = 16
     d = 64
+    from akas.ops.attention.kernel import cache_reader
+    from akas.quantization.kv.codec import get
+    from akas.quantization._shared.access import packed_arguments
+
+    native_half = p.get("kv_dtype") == "float16" and p.get("unit_scales", False)
+    storage, read = cache_reader({**p, "provider": "cuda"})
+    codec = (
+        None
+        if native_half
+        else get(p["kv_dtype"]).bind((r, kh, cap, d), provider="cuda")
+    )
+    decode = (
+        packed_arguments(codec.require("read_packed")) if codec is not None else None
+    )
     if (
         h % kh
         or group not in (2, 4, 8, 16)
-        or p.get("kv_dtype") != "float16"
-        or not p.get("unit_scales")
         or p.get("d") != 64
         or bk not in (64, 128)
         or stages not in (0, 1, 2, 3)
     ):
-        raise ValueError("unsupported native-half GQA decode schedule")
+        raise ValueError("unsupported staged-half GQA decode schedule")
 
     @T.macro
     def consume(
@@ -74,8 +86,8 @@ def mma_partial(spec: KernelSpec, schedule: Mapping[str, object]):
     @kernel
     def compute(
         q: Tensor((r, h * d), "float32"),
-        kc: Tensor((r, kh, cap, d), "float16"),
-        vc: Tensor((r, kh, cap, d), "float16"),
+        kc: Tensor(storage.values.shape, storage.values.dtype),
+        vc: Tensor(storage.values.shape, storage.values.dtype),
         ks: Tensor((r, kh, cap, 1), "float32"),
         vs: Tensor((r, kh, cap, 1), "float32"),
         positions: Tensor(r, "int32"),
@@ -92,6 +104,13 @@ def mma_partial(spec: KernelSpec, schedule: Mapping[str, object]):
             query = T.alloc_shared((qm, d), "float16")
             key = T.alloc_shared((bk, d), "float16")
             value = T.alloc_shared((bk, d), "float16")
+            if not native_half:
+                encoded_k = T.alloc_shared((bk, d), codec.packed_dtype)
+                encoded_v = T.alloc_shared((bk, d), codec.packed_dtype)
+                scale_k = T.alloc_shared((bk, 1), "float32")
+                scale_v = T.alloc_shared((bk, 1), "float32")
+                keys = T.view(kc, dtype=codec.packed_dtype)
+                values = T.view(vc, dtype=codec.packed_dtype)
             prob = T.alloc_shared((qm, bk), "float16")
             scores = T.alloc_fragment((qm, bk), "float32")
             result = T.alloc_fragment((qm, d), "float32")
@@ -104,7 +123,7 @@ def mma_partial(spec: KernelSpec, schedule: Mapping[str, object]):
                 query[i, j] = T.if_then_else(
                     i < group,
                     q[slot, (head * group + T.min(i, group - 1)) * d + j]
-                    * ks[slot, head, 0, 0],
+                    * (ks[slot, head, 0, 0] if native_half else 1),
                     0,
                 )
             T.clear(result)
@@ -117,8 +136,17 @@ def mma_partial(spec: KernelSpec, schedule: Mapping[str, object]):
             for block in T.serial(full_groups):
                 for local in T.Pipelined(4, num_stages=stages):
                     start = (split * span + block * 4 + local) * bk
-                    T.copy(kc[slot, head, start, 0], key)
-                    T.copy(vc[slot, head, start, 0], value)
+                    if native_half:
+                        T.copy(kc[slot, head, start, 0], key)
+                        T.copy(vc[slot, head, start, 0], value)
+                    else:
+                        T.copy(keys[slot, head, start, 0], encoded_k)
+                        T.copy(values[slot, head, start, 0], encoded_v)
+                        T.copy(ks[slot, head, start, 0], scale_k)
+                        T.copy(vs[slot, head, start, 0], scale_v)
+                        for i, j in T.Parallel(bk, d):
+                            key[i, j] = decode(encoded_k, scale_k, i, j)
+                            value[i, j] = decode(encoded_v, scale_v, i, j)
                     consume(
                         start,
                         length,
@@ -146,12 +174,12 @@ def mma_partial(spec: KernelSpec, schedule: Mapping[str, object]):
                 for i, j in T.Parallel(bk, d):
                     key_tail[i, j] = T.if_then_else(
                         start + i < length,
-                        kc[slot, head, T.min(start + i, cap - 1), j],
+                        read(kc, ks, slot, head, T.min(start + i, cap - 1), j),
                         0,
                     )
                     value_tail[i, j] = T.if_then_else(
                         start + i < length,
-                        vc[slot, head, T.min(start + i, cap - 1), j],
+                        read(vc, vs, slot, head, T.min(start + i, cap - 1), j),
                         0,
                     )
                 consume(
@@ -172,7 +200,7 @@ def mma_partial(spec: KernelSpec, schedule: Mapping[str, object]):
             for i, j in T.Parallel(qm, d):
                 if i < group:
                     out[((slot * h + head * group + i) * splits + split) * 66 + j] = (
-                        result[i, j] * vs[slot, head, 0, 0]
+                        result[i, j] * (vs[slot, head, 0, 0] if native_half else 1)
                     )
             for i in T.Parallel(qm):
                 if i < group:

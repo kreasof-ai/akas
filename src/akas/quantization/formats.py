@@ -38,6 +38,8 @@ class Codec:
     ``read(encoded, *coordinates)`` returns F32. Matrix ``read_tile`` fills a
     caller-owned tile; its element type selects staging precision. Specialized
     capabilities keep their documented operation-specific argument contracts.
+    ``dot_half(encoded, x, offset, tile, lane, row, previous)`` carries an F32
+    lane accumulator through FP16 operand products; tile sums must not reset it.
     No codec dispatch or container allocation survives macro expansion.
     """
 

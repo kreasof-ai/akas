@@ -295,8 +295,11 @@ def candidate(job, output):
             deployment=str(root / "candidate.json"),
         )
     except BaseException as error:
-        if isinstance(error, TimeoutError) and hasattr(error, "results"):
+        if hasattr(error, "results"):
             report["results"] = error.results
+        if getattr(error, "diagnostics", None):
+            np.savez_compressed(root / "diagnostics.npz", **error.diagnostics)
+            metadata["diagnostics_sha256"] = digest(root / "diagnostics.npz")
         result.update(
             status="oom"
             if isinstance(error, MemoryError) or "out of memory" in str(error).lower()
@@ -312,6 +315,8 @@ def candidate(job, output):
             )
         print(result["traceback"], flush=True)
     finally:
+        if (root / "diagnostics.npz").exists():
+            recorder.artifact(root / "diagnostics.npz", "diagnostics.npz")
         if (root / "telemetry.json").exists():
             metadata["memory"] = json.loads((root / "telemetry.json").read_text())
             write(root / "memory.json", metadata["memory"])
