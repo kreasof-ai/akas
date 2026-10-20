@@ -21,6 +21,78 @@ CODECS = [
 ]
 
 
+@pytest.mark.parametrize(
+    "depth,dtype,row,column,width",
+    [
+        (64, "float16", 0, 0, 64),
+        (64, "float16", 3, 32, 64),
+        (64, "float16", 0, 3, 32),
+        (96, "float16", 0, 64, 64),
+        (64, "float32", 0, 0, 64),
+        (64, "bfloat16", 0, 0, 64),
+    ],
+)
+def test_cuda_q4_tile_preserves_precision_and_boundaries(
+    tmp_path, depth, dtype, row, column, width
+):
+    if os.environ.get("AKAS_LFM_MOE_CUDA") != "1":
+        pytest.skip("opt-in packed Q4 tile qualification")
+    import tensor
+    from tensor.runtime.dtypes import encode_bfloat16, decode_bfloat16
+    from akas.compilation.emit import build_artifact
+    from akas.quantization.weights.ggml.validation import decode_rows
+
+    rows, tile_rows = 5, 8
+    rng = np.random.default_rng(918)
+    blocks = rng.integers(0, 256, (rows * depth // 32, 18), dtype="uint8")
+    scales = np.resize(
+        np.array(
+            [0.0, -0.0, 2**-24, -(2**-24), 2**-14, -(2**-14), 0.12347, -0.4321],
+            dtype="float16",
+        ),
+        len(blocks),
+    )
+    blocks[:, :2] = scales.view("uint8").reshape(-1, 2)
+    raw = blocks.ravel()
+    expected = np.zeros((tile_rows, width), dtype="float32")
+    decoded = decode_rows(raw, 2, depth, 0, rows)
+    valid_rows, valid_columns = min(tile_rows, rows - row), min(width, depth - column)
+    expected[:valid_rows, :valid_columns] = decoded[
+        row:, column : column + valid_columns
+    ]
+    if dtype == "float16":
+        expected = expected.astype("float16")
+    elif dtype == "bfloat16":
+        expected = decode_bfloat16(encode_bfloat16(expected))
+    entry, artifact = tmp_path / "tile.py", tmp_path / "tile.tbin"
+    entry.write_text(
+        "from akas.kernels.kernel import Tensor, kernel, output\n"
+        "from akas.quantization.weights import bind_parts\n"
+        "import tilelang.language as T\n"
+        "def tensor_export():\n"
+        f" codec = bind_parts((dict(rows={rows}, format='ggml', options=dict(encoding=2)),), {depth}, provider='cuda')\n"
+        " load = codec.require('read_tile')\n"
+        " @kernel\n"
+        f" def compute(w: Tensor(({raw.size},), 'uint8')) -> Tensor(({tile_rows}, {width}), '{dtype}'):\n"
+        f"  out = output(({tile_rows}, {width}), '{dtype}')\n"
+        "  with T.Kernel(1, threads=128):\n"
+        f"   load((w,), out, {row}, {column})\n"
+        "  return out\n"
+        " return {'kernel': compute}\n"
+    )
+    build_artifact(entry, artifact, provider="cuda", target="sm_89")
+    with tensor.Device(provider="cuda") as device, ExitStack() as stack:
+        source = device.from_numpy(raw)
+        result = device.empty(expected.shape, dtype)
+        stack.callback(source.release)
+        stack.callback(result.release)
+        module = stack.enter_context(device.load(artifact))
+        module.launch(source, result)
+        actual = result.to_numpy()
+        unsigned = "uint16" if dtype == "float16" else "uint32"
+        np.testing.assert_array_equal(actual.view(unsigned), expected.view(unsigned))
+
+
 def cases():
     for name in ("q8", "q16"):
         yield f"quantize_{name}", dict(r=3, k=256), "reference"

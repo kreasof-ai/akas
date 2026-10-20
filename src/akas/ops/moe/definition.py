@@ -954,11 +954,12 @@ IMPLEMENTATIONS += (
         factory="compact_experts",
         priority=40,
         accepts=lambda p: p["r"] > 1 and p.get("tile_map", False),
-        defaults=(("block_m", 16), ("columns", 64), ("block_k", 32)),
+        defaults=(("block_m", 16), ("columns", 64), ("block_k", 32), ("threads", 128)),
         space=(
             ("block_m", (16, 32, 64)),
             ("columns", (32, 64, 128)),
             ("block_k", (32, 64, 128)),
+            ("threads", (128, 256)),
         ),
     ),
     Implementation(

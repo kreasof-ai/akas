@@ -56,7 +56,9 @@ registrations and [GGUF tests](../../../../tests/test_qwen_gguf.py).
 Its FP32 activation contract runs on CUDA and WebGPU; `biased_router` and
 `routed_combine` share the same callable bodies. CUDA reuses the packed GEMV and
 grouped GEMM projections, with a warp-local decode reduction candidate. CUDA
-prefill search varies route rows, output columns and reduction depth per tile.
+prefill search varies route rows, output columns, reduction depth and thread
+count per tile. `compact_experts` requests the weight codec's `read_tile` to stage
+FP16 coefficients; format-specific packed loads stay in quantization.
 For prefill, the shared `expert_tile_map(counts)` returns expert IDs and local
 tile indices for each supported row tile. Empty experts produce no active work;
 one map serves gate, up and down projections on both providers. The map is

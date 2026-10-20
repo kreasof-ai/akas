@@ -160,11 +160,14 @@ def compact_experts(spec, schedule):
     bm, bn, bk = p.get("block_m", 16), p.get("columns", 64), p.get("block_k", 32)
     if bm not in (16, 32, 64) or bn not in (32, 64, 128) or bk not in (32, 64, 128):
         raise ValueError("invalid compact CUDA expert tile")
+    threads = p.get("threads", 128)
+    if threads not in (128, 256):
+        raise ValueError("compact CUDA expert tiles require 128 or 256 threads")
     capacity = (rows * top + 3) // 4 + experts
     groups = (rows * top + bm - 1) // bm + experts
     layout = bm.bit_length() - 3
     binding = bind_parts(p["weight_parts"], depth, provider="cuda")
-    storage, read = binding.storage.values, binding.read
+    storage, read_tile = binding.storage.values, binding.require("read_tile")
     routed = p.get("routed_input", False)
     shape = (rows, top, depth) if routed else (rows, depth)
     input_dtype = p.get("input_dtype", "float32")
@@ -186,7 +189,7 @@ def compact_experts(spec, schedule):
         tile_rows: Tensor((5, capacity), "int32"),
     ) -> Tensor((rows, top, columns), "float32"):
         out = output((rows, top, columns), "float32")
-        with T.Kernel(T.ceildiv(columns, bn), groups, threads=128) as (bx, group):
+        with T.Kernel(T.ceildiv(columns, bn), groups, threads=threads) as (bx, group):
             expert = tile_experts[layout, group]
             by = tile_rows[layout, group]
             if expert >= 0 and by * bm < counts[expert]:
@@ -205,16 +208,7 @@ def compact_experts(spec, schedule):
                             ),
                             0,
                         )
-                    for i, j in T.Parallel(bn, bk):
-                        rhs[i, j] = T.if_then_else(
-                            bx * bn + i < columns and tile * bk + j < depth,
-                            read(
-                                (w,),
-                                expert * columns + T.min(bx * bn + i, columns - 1),
-                                T.min(tile * bk + j, depth - 1),
-                            ),
-                            0,
-                        )
+                    read_tile((w,), rhs, expert * columns + bx * bn, tile * bk)
                     T.gemm(lhs, rhs, accum, transpose_B=True)
                 for i, j in T.Parallel(bm, bn):
                     index = by * bm + i

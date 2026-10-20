@@ -99,7 +99,7 @@ def bind_parts(parts, depth, *, provider):
     return Codec(
         storage,
         read,
-        matrix_tile(read, (bounds[-1], depth)),
+        direct.read_tile if direct else matrix_tile(read, (bounds[-1], depth)),
         read_pair=direct.read_pair if direct else None,
         dot=direct.dot if direct else None,
         dot_half=direct.dot_half if direct else None,

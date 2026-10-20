@@ -28362,6 +28362,240 @@
       "shapes": [],
       "search_phases": 0,
       "path": "runs/20261020132626112696-70569d50/run.json"
+    },
+    {
+      "id": "20261020134751392443-6b1662b8",
+      "started_at": "2026-10-20T13:47:51.392443Z",
+      "status": "failed",
+      "revision": "32f88b27fdb4077be1e474e5d269b6c11fb5a96e",
+      "dirty": false,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "fp8",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Qualify fused FP8 KV decode/prefill through complete autoregressive serving",
+        "parent_run": null
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 8192,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 130944,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 4,
+      "path": "runs/20261020134751392443-6b1662b8/run.json"
+    },
+    {
+      "id": "20261020141038109279-48b4394f",
+      "started_at": "2026-10-20T14:10:38.109279Z",
+      "status": "passed",
+      "revision": "32f88b27fdb4077be1e474e5d269b6c11fb5a96e",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": null,
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Use packed word loads and adjacent half2 dequantization in expert prefill",
+        "parent_run": null
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020141038109279-48b4394f/run.json"
+    },
+    {
+      "id": "20261020141834495811-d8e958f0",
+      "started_at": "2026-10-20T14:18:34.495811Z",
+      "status": "passed",
+      "revision": "32f88b27fdb4077be1e474e5d269b6c11fb5a96e",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "fp8",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "diagnostic",
+        "description": "Complete HTTP qualification of the existing FP8 program with owner-thread service construction",
+        "parent_run": "20261020134751392443-6b1662b8"
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 8192,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 130944,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 4,
+      "path": "runs/20261020141834495811-d8e958f0/run.json"
+    },
+    {
+      "id": "20261020142937738098-3f7d2afa",
+      "started_at": "2026-10-20T14:29:37.738098Z",
+      "status": "passed",
+      "revision": "32f88b27fdb4077be1e474e5d269b6c11fb5a96e",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "fp8",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Compare packed-word half2 expert prefill in the full FP8 model",
+        "parent_run": "20261020141834495811-d8e958f0"
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 8192,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 130944,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 4,
+      "path": "runs/20261020142937738098-3f7d2afa/run.json"
+    },
+    {
+      "id": "20261020143703352525-3f3213fb",
+      "started_at": "2026-10-20T14:37:03.352525Z",
+      "status": "passed",
+      "revision": "32f88b27fdb4077be1e474e5d269b6c11fb5a96e",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": null,
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Decode Q4 expert coefficients with adjacent half2 arithmetic while preserving continuous F32 dot order",
+        "parent_run": null
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020143703352525-3f3213fb/run.json"
+    },
+    {
+      "id": "20261020143708509841-18272ccf",
+      "started_at": "2026-10-20T14:37:08.509841Z",
+      "status": "passed",
+      "revision": "32f88b27fdb4077be1e474e5d269b6c11fb5a96e",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": null,
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Asynchronously stage compressed expert tiles before adjacent half2 dequantization",
+        "parent_run": null
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020143708509841-18272ccf/run.json"
+    },
+    {
+      "id": "20261020143737183637-9315841b",
+      "started_at": "2026-10-20T14:37:37.183637Z",
+      "status": "passed",
+      "revision": "32f88b27fdb4077be1e474e5d269b6c11fb5a96e",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": null,
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Asynchronously stage compressed expert tiles before adjacent half2 dequantization",
+        "parent_run": null
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020143737183637-9315841b/run.json"
     }
   ]
 }

@@ -225,7 +225,8 @@ def test_moe_kernel_device_qualification(tmp_path, provider, kind, parameters):
 
 @pytest.mark.parametrize("columns,block_k", [(32, 64), (64, 128), (128, 128)])
 @pytest.mark.parametrize("routed", [False, True])
-def test_cuda_prefill_expert_tile_shapes(tmp_path, columns, block_k, routed):
+@pytest.mark.parametrize("threads", [128, 256])
+def test_cuda_prefill_expert_tile_shapes(tmp_path, columns, block_k, routed, threads):
     test_moe_kernel_device_qualification(
         tmp_path,
         "cuda",
@@ -242,6 +243,7 @@ def test_cuda_prefill_expert_tile_shapes(tmp_path, columns, block_k, routed):
             columns=columns,
             block_k=block_k,
             block_m=32,
+            threads=threads,
             weight_parts=({"rows": 512, "format": "ggml", "options": {"encoding": 2}},),
         ),
     )

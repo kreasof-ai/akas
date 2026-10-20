@@ -34,13 +34,22 @@ encoding. Missing specializations raise through `Codec.require`; scalar/tile
 access remains available. Adding a codec does not replace any qualified packed
 consumer with its scalar fallback.
 
-CUDA Q4_0 also supplies `dot_half(encoded, x, offset, tile, lane, row)`. A logical
+CUDA Q4_0 supplies `dot_half(encoded, x, offset, tile, lane, row, previous)`. A logical
 32-lane warp consumes 256 channels: `offset` selects an activation row from a
 flat view, and each lane returns its F32 partial dot after FP16 operand rounding.
-The consumer owns the cross-tile sum and warp reduction. A word view and funnel
+The codec carries `previous` through continuous F32 additions; the consumer owns
+the warp reduction. A word view and funnel
 shift read the original alternating halfword-aligned blocks; they copy no
 weights and preserve the GGUF storage size. This capability is distinct from
 the F32-operand `dot`, and is checked by encoding and geometry before selection.
+
+For aligned FP16 matrix tiles, Q4_0 `read_tile` unpacks eight coefficients from
+word loads and computes adjacent pairs with FP16 arithmetic. The resulting
+coefficient bits match scalar F32 decoding followed by FP16 rounding, including
+signed zero and subnormal scales. Other tile precisions and unaligned columns
+keep scalar decoding. Single unpermuted weight pieces retain this tile reader;
+segmented or permuted layouts keep the composed reader. Operations request tile
+access without interpreting the encoding or allocating a decoded weight cache.
 
 Q4_1 and Q5_K supply host, scalar and tile decoding on both providers. They have no native
 packed-pair or lane-dot specialization yet. Fused projection/expert consumers use
