@@ -29843,6 +29843,87 @@
       "shapes": [],
       "search_phases": 0,
       "path": "runs/20261020182425046020-e2b51e58/run.json"
+    },
+    {
+      "id": "20261020182637613063-8a87f1a5",
+      "started_at": "2026-10-20T18:26:37.613063Z",
+      "status": "passed",
+      "revision": "8365db71a386bb1a50dcc311c84bf854456ecae9",
+      "dirty": false,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "fp8",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Full eight-context CUDA benchmark with compiler-owned FP8 prefill staging and exact fused expert decode; shape-matched native/Engine/HTTP prompts",
+        "parent_run": "20261020172334890603-b8fd2763"
+      },
+      "purpose": "benchmark",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 512,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 8192,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 16384,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 32768,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 65536,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 130944,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 4,
+      "path": "runs/20261020182637613063-8a87f1a5/run.json"
     }
   ]
 }
