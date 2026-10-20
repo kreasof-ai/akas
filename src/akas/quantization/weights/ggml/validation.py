@@ -1,6 +1,17 @@
 """Independent numerical and state qualification for ggml."""
 
 
+def reference(options, shape, storage, *, seed=31):
+    """Sample encoded storage and expose bounded independently decoded rows."""
+    encoding, depth = options["encoding"], shape[-1]
+    sample_weight(storage, encoding, seed=seed, decode=False)
+
+    def read(start, stop):
+        return decode_rows(storage, encoding, depth, start, stop)
+
+    return read
+
+
 def sample_weight(storage, kind, *, seed=31, decode=True):
     """Fill resident bytes, including signed payloads and finite block scales."""
     import numpy as np

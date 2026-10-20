@@ -1,6 +1,37 @@
 """Independent numerical and state qualification for moe."""
 
 
+def expert_swiglu_validation(kind, p, signature):
+    """Independent gate/up products, preserving the declared operand rounding."""
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.quantization.weights.reference import sample_parts
+
+    values = sample_arguments(signature)
+    experts, top, columns, depth = (p[n] for n in ("experts", "top", "o", "k"))
+    values["x"] *= 8
+    values["ids"][0] = np.linspace(0, experts - 1, top, dtype="int32")
+    values["counts"][:] = 0
+    values["counts"][values["ids"][0]] = 1
+    if top > 1:
+        values["counts"][values["ids"][0, -1]] = 0
+    gate = sample_parts(p["weight_parts"], depth, values["w"], seed=31)
+    up = sample_parts(p["up_weight_parts"], depth, values["w2"], seed=32)
+    dtype = "float16" if p.get("round_inputs", False) else "float32"
+    source = values["x"][0].astype(dtype).astype("float64")
+    result = np.zeros_like(values["out"])
+    for rank, expert in enumerate(values["ids"][0]):
+        if not values["counts"][expert]:
+            continue
+        for start in range(0, columns, 128):
+            stop = min(start + 128, columns)
+            begin, end = expert * columns + start, expert * columns + stop
+            g = (gate(begin, end).astype(dtype).astype("float64") @ source).astype("float32")
+            u = (up(begin, end).astype(dtype).astype("float64") @ source).astype("float32")
+            result[0, rank, start:stop] = g / (1 + np.exp(-g)) * u
+    return ValidationCase(values, {**values, "out": result}, rtol=.002, atol=.0002)
+
+
 def tile_tables(counts, capacity):
     import numpy as np
 

@@ -82,5 +82,10 @@ Add backend specializations behind the same binding; declare actual capabilities
 and independent validation recipes. Check payload bits, scales, geometry and a
 consuming operation, including the full conversion/consumer launch plan.
 
+`validation.reference(options, shape, storage, seed=...)` samples encoded bytes
+and returns a bounded host row reader. Operations use this through
+`weights.reference.sample_parts` to build independent mathematical expectations
+without interpreting encoding IDs or allocating a full decoded expert bank.
+
 See the [quantization guide](../../README.md) for callable contracts, fused linear
 usage, adding a format and qualification commands.

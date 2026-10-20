@@ -324,7 +324,81 @@ def fp8_prefill_moe(ctx, block):
     )
 
 
+def _expert_swiglu_groups(graph):
+    """Fuse only private, single-token projection pairs consumed by SwiGLU."""
+    from collections import Counter
+    from akas.graph import Call
+
+    references = Counter(
+        name for call in graph.calls for name in (*call.arguments, *call.bindings.values())
+    )
+    exposed = {b.alias_of for b in graph.buffers.values() if b.alias_of is not None}
+    if graph.request:
+        exposed.update(graph.request["inputs"].values())
+        exposed.update(graph.request.get("features", {}).values())
+        exposed.update(graph.request.get("reset", ()))
+        exposed.add(graph.request["prediction"])
+
+    def fields(call, names):
+        if call.bindings:
+            return dict(call.bindings) if set(call.bindings) == set(names) else None
+        return dict(zip(names, call.arguments)) if len(call.arguments) == len(names) else None
+
+    def simple(parts, rows):
+        return (
+            len(parts) == 1 and parts[0]["rows"] == rows
+            and not parts[0].get("row_order") and not parts[0].get("column_order")
+        )
+
+    groups = {}
+    for index in range(len(graph.calls) - 2):
+        gate, up, activation = graph.calls[index:index + 3]
+        if (gate.kind, up.kind, activation.kind) != (
+            "quantized_experts", "quantized_experts", "swiglu_experts"
+        ):
+            continue
+        p, q, a = gate.parameters, up.parameters, activation.parameters
+        keys = ("r", "top", "experts", "o", "k", "input_dtype", "round_inputs")
+        if not all(k in p and k in q for k in (*keys, "weight_parts")):
+            continue
+        if (
+            p.get("r") != 1 or p.get("input_dtype") != "float32"
+            or p.get("routed_input") or q.get("routed_input")
+            or any(p.get(k) != q.get(k) for k in keys)
+            or not a.get("expert_rows") or a.get("round_inputs", False)
+            or (a.get("r"), a.get("top"), a.get("c")) != (1, p["top"], p["o"])
+            or a.get("input_dtype") != "float32" or a.get("output_dtype") != "float32"
+            or not simple(p["weight_parts"], p["experts"] * p["o"])
+            or not simple(q["weight_parts"], p["experts"] * p["o"])
+        ):
+            continue
+        g = fields(gate, ("x", "w", "ids", "counts", "out"))
+        u = fields(up, ("x", "w", "ids", "counts", "out"))
+        act = fields(activation, ("g", "u", "out"))
+        if not g or not u or not act:
+            continue
+        if (
+            any(g[k] != u[k] for k in ("x", "ids", "counts"))
+            or (act["g"], act["u"]) != (g["out"], u["out"])
+            or any(
+                name in exposed or references[name] != 2 or graph.buffers[name].role != "scratch"
+                for name in (g["out"], u["out"])
+            )
+        ):
+            continue
+        parameters = {k: p[k] for k in keys}
+        parameters.update(weight_parts=p["weight_parts"], up_weight_parts=q["weight_parts"])
+        groups[index] = Call(
+            "expert_swiglu", parameters,
+            (g["x"], g["w"], u["w"], g["ids"], g["counts"], act["out"]),
+            label=activation.label if activation.label is not None else gate.label,
+        )
+    return groups
+
+
 def search_policies(graph, commit, *, provider, target):
+    if graph.contract == "reference":
+        return [{"fused_swiglu": True}] if _expert_swiglu_groups(graph) else []
     if (
         graph.contract != "block-fp8"
         or provider != "cuda"
@@ -339,6 +413,7 @@ def lower(graph, commit, settings, *, provider, target):
     from akas.quantization import get
 
     allowed = {
+        "fused_swiglu",
         "compact",
         "partitions",
         "columns",
@@ -358,6 +433,22 @@ def lower(graph, commit, settings, *, provider, target):
     }
     if set(settings) - allowed:
         raise ValueError("unknown routed projection policy")
+    if "fused_swiglu" in settings and type(settings["fused_swiglu"]) is not bool:
+        raise ValueError("expert SwiGLU fusion must be a boolean")
+    if settings.get("fused_swiglu") and graph.contract != "reference":
+        raise ValueError("expert SwiGLU fusion requires the reference contract")
+    if graph.contract == "reference" and settings.get("fused_swiglu"):
+        groups = _expert_swiglu_groups(graph)
+        calls, index = [], 0
+        while index < len(graph.calls):
+            if index in groups:
+                calls.append(groups[index])
+                index += 3
+            else:
+                calls.append(graph.calls[index])
+                index += 1
+        graph.calls = calls
+        return graph, commit
     if graph.contract != "block-fp8":
         return (graph, commit)
     if provider != "cuda":
@@ -1005,6 +1096,37 @@ IMPLEMENTATIONS += (
 
 
 from akas.quantization.weights import supports_parts
+
+from .validation import expert_swiglu_validation
+
+OUTPUT_ARGUMENTS["reference"]["expert_swiglu"] = OutputABI((-1,), ("out",))
+VALIDATIONS["expert_swiglu"] = expert_swiglu_validation
+
+IMPLEMENTATIONS += (
+    Implementation(
+        "expert_swiglu", "akas.ops.moe.kernel", "reference",
+        factory="expert_swiglu", priority=10,
+        accepts=lambda p: p["r"] == 1 and p.get("input_dtype") == "float32",
+        defaults=(("threads", 128),), space=(("threads", (64, 128, 256)),),
+    ),
+    Implementation(
+        "expert_swiglu", "akas.ops.moe.webgpu", "reference", provider="webgpu",
+        factory="expert_swiglu", priority=10,
+        accepts=lambda p: p["r"] == 1 and p.get("input_dtype") == "float32",
+        defaults=(("threads", 128),), space=(("threads", (64, 128, 256)),),
+    ),
+    Implementation(
+        "expert_swiglu", "akas.ops.moe.cuda", "reference",
+        factory="expert_swiglu", name="moe.cuda.packed_swiglu", priority=40,
+        accepts=lambda p: (
+            p["r"] == 1 and p.get("input_dtype") == "float32" and p.get("round_inputs", False)
+            and supports_parts(p["weight_parts"], p["k"], "dot_half", provider="cuda")
+            and supports_parts(p["up_weight_parts"], p["k"], "dot_half", provider="cuda")
+        ),
+        defaults=(("threads", 128), ("columns_per_warp", 1), ("unroll", 1)),
+        space=(("threads", (128, 256)), ("columns_per_warp", (1, 2)), ("unroll", (1, 2))),
+    ),
+)
 
 IMPLEMENTATIONS += (
     Implementation(

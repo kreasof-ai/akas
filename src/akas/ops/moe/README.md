@@ -96,6 +96,17 @@ tile, preserving continuous F32 summation. Adding independently rounded tile
 dots can change a later router decision even when early model diagnostics pass.
 Thread count remains a measured schedule choice.
 
+The `fused_swiglu` policy can replace a private, adjacent single-token gate/up/
+SwiGLU sequence with `expert_swiglu(x, gate, up, ids, counts) -> activation`.
+The down projection stays separate, so output tiles do not recompute gate/up.
+CUDA carries each codec's FP16 dot through continuous FP32 lane accumulators;
+the shared implementation also supplies the WebGPU callable. Each provider
+retains the original graph's operand-rounding policy. Projection values exposed
+as features, views or additional consumers keep their original calls. The
+independent reference samples weights through their codec and decodes bounded
+row tiles. Measure the complete sequence and whole-model execution before
+selecting a fusion schedule; cache-resident microbenchmarks are insufficient.
+
 CUDA's `parallel_routes` compacts rows with warp prefix sums and one shared
 cursor per expert. It preserves token/rank order and initializes unused entries
 to -1, including fully inactive batches. The shared implementation retains the

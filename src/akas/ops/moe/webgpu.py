@@ -5,6 +5,12 @@ from .definition import IMPLEMENTATIONS as _CHOICES
 IMPLEMENTATIONS = tuple((choice for choice in _CHOICES if choice.provider == "webgpu"))
 
 
+def expert_swiglu(spec, schedule):
+    from .kernel import expert_swiglu as portable
+
+    return portable(spec, schedule, provider="webgpu")
+
+
 def register_experts(spec, schedule):
     """Grouped expert tiles with warp-aligned columns and private accumulators."""
     import tilelang.language as T
