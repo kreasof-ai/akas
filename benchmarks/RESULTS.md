@@ -4,6 +4,9 @@ Generated from run records. See [the benchmark guide](../docs/benchmarking.md).
 
 | UTC | Hardware | Runtime / model | Backend / weights / mode / KV | Shapes (B/P/O) | Purpose | Status | Source | Record |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-10-20T10:48:41.883865Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | webgpu / q4_0 / ar / float16 | 1/32/128, 1/8192/128 | preflight | passed | b3046abc86 + snapshot | [run](runs/20261020104841883865-97f56594/run.json) |
+| 2026-10-20T10:37:54.938429Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | webgpu / q4_0 / ar / float16 | 1/32/128, 1/8192/128, 1/130944/128 | preflight | failed | b3046abc86 + snapshot | [run](runs/20261020103754938429-11a56641/run.json) |
+| 2026-10-20T10:23:28.416670Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / ar / float16 | 1/32/128, 1/8192/128, 1/130944/128 | preflight | passed | b3046abc86 | [run](runs/20261020102328416670-be712fbb/run.json) |
 | 2026-10-20T05:38:20.844217Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | webgpu / unspecified / ar / float16 | 1/32/128, 1/512/128, 1/2048/128, 1/8192/128, 1/16384/128, 1/32768/128, 1/65536/128, 1/130944/128 | optimization | interrupted | fb5dd2582a + snapshot | [run](runs/20261020053820844217-3b0765e7/run.json) |
 | 2026-10-19T23:57:48.301427Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | webgpu / q4_0 / ar / float16 | 1/32/128, 1/512/128, 1/2048/128, 1/8192/128, 1/16384/128, 1/32768/128, 1/65536/128, 1/130944/128 | optimization | failed | fb5dd2582a + snapshot | [run](runs/20261019235748301427-fdb5ef2b/run.json) |
 | 2026-10-19T23:52:38.660430Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / ar / float16 | 1/32/128, 1/512/128, 1/2048/128, 1/8192/128, 1/16384/128, 1/32768/128, 1/65536/128, 1/130944/128 | optimization | failed | fb5dd2582a + snapshot | [run](runs/20261019235238660430-0eb8e3d6/run.json) |

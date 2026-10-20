@@ -377,6 +377,11 @@ def test_expert_search_reuses_reference_across_tiles(tmp_path, monkeypatch, prov
     operation = result["tuning"]["operations"][0]
     assert operation["selected"]["trials"] == 2
     assert len(operation["candidates"]) >= 3
+    assert all(
+        row["timing"]["execution"] == "prepared-plan"
+        for row in operation["candidates"]
+        if row["status"] == "passed"
+    )
     assert len(constructions) == 1, [
         (p.get("block_m"), p.get("columns")) for _, p in constructions
     ]
@@ -584,3 +589,34 @@ def test_cuda_pipelined_attention_tail_and_inactive(
             np.testing.assert_allclose(
                 buffer.to_numpy(), case.expected[name], rtol=case.rtol, atol=case.atol
             )
+
+
+@pytest.mark.parametrize("provider", ["cuda", "webgpu"])
+def test_prepared_kernel_timing_restores_mutable_state(tmp_path, provider):
+    if os.environ.get("AKAS_LFM_MOE_" + provider.upper()) != "1":
+        pytest.skip("opt-in prepared timing and state reset qualification")
+    from akas.graph import Graph
+    from akas.compilation.compile import produce
+    from akas.compilation.tuning import SearchSettings
+
+    graph = Graph(contract="reference", phase="prefill")
+    layouts = [
+        ("x", (2 * 4 * 3 * 64,), "float32", "input"),
+        ("w", (64 * 3,), "float32", "weight"),
+        ("state", (2, 2, 64), "float32", "state"),
+        ("out", (2 * 4 * 64,), "float32", "output"),
+        ("enabled", (2,), "int32", "input"),
+    ]
+    buffers = [graph.buffer(n, s, d, role=r) for n, s, d, r in layouts]
+    graph("conv", dict(r=2, c=64, length=3, chunk=4), *buffers)
+    result = produce(
+        graph,
+        tmp_path,
+        provider=provider,
+        search_settings=SearchSettings(budget=1, warmup=2, samples=2, repeats=2),
+    )
+    # Qualification checks both the returned output and the convolution state
+    # after repeated replays; accumulated state would fail that reference.
+    trials = result["tuning"]["operations"][0]["candidates"]
+    assert trials and all(t["status"] == "passed" for t in trials)
+    assert all(t["timing"]["execution"] == "prepared-plan" for t in trials)

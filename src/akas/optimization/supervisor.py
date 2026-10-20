@@ -12,7 +12,7 @@ import tempfile
 import time
 
 from akas.benchmarking.history import digest, source_identity, utc, write, rebuild_index
-from akas.optimization.context import Context, identity, source_root
+from akas.optimization.context import Context, identity, measurement_limits, source_root
 from akas.optimization.planning import recipes, refine, score, search_order, software
 
 
@@ -261,10 +261,7 @@ def optimize(context: Context, out, *, budget, history="benchmarks"):
         checkpoint_sha256=checkpoint_hash,
         source_sha256=source["tree_sha256"],
         software=software(),
-        measurement_limits=dict(
-            shape_timeout_seconds=float(os.environ.get("AKAS_SHAPE_TIMEOUT", "0")),
-            http_timeout_seconds=os.environ.get("AKAS_HTTP_TIMEOUT"),
-        ),
+        measurement_limits=measurement_limits(),
     )
     fingerprint = identity(frozen)
     with (

@@ -27428,6 +27428,137 @@
       ],
       "search_phases": 0,
       "path": "runs/20261020053820844217-3b0765e7/run.json"
+    },
+    {
+      "id": "20261020102328416670-be712fbb",
+      "started_at": "2026-10-20T10:23:28.416670Z",
+      "status": "passed",
+      "revision": "b3046abc86b48ef44871f42988de5b0f794d8e7e",
+      "dirty": false,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Manually optimize pipelined CUDA and vector-reusing WebGPU attention; validate bounded measurements without restarting campaign",
+        "parent_run": "20261019162711688563-1782af6e"
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 8192,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 130944,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 4,
+      "path": "runs/20261020102328416670-be712fbb/run.json"
+    },
+    {
+      "id": "20261020103754938429-11a56641",
+      "started_at": "2026-10-20T10:37:54.938429Z",
+      "status": "failed",
+      "revision": "b3046abc86b48ef44871f42988de5b0f794d8e7e",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "webgpu",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Manually optimize pipelined CUDA and vector-reusing WebGPU attention; validate bounded measurements without restarting campaign",
+        "parent_run": "20261019235748301427-fdb5ef2b"
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 8192,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 130944,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 4,
+      "path": "runs/20261020103754938429-11a56641/run.json"
+    },
+    {
+      "id": "20261020104841883865-97f56594",
+      "started_at": "2026-10-20T10:48:41.883865Z",
+      "status": "passed",
+      "revision": "b3046abc86b48ef44871f42988de5b0f794d8e7e",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "webgpu",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Manually optimize pipelined CUDA and vector-reusing WebGPU attention; validate bounded measurements without restarting campaign",
+        "parent_run": "20261019235748301427-fdb5ef2b"
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 8192,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 4,
+      "path": "runs/20261020104841883865-97f56594/run.json"
     }
   ]
 }

@@ -7,7 +7,14 @@ from pathlib import Path
 import time
 
 from akas.benchmarking.history import source_identity, utc, write
-from akas.optimization.context import Context, discover, duration, identity, workload
+from akas.optimization.context import (
+    Context,
+    discover,
+    duration,
+    identity,
+    workload,
+    measurement_limits,
+)
 from akas.optimization.supervisor import lock, optimize
 
 
@@ -62,6 +69,7 @@ def run(specification, out, *, budget, slice_seconds, history):
         spec=spec,
         models=models,
         workload=workload(spec["workload"]),
+        measurement_limits=measurement_limits(),
         source=source_identity(root)["tree_sha256"],
     )
     fingerprint = identity(frozen)
@@ -75,7 +83,7 @@ def run(specification, out, *, budget, slice_seconds, history):
             state = json.loads(path.read_text())
             if state["identity"] != fingerprint or state["budget_seconds"] != budget:
                 raise ValueError(
-                    "campaign source, specification, model declarations or total budget changed; use a new output directory"
+                    "campaign source, specification, model declarations, measurement limits or total budget changed; use a new output directory"
                 )
         else:
             print(
@@ -86,6 +94,7 @@ def run(specification, out, *, budget, slice_seconds, history):
                 identity=fingerprint,
                 specification=spec,
                 models=models,
+                measurement_limits=frozen["measurement_limits"],
                 source=source_identity(root),
                 created_at=utc(),
                 budget_seconds=budget,

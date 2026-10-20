@@ -44,6 +44,12 @@ the search algorithm and backend compilation. A candidate must preserve numerica
 results, immutable inputs, state and buffer layouts before its timing can count.
 Qualification is scoped to the compiled workload; it does not imply peak performance
 at every other shape.
+Candidate timing binds arguments once and replays a prepared execution plan,
+matching the provider path used by serving. Repeated Python argument binding is
+excluded. Mutable inputs and outputs are restored outside each timed invocation;
+qualification still checks results and state after repeated replays. Traces label
+the execution mode so kernel timings can be interpreted with their protocol.
+
 Search keeps one numerical fixture per operation at a time. Candidates sharing
 its storage ABI and declared precision reuse it; switching layouts or precision
 defaults releases the preceding fixture and device buffers before constructing

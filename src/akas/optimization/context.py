@@ -29,6 +29,16 @@ def duration(value):
     return seconds
 
 
+def measurement_limits():
+    """Freeze measurement controls in both matrix and configuration identities."""
+    import os
+
+    return dict(
+        shape_timeout_seconds=float(os.environ.get("AKAS_SHAPE_TIMEOUT", "0")),
+        http_timeout_seconds=os.environ.get("AKAS_HTTP_TIMEOUT"),
+    )
+
+
 def symbol(name):
     module, separator, attribute = name.partition(":")
     if not separator:

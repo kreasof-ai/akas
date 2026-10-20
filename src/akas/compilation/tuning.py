@@ -647,14 +647,26 @@ def qualify(bundle, out, *, settings=None, device=None):
                             check(name)
                     case_cache[signature_key] = (case, written, buffers, True)
 
-                    timing = time_kernel(
-                        device,
-                        lambda: loaded.launch(*arguments),
-                        reset=reset,
-                        warmup=settings.warmup,
-                        samples=settings.samples,
-                        repeats=settings.repeats,
-                    )
+                    # Match serving: resolve arguments once, then time a
+                    # prepared plan rather than repeated Python ABI binding.
+                    # Reset mutable buffers outside each timed invocation.
+                    from akas.execution.plan import ExecutionPlan
+
+                    plan = ExecutionPlan(device)
+                    plan.bind(loaded, arguments)
+                    prepared = plan.capture(resources=(loaded, *arguments))
+                    try:
+                        timing = time_kernel(
+                            device,
+                            prepared.launch,
+                            reset=reset,
+                            warmup=settings.warmup,
+                            samples=settings.samples,
+                            repeats=settings.repeats,
+                        )
+                    finally:
+                        prepared.close()
+                    timing["execution"] = "prepared-plan"
                     for name in written:
                         check(name)
                     measurements.append(

@@ -130,6 +130,16 @@ def test_matrix_resumes_without_repeating_completed_entries(tmp_path, monkeypatc
             history=tmp_path / "history",
         )
 
+    monkeypatch.setenv("AKAS_SHAPE_TIMEOUT", "2")
+    with pytest.raises(ValueError, match="measurement limits"):
+        campaign.run(
+            spec,
+            tmp_path / "out",
+            budget=60,
+            slice_seconds=10,
+            history=tmp_path / "history",
+        )
+
 
 def test_mtp_cannot_establish_its_own_ar_reference(tmp_path, monkeypatch):
     from akas.optimization import supervisor
