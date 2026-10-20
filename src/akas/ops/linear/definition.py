@@ -758,8 +758,8 @@ IMPLEMENTATIONS = (
         priority=40,
         defaults=(("block_m", 32), ("block_n", 64), ("block_k", 32), ("stages", 2)),
         space=(
-            ("block_m", (32, 16, 64)),
-            ("block_n", (64, 32, 128)),
+            ("block_m", (32, 16, 64, 128)),
+            ("block_n", (64, 32, 128, 256)),
             ("block_k", (32, 64, 128)),
             ("stages", (2, 1, 3)),
             ("threads", (128, 256)),
@@ -777,8 +777,8 @@ IMPLEMENTATIONS = (
         priority=40,
         defaults=(("block_m", 32), ("block_n", 64), ("block_k", 32), ("stages", 2)),
         space=(
-            ("block_m", (32, 16, 64)),
-            ("block_n", (64, 32, 128)),
+            ("block_m", (32, 16, 64, 128)),
+            ("block_n", (64, 32, 128, 256)),
             ("block_k", (32, 64, 128)),
             ("stages", (2, 1, 3)),
             ("threads", (128, 256)),
@@ -796,8 +796,8 @@ IMPLEMENTATIONS = (
         priority=40,
         defaults=(("block_m", 32), ("block_n", 64), ("block_k", 32), ("stages", 2)),
         space=(
-            ("block_m", (32, 16, 64)),
-            ("block_n", (64, 32, 128)),
+            ("block_m", (32, 16, 64, 128)),
+            ("block_n", (64, 32, 128, 256)),
             ("block_k", (32, 64, 128)),
             ("stages", (2, 1, 3)),
             ("threads", (128, 256)),

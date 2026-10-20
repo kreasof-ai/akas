@@ -1182,3 +1182,42 @@ IMPLEMENTATIONS += (
         ),
     ),
 )
+
+
+# Row-local MMA removes cross-warp barriers while retaining the established
+# two-half, per-lane F32 reduction order. Staging owns finite zero padding.
+IMPLEMENTATIONS += (
+    Implementation(
+        "attention",
+        "akas.ops.attention.cuda",
+        "reference",
+        factory="floating_ordered",
+        name="attention.cuda.ordered",
+        priority=40,
+        targets=("sm_89",),
+        defaults=(
+            ("prefill_precision", "float16"),
+            ("async_loads", True),
+            ("query_rows", 64),
+            ("key_rows", 64),
+            ("stages", 1),
+            ("threads", 128),
+        ),
+        space=(
+            ("query_rows", (64,)),
+            ("key_rows", (64,)),
+            ("stages", (1,)),
+            ("threads", (128,)),
+        ),
+        reference_keys=("key_rows",),
+        accepts=lambda p: (
+            p.get("optimized", False)
+            and p.get("chunk", 1) >= 256
+            and p.get("d") == 64
+            and p.get("unit_scales", False)
+            and p.get("staged_kv", False)
+            and p["kv_dtype"] == "float16"
+            and p["capacity"] % 256 == 0
+        ),
+    ),
+)

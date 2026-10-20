@@ -50,6 +50,14 @@ softmax remains ordered. Merely changing a serial loop annotation does not make
 loads asynchronous, and additional stages can reduce occupancy. Qualify and
 measure the generated code before promoting a schedule.
 
+On SM89, compiler-staged F16 KV can use `floating_ordered(spec, schedule)`.
+Each warp owns a query row's 64-key tile. Its two 32-key partial sums retain the
+established per-lane F32 addition order, then combine inside the warp. This
+removes cross-warp softmax barriers while preserving the qualified output bits.
+The factory requires Q64/K64, 128 threads, one stage, unit metadata and finite
+padding supplied by cache staging. Native scaled caches keep their existing
+implementations. See the [ordered attention checks](../../../../tests/test_attention_ordered.py).
+
 Floating decode exposes its KV partition count through the attention graph
 policy. The policy updates the partial buffer and both producer and merger
 contracts together. Grouped decode shares each KV tile across query heads and

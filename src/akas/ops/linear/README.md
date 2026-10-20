@@ -47,6 +47,12 @@ with at most 256 outputs and depth at least 128. CUDA keeps its measured warp
 implementation as the default; the shared alternative remains selectable.
 Changing the reduction geometry needs numerical and model qualification.
 
+Packed CUDA prefill also exposes 128-row and 256-column tiles to tuning. These
+retain FP16 operands and F32 accumulation; larger tiles trade more register and
+shared-memory use for greater input and weight reuse. Small or narrow matrices
+can still favor the smaller tiles, so qualified schedule profiles record the
+selected geometry for each shape.
+
 ## How to extend
 
 Declare the operand storage, accumulation/output precision and any residual effects
