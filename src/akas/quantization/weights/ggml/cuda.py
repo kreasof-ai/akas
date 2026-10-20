@@ -434,9 +434,50 @@ def packed_dot_half(shape):
     return dot
 
 
+def packed_dot_float(shape):
+    """Packed Q4 lane tile with F32 operands, coefficients and accumulation."""
+    import tilelang.language as T
+    from math import prod
+
+    depth = shape[-1]
+    row_bytes = depth // 32 * 18
+    words_count = prod(shape) // 32 * 18 // 4
+
+    @T.macro
+    def dot(encoded, x, offset, tile, lane, row, previous):
+        words = T.meta_var(T.view(encoded[0], (words_count,), dtype="uint32"))
+        base = row * row_bytes + (tile * 8 + lane // 4) * 18
+        scale_bits = T.cast(words[base // 4] >> (base % 4 * 8), "uint16")
+        scale = T.cast(T.reinterpret("float16", scale_bits), "float32")
+        address = base + 2 + lane % 4 * 4
+        packed = T.call_extern(
+            "uint32",
+            "__funnelshift_r",
+            words[address // 4],
+            words[(address + 3) // 4],
+            T.cast(address % 4 * 8, "uint32"),
+        )
+        channel = offset + tile * 256 + lane // 4 * 32 + lane % 4 * 4
+        partial = T.alloc_var("float32")
+        partial = 0
+        for component in T.unroll(4):
+            coefficient = (
+                T.cast((packed >> (component * 8)) & 15, "float32") - 8
+            ) * scale
+            partial = T.ieee_fmaf(x[channel + component], coefficient, partial)
+        for component in T.unroll(4):
+            coefficient = (
+                T.cast((packed >> (component * 8 + 4)) & 15, "float32") - 8
+            ) * scale
+            partial = T.ieee_fmaf(x[channel + 16 + component], coefficient, partial)
+        return previous + partial
+
+    return dot
+
+
 def supports(capability, shape, *, encoding):
     """Compiler-free specialization inventory for packed consumers."""
-    if capability == "dot_half":
+    if capability in ("dot_half", "dot_float"):
         return encoding == 2 and shape[-1] % 256 == 0
     if capability == "read_pair":
         return encoding in (1, 2, 12, 14)
@@ -478,6 +519,9 @@ def bind(shape, *, encoding):
         dot_half=packed_dot_half(shape)
         if supports("dot_half", shape, encoding=encoding)
         else None,
+        dot_float=packed_dot_float(shape)
+        if supports("dot_float", shape, encoding=encoding)
+        else None,
     )
 
 
@@ -488,5 +532,13 @@ def dequantize(spec, schedule):
 
 
 AVAILABLE = "cuda" in dict(FORMAT.providers)
-CAPABILITIES = ("read", "read_tile", "read_pair", "dot", "dot_half", "dequantize")
+CAPABILITIES = (
+    "read",
+    "read_tile",
+    "read_pair",
+    "dot",
+    "dot_half",
+    "dot_float",
+    "dequantize",
+)
 IMPLEMENTATIONS = tuple(choice for choice in _CHOICES if choice.provider == "cuda")

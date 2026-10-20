@@ -103,6 +103,7 @@ def bind_parts(parts, depth, *, provider):
         read_pair=direct.read_pair if direct else None,
         dot=direct.dot if direct else None,
         dot_half=direct.dot_half if direct else None,
+        dot_float=direct.dot_float if direct else None,
     )
 
 

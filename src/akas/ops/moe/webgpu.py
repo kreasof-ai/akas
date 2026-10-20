@@ -307,3 +307,10 @@ def warp_experts(spec, schedule):
         return out
 
     return compute
+
+
+def packed_float_experts(spec, schedule):
+    """Decode through the codec F32 lane-product capability."""
+    from .kernel import _packed_float_experts
+
+    return _packed_float_experts(spec, schedule, provider="webgpu")

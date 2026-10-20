@@ -40,6 +40,10 @@ class Codec:
     capabilities keep their documented operation-specific argument contracts.
     ``dot_half(encoded, x, offset, tile, lane, row, previous)`` carries an F32
     lane accumulator through FP16 operand products; tile sums must not reset it.
+    ``dot_float(encoded, x, offset, tile, lane, row, previous)`` adds a packed
+    256-channel F32 lane product to ``previous`` without rounding operands to
+    FP16. The consumer owns the warp reduction; tile grouping can change F32
+    addition order and must pass an independent numerical reference.
     No codec dispatch or container allocation survives macro expansion.
     """
 
@@ -49,6 +53,7 @@ class Codec:
     read_pair: Callable | None = None
     dot: Callable | None = None
     dot_half: Callable | None = None
+    dot_float: Callable | None = None
     write: Callable | None = None
     write_pair: Callable | None = None
     read_packed: Callable | None = None
@@ -69,6 +74,7 @@ class Codec:
             "read_pair",
             "dot",
             "dot_half",
+            "dot_float",
             "write",
             "write_pair",
             "read_packed",

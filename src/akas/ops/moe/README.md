@@ -1,5 +1,11 @@
 # Mixture of experts
 
+Single-token F32 expert projections use the codec-owned `dot_float` capability
+when available. Both providers retain F32 activations, coefficients and
+accumulators; the kernel owns routing, launch geometry, warp reduction and
+inactive outputs. Packed block fields remain in quantization. Formats without
+that capability keep the general reader path.
+
 ## Purpose
 
 Route tokens to experts, construct route groups/tiles, project expert inputs and combine

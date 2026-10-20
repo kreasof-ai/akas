@@ -17,7 +17,14 @@ def bind(shape, *, encoding):
     storage = FORMAT.storage(shape, provider="webgpu", encoding=encoding)
     read = matrix_reader(decoder(encoding, shape[-1]))
 
-    return Codec(storage, read, matrix_tile(read, shape))
+    return Codec(
+        storage,
+        read,
+        matrix_tile(read, shape),
+        dot_float=packed_dot_float(shape)
+        if supports("dot_float", shape, encoding=encoding)
+        else None,
+    )
 
 
 def gemv_terms(p, *, fast_q4, lanes, row_count, dot_q4, dot_q6):
@@ -274,5 +281,50 @@ def dequantize(spec, schedule):
 
 
 AVAILABLE = "webgpu" in dict(FORMAT.providers)
-CAPABILITIES = ("read", "read_tile", "dequantize")
+CAPABILITIES = ("read", "read_tile", "dot_float", "dequantize")
 IMPLEMENTATIONS = tuple(choice for choice in _CHOICES if choice.provider == "webgpu")
+
+
+def packed_dot_float(shape):
+    """A 32-lane, 256-channel tile with original F32 coefficients/operands."""
+    import tilelang.language as T
+    from tensor.compiler.webgpu.schedules.registers import vector
+    from akas.quantization._shared.packing import packed_loads
+
+    byte, half, word = packed_loads()
+    depth = shape[-1]
+    row_bytes = depth // 32 * 18
+
+    def activation(x, channel):
+        return vector([x[channel + i] for i in range(4)])
+
+    def coefficients(packed, scale, offset):
+        return vector(
+            [
+                (T.cast((packed >> (i * 8 + offset)) & 15, "float32") - 8) * scale
+                for i in range(4)
+            ]
+        )
+
+    @T.macro
+    def dot(encoded, x, offset, tile, lane, row, previous):
+        base = row * row_bytes + (tile * 8 + lane // 4) * 18
+        scale = half(encoded[0], base)
+        packed = word(encoded[0], base + 2 + lane % 4 * 4)
+        channel = offset + tile * 256 + lane // 4 * 32 + lane % 4 * 4
+        lo = activation(x, channel)
+        hi = activation(x, channel + 16)
+        low = coefficients(packed, scale, 0)
+        high = coefficients(packed, scale, 4)
+        return previous + (
+            T.call_extern("float32", "dot", lo, low)
+            + T.call_extern("float32", "dot", hi, high)
+        )
+
+    return dot
+
+
+def supports(capability, shape, *, encoding):
+    if capability == "dot_float":
+        return encoding == 2 and shape[-1] % 256 == 0
+    return capability in CAPABILITIES

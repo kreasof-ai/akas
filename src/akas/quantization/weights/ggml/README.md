@@ -45,6 +45,13 @@ the F32-operand `dot`, and is checked by encoding and geometry before selection.
 Adjacent FP16 pairs decode coefficients before the continuous F32 lane sum;
 this changes neither the operands' rounded values nor their addition order.
 
+Both providers supply `dot_float` for aligned Q4_0 rows. It accepts the same
+routed offset and accumulator arguments, reads the original packed bytes, and
+adds one 256-channel lane product using F32 coefficients and activations.
+WebGPU uses word loads and vector products; CUDA uses aligned word access
+and F32 fused products. The grouped addition order is independently checked
+against the original coefficients; it does not introduce activation quantization.
+
 For aligned FP16 matrix tiles, Q4_0 `read_tile` unpacks eight coefficients from
 word loads and computes adjacent pairs with FP16 arithmetic. The resulting
 coefficient bits match scalar F32 decoding followed by FP16 rounding, including
