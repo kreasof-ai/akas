@@ -30299,6 +30299,126 @@
       "shapes": [],
       "search_phases": 0,
       "path": "runs/20261020205428613069-2df3a0b4/run.json"
+    },
+    {
+      "id": "20261020205941837023-84bc5997",
+      "started_at": "2026-10-20T20:59:41.837023Z",
+      "status": "passed",
+      "revision": "d3b59b998de026b2a358f93b8d5e88030aebccab",
+      "dirty": false,
+      "hardware": "NVIDIA L4",
+      "model": "",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": null,
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "geometry",
+        "description": "Test larger shared and register reuse for the profiled CUDA prefill projections",
+        "parent_run": null
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020205941837023-84bc5997/run.json"
+    },
+    {
+      "id": "20261020210206065406-3188ddc9",
+      "started_at": "2026-10-20T21:02:06.065406Z",
+      "status": "passed",
+      "revision": "d3b59b998de026b2a358f93b8d5e88030aebccab",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "fp8",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "diagnostic",
+        "description": "Isolate real-input projection and attention geometry before combining them",
+        "parent_run": "20261020182637613063-8a87f1a5"
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 4,
+      "path": "runs/20261020210206065406-3188ddc9/run.json"
+    },
+    {
+      "id": "20261020210651016012-a3613aec",
+      "started_at": "2026-10-20T21:06:51.016012Z",
+      "status": "passed",
+      "revision": "d3b59b998de026b2a358f93b8d5e88030aebccab",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "fp8",
+      "weight_format": null,
+      "change": {
+        "kind": "algorithm",
+        "description": "Retain the qualified column-split F32 sum order inside a row-local attention warp",
+        "parent_run": null
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020210651016012-a3613aec/run.json"
+    },
+    {
+      "id": "20261020210822967727-b12a9cf7",
+      "started_at": "2026-10-20T21:08:22.967727Z",
+      "status": "passed",
+      "revision": "d3b59b998de026b2a358f93b8d5e88030aebccab",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "fp8",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "diagnostic",
+        "description": "Qualify the warp-local canonical-order attention alone and with larger public projection tiles",
+        "parent_run": "20261020182637613063-8a87f1a5"
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 4,
+      "path": "runs/20261020210822967727-b12a9cf7/run.json"
+    },
+    {
+      "id": "20261020211643710127-7d56732c",
+      "started_at": "2026-10-20T21:16:43.710127Z",
+      "status": "passed",
+      "revision": "1e72ec705bfe00ccb7cca3b1c2723f233ccbc37b",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": null,
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "geometry",
+        "description": "Select projection reuse geometry for unpadded 512- and 2048-token CUDA prefill",
+        "parent_run": null
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020211643710127-7d56732c/run.json"
     }
   ]
 }
