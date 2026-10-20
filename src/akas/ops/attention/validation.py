@@ -132,6 +132,16 @@ def pipeline_validation(kind, p, signature):
     return ValidationCase(values, expected)
 
 
+def reference_dtype(rows, heads, capacity, chunk):
+    """Bound large prefill oracles to F32; small and decode cases retain F64.
+
+    These are independent NumPy products/softmax, with the kernel's FP16
+    operand and probability rounding retained. GPU arithmetic and validation
+    tolerances do not change with this host working-set choice.
+    """
+    return "float32" if chunk > 1 and rows * heads * capacity > 4194304 else "float64"
+
+
 def canonical_validation(kind, p, signature):
     import numpy as np
     from akas.kernels.contracts import ValidationCase, sample_arguments
@@ -250,6 +260,7 @@ def canonical_validation(kind, p, signature):
                     )
                     expected[scales][slots_idx, :, pos_idx, 0] = 1
         return ValidationCase(values, expected, rtol=0, atol=1e-09)
+    compute_dtype = reference_dtype(r, h, cap, chunk)
     decoded_cache = {}
 
     def read_slot(cache, scales, slot, end):
@@ -264,12 +275,15 @@ def canonical_validation(kind, p, signature):
                 )
                 data = decode_storage(bits)
             factors = values[scales][slot]
-            decoded_cache[key] = (
-                data.astype("float64") * np.repeat(factors, 128, axis=-1)[:, :, :d]
+            scales = (
+                factors
+                if factors.shape[-1] == 1
+                else np.repeat(factors, 128, axis=-1)[..., :d]
             )
+            decoded_cache[key] = data.astype(compute_dtype) * scales
         return decoded_cache[key][:, :end]
 
-    queries = values["q"].reshape(r, h, d).astype("float64")
+    queries = values["q"].reshape(r, h, d).astype(compute_dtype)
     if kind == "attention_partial":
         out = expected["out"].reshape(r, h, splits, d + 2)
     elif kind == "attention":
@@ -288,23 +302,27 @@ def canonical_validation(kind, p, signature):
             pos = np.minimum(cap - 1, values["positions"][r0:r1])
             max_len = int(pos[en].max()) + 1
             keys = (
-                read_slot("kc", "ks", slot, max_len).astype("float16").astype("float64")
+                read_slot("kc", "ks", slot, max_len)
+                .astype("float16")
+                .astype(compute_dtype)
             )
             vals = (
-                read_slot("vc", "vs", slot, max_len).astype("float16").astype("float64")
+                read_slot("vc", "vs", slot, max_len)
+                .astype("float16")
+                .astype(compute_dtype)
             )
             q_slot = (
                 queries[r0:r1]
                 .reshape(chunk, kh, group, d)
                 .astype("float16")
-                .astype("float64")
+                .astype(compute_dtype)
             )
             q_heads = np.ascontiguousarray(q_slot.transpose(1, 0, 2, 3)).reshape(
                 kh, chunk * group, d
             )
-            maximum = np.full((chunk, kh, group), -np.inf, dtype="float64")
-            normalizer = np.zeros((chunk, kh, group), dtype="float64")
-            accumulated = np.zeros((chunk, kh, group, d), dtype="float64")
+            maximum = np.full((chunk, kh, group), -np.inf, dtype=compute_dtype)
+            normalizer = np.zeros((chunk, kh, group), dtype=compute_dtype)
+            accumulated = np.zeros((chunk, kh, group, d), dtype=compute_dtype)
             tile = p.get("key_rows", 64)
             for begin in range(0, max_len, tile):
                 end = min(max_len, begin + tile)
@@ -314,7 +332,7 @@ def canonical_validation(kind, p, signature):
                     continue
                 scores = (q_heads @ keys[:, begin:end].transpose(0, 2, 1)).reshape(
                     kh, chunk, group, end - begin
-                ).transpose(1, 0, 2, 3) / np.sqrt(d)
+                ).transpose(1, 0, 2, 3) * (d**-0.5)
                 scores = np.where(valid[:, None, None, :], scores, -np.inf)
                 block_max = scores.max(axis=-1)
                 has_valid = valid.any(axis=-1)[:, None, None]
@@ -328,7 +346,7 @@ def canonical_validation(kind, p, signature):
                     0.0,
                 )
                 normalizer = normalizer * correction + probabilities.sum(axis=-1)
-                prob_f16 = probabilities.astype("float16").astype("float64")
+                prob_f16 = probabilities.astype("float16").astype(compute_dtype)
                 prob_heads = np.ascontiguousarray(
                     prob_f16.transpose(1, 0, 2, 3)
                 ).reshape(kh, chunk * group, end - begin)
@@ -358,9 +376,9 @@ def canonical_validation(kind, p, signature):
             q_heads = np.ascontiguousarray(q_slot.transpose(1, 0, 2, 3)).reshape(
                 kh, chunk * group, d
             )
-            maximum = np.full((chunk, kh, group), -np.inf, dtype="float64")
-            normalizer = np.zeros((chunk, kh, group), dtype="float64")
-            accumulated = np.zeros((chunk, kh, group, d), dtype="float64")
+            maximum = np.full((chunk, kh, group), -np.inf, dtype=compute_dtype)
+            normalizer = np.zeros((chunk, kh, group), dtype=compute_dtype)
+            accumulated = np.zeros((chunk, kh, group, d), dtype=compute_dtype)
             for begin in range(0, max_len, 64):
                 end = min(max_len, begin + 64)
                 k_idx = np.arange(begin, end)
@@ -369,7 +387,7 @@ def canonical_validation(kind, p, signature):
                     continue
                 scores = (q_heads @ keys[:, begin:end].transpose(0, 2, 1)).reshape(
                     kh, chunk, group, end - begin
-                ).transpose(1, 0, 2, 3) / np.sqrt(d)
+                ).transpose(1, 0, 2, 3) * (d**-0.5)
                 scores = np.where(valid[:, None, None, :], scores, -np.inf)
                 block_max = scores.max(axis=-1)
                 has_valid = valid.any(axis=-1)[:, None, None]
@@ -397,7 +415,7 @@ def canonical_validation(kind, p, signature):
             out[r0:r1][en] = res[en]
         return ValidationCase(values, expected, rtol=0.02, atol=0.002)
     if kind == "attention_partial" and p.get("decode_precision") == "float16":
-        queries = queries.astype("float16").astype("float64")
+        queries = queries.astype("float16").astype(compute_dtype)
         tile = p.get("key_rows", 64)
         for row in range(r):
             length = (
@@ -409,11 +427,11 @@ def canonical_validation(kind, p, signature):
             vals = read_slot("vc", "vs", row, max(1, length))
             span = ((length + tile - 1) // tile + splits - 1) // splits * tile
             for head in range(h):
-                scores = keys[head // group, :length] @ queries[row, head] / np.sqrt(d)
+                scores = keys[head // group, :length] @ queries[row, head] * (d**-0.5)
                 for part in range(splits):
                     begin, end = part * span, min(length, (part + 1) * span)
                     maximum, normalizer = -np.inf, 0.0
-                    accumulated = np.zeros(d, dtype="float64")
+                    accumulated = np.zeros(d, dtype=compute_dtype)
                     for start in range(begin, end, tile):
                         stop = min(end, start + tile)
                         block = scores[start:stop]
@@ -426,7 +444,7 @@ def canonical_validation(kind, p, signature):
                         probabilities = np.exp(block - next_maximum)
                         accumulated = (
                             accumulated * correction
-                            + probabilities.astype("float16").astype("float64")
+                            + probabilities.astype("float16").astype(compute_dtype)
                             @ vals[head // group, start:stop]
                         )
                         normalizer = normalizer * correction + probabilities.sum()
@@ -447,7 +465,7 @@ def canonical_validation(kind, p, signature):
         for head in range(h):
             keys = keys_slot[head // group, :length]
             vals = vals_slot[head // group, :length]
-            scores = keys @ queries[row, head] / np.sqrt(d)
+            scores = keys @ queries[row, head] * (d**-0.5)
             if kind == "attention":
                 if not length:
                     out[row, head] = 0

@@ -258,6 +258,26 @@ def test_cuda_packed_expert_decode_tail(tmp_path, routed, columns, depth):
     )
 
 
+@pytest.mark.parametrize("provider", ["cuda", "webgpu"])
+def test_large_prefill_reference_gpu(tmp_path, provider):
+    test_moe_kernel_device_qualification(
+        tmp_path,
+        provider,
+        "attention",
+        dict(
+            r=1024,
+            h=4,
+            kh=1,
+            d=64,
+            capacity=4096,
+            chunk=512,
+            kv_dtype="float16",
+            optimized=True,
+            unit_scales=True,
+        ),
+    )
+
+
 @pytest.mark.parametrize(
     "block_m,columns,block_k,pad", [(4, 32, 32, 1), (32, 64, 32, 1), (32, 64, 64, 0)]
 )

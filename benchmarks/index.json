@@ -28011,6 +28011,30 @@
       "shapes": [],
       "search_phases": 0,
       "path": "runs/20261020115311467197-0455eb42/run.json"
+    },
+    {
+      "id": "20261020120951480014-641874eb",
+      "started_at": "2026-10-20T12:09:51.480014Z",
+      "status": "failed",
+      "revision": "d0da20f9bb61f4105a6fa631bc6e5e08488737b8",
+      "dirty": false,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Integrate packed expert dots, native GQA tensor-core decode, F32 warp routers; qualify larger prefill chunks",
+        "parent_run": "20261020102328416670-be712fbb"
+      },
+      "purpose": "preflight",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020120951480014-641874eb/run.json"
     }
   ]
 }

@@ -113,6 +113,10 @@ Host prefill qualification computes online softmax in bounded key tiles. Batched
 matrix products reuse query groups without constructing a full query-by-context
 score matrix. The reference retains each implementation's declared operand and
 probability precision, including FP16 rounding between tensor-core tiles.
+Large prefill references use F32 working arrays; small cases and decode retain
+F64. Cross-checks compare both host paths with identical fixtures and unchanged
+tolerances. Single-block cache scales broadcast over channels, avoiding a full
+materialized scale matrix. GPU arithmetic is independent of this host policy.
 
 For mapped native attention, only live rows of a freshly returned output are
 defined. Padding rows are not borrowed state and need not preserve old buffer
