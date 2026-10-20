@@ -1,0 +1,25 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "kernel",
+    "protocol": "kernel-latency-v1",
+    "provider": "cuda",
+    "target": "sm_89",
+    "device": {
+      "name": "NVIDIA L4",
+      "provider": "cuda"
+    },
+    "kv_dtype": "fp8",
+    "mode": "ar",
+    "operand_dtype": "float16",
+    "accumulator_dtype": "float32",
+    "probability_scale": 128,
+    "precision_policy": "Decode unscaled FP8 values exactly to F16; apply per-position K scale after QK and V scale before probability staging, with exact power-of-two compensation. Different rounding points from staged scaled-F16 cache.",
+    "qualification": "Independent NumPy FP8 bit equation and factored online-softmax reference; strict merged absolute tolerance 2e-6; poisoned future cache and inactive query checks. Kernel timing only; no model quality claim.",
+    "error": "'mapping'",
+    "traceback": "Traceback (most recent call last):\n  File \"/home/sagemaker-user/akas/build/lfm-moe/validate-factored-attention.py\", line 27, in <module>\n    args=tuple(buffers[a['name']] for a in kernel.manifest['arguments']);kernel.launch(*args);actual=buffers['out'].to_numpy();normalized=merge(actual)\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sagemaker-user/akas/build/lfm-moe/validate-factored-attention.py\", line 27, in <genexpr>\n    args=tuple(buffers[a['name']] for a in kernel.manifest['arguments']);kernel.launch(*args);actual=buffers['out'].to_numpy();normalized=merge(actual)\n               ~~~~~~~^^^^^^^^^^^\nKeyError: 'mapping'\n",
+    "checks": []
+  },
+  "results": []
+}

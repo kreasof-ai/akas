@@ -28668,6 +28668,218 @@
       "shapes": [],
       "search_phases": 0,
       "path": "runs/20261020145214095534-adf8104a/run.json"
+    },
+    {
+      "id": "20261020145716182537-a52f9257",
+      "started_at": "2026-10-20T14:57:16.182537Z",
+      "status": "failed",
+      "revision": "a9848dd6f8fdbb7af4f63c14f07af37fe41ab5ae",
+      "dirty": false,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "fp8",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Qualify integrated packed-word expert, linear and paired FFN prefill through complete FP8 autoregressive serving",
+        "parent_run": "20261020141834495811-d8e958f0"
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 8192,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 130944,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 4,
+      "path": "runs/20261020145716182537-a52f9257/run.json"
+    },
+    {
+      "id": "20261020151957516915-bd160a5f",
+      "started_at": "2026-10-20T15:19:57.516915Z",
+      "status": "failed",
+      "revision": "a9848dd6f8fdbb7af4f63c14f07af37fe41ab5ae",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "fp8",
+      "weight_format": null,
+      "change": {
+        "kind": "algorithm",
+        "description": "Factor per-position FP8 KV scales out of tensor-core operand decoding",
+        "parent_run": null
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020151957516915-bd160a5f/run.json"
+    },
+    {
+      "id": "20261020152004762587-0ba8dbd9",
+      "started_at": "2026-10-20T15:20:04.762587Z",
+      "status": "passed",
+      "revision": "a9848dd6f8fdbb7af4f63c14f07af37fe41ab5ae",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": null,
+      "weight_format": null,
+      "change": {
+        "kind": "algorithm",
+        "description": "Reuse each F32 router activation across several warp output columns",
+        "parent_run": null
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020152004762587-0ba8dbd9/run.json"
+    },
+    {
+      "id": "20261020152057040025-590fec5c",
+      "started_at": "2026-10-20T15:20:57.040025Z",
+      "status": "passed",
+      "revision": "a9848dd6f8fdbb7af4f63c14f07af37fe41ab5ae",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": null,
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Increase expert route reuse with 512-thread tensor-core tiles; pair or group four existing route tiles",
+        "parent_run": null
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020152057040025-590fec5c/run.json"
+    },
+    {
+      "id": "20261020152156614798-0cf46948",
+      "started_at": "2026-10-20T15:21:56.614798Z",
+      "status": "passed",
+      "revision": "a9848dd6f8fdbb7af4f63c14f07af37fe41ab5ae",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "fp8",
+      "weight_format": null,
+      "change": {
+        "kind": "algorithm",
+        "description": "Factor per-position FP8 KV scales out of tensor-core operand decoding",
+        "parent_run": null
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020152156614798-0cf46948/run.json"
+    },
+    {
+      "id": "20261020152431734974-3777f95e",
+      "started_at": "2026-10-20T15:24:31.734974Z",
+      "status": "passed",
+      "revision": "a9848dd6f8fdbb7af4f63c14f07af37fe41ab5ae",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "fp8",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "diagnostic",
+        "description": "Complete HTTP qualification of the integrated codec FP8 program with owner-thread service construction",
+        "parent_run": "20261020145716182537-a52f9257"
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 8192,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 130944,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 4,
+      "path": "runs/20261020152431734974-3777f95e/run.json"
+    },
+    {
+      "id": "20261020153056387214-beeea5c5",
+      "started_at": "2026-10-20T15:30:56.387214Z",
+      "status": "passed",
+      "revision": "a9848dd6f8fdbb7af4f63c14f07af37fe41ab5ae",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": null,
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Align original Q4 quants and scale bits without changing precision or payload size",
+        "parent_run": null
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020153056387214-beeea5c5/run.json"
     }
   ]
 }

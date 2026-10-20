@@ -1,0 +1,524 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "kernel",
+    "protocol": "kernel-latency-v1",
+    "provider": "cuda",
+    "target": "sm_89",
+    "device": {
+      "name": "NVIDIA L4",
+      "provider": "cuda"
+    },
+    "kv_dtype": "fp8",
+    "mode": "ar",
+    "operand_dtype": "float16",
+    "accumulator_dtype": "float32",
+    "probability_scale": 128,
+    "precision_policy": "Decode unscaled FP8 values exactly to F16; apply per-position K scale after QK and V scale before probability staging, with exact power-of-two compensation. Different rounding points from staged scaled-F16 cache.",
+    "qualification": "Independent NumPy FP8 bit equation and factored online-softmax reference; strict merged absolute tolerance 2e-6; poisoned future cache and inactive query checks. Kernel timing only; no model quality claim.",
+    "checks": [
+      {
+        "prefix": 8192,
+        "implementation": "staged-reference",
+        "key_rows": 64,
+        "correct": true,
+        "poisoned_future": true,
+        "inactive_query": true,
+        "merged_max_absolute_error": null,
+        "relative_output_difference_from_staged": 0.0,
+        "launch": {
+          "block": [
+            128,
+            1,
+            1
+          ],
+          "grid": [
+            8,
+            64,
+            1
+          ],
+          "shared_memory_bytes": 31232
+        },
+        "timing": {
+          "gpu_seconds": [
+            3.010559976100922e-05,
+            2.9491201043128965e-05,
+            2.979840040206909e-05,
+            3.012799918651581e-05,
+            3.0208000540733338e-05,
+            3.0092799663543705e-05,
+            3.0003198981285097e-05
+          ],
+          "completed_seconds": [
+            3.1627301359549166e-05,
+            3.0325300758704544e-05,
+            3.099829773418605e-05,
+            3.139630425721407e-05,
+            3.137029707431793e-05,
+            3.1314295483753085e-05,
+            3.115030121989548e-05
+          ],
+          "median_gpu_seconds": 3.0092799663543705e-05,
+          "median_completed_seconds": 3.1314295483753085e-05,
+          "warmup": 50,
+          "samples": 7,
+          "repeats": 10,
+          "metric": "gpu_seconds",
+          "median_seconds": 3.0092799663543705e-05
+        }
+      },
+      {
+        "prefix": 8192,
+        "implementation": "factored-64",
+        "key_rows": 64,
+        "correct": true,
+        "poisoned_future": true,
+        "inactive_query": true,
+        "merged_max_absolute_error": 1.2019495427993872e-07,
+        "relative_output_difference_from_staged": 0.00033505017805385143,
+        "launch": {
+          "block": [
+            128,
+            1,
+            1
+          ],
+          "grid": [
+            8,
+            64,
+            1
+          ],
+          "shared_memory_bytes": 31232
+        },
+        "timing": {
+          "gpu_seconds": [
+            2.4780799448490145e-05,
+            2.467840015888214e-05,
+            2.457599937915802e-05,
+            2.447360008955002e-05,
+            2.447360008955002e-05,
+            2.457599937915802e-05,
+            2.4495999515056613e-05
+          ],
+          "completed_seconds": [
+            2.571899676695466e-05,
+            2.5392102543264627e-05,
+            2.5324098533019424e-05,
+            2.51989986281842e-05,
+            2.5204097619280218e-05,
+            2.525199670344591e-05,
+            2.5233003543689848e-05
+          ],
+          "median_gpu_seconds": 2.457599937915802e-05,
+          "median_completed_seconds": 2.525199670344591e-05,
+          "warmup": 50,
+          "samples": 7,
+          "repeats": 10,
+          "metric": "gpu_seconds",
+          "median_seconds": 2.457599937915802e-05
+        }
+      },
+      {
+        "prefix": 8192,
+        "implementation": "factored-128",
+        "key_rows": 128,
+        "correct": true,
+        "poisoned_future": true,
+        "inactive_query": true,
+        "merged_max_absolute_error": 1.2009913955224544e-07,
+        "relative_output_difference_from_staged": 0.0003323896534292697,
+        "launch": {
+          "block": [
+            128,
+            1,
+            1
+          ],
+          "grid": [
+            8,
+            64,
+            1
+          ],
+          "shared_memory_bytes": 58368
+        },
+        "timing": {
+          "gpu_seconds": [
+            5.4374402761459354e-05,
+            5.375999808311463e-05,
+            5.36575973033905e-05,
+            5.3663998842239386e-05,
+            5.375999808311463e-05,
+            5.386239886283875e-05,
+            5.36575973033905e-05
+          ],
+          "completed_seconds": [
+            5.564730381593108e-05,
+            5.4504198487848043e-05,
+            5.44112001080066e-05,
+            5.447820294648409e-05,
+            5.469120224006474e-05,
+            5.464819842018187e-05,
+            5.431719473563135e-05
+          ],
+          "median_gpu_seconds": 5.375999808311463e-05,
+          "median_completed_seconds": 5.4504198487848043e-05,
+          "warmup": 50,
+          "samples": 7,
+          "repeats": 10,
+          "metric": "gpu_seconds",
+          "median_seconds": 5.375999808311463e-05
+        }
+      },
+      {
+        "prefix": 8192,
+        "implementation": "masked-softmax-64",
+        "key_rows": 64,
+        "correct": true,
+        "poisoned_future": true,
+        "inactive_query": true,
+        "merged_max_absolute_error": 1.2019495427993872e-07,
+        "relative_output_difference_from_staged": 0.00033505017805385143,
+        "launch": {
+          "block": [
+            128,
+            1,
+            1
+          ],
+          "grid": [
+            8,
+            64,
+            1
+          ],
+          "shared_memory_bytes": 31232
+        },
+        "timing": {
+          "gpu_seconds": [
+            2.3756800591945647e-05,
+            2.3756800591945647e-05,
+            2.3740799725055695e-05,
+            2.3552000522613525e-05,
+            2.365439981222153e-05,
+            2.364159971475601e-05,
+            2.364480048418045e-05
+          ],
+          "completed_seconds": [
+            2.4779996601864694e-05,
+            2.4482002481818198e-05,
+            2.435100032016635e-05,
+            2.426999853923917e-05,
+            2.43099988438189e-05,
+            2.4262000806629658e-05,
+            2.4446001043543218e-05
+          ],
+          "median_gpu_seconds": 2.365439981222153e-05,
+          "median_completed_seconds": 2.435100032016635e-05,
+          "warmup": 50,
+          "samples": 7,
+          "repeats": 10,
+          "metric": "gpu_seconds",
+          "median_seconds": 2.365439981222153e-05
+        }
+      },
+      {
+        "prefix": 8192,
+        "implementation": "masked-softmax-128",
+        "key_rows": 128,
+        "correct": true,
+        "poisoned_future": true,
+        "inactive_query": true,
+        "merged_max_absolute_error": 1.2009913955224544e-07,
+        "relative_output_difference_from_staged": 0.0003323896534292697,
+        "launch": {
+          "block": [
+            128,
+            1,
+            1
+          ],
+          "grid": [
+            8,
+            64,
+            1
+          ],
+          "shared_memory_bytes": 58368
+        },
+        "timing": {
+          "gpu_seconds": [
+            5.1507198810577396e-05,
+            5.1097601652145384e-05,
+            5.107520222663879e-05,
+            5.099520087242127e-05,
+            5.1283198595047e-05,
+            5.1302397251129145e-05,
+            5.1097601652145384e-05
+          ],
+          "completed_seconds": [
+            5.274409777484834e-05,
+            5.191209493204951e-05,
+            5.1744095981121066e-05,
+            5.1800103392452e-05,
+            5.2068103104829785e-05,
+            5.2041100570932033e-05,
+            5.17551030497998e-05
+          ],
+          "median_gpu_seconds": 5.1097601652145384e-05,
+          "median_completed_seconds": 5.191209493204951e-05,
+          "warmup": 50,
+          "samples": 7,
+          "repeats": 10,
+          "metric": "gpu_seconds",
+          "median_seconds": 5.1097601652145384e-05
+        }
+      },
+      {
+        "prefix": 131055,
+        "implementation": "staged-reference",
+        "key_rows": 64,
+        "correct": true,
+        "poisoned_future": true,
+        "inactive_query": true,
+        "merged_max_absolute_error": null,
+        "relative_output_difference_from_staged": 0.0,
+        "launch": {
+          "block": [
+            128,
+            1,
+            1
+          ],
+          "grid": [
+            8,
+            64,
+            1
+          ],
+          "shared_memory_bytes": 31232
+        },
+        "timing": {
+          "gpu_seconds": [
+            0.0005627744197845459,
+            0.0005638016223907471,
+            0.0005637119770050049,
+            0.0005628928184509277,
+            0.0005647359848022461,
+            0.0005650432109832764,
+            0.0005644288063049316
+          ],
+          "completed_seconds": [
+            0.0005656530032865703,
+            0.0005651050014421344,
+            0.0005649850005283952,
+            0.0005646549980156124,
+            0.0005667840014211833,
+            0.0005666280048899353,
+            0.000565791002009064
+          ],
+          "median_gpu_seconds": 0.0005638016223907471,
+          "median_completed_seconds": 0.0005656530032865703,
+          "warmup": 50,
+          "samples": 7,
+          "repeats": 10,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.0005638016223907471
+        }
+      },
+      {
+        "prefix": 131055,
+        "implementation": "factored-64",
+        "key_rows": 64,
+        "correct": true,
+        "poisoned_future": true,
+        "inactive_query": true,
+        "merged_max_absolute_error": 1.8291739752160276e-08,
+        "relative_output_difference_from_staged": 0.00031411758943384227,
+        "launch": {
+          "block": [
+            128,
+            1,
+            1
+          ],
+          "grid": [
+            8,
+            64,
+            1
+          ],
+          "shared_memory_bytes": 31232
+        },
+        "timing": {
+          "gpu_seconds": [
+            0.0005689343929290772,
+            0.0005678080081939697,
+            0.000568006420135498,
+            0.0005685152053833008,
+            0.0005690368175506591,
+            0.0005683199882507324,
+            0.0005686272144317628
+          ],
+          "completed_seconds": [
+            0.0005718312982935459,
+            0.0005687611002940685,
+            0.0005694392020814121,
+            0.0005698241002392024,
+            0.0005700470996089279,
+            0.0005702572991140187,
+            0.0005696851992979645
+          ],
+          "median_gpu_seconds": 0.0005685152053833008,
+          "median_completed_seconds": 0.0005698241002392024,
+          "warmup": 50,
+          "samples": 7,
+          "repeats": 10,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.0005685152053833008
+        }
+      },
+      {
+        "prefix": 131055,
+        "implementation": "factored-128",
+        "key_rows": 128,
+        "correct": true,
+        "poisoned_future": true,
+        "inactive_query": true,
+        "merged_max_absolute_error": 1.5394729301889884e-08,
+        "relative_output_difference_from_staged": 0.0003170916556562765,
+        "launch": {
+          "block": [
+            128,
+            1,
+            1
+          ],
+          "grid": [
+            8,
+            64,
+            1
+          ],
+          "shared_memory_bytes": 58368
+        },
+        "timing": {
+          "gpu_seconds": [
+            0.0005826560020446778,
+            0.0005818367958068848,
+            0.0005817440032958984,
+            0.0005825471878051758,
+            0.0005824512004852295,
+            0.0005819392204284668,
+            0.000582860803604126
+          ],
+          "completed_seconds": [
+            0.0005851747991982847,
+            0.000583085702965036,
+            0.0005831087008118629,
+            0.0005836767028085888,
+            0.0005834025971125812,
+            0.0005834517010953278,
+            0.0005840967001859099
+          ],
+          "median_gpu_seconds": 0.0005824512004852295,
+          "median_completed_seconds": 0.0005834517010953278,
+          "warmup": 50,
+          "samples": 7,
+          "repeats": 10,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.0005824512004852295
+        }
+      },
+      {
+        "prefix": 131055,
+        "implementation": "masked-softmax-64",
+        "key_rows": 64,
+        "correct": true,
+        "poisoned_future": true,
+        "inactive_query": true,
+        "merged_max_absolute_error": 1.8291739752160276e-08,
+        "relative_output_difference_from_staged": 0.00031411758943384227,
+        "launch": {
+          "block": [
+            128,
+            1,
+            1
+          ],
+          "grid": [
+            8,
+            64,
+            1
+          ],
+          "shared_memory_bytes": 31232
+        },
+        "timing": {
+          "gpu_seconds": [
+            0.0005672959804534912,
+            0.0005653503894805908,
+            0.0005656576156616211,
+            0.0005665791988372803,
+            0.0005664608001708985,
+            0.0005666816234588623,
+            0.0005667840003967285
+          ],
+          "completed_seconds": [
+            0.0005699381988961249,
+            0.0005664869968313724,
+            0.0005670790036674589,
+            0.0005678211047779769,
+            0.000567599100759253,
+            0.0005677350971382111,
+            0.0005677781999111175
+          ],
+          "median_gpu_seconds": 0.0005665791988372803,
+          "median_completed_seconds": 0.0005677350971382111,
+          "warmup": 50,
+          "samples": 7,
+          "repeats": 10,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.0005665791988372803
+        }
+      },
+      {
+        "prefix": 131055,
+        "implementation": "masked-softmax-128",
+        "key_rows": 128,
+        "correct": true,
+        "poisoned_future": true,
+        "inactive_query": true,
+        "merged_max_absolute_error": 1.5394729301889884e-08,
+        "relative_output_difference_from_staged": 0.0003170916556562765,
+        "launch": {
+          "block": [
+            128,
+            1,
+            1
+          ],
+          "grid": [
+            8,
+            64,
+            1
+          ],
+          "shared_memory_bytes": 58368
+        },
+        "timing": {
+          "gpu_seconds": [
+            0.0005803008079528809,
+            0.0005793791770935059,
+            0.0005797887802124023,
+            0.0005795839786529541,
+            0.0005799808025360108,
+            0.0005799935817718505,
+            0.0005806079864501953
+          ],
+          "completed_seconds": [
+            0.0005832797032780945,
+            0.0005806086002849043,
+            0.0005806595960166306,
+            0.0005805177032016217,
+            0.0005809746973682195,
+            0.0005809865950141102,
+            0.0005819635989610106
+          ],
+          "median_gpu_seconds": 0.0005799808025360108,
+          "median_completed_seconds": 0.0005809746973682195,
+          "warmup": 50,
+          "samples": 7,
+          "repeats": 10,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.0005799808025360108
+        }
+      }
+    ]
+  },
+  "results": []
+}
