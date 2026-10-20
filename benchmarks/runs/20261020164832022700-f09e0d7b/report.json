@@ -1,0 +1,18 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "kernel",
+    "protocol": "cuda-counter-availability-v1",
+    "provider": "cuda",
+    "target": "sm_89",
+    "device": {
+      "name": "NVIDIA L4",
+      "provider": "cuda"
+    },
+    "prior_run_id": "20261020164732120741-689f92b7",
+    "error": "ERR_NVGPUCTRPERM",
+    "qualification": "Availability evidence only: root-launched Nsight could execute the unmodified CUDA artifact, but the driver denied performance counters. No hardware-counter measurements were collected. Does not reject the already qualified model or kernels."
+  },
+  "results": []
+}
