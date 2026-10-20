@@ -4,6 +4,11 @@ Generated from run records. See [the benchmark guide](../docs/benchmarking.md).
 
 | UTC | Hardware | Runtime / model | Backend / weights / mode / KV | Shapes (B/P/O) | Purpose | Status | Source | Record |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-10-20T20:54:28.613069Z | NVIDIA L4 | akas /  | cuda / q4_0 / ar / unspecified |  | kernel | passed | 9f6334f95e + snapshot | [run](runs/20261020205428613069-2df3a0b4/run.json) |
+| 2026-10-20T20:47:52.022436Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / ar / fp8 |  | kernel | passed | 9f6334f95e + snapshot | [run](runs/20261020204752022436-ec563425/run.json) |
+| 2026-10-20T20:47:20.453807Z | NVIDIA L4 | akas /  | cuda / q4_0 / ar / unspecified |  | kernel | passed | 9f6334f95e + snapshot | [run](runs/20261020204720453807-15d89c70/run.json) |
+| 2026-10-20T20:32:34.485228Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | webgpu / q4_0 / ar / float16 | 1/32/128, 1/8192/128 | benchmark | passed | 9f6334f95e + snapshot | [run](runs/20261020203234485228-3cbc31e8/run.json) |
+| 2026-10-20T20:32:13.757090Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | webgpu / q4_0 / ar / float16 |  | benchmark | failed | 9f6334f95e | [run](runs/20261020203213757090-efe4b8ae/run.json) |
 | 2026-10-20T20:23:52.722428Z | NVIDIA L4 | akas /  | cuda / q4_0 / ar / unspecified |  | kernel | passed | d1546d6535 | [run](runs/20261020202352722428-11958c5b/run.json) |
 | 2026-10-20T19:52:37.721793Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | webgpu / q4_0 / ar / float16 |  | kernel | passed | d48bfaedbb + snapshot | [run](runs/20261020195237721793-a4187a4a/run.json) |
 | 2026-10-20T19:50:31.655272Z | NVIDIA L4 | akas /  | webgpu / q4_0 / ar / unspecified |  | kernel | passed | d48bfaedbb + snapshot | [run](runs/20261020195031655272-927c4e8a/run.json) |

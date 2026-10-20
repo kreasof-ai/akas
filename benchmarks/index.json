@@ -30164,6 +30164,141 @@
       "shapes": [],
       "search_phases": 0,
       "path": "runs/20261020202352722428-11958c5b/run.json"
+    },
+    {
+      "id": "20261020203213757090-efe4b8ae",
+      "started_at": "2026-10-20T20:32:13.757090Z",
+      "status": "failed",
+      "revision": "9f6334f95e47a49e9171da843507eaa49ec77fdb",
+      "dirty": false,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "webgpu",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Qualify the integrated WebGPU decode compiler and production serving path",
+        "parent_run": "20261020195237721793-a4187a4a"
+      },
+      "purpose": "benchmark",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020203213757090-efe4b8ae/run.json"
+    },
+    {
+      "id": "20261020203234485228-3cbc31e8",
+      "started_at": "2026-10-20T20:32:34.485228Z",
+      "status": "passed",
+      "revision": "9f6334f95e47a49e9171da843507eaa49ec77fdb",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "webgpu",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Qualify the integrated WebGPU decode compiler and production serving path",
+        "parent_run": "20261020195237721793-a4187a4a"
+      },
+      "purpose": "benchmark",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 8192,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 4,
+      "path": "runs/20261020203234485228-3cbc31e8/run.json"
+    },
+    {
+      "id": "20261020204720453807-15d89c70",
+      "started_at": "2026-10-20T20:47:20.453807Z",
+      "status": "passed",
+      "revision": "9f6334f95e47a49e9171da843507eaa49ec77fdb",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": null,
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Measure smaller staging footprints and warp counts with real expert banks and skewed routing before selecting CUDA prefill geometry",
+        "parent_run": null
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020204720453807-15d89c70/run.json"
+    },
+    {
+      "id": "20261020204752022436-ec563425",
+      "started_at": "2026-10-20T20:47:52.022436Z",
+      "status": "passed",
+      "revision": "9f6334f95e47a49e9171da843507eaa49ec77fdb",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "fp8",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "diagnostic",
+        "description": "Attribute source-integrated fused decode and staged prefill after the full CUDA context sweep",
+        "parent_run": "20261020182637613063-8a87f1a5"
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 4,
+      "path": "runs/20261020204752022436-ec563425/run.json"
+    },
+    {
+      "id": "20261020205428613069-2df3a0b4",
+      "started_at": "2026-10-20T20:54:28.613069Z",
+      "status": "passed",
+      "revision": "9f6334f95e47a49e9171da843507eaa49ec77fdb",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": null,
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Compare Tensor Core warp policies with the qualified CUDA expert geometry on balanced and skewed real-weight products",
+        "parent_run": null
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020205428613069-2df3a0b4/run.json"
     }
   ]
 }
