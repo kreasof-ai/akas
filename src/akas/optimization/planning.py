@@ -111,7 +111,7 @@ def memory_bound(graphs):
 
 
 def probe(context, provider):
-    from akas.compilation.policy import candidates
+    from akas.compilation.policy import candidates, combine
     from akas.models.definition import Composition
 
     model = symbol(context["definition"])
@@ -239,7 +239,7 @@ def probe(context, provider):
         device=device,
         provider=provider,
         chunks=chunks,
-        policies=policies,
+        policies=combine(policies),
         model_options=options,
         option_variants=variants,
         deferred_windows=deferred_windows,

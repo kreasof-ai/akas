@@ -49,3 +49,24 @@ def candidates(graph, *, provider, target, commit=None):
     if len(combined) > 1:
         alternatives.append(combined)
     return alternatives
+
+
+def combine(policies):
+    """Keep individual choices and combine defaults across operation families.
+
+    Decode and prefill can expose different policies. Extend each discovered
+    choice with the first choice from other families, without merging settings
+    within a family or enumerating a Cartesian product. These are candidates;
+    compilation and model validation still decide which combinations are valid.
+    """
+    alternatives, defaults = [], {}
+    for policy in policies:
+        if policy not in alternatives:
+            alternatives.append(policy)
+        for name, settings in policy.items():
+            defaults.setdefault(name, settings)
+    for policy in tuple(alternatives):
+        combined = {**defaults, **policy}
+        if combined not in alternatives:
+            alternatives.append(combined)
+    return alternatives

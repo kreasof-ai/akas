@@ -17,6 +17,28 @@ def test_empty_policy_remains_lazy_for_new_model_contract(monkeypatch):
     assert lower(graph) == (graph, None)
 
 
+def test_cross_phase_choices_combine_without_mixing_alternatives_within_a_family():
+    from akas.compilation.policy import combine
+
+    choices = [
+        {},
+        {"attention": {"splits": 32}},
+        {"attention": {"splits": 64, "decoded_kv": True}},
+        {"moe": {"fused_swiglu": True}},
+    ]
+    result = combine(choices)
+    assert result[: len(choices)] == choices
+    assert {
+        "attention": {"splits": 64, "decoded_kv": True},
+        "moe": {"fused_swiglu": True},
+    } in result
+    assert combine(result) == result
+    assert len(result) <= 2 * len(choices)
+    assert choices[-1] == {"moe": {"fused_swiglu": True}}
+    incompatible = [{}, {"moe": {"compact": True}}, {"moe": {"resident_weights": True}}]
+    assert combine(incompatible) == incompatible
+
+
 @pytest.mark.parametrize("phase", [None, "verify", "proposal"])
 def test_projection_routing_recompute_and_hopper_policies_share_program_graphs(phase):
     from test_moe_speculative_program import checkpoint

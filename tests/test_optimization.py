@@ -147,7 +147,7 @@ def test_probe_discovers_policies_from_later_chunk_geometries(monkeypatch):
     model = SimpleNamespace(
         checkpoint_type=lambda path: SimpleNamespace(config=Config()),
         compose=compose,
-        optimization_chunks=(32, 4096),
+        optimization_chunks=(32, 4096, 1),
         optimization_space=(),
     )
     monkeypatch.setattr(planning, "symbol", lambda name: model)
@@ -157,7 +157,11 @@ def test_probe_discovers_policies_from_later_chunk_geometries(monkeypatch):
         policy,
         "candidates",
         lambda graph, **kwargs: (
-            [{}, dict(attention=dict(decoded_kv=True))] if graph.chunk == 4096 else [{}]
+            [{}, dict(attention=dict(decoded_kv=True))]
+            if graph.chunk == 4096
+            else [{}, dict(moe=dict(fused_swiglu=True))]
+            if graph.chunk == 1
+            else [{}]
         ),
     )
     settings = {
@@ -168,6 +172,11 @@ def test_probe_discovers_policies_from_later_chunk_geometries(monkeypatch):
     result = planning.probe(settings, "cuda")
     assert result["status"] == "ok"
     assert dict(attention=dict(decoded_kv=True)) in result["policies"]
+    combined = dict(attention=dict(decoded_kv=True), moe=dict(fused_swiglu=True))
+    assert combined in result["policies"]
+    assert {
+        p["chunk"] for p in recipes(settings, [result]) if p["policy"] == combined
+    } == {32, 4096, 1}
 
 
 def test_partial_beam_progress_resumes_and_requalifies_winner(tmp_path):

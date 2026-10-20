@@ -90,6 +90,11 @@ The compiler searches existing operation implementations and their declared
 schedule axes. Operation-owned policies offer alternative physical algorithms;
 this workflow does not invent new kernel source. Unsupported combinations and
 rejected candidates retain their reasons in campaign state and benchmark history.
+Policies are discovered across prefill and decode geometries. Search retains
+each individual choice and also combines it with the first choice from other
+operation families, so prefill staging can be evaluated together with a decode
+fusion. It keeps alternatives within one family separate and qualifies every
+combined candidate through the same model and serving checks.
 Operation qualification can reuse an exact source/device-qualified cache entry;
 new candidates still run complete model and HTTP checks with fresh timings.
 Program and serving alternatives receive a cheap qualification pass first.
