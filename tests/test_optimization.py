@@ -179,6 +179,24 @@ def test_probe_discovers_policies_from_later_chunk_geometries(monkeypatch):
     } == {32, 4096, 1}
 
 
+@pytest.mark.parametrize("window", [None, 4])
+def test_workload_prefills_fit_every_short_prompt_without_a_large_padded_frame(window):
+    from akas.optimization.planning import geometries
+
+    data = dict(batches=[1, 4], prefix_tokens=[32, 512, 2048, 8192, 130944])
+    recipe = dict(chunk=4096, prefill_requests=2, window=window)
+    result = geometries(data, recipe)
+    assert len(result) == len(set(result))
+    assert {(1, 1), (4, 1)} <= set(result)
+    for group in (1, 2):
+        for prefix in data["prefix_tokens"]:
+            assert (group, min(prefix, 4096)) in result
+    assert all(shape[1] <= 4096 for shape in result)
+    if window:
+        assert {(1, 4, "verify"), (4, 4, "verify")} <= set(result)
+        assert (2, 512, "proposal") in result
+
+
 def test_partial_beam_progress_resumes_and_requalifies_winner(tmp_path):
     variant = Implementation(
         "add",

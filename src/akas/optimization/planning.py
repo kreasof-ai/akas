@@ -364,7 +364,7 @@ def geometries(data, recipe):
     batches = sorted({1, *data["batches"]})
     groups = sorted({1, min(max(data["batches"]), recipe["prefill_requests"])})
     chunk, window = recipe["chunk"], recipe["window"]
-    prefills = sorted({chunk, min(chunk, min(data["prefix_tokens"]))} - {1})
+    prefills = sorted({chunk, *(min(chunk, p) for p in data["prefix_tokens"])} - {1})
     result = [(b, 1) for b in batches]
     result.extend((g, tokens) for tokens in prefills for g in groups)
     if window is not None:

@@ -103,9 +103,9 @@ retaining its selected chunk, grouping, policy and speculative mode.
 For long-context workloads, larger prefill choices and refinement run before
 costly small-chunk alternatives. Saved kernel geometries seed new exploration;
 each selected candidate is qualified again.
-Programs retain a smaller prefill geometry for the workload's shortest prompt.
-The executor chooses among qualified geometries so a larger throughput tile
-does not force short prompts to execute a padded full tile.
+Programs retain a prefill geometry for each requested prompt shorter than the
+chosen chunk. The executor chooses among qualified geometries so a larger
+throughput tile does not force those prompts to execute a padded full tile.
 
 ## Stop and resume
 
