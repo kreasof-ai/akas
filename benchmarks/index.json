@@ -28880,6 +28880,30 @@
       "shapes": [],
       "search_phases": 0,
       "path": "runs/20261020153056387214-beeea5c5/run.json"
+    },
+    {
+      "id": "20261020153635342474-a9584b3c",
+      "started_at": "2026-10-20T15:36:35.342474Z",
+      "status": "passed",
+      "revision": "35d90e8f15855c72c97a03e6dde7414124fe4c0f",
+      "dirty": false,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "fp8",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Compare aligned expert Q4 byte layout under actual full-model weight streaming",
+        "parent_run": null
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 4,
+      "path": "runs/20261020153635342474-a9584b3c/run.json"
     }
   ]
 }
