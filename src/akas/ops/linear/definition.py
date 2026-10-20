@@ -1039,3 +1039,29 @@ IMPLEMENTATIONS += (
         ),
     ),
 )
+
+
+# Independent columns expose small F32 projections to more workgroups. CUDA
+# retains its established warp specialization until this alternative is timed.
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        "linear",
+        f"akas.ops.linear.{provider}",
+        "reference",
+        provider=provider,
+        factory="column_projection",
+        name=f"linear.{provider}.column_projection",
+        priority=30 if provider == "webgpu" else -10,
+        defaults=(("threads", 256),),
+        space=(("threads", (32, 64, 128, 256)),),
+        accepts=lambda p: (
+            p["r"] == 1
+            and p["k"] >= 128
+            and p["o"] <= 256
+            and not p.get("ggml", False)
+            and "type" not in p
+            and p.get("weight_dtype", "float32") == "float32"
+        ),
+    )
+    for provider in ("cuda", "webgpu")
+)

@@ -45,6 +45,15 @@ composition entry. `quantized_embedding` decodes only requested rows through the
 format reader, returning BF16 for the native Qwen graph or F32 for portable
 consumers. It does not allocate a decoded vocabulary matrix.
 
+
+For large materialized F32 logits, the `vocabulary.parallel_argmax` compiler
+policy splits plain `argmax` into `argmax_partial` and `argmax_merge`. Both
+providers use the same TileLang factories. The merge preserves the first index
+on ties and leaves inactive outputs untouched; all-invalid rows retain the
+legacy vocabulary-size sentinel. This policy does not rewrite fused heads or
+native argmax variants that update positions. Scratch buffers and the two
+stages belong to the compiled program, so serving uses the same selected plan.
+
 ## How to extend
 
 Define `embedding`, token selection and head projection as clear callable contracts. Put
@@ -66,3 +75,4 @@ tests](../../../../tests/test_qwen_kernels.py) and [device feedback
 tests](../../../../tests/test_device_feedback.py).
 
 Return to the [operation index](../README.md).
+

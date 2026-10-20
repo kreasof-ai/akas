@@ -218,3 +218,6 @@ from .kernel import (
 from .definition import IMPLEMENTATIONS as _CHOICES
 
 IMPLEMENTATIONS = tuple((choice for choice in _CHOICES if choice.provider == "cuda"))
+
+
+from .kernel import argmax_partial as argmax_partial, argmax_merge as argmax_merge

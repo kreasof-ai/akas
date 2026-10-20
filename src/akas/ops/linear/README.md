@@ -39,6 +39,14 @@ compilation, execution and performance.
 
 Portable projections and epilogue/ABI helpers are in `kernel.py`. CUDA GEMV/GEMM, shared dense/expert FP8 MMA, split/merge and Hopper variants are in `cuda.py`. WebGPU subgroup/integer implementations are in `webgpu.py`. `definition.py` contains projection composition, scheduling, rewrites and split policy.
 
+
+Small F32 vector projections can use `column_projection(spec, schedule)` on
+both providers. One workgroup reduces each output column; `threads` controls the
+F32 reduction geometry. WebGPU selects it for single-row, unencoded matrices
+with at most 256 outputs and depth at least 128. CUDA keeps its measured warp
+implementation as the default; the shared alternative remains selectable.
+Changing the reduction geometry needs numerical and model qualification.
+
 ## How to extend
 
 Declare the operand storage, accumulation/output precision and any residual effects
@@ -103,3 +111,4 @@ routers as well as larger row batches. It assigns one output column to each
 warp and replaces shared reduction barriers with warp shuffles. Both operands
 and accumulation stay F32; this path does not quantize router weights. Output
 strides, offsets and partial columns retain the common projection contract.
+

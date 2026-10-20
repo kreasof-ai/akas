@@ -1345,3 +1345,6 @@ def projection(spec, schedule):
     from .kernel import projection
 
     return projection(spec, schedule, provider="cuda")
+
+
+from .kernel import column_projection as column_projection

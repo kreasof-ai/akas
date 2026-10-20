@@ -209,3 +209,114 @@ IMPLEMENTATIONS += tuple(
 from .validation import quantized_embedding_validation
 
 VALIDATIONS["quantized_embedding"] = quantized_embedding_validation
+
+
+def _parallel_argmax_calls(graph):
+    """Only the plain F32 argmax has this masking and output contract."""
+    if graph.contract != "reference":
+        return []
+    return [
+        call
+        for call in graph.calls
+        if call.kind == "argmax"
+        and not call.parameters.get("ggml", False)
+        and "c" in call.parameters
+        and graph.buffers[
+            call.arguments[0] if call.arguments else call.bindings["x"]
+        ].dtype
+        == "float32"
+    ]
+
+
+def search_policies(graph, commit, *, provider, target):
+    return (
+        [{"parallel_argmax": True, "block": 1024}]
+        if any(call.parameters["c"] >= 4096 for call in _parallel_argmax_calls(graph))
+        else []
+    )
+
+
+def lower(graph, commit, settings, *, provider, target):
+    """Split token selection without changing feedback, ties or inactive rows."""
+    from akas.graph import Call
+
+    if settings.keys() - {"parallel_argmax", "block"}:
+        raise ValueError("unknown vocabulary policy")
+    enabled = settings.get("parallel_argmax", False)
+    block = settings.get("block", 1024)
+    if type(enabled) is not bool:
+        raise ValueError("parallel argmax must be a boolean")
+    if type(block) is not int or block < 1:
+        raise ValueError("argmax block must be a positive integer")
+    if not enabled:
+        return graph, commit
+    if graph.contract != "reference":
+        raise ValueError("parallel argmax requires the plain reference contract")
+    eligible = {id(call) for call in _parallel_argmax_calls(graph)}
+    calls = []
+    for index, call in enumerate(graph.calls):
+        if id(call) not in eligible:
+            calls.append(call)
+            continue
+        p = call.parameters
+        names = (
+            dict(zip(("x", "out", "enabled"), call.arguments))
+            if call.arguments
+            else call.bindings
+        )
+        parts = (p["c"] + block - 1) // block
+        values = graph.buffer(
+            f"pipeline.argmax.{index}.values", (p["r"], parts), "float32"
+        )
+        indices = graph.buffer(
+            f"pipeline.argmax.{index}.indices", (p["r"], parts), "int32"
+        )
+        parameters = dict(r=p["r"], c=p["c"], block=block)
+        calls.extend(
+            (
+                Call(
+                    "argmax_partial",
+                    parameters,
+                    bindings=dict(
+                        x=names["x"], values=values.name, indices=indices.name
+                    ),
+                ),
+                Call(
+                    "argmax_merge",
+                    parameters,
+                    bindings=dict(
+                        values=values.name,
+                        indices=indices.name,
+                        enabled=names["enabled"],
+                        out=names["out"],
+                    ),
+                    label=call.label,
+                ),
+            )
+        )
+    graph.calls = calls
+    return graph, commit
+
+
+OUTPUT_ARGUMENTS["reference"].update(
+    {
+        "argmax_partial": OutputABI((-2, -1), ("values", "indices")),
+        "argmax_merge": OutputABI((-1,), ("out",)),
+    }
+)
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        kind,
+        f"akas.ops.vocabulary.{provider}",
+        "reference",
+        provider=provider,
+        factory=kind,
+    )
+    for provider in ("cuda", "webgpu")
+    for kind in ("argmax_partial", "argmax_merge")
+)
+from .validation import parallel_argmax_validation
+
+VALIDATIONS.update(
+    {kind: parallel_argmax_validation for kind in ("argmax_partial", "argmax_merge")}
+)

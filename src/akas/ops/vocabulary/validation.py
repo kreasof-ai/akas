@@ -106,3 +106,37 @@ def validation(kind, p, signature):
 VALIDATIONS = {
     name: validation for name in ("embedding", "argmax", "head_linear", "head_argmax")
 }
+
+
+def parallel_argmax_validation(kind, p, signature):
+    """Independent first-index reduction; NaNs and -inf retain the sentinel."""
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    values = sample_arguments(signature)
+    rows, columns, block = p["r"], p["c"], p["block"]
+    parts = (columns + block - 1) // block
+    expected = {name: value.copy() for name, value in values.items()}
+    if kind == "argmax_partial":
+        x = values["x"].reshape(rows, columns)
+        for part in range(parts):
+            begin, end = part * block, min(columns, (part + 1) * block)
+            section = np.where(np.isnan(x[:, begin:end]), -np.inf, x[:, begin:end])
+            peaks = np.max(section, axis=1)
+            expected["values"][:, part] = peaks
+            expected["indices"][:, part] = np.where(
+                peaks > -np.inf, begin + np.argmax(section, axis=1), columns
+            )
+    else:
+        values["enabled"][:] = 1
+        if rows > 1:
+            values["enabled"][-1] = 0
+        values["indices"][:] = np.arange(parts)[None, :] * block
+        expected = {name: value.copy() for name, value in values.items()}
+        section = np.where(np.isnan(values["values"]), -np.inf, values["values"])
+        peaks = np.max(section, axis=1, keepdims=True)
+        indices = np.min(np.where(section == peaks, values["indices"], columns), axis=1)
+        indices = np.where(peaks[:, 0] > -np.inf, indices, columns)
+        active = values["enabled"] != 0
+        expected["out"][active] = indices[active]
+    return ValidationCase(values, expected, rtol=0, atol=0)
