@@ -27559,6 +27559,54 @@
       ],
       "search_phases": 4,
       "path": "runs/20261020104841883865-97f56594/run.json"
+    },
+    {
+      "id": "20261020105826407178-154ef54b",
+      "started_at": "2026-10-20T10:58:26.407178Z",
+      "status": "passed",
+      "revision": "854fea412451ba37528b1c1ad687ca90b807341c",
+      "dirty": false,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": null,
+      "weight_format": null,
+      "change": {
+        "kind": "algorithm",
+        "description": "Independently qualify and time attention load pipelining, KV-vector reuse and grouped decode; kernel latencies only",
+        "parent_run": null
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020105826407178-154ef54b/run.json"
+    },
+    {
+      "id": "20261020105938620724-d6c83495",
+      "started_at": "2026-10-20T10:59:38.620724Z",
+      "status": "passed",
+      "revision": "854fea412451ba37528b1c1ad687ca90b807341c",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "webgpu",
+      "mode": "ar",
+      "kv_dtype": null,
+      "weight_format": null,
+      "change": {
+        "kind": "algorithm",
+        "description": "Independently qualify and time attention load pipelining, KV-vector reuse and grouped decode; kernel latencies only",
+        "parent_run": null
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020105938620724-d6c83495/run.json"
     }
   ]
 }

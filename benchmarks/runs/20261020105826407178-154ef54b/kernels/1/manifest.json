@@ -1,0 +1,206 @@
+{
+  "abi": [
+    {
+      "dtype": "int32",
+      "kind": "buffer",
+      "name": "enabled"
+    },
+    {
+      "dtype": "float16",
+      "kind": "buffer",
+      "name": "kc"
+    },
+    {
+      "dtype": "float32",
+      "kind": "buffer",
+      "name": "ks"
+    },
+    {
+      "dtype": "float32",
+      "kind": "buffer",
+      "name": "out"
+    },
+    {
+      "dtype": "int32",
+      "kind": "buffer",
+      "name": "positions"
+    },
+    {
+      "dtype": "float32",
+      "kind": "buffer",
+      "name": "q"
+    },
+    {
+      "dtype": "float16",
+      "kind": "buffer",
+      "name": "vc"
+    },
+    {
+      "dtype": "float32",
+      "kind": "buffer",
+      "name": "vs"
+    }
+  ],
+  "arguments": [
+    {
+      "alignment": 64,
+      "dtype": "float32",
+      "kind": "buffer",
+      "name": "q",
+      "shape": [
+        512,
+        2048
+      ]
+    },
+    {
+      "alignment": 64,
+      "dtype": "float16",
+      "kind": "buffer",
+      "name": "kc",
+      "shape": [
+        1,
+        8,
+        8192,
+        64
+      ]
+    },
+    {
+      "alignment": 64,
+      "dtype": "float16",
+      "kind": "buffer",
+      "name": "vc",
+      "shape": [
+        1,
+        8,
+        8192,
+        64
+      ]
+    },
+    {
+      "alignment": 64,
+      "dtype": "float32",
+      "kind": "buffer",
+      "name": "ks",
+      "shape": [
+        1,
+        8,
+        8192,
+        1
+      ]
+    },
+    {
+      "alignment": 64,
+      "dtype": "float32",
+      "kind": "buffer",
+      "name": "vs",
+      "shape": [
+        1,
+        8,
+        8192,
+        1
+      ]
+    },
+    {
+      "alignment": 64,
+      "dtype": "float32",
+      "kind": "buffer",
+      "name": "out",
+      "shape": [
+        1048576
+      ]
+    },
+    {
+      "alignment": 64,
+      "dtype": "int32",
+      "kind": "buffer",
+      "name": "positions",
+      "shape": [
+        512
+      ]
+    },
+    {
+      "alignment": 64,
+      "dtype": "int32",
+      "kind": "buffer",
+      "name": "enabled",
+      "shape": [
+        512
+      ]
+    }
+  ],
+  "compiler": {
+    "compatibility_profile": "tilelang-nvrtc-integral-trait-v1",
+    "libraries": {
+      "libnvrtc-builtins.alt.so.12.9.86": "5246bbfb25da49f7107b6a3ae9bb337fb45bce0178f97a431ce8a88113b2283c",
+      "libnvrtc-builtins.so.12.9.86": "6507cf33450cfb22970c2c1e7aa8e7c0a33e39d864720277b05f61a92791e2e8",
+      "libnvrtc.alt.so.12.9.86": "19927a35d2a45a72356e665f1170debbdc1f835b8d0dd310d380974073b21dbd",
+      "libnvrtc.so.12.9.86": "c3430e8b6b0d8d3a74f5f839118a85e13e3ad6e4d6203ea1b6a27a0c0b4fe10a"
+    },
+    "lowering_sha256": "49d6f330cc63ef55374d50a1049fff5a7d30c5939fd840e074eb2c0f0f004d38",
+    "name": "nvrtc",
+    "options": [
+      "--gpu-architecture=sm_89",
+      "--std=c++20",
+      "--device-as-default-execution-space",
+      "--generate-line-info",
+      "--include-path=/home/sagemaker-user/akas/.venv/lib/python3.12/site-packages/tilelang/src",
+      "--include-path=/home/sagemaker-user/akas/.venv/lib/python3.12/site-packages/tilelang/3rdparty/cutlass/include",
+      "--include-path=/home/sagemaker-user/akas/build/nvrtc-12.9/include"
+    ],
+    "pass_config": {},
+    "version": "12.9"
+  },
+  "entrypoint": "kernel_kernel",
+  "files": {
+    "kernel.cubin": "f66f6caa8ada783b69f18c7b940852b838606a2d63af43a57f4e25ce4a3d67a2",
+    "kernel.tirx.json": "d4e93c0461303c25d7418a4e93e174b3a1c5ecc70dabf0f5ad8ff531bb186c2f",
+    "licenses/cutlass-notice.txt": "ab92fa154eb5cd37b375991e5c44d6b20438e14b1ce4cd3ebf3359b6573f8322",
+    "licenses/tilelang-5-LICENSE": "f70e5cdc24c3797af741930440086f9a0ad36930b05a3dfc25b420936dc2cfa1"
+  },
+  "format": "tensor.module",
+  "format_version": 3,
+  "kind": "cubin",
+  "launch": {
+    "block": [
+      128,
+      1,
+      1
+    ],
+    "grid": [
+      16,
+      32,
+      1
+    ],
+    "shared_memory_bytes": 44032
+  },
+  "op_set": [
+    "tirx.exp",
+    "tirx.if_then_else",
+    "tl.infinity",
+    "tl.region",
+    "tl.tileop.copy",
+    "tl.tileop.fill",
+    "tl.tileop.gemm",
+    "tl.tileop.reduce"
+  ],
+  "outputs": [],
+  "provider": "cuda",
+  "runtime_abi": {
+    "major": 1,
+    "minor": 1,
+    "required_capabilities": [
+      "contiguous",
+      "executable_descriptors",
+      "no_external_workspace"
+    ]
+  },
+  "source_sha256": "580b901c4cdfff9ee04c5e31f5b1fd6e3177aa38d299c60f1b23c6ddee5e0806",
+  "symbols": {},
+  "target": "sm_89",
+  "tilelang_version": "0.1.14",
+  "tvm_ffi_version": "0.1.12",
+  "workspace": {
+    "alignment": 1,
+    "bytes": 0
+  }
+}

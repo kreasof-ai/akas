@@ -1,0 +1,239 @@
+{
+  "abi": [
+    {
+      "dtype": "int32",
+      "kind": "buffer",
+      "name": "enabled"
+    },
+    {
+      "dtype": "float16",
+      "kind": "buffer",
+      "name": "kc"
+    },
+    {
+      "dtype": "float32",
+      "kind": "buffer",
+      "name": "ks"
+    },
+    {
+      "dtype": "float32",
+      "kind": "buffer",
+      "name": "out"
+    },
+    {
+      "dtype": "int32",
+      "kind": "buffer",
+      "name": "positions"
+    },
+    {
+      "dtype": "float32",
+      "kind": "buffer",
+      "name": "q"
+    },
+    {
+      "dtype": "float16",
+      "kind": "buffer",
+      "name": "vc"
+    },
+    {
+      "dtype": "float32",
+      "kind": "buffer",
+      "name": "vs"
+    }
+  ],
+  "arguments": [
+    {
+      "alignment": 64,
+      "dtype": "float32",
+      "kind": "buffer",
+      "name": "q",
+      "shape": [
+        1,
+        2048
+      ]
+    },
+    {
+      "alignment": 64,
+      "dtype": "float16",
+      "kind": "buffer",
+      "name": "kc",
+      "shape": [
+        1,
+        8,
+        8192,
+        64
+      ]
+    },
+    {
+      "alignment": 64,
+      "dtype": "float16",
+      "kind": "buffer",
+      "name": "vc",
+      "shape": [
+        1,
+        8,
+        8192,
+        64
+      ]
+    },
+    {
+      "alignment": 64,
+      "dtype": "float32",
+      "kind": "buffer",
+      "name": "ks",
+      "shape": [
+        1,
+        8,
+        8192,
+        1
+      ]
+    },
+    {
+      "alignment": 64,
+      "dtype": "float32",
+      "kind": "buffer",
+      "name": "vs",
+      "shape": [
+        1,
+        8,
+        8192,
+        1
+      ]
+    },
+    {
+      "alignment": 64,
+      "dtype": "float32",
+      "kind": "buffer",
+      "name": "out",
+      "shape": [
+        33792
+      ]
+    },
+    {
+      "alignment": 64,
+      "dtype": "int32",
+      "kind": "buffer",
+      "name": "positions",
+      "shape": [
+        1
+      ]
+    },
+    {
+      "alignment": 64,
+      "dtype": "int32",
+      "kind": "buffer",
+      "name": "enabled",
+      "shape": [
+        1
+      ]
+    }
+  ],
+  "compiler": {
+    "lowering_sha256": "64408356c0d045753f2df01e0107089210fe40c71ba755d6b563593b6e2ac76c",
+    "name": "wgsl",
+    "producer_sha256": "221520a804b80fc973e648cd1c7eba6491ef38c166f37561d296cfcb18efc1bf",
+    "tilelang": "0.1.14",
+    "version": "tensor-simt-v2"
+  },
+  "entrypoint": "kernel_kernel",
+  "files": {
+    "kernel.tirx.json": "10c6411b2e6565e26a1b246d7967cc6c9dbc88cf1a1aa87095733442de79782c",
+    "kernel.wgsl": "00ff3b105b6dd3f3777cbe437828489e47af93ef4777b4300b9bcc417af8ffb9",
+    "licenses/cutlass-notice.txt": "ab92fa154eb5cd37b375991e5c44d6b20438e14b1ce4cd3ebf3359b6573f8322",
+    "licenses/tilelang-5-LICENSE": "f70e5cdc24c3797af741930440086f9a0ad36930b05a3dfc25b420936dc2cfa1"
+  },
+  "format": "tensor.module",
+  "format_version": 3,
+  "kind": "wgsl",
+  "launch": {
+    "block": [
+      128,
+      1,
+      1
+    ],
+    "grid": [
+      8,
+      16,
+      1
+    ],
+    "shared_memory_bytes": 0
+  },
+  "op_set": [
+    "tirx.call_extern",
+    "tirx.exp",
+    "tirx.if_then_else",
+    "tirx.shift_right",
+    "tirx.tvm_storage_sync",
+    "tl.infinity"
+  ],
+  "outputs": [],
+  "provider": "webgpu",
+  "runtime_abi": {
+    "major": 1,
+    "minor": 2,
+    "required_capabilities": [
+      "contiguous",
+      "executable_descriptors",
+      "no_external_workspace",
+      "opaque_buffer_handles"
+    ]
+  },
+  "source_sha256": "690d7bf8b3d40ed888c1bb4859b8a1be1ae84bc3374e1545fdffd64021f4e29f",
+  "symbols": {},
+  "target": "webgpu-portable-v1",
+  "tilelang_version": "0.1.14",
+  "tvm_ffi_version": "0.1.12",
+  "webgpu": {
+    "bindings": [
+      {
+        "access": "read",
+        "binding": 0,
+        "name": "enabled"
+      },
+      {
+        "access": "read",
+        "binding": 1,
+        "name": "kc"
+      },
+      {
+        "access": "read",
+        "binding": 2,
+        "name": "ks"
+      },
+      {
+        "access": "read_write",
+        "binding": 3,
+        "name": "out"
+      },
+      {
+        "access": "read",
+        "binding": 4,
+        "name": "positions"
+      },
+      {
+        "access": "read",
+        "binding": 5,
+        "name": "q"
+      },
+      {
+        "access": "read",
+        "binding": 6,
+        "name": "vc"
+      },
+      {
+        "access": "read",
+        "binding": 7,
+        "name": "vs"
+      }
+    ],
+    "required_features": [
+      "shader-f16",
+      "subgroup"
+    ],
+    "workgroup_storage_bytes": 18176
+  },
+  "workspace": {
+    "alignment": 1,
+    "bytes": 0
+  }
+}
