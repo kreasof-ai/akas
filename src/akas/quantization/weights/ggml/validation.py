@@ -5,9 +5,30 @@ def reference(options, shape, storage, *, seed=31):
     """Sample encoded storage and expose bounded independently decoded rows."""
     encoding, depth = options["encoding"], shape[-1]
     sample_weight(storage, encoding, seed=seed, decode=False)
+    planar = options.get("layout", "raw") == "planar"
+    if planar:
+        from .kernel import repack_host
+
+        raw = storage.view("uint8").reshape(-1)
+        raw[:] = repack_host(raw)
 
     def read(start, stop):
-        return decode_rows(storage, encoding, depth, start, stop)
+        if not planar:
+            return decode_rows(storage, encoding, depth, start, stop)
+        # Rebuild only the requested rows; never decode an entire expert bank.
+        import numpy as np
+        from math import prod
+        from .kernel import decode_host
+
+        raw = storage.view("uint8").reshape(-1)
+        if not 0 <= start < stop <= prod(shape[:-1]):
+            raise ValueError("invalid planar weight row range")
+        total = prod(shape) // 32
+        begin, end = start * (depth // 32), stop * (depth // 32)
+        blocks = np.empty((end - begin, 18), dtype="uint8")
+        blocks[:, 2:] = raw[: total * 16].reshape(total, 16)[begin:end]
+        blocks[:, :2] = raw[total * 16 :].reshape(total, 2)[begin:end]
+        return decode_host(blocks.reshape(-1), 2).reshape(stop - start, depth)
 
     return read
 

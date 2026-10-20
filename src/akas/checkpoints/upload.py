@@ -42,12 +42,26 @@ class UploadBatch:
                 self.plan.close()
 
 
-def upload_packed(device, checkpoint):
+def upload_packed(device, checkpoint, *, layouts=None):
+    layouts = dict(layouts or {})
+    if layouts.keys() - checkpoint.tensors.keys():
+        raise ValueError("upload layout references an unknown tensor")
     weights = {}
     try:
         with UploadBatch(device) as transfers:
             for name, info in checkpoint.tensors.items():
                 raw = checkpoint.packed(name)
+                if name in layouts:
+                    from akas.quantization.weights.ggml.definition import (
+                        validate_layout,
+                    )
+                    from akas.quantization.weights.ggml.kernel import repack_host
+
+                    validate_layout(
+                        info.shape, encoding=info.type, layout=layouts[name]
+                    )
+                    if layouts[name] != "raw":
+                        raw = repack_host(raw, target=layouts[name])
                 if info.type in (0, 1):
                     raw = raw.view(np.float32 if info.type == 0 else np.float16)
                 elif device.info["provider"] == "webgpu":

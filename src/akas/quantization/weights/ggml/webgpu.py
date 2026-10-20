@@ -9,7 +9,9 @@ def decoder(encoding, depth):
     return weight_decoder(encoding, depth, packed_words=True)
 
 
-def bind(shape, *, encoding):
+def bind(shape, *, encoding, layout="raw"):
+    if layout == "planar":
+        return planar_binding(shape, encoding=encoding)
     from akas.quantization.formats import Codec
     from akas.quantization._shared.access import matrix_reader, matrix_tile
     from .definition import FORMAT
@@ -324,7 +326,67 @@ def packed_dot_float(shape):
     return dot
 
 
-def supports(capability, shape, *, encoding):
+def supports(capability, shape, *, encoding, layout="raw"):
+    from .definition import validate_layout
+
+    validate_layout(shape, encoding=encoding, layout=layout)
+    if layout == "planar":
+        return capability in ("read", "read_tile", "dot_float")
     if capability == "dot_float":
         return encoding == 2 and shape[-1] % 256 == 0
     return capability in CAPABILITIES
+
+
+def planar_dot_float(shape):
+    """A 32-lane, 256-channel tile with original F32 coefficients/operands."""
+    from math import prod
+    import tilelang.language as T
+    from tensor.compiler.webgpu.schedules.registers import vector
+    from akas.quantization._shared.packing import packed_loads
+
+    byte, half, word = packed_loads()
+    depth = shape[-1]
+    scales_offset = prod(shape) // 2
+
+    def activation(x, channel):
+        return vector([x[channel + i] for i in range(4)])
+
+    def coefficients(packed, scale, offset):
+        return vector(
+            [
+                (T.cast((packed >> (i * 8 + offset)) & 15, "float32") - 8) * scale
+                for i in range(4)
+            ]
+        )
+
+    @T.macro
+    def dot(encoded, x, offset, tile, lane, row, previous):
+        block = row * (depth // 32) + tile * 8 + lane // 4
+        scale = half(encoded[0], scales_offset + block * 2)
+        packed = encoded[0][block * 4 + lane % 4]
+        channel = offset + tile * 256 + lane // 4 * 32 + lane % 4 * 4
+        lo = activation(x, channel)
+        hi = activation(x, channel + 16)
+        low = coefficients(packed, scale, 0)
+        high = coefficients(packed, scale, 4)
+        return previous + (
+            T.call_extern("float32", "dot", lo, low)
+            + T.call_extern("float32", "dot", hi, high)
+        )
+
+    return dot
+
+
+def planar_binding(shape, *, encoding):
+    from akas.quantization.formats import Codec
+    from akas.quantization._shared.access import matrix_tile
+    from .definition import FORMAT
+    from .kernel import planar_reader
+
+    storage = FORMAT.storage(
+        shape, provider="webgpu", encoding=encoding, layout="planar"
+    )
+    read = planar_reader(shape)
+    return Codec(
+        storage, read, matrix_tile(read, shape), dot_float=planar_dot_float(shape)
+    )

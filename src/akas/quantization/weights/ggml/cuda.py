@@ -475,8 +475,13 @@ def packed_dot_float(shape):
     return dot
 
 
-def supports(capability, shape, *, encoding):
+def supports(capability, shape, *, encoding, layout="raw"):
     """Compiler-free specialization inventory for packed consumers."""
+    from .definition import validate_layout
+
+    validate_layout(shape, encoding=encoding, layout=layout)
+    if layout == "planar":
+        return capability in ("read", "read_tile", "dot_half", "dot_float")
     if capability in ("dot_half", "dot_float"):
         return encoding == 2 and shape[-1] % 256 == 0
     if capability == "read_pair":
@@ -486,7 +491,9 @@ def supports(capability, shape, *, encoding):
     return capability in CAPABILITIES
 
 
-def bind(shape, *, encoding):
+def bind(shape, *, encoding, layout="raw"):
+    if layout == "planar":
+        return planar_binding(shape, encoding=encoding)
     import tilelang.language as T
     from akas.quantization.formats import Codec
     from akas.quantization._shared.access import matrix_reader, matrix_tile
@@ -542,3 +549,199 @@ CAPABILITIES = (
     "dequantize",
 )
 IMPLEMENTATIONS = tuple(choice for choice in _CHOICES if choice.provider == "cuda")
+
+
+def planar_dot_half(shape):
+    """Aligned Q4 payloads with unchanged F16 scales and continuous F32 FMA.
+
+    Coefficients and activations retain the raw layout's FP16 rounding and
+    lane addition order. Only byte addresses change; no wider weight cache or
+    numerical requantization is introduced.
+    """
+    import tilelang.language as T
+    from math import prod
+
+    depth = shape[-1]
+    words_count = prod(shape) // 32 * 18 // 4
+    scales_offset = prod(shape) // 2
+
+    @T.macro
+    def dot(encoded, x, offset, tile, lane, row, previous):
+        T.import_source(_Q4_HALF2_SOURCE)
+        words = T.meta_var(T.view(encoded[0], (words_count,), dtype="uint32"))
+        halves = T.meta_var(T.view(encoded[0], (words_count * 2,), dtype="uint16"))
+        scale = halves[scales_offset // 2 + row * (depth // 32) + tile * 8 + lane // 4]
+        packed = words[row * (depth // 8) + tile * 32 + lane]
+        coefficients = T.alloc_local((8,), "float32")
+        for half in T.unroll(2):
+            lo_bits = T.call_extern(
+                "uint32",
+                "akas_q4_adjacent_pair",
+                packed >> (half * 16),
+                T.cast(scale, "uint32"),
+            )
+            hi_bits = T.call_extern(
+                "uint32",
+                "akas_q4_adjacent_pair",
+                packed >> (half * 16 + 4),
+                T.cast(scale, "uint32"),
+            )
+            coefficients[half * 2] = T.cast(
+                T.reinterpret("float16", T.cast(lo_bits, "uint16")), "float32"
+            )
+            coefficients[half * 2 + 1] = T.cast(
+                T.reinterpret("float16", T.cast(lo_bits >> 16, "uint16")), "float32"
+            )
+            coefficients[4 + half * 2] = T.cast(
+                T.reinterpret("float16", T.cast(hi_bits, "uint16")), "float32"
+            )
+            coefficients[5 + half * 2] = T.cast(
+                T.reinterpret("float16", T.cast(hi_bits >> 16, "uint16")), "float32"
+            )
+        j = offset + tile * 256 + lane // 4 * 32 + lane % 4 * 4
+        lo = T.alloc_local((4,), "float32")
+        hi = T.alloc_local((4,), "float32")
+        for component in T.vectorized(4):
+            lo[component] = T.cast(T.cast(x[j + component], "float16"), "float32")
+            hi[component] = T.cast(T.cast(x[j + 16 + component], "float16"), "float32")
+        result = T.alloc_var("float32")
+        result = previous
+        for component in T.unroll(4):
+            result += lo[component] * coefficients[component]
+        for component in T.unroll(4):
+            result += hi[component] * coefficients[component + 4]
+        return result
+
+    return dot
+
+
+def planar_tile_half(shape, read):
+    from math import prod
+    from akas.quantization._shared.access import matrix_tile
+
+    rows, depth = prod(shape[:-1]), shape[-1]
+    fallback = matrix_tile(read, shape)
+    import tilelang.language as T
+
+    words_count = rows * depth // 32 * 18 // 4
+
+    @T.macro
+    def load(encoded, destination, row, column):
+        if destination.dtype == "float16" and destination.shape[1] % 32 == 0:
+            T.import_source(_Q4_HALF2_SOURCE)
+            words = T.meta_var(T.view(encoded[0], (words_count,), dtype="uint32"))
+            halves = T.meta_var(T.view(encoded[0], (words_count * 2,), dtype="uint16"))
+            for i, j in T.Parallel(destination.shape[0], destination.shape[1] // 8):
+                local = j // 4 * 32 + j % 4 * 4
+                channel = column + local
+                if row + i < rows and channel + 19 < depth:
+                    block = (row + i) * (depth // 32) + channel // 32
+                    scale = halves[rows * depth // 4 + block]
+                    packed = words[block * 4 + channel % 16 // 4]
+                    lo0 = T.call_extern(
+                        "uint32",
+                        "akas_q4_adjacent_pair",
+                        packed,
+                        T.cast(scale, "uint32"),
+                    )
+                    lo1 = T.call_extern(
+                        "uint32",
+                        "akas_q4_adjacent_pair",
+                        packed >> 16,
+                        T.cast(scale, "uint32"),
+                    )
+                    hi0 = T.call_extern(
+                        "uint32",
+                        "akas_q4_adjacent_pair",
+                        packed >> 4,
+                        T.cast(scale, "uint32"),
+                    )
+                    hi1 = T.call_extern(
+                        "uint32",
+                        "akas_q4_adjacent_pair",
+                        packed >> 20,
+                        T.cast(scale, "uint32"),
+                    )
+                    destination[i, local] = T.reinterpret(
+                        "float16", T.cast(lo0, "uint16")
+                    )
+                    destination[i, local + 1] = T.reinterpret(
+                        "float16", T.cast(lo0 >> 16, "uint16")
+                    )
+                    destination[i, local + 2] = T.reinterpret(
+                        "float16", T.cast(lo1, "uint16")
+                    )
+                    destination[i, local + 3] = T.reinterpret(
+                        "float16", T.cast(lo1 >> 16, "uint16")
+                    )
+                    destination[i, local + 16] = T.reinterpret(
+                        "float16", T.cast(hi0, "uint16")
+                    )
+                    destination[i, local + 17] = T.reinterpret(
+                        "float16", T.cast(hi0 >> 16, "uint16")
+                    )
+                    destination[i, local + 18] = T.reinterpret(
+                        "float16", T.cast(hi1, "uint16")
+                    )
+                    destination[i, local + 19] = T.reinterpret(
+                        "float16", T.cast(hi1 >> 16, "uint16")
+                    )
+                else:
+                    for offset in T.unroll(4):
+                        destination[i, local + offset] = 0
+                        destination[i, local + offset + 16] = 0
+        else:
+            fallback(encoded, destination, row, column)
+
+    return load
+
+
+def planar_dot_float(shape):
+    """Packed Q4 lane tile with F32 operands, coefficients and accumulation."""
+    import tilelang.language as T
+    from math import prod
+
+    depth = shape[-1]
+    words_count = prod(shape) // 32 * 18 // 4
+    scales_offset = prod(shape) // 2
+
+    @T.macro
+    def dot(encoded, x, offset, tile, lane, row, previous):
+        words = T.meta_var(T.view(encoded[0], (words_count,), dtype="uint32"))
+        block = row * (depth // 32) + tile * 8 + lane // 4
+        scale_address = scales_offset + block * 2
+        bits = words[scale_address // 4] >> (scale_address % 4 * 8)
+        scale = T.cast(T.reinterpret("float16", T.cast(bits, "uint16")), "float32")
+        packed = words[block * 4 + lane % 4]
+        channel = offset + tile * 256 + lane // 4 * 32 + lane % 4 * 4
+        partial = T.alloc_var("float32")
+        partial = 0
+        for component in T.unroll(4):
+            coefficient = (
+                T.cast((packed >> (component * 8)) & 15, "float32") - 8
+            ) * scale
+            partial = T.ieee_fmaf(x[channel + component], coefficient, partial)
+        for component in T.unroll(4):
+            coefficient = (
+                T.cast((packed >> (component * 8 + 4)) & 15, "float32") - 8
+            ) * scale
+            partial = T.ieee_fmaf(x[channel + 16 + component], coefficient, partial)
+        return previous + partial
+
+    return dot
+
+
+def planar_binding(shape, *, encoding):
+    from akas.quantization.formats import Codec
+    from .definition import FORMAT
+    from .kernel import planar_reader
+
+    storage = FORMAT.storage(shape, provider="cuda", encoding=encoding, layout="planar")
+    read = planar_reader(shape)
+    return Codec(
+        storage,
+        read,
+        planar_tile_half(shape, read),
+        dot_half=planar_dot_half(shape),
+        dot_float=planar_dot_float(shape),
+    )

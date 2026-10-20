@@ -20,6 +20,26 @@ U32 words and zero-pads a final partial word. F32/F16 remain native float buffer
 Shared `kernel.decode_host` and `kernel.prepack_host` own numerical host
 conversion; the GGUF reader delegates to them and keeps its public parse errors.
 
+## Physical layouts
+
+The default `raw` layout keeps each Q4_0 block's two scale bytes beside its
+16 payload bytes. The optional `planar` layout stores all payloads followed by
+all original scale bytes. `kernel.repack_host` reverses this permutation exactly;
+it changes neither the allocation size nor the encoding's numerical precision.
+Source arrays remain unchanged and upload needs only one tensor-sized temporary.
+
+Both providers expose scalar/tile readers and F32 expert products for planar
+storage; CUDA also exposes the same continuous F16-operand lane product as raw
+storage. Layout-dependent capabilities are checked through `Format.supports`.
+The standalone `dequantize_ggml` operation retains its raw-storage ABI; encoded
+consumers use the bound codec readers for either layout.
+
+The LFM2 MoE planner can explore `expert_weight_layout="planar"` internally.
+Only eligible Q4_0 expert banks change layout. Their graph descriptors and
+checkpoint upload options agree for the entire compiled program, so prefill and
+decode share one permanent representation. Packing rules stay here in the codec;
+expert projections, fused SwiGLU and their schedules keep their normal contracts.
+
 ## Why share and specialize
 
 Share scalar decode mathematics and tile access across both providers. CUDA

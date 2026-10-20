@@ -21,6 +21,7 @@ def compose(
     max_weight_bytes=64 * 1024 * 1024,
     optimized=True,
     activation_quantization=None,
+    expert_weight_layout="raw",
 ):
     from akas.models.lfm2._composition import program
 
@@ -38,6 +39,7 @@ def compose(
             max_weight_bytes=max_weight_bytes,
             optimized=optimized,
             activation_quantization=activation_quantization,
+            expert_weight_layout=expert_weight_layout,
         )
     )
 
@@ -53,6 +55,7 @@ class LFM2MoE(Definition):
     checkpoint_type = LFM2MoECheckpoint
     model_defaults = {"kv_dtype": "float16", "optimized": True}
     optimization_chunks = (512, 1024, 2048, 4096, 256, 128, 32, 1)
+    optimization_space = (("expert_weight_layout", ("planar",)),)
 
 
 class LFM2Reference(Definition):

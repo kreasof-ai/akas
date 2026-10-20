@@ -30419,6 +30419,111 @@
       "shapes": [],
       "search_phases": 0,
       "path": "runs/20261020211643710127-7d56732c/run.json"
+    },
+    {
+      "id": "20261020211932758011-47b0b378",
+      "started_at": "2026-10-20T21:19:32.758011Z",
+      "status": "passed",
+      "revision": "98fedcc76c834d813c86c92bf28e94497c79dfd6",
+      "dirty": false,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "fp8",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Full eight-context CUDA benchmark with canonical-order warp-local attention, measured projection reuse geometry and unpadded medium prompts; matched native/Engine/HTTP outputs",
+        "parent_run": "20261020182637613063-8a87f1a5"
+      },
+      "purpose": "benchmark",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 512,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 8192,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 16384,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 32768,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 65536,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 130944,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 6,
+      "path": "runs/20261020211932758011-47b0b378/run.json"
+    },
+    {
+      "id": "20261020220039578046-59963a09",
+      "started_at": "2026-10-20T22:00:39.578046Z",
+      "status": "passed",
+      "revision": "98fedcc76c834d813c86c92bf28e94497c79dfd6",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "fp8",
+      "weight_format": null,
+      "change": {
+        "kind": "algorithm",
+        "description": "Keep the canonically ordered F16 probabilities in registers before the value MMA",
+        "parent_run": null
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020220039578046-59963a09/run.json"
     }
   ]
 }

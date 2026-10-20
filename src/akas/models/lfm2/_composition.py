@@ -13,6 +13,7 @@ def compose(
     chunk=1,
     optimized=False,
     checkpoint=None,
+    expert_weight_layout="raw",
 ):
     """Compose a chunk of tokens per slot with masked, persistent state."""
     from akas.graph import Graph
@@ -40,9 +41,23 @@ def compose(
     b, c = (batch * chunk, config.width)
     from akas.checkpoints.partition import Weights
 
+    if expert_weight_layout not in ("raw", "planar"):
+        raise ValueError("expert weight layout must be raw or planar")
+    if expert_weight_layout != "raw" and (
+        not isinstance(config, LFM2MoEConfig) or checkpoint is None
+    ):
+        raise ValueError("expert storage layouts require an encoded MoE checkpoint")
     matrix_dtype = "float16" if optimized else "float32"
     weights = (
-        checkpoint.graph_weights(plan, provider=provider)
+        checkpoint.graph_weights(
+            plan,
+            provider=provider,
+            **(
+                dict(expert_weight_layout=expert_weight_layout)
+                if expert_weight_layout != "raw"
+                else {}
+            ),
+        )
         if checkpoint is not None and hasattr(checkpoint, "graph_weights")
         else Weights(
             plan,
@@ -326,6 +341,7 @@ def program(
     max_weight_bytes=64 * 1024 * 1024,
     optimized=True,
     activation_quantization=None,
+    expert_weight_layout="raw",
 ):
     """Compose token phases over the shared executor's persistent slot pool."""
     from dataclasses import replace
@@ -340,6 +356,7 @@ def program(
         max_weight_bytes=max_weight_bytes,
         optimized=optimized,
         checkpoint=checkpoint,
+        expert_weight_layout=expert_weight_layout,
         **checkpoint.definition_options,
     )
     if activation_quantization is not None:

@@ -4,6 +4,8 @@ Generated from run records. See [the benchmark guide](../docs/benchmarking.md).
 
 | UTC | Hardware | Runtime / model | Backend / weights / mode / KV | Shapes (B/P/O) | Purpose | Status | Source | Record |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-10-20T22:00:39.578046Z | NVIDIA L4 | akas /  | cuda / unspecified / ar / fp8 |  | kernel | passed | 98fedcc76c + snapshot | [run](runs/20261020220039578046-59963a09/run.json) |
+| 2026-10-20T21:19:32.758011Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / ar / fp8 | 1/32/128, 1/512/128, 1/2048/128, 1/8192/128, 1/16384/128, 1/32768/128, 1/65536/128, 1/130944/128 | benchmark | passed | 98fedcc76c | [run](runs/20261020211932758011-47b0b378/run.json) |
 | 2026-10-20T21:16:43.710127Z | NVIDIA L4 | akas /  | cuda / q4_0 / ar / unspecified |  | kernel | passed | 1e72ec705b + snapshot | [run](runs/20261020211643710127-7d56732c/run.json) |
 | 2026-10-20T21:08:22.967727Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / ar / fp8 |  | kernel | passed | d3b59b998d + snapshot | [run](runs/20261020210822967727-b12a9cf7/run.json) |
 | 2026-10-20T21:06:51.016012Z | NVIDIA L4 | akas /  | cuda / unspecified / ar / fp8 |  | kernel | passed | d3b59b998d + snapshot | [run](runs/20261020210651016012-a3613aec/run.json) |

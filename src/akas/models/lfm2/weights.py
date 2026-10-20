@@ -26,8 +26,10 @@ class LFM2Checkpoint:
     def definition_options(self):
         return {"output": "output.weight" in self.gguf.tensors}
 
-    def graph_weights(self, graph, *, provider):
-        return PackedWeights(graph, self, provider=provider)
+    def graph_weights(self, graph, *, provider, expert_weight_layout="raw"):
+        return PackedWeights(
+            graph, self, provider=provider, expert_weight_layout=expert_weight_layout
+        )
 
     def inventory(self):
         from collections import Counter
@@ -37,8 +39,23 @@ class LFM2Checkpoint:
             encodings=dict(Counter(t.type for t in self.gguf.tensors.values())),
         )
 
-    def upload(self, device):
-        return upload_packed(device, self.gguf)
+    def program_upload_options(self, weights, *, model_options):
+        layout = model_options.get("expert_weight_layout", "raw")
+        if layout not in ("raw", "planar"):
+            raise ValueError("expert weight layout must be raw or planar")
+        return {} if layout == "raw" else dict(expert_weight_layout=layout)
+
+    def upload(self, device, *, expert_weight_layout="raw"):
+        if expert_weight_layout not in ("raw", "planar"):
+            raise ValueError("expert weight layout must be raw or planar")
+        layouts = {
+            name: "planar"
+            for name, info in self.gguf.tensors.items()
+            if expert_weight_layout == "planar"
+            and len(info.shape) == 3
+            and info.type == 2
+        }
+        return upload_packed(device, self.gguf, layouts=layouts)
 
 
 class LFM2MoECheckpoint(LFM2Checkpoint):
@@ -265,12 +282,15 @@ def huggingface_names(config, *, output=False):
 class PackedWeights:
     """Declare original GGML bytes; mathematical shapes stay with the checkpoint."""
 
-    def __init__(self, graph, checkpoint, *, provider):
+    def __init__(self, graph, checkpoint, *, provider, expert_weight_layout="raw"):
         from math import prod
 
         from akas.quantization.weights.ggml.definition import weight_storage
 
+        if expert_weight_layout not in ("raw", "planar"):
+            raise ValueError("expert weight layout must be raw or planar")
         self.checkpoint = checkpoint
+        self.expert_weight_layout = expert_weight_layout
         self.buffers = {}
         for name, info in checkpoint.gguf.tensors.items():
             count, dtype = weight_storage(
@@ -291,10 +311,14 @@ class PackedWeights:
         from math import prod
 
         info = self.checkpoint.gguf.tensors[name]
-        return (
-            dict(
-                rows=prod(info.shape[:-1]),
-                format="ggml",
-                options={"encoding": info.type},
-            ),
-        )
+        options = {"encoding": info.type}
+        if (
+            self.expert_weight_layout == "planar"
+            and len(info.shape) == 3
+            and info.type == 2
+        ):
+            from akas.quantization.weights.ggml.definition import validate_layout
+
+            validate_layout(info.shape, encoding=2, layout="planar")
+            options["layout"] = "planar"
+        return (dict(rows=prod(info.shape[:-1]), format="ggml", options=options),)

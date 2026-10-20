@@ -33,7 +33,8 @@ def weight_storage(kind, elements, *, packed_words=False):
     return (count, "uint8")
 
 
-def layout(shape, *, encoding):
+def layout(shape, *, encoding, layout="raw"):
+    validate_layout(shape, encoding=encoding, layout=layout)
     from math import prod
     from akas.memory.state import BufferSpec
     from akas.quantization.formats import Storage
@@ -43,7 +44,8 @@ def layout(shape, *, encoding):
     return Storage(BufferSpec((count,), dtype))
 
 
-def webgpu_layout(shape, *, encoding):
+def webgpu_layout(shape, *, encoding, layout="raw"):
+    validate_layout(shape, encoding=encoding, layout=layout)
     from math import prod
     from akas.memory.state import BufferSpec
     from akas.quantization.formats import Storage
@@ -93,3 +95,11 @@ IMPLEMENTATIONS = tuple(
     )
     for provider in ("cuda", "webgpu")
 )
+
+
+def validate_layout(shape, *, encoding, layout="raw"):
+    """Physical permutations keep source encoding and allocation size explicit."""
+    if layout not in ("raw", "planar"):
+        raise ValueError("GGML weight layout must be raw or planar")
+    if layout == "planar" and (encoding != 2 or shape[-1] % 256):
+        raise ValueError("planar Q4_0 requires channels divisible by 256")

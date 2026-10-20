@@ -287,3 +287,58 @@ def q5_decoder(depth, *, packed_words=False):
         ) - half(w, base, 2) * T.cast(minimum, "float32")
 
     return read_weight_q5
+
+
+def repack_host(data, *, source="raw", target="planar"):
+    """Reversibly separate Q4_0 payloads and scales without changing a bit.
+
+    The returned contiguous array has the original byte count. Source storage
+    is borrowed and never modified; at most one tensor-sized destination lives
+    alongside it. This is a byte permutation, not numerical quantization.
+    """
+    import numpy as np
+
+    if source not in ("raw", "planar") or target not in ("raw", "planar"):
+        raise ValueError("Q4_0 layout must be raw or planar")
+    raw = np.ascontiguousarray(data).view("uint8").reshape(-1)
+    if not raw.size or raw.size % 18:
+        raise ValueError("Q4_0 layout conversion requires whole 18-byte blocks")
+    if source == target:
+        return raw
+    count = raw.size // 18
+    result = np.empty_like(raw)
+    if source == "raw":
+        blocks = raw.reshape(count, 18)
+        result[: count * 16].reshape(count, 16)[:] = blocks[:, 2:]
+        result[count * 16 :].reshape(count, 2)[:] = blocks[:, :2]
+    else:
+        blocks = result.reshape(count, 18)
+        blocks[:, 2:] = raw[: count * 16].reshape(count, 16)
+        blocks[:, :2] = raw[count * 16 :].reshape(count, 2)
+    return result
+
+
+def planar_reader(shape):
+    """One shared F32 reader over separated Q4_0 bytes and unchanged F16 scales."""
+    from math import prod
+    import tilelang.language as T
+    from akas.quantization._shared.rounding import half_bits
+
+    depth = shape[-1]
+    blocks = prod(shape) // 32
+    words_count = blocks * 18 // 4
+    unpack = half_bits()
+
+    @T.macro
+    def read(encoded, row, column):
+        words = T.meta_var(T.view(encoded[0], (words_count,), dtype="uint32"))
+        block = row * (depth // 32) + column // 32
+        scale_address = blocks * 16 + block * 2
+        scale = unpack(
+            words[scale_address // 4] >> (scale_address % 4 * 8) & T.uint32(65535)
+        )
+        packed = words[block * 4 + column % 16 // 4]
+        bits = packed >> (column % 4 * 8 + column % 32 // 16 * 4) & T.uint32(15)
+        return (T.cast(bits, "float32") - 8) * scale
+
+    return read
