@@ -111,4 +111,3 @@ routers as well as larger row batches. It assigns one output column to each
 warp and replaces shared reduction barriers with warp shuffles. Both operands
 and accumulation stay F32; this path does not quantize router weights. Output
 strides, offsets and partial columns retain the common projection contract.
-
