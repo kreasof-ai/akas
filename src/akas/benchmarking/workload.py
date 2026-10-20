@@ -24,3 +24,27 @@ _encoded = (
 )
 STANDARD = json.loads(_encoded)
 STANDARD_SHA256 = hashlib.sha256(_encoded).hexdigest()
+
+
+def prompt_seed(batch, prefix):
+    """Shared synthetic-input seed for native, serving and baseline workloads."""
+    return 17 + batch * 4099 + prefix
+
+
+def synthetic_prompts(vocab, batch, prefix):
+    import numpy as np
+
+    rng = np.random.default_rng(prompt_seed(batch, prefix))
+    return rng.integers(0, vocab, (batch, prefix), dtype="int32").astype(int).tolist()
+
+
+def prompt_digest(rows):
+    """Fingerprint request boundaries and token IDs without retaining long prompts."""
+    import numpy as np
+
+    digest = hashlib.sha256()
+    for row in rows:
+        values = np.asarray(row, dtype="<i4")
+        digest.update(len(values).to_bytes(8, "little"))
+        digest.update(values.tobytes())
+    return digest.hexdigest()

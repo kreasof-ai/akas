@@ -123,6 +123,43 @@ def test_invalid_workload_settings_fail_before_measurement():
     assert {c.prompt for c in matrix()} == {32, 2048}
 
 
+@pytest.mark.parametrize("batch,prefix", [(1,32),(4,32),(1,2048),(4,2048)])
+def test_native_serving_and_isolated_baseline_use_identical_prompts(batch,prefix):
+    from tools.baselines.common import synthetic_prompts as baseline_prompts
+    from akas.optimization.evaluation import prompts as serving_prompts
+    from akas.benchmarking.workload import prompt_digest
+
+    session = Session()
+    session.batch, session.capacity = batch, prefix + 128
+    times = iter([0,1,1,2])
+    row = run(session, Case(batch,prefix), repeats=1, warmup=0, clock=lambda: next(times))
+    actual = next(call for call in session.calls if isinstance(call,list))
+    expected = baseline_prompts(session.config.vocab,batch,prefix)
+    assert actual == expected == serving_prompts(session.config.vocab,batch,prefix)
+    assert row["prompt_sha256"] == prompt_digest(expected)
+
+
+def test_explicit_native_seed_preserves_replay_of_historical_inputs():
+    session = Session()
+    times = iter([0,1,1,2])
+    row = run(session, Case(4,5), seed=17, repeats=1, warmup=0, clock=lambda: next(times))
+    actual = next(call for call in session.calls if isinstance(call,list))
+    expected = np.random.default_rng(17).integers(0,31,(4,5),dtype="int32").tolist()
+    assert row["seed"] == 17 and actual == expected
+
+
+@pytest.mark.parametrize("field,value", [("seed",18),("prompt_sha256","other"),("cached_prefix_sha256","other")])
+def test_regression_comparison_rejects_different_prompt_inputs(tmp_path,field,value):
+    session = Session()
+    times = iter([0,1,1,2])
+    row = run(session, Case(4,5), repeats=1, warmup=0, clock=lambda: next(times))
+    report = write_report(tmp_path/"report.json",dict(protocol="native-token-step-v2"),[row])
+    other = json.loads(json.dumps(report))
+    other["results"][0][field] = value
+    with pytest.raises(ValueError,match="different prompt inputs"):
+        compare(report,other)
+
+
 def test_report_roundtrip_and_matched_regression(tmp_path):
     session = Session()
     times = iter([0, 2, 2, 6])

@@ -11,6 +11,7 @@ import math
 import statistics
 import time
 import numpy as np
+from akas.benchmarking.workload import prompt_seed, prompt_digest
 
 
 def summarize(values):
@@ -27,7 +28,7 @@ def summarize(values):
     )
 
 
-def run(session, case, *, repeats=5, warmup=1, seed=17, clock=time.perf_counter):
+def run(session, case, *, repeats=5, warmup=1, seed=None, clock=time.perf_counter):
     if type(repeats) is not int or repeats < 1 or type(warmup) is not int or warmup < 0:
         raise ValueError("positive repeats and nonnegative warmup required")
     if session.batch != case.batch or case.capacity > session.capacity:
@@ -35,6 +36,7 @@ def run(session, case, *, repeats=5, warmup=1, seed=17, clock=time.perf_counter)
     if case.generated < 2:
         raise ValueError("decode throughput requires at least two total output tokens")
     decode_steps = case.generated - 1  # Prefill already predicts the first token.
+    seed = prompt_seed(case.batch, case.prompt) if seed is None else seed
     rng = np.random.default_rng(seed)
     prompts = [
         rng.integers(0, session.config.vocab, n, dtype="int32") for n in case.lengths
@@ -85,6 +87,8 @@ def run(session, case, *, repeats=5, warmup=1, seed=17, clock=time.perf_counter)
         case=asdict(case),
         status="ok",
         seed=seed,
+        prompt_sha256=prompt_digest(prompts),
+        cached_prefix_sha256=prompt_digest(context),
         repeats=repeats,
         warmup=warmup,
         prompt_tokens=sum(case.lengths),

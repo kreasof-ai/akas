@@ -63,6 +63,11 @@ def compare(current, baseline):
         old = previous.get(key(row))
         if old is None or row["status"] != "ok":
             continue
+        if row.get("seed") != old.get("seed") or any(
+            name in row and name in old and row[name] != old[name]
+            for name in ("prompt_sha256", "cached_prefix_sha256")
+        ):
+            raise ValueError("baseline uses different prompt inputs")
         ratios = {
             name: row["summary"][name]["mean"] / old["summary"][name]["mean"]
             for name in ("prefill_tokens_per_second", "decode_tokens_per_second")

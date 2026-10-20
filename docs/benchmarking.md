@@ -28,6 +28,12 @@ Give each request a distinct prefix when a runtime
 cannot disable reuse. Long-context and ragged-serving workloads should receive
 their own versioned definitions rather than changing these shapes.
 
+Synthetic inputs use uniform model-vocabulary IDs with seed
+`17 + B × 4099 + prompt_tokens` across native execution, serving and external
+baselines. Native rows record the effective seed and SHA-256 fingerprints of
+the prompt and cached prefix. Regression comparisons reject different recorded
+inputs. Pass an explicit native `seed` to replay a historical measurement.
+
 `B` means independent active requests. A runtime's token batch budget, prefill
 chunk size and HTTP concurrency are different quantities; record them separately.
 Provision cache space for prompt + output + speculative guard, rounded to the

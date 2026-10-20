@@ -15,11 +15,11 @@ from akas.benchmarking.session import Session
 from akas.config import EngineConfig
 from akas.engine import Engine
 from akas.optimization.context import symbol
+from akas.benchmarking.workload import synthetic_prompts
 
 
 def prompts(vocab, batch, prefix):
-    rng = np.random.default_rng(17 + batch * 4099 + prefix)
-    return rng.integers(0, vocab, (batch, prefix), dtype="int32").astype(int).tolist()
+    return synthetic_prompts(vocab, batch, prefix)
 
 
 def diagnostic_values(values, frame, feature):
