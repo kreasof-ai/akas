@@ -1,0 +1,941 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "kernel",
+    "protocol": "kernel-latency-v1",
+    "provider": "cuda",
+    "target": "sm_89",
+    "device": {
+      "name": "NVIDIA L4",
+      "provider": "cuda"
+    },
+    "weight_format": "q4_0",
+    "operand_dtype": "float16",
+    "accumulator_dtype": "float32",
+    "shape_timeout_seconds": 120,
+    "qualification": "Gate/up/SwiGLU decode fusion over the existing codec dot contract. Original Q4 weights; no activation quantization or pruning. Independent small CPU reference, current-AOT full-size comparison, inactive experts and unchanged inputs. Timing compares complete three-kernel baseline with fused kernel. Cold samples first overwrite 128 MiB of unrelated GPU memory outside the timed region; L4 L2 is 48 MiB. CUDA events bracket only the expert sequence, with one graph invocation per sample. This is a kernel result, not serving throughput.",
+    "selected_weight_bytes": 14155776,
+    "checks": [
+      {
+        "shape": "small",
+        "mode": "all-active",
+        "correct": true,
+        "independent_cpu": true,
+        "output_tail": true,
+        "unchanged_inputs": true
+      },
+      {
+        "shape": "small",
+        "mode": "one-inactive",
+        "correct": true,
+        "independent_cpu": true,
+        "output_tail": true,
+        "unchanged_inputs": true
+      },
+      {
+        "shape": "small",
+        "mode": "all-inactive",
+        "correct": true,
+        "independent_cpu": true,
+        "output_tail": true,
+        "unchanged_inputs": true
+      },
+      {
+        "geometry": "three-kernel-baseline",
+        "cache": "warm",
+        "timing": {
+          "gpu_seconds": [
+            3.440639972686768e-05,
+            3.4713599085807795e-05,
+            3.461120128631592e-05,
+            3.460800051689148e-05,
+            3.469440042972565e-05,
+            3.4713599085807795e-05,
+            3.481599986553192e-05,
+            3.4508800506591795e-05,
+            3.480640053749085e-05
+          ],
+          "completed_seconds": [
+            3.5395403392612935e-05,
+            3.564450307749212e-05,
+            3.5260501317679885e-05,
+            3.5158399259671566e-05,
+            3.533049602992833e-05,
+            3.53665032889694e-05,
+            3.560050390660763e-05,
+            3.526450018398464e-05,
+            3.5430496791377666e-05
+          ],
+          "median_gpu_seconds": 3.469440042972565e-05,
+          "median_completed_seconds": 3.53665032889694e-05,
+          "warmup": 5,
+          "samples": 9,
+          "repeats": 10,
+          "metric": "gpu_seconds",
+          "median_seconds": 3.469440042972565e-05
+        },
+        "correct": true,
+        "properties": {
+          "max_threads": 128,
+          "static_shared_bytes": 0,
+          "local_bytes_per_thread": 0,
+          "registers_per_thread": 38
+        }
+      },
+      {
+        "geometry": "three-kernel-baseline",
+        "cache": "cold",
+        "timing": {
+          "median_seconds": 0.00011366400122642517,
+          "samples": [
+            0.00011366400122642517,
+            0.00011366400122642517,
+            0.00011264000087976456,
+            0.00011264000087976456,
+            0.00011264000087976456,
+            0.00011468800157308579,
+            0.0001157120019197464,
+            0.00011468800157308579,
+            0.00011161600053310394
+          ],
+          "warmup": 2,
+          "repeats": 1,
+          "sample_count": 9,
+          "eviction_bytes": 134217728
+        },
+        "correct": true,
+        "properties": {
+          "max_threads": 128,
+          "static_shared_bytes": 0,
+          "local_bytes_per_thread": 0,
+          "registers_per_thread": 38
+        }
+      },
+      {
+        "geometry": "full-128-1-1",
+        "parameters": {
+          "k": 2048,
+          "o": 1536,
+          "experts": 64,
+          "top": 4,
+          "threads": 128,
+          "width": 1,
+          "unroll": 1,
+          "weight_parts": [
+            {
+              "rows": 98304,
+              "format": "ggml",
+              "options": {
+                "encoding": 2
+              }
+            }
+          ]
+        },
+        "cache": "warm",
+        "timing": {
+          "gpu_seconds": [
+            2.6912000775337218e-05,
+            2.680639922618866e-05,
+            2.7033600211143492e-05,
+            2.712000012397766e-05,
+            2.6931199431419374e-05,
+            2.6931199431419374e-05,
+            2.7033600211143492e-05,
+            2.7033600211143492e-05,
+            2.7033600211143492e-05
+          ],
+          "completed_seconds": [
+            2.7930201031267644e-05,
+            2.7784198755398394e-05,
+            2.8017204022035004e-05,
+            2.800919464789331e-05,
+            2.790619619190693e-05,
+            2.7867202879861e-05,
+            2.7937197592109443e-05,
+            2.7961202431470155e-05,
+            2.8053205460309984e-05
+          ],
+          "median_gpu_seconds": 2.7033600211143492e-05,
+          "median_completed_seconds": 2.7937197592109443e-05,
+          "warmup": 5,
+          "samples": 9,
+          "repeats": 10,
+          "metric": "gpu_seconds",
+          "median_seconds": 2.7033600211143492e-05
+        },
+        "correct": true,
+        "bitwise": true,
+        "max_absolute_error": 0.0,
+        "launch": {
+          "block": [
+            128,
+            1,
+            1
+          ],
+          "grid": [
+            384,
+            4,
+            1
+          ],
+          "shared_memory_bytes": 0
+        },
+        "properties": {
+          "max_threads": 128,
+          "static_shared_bytes": 0,
+          "local_bytes_per_thread": 0,
+          "registers_per_thread": 53
+        }
+      },
+      {
+        "geometry": "full-128-1-1",
+        "parameters": {
+          "k": 2048,
+          "o": 1536,
+          "experts": 64,
+          "top": 4,
+          "threads": 128,
+          "width": 1,
+          "unroll": 1,
+          "weight_parts": [
+            {
+              "rows": 98304,
+              "format": "ggml",
+              "options": {
+                "encoding": 2
+              }
+            }
+          ]
+        },
+        "cache": "cold",
+        "timing": {
+          "median_seconds": 9.728000313043594e-05,
+          "samples": [
+            9.523200243711472e-05,
+            9.523200243711472e-05,
+            9.836799651384353e-05,
+            9.830400347709655e-05,
+            9.907200187444686e-05,
+            9.728000313043594e-05,
+            9.625600278377533e-05,
+            9.830400347709655e-05,
+            9.612800180912018e-05
+          ],
+          "warmup": 2,
+          "repeats": 1,
+          "sample_count": 9,
+          "eviction_bytes": 134217728
+        },
+        "correct": true,
+        "bitwise": true,
+        "max_absolute_error": 0.0,
+        "launch": {
+          "block": [
+            128,
+            1,
+            1
+          ],
+          "grid": [
+            384,
+            4,
+            1
+          ],
+          "shared_memory_bytes": 0
+        },
+        "properties": {
+          "max_threads": 128,
+          "static_shared_bytes": 0,
+          "local_bytes_per_thread": 0,
+          "registers_per_thread": 53
+        }
+      },
+      {
+        "geometry": "full-128-1-2",
+        "parameters": {
+          "k": 2048,
+          "o": 1536,
+          "experts": 64,
+          "top": 4,
+          "threads": 128,
+          "width": 1,
+          "unroll": 2,
+          "weight_parts": [
+            {
+              "rows": 98304,
+              "format": "ggml",
+              "options": {
+                "encoding": 2
+              }
+            }
+          ]
+        },
+        "cache": "warm",
+        "timing": {
+          "gpu_seconds": [
+            2.508800029754639e-05,
+            2.539519965648651e-05,
+            2.559359967708588e-05,
+            2.547839879989624e-05,
+            2.539519965648651e-05,
+            2.5702399015426635e-05,
+            2.560000121593475e-05,
+            2.5190401077270504e-05,
+            2.5587201118469237e-05
+          ],
+          "completed_seconds": [
+            2.596310223452747e-05,
+            2.6049104053527117e-05,
+            2.615510020405054e-05,
+            2.6093097403645515e-05,
+            2.6063097175210713e-05,
+            2.659110468812287e-05,
+            2.6466097915545105e-05,
+            2.6106100995093585e-05,
+            2.647219807840884e-05
+          ],
+          "median_gpu_seconds": 2.547839879989624e-05,
+          "median_completed_seconds": 2.6106100995093585e-05,
+          "warmup": 5,
+          "samples": 9,
+          "repeats": 10,
+          "metric": "gpu_seconds",
+          "median_seconds": 2.547839879989624e-05
+        },
+        "correct": true,
+        "bitwise": true,
+        "max_absolute_error": 0.0,
+        "launch": {
+          "block": [
+            128,
+            1,
+            1
+          ],
+          "grid": [
+            384,
+            4,
+            1
+          ],
+          "shared_memory_bytes": 0
+        },
+        "properties": {
+          "max_threads": 128,
+          "static_shared_bytes": 0,
+          "local_bytes_per_thread": 0,
+          "registers_per_thread": 64
+        }
+      },
+      {
+        "geometry": "full-128-1-2",
+        "parameters": {
+          "k": 2048,
+          "o": 1536,
+          "experts": 64,
+          "top": 4,
+          "threads": 128,
+          "width": 1,
+          "unroll": 2,
+          "weight_parts": [
+            {
+              "rows": 98304,
+              "format": "ggml",
+              "options": {
+                "encoding": 2
+              }
+            }
+          ]
+        },
+        "cache": "cold",
+        "timing": {
+          "median_seconds": 9.318400174379349e-05,
+          "samples": [
+            9.42080020904541e-05,
+            9.318400174379349e-05,
+            9.42080020904541e-05,
+            9.414400160312652e-05,
+            9.113600105047225e-05,
+            9.216000139713287e-05,
+            9.318400174379349e-05,
+            9.523200243711472e-05,
+            9.318400174379349e-05
+          ],
+          "warmup": 2,
+          "repeats": 1,
+          "sample_count": 9,
+          "eviction_bytes": 134217728
+        },
+        "correct": true,
+        "bitwise": true,
+        "max_absolute_error": 0.0,
+        "launch": {
+          "block": [
+            128,
+            1,
+            1
+          ],
+          "grid": [
+            384,
+            4,
+            1
+          ],
+          "shared_memory_bytes": 0
+        },
+        "properties": {
+          "max_threads": 128,
+          "static_shared_bytes": 0,
+          "local_bytes_per_thread": 0,
+          "registers_per_thread": 64
+        }
+      },
+      {
+        "geometry": "full-256-1-1",
+        "parameters": {
+          "k": 2048,
+          "o": 1536,
+          "experts": 64,
+          "top": 4,
+          "threads": 256,
+          "width": 1,
+          "unroll": 1,
+          "weight_parts": [
+            {
+              "rows": 98304,
+              "format": "ggml",
+              "options": {
+                "encoding": 2
+              }
+            }
+          ]
+        },
+        "cache": "warm",
+        "timing": {
+          "gpu_seconds": [
+            2.72383987903595e-05,
+            2.7647998929023746e-05,
+            2.775039970874786e-05,
+            2.775039970874786e-05,
+            2.7647998929023746e-05,
+            2.775039970874786e-05,
+            2.7647998929023746e-05,
+            2.775039970874786e-05,
+            2.7734398841857913e-05
+          ],
+          "completed_seconds": [
+            2.8151203878223896e-05,
+            2.8304202714934945e-05,
+            2.8319202829152346e-05,
+            2.836720086634159e-05,
+            2.8305198065936564e-05,
+            2.8524198569357395e-05,
+            2.8534198645502328e-05,
+            2.8601201483979823e-05,
+            2.8572202427312732e-05
+          ],
+          "median_gpu_seconds": 2.7734398841857913e-05,
+          "median_completed_seconds": 2.836720086634159e-05,
+          "warmup": 5,
+          "samples": 9,
+          "repeats": 10,
+          "metric": "gpu_seconds",
+          "median_seconds": 2.7734398841857913e-05
+        },
+        "correct": true,
+        "bitwise": true,
+        "max_absolute_error": 0.0,
+        "launch": {
+          "block": [
+            256,
+            1,
+            1
+          ],
+          "grid": [
+            192,
+            4,
+            1
+          ],
+          "shared_memory_bytes": 0
+        },
+        "properties": {
+          "max_threads": 256,
+          "static_shared_bytes": 0,
+          "local_bytes_per_thread": 0,
+          "registers_per_thread": 51
+        }
+      },
+      {
+        "geometry": "full-256-1-1",
+        "parameters": {
+          "k": 2048,
+          "o": 1536,
+          "experts": 64,
+          "top": 4,
+          "threads": 256,
+          "width": 1,
+          "unroll": 1,
+          "weight_parts": [
+            {
+              "rows": 98304,
+              "format": "ggml",
+              "options": {
+                "encoding": 2
+              }
+            }
+          ]
+        },
+        "cache": "cold",
+        "timing": {
+          "median_seconds": 9.932799637317657e-05,
+          "samples": [
+            9.824000298976898e-05,
+            9.932799637317657e-05,
+            9.932799637317657e-05,
+            9.728000313043594e-05,
+            9.728000313043594e-05,
+            9.830400347709655e-05,
+            9.932799637317657e-05,
+            0.00010035199671983719,
+            9.932799637317657e-05
+          ],
+          "warmup": 2,
+          "repeats": 1,
+          "sample_count": 9,
+          "eviction_bytes": 134217728
+        },
+        "correct": true,
+        "bitwise": true,
+        "max_absolute_error": 0.0,
+        "launch": {
+          "block": [
+            256,
+            1,
+            1
+          ],
+          "grid": [
+            192,
+            4,
+            1
+          ],
+          "shared_memory_bytes": 0
+        },
+        "properties": {
+          "max_threads": 256,
+          "static_shared_bytes": 0,
+          "local_bytes_per_thread": 0,
+          "registers_per_thread": 51
+        }
+      },
+      {
+        "geometry": "full-128-2-1",
+        "parameters": {
+          "k": 2048,
+          "o": 1536,
+          "experts": 64,
+          "top": 4,
+          "threads": 128,
+          "width": 2,
+          "unroll": 1,
+          "weight_parts": [
+            {
+              "rows": 98304,
+              "format": "ggml",
+              "options": {
+                "encoding": 2
+              }
+            }
+          ]
+        },
+        "cache": "warm",
+        "timing": {
+          "gpu_seconds": [
+            2.3552000522613525e-05,
+            2.385919988155365e-05,
+            2.4166400730609895e-05,
+            2.3961600661277773e-05,
+            2.3980799317359925e-05,
+            2.4063999950885772e-05,
+            2.395839989185333e-05,
+            2.385919988155365e-05,
+            2.415360063314438e-05
+          ],
+          "completed_seconds": [
+            2.4443998700007797e-05,
+            2.481610281392932e-05,
+            2.5289098266512157e-05,
+            2.486400189809501e-05,
+            2.468900056555867e-05,
+            2.492900239303708e-05,
+            2.4801096878945826e-05,
+            2.4661998031660916e-05,
+            2.475910005159676e-05
+          ],
+          "median_gpu_seconds": 2.3961600661277773e-05,
+          "median_completed_seconds": 2.4801096878945826e-05,
+          "warmup": 5,
+          "samples": 9,
+          "repeats": 10,
+          "metric": "gpu_seconds",
+          "median_seconds": 2.3961600661277773e-05
+        },
+        "correct": true,
+        "bitwise": true,
+        "max_absolute_error": 0.0,
+        "launch": {
+          "block": [
+            128,
+            1,
+            1
+          ],
+          "grid": [
+            192,
+            4,
+            1
+          ],
+          "shared_memory_bytes": 0
+        },
+        "properties": {
+          "max_threads": 128,
+          "static_shared_bytes": 0,
+          "local_bytes_per_thread": 0,
+          "registers_per_thread": 64
+        }
+      },
+      {
+        "geometry": "full-128-2-1",
+        "parameters": {
+          "k": 2048,
+          "o": 1536,
+          "experts": 64,
+          "top": 4,
+          "threads": 128,
+          "width": 2,
+          "unroll": 1,
+          "weight_parts": [
+            {
+              "rows": 98304,
+              "format": "ggml",
+              "options": {
+                "encoding": 2
+              }
+            }
+          ]
+        },
+        "cache": "cold",
+        "timing": {
+          "median_seconds": 9.728000313043594e-05,
+          "samples": [
+            9.728000313043594e-05,
+            9.728000313043594e-05,
+            9.728000313043594e-05,
+            9.539200365543366e-05,
+            9.625600278377533e-05,
+            9.625600278377533e-05,
+            9.830400347709655e-05,
+            9.523200243711472e-05,
+            9.728000313043594e-05
+          ],
+          "warmup": 2,
+          "repeats": 1,
+          "sample_count": 9,
+          "eviction_bytes": 134217728
+        },
+        "correct": true,
+        "bitwise": true,
+        "max_absolute_error": 0.0,
+        "launch": {
+          "block": [
+            128,
+            1,
+            1
+          ],
+          "grid": [
+            192,
+            4,
+            1
+          ],
+          "shared_memory_bytes": 0
+        },
+        "properties": {
+          "max_threads": 128,
+          "static_shared_bytes": 0,
+          "local_bytes_per_thread": 0,
+          "registers_per_thread": 64
+        }
+      },
+      {
+        "geometry": "full-128-2-2",
+        "parameters": {
+          "k": 2048,
+          "o": 1536,
+          "experts": 64,
+          "top": 4,
+          "threads": 128,
+          "width": 2,
+          "unroll": 2,
+          "weight_parts": [
+            {
+              "rows": 98304,
+              "format": "ggml",
+              "options": {
+                "encoding": 2
+              }
+            }
+          ]
+        },
+        "cache": "warm",
+        "timing": {
+          "gpu_seconds": [
+            2.292799949645996e-05,
+            2.364159971475601e-05,
+            2.3548799753189087e-05,
+            2.3552000522613525e-05,
+            2.3552000522613525e-05,
+            2.3552000522613525e-05,
+            2.365439981222153e-05,
+            2.367040067911148e-05,
+            2.3449599742889403e-05
+          ],
+          "completed_seconds": [
+            2.3835001047700644e-05,
+            2.4352100444957615e-05,
+            2.4185999063774943e-05,
+            2.426399732939899e-05,
+            2.422099933028221e-05,
+            2.4317100178450345e-05,
+            2.4458003463223576e-05,
+            2.4295999901369213e-05,
+            2.403699909336865e-05
+          ],
+          "median_gpu_seconds": 2.3552000522613525e-05,
+          "median_completed_seconds": 2.426399732939899e-05,
+          "warmup": 5,
+          "samples": 9,
+          "repeats": 10,
+          "metric": "gpu_seconds",
+          "median_seconds": 2.3552000522613525e-05
+        },
+        "correct": true,
+        "bitwise": true,
+        "max_absolute_error": 0.0,
+        "launch": {
+          "block": [
+            128,
+            1,
+            1
+          ],
+          "grid": [
+            192,
+            4,
+            1
+          ],
+          "shared_memory_bytes": 0
+        },
+        "properties": {
+          "max_threads": 128,
+          "static_shared_bytes": 0,
+          "local_bytes_per_thread": 0,
+          "registers_per_thread": 80
+        }
+      },
+      {
+        "geometry": "full-128-2-2",
+        "parameters": {
+          "k": 2048,
+          "o": 1536,
+          "experts": 64,
+          "top": 4,
+          "threads": 128,
+          "width": 2,
+          "unroll": 2,
+          "weight_parts": [
+            {
+              "rows": 98304,
+              "format": "ggml",
+              "options": {
+                "encoding": 2
+              }
+            }
+          ]
+        },
+        "cache": "cold",
+        "timing": {
+          "median_seconds": 9.42080020904541e-05,
+          "samples": [
+            9.42080020904541e-05,
+            9.318400174379349e-05,
+            9.42080020904541e-05,
+            9.625600278377533e-05,
+            9.324800223112106e-05,
+            9.318400174379349e-05,
+            9.641599655151368e-05,
+            9.516800194978714e-05,
+            9.318400174379349e-05
+          ],
+          "warmup": 2,
+          "repeats": 1,
+          "sample_count": 9,
+          "eviction_bytes": 134217728
+        },
+        "correct": true,
+        "bitwise": true,
+        "max_absolute_error": 0.0,
+        "launch": {
+          "block": [
+            128,
+            1,
+            1
+          ],
+          "grid": [
+            192,
+            4,
+            1
+          ],
+          "shared_memory_bytes": 0
+        },
+        "properties": {
+          "max_threads": 128,
+          "static_shared_bytes": 0,
+          "local_bytes_per_thread": 0,
+          "registers_per_thread": 80
+        }
+      },
+      {
+        "geometry": "full-256-2-1",
+        "parameters": {
+          "k": 2048,
+          "o": 1536,
+          "experts": 64,
+          "top": 4,
+          "threads": 256,
+          "width": 2,
+          "unroll": 1,
+          "weight_parts": [
+            {
+              "rows": 98304,
+              "format": "ggml",
+              "options": {
+                "encoding": 2
+              }
+            }
+          ]
+        },
+        "cache": "warm",
+        "timing": {
+          "gpu_seconds": [
+            2.365439981222153e-05,
+            2.4063999950885772e-05,
+            2.4063999950885772e-05,
+            2.4063999950885772e-05,
+            2.4156799912452696e-05,
+            2.385919988155365e-05,
+            2.4063999950885772e-05,
+            2.4268800020217894e-05,
+            2.4063999950885772e-05
+          ],
+          "completed_seconds": [
+            2.4732097517699004e-05,
+            2.4890998611226677e-05,
+            2.4858000688254834e-05,
+            2.499909605830908e-05,
+            2.49410979449749e-05,
+            2.5087996618822217e-05,
+            2.489809994585812e-05,
+            2.5042000925168394e-05,
+            2.4886999744921924e-05
+          ],
+          "median_gpu_seconds": 2.4063999950885772e-05,
+          "median_completed_seconds": 2.489809994585812e-05,
+          "warmup": 5,
+          "samples": 9,
+          "repeats": 10,
+          "metric": "gpu_seconds",
+          "median_seconds": 2.4063999950885772e-05
+        },
+        "correct": true,
+        "bitwise": true,
+        "max_absolute_error": 0.0,
+        "launch": {
+          "block": [
+            256,
+            1,
+            1
+          ],
+          "grid": [
+            96,
+            4,
+            1
+          ],
+          "shared_memory_bytes": 0
+        },
+        "properties": {
+          "max_threads": 256,
+          "static_shared_bytes": 0,
+          "local_bytes_per_thread": 0,
+          "registers_per_thread": 64
+        }
+      },
+      {
+        "geometry": "full-256-2-1",
+        "parameters": {
+          "k": 2048,
+          "o": 1536,
+          "experts": 64,
+          "top": 4,
+          "threads": 256,
+          "width": 2,
+          "unroll": 1,
+          "weight_parts": [
+            {
+              "rows": 98304,
+              "format": "ggml",
+              "options": {
+                "encoding": 2
+              }
+            }
+          ]
+        },
+        "cache": "cold",
+        "timing": {
+          "median_seconds": 9.718400239944459e-05,
+          "samples": [
+            9.42080020904541e-05,
+            9.932799637317657e-05,
+            9.830400347709655e-05,
+            9.830400347709655e-05,
+            9.718400239944459e-05,
+            9.830400347709655e-05,
+            9.625600278377533e-05,
+            9.523200243711472e-05,
+            9.625600278377533e-05
+          ],
+          "warmup": 2,
+          "repeats": 1,
+          "sample_count": 9,
+          "eviction_bytes": 134217728
+        },
+        "correct": true,
+        "bitwise": true,
+        "max_absolute_error": 0.0,
+        "launch": {
+          "block": [
+            256,
+            1,
+            1
+          ],
+          "grid": [
+            96,
+            4,
+            1
+          ],
+          "shared_memory_bytes": 0
+        },
+        "properties": {
+          "max_threads": 256,
+          "static_shared_bytes": 0,
+          "local_bytes_per_thread": 0,
+          "registers_per_thread": 64
+        }
+      }
+    ],
+    "cpu_peak_rss_bytes": 517881856
+  },
+  "results": []
+}

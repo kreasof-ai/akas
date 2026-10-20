@@ -1,0 +1,222 @@
+[
+  {
+    "name": "small-32-64-128",
+    "label": "small",
+    "parameters": {
+      "r": 66,
+      "h": 8,
+      "kh": 2,
+      "d": 64,
+      "capacity": 4096,
+      "chunk": 33,
+      "kv_dtype": "float16",
+      "unit_scales": true,
+      "query_rows": 32,
+      "key_rows": 64,
+      "threads": 128,
+      "stages": 1,
+      "async_loads": true
+    },
+    "passed": true,
+    "seconds": 7.962802571011707,
+    "shared_memory_bytes": 26624
+  },
+  {
+    "name": "small-256-64-512-1",
+    "label": "small",
+    "parameters": {
+      "r": 66,
+      "h": 8,
+      "kh": 2,
+      "d": 64,
+      "capacity": 4096,
+      "chunk": 33,
+      "kv_dtype": "float16",
+      "unit_scales": true,
+      "query_rows": 256,
+      "key_rows": 64,
+      "threads": 512,
+      "stages": 1,
+      "async_loads": true
+    },
+    "passed": true,
+    "seconds": 5.4496330200345255,
+    "shared_memory_bytes": 81920
+  },
+  {
+    "name": "small-64-32-128-2",
+    "label": "small",
+    "parameters": {
+      "r": 66,
+      "h": 8,
+      "kh": 2,
+      "d": 64,
+      "capacity": 4096,
+      "chunk": 33,
+      "kv_dtype": "float16",
+      "unit_scales": true,
+      "query_rows": 64,
+      "key_rows": 32,
+      "threads": 128,
+      "stages": 2,
+      "async_loads": true
+    },
+    "passed": true,
+    "seconds": 6.6781543719698675,
+    "shared_memory_bytes": 28672
+  },
+  {
+    "name": "full-64-64-128-1",
+    "label": "full",
+    "parameters": {
+      "r": 4096,
+      "h": 32,
+      "kh": 8,
+      "d": 64,
+      "capacity": 131072,
+      "chunk": 4096,
+      "kv_dtype": "float16",
+      "unit_scales": true,
+      "query_rows": 64,
+      "key_rows": 64,
+      "threads": 128,
+      "stages": 1,
+      "async_loads": true
+    },
+    "passed": true,
+    "seconds": 4.0810417250031605,
+    "shared_memory_bytes": 32768
+  },
+  {
+    "name": "full-64-64-128-2",
+    "label": "full",
+    "parameters": {
+      "r": 4096,
+      "h": 32,
+      "kh": 8,
+      "d": 64,
+      "capacity": 131072,
+      "chunk": 4096,
+      "kv_dtype": "float16",
+      "unit_scales": true,
+      "query_rows": 64,
+      "key_rows": 64,
+      "threads": 128,
+      "stages": 2,
+      "async_loads": true
+    },
+    "passed": true,
+    "seconds": 6.326495287998114,
+    "shared_memory_bytes": 49152
+  },
+  {
+    "name": "full-128-64-256-2",
+    "label": "full",
+    "parameters": {
+      "r": 4096,
+      "h": 32,
+      "kh": 8,
+      "d": 64,
+      "capacity": 131072,
+      "chunk": 4096,
+      "kv_dtype": "float16",
+      "unit_scales": true,
+      "query_rows": 128,
+      "key_rows": 64,
+      "threads": 256,
+      "stages": 2,
+      "async_loads": true
+    },
+    "passed": true,
+    "seconds": 6.040042862994596,
+    "shared_memory_bytes": 65536
+  },
+  {
+    "name": "full-256-64-512-1",
+    "label": "full",
+    "parameters": {
+      "r": 4096,
+      "h": 32,
+      "kh": 8,
+      "d": 64,
+      "capacity": 131072,
+      "chunk": 4096,
+      "kv_dtype": "float16",
+      "unit_scales": true,
+      "query_rows": 256,
+      "key_rows": 64,
+      "threads": 512,
+      "stages": 1,
+      "async_loads": true
+    },
+    "passed": true,
+    "seconds": 4.735901225009002,
+    "shared_memory_bytes": 81920
+  },
+  {
+    "name": "full-256-64-512-2",
+    "label": "full",
+    "parameters": {
+      "r": 4096,
+      "h": 32,
+      "kh": 8,
+      "d": 64,
+      "capacity": 131072,
+      "chunk": 4096,
+      "kv_dtype": "float16",
+      "unit_scales": true,
+      "query_rows": 256,
+      "key_rows": 64,
+      "threads": 512,
+      "stages": 2,
+      "async_loads": true
+    },
+    "passed": true,
+    "seconds": 6.2121548220166005,
+    "shared_memory_bytes": 98304
+  },
+  {
+    "name": "full-64-32-128-1",
+    "label": "full",
+    "parameters": {
+      "r": 4096,
+      "h": 32,
+      "kh": 8,
+      "d": 64,
+      "capacity": 131072,
+      "chunk": 4096,
+      "kv_dtype": "float16",
+      "unit_scales": true,
+      "query_rows": 64,
+      "key_rows": 32,
+      "threads": 128,
+      "stages": 1,
+      "async_loads": true
+    },
+    "passed": true,
+    "seconds": 4.323387618991546,
+    "shared_memory_bytes": 20480
+  },
+  {
+    "name": "full-64-32-128-2",
+    "label": "full",
+    "parameters": {
+      "r": 4096,
+      "h": 32,
+      "kh": 8,
+      "d": 64,
+      "capacity": 131072,
+      "chunk": 4096,
+      "kv_dtype": "float16",
+      "unit_scales": true,
+      "query_rows": 64,
+      "key_rows": 32,
+      "threads": 128,
+      "stages": 2,
+      "async_loads": true
+    },
+    "passed": true,
+    "seconds": 5.690421455015894,
+    "shared_memory_bytes": 28672
+  }
+]

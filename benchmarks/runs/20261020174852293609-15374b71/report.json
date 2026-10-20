@@ -1,0 +1,630 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "kernel",
+    "protocol": "kernel-latency-v1",
+    "shape_timeout_seconds": 120,
+    "provider": "cuda",
+    "target": "sm_89",
+    "device": {
+      "name": "NVIDIA L4",
+      "provider": "cuda"
+    },
+    "kv_dtype": "fp8",
+    "operand_dtype": "float16",
+    "accumulator_dtype": "float32",
+    "qualification": "FP8 persistent KV unchanged; reuse exactly the same FP16-decoded coefficients in a temporary cache. Includes live-extent reduction, full shadow decoding, and attention in timing. Small independent CPU coefficient and attention expectations, poisoned future entries, inactive slots/tails, and output reset before every candidate. Full current AOT output comparison; no model/HTTP claim.",
+    "checks": [
+      {
+        "case": "small",
+        "prefix": 97,
+        "geometry": "small-32-64-128",
+        "correct": true,
+        "bitwise": false,
+        "max_absolute_error": 2.1711457520723343e-07,
+        "temporary_bytes": 4259848,
+        "timing": {
+          "gpu_seconds": [
+            7.680000364780426e-05,
+            7.680000364780426e-05,
+            7.475200295448303e-05,
+            7.577600330114365e-05,
+            7.56160020828247e-05
+          ],
+          "completed_seconds": [
+            8.997396798804402e-05,
+            8.440401870757341e-05,
+            8.283404167741537e-05,
+            8.209299994632602e-05,
+            8.28640186227858e-05
+          ],
+          "median_gpu_seconds": 7.577600330114365e-05,
+          "median_completed_seconds": 8.28640186227858e-05,
+          "warmup": 2,
+          "samples": 5,
+          "repeats": 1,
+          "metric": "gpu_seconds",
+          "median_seconds": 7.577600330114365e-05
+        }
+      },
+      {
+        "case": "small",
+        "prefix": 97,
+        "geometry": "small-128-64-256",
+        "correct": true,
+        "bitwise": false,
+        "max_absolute_error": 2.1711457520723343e-07,
+        "temporary_bytes": 4259848,
+        "timing": {
+          "gpu_seconds": [
+            0.00025884801149368285,
+            0.0002560000121593475,
+            0.00025497600436210634,
+            0.0002560000121593475,
+            0.00025497600436210634
+          ],
+          "completed_seconds": [
+            0.0002697919844649732,
+            0.00026303099002689123,
+            0.0002616620040498674,
+            0.00026216101832687855,
+            0.00026123097632080317
+          ],
+          "median_gpu_seconds": 0.0002560000121593475,
+          "median_completed_seconds": 0.00026216101832687855,
+          "warmup": 2,
+          "samples": 5,
+          "repeats": 1,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.0002560000121593475
+        }
+      },
+      {
+        "case": "small",
+        "prefix": 97,
+        "geometry": "small-64-128-256",
+        "correct": true,
+        "bitwise": false,
+        "max_absolute_error": 5.94649463891983e-07,
+        "temporary_bytes": 4259848,
+        "timing": {
+          "gpu_seconds": [
+            0.00012572799623012542,
+            0.00012800000607967376,
+            0.00012492799758911133,
+            0.00012390399724245072,
+            0.0001228799968957901
+          ],
+          "completed_seconds": [
+            0.00013612600741907954,
+            0.00013644597493112087,
+            0.00013216602383181453,
+            0.0001307149650529027,
+            0.00013006594963371754
+          ],
+          "median_gpu_seconds": 0.00012492799758911133,
+          "median_completed_seconds": 0.00013216602383181453,
+          "warmup": 2,
+          "samples": 5,
+          "repeats": 1,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.00012492799758911133
+        }
+      },
+      {
+        "case": "full",
+        "prefix": 8192,
+        "geometry": "baseline",
+        "correct": true,
+        "bitwise": true,
+        "max_absolute_error": 0.0,
+        "temporary_bytes": 272629764,
+        "timing": {
+          "gpu_seconds": [
+            0.006863711833953857,
+            0.006862847805023193,
+            0.007368703842163086,
+            0.008086463928222657,
+            0.008070143699645996
+          ],
+          "completed_seconds": [
+            0.006895683007314801,
+            0.006881612993311137,
+            0.007385863980744034,
+            0.008101654006168246,
+            0.008087993017397821
+          ],
+          "median_gpu_seconds": 0.007368703842163086,
+          "median_completed_seconds": 0.007385863980744034,
+          "warmup": 2,
+          "samples": 5,
+          "repeats": 1,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.007368703842163086
+        }
+      },
+      {
+        "case": "full",
+        "prefix": 8192,
+        "geometry": "full-32-64-128",
+        "correct": true,
+        "bitwise": true,
+        "max_absolute_error": 0.0,
+        "temporary_bytes": 272629764,
+        "timing": {
+          "gpu_seconds": [
+            0.006508543968200684,
+            0.006497280120849609,
+            0.006746111869812011,
+            0.007048192024230957,
+            0.007064576148986816
+          ],
+          "completed_seconds": [
+            0.006533947947900742,
+            0.0065133460448123515,
+            0.006761456956155598,
+            0.007064400007948279,
+            0.007079511997289956
+          ],
+          "median_gpu_seconds": 0.006746111869812011,
+          "median_completed_seconds": 0.006761456956155598,
+          "warmup": 2,
+          "samples": 5,
+          "repeats": 1,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.006746111869812011
+        }
+      },
+      {
+        "case": "full",
+        "prefix": 8192,
+        "geometry": "full-64-64-128",
+        "correct": true,
+        "bitwise": true,
+        "max_absolute_error": 0.0,
+        "temporary_bytes": 272629764,
+        "timing": {
+          "gpu_seconds": [
+            0.005904384136199951,
+            0.005907455921173096,
+            0.005883903980255127,
+            0.0061337599754333495,
+            0.00642252779006958
+          ],
+          "completed_seconds": [
+            0.005927852005697787,
+            0.005922821001149714,
+            0.005897350027225912,
+            0.0061478709685616195,
+            0.006435584044083953
+          ],
+          "median_gpu_seconds": 0.005907455921173096,
+          "median_completed_seconds": 0.005927852005697787,
+          "warmup": 2,
+          "samples": 5,
+          "repeats": 1,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.005907455921173096
+        }
+      },
+      {
+        "case": "full",
+        "prefix": 8192,
+        "geometry": "full-64-64-256",
+        "correct": true,
+        "bitwise": false,
+        "max_absolute_error": 2.2351741790771484e-08,
+        "temporary_bytes": 272629764,
+        "timing": {
+          "gpu_seconds": [
+            0.00900607967376709,
+            0.009203712463378906,
+            0.010205183982849121,
+            0.010512160301208497,
+            0.010785792350769043
+          ],
+          "completed_seconds": [
+            0.009039464057423174,
+            0.00922323198756203,
+            0.01022526400629431,
+            0.010534058033954352,
+            0.010813489963766187
+          ],
+          "median_gpu_seconds": 0.010205183982849121,
+          "median_completed_seconds": 0.01022526400629431,
+          "warmup": 2,
+          "samples": 5,
+          "repeats": 1,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.010205183982849121
+        }
+      },
+      {
+        "case": "full",
+        "prefix": 8192,
+        "geometry": "full-128-64-128",
+        "correct": true,
+        "bitwise": true,
+        "max_absolute_error": 0.0,
+        "temporary_bytes": 272629764,
+        "timing": {
+          "gpu_seconds": [
+            0.00704204797744751,
+            0.007295839786529541,
+            0.007618559837341309,
+            0.007617536067962646,
+            0.00808140754699707
+          ],
+          "completed_seconds": [
+            0.0070678500342182815,
+            0.007311680994462222,
+            0.007632785011082888,
+            0.007631885004229844,
+            0.008097493962850422
+          ],
+          "median_gpu_seconds": 0.007617536067962646,
+          "median_completed_seconds": 0.007631885004229844,
+          "warmup": 2,
+          "samples": 5,
+          "repeats": 1,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.007617536067962646
+        }
+      },
+      {
+        "case": "full",
+        "prefix": 8192,
+        "geometry": "full-128-64-256",
+        "correct": true,
+        "bitwise": false,
+        "max_absolute_error": 2.2351741790771484e-08,
+        "temporary_bytes": 272629764,
+        "timing": {
+          "gpu_seconds": [
+            0.008469504356384277,
+            0.009074687957763672,
+            0.00910848045349121,
+            0.00910540771484375,
+            0.009116671562194823
+          ],
+          "completed_seconds": [
+            0.00849223101977259,
+            0.009087086014915258,
+            0.00911871698917821,
+            0.009122786985244602,
+            0.009131927974522114
+          ],
+          "median_gpu_seconds": 0.00910540771484375,
+          "median_completed_seconds": 0.00911871698917821,
+          "warmup": 2,
+          "samples": 5,
+          "repeats": 1,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.00910540771484375
+        }
+      },
+      {
+        "case": "full",
+        "prefix": 8192,
+        "geometry": "full-64-128-256",
+        "correct": true,
+        "bitwise": false,
+        "max_absolute_error": 1.125037670135498e-05,
+        "temporary_bytes": 272629764,
+        "timing": {
+          "gpu_seconds": [
+            0.006957056045532227,
+            0.006954880237579346,
+            0.006967296123504638,
+            0.007518208026885987,
+            0.007984000205993652
+          ],
+          "completed_seconds": [
+            0.006974985997658223,
+            0.006968536006752402,
+            0.006980177015066147,
+            0.007530989998485893,
+            0.008000799978617579
+          ],
+          "median_gpu_seconds": 0.006967296123504638,
+          "median_completed_seconds": 0.006980177015066147,
+          "warmup": 2,
+          "samples": 5,
+          "repeats": 1,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.006967296123504638
+        }
+      },
+      {
+        "case": "full",
+        "prefix": 8192,
+        "geometry": "full-64-128-512",
+        "correct": true,
+        "bitwise": false,
+        "max_absolute_error": 1.125037670135498e-05,
+        "temporary_bytes": 272629764,
+        "timing": {
+          "gpu_seconds": [
+            0.007135231971740722,
+            0.007132160186767578,
+            0.007147520065307617,
+            0.007950335979461669,
+            0.00820531177520752
+          ],
+          "completed_seconds": [
+            0.007157413987442851,
+            0.007148273987695575,
+            0.007161593995988369,
+            0.007961938041262329,
+            0.008215269015636295
+          ],
+          "median_gpu_seconds": 0.007147520065307617,
+          "median_completed_seconds": 0.007161593995988369,
+          "warmup": 2,
+          "samples": 5,
+          "repeats": 1,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.007147520065307617
+        }
+      },
+      {
+        "case": "full",
+        "prefix": 131072,
+        "geometry": "baseline",
+        "correct": true,
+        "bitwise": true,
+        "max_absolute_error": 0.0,
+        "temporary_bytes": 272629764,
+        "timing": {
+          "gpu_seconds": [
+            0.17296173095703124,
+            0.17258901977539062,
+            0.1740748748779297,
+            0.17821798706054687,
+            0.17661541748046874
+          ],
+          "completed_seconds": [
+            0.17300628300290555,
+            0.1726223169825971,
+            0.17410732997814193,
+            0.17825143702793866,
+            0.17664903600234538
+          ],
+          "median_gpu_seconds": 0.1740748748779297,
+          "median_completed_seconds": 0.17410732997814193,
+          "warmup": 2,
+          "samples": 5,
+          "repeats": 1,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.1740748748779297
+        }
+      },
+      {
+        "case": "full",
+        "prefix": 131072,
+        "geometry": "full-32-64-128",
+        "correct": true,
+        "bitwise": true,
+        "max_absolute_error": 0.0,
+        "temporary_bytes": 272629764,
+        "timing": {
+          "gpu_seconds": [
+            0.14173184204101563,
+            0.14196121215820312,
+            0.14324838256835937,
+            0.14499430847167968,
+            0.1486069793701172
+          ],
+          "completed_seconds": [
+            0.14177729503717273,
+            0.14199617400299758,
+            0.143282109987922,
+            0.1450287739862688,
+            0.1486426170449704
+          ],
+          "median_gpu_seconds": 0.14324838256835937,
+          "median_completed_seconds": 0.143282109987922,
+          "warmup": 2,
+          "samples": 5,
+          "repeats": 1,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.14324838256835937
+        }
+      },
+      {
+        "case": "full",
+        "prefix": 131072,
+        "geometry": "full-64-64-128",
+        "correct": true,
+        "bitwise": true,
+        "max_absolute_error": 0.0,
+        "temporary_bytes": 272629764,
+        "timing": {
+          "gpu_seconds": [
+            0.12485529327392578,
+            0.12513996887207032,
+            0.1244211196899414,
+            0.12419884490966797,
+            0.12692377471923827
+          ],
+          "completed_seconds": [
+            0.12490522000007331,
+            0.12517567997565493,
+            0.1244605709798634,
+            0.124237390991766,
+            0.12695834401529282
+          ],
+          "median_gpu_seconds": 0.12485529327392578,
+          "median_completed_seconds": 0.12490522000007331,
+          "warmup": 2,
+          "samples": 5,
+          "repeats": 1,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.12485529327392578
+        }
+      },
+      {
+        "case": "full",
+        "prefix": 131072,
+        "geometry": "full-64-64-256",
+        "correct": true,
+        "bitwise": false,
+        "max_absolute_error": 5.587935447692871e-09,
+        "temporary_bytes": 272629764,
+        "timing": {
+          "gpu_seconds": [
+            0.201670654296875,
+            0.20547378540039063,
+            0.20961074829101561,
+            0.20584243774414063,
+            0.2033109130859375
+          ],
+          "completed_seconds": [
+            0.2017159360111691,
+            0.20550795795861632,
+            0.2096445090137422,
+            0.2058791529852897,
+            0.20334888499928638
+          ],
+          "median_gpu_seconds": 0.20547378540039063,
+          "median_completed_seconds": 0.20550795795861632,
+          "warmup": 2,
+          "samples": 5,
+          "repeats": 1,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.20547378540039063
+        }
+      },
+      {
+        "case": "full",
+        "prefix": 131072,
+        "geometry": "full-128-64-128",
+        "correct": true,
+        "bitwise": true,
+        "max_absolute_error": 0.0,
+        "temporary_bytes": 272629764,
+        "timing": {
+          "gpu_seconds": [
+            0.14960844421386718,
+            0.15021466064453126,
+            0.15118130493164061,
+            0.15248793029785157,
+            0.15433401489257811
+          ],
+          "completed_seconds": [
+            0.149653920030687,
+            0.1502489930135198,
+            0.15121745597571135,
+            0.15252556995255873,
+            0.15436706598848104
+          ],
+          "median_gpu_seconds": 0.15118130493164061,
+          "median_completed_seconds": 0.15121745597571135,
+          "warmup": 2,
+          "samples": 5,
+          "repeats": 1,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.15118130493164061
+        }
+      },
+      {
+        "case": "full",
+        "prefix": 131072,
+        "geometry": "full-128-64-256",
+        "correct": true,
+        "bitwise": false,
+        "max_absolute_error": 5.587935447692871e-09,
+        "temporary_bytes": 272629764,
+        "timing": {
+          "gpu_seconds": [
+            0.183836669921875,
+            0.18398822021484376,
+            0.18682675170898438,
+            0.18955877685546876,
+            0.18599526977539063
+          ],
+          "completed_seconds": [
+            0.1838803970022127,
+            0.1840217940043658,
+            0.1868610720266588,
+            0.18959742895094678,
+            0.1860268089803867
+          ],
+          "median_gpu_seconds": 0.18599526977539063,
+          "median_completed_seconds": 0.1860268089803867,
+          "warmup": 2,
+          "samples": 5,
+          "repeats": 1,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.18599526977539063
+        }
+      },
+      {
+        "case": "full",
+        "prefix": 131072,
+        "geometry": "full-64-128-256",
+        "correct": true,
+        "bitwise": false,
+        "max_absolute_error": 8.034985512495041e-07,
+        "temporary_bytes": 272629764,
+        "timing": {
+          "gpu_seconds": [
+            0.149928955078125,
+            0.15070191955566406,
+            0.15020133972167968,
+            0.15319027709960936,
+            0.15571046447753906
+          ],
+          "completed_seconds": [
+            0.14997855300316587,
+            0.15073513495735824,
+            0.15023943304549903,
+            0.1532255999627523,
+            0.15574653603835031
+          ],
+          "median_gpu_seconds": 0.15070191955566406,
+          "median_completed_seconds": 0.15073513495735824,
+          "warmup": 2,
+          "samples": 5,
+          "repeats": 1,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.15070191955566406
+        }
+      },
+      {
+        "case": "full",
+        "prefix": 131072,
+        "geometry": "full-64-128-512",
+        "correct": true,
+        "bitwise": false,
+        "max_absolute_error": 8.034985512495041e-07,
+        "temporary_bytes": 272629764,
+        "timing": {
+          "gpu_seconds": [
+            0.15553433227539062,
+            0.15574613952636718,
+            0.15593472290039062,
+            0.1601464385986328,
+            0.16215756225585937
+          ],
+          "completed_seconds": [
+            0.15558180800871924,
+            0.155779168009758,
+            0.1559672129806131,
+            0.16017916100099683,
+            0.16219127201475203
+          ],
+          "median_gpu_seconds": 0.15593472290039062,
+          "median_completed_seconds": 0.1559672129806131,
+          "warmup": 2,
+          "samples": 5,
+          "repeats": 1,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.15593472290039062
+        }
+      }
+    ]
+  },
+  "results": []
+}

@@ -1,0 +1,219 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "kernel",
+    "protocol": "snapshot-decode-v1",
+    "provider": "cuda",
+    "target": "sm_89",
+    "device": {
+      "name": "NVIDIA L4",
+      "provider": "cuda"
+    },
+    "model": "akas.models.lfm2.model:LFM2MoE",
+    "checkpoint": "build/checkpoints/lfm2.5-24b-a2b/q4_0.gguf",
+    "checkpoint_sha256": "d1c03f73ecaf61017d70419eec9e5dc0b05d50ae26c23d522829b934fbabf8a5",
+    "weight_format": "q4_0",
+    "kv_dtype": "fp8",
+    "mode": "ar",
+    "output_tokens": 128,
+    "shape_timeout_seconds": 120,
+    "qualified_program_run_id": "20261020172334890603-b8fd2763",
+    "reference_http_run_id": "20261020152431734974-3777f95e",
+    "geometry": "full-128-1-2",
+    "parameters": {
+      "k": 2048,
+      "o": 1536,
+      "experts": 64,
+      "top": 4,
+      "threads": 128,
+      "width": 1,
+      "unroll": 2,
+      "weight_parts": [
+        {
+          "rows": 98304,
+          "format": "ggml",
+          "options": {
+            "encoding": 2
+          }
+        }
+      ]
+    },
+    "qualification": "Whole-model streamed weights, exact original/paired-raw/paired-planar/original state snapshots. Lossless Q4 byte permutation includes all 114 expert matrices; no change to any scale or quant bit. Pure AR, FP8 KV; same Q4 coefficients, F16 operands and F32 accumulators. All 128 greedy IDs must match the qualified FP8 reference before timing; 1 warmup and 3 measured 127-step repeats. Prefill prompts use baseline seed=17+B*4099+P. Decode-only prototype; no prefill speed or HTTP claim.",
+    "weight_layout": {
+      "tensors": 114,
+      "resident_payload_change_bytes": 0,
+      "temporary_bytes": 113246208,
+      "transforms_outside_timing": true
+    },
+    "raw_geometry": "full-128-1-2",
+    "snapshot_gpu_bytes": 1426554884,
+    "decode_comparisons": [
+      {
+        "prefix": 32,
+        "variant": "original-before",
+        "decode_tokens_per_second": 125.47931716063971,
+        "samples": [
+          125.52377674346263,
+          125.39376579307938,
+          125.47931716063971
+        ],
+        "greedy_identical": true
+      },
+      {
+        "prefix": 32,
+        "variant": "paired-raw",
+        "decode_tokens_per_second": 131.39288377085796,
+        "samples": [
+          131.32466583228793,
+          131.4033630946599,
+          131.39288377085796
+        ],
+        "greedy_identical": true
+      },
+      {
+        "prefix": 32,
+        "variant": "paired-planar",
+        "decode_tokens_per_second": 135.05363993724254,
+        "samples": [
+          135.05363993724254,
+          135.04045579644654,
+          135.18532329662364
+        ],
+        "greedy_identical": true
+      },
+      {
+        "prefix": 32,
+        "variant": "original-after",
+        "decode_tokens_per_second": 125.11062956754047,
+        "samples": [
+          125.11062956754047,
+          125.12340234355929,
+          125.05446208217391
+        ],
+        "greedy_identical": true
+      },
+      {
+        "prefix": 8192,
+        "variant": "original-before",
+        "decode_tokens_per_second": 118.05364761578738,
+        "samples": [
+          118.06494222197308,
+          118.05364761578738,
+          118.01086790935922
+        ],
+        "greedy_identical": true
+      },
+      {
+        "prefix": 8192,
+        "variant": "paired-raw",
+        "decode_tokens_per_second": 123.41174549662021,
+        "samples": [
+          123.41174549662021,
+          123.44793059985288,
+          123.38772946182796
+        ],
+        "greedy_identical": true
+      },
+      {
+        "prefix": 8192,
+        "variant": "paired-planar",
+        "decode_tokens_per_second": 126.46045495165859,
+        "samples": [
+          126.47830796180774,
+          126.45972195708356,
+          126.46045495165859
+        ],
+        "greedy_identical": true
+      },
+      {
+        "prefix": 8192,
+        "variant": "original-after",
+        "decode_tokens_per_second": 117.78477087349357,
+        "samples": [
+          117.85202746354926,
+          117.78477087349357,
+          117.78255338819481
+        ],
+        "greedy_identical": true
+      },
+      {
+        "prefix": 130944,
+        "variant": "original-before",
+        "decode_tokens_per_second": 73.40300008606302,
+        "samples": [
+          73.40300008606302,
+          73.40394320916555,
+          73.39168104763331
+        ],
+        "greedy_identical": true
+      },
+      {
+        "prefix": 130944,
+        "variant": "paired-raw",
+        "decode_tokens_per_second": 75.4438852678316,
+        "samples": [
+          75.45085166266053,
+          75.4438852678316,
+          75.38129641852808
+        ],
+        "greedy_identical": true
+      },
+      {
+        "prefix": 130944,
+        "variant": "paired-planar",
+        "decode_tokens_per_second": 76.56630788686067,
+        "samples": [
+          76.55691913505704,
+          76.56630788686067,
+          76.59419144112921
+        ],
+        "greedy_identical": true
+      },
+      {
+        "prefix": 130944,
+        "variant": "original-after",
+        "decode_tokens_per_second": 73.07757992648864,
+        "samples": [
+          73.05448423042998,
+          73.09365323739047,
+          73.07757992648864
+        ],
+        "greedy_identical": true
+      }
+    ],
+    "transforms": [
+      {
+        "prefix": 32,
+        "direction": "pack",
+        "seconds": 0.2246137050096877
+      },
+      {
+        "prefix": 32,
+        "direction": "unpack",
+        "seconds": 0.22331591497641057
+      },
+      {
+        "prefix": 8192,
+        "direction": "pack",
+        "seconds": 0.22450508101610467
+      },
+      {
+        "prefix": 8192,
+        "direction": "unpack",
+        "seconds": 0.22329733101651073
+      },
+      {
+        "prefix": 130944,
+        "direction": "pack",
+        "seconds": 0.22452933702152222
+      },
+      {
+        "prefix": 130944,
+        "direction": "unpack",
+        "seconds": 0.22340720996726304
+      }
+    ]
+  },
+  "results": []
+}

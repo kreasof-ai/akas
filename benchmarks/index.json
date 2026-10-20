@@ -29566,6 +29566,259 @@
       "shapes": [],
       "search_phases": 0,
       "path": "runs/20261020172052480924-ed16a947/run.json"
+    },
+    {
+      "id": "20261020172334890603-b8fd2763",
+      "started_at": "2026-10-20T17:23:34.890603Z",
+      "status": "passed",
+      "revision": "0765bb7ea8a570a6978c554b8b16ea948d0f19c4",
+      "dirty": false,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "fp8",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Qualify compiler-owned shared decoded FP8 prefill through native execution and HTTP serving",
+        "parent_run": "20261020152431734974-3777f95e"
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 8192,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 130944,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 4,
+      "path": "runs/20261020172334890603-b8fd2763/run.json"
+    },
+    {
+      "id": "20261020174844718413-384c5b14",
+      "started_at": "2026-10-20T17:48:44.718413Z",
+      "status": "passed",
+      "revision": "0765bb7ea8a570a6978c554b8b16ea948d0f19c4",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": null,
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Fuse decode expert gate/up/SwiGLU without recomputing projections; distinguish L2-resident and streamed-weight timings",
+        "parent_run": null
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020174844718413-384c5b14/run.json"
+    },
+    {
+      "id": "20261020174852293609-15374b71",
+      "started_at": "2026-10-20T17:48:52.293609Z",
+      "status": "passed",
+      "revision": "0765bb7ea8a570a6978c554b8b16ea948d0f19c4",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "fp8",
+      "weight_format": null,
+      "change": {
+        "kind": "algorithm",
+        "description": "Revisit wider query/key tiles after removing repeated FP8 decoding from prefill MMA",
+        "parent_run": null
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020174852293609-15374b71/run.json"
+    },
+    {
+      "id": "20261020174911320354-58e32599",
+      "started_at": "2026-10-20T17:49:11.320354Z",
+      "status": "passed",
+      "revision": "0765bb7ea8a570a6978c554b8b16ea948d0f19c4",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "fp8",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Qualify paired expert decode fusion under full-model streaming weights and identical AR state snapshots",
+        "parent_run": "20261020172334890603-b8fd2763"
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 4,
+      "path": "runs/20261020174911320354-58e32599/run.json"
+    },
+    {
+      "id": "20261020175337942340-7a71d91a",
+      "started_at": "2026-10-20T17:53:37.942340Z",
+      "status": "passed",
+      "revision": "0765bb7ea8a570a6978c554b8b16ea948d0f19c4",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "fp8",
+      "weight_format": null,
+      "change": {
+        "kind": "algorithm",
+        "description": "Partition MMA warps over query rows so each softmax row stays within one warp",
+        "parent_run": null
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020175337942340-7a71d91a/run.json"
+    },
+    {
+      "id": "20261020175752556042-5300f58c",
+      "started_at": "2026-10-20T17:57:52.556042Z",
+      "status": "passed",
+      "revision": "0765bb7ea8a570a6978c554b8b16ea948d0f19c4",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": null,
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Fuse decode expert gate/up/SwiGLU without recomputing projections; distinguish L2-resident and streamed-weight timings",
+        "parent_run": null
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020175752556042-5300f58c/run.json"
+    },
+    {
+      "id": "20261020175820278888-91a92512",
+      "started_at": "2026-10-20T17:58:20.278888Z",
+      "status": "passed",
+      "revision": "0765bb7ea8a570a6978c554b8b16ea948d0f19c4",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "fp8",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Combine paired expert decode fusion with a lossless aligned Q4 layout under full-model streaming weights",
+        "parent_run": "20261020172334890603-b8fd2763"
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 4,
+      "path": "runs/20261020175820278888-91a92512/run.json"
+    },
+    {
+      "id": "20261020180714446008-b46814a3",
+      "started_at": "2026-10-20T18:07:14.446008Z",
+      "status": "passed",
+      "revision": "0765bb7ea8a570a6978c554b8b16ea948d0f19c4",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "fp8",
+      "weight_format": null,
+      "change": {
+        "kind": "algorithm",
+        "description": "Partition MMA warps over query rows so each softmax row stays within one warp",
+        "parent_run": null
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020180714446008-b46814a3/run.json"
+    },
+    {
+      "id": "20261020181402894849-f6b904e9",
+      "started_at": "2026-10-20T18:14:02.894849Z",
+      "status": "failed",
+      "revision": "67195dd3e7e1dcf70e9cb267c571e1d5245fc79b",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "fp8",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Combine row-partitioned attention with packed routed expert prefill on matched baseline prompts",
+        "parent_run": "20261020152431734974-3777f95e"
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 8192,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 4,
+      "path": "runs/20261020181402894849-f6b904e9/run.json"
     }
   ]
 }
