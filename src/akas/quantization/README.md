@@ -86,6 +86,13 @@ A scalar compatibility implementation does not establish optimized packed-dot
 support. Small adapters in [_shared/access.py](_shared/access.py) retain the
 existing attention ABIs while using the same tuple readers and writers.
 
+`format.supports(capability, shape, provider=..., **options)` checks a specific
+encoding and geometry without importing its compiler. A backend may refine its
+capability inventory with a compiler-free `supports` function. For example,
+CUDA GGML's `dot_half` requires Q4_0 and a channel count divisible by 256;
+unavailable specializations keep the ordinary reader path. Unpermuted single
+weight pieces retain packed capabilities through `bind_parts`.
+
 ## Fused computation
 
 [Linear](../ops/linear/README.md) supplies an additive `quantized_linear` operation

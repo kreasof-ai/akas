@@ -56,6 +56,21 @@ contracts together. Grouped decode shares each KV tile across query heads and
 updates online softmax per tile. Its value depends on the provider and shape;
 compatible implementations remain available for measured selection.
 
+CUDA's native-half `mma_partial` shares a KV tile across a group of query heads
+and uses tensor-core QK/PV products. Queries and probabilities round to FP16;
+softmax statistics and accumulated values stay F32. The `unit_scales` contract
+selects this path only when native cache scales are one. Other cache contracts
+retain their compatible implementations.
+
+Complete groups of four key tiles use `T.Pipelined`. At most four final tiles
+use guarded loads, keeping unused or nonfinite future cache entries out of PV.
+Separating the tail also avoids asking the compiler to pipeline a dynamically
+sized final group. Partial buffers and the merge ABI stay the same; the
+independent oracle accounts for tile-aligned partitions and FP16 probability
+rounding. These implementations declare `key_rows` in `reference_keys`, so
+tuning cannot reuse an oracle with different tile rounding or split boundaries.
+See [decode qualification](../../../../tests/test_attention_mma_decode.py).
+
 WebGPU's `tiled_prefill` shares key/value tiles across query rows and grouped
 heads. It performs online softmax per key tile and retains the output
 accumulators in private registers. The score and value loops load a KV vector

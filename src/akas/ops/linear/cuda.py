@@ -5,6 +5,47 @@ from collections.abc import Mapping
 from akas.kernels.definition import KernelSpec
 
 
+def floating_warp(spec: KernelSpec, schedule: Mapping[str, object]):
+    """One warp per F32 output, with F32 FMA and a warp-local reduction."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    rows, depth, columns = (p[n] for n in ("r", "k", "o"))
+    threads = p.get("threads", 128)
+    if threads not in (128, 256):
+        raise ValueError("floating warp projection requires 128 or 256 threads")
+    stride, offset = p.get("output_stride", columns), p.get("output_offset", 0)
+    shape = (rows, stride) if p.get("matrix_output", False) else (rows * stride,)
+    warps = threads // 32
+
+    @kernel
+    def compute(
+        x: Tensor((rows * depth,), "float32"),
+        w: Tensor((columns * depth,), "float32"),
+    ) -> Tensor(shape, "float32"):
+        out = output(shape, "float32")
+        with T.Kernel(T.ceildiv(columns, warps), rows, threads=threads) as (block, row):
+            tx = T.get_thread_binding()
+            lane, column = tx % 32, block * warps + tx // 32
+            total = T.alloc_var("float32")
+            total = 0
+            if column < columns:
+                for tile in T.serial(T.ceildiv(depth, 32)):
+                    channel = tile * 32 + lane
+                    if channel < depth:
+                        total += x[row * depth + channel] * w[column * depth + channel]
+            for step in T.unroll(5):
+                total += T.shfl_down(total, 16 >> step)
+            if lane == 0 and column < columns:
+                if p.get("matrix_output", False):
+                    out[row, offset + column] = total
+                else:
+                    out[row * stride + offset + column] = total
+        return out
+
+    return compute
+
+
 def _mma(p, *, grouped, prequantized):
     import tilelang.language as T
 

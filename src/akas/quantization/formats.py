@@ -46,6 +46,7 @@ class Codec:
     read_tile: Callable | None = None
     read_pair: Callable | None = None
     dot: Callable | None = None
+    dot_half: Callable | None = None
     write: Callable | None = None
     write_pair: Callable | None = None
     read_packed: Callable | None = None
@@ -65,6 +66,7 @@ class Codec:
             "read_tile",
             "read_pair",
             "dot",
+            "dot_half",
             "write",
             "write_pair",
             "read_packed",
@@ -107,6 +109,13 @@ class Format:
     def capabilities(self, provider):
         """Compiler-free inventory; availability is per capability and provider."""
         return self.backend(provider).CAPABILITIES
+
+    def supports(self, capability, shape, *, provider, **options):
+        """Check an inline access specialization without importing its compiler."""
+        if capability not in self.capabilities(provider):
+            return False
+        check = getattr(self.backend(provider), "supports", None)
+        return check(capability, tuple(shape), **options) if check else True
 
     def bind(self, shape, *, provider, access=None, **options):
         """Resolve storage and inline access before constructing a consumer."""

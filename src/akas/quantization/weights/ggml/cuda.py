@@ -246,6 +246,81 @@ def decoder(encoding, depth):
     return weight_decoder(encoding, depth)
 
 
+def packed_dot_half(shape):
+    """A warp dots 256 values, rounding both operands to FP16 before F32 FMA.
+
+    Keep the original GGUF bytes. A word view provides aligned loads and a
+    funnel shift joins the alternating halfword-aligned Q4 blocks. No derived
+    cache or fully dequantized matrix is allocated. ``offset`` selects one
+    routed activation row from the caller's flat activation view.
+    """
+    import tilelang.language as T
+    from math import prod
+
+    depth = shape[-1]
+    words_count = prod(shape) // 32 * 18 // 4
+    row_bytes = depth // 32 * 18
+
+    @T.macro
+    def dot(encoded, x, offset, tile, lane, row):
+        words = T.view(encoded[0], (words_count,), dtype="uint32")
+        base = row * row_bytes + (tile * 8 + lane // 4) * 18
+        scale = T.cast(
+            T.reinterpret(
+                "float16", T.cast(words[base // 4] >> (base % 4 * 8), "uint16")
+            ),
+            "float32",
+        )
+        address = base + 2 + lane % 4 * 4
+        packed = T.call_extern(
+            "uint32",
+            "__funnelshift_r",
+            words[address // 4],
+            words[(address + 3) // 4],
+            T.cast(address % 4 * 8, "uint32"),
+        )
+        j = offset + tile * 256 + lane // 4 * 32 + lane % 4 * 4
+        lo = T.alloc_local((4,), "float32")
+        hi = T.alloc_local((4,), "float32")
+        for component in T.vectorized(4):
+            lo[component] = T.cast(T.cast(x[j + component], "float16"), "float32")
+            hi[component] = T.cast(T.cast(x[j + 16 + component], "float16"), "float32")
+        result = T.alloc_var("float32")
+        result = 0
+        for component in T.unroll(4):
+            coefficient = T.cast(
+                T.cast(
+                    scale * (T.cast(packed >> (component * 8) & 15, "float32") - 8),
+                    "float16",
+                ),
+                "float32",
+            )
+            result += lo[component] * coefficient
+        for component in T.unroll(4):
+            coefficient = T.cast(
+                T.cast(
+                    scale * (T.cast(packed >> (component * 8 + 4) & 15, "float32") - 8),
+                    "float16",
+                ),
+                "float32",
+            )
+            result += hi[component] * coefficient
+        return result
+
+    return dot
+
+
+def supports(capability, shape, *, encoding):
+    """Compiler-free specialization inventory for packed consumers."""
+    if capability == "dot_half":
+        return encoding == 2 and shape[-1] % 256 == 0
+    if capability == "read_pair":
+        return encoding in (1, 2, 12, 14)
+    if capability == "dot":
+        return encoding in (0, 1, 2, 12, 14) and shape[-1] % 256 == 0
+    return capability in CAPABILITIES
+
+
 def bind(shape, *, encoding):
     import tilelang.language as T
     from akas.quantization.formats import Codec
@@ -276,6 +351,9 @@ def bind(shape, *, encoding):
         matrix_tile(read, shape),
         read_pair=read_pair if pair is not None else None,
         dot=dot if product is not None else None,
+        dot_half=packed_dot_half(shape)
+        if supports("dot_half", shape, encoding=encoding)
+        else None,
     )
 
 
@@ -286,5 +364,5 @@ def dequantize(spec, schedule):
 
 
 AVAILABLE = "cuda" in dict(FORMAT.providers)
-CAPABILITIES = ("read", "read_tile", "read_pair", "dot", "dequantize")
+CAPABILITIES = ("read", "read_tile", "read_pair", "dot", "dot_half", "dequantize")
 IMPLEMENTATIONS = tuple(choice for choice in _CHOICES if choice.provider == "cuda")

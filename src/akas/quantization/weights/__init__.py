@@ -90,7 +90,32 @@ def bind_parts(parts, depth, *, provider):
         tuple(codec.storage.values for codec in codecs[1:]),
         tuple(f"part{index}" for index in range(1, count)),
     )
-    return Codec(storage, read, matrix_tile(read, (bounds[-1], depth)))
+    direct = (
+        codecs[0]
+        if count == 1
+        and not (parts[0].get("row_order") or parts[0].get("column_order"))
+        else None
+    )
+    return Codec(
+        storage,
+        read,
+        matrix_tile(read, (bounds[-1], depth)),
+        read_pair=direct.read_pair if direct else None,
+        dot=direct.dot if direct else None,
+        dot_half=direct.dot_half if direct else None,
+    )
+
+
+def supports_parts(parts, depth, capability, *, provider):
+    """Packed access requires one unpermuted encoded piece, with format support."""
+    from akas.quantization.formats import get
+
+    if len(parts) != 1 or parts[0].get("row_order") or parts[0].get("column_order"):
+        return False
+    part = parts[0]
+    return get("weights", part["format"]).supports(
+        capability, (part["rows"], depth), provider=provider, **part["options"]
+    )
 
 
 def bind(parameters, shape, *, provider):

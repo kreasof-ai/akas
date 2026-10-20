@@ -1023,3 +1023,19 @@ OUTPUT_ARGUMENTS["*"] = {"quantized_projection": OutputABI((-1,), ("out",))}
 from .validation import projection_validation
 
 VALIDATIONS["quantized_projection"] = projection_validation
+
+IMPLEMENTATIONS += (
+    Implementation(
+        "linear",
+        "akas.ops.linear.cuda",
+        "reference",
+        factory="floating_warp",
+        name="linear.cuda.floating_warp",
+        priority=25,
+        defaults=(("threads", 128),),
+        space=(("threads", (128, 256)),),
+        accepts=lambda p: (
+            "type" not in p and p.get("weight_dtype", "float32") == "float32"
+        ),
+    ),
+)

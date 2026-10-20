@@ -26,6 +26,7 @@ class Implementation:
     defaults: tuple[tuple[str, object], ...] = ()
     space: tuple[tuple[str, tuple], ...] = ()
     semantic_keys: tuple[str, ...] | None = None
+    reference_keys: tuple[str, ...] = ()
     variant: str | None = None
     name: str | None = None
 

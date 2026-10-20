@@ -236,6 +236,28 @@ def test_cuda_prefill_expert_tile_shapes(tmp_path, columns, block_k, routed):
     )
 
 
+@pytest.mark.parametrize("routed", [False, True])
+@pytest.mark.parametrize("columns,depth", [(7, 256), (128, 512)])
+def test_cuda_packed_expert_decode_tail(tmp_path, routed, columns, depth):
+    test_moe_kernel_device_qualification(
+        tmp_path,
+        "cuda",
+        "quantized_experts",
+        dict(
+            r=1,
+            top=2,
+            experts=4,
+            k=depth,
+            o=columns,
+            input_dtype="float32",
+            routed_input=routed,
+            weight_parts=(
+                {"rows": 4 * columns, "format": "ggml", "options": {"encoding": 2}},
+            ),
+        ),
+    )
+
+
 @pytest.mark.parametrize(
     "block_m,columns,block_k,pad", [(4, 32, 32, 1), (32, 64, 32, 1), (32, 64, 64, 0)]
 )

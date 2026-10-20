@@ -91,3 +91,9 @@ The computation shares GEMV and tiled GEMM with the common codec consumer. CUDA
 prefill tunes its M/N/K tile sizes and uses FP16 tensor-core operands with F32
 accumulation. WebGPU has F32-input shader coverage; Qwen's BF16 activation graph
 still requires CUDA. See [GGUF qualification tests](../../../../tests/test_qwen_gguf.py).
+
+Native F32 projections have a CUDA warp specialization, useful for small
+routers as well as larger row batches. It assigns one output column to each
+warp and replaces shared reduction barriers with warp shuffles. Both operands
+and accumulation stay F32; this path does not quantize router weights. Output
+strides, offsets and partial columns retain the common projection contract.

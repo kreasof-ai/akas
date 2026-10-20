@@ -396,6 +396,44 @@ def canonical_validation(kind, p, signature):
             res = (accumulated / normalizer[:, :, :, None]).reshape(chunk, h, d)
             out[r0:r1][en] = res[en]
         return ValidationCase(values, expected, rtol=0.02, atol=0.002)
+    if kind == "attention_partial" and p.get("decode_precision") == "float16":
+        queries = queries.astype("float16").astype("float64")
+        tile = p.get("key_rows", 64)
+        for row in range(r):
+            length = (
+                min(cap, int(values["positions"][row]) + 1)
+                if values["enabled"][row]
+                else 0
+            )
+            keys = read_slot("kc", "ks", row, max(1, length))
+            vals = read_slot("vc", "vs", row, max(1, length))
+            span = ((length + tile - 1) // tile + splits - 1) // splits * tile
+            for head in range(h):
+                scores = keys[head // group, :length] @ queries[row, head] / np.sqrt(d)
+                for part in range(splits):
+                    begin, end = part * span, min(length, (part + 1) * span)
+                    maximum, normalizer = -np.inf, 0.0
+                    accumulated = np.zeros(d, dtype="float64")
+                    for start in range(begin, end, tile):
+                        stop = min(end, start + tile)
+                        block = scores[start:stop]
+                        next_maximum = max(maximum, block.max())
+                        correction = (
+                            np.exp(maximum - next_maximum)
+                            if np.isfinite(maximum)
+                            else 0.0
+                        )
+                        probabilities = np.exp(block - next_maximum)
+                        accumulated = (
+                            accumulated * correction
+                            + probabilities.astype("float16").astype("float64")
+                            @ vals[head // group, start:stop]
+                        )
+                        normalizer = normalizer * correction + probabilities.sum()
+                        maximum = next_maximum
+                    out[row, head, part, :d] = accumulated
+                    out[row, head, part, d:] = [maximum, normalizer]
+        return ValidationCase(values, expected, rtol=0.002, atol=0.002)
     for row in range(r):
         length = (
             min(cap, int(values["positions"][row]) + 1) if values["enabled"][row] else 0

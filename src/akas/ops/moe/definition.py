@@ -1001,3 +1001,24 @@ IMPLEMENTATIONS += (
         ),
     ),
 )
+
+
+from akas.quantization.weights import supports_parts
+
+IMPLEMENTATIONS += (
+    Implementation(
+        "quantized_experts",
+        "akas.ops.moe.cuda",
+        "reference",
+        factory="packed_experts",
+        name="moe.cuda.packed_decode",
+        priority=40,
+        defaults=(("threads", 128),),
+        space=(("threads", (128, 256)),),
+        accepts=lambda p: (
+            p["r"] == 1
+            and p.get("round_inputs", True)
+            and supports_parts(p["weight_parts"], p["k"], "dot_half", provider="cuda")
+        ),
+    ),
+)

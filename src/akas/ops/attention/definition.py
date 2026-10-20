@@ -937,6 +937,7 @@ IMPLEMENTATIONS += (
         ),
         factory="floating",
         name="attention.cuda.pipelined",
+        reference_keys=("key_rows",),
     ),
 )
 
@@ -984,4 +985,28 @@ IMPLEMENTATIONS += tuple(
         name="attention.grouped_decode",
     )
     for provider in ("cuda", "webgpu")
+)
+
+
+IMPLEMENTATIONS += (
+    Implementation(
+        "attention_partial",
+        "akas.ops.attention.cuda",
+        "reference",
+        factory="mma_partial",
+        name="attention.cuda.mma_decode",
+        reference_keys=("key_rows",),
+        priority=40,
+        defaults=(("key_rows", 64), ("stages", 2), ("decode_precision", "float16")),
+        space=(("key_rows", (64, 128)), ("stages", (2, 1, 3))),
+        accepts=lambda p: (
+            p.get("optimized", False)
+            and p.get("d") == 64
+            and p.get("kv_dtype") == "float16"
+            and p.get("unit_scales", False)
+            and p["h"] % p["kh"] == 0
+            and p["h"] // p["kh"] in (2, 4, 8, 16)
+            and p["capacity"] >= 4096
+        ),
+    ),
 )

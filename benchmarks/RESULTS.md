@@ -4,6 +4,19 @@ Generated from run records. See [the benchmark guide](../docs/benchmarking.md).
 
 | UTC | Hardware | Runtime / model | Backend / weights / mode / KV | Shapes (B/P/O) | Purpose | Status | Source | Record |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-10-20T11:53:11.467197Z | NVIDIA L4 | akas /  | cuda / unspecified / ar / unspecified |  | kernel | passed | b24bdad5ef + snapshot | [run](runs/20261020115311467197-0455eb42/run.json) |
+| 2026-10-20T11:52:31.876553Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / ar / float16 | 1/8192/128 | preflight | passed | b24bdad5ef + snapshot | [run](runs/20261020115231876553-b8813d7d/run.json) |
+| 2026-10-20T11:42:35.093651Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / ar / float16 | 1/32/128, 1/8192/128, 1/130944/128 | preflight | passed | b24bdad5ef + snapshot | [run](runs/20261020114235093651-4bca37f4/run.json) |
+| 2026-10-20T11:41:54.794755Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / ar / float16 | 1/32/128, 1/8192/128 | preflight | passed | b24bdad5ef + snapshot | [run](runs/20261020114154794755-65c1eb16/run.json) |
+| 2026-10-20T11:41:14.230139Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / ar / float16 | 1/32/128, 1/8192/128 | preflight | passed | b24bdad5ef + snapshot | [run](runs/20261020114114230139-c2ca7eba/run.json) |
+| 2026-10-20T11:40:36.078340Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / ar / float16 | 1/8192/128 | preflight | passed | b24bdad5ef + snapshot | [run](runs/20261020114036078340-65a2f98f/run.json) |
+| 2026-10-20T11:40:01.920077Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / ar / float16 | 1/8192/128 | preflight | passed | b24bdad5ef + snapshot | [run](runs/20261020114001920077-64ab08db/run.json) |
+| 2026-10-20T11:39:21.821900Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / ar / float16 | 1/8192/128 | preflight | passed | b24bdad5ef + snapshot | [run](runs/20261020113921821900-8083cbab/run.json) |
+| 2026-10-20T11:38:43.539404Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / ar / float16 | 1/8192/128 | preflight | passed | b24bdad5ef + snapshot | [run](runs/20261020113843539404-0a384377/run.json) |
+| 2026-10-20T11:30:38.043995Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / unspecified / ar / unspecified |  | kernel | passed | b24bdad5ef + snapshot | [run](runs/20261020113038043995-f1f6c7e8/run.json) |
+| 2026-10-20T11:27:56.083439Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / unspecified / ar / unspecified |  | kernel | failed | b24bdad5ef + snapshot | [run](runs/20261020112756083439-06c10f14/run.json) |
+| 2026-10-20T11:25:54.943265Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / unspecified / ar / unspecified |  | kernel | passed | b24bdad5ef + snapshot | [run](runs/20261020112554943265-e0da70d0/run.json) |
+| 2026-10-20T11:23:51.907790Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / unspecified / ar / unspecified |  | kernel | failed | b24bdad5ef | [run](runs/20261020112351907790-7a65971c/run.json) |
 | 2026-10-20T10:59:38.620724Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | webgpu / unspecified / ar / unspecified |  | kernel | passed | 854fea4124 + snapshot | [run](runs/20261020105938620724-d6c83495/run.json) |
 | 2026-10-20T10:58:26.407178Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / unspecified / ar / unspecified |  | kernel | passed | 854fea4124 | [run](runs/20261020105826407178-154ef54b/run.json) |
 | 2026-10-20T10:48:41.883865Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | webgpu / q4_0 / ar / float16 | 1/32/128, 1/8192/128 | preflight | passed | b3046abc86 + snapshot | [run](runs/20261020104841883865-97f56594/run.json) |

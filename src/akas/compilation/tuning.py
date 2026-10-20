@@ -538,6 +538,10 @@ def qualify(bundle, out, *, settings=None, device=None):
                                 for name, _ in implementation.defaults
                                 if name not in dict(implementation.space)
                             },
+                            {
+                                name: validation_parameters.get(name)
+                                for name in implementation.reference_keys
+                            },
                             validation_parameters.get("bk")
                             if kind == "split_linear"
                             else None,

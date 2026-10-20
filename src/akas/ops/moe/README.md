@@ -83,6 +83,14 @@ FP16 operand rounding, FP32 accumulation and the same per-column summation
 order. Larger tiles are candidates rather than presumed improvements; the
 single-column schedule remains the default.
 
+For eligible encoded weights, CUDA's `packed_experts` asks the weight codec for
+`dot_half`: each warp consumes 256 input channels per iteration, rounds operands
+to FP16 and accumulates in F32. Block decoding and packed loads belong to
+`quantization/weights`, rather than this operation. A single unpermuted piece
+with that capability can use the packed path; other layouts keep the general
+expert implementation. This avoids allocating a dequantized expert bank or a
+second weight cache. Thread count remains a measured schedule choice.
+
 ## How to extend
 
 Define route indices, counts, padding, tie handling and output accumulation

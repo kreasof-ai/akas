@@ -1,0 +1,18 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "kernel",
+    "protocol": "kernel-latency-v1",
+    "provider": "cuda",
+    "model": "akas.models.lfm2.model:LFM2MoE",
+    "checkpoint": "build/checkpoints/lfm2.5-24b-a2b/q4_0.gguf",
+    "checkpoint_sha256": "d1c03f73ecaf61017d70419eec9e5dc0b05d50ae26c23d522829b934fbabf8a5",
+    "device": {
+      "name": "NVIDIA L4",
+      "provider": "cuda"
+    },
+    "qualification": "Profiling only; captured event nodes perturb timings; real whole-model greedy decode and streaming weights"
+  },
+  "results": []
+}

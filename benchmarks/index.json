@@ -27607,6 +27607,410 @@
       "shapes": [],
       "search_phases": 0,
       "path": "runs/20261020105938620724-d6c83495/run.json"
+    },
+    {
+      "id": "20261020112351907790-7a65971c",
+      "started_at": "2026-10-20T11:23:51.907790Z",
+      "status": "failed",
+      "revision": "b24bdad5efcba1147f7d4197f9f43763b2c86bdc",
+      "dirty": false,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": null,
+      "weight_format": null,
+      "change": {
+        "kind": "diagnostic",
+        "description": "Profile ordered full-model execution before further algorithm changes",
+        "parent_run": null
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020112351907790-7a65971c/run.json"
+    },
+    {
+      "id": "20261020112554943265-e0da70d0",
+      "started_at": "2026-10-20T11:25:54.943265Z",
+      "status": "passed",
+      "revision": "b24bdad5efcba1147f7d4197f9f43763b2c86bdc",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": null,
+      "weight_format": null,
+      "change": {
+        "kind": "diagnostic",
+        "description": "Profile ordered full-model execution before further algorithm changes",
+        "parent_run": null
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020112554943265-e0da70d0/run.json"
+    },
+    {
+      "id": "20261020112756083439-06c10f14",
+      "started_at": "2026-10-20T11:27:56.083439Z",
+      "status": "failed",
+      "revision": "b24bdad5efcba1147f7d4197f9f43763b2c86bdc",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": null,
+      "weight_format": null,
+      "change": {
+        "kind": "diagnostic",
+        "description": "Profile ordered full-model execution before further algorithm changes",
+        "parent_run": null
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020112756083439-06c10f14/run.json"
+    },
+    {
+      "id": "20261020113038043995-f1f6c7e8",
+      "started_at": "2026-10-20T11:30:38.043995Z",
+      "status": "passed",
+      "revision": "b24bdad5efcba1147f7d4197f9f43763b2c86bdc",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": null,
+      "weight_format": null,
+      "change": {
+        "kind": "diagnostic",
+        "description": "Profile ordered full-model execution before further algorithm changes",
+        "parent_run": null
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020113038043995-f1f6c7e8/run.json"
+    },
+    {
+      "id": "20261020113843539404-0a384377",
+      "started_at": "2026-10-20T11:38:43.539404Z",
+      "status": "passed",
+      "revision": "b24bdad5efcba1147f7d4197f9f43763b2c86bdc",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Manually optimize measured expert and attention bottlenecks: baseline-before",
+        "parent_run": "20261020102328416670-be712fbb"
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 8192,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261020113843539404-0a384377/run.json"
+    },
+    {
+      "id": "20261020113921821900-8083cbab",
+      "started_at": "2026-10-20T11:39:21.821900Z",
+      "status": "passed",
+      "revision": "b24bdad5efcba1147f7d4197f9f43763b2c86bdc",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Manually optimize measured expert and attention bottlenecks: half2-16-64-32",
+        "parent_run": "20261020102328416670-be712fbb"
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 8192,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261020113921821900-8083cbab/run.json"
+    },
+    {
+      "id": "20261020114001920077-64ab08db",
+      "started_at": "2026-10-20T11:40:01.920077Z",
+      "status": "passed",
+      "revision": "b24bdad5efcba1147f7d4197f9f43763b2c86bdc",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Manually optimize measured expert and attention bottlenecks: half2-32-64-128",
+        "parent_run": "20261020102328416670-be712fbb"
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 8192,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261020114001920077-64ab08db/run.json"
+    },
+    {
+      "id": "20261020114036078340-65a2f98f",
+      "started_at": "2026-10-20T11:40:36.078340Z",
+      "status": "passed",
+      "revision": "b24bdad5efcba1147f7d4197f9f43763b2c86bdc",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Manually optimize measured expert and attention bottlenecks: half2-64-128-128",
+        "parent_run": "20261020102328416670-be712fbb"
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 8192,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261020114036078340-65a2f98f/run.json"
+    },
+    {
+      "id": "20261020114114230139-c2ca7eba",
+      "started_at": "2026-10-20T11:41:14.230139Z",
+      "status": "passed",
+      "revision": "b24bdad5efcba1147f7d4197f9f43763b2c86bdc",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Manually optimize measured expert and attention bottlenecks: mma-decode-64",
+        "parent_run": "20261020102328416670-be712fbb"
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 8192,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261020114114230139-c2ca7eba/run.json"
+    },
+    {
+      "id": "20261020114154794755-65c1eb16",
+      "started_at": "2026-10-20T11:41:54.794755Z",
+      "status": "passed",
+      "revision": "b24bdad5efcba1147f7d4197f9f43763b2c86bdc",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Manually optimize measured expert and attention bottlenecks: mma-decode-128",
+        "parent_run": "20261020102328416670-be712fbb"
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 8192,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261020114154794755-65c1eb16/run.json"
+    },
+    {
+      "id": "20261020114235093651-4bca37f4",
+      "started_at": "2026-10-20T11:42:35.093651Z",
+      "status": "passed",
+      "revision": "b24bdad5efcba1147f7d4197f9f43763b2c86bdc",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Manually optimize measured expert and attention bottlenecks: combined",
+        "parent_run": "20261020102328416670-be712fbb"
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 8192,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 130944,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261020114235093651-4bca37f4/run.json"
+    },
+    {
+      "id": "20261020115231876553-b8813d7d",
+      "started_at": "2026-10-20T11:52:31.876553Z",
+      "status": "passed",
+      "revision": "b24bdad5efcba1147f7d4197f9f43763b2c86bdc",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Manually optimize measured expert and attention bottlenecks: baseline-after",
+        "parent_run": "20261020102328416670-be712fbb"
+      },
+      "purpose": "preflight",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 8192,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261020115231876553-b8813d7d/run.json"
+    },
+    {
+      "id": "20261020115311467197-0455eb42",
+      "started_at": "2026-10-20T11:53:11.467197Z",
+      "status": "passed",
+      "revision": "b24bdad5efcba1147f7d4197f9f43763b2c86bdc",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": null,
+      "weight_format": null,
+      "change": {
+        "kind": "diagnostic",
+        "description": "Validate packed CUDA expert word views without a derived weight copy",
+        "parent_run": null
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020115311467197-0455eb42/run.json"
     }
   ]
 }

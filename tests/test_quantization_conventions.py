@@ -54,3 +54,19 @@ def test_declarations_and_factory_modules_import_without_compiler_packages():
         ],
         check=True,
     )
+
+
+def test_packed_dot_eligibility_respects_encoding_geometry_and_permutations():
+    from akas.quantization.weights import supports_parts
+
+    part = dict(rows=28, format="ggml", options=dict(encoding=2))
+    assert supports_parts((part,), 256, "dot_half", provider="cuda")
+    assert not supports_parts((part,), 32, "dot_half", provider="cuda")
+    assert not supports_parts((part, part), 256, "dot_half", provider="cuda")
+    assert not supports_parts(
+        ({**part, "row_order": (0, 2, 2, 7)},), 256, "dot_half", provider="cuda"
+    )
+    assert not supports_parts(
+        ({**part, "options": dict(encoding=8)},), 256, "dot_half", provider="cuda"
+    )
+    assert not supports_parts((part,), 256, "dot_half", provider="webgpu")
