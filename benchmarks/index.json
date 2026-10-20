@@ -28596,6 +28596,78 @@
       "shapes": [],
       "search_phases": 0,
       "path": "runs/20261020143737183637-9315841b/run.json"
+    },
+    {
+      "id": "20261020144439270674-d3b0ff73",
+      "started_at": "2026-10-20T14:44:39.270674Z",
+      "status": "passed",
+      "revision": "dc7ffce0a756fcba2b8ee144762f1fed62d41d83",
+      "dirty": false,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "fp8",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Compare bitwise coefficient half2 expert decoding on the full model",
+        "parent_run": "20261020141834495811-d8e958f0"
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 4,
+      "path": "runs/20261020144439270674-d3b0ff73/run.json"
+    },
+    {
+      "id": "20261020144820150686-573c298a",
+      "started_at": "2026-10-20T14:48:20.150686Z",
+      "status": "passed",
+      "revision": "dc7ffce0a756fcba2b8ee144762f1fed62d41d83",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": null,
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Pair adjacent route tiles to reuse each decoded expert coefficient across 128 token rows",
+        "parent_run": null
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020144820150686-573c298a/run.json"
+    },
+    {
+      "id": "20261020145214095534-adf8104a",
+      "started_at": "2026-10-20T14:52:14.095534Z",
+      "status": "passed",
+      "revision": "dc7ffce0a756fcba2b8ee144762f1fed62d41d83",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": null,
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Share optimized quantization tile access across linear, paired FFN and expert prefill",
+        "parent_run": null
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020145214095534-adf8104a/run.json"
     }
   ]
 }

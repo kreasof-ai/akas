@@ -24,9 +24,25 @@ def test_kernel_arithmetic_matches_pre_refactor_source(record):
     for module in (record["module"], *record.get("related_modules", ())):
         path = ROOT / "src" / Path(module.replace(".", "/")).with_suffix(".py")
         observed.update(computation_hashes(path.read_text()))
-    # Additive codecs may introduce new computations. Every frozen computation
-    # must still exist, including helpers moved into their format's backend.
-    assert set(record["computations"]) <= observed
+    # Refactoring preserves frozen computations. An intentional optimization
+    # explicitly identifies both bodies and its retained numerical qualification.
+    required = set(record["computations"])
+    for replacement in record.get("qualified_replacements", ()):
+        original, updated = (
+            set(replacement["original"]),
+            set(replacement["replacement"]),
+        )
+        assert original and original <= required
+        assert updated and updated <= observed
+        assert replacement["reason"] and replacement["qualification_tests"]
+        directory = ROOT / "benchmarks/runs" / replacement["qualification_run"]
+        run = json.loads((directory / "run.json").read_text())
+        report = json.loads((directory / "report.json").read_text())
+        assert run["status"] == "passed"
+        checks = report["metadata"]["checks"]
+        assert checks and all(check["bitwise"] for check in checks)
+        required -= original
+    assert required <= observed
 
 
 @pytest.mark.parametrize("precision", ["bfloat16", "fp8"])

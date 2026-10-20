@@ -93,6 +93,50 @@ def test_cuda_q4_tile_preserves_precision_and_boundaries(
         np.testing.assert_array_equal(actual.view(unsigned), expected.view(unsigned))
 
 
+@pytest.mark.parametrize("kind", ["linear", "ffn", "linear_add"])
+@pytest.mark.parametrize(
+    "encoding,packed_pairs", [(2, False), (2, True), (12, False), (14, False)]
+)
+def test_cuda_prefill_projection_uses_independent_codec_inputs(
+    tmp_path, kind, encoding, packed_pairs
+):
+    if os.environ.get("AKAS_LFM_MOE_CUDA") != "1":
+        pytest.skip("opt-in codec prefill and fused input qualification")
+    import tensor
+    from tensor.artifacts.format import read_artifact
+    from tensor.compiler.frontend.portable import export_spec
+    from akas.compilation.emit import build_artifact
+    from akas.kernels.registry import validation
+
+    p = dict(r=33, k=256, o=65, type=encoding, ggml=True, packed_pairs=packed_pairs)
+    entry, artifact = tmp_path / "projection.py", tmp_path / "projection.tbin"
+    entry.write_text(
+        "from akas.ops.linear.cuda import _packed\n"
+        "def tensor_export():\n"
+        f" return {{'kernel': _packed({p!r}, paired={kind == 'ffn'}, add_residual={kind == 'linear_add'})}}\n"
+    )
+    definition = export_spec(entry, None)["kernel"]
+    names = [str(buffer.data.name) for buffer in definition.buffer_map.values()]
+    assert len(names) == len(set(names)), "codec views renamed distinct input pointers"
+    build_artifact(entry, artifact, provider="cuda", target="sm_89")
+    metadata, _ = read_artifact(artifact)
+    case = validation(kind, p, metadata["arguments"])
+    with tensor.Device(provider="cuda") as device, ExitStack() as stack:
+        buffers = {
+            name: device.from_numpy(value) for name, value in case.arguments.items()
+        }
+        for buffer in buffers.values():
+            stack.callback(buffer.release)
+        module = stack.enter_context(device.load(artifact))
+        module.launch(*[buffers[arg["name"]] for arg in metadata["arguments"]])
+        np.testing.assert_allclose(
+            buffers["out"].to_numpy(),
+            case.expected["out"],
+            rtol=case.rtol,
+            atol=case.atol,
+        )
+
+
 def cases():
     for name in ("q8", "q16"):
         yield f"quantize_{name}", dict(r=3, k=256), "reference"

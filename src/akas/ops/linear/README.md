@@ -73,6 +73,12 @@ row and reusable decoded FP16 tiles for GEMM, and accumulates in F32. Payloads
 and required scale buffers are explicit inputs; Q8/Q16 correction sums are only
 needed by packed integer consumers. No full decoded operand is allocated.
 
+CUDA's existing packed prefill path also requests weight `read_tile` and
+`read_pair` through this binding. Linear, paired FFN and residual projections
+therefore share format-specific load optimizations while retaining their
+tensor-core schedules and fused epilogues. Codec word views preserve each
+input's pointer identity, including the two separate FFN weight matrices.
+
 Existing tuned packed/integer/native FP8 registrations remain separate and keep
 their original algorithms. This common consumer supplies compatibility; it is
 not a claim that every shape outperforms a specialized native kernel. FP16

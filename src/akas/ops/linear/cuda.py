@@ -450,15 +450,19 @@ def _packed(p, paired=False, add_residual=False):
     """FP16 tensor-core operands, FP32 accumulation, and paired FFN tiles."""
     import tilelang.language as T
     from akas.ops.linear.kernel import cuda_abi as projection_abi
-    from akas.quantization.weights.ggml.cuda import pair_decoder
-    from akas.quantization.weights.ggml.kernel import weight_decoder
+    from akas.quantization.weights import bind
 
-    r, k, o, q = (p[n] for n in ("r", "k", "o", "type"))
+    r, k, o = (p[n] for n in ("r", "k", "o"))
     bm, bn, bk = (p.get("block_m", 32), p.get("block_n", 64), p.get("block_k", 32))
     stages, threads = (p.get("stages", 2), p.get("threads", 128))
     packed = p.get("packed_pairs", False)
-    read_weight = weight_decoder(q, k)
-    read_pair = pair_decoder(q, k) if packed else None
+    binding = bind(p, (o, k), provider="cuda")
+    read_tile = binding.require("read_tile")
+    pair = binding.require("read_pair") if packed else None
+
+    @T.macro
+    def read_pair(w, row, column):
+        return pair((w,), row, column)
 
     @T.macro
     def load_rhs(w, rhs, bx, tile, i, j):
@@ -474,10 +478,6 @@ def _packed(p, paired=False, add_residual=False):
             else:
                 rhs[i, j * 2] = 0
                 rhs[i, j * 2 + 1] = 0
-        elif bx * bn + i < o:
-            rhs[i, j] = read_weight(w, bx * bn + i, tile * bk + j)
-        else:
-            rhs[i, j] = 0
 
     @T.macro
     def matmul(x, w, out, w2=None, residual=None):
@@ -495,10 +495,15 @@ def _packed(p, paired=False, add_residual=False):
                     lhs[i, j] = T.if_then_else(
                         by * bm + i < r, x[(by * bm + i) * k + tile * bk + j], 0
                     )
-                for i, j in T.Parallel(bn, bk // 2 if packed else bk):
-                    load_rhs(w, rhs, bx, tile, i, j)
+                if packed:
+                    for i, j in T.Parallel(bn, bk // 2):
+                        load_rhs(w, rhs, bx, tile, i, j)
+                        if paired:
+                            load_rhs(w2, rhs2, bx, tile, i, j)
+                else:
+                    read_tile((w,), rhs, bx * bn, tile * bk)
                     if paired:
-                        load_rhs(w2, rhs2, bx, tile, i, j)
+                        read_tile((w2,), rhs2, bx * bn, tile * bk)
                 T.gemm(lhs, rhs, accum, transpose_B=True)
                 if paired:
                     T.gemm(lhs, rhs2, accum2, transpose_B=True)

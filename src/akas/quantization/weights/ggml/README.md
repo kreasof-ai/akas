@@ -42,6 +42,8 @@ the warp reduction. A word view and funnel
 shift read the original alternating halfword-aligned blocks; they copy no
 weights and preserve the GGUF storage size. This capability is distinct from
 the F32-operand `dot`, and is checked by encoding and geometry before selection.
+Adjacent FP16 pairs decode coefficients before the continuous F32 lane sum;
+this changes neither the operands' rounded values nor their addition order.
 
 For aligned FP16 matrix tiles, Q4_0 `read_tile` unpacks eight coefficients from
 word loads and computes adjacent pairs with FP16 arithmetic. The resulting
@@ -50,6 +52,8 @@ signed zero and subnormal scales. Other tile precisions and unaligned columns
 keep scalar decoding. Single unpermuted weight pieces retain this tile reader;
 segmented or permuted layouts keep the composed reader. Operations request tile
 access without interpreting the encoding or allocating a decoded weight cache.
+Word views use `T.meta_var` so a macro-local alias cannot rename two distinct
+input pointers to the same name in a fused kernel.
 
 Q4_1 and Q5_K supply host, scalar and tile decoding on both providers. They have no native
 packed-pair or lane-dot specialization yet. Fused projection/expert consumers use

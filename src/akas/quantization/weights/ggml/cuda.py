@@ -282,7 +282,10 @@ def packed_tile_half(shape, read):
         ):
             if column % 32 == 0:
                 T.import_source(_Q4_HALF2_SOURCE)
-                words = T.view(encoded[0], (words_count,), dtype="uint32")
+                # Views are compile-time aliases. Naming the view as a device
+                # variable renames its input pointer and collides when a fused
+                # kernel binds two weight matrices through this same macro.
+                words = T.meta_var(T.view(encoded[0], (words_count,), dtype="uint32"))
                 for i, j in T.Parallel(destination.shape[0], destination.shape[1] // 8):
                     local = j // 4 * 32 + j % 4 * 4
                     channel = column + local
@@ -376,14 +379,10 @@ def packed_dot_half(shape):
 
     @T.macro
     def dot(encoded, x, offset, tile, lane, row, previous):
-        words = T.view(encoded[0], (words_count,), dtype="uint32")
+        T.import_source(_Q4_HALF2_SOURCE)
+        words = T.meta_var(T.view(encoded[0], (words_count,), dtype="uint32"))
         base = row * row_bytes + (tile * 8 + lane // 4) * 18
-        scale = T.cast(
-            T.reinterpret(
-                "float16", T.cast(words[base // 4] >> (base % 4 * 8), "uint16")
-            ),
-            "float32",
-        )
+        scale = T.cast(words[base // 4] >> (base % 4 * 8), "uint16")
         address = base + 2 + lane % 4 * 4
         packed = T.call_extern(
             "uint32",
@@ -392,6 +391,32 @@ def packed_dot_half(shape):
             words[(address + 3) // 4],
             T.cast(address % 4 * 8, "uint32"),
         )
+        coefficients = T.alloc_local((8,), "float32")
+        for half in T.unroll(2):
+            lo_bits = T.call_extern(
+                "uint32",
+                "akas_q4_adjacent_pair",
+                packed >> (half * 16),
+                T.cast(scale, "uint32"),
+            )
+            hi_bits = T.call_extern(
+                "uint32",
+                "akas_q4_adjacent_pair",
+                packed >> (half * 16 + 4),
+                T.cast(scale, "uint32"),
+            )
+            coefficients[half * 2] = T.cast(
+                T.reinterpret("float16", T.cast(lo_bits, "uint16")), "float32"
+            )
+            coefficients[half * 2 + 1] = T.cast(
+                T.reinterpret("float16", T.cast(lo_bits >> 16, "uint16")), "float32"
+            )
+            coefficients[4 + half * 2] = T.cast(
+                T.reinterpret("float16", T.cast(hi_bits, "uint16")), "float32"
+            )
+            coefficients[5 + half * 2] = T.cast(
+                T.reinterpret("float16", T.cast(hi_bits >> 16, "uint16")), "float32"
+            )
         j = offset + tile * 256 + lane // 4 * 32 + lane % 4 * 4
         lo = T.alloc_local((4,), "float32")
         hi = T.alloc_local((4,), "float32")
@@ -401,23 +426,9 @@ def packed_dot_half(shape):
         result = T.alloc_var("float32")
         result = previous
         for component in T.unroll(4):
-            coefficient = T.cast(
-                T.cast(
-                    scale * (T.cast(packed >> (component * 8) & 15, "float32") - 8),
-                    "float16",
-                ),
-                "float32",
-            )
-            result += lo[component] * coefficient
+            result += lo[component] * coefficients[component]
         for component in T.unroll(4):
-            coefficient = T.cast(
-                T.cast(
-                    scale * (T.cast(packed >> (component * 8 + 4) & 15, "float32") - 8),
-                    "float16",
-                ),
-                "float32",
-            )
-            result += hi[component] * coefficient
+            result += hi[component] * coefficients[component + 4]
         return result
 
     return dot

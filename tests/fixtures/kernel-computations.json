@@ -175,6 +175,23 @@
         "launch:c8a5e5f3ed9a78f8eef2a05ac98d4de61eca30d743e55b8682aff679b1a07852",
         "launch:d4b779f5eb0b5a2003942263529157500d9a34da819658767ae6b980faf89fb1",
         "launch:dc559da38078616646f86ffe4b230ea487b4862a414e72d59b984a65a3063168"
+      ],
+      "qualified_replacements": [
+        {
+          "original": [
+            "inline:a05d90a2e97f17f44a87cc1eec1d772d006bd954541f830079da6fef79fec5a5",
+            "launch:158b64f8b186d23c9ccddd7f7758883d95d2a86e232071989c7c6e695d3d60d8"
+          ],
+          "replacement": [
+            "inline:58f11c7ac0c9c48e8a51b91a7dbf26e5180861026a60adb0372d34f986755746",
+            "launch:0a3e52fee229b9ebb69a87e5026d2693497f026b50fe6617aaccc13ab5b700a5"
+          ],
+          "reason": "CUDA packed prefill stages coefficients through the quantization codec instead of per-element scalar reads; tensor-core arithmetic and epilogues are unchanged.",
+          "qualification_run": "20261020145214095534-adf8104a",
+          "qualification_tests": [
+            "tests/test_quantization_codecs.py::test_cuda_prefill_projection_uses_independent_codec_inputs"
+          ]
+        }
       ]
     },
     {
