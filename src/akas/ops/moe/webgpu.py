@@ -6,7 +6,7 @@ IMPLEMENTATIONS = tuple((choice for choice in _CHOICES if choice.provider == "we
 
 
 def expert_swiglu(spec, schedule):
-    from .kernel import expert_swiglu as portable
+    from .kernel import _expert_swiglu as portable
 
     return portable(spec, schedule, provider="webgpu")
 

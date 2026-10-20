@@ -29819,6 +29819,30 @@
       ],
       "search_phases": 4,
       "path": "runs/20261020181402894849-f6b904e9/run.json"
+    },
+    {
+      "id": "20261020182425046020-e2b51e58",
+      "started_at": "2026-10-20T18:24:25.046020Z",
+      "status": "failed",
+      "revision": "836e733f80dfeaf5e00875a3aa351da473856106",
+      "dirty": false,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "fp8",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Full eight-context CUDA benchmark with compiler-owned FP8 prefill staging and exact fused expert decode; shape-matched native/Engine/HTTP prompts",
+        "parent_run": "20261020172334890603-b8fd2763"
+      },
+      "purpose": "benchmark",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020182425046020-e2b51e58/run.json"
     }
   ]
 }

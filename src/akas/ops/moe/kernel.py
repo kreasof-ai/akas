@@ -1,7 +1,12 @@
 """Shared TileLang computations for moe."""
 
 
-def expert_swiglu(spec, schedule, *, provider="cuda"):
+def expert_swiglu(spec, schedule):
+    """Portable CUDA definition with the common operation factory signature."""
+    return _expert_swiglu(spec, schedule, provider="cuda")
+
+
+def _expert_swiglu(spec, schedule, *, provider):
     """Portable single-token gate/up/SwiGLU with independently bound codecs."""
     import tilelang.language as T
     from akas.kernels.kernel import Tensor, kernel, output

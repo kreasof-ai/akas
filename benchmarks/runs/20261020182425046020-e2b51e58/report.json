@@ -1,0 +1,72 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "benchmark",
+    "protocol": "native-token-step-v2",
+    "provider": "cuda",
+    "target": "sm_89",
+    "device": {
+      "name": "NVIDIA L4",
+      "provider": "cuda"
+    },
+    "model": "akas.models.lfm2.model:LFM2MoE",
+    "definition": "akas.models.lfm2.model:LFM2MoE",
+    "checkpoint": "/home/sagemaker-user/akas/build/checkpoints/lfm2.5-24b-a2b/q4_0.gguf",
+    "checkpoint_sha256": "d1c03f73ecaf61017d70419eec9e5dc0b05d50ae26c23d522829b934fbabf8a5",
+    "weight_format": "q4_0",
+    "weight_dtype": "gguf-q4_0-mixed",
+    "activation_dtype": "float32",
+    "kv_dtype": "fp8",
+    "mode": "ar",
+    "chunk": 4096,
+    "graphs": true,
+    "warmup": 1,
+    "repeats": 3,
+    "output_tokens": 128,
+    "ignore_eos": true,
+    "policy": {
+      "attention": {
+        "splits": 64,
+        "decoded_kv": true
+      },
+      "moe": {
+        "fused_swiglu": true
+      }
+    },
+    "shape_timeout_seconds": 120,
+    "cpu_reference_threads": 4,
+    "prompt_generation": "17 + batch * 4099 + prefix_tokens",
+    "requested_prefixes": [
+      32,
+      512,
+      2048,
+      8192,
+      16384,
+      32768,
+      65536,
+      130944
+    ],
+    "same_precision_reference_run_id": "20261020172334890603-b8fd2763",
+    "precision_reference_run_id": "20261020134751392443-6b1662b8",
+    "qualification": "Independent codec/operation references; exact 128-token native/Engine/HTTP consistency on every shape; unchanged FP8 model reference at 32, 8192 and 130944; teacher-forced F16 drift probe at those three boundaries, not corpus accuracy.",
+    "kernel_evidence_runs": [
+      "20261020174844718413-384c5b14",
+      "20261020174911320354-58e32599"
+    ],
+    "performance_target": {
+      "prefill_speedup": 2,
+      "decode_speedup": 1.5,
+      "baselines": [
+        "20261018202355478915-6adad97d",
+        "20261018203703691867-28072a0a"
+      ],
+      "precision_comparison": "FP8 KV versus F16 KV, reported separately",
+      "phase_comparison": "AKAS synchronized native phases versus llama.cpp server eval phases; HTTP measurements reported separately"
+    },
+    "error": "KeyboardInterrupt: ",
+    "traceback": "Traceback (most recent call last):\n  File \"/home/sagemaker-user/akas/build/lfm-moe/cuda-full.py\", line 101, in <module>\n    compile_program(loaded, PROGRAM, definition=LFM2MoE.compose,\n  File \"/home/sagemaker-user/akas/src/akas/compilation/compile.py\", line 349, in compile_program\n    built = build(\n            ^^^^^^\n  File \"/home/sagemaker-user/akas/src/akas/compilation/compile.py\", line 36, in build\n    schedules, report = qualify(\n                        ^^^^^^^^\n  File \"/home/sagemaker-user/akas/src/akas/compilation/tuning.py\", line 709, in qualify\n    result = tune(\n             ^^^^^\n  File \"/home/sagemaker-user/akas/src/akas/compilation/tuning.py\", line 111, in tune\n    measured = measure(base, {**p, **preset}, workload)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sagemaker-user/akas/src/akas/compilation/tuning.py\", line 517, in measure_candidate\n    record = compile_kernel(\n             ^^^^^^^^^^^^^^^\n  File \"/home/sagemaker-user/akas/src/akas/compilation/emit.py\", line 90, in compile_kernel\n    build_artifact(\n  File \"/home/sagemaker-user/akas/src/akas/compilation/emit.py\", line 36, in build_artifact\n    return tensor.build(\n           ^^^^^^^^^^^^^\n  File \"/home/sagemaker-user/akas/.venv/lib/python3.12/site-packages/tensor/__init__.py\", line 41, in build\n    return _build_artifact(\n           ^^^^^^^^^^^^^^^^\n  File \"/home/sagemaker-user/akas/.venv/lib/python3.12/site-packages/tensor/compiler/build.py\", line 26, in build_artifact\n    return build(\n           ^^^^^^\n  File \"/home/sagemaker-user/akas/.venv/lib/python3.12/site-packages/tensor/compiler/cuda/build.py\", line 185, in build_cuda\n    cubin = backend.compile(cuda, target, includes)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sagemaker-user/akas/.venv/lib/python3.12/site-packages/tensor/compiler/cuda/nvrtc.py\", line 150, in compile\n    status = self.lib.nvrtcCompileProgram(program, len(encoded), pointers)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nKeyboardInterrupt\n",
+    "cpu_peak_rss_bytes": 1211531264
+  },
+  "results": []
+}
