@@ -1,0 +1,459 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "kernel",
+    "protocol": "ordered-webgpu-pass-profile-v1",
+    "provider": "webgpu",
+    "target": "webgpu-portable-v1",
+    "device": {
+      "name": "NVIDIA L4",
+      "provider": "webgpu"
+    },
+    "operand_dtype": "float32",
+    "accumulator_dtype": "float32",
+    "qualification": "Independent CPU F64 products, strided outputs and non-multiple tails; unchanged input bytes. Output grouping preserves per-lane sums; different thread counts alter F32 summation geometry. Warm and cold-cache proxy GPU timings bracketed by AOT before/after; no serving claim.",
+    "checks": [
+      {
+        "kind": "small",
+        "geometry": "original-before",
+        "parameters": {
+          "r": 3,
+          "k": 257,
+          "o": 7,
+          "output_stride": 15,
+          "output_offset": 3,
+          "matrix_output": true
+        },
+        "cpu_reference": true,
+        "immutable_inputs": true,
+        "bitwise": true,
+        "maximum_absolute_error": 1.1920928955078125e-07
+      },
+      {
+        "kind": "full",
+        "geometry": "original-before",
+        "parameters": {
+          "r": 1,
+          "k": 2048,
+          "o": 64
+        },
+        "cpu_reference": true,
+        "immutable_inputs": true,
+        "bitwise": true,
+        "maximum_absolute_error": 3.5762786865234375e-07,
+        "warm": {
+          "gpu_ms": 0.046048000000000006,
+          "samples_ms": [
+            0.046176,
+            0.046208,
+            0.04656,
+            0.04624,
+            0.046016,
+            0.045824,
+            0.04608,
+            0.045856,
+            0.045952,
+            0.045888,
+            0.046208,
+            0.046016
+          ]
+        },
+        "cold": {
+          "gpu_ms": 0.098496,
+          "samples_ms": [
+            0.098816,
+            0.098816,
+            0.098304,
+            0.098464,
+            0.098304,
+            0.098016,
+            0.097824,
+            0.098368,
+            0.098912,
+            0.098528,
+            0.098592,
+            0.098528
+          ]
+        }
+      },
+      {
+        "kind": "full",
+        "geometry": "4-32",
+        "parameters": {
+          "r": 1,
+          "k": 2048,
+          "o": 64
+        },
+        "cpu_reference": true,
+        "immutable_inputs": true,
+        "bitwise": true,
+        "maximum_absolute_error": 3.5762786865234375e-07,
+        "warm": {
+          "gpu_ms": 0.046368,
+          "samples_ms": [
+            0.046368,
+            0.046432,
+            0.046656,
+            0.046208,
+            0.045792,
+            0.046368,
+            0.046752,
+            0.046592,
+            0.045792,
+            0.046816,
+            0.045824,
+            0.045984
+          ]
+        },
+        "cold": {
+          "gpu_ms": 0.098384,
+          "samples_ms": [
+            0.098464,
+            0.099072,
+            0.097856,
+            0.09856,
+            0.098336,
+            0.098112,
+            0.097664,
+            0.098432,
+            0.09808,
+            0.09856,
+            0.098976,
+            0.098272
+          ]
+        }
+      },
+      {
+        "kind": "full",
+        "geometry": "1-32",
+        "parameters": {
+          "r": 1,
+          "k": 2048,
+          "o": 64
+        },
+        "cpu_reference": true,
+        "immutable_inputs": true,
+        "bitwise": true,
+        "maximum_absolute_error": 3.5762786865234375e-07,
+        "warm": {
+          "gpu_ms": 0.013264,
+          "samples_ms": [
+            0.01376,
+            0.013248,
+            0.013344,
+            0.013728,
+            0.013632,
+            0.012832,
+            0.0136,
+            0.01328,
+            0.012736,
+            0.013184,
+            0.012864,
+            0.0128
+          ]
+        },
+        "cold": {
+          "gpu_ms": 0.028464,
+          "samples_ms": [
+            0.028768,
+            0.028448,
+            0.028512,
+            0.027776,
+            0.02848,
+            0.02864,
+            0.028768,
+            0.028256,
+            0.028224,
+            0.028,
+            0.028736,
+            0.028256
+          ]
+        }
+      },
+      {
+        "kind": "full",
+        "geometry": "1-64",
+        "parameters": {
+          "r": 1,
+          "k": 2048,
+          "o": 64
+        },
+        "cpu_reference": true,
+        "immutable_inputs": true,
+        "bitwise": false,
+        "maximum_absolute_error": 2.384185791015625e-07,
+        "warm": {
+          "gpu_ms": 0.008015999999999999,
+          "samples_ms": [
+            0.007584,
+            0.008064,
+            0.008128,
+            0.008096,
+            0.007872,
+            0.007392,
+            0.008448,
+            0.008416,
+            0.00752,
+            0.007968,
+            0.008224,
+            0.007904
+          ]
+        },
+        "cold": {
+          "gpu_ms": 0.016928,
+          "samples_ms": [
+            0.016352,
+            0.016608,
+            0.016832,
+            0.016896,
+            0.016768,
+            0.017056,
+            0.017248,
+            0.01696,
+            0.017408,
+            0.017248,
+            0.017056,
+            0.016544
+          ]
+        }
+      },
+      {
+        "kind": "full",
+        "geometry": "1-128",
+        "parameters": {
+          "r": 1,
+          "k": 2048,
+          "o": 64
+        },
+        "cpu_reference": true,
+        "immutable_inputs": true,
+        "bitwise": false,
+        "maximum_absolute_error": 3.8743019104003906e-07,
+        "warm": {
+          "gpu_ms": 0.00544,
+          "samples_ms": [
+            0.005696,
+            0.005536,
+            0.005056,
+            0.005408,
+            0.00528,
+            0.005088,
+            0.005728,
+            0.005728,
+            0.005024,
+            0.005472,
+            0.00512,
+            0.005568
+          ]
+        },
+        "cold": {
+          "gpu_ms": 0.010976,
+          "samples_ms": [
+            0.011296,
+            0.010784,
+            0.010752,
+            0.010752,
+            0.010592,
+            0.011168,
+            0.011424,
+            0.010656,
+            0.011296,
+            0.01152,
+            0.010752,
+            0.0112
+          ]
+        }
+      },
+      {
+        "kind": "full",
+        "geometry": "1-256",
+        "parameters": {
+          "r": 1,
+          "k": 2048,
+          "o": 64
+        },
+        "cpu_reference": true,
+        "immutable_inputs": true,
+        "bitwise": false,
+        "maximum_absolute_error": 2.8312206268310547e-07,
+        "warm": {
+          "gpu_ms": 0.003552,
+          "samples_ms": [
+            0.003392,
+            0.003616,
+            0.003968,
+            0.00336,
+            0.003296,
+            0.003488,
+            0.003712,
+            0.00304,
+            0.003392,
+            0.003712,
+            0.003616,
+            0.003904
+          ]
+        },
+        "cold": {
+          "gpu_ms": 0.0076,
+          "samples_ms": [
+            0.008064,
+            0.008,
+            0.00736,
+            0.007456,
+            0.00816,
+            0.007488,
+            0.007392,
+            0.00768,
+            0.00768,
+            0.007968,
+            0.00752,
+            0.007264
+          ]
+        }
+      },
+      {
+        "kind": "full",
+        "geometry": "2-128",
+        "parameters": {
+          "r": 1,
+          "k": 2048,
+          "o": 64
+        },
+        "cpu_reference": true,
+        "immutable_inputs": true,
+        "bitwise": false,
+        "maximum_absolute_error": 3.8743019104003906e-07,
+        "warm": {
+          "gpu_ms": 0.008704,
+          "samples_ms": [
+            0.008544,
+            0.00896,
+            0.00832,
+            0.008992,
+            0.008928,
+            0.008448,
+            0.008,
+            0.009024,
+            0.008928,
+            0.00816,
+            0.008128,
+            0.008864
+          ]
+        },
+        "cold": {
+          "gpu_ms": 0.017391999999999998,
+          "samples_ms": [
+            0.017376,
+            0.016928,
+            0.017184,
+            0.01776,
+            0.017792,
+            0.017408,
+            0.016992,
+            0.01728,
+            0.017312,
+            0.017536,
+            0.01776,
+            0.01776
+          ]
+        }
+      },
+      {
+        "kind": "full",
+        "geometry": "2-256",
+        "parameters": {
+          "r": 1,
+          "k": 2048,
+          "o": 64
+        },
+        "cpu_reference": true,
+        "immutable_inputs": true,
+        "bitwise": false,
+        "maximum_absolute_error": 2.8312206268310547e-07,
+        "warm": {
+          "gpu_ms": 0.005696,
+          "samples_ms": [
+            0.005664,
+            0.005504,
+            0.005312,
+            0.006368,
+            0.006016,
+            0.005632,
+            0.006176,
+            0.005984,
+            0.006272,
+            0.005728,
+            0.00544,
+            0.005344
+          ]
+        },
+        "cold": {
+          "gpu_ms": 0.01176,
+          "samples_ms": [
+            0.011424,
+            0.012064,
+            0.01136,
+            0.01216,
+            0.01168,
+            0.012256,
+            0.011456,
+            0.011744,
+            0.012128,
+            0.012288,
+            0.011776,
+            0.011712
+          ]
+        }
+      },
+      {
+        "kind": "full",
+        "geometry": "original-after",
+        "parameters": {
+          "r": 1,
+          "k": 2048,
+          "o": 64
+        },
+        "cpu_reference": true,
+        "immutable_inputs": true,
+        "bitwise": true,
+        "maximum_absolute_error": 3.5762786865234375e-07,
+        "warm": {
+          "gpu_ms": 0.046208,
+          "samples_ms": [
+            0.046432,
+            0.045984,
+            0.045952,
+            0.046432,
+            0.046272,
+            0.04656,
+            0.046496,
+            0.046144,
+            0.045728,
+            0.04576,
+            0.046688,
+            0.045696
+          ]
+        },
+        "cold": {
+          "gpu_ms": 0.09844800000000001,
+          "samples_ms": [
+            0.098592,
+            0.098624,
+            0.098176,
+            0.0984,
+            0.098368,
+            0.098496,
+            0.098592,
+            0.098496,
+            0.097888,
+            0.098048,
+            0.098176,
+            0.100512
+          ]
+        }
+      }
+    ]
+  },
+  "results": []
+}
