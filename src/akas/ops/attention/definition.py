@@ -1022,3 +1022,36 @@ IMPLEMENTATIONS += (
         ),
     ),
 )
+
+
+IMPLEMENTATIONS += (
+    Implementation(
+        "attention",
+        "akas.ops.attention.cuda",
+        "reference",
+        factory="packed_prefill",
+        name="attention.cuda.packed_prefill",
+        priority=40,
+        defaults=(
+            ("prefill_precision", "float16"),
+            ("query_rows", 64),
+            ("key_rows", 64),
+            ("stages", 1),
+            ("threads", 128),
+            ("pipeline_group", 8),
+            ("group_queries", True),
+        ),
+        space=(("query_rows", (64, 128)), ("stages", (1, 2)), ("threads", (128, 256))),
+        reference_keys=("key_rows",),
+        accepts=lambda p: (
+            p.get("optimized", False)
+            and p.get("chunk", 1) > 1
+            and p.get("d") == 64
+            and p.get("kv_dtype") not in ("float16", "float32")
+            and p["h"] % p["kh"] == 0
+            and p["h"] // p["kh"] in (1, 2, 4, 8)
+            and p["capacity"] >= 4096
+            and _mma_cache_supported(p)
+        ),
+    ),
+)

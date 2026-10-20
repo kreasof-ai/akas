@@ -28314,6 +28314,54 @@
       "shapes": [],
       "search_phases": 0,
       "path": "runs/20261020130903485764-a35a480a/run.json"
+    },
+    {
+      "id": "20261020132400026841-b4cb3d30",
+      "started_at": "2026-10-20T13:24:00.026841Z",
+      "status": "passed",
+      "revision": "a8148508a9e0e6337898f9d78d1eb39271aaf357",
+      "dirty": false,
+      "hardware": "NVIDIA L4",
+      "model": "",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": null,
+      "weight_format": null,
+      "change": {
+        "kind": "algorithm",
+        "description": "Restore prefill occupancy with one staging buffer and compare grouped versus per-head queries",
+        "parent_run": null
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020132400026841-b4cb3d30/run.json"
+    },
+    {
+      "id": "20261020132626112696-70569d50",
+      "started_at": "2026-10-20T13:26:26.112696Z",
+      "status": "passed",
+      "revision": "a8148508a9e0e6337898f9d78d1eb39271aaf357",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "fp8",
+      "weight_format": null,
+      "change": {
+        "kind": "configuration",
+        "description": "Measure packed versus scalar FP8 prefill and refine long-context decode geometry",
+        "parent_run": null
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020132626112696-70569d50/run.json"
     }
   ]
 }

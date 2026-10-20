@@ -1,6 +1,7 @@
 """Compile kernel declarations through Tensor and emit checked artifacts."""
 
 import os
+from functools import lru_cache
 from pathlib import Path
 
 from akas.artifacts.fingerprint import _compiler_identity
@@ -116,6 +117,31 @@ def source_dependencies(module, *, dependencies=()):
     return dependency_closure(module, dependencies)
 
 
+@lru_cache(maxsize=512)
+def _source_imports(package, text):
+    """Cache parsed imports by content; edits cannot reuse an outdated scan."""
+    import ast
+
+    imports = []
+    for node in ast.walk(ast.parse(text)):
+        if isinstance(node, ast.Import):
+            imported = [alias.name for alias in node.names]
+        elif isinstance(node, ast.ImportFrom):
+            if node.level:
+                parts = package.split(".")
+                base = ".".join(parts[: len(parts) - node.level + 1])
+                base += "." + node.module if node.module else ""
+            else:
+                base = node.module or ""
+            imported = [base, *(base + "." + alias.name for alias in node.names)]
+        else:
+            continue
+        imports.extend(
+            item for item in imported if item.startswith(("akas.", "tensor.compiler."))
+        )
+    return tuple(imports)
+
+
 def dependency_closure(module, dependencies):
     """Hash the selected factory's imports rather than unrelated executors.
 
@@ -123,7 +149,6 @@ def dependency_closure(module, dependencies):
     so local codec sources are included when a factory uses the format API.
     Explicit dependencies cover factories that import a module supplied as data.
     """
-    import ast
     from importlib.util import find_spec
 
     pending = [module, *dependencies]
@@ -153,24 +178,7 @@ def dependency_closure(module, dependencies):
                 if p.stem != "__init__"
             )
         package = name if path.name == "__init__.py" else name.rpartition(".")[0]
-        for node in ast.walk(ast.parse(path.read_text())):
-            if isinstance(node, ast.Import):
-                imported = [alias.name for alias in node.names]
-            elif isinstance(node, ast.ImportFrom):
-                if node.level:
-                    parts = package.split(".")
-                    base = ".".join(parts[: len(parts) - node.level + 1])
-                    base += "." + node.module if node.module else ""
-                else:
-                    base = node.module or ""
-                imported = [base, *(base + "." + alias.name for alias in node.names)]
-            else:
-                continue
-            pending.extend(
-                item
-                for item in imported
-                if item.startswith(("akas.", "tensor.compiler."))
-            )
+        pending.extend(_source_imports(package, path.read_text()))
     return tuple(sorted(visited - {module}))
 
 

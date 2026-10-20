@@ -66,6 +66,14 @@ scales apply during decoding, never as one global factor. Unsupported codecs
 retain their compatible implementations. Report native F16 KV and FP8 KV as
 separate precision configurations, including numerical drift versus F16.
 
+Encoded-cache `packed_prefill` stages each encoded K/V tile and its scales,
+decodes into FP16 shared memory, then shares that tile across grouped queries.
+It retains FP32 softmax statistics and accumulation. Query tile size, stage
+count and threads are explicit schedule choices; fewer staging buffers can
+improve occupancy. Native F16 prefill keeps its direct-load implementation.
+The maximum **live** query position determines the cache extent, so inactive
+query tails cannot expose future cache entries to the value product.
+
 Complete groups of four key tiles use `T.Pipelined`. At most four final tiles
 use guarded loads, keeping unused or nonfinite future cache entries out of PV.
 Separating the tail also avoids asking the compiler to pipeline a dynamically

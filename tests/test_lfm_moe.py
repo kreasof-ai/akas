@@ -747,3 +747,76 @@ def test_cuda_parallel_route_compaction(tmp_path, rows):
     test_moe_kernel_device_qualification(
         tmp_path, "cuda", "quantized_routes", dict(r=rows, top=4, experts=64)
     )
+
+
+def test_cuda_fp8_model_matches_independent_oracle_in_nonzero_slot(tmp_path):
+    if os.environ.get("AKAS_LFM_MOE_CUDA") != "1":
+        pytest.skip("opt-in FP8 MoE model qualification")
+    import tensor
+    from akas.compilation.compile import compile_program
+    from akas.compilation.tuning import SearchSettings
+    from akas.execution.executor import Executor
+    from akas.quantization._shared.e4m3 import encode_storage, decode_storage
+
+    path = fixture(tmp_path / "moe.gguf", dense_layers=0, context=8192)
+    loaded = LFM2MoE.checkpoint_type(path, tokenizer=False)
+    out = tmp_path / "program"
+    with tensor.Device(provider="cuda") as device:
+        compile_program(
+            loaded,
+            out,
+            definition=LFM2MoE.compose,
+            geometries=[(1, 1), (1, 4)],
+            max_requests=2,
+            max_context=8192,
+            provider="cuda",
+            device=device,
+            model_options=dict(kv_dtype="fp8", optimized=True),
+            search_settings=SearchSettings(budget=1, samples=1, repeats=1, warmup=0),
+        )
+        with Executor.from_program(loaded, out, device) as executor:
+            slot = executor.admit_at(1)
+            oracle = Oracle(path, provider="cuda", context=8192)
+            # Preserve unencoded F32 values in this CPU oracle; the callback
+            # independently encodes/decodes every per-position FP8 block.
+            oracle.caches = {
+                i: tuple(np.zeros_like(a, dtype="float32") for a in pair)
+                for i, pair in oracle.caches.items()
+            }
+
+            def attention(q, keys, values, start):
+                def staged(cache):
+                    factor = np.maximum(
+                        np.abs(cache).max(-1, keepdims=True), np.float32(1e-12)
+                    ) / np.float32(448)
+                    return (
+                        (decode_storage(encode_storage(cache / factor)) * factor)
+                        .astype("float16")
+                        .astype("float64")
+                    )
+
+                q = q.astype("float16").astype("float64").transpose(1, 0, 2)
+                keys, values = staged(keys), staged(values)
+                scores = (q @ keys.transpose(0, 2, 1)) / 8
+                valid = (
+                    np.arange(keys.shape[1])[None, :]
+                    <= np.arange(start, start + q.shape[1])[:, None]
+                )
+                scores = np.where(valid[None], scores, -np.inf)
+                probabilities = np.exp(scores - scores.max(-1, keepdims=True))
+                return (
+                    probabilities.astype("float16").astype("float64") @ values
+                ) / probabilities.sum(-1, keepdims=True)
+
+            for sequence, chunk in (([1, 2, 3, 4], 4), ([5], 1), ([6], 1)):
+                expected = oracle._chunk(
+                    np.array(sequence, dtype="int32"),
+                    projection_half=False,
+                    head_half=False,
+                    attention=attention,
+                )
+                executor.run_batch([slot], [sequence], chunk=chunk)
+                actual = executor.last_frame.feature("logits").to_numpy().reshape(-1)
+                np.testing.assert_allclose(actual, expected, rtol=0.02, atol=0.003)
+            executor.release(slot)
+            assert executor.admit_at(1) == 1 and executor.positions[1] == 0

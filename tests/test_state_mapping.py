@@ -193,7 +193,11 @@ def test_mapped_restore_flattens_view_indices_using_view_shape(
     from akas.kernels.contracts import Implementation
 
     catalog = (
-        (Implementation("restore", "gdn.cuda.verification", "block-fp8", factory="kernel"),)
+        (
+            Implementation(
+                "restore", "gdn.cuda.verification", "block-fp8", factory="kernel"
+            ),
+        )
         if implementation == "view"
         else None
     )
@@ -268,7 +272,12 @@ def test_read_only_state_keeps_mapping_after_simplification(capacity):
     from support.migration import factory as _historical_factory
     from akas.compilation.transforms.state import map_state
 
-    original = _historical_factory('akas.ops.attention.reference', 'make_kernel', "rope", dict(r=1, h=1, d=64, theta=10000.0))
+    original = _historical_factory(
+        "akas.ops.attention.reference",
+        "make_kernel",
+        "rope",
+        dict(r=1, h=1, d=64, theta=10000.0),
+    )
     import tvm
     from tvm import tirx as ir
 
@@ -277,49 +286,66 @@ def test_read_only_state_keeps_mapping_after_simplification(capacity):
     reads = []
     ir.stmt_functor.post_order_visit(
         simplified.body,
-        lambda node: reads.append(node.buffer.name)
-        if isinstance(node, ir.BufferLoad) else None,
+        lambda node: (
+            reads.append(node.buffer.name) if isinstance(node, ir.BufferLoad) else None
+        ),
     )
     assert "mapping" in reads
 
 
 @pytest.mark.parametrize("provider", ["cuda", "webgpu"])
 @pytest.mark.parametrize("capacity", [1, 4])
-def test_read_only_state_compiles_and_uses_mapped_position(tmp_path, provider, capacity):
+def test_read_only_state_compiles_and_uses_mapped_position(
+    tmp_path, provider, capacity
+):
     if os.environ.get("AKAS_LFM_REFERENCE_" + provider.upper()) != "1":
         pytest.skip("enable hardware state-pool qualification")
     import tensor
 
     source = tmp_path / "mapped_rope.py"
-    source.write_text(export_kernel(
-        "akas.compilation.transforms.state", "make_kernel",
-        "akas.ops.attention.reference", "make_kernel",
-        ("rope", dict(r=1, h=1, d=64, theta=10000.0)), (2,), 1, capacity,
-    ))
+    source.write_text(
+        export_kernel(
+            "akas.compilation.transforms.state",
+            "make_kernel",
+            "akas.ops.attention.reference",
+            "make_kernel",
+            ("rope", dict(r=1, h=1, d=64, theta=10000.0)),
+            (2,),
+            1,
+            capacity,
+        )
+    )
     rng = np.random.default_rng(512)
     x = rng.normal(size=64).astype("float32")
     slot = capacity - 1
     positions = np.zeros(capacity, dtype="int32")
     positions[slot] = 3
     angle = 3 * np.exp(-np.log(10000.0) * 2 / 64 * np.arange(32))
-    expected = np.concatenate((
-        x[:32] * np.cos(angle) - x[32:] * np.sin(angle),
-        x[:32] * np.sin(angle) + x[32:] * np.cos(angle),
-    ))
+    expected = np.concatenate(
+        (
+            x[:32] * np.cos(angle) - x[32:] * np.sin(angle),
+            x[:32] * np.sin(angle) + x[32:] * np.cos(angle),
+        )
+    )
     with tensor.Device(provider=provider) as device:
         artifact = source.with_suffix(".tbin")
         build_artifact(source, artifact, target=device.info["arch"], provider=provider)
         with device.load(artifact) as kernel:
             assert "mapping" in {arg["name"] for arg in kernel.manifest["arguments"]}
-            buffers = [device.from_numpy(x), device.zeros((1, 64), "float32"),
-                       device.from_numpy(positions),
-                       device.from_numpy(np.array([slot], dtype="int32"))]
+            buffers = [
+                device.from_numpy(x),
+                device.zeros((1, 64), "float32"),
+                device.from_numpy(positions),
+                device.from_numpy(np.array([slot], dtype="int32")),
+            ]
             try:
                 kernel.launch(*buffers)
-                np.testing.assert_allclose(buffers[1].to_numpy().ravel(), expected,
-                                           rtol=2e-5, atol=2e-5)
+                np.testing.assert_allclose(
+                    buffers[1].to_numpy().ravel(), expected, rtol=2e-5, atol=2e-5
+                )
                 if capacity == 1:
                     from akas.memory.transfer import write
+
                     previous = buffers[1].to_numpy()
                     write(device, buffers[3], np.array([-1], dtype="int32"))
                     kernel.launch(*buffers)
@@ -327,3 +353,72 @@ def test_read_only_state_compiles_and_uses_mapped_position(tmp_path, provider, c
             finally:
                 for buffer in buffers:
                     buffer.release()
+
+
+def test_state_mapping_preserves_reinterpreted_storage_dtype():
+    import tilelang.language as T
+    from tvm import tirx as ir
+    from akas.compilation.transforms.state import map_state
+
+    @T.prim_func
+    def kernel(state: T.Tensor((2, 4), "uint8"), out: T.Tensor((2, 4), "float32")):
+        with T.Kernel(2, threads=32) as row:
+            encoded = T.view(state, dtype="float8_e4m3fn")
+            for column in T.Parallel(4):
+                out[row, column] = T.cast(encoded[row, column], "float32")
+
+    mapped = map_state(kernel, (0,), rows=2, capacity=4)
+    reads = []
+    ir.stmt_functor.post_order_visit(
+        mapped.body,
+        lambda node: (
+            reads.append(node)
+            if isinstance(node, ir.BufferLoad)
+            and node.buffer.data == kernel.buffer_map[kernel.params[0]].data
+            else None
+        ),
+    )
+    assert reads and all(str(read.dtype) == "float8_e4m3fn" for read in reads)
+    assert all(tuple(int(n) for n in read.buffer.shape) == (4, 4) for read in reads)
+
+
+def test_cuda_reinterpreted_state_reads_reordered_slots(tmp_path):
+    if os.environ.get("AKAS_LFM_MOE_CUDA") != "1":
+        pytest.skip("opt-in FP8 view mapping qualification")
+    import tensor
+    from tensor.artifacts.format import read_artifact
+    from akas.quantization._shared.e4m3 import decode_storage
+
+    entry = tmp_path / "view.py"
+    entry.write_text("""
+import tilelang.language as T
+from akas.compilation.transforms.state import map_state
+def tensor_export():
+    @T.prim_func
+    def kernel(state:T.Tensor((2,4),"uint8"),out:T.Tensor((2,4),"float32")):
+        with T.Kernel(2,threads=32) as row:
+            encoded=T.view(state,dtype="float8_e4m3fn")
+            for column in T.Parallel(4):
+                out[row,column]=T.cast(encoded[row,column],"float32")
+    return {"kernel":map_state(kernel,(0,),rows=2,capacity=4)}
+""")
+    artifact = entry.with_suffix(".tbin")
+    build_artifact(entry, artifact, provider="cuda", target="sm_89")
+    values = np.array(
+        [[1, 2, 3, 4], [48, 56, 64, 72], [5, 6, 7, 8], [176, 184, 192, 200]],
+        dtype="uint8",
+    )
+    arrays = dict(
+        state=values,
+        out=np.zeros((2, 4), dtype="float32"),
+        mapping=np.array([3, 1], dtype="int32"),
+    )
+    with tensor.Device(provider="cuda") as device:
+        buffers = {name: device.from_numpy(a) for name, a in arrays.items()}
+        with device.load(artifact) as kernel:
+            kernel.launch(*[buffers[a["name"]] for a in kernel.manifest["arguments"]])
+            np.testing.assert_array_equal(
+                buffers["out"].to_numpy(), decode_storage(values[[3, 1]])
+            )
+        for buffer in buffers.values():
+            buffer.release()

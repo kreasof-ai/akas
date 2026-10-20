@@ -89,6 +89,21 @@ def map_state(kernel, states, *, rows, capacity):
                 tuple((int(d) for d in old.shape))
             ):
                 raise ValueError("state aliases must cover the complete storage")
+            if node.buffer.dtype != new.dtype:
+                source_type, view_type = (
+                    tvm.DataType(new.dtype),
+                    tvm.DataType(node.buffer.dtype),
+                )
+                if (source_type.bits, source_type.lanes) != (
+                    view_type.bits,
+                    view_type.lanes,
+                ):
+                    raise ValueError("state aliases must preserve element width")
+                # Typed views share the same allocation, but their reads must
+                # retain the view dtype (e.g. E4M3 rather than raw u8 values).
+                new = ir.decl_buffer(
+                    new.shape, node.buffer.dtype, new.name, data=new.data
+                )
             index = indices(node.indices, node.buffer, new, stride)
             if isinstance(node, ir.BufferLoad):
                 return ir.BufferLoad(new, index)

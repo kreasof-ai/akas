@@ -39,9 +39,16 @@ optimizations. Operation registrations and rewrite rules live in each operation'
 | `phases.py` | Describe token phases and proposal-independent speculative controls |
 | `emit.py` | Export dependency-tracked sources and invoke Tensor compilation |
 
+Request mapping lifts each declared state allocation into the request-slot pool.
+Typed views retain their element type: reading byte-backed FP8 storage through an
+FP8 view must decode FP8 values after remapping. Views currently cover the whole
+allocation and preserve element width; copy regions must stay within one request.
+
 Beam search is enabled by default. Candidate axes belong to operations; Tensor owns
 the search algorithm and backend compilation. A candidate must preserve numerical
 results, immutable inputs, state and buffer layouts before its timing can count.
+Source import scans reuse unchanged content; edits and newly discovered codec
+files still update the dependency closure and generated source identity.
 Qualification is scoped to the compiled workload; it does not imply peak performance
 at every other shape.
 Candidate timing binds arguments once and replays a prepared execution plan,

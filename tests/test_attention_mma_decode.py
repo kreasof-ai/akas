@@ -216,3 +216,68 @@ def test_tuning_rebuilds_mma_reference_for_key_tile(tmp_path, monkeypatch):
     assert all(
         c["status"] == "passed" for c in result["tuning"]["operations"][0]["candidates"]
     )
+
+
+@pytest.mark.parametrize("threads", [128, 256])
+def test_cuda_packed_prefill_masks_inactive_query_tiles(tmp_path, threads):
+    if os.environ.get("AKAS_LFM_MOE_CUDA") != "1":
+        pytest.skip("opt-in packed prefill qualification")
+    import tensor
+    from tensor.artifacts.format import read_artifact
+    from akas.compilation.emit import build_artifact
+    from akas.compilation.selection import source
+    from akas.memory.transfer import write
+    from akas.kernels.registry import validation
+
+    p = dict(
+        r=66,
+        chunk=33,
+        h=8,
+        kh=2,
+        d=64,
+        capacity=4096,
+        kv_dtype="fp8",
+        provider="cuda",
+        optimized=True,
+        threads=threads,
+        prefill_precision="float16",
+        key_rows=64,
+    )
+    entry, artifact = tmp_path / "kernel.py", tmp_path / "kernel.tbin"
+    entry.write_text(
+        source(
+            "attention",
+            p,
+            contract="reference",
+            provider="cuda",
+            target="sm_89",
+            preferred="attention.cuda.packed_prefill",
+        ).render()
+    )
+    build_artifact(entry, artifact, provider="cuda", target="sm_89")
+    metadata, _ = read_artifact(artifact)
+    case = validation("attention", p, metadata["arguments"])
+    # The last query tile of slot 1 is inactive. Its future cache location is
+    # poisoned; only the live queries may determine the staged cache length.
+    for name in ("kc", "vc"):
+        case.arguments[name][-1, :, -1] = 127
+    for name in ("ks", "vs"):
+        case.arguments[name][-1, :, -1] = np.nan
+    with tensor.Device(provider="cuda") as device, ExitStack() as stack:
+        buffers = {
+            name: device.from_numpy(array) for name, array in case.arguments.items()
+        }
+        for buffer in buffers.values():
+            stack.callback(buffer.release)
+        module = stack.enter_context(device.load(artifact))
+        args = [buffers[a["name"]] for a in metadata["arguments"]]
+        module.launch(*args)
+        np.testing.assert_allclose(
+            buffers["out"].to_numpy(),
+            case.expected["out"],
+            rtol=case.rtol,
+            atol=case.atol,
+        )
+        write(device, buffers["enabled"], np.zeros(66, dtype="int32"))
+        module.launch(*args)
+        np.testing.assert_array_equal(buffers["out"].to_numpy(), 0)

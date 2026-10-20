@@ -25,19 +25,30 @@ CASES = json.loads(
 )
 
 
-@pytest.mark.parametrize("case",[case for case in CASES if case["profile"].endswith("packed")])
+@pytest.mark.parametrize(
+    "case", [case for case in CASES if case["profile"].endswith("packed")]
+)
 def test_frozen_packed_kernel_parameters_use_uniform_definitions(case):
     from akas.compilation.selection import source
 
-    provider = case["options"].get("provider","cuda")
+    provider = case["options"].get("provider", "cuda")
     for record in case["kernels"]:
         original = record["source"]
-        kind,parameters = original["args"]
-        contract = "packed-baseline" if original["factory"] == "packed_baseline_factory" else "packed"
-        declaration = source(kind,parameters,contract=contract,provider=provider,
-                             target=case["options"].get("target"))
+        kind, parameters = original["args"]
+        contract = (
+            "packed-baseline"
+            if original["factory"] == "packed_baseline_factory"
+            else "packed"
+        )
+        declaration = source(
+            kind,
+            parameters,
+            contract=contract,
+            provider=provider,
+            target=case["options"].get("target"),
+        )
         assert declaration.module == "akas.kernels.definition"
-        spec,schedule,capabilities,implementation = declaration.args
+        spec, schedule, capabilities, implementation = declaration.args
         assert spec["kind"] == kind
         assert spec["parameters"] == parameters
         assert capabilities["provider"] == provider
@@ -56,7 +67,9 @@ def packed_checkpoint(tmp_path_factory):
 # Retired MoE producer inventories are replaced by complete frozen forward
 # contracts and independently qualified physical policies in test_qwen_graph
 # and test_native_pipeline_policy; those fixtures remain unchanged.
-@pytest.mark.parametrize("case", [case for case in CASES if case["profile"].endswith("bf16")])
+@pytest.mark.parametrize(
+    "case", [case for case in CASES if case["profile"].endswith("bf16")]
+)
 def test_profiles_preserve_original_kernel_sources_and_specializations(
     case, packed_checkpoint, monkeypatch
 ):
@@ -71,6 +84,7 @@ def test_profiles_preserve_original_kernel_sources_and_specializations(
         from plan_fixture import dense_checkpoint
         from akas.models.qwen35._composition import compose_dense
         from akas.compilation.compile import plan as graph_plan
+
         values = {**case["config"], "layers": tuple(case["config"]["layers"])}
         checkpoint = dense_checkpoint(Qwen35DenseConfig(**values))
         options = dict(case["options"])
@@ -79,7 +93,11 @@ def test_profiles_preserve_original_kernel_sources_and_specializations(
         plan = graph_plan(graph, target=target)
         if commit.calls:
             extra = graph_plan(commit, target=target)
-            plan.kernels = list({kernel.key: kernel for kernel in [*plan.kernels, *extra.kernels]}.values())
+            plan.kernels = list(
+                {
+                    kernel.key: kernel for kernel in [*plan.kernels, *extra.kernels]
+                }.values()
+            )
     else:
         module = importlib.import_module(case["profile"])
         if case["profile"].endswith("packed"):
@@ -106,29 +124,49 @@ def test_profiles_preserve_original_kernel_sources_and_specializations(
             del record["source"]["dependencies"]
             if record["source"]["module"] == "akas.compilation.factories.block_fp8":
                 from akas.kernels.registry import select
+
                 original = record["source"]
                 kind, parameters = original["args"]
-                variant = select(kind, parameters, contract="block-fp8", provider="cuda",
-                                 phase=original["factory"].removesuffix("_factory"), target=None)
+                variant = select(
+                    kind,
+                    parameters,
+                    contract="block-fp8",
+                    provider="cuda",
+                    phase=original["factory"].removesuffix("_factory"),
+                    target=None,
+                )
                 original.update(historical_source(variant, parameters))
             if record["source"]["module"].startswith("akas.ops.ffn."):
                 from activation_parity import old_dispatch
+
                 original = record["source"]
                 kind, parameters = original["args"]
                 if kind == "swiglu_experts":
-                    parameters = {**parameters, "expert_rows":True, "output_dtype":"bfloat16", "round_inputs":True}
+                    parameters = {
+                        **parameters,
+                        "expert_rows": True,
+                        "output_dtype": "bfloat16",
+                        "round_inputs": True,
+                    }
                 else:
                     has_rows = "r" in parameters
-                    parameters = old_dispatch(original["module"],kind,parameters)
+                    parameters = old_dispatch(original["module"], kind, parameters)
                     if not has_rows:
                         parameters.pop("r", None)
                 original["module"] = "akas.ops.activation.kernel"
-                original["args"] = json.loads(json.dumps([kind,parameters]))
-            elif record["source"]["module"].startswith("akas.ops.normalization.") and record["source"]["module"] != "akas.ops.normalization.kernel":
+                original["args"] = json.loads(json.dumps([kind, parameters]))
+            elif (
+                record["source"]["module"].startswith("akas.ops.normalization.")
+                and record["source"]["module"] != "akas.ops.normalization.kernel"
+            ):
                 from normalization_parity import migrated_parameters
+
                 original = record["source"]
                 kind, parameters = original["args"]
-                original["args"] = [kind, migrated_parameters(original["module"], kind, parameters)]
+                original["args"] = [
+                    kind,
+                    migrated_parameters(original["module"], kind, parameters),
+                ]
                 original["module"] = "akas.ops.normalization.kernel"
             elif record["source"]["module"].startswith("akas.ops.residual."):
                 record["source"]["module"] = "akas.ops.residual.kernel"
@@ -150,13 +188,17 @@ def test_profiles_preserve_original_kernel_sources_and_specializations(
             assert source["factory"] == "define"
             spec, schedule, capabilities, choice = source["args"]
             assert choice["provider"] == capabilities["provider"]
-            record["source"] = historical_source(choice, {**spec["parameters"], **schedule})
+            record["source"] = historical_source(
+                choice, {**spec["parameters"], **schedule}
+            )
     if dense:
         # The old inventory also emitted unreachable GDN, merge and fused-head
         # kernels. Only actual forward/commit calls enter the common compiler.
         reference = {item["key"]: item for item in expected}
         assert set(item["key"] for item in actual) <= reference.keys()
-        assert {item["key"]: item for item in actual} == {item["key"]: reference[item["key"]] for item in actual}
+        assert {item["key"]: item for item in actual} == {
+            item["key"]: reference[item["key"]] for item in actual
+        }
     else:
         assert actual == expected
 
@@ -189,7 +231,9 @@ def test_batched_profile_reuses_different_widths_and_vocabularies():
     bundle = plan(graph)
     embedding = next(k for k in bundle.kernels if k.kind == "embedding")
     assert embedding.parameters == dict(r=8, c=512, vocab=4096)
-    verification, _ = compose_dense(checkpoint, slots=2, chunk=4, pool=8, context=512, verify=True)
+    verification, _ = compose_dense(
+        checkpoint, slots=2, chunk=4, pool=8, context=512, verify=True
+    )
     deferred, commit, materialize, _ = deferred_state(verification)
     recurrent = plan(commit)
     recurrent.kernels.extend(plan(materialize).kernels)
@@ -208,9 +252,9 @@ def test_fixed_layout_profile_rejects_incompatible_geometry():
     from test_qwen_graph import moe_checkpoint
 
     checkpoint = moe_checkpoint()
-    checkpoint.config = replace(checkpoint.config,width=1024)
-    with pytest.raises(ValueError,match="width=2048"):
-        compose_moe_program(checkpoint,rows=2,chunk=1,max_requests=4,max_context=64)
+    checkpoint.config = replace(checkpoint.config, width=1024)
+    with pytest.raises(ValueError, match="width=2048"):
+        compose_moe_program(checkpoint, rows=2, chunk=1, max_requests=4, max_context=64)
 
 
 @pytest.fixture
@@ -381,3 +425,40 @@ def test_shared_entry_uses_supplied_checkpoint_reader_and_profile(
     )
     assert calls == [("checkpoint", {"branch": "draft"})]
     assert result == ("geometry", tmp_path, {"rows": [1, 32]})
+
+
+def test_dependency_scans_reuse_unchanged_content_and_follow_edits(
+    tmp_path, monkeypatch
+):
+    import ast
+    import importlib.util
+    from types import SimpleNamespace
+    from akas.compilation.emit import dependency_closure, _source_imports
+
+    paths = {name: tmp_path / (name + ".py") for name in ("a", "b", "c")}
+    paths["a"].write_text("import akas.scan_b\n")
+    paths["b"].write_text("")
+    paths["c"].write_text("")
+    monkeypatch.setattr(
+        importlib.util,
+        "find_spec",
+        lambda name: (
+            SimpleNamespace(origin=str(paths[name.removeprefix("akas.scan_")]))
+            if name in {f"akas.scan_{n}" for n in paths}
+            else None
+        ),
+    )
+    parse = ast.parse
+    calls = []
+    monkeypatch.setattr(ast, "parse", lambda text: (calls.append(text), parse(text))[1])
+    _source_imports.cache_clear()
+    try:
+        assert dependency_closure("akas.scan_a", ()) == ("akas.scan_b",)
+        parsed = len(calls)
+        assert dependency_closure("akas.scan_a", ()) == ("akas.scan_b",)
+        assert len(calls) == parsed
+        paths["a"].write_text("import akas.scan_c\n")
+        assert dependency_closure("akas.scan_a", ()) == ("akas.scan_c",)
+        assert len(calls) > parsed
+    finally:
+        _source_imports.cache_clear()
