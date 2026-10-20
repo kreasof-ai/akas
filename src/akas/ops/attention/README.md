@@ -40,9 +40,26 @@ compilation, execution and performance.
 
 Shared preparation/cache/online/floating-decode functions are in `kernel.py`. CUDA decode, prefill, partial/merge and Hopper variants are together in `cuda.py`; subgroup score/value algorithms are in `webgpu.py`. The split/decoded-cache policy is `definition.lower`.
 
+CUDA floating prefill offers a tensor-core load pipeline for native FP16 KV.
+The model declares `unit_scales` only when its cache writer stores unit metadata;
+generic scaled caches keep their scaling computation. Query/key tile sizes,
+load pipelining, stage count and thread count are explicit schedule choices.
+Constant groups of four key tiles keep asynchronous waits static even when
+sequence lengths are dynamic. The outer loop advances those groups; online
+softmax remains ordered. Merely changing a serial loop annotation does not make
+loads asynchronous, and additional stages can reduce occupancy. Qualify and
+measure the generated code before promoting a schedule.
+
+Floating decode exposes its KV partition count through the attention graph
+policy. The policy updates the partial buffer and both producer and merger
+contracts together. Grouped decode shares each KV tile across query heads and
+updates online softmax per tile. Its value depends on the provider and shape;
+compatible implementations remain available for measured selection.
+
 WebGPU's `tiled_prefill` shares key/value tiles across query rows and grouped
 heads. It performs online softmax per key tile and retains the output
-accumulators in private registers. Query rows, key rows, staging precision,
+accumulators in private registers. The score and value loops load a KV vector
+once and reuse it across query rows. Query rows, key rows, staging precision,
 padding and dot width are qualified search axes. Native FP16 KV permits half
 staging without changing stored values; other cache formats use FP32 staging.
 The launch stays within 32 KiB of workgroup storage. Decode and ineligible

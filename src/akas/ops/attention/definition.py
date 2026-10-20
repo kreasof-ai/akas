@@ -162,6 +162,14 @@ def floating_attention(plan, p, q, kc, vc, ks, vs, out, positions, active):
 
 
 def search_policies(graph, commit, *, provider, target):
+    if graph.contract == "reference":
+        if any(
+            call.kind in ("attention", "attention_partial")
+            and call.parameters.get("optimized")
+            for call in graph.calls
+        ):
+            return [{"splits": count} for count in (32, 64, 128)]
+        return []
     if (
         graph.contract != "block-fp8"
         or provider != "cuda"
@@ -194,6 +202,42 @@ def lower(graph, commit, settings, *, provider, target):
     }
     if set(settings) - allowed:
         raise ValueError("unknown attention pipeline policy")
+    if graph.contract == "reference":
+        from dataclasses import replace
+
+        if (
+            set(settings) != {"splits"}
+            or type(settings["splits"]) is not int
+            or settings["splits"] not in (1, 2, 4, 8, 16, 32, 64, 128)
+        ):
+            raise ValueError(
+                "floating attention policy requires a supported split count"
+            )
+        calls = []
+        for call in graph.calls:
+            if call.kind in (
+                "attention_partial",
+                "attention_merge",
+            ) and call.parameters.get("optimized"):
+                p = {**call.parameters, "splits": settings["splits"]}
+                if call.kind == "attention_partial":
+                    name = (
+                        call.bindings.get("out") if call.bindings else call.arguments[5]
+                    )
+                    buffer = graph.buffers[name]
+                    if buffer.alias_of is not None:
+                        raise ValueError(
+                            "attention partition scratch cannot be an alias"
+                        )
+                    buffer = replace(
+                        buffer, shape=(p["r"] * p["h"] * p["splits"] * 66,)
+                    )
+                    object.__setattr__(buffer, "_graph", graph)
+                    graph.buffers[name] = buffer
+                call = replace(call, parameters=p)
+            calls.append(call)
+        graph.calls = calls
+        return graph, commit
     if graph.contract != "block-fp8":
         return (graph, commit)
     if provider != "cuda":
@@ -867,6 +911,38 @@ IMPLEMENTATIONS = (
 IMPLEMENTATIONS += (
     Implementation(
         "attention",
+        "akas.ops.attention.cuda",
+        "reference",
+        priority=35,
+        defaults=(
+            ("prefill_precision", "float16"),
+            ("async_loads", True),
+            ("query_rows", 32),
+            ("key_rows", 64),
+            ("stages", 2),
+            ("threads", 128),
+        ),
+        space=(
+            ("async_loads", (True, False)),
+            ("query_rows", (32, 64, 16)),
+            ("key_rows", (64, 128, 32)),
+            ("stages", (2, 1, 3)),
+            ("threads", (128, 256)),
+        ),
+        accepts=lambda p: (
+            p.get("optimized", False)
+            and p.get("chunk", 1) > 1
+            and p.get("unit_scales", False)
+            and p["kv_dtype"] == "float16"
+        ),
+        factory="floating",
+        name="attention.cuda.pipelined",
+    ),
+)
+
+IMPLEMENTATIONS += (
+    Implementation(
+        "attention",
         "akas.ops.attention.webgpu",
         "reference",
         provider="webgpu",
@@ -889,4 +965,23 @@ IMPLEMENTATIONS += (
             ("dot_width", (4, 1)),
         ),
     ),
+)
+
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        "attention_partial",
+        "akas.ops.attention.kernel",
+        "reference",
+        provider=provider,
+        priority=35 if provider == "webgpu" else 25,
+        accepts=lambda p: (
+            p.get("optimized", False)
+            and p["d"] == 64
+            and p["h"] % p["kh"] == 0
+            and p["h"] // p["kh"] in (1, 2, 4, 8)
+        ),
+        factory="tiled_partial_floating",
+        name="attention.grouped_decode",
+    )
+    for provider in ("cuda", "webgpu")
 )

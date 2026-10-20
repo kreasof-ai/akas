@@ -226,9 +226,88 @@ def compact_experts(spec, schedule):
     return compute
 
 
-def quantized_experts_warp(spec, schedule):
-    """Decode specialization with cached vector loads and warp-local reductions."""
-    return quantized_experts(spec, {**schedule, "warp_shuffle": True})
+def quantized_experts_warp(spec: KernelSpec, schedule: Mapping[str, object]):
+    """Reuse each activation across several output columns within a warp."""
+    import tilelang.language as T
+    from akas.quantization.weights import bind_parts
+
+    p = {**spec.parameters, **schedule}
+    rows, top, experts, columns, depth = (
+        p[n] for n in ("r", "top", "experts", "o", "k")
+    )
+    width, threads, unroll = (
+        p.get("columns_per_warp", 2),
+        p.get("threads", 128),
+        p.get("unroll", 2),
+    )
+    if (
+        rows != 1
+        or width not in (1, 2, 4)
+        or threads not in (128, 256)
+        or unroll not in (1, 2, 4)
+    ):
+        raise ValueError("unsupported expert decode schedule")
+    binding = bind_parts(p["weight_parts"], depth, provider="cuda")
+    storage, read = binding.storage.values, binding.read
+    routed = p.get("routed_input", False)
+    shape = (rows, top, depth) if routed else (rows, depth)
+    input_dtype = p.get("input_dtype", "bfloat16")
+    warps = threads // 32
+
+    @kernel
+    def compute(
+        x: Tensor(shape, input_dtype),
+        w: Tensor(storage.shape, storage.dtype),
+        ids: Tensor((rows, top), "int32"),
+        counts: Tensor((experts,), "int32"),
+    ) -> Tensor((rows, top, columns), "float32"):
+        out = output((rows, top, columns), "float32")
+        with T.Kernel(T.ceildiv(columns, warps * width), top, threads=threads) as (
+            block,
+            rank,
+        ):
+            tx = T.get_thread_binding()
+            warp, lane = tx // 32, tx % 32
+            expert = ids[0, rank]
+            accum = T.alloc_local((width,), "float32")
+            for col in T.unroll(width):
+                accum[col] = 0
+            for tile in T.serial(T.ceildiv(depth, 32 * unroll)):
+                for step in T.unroll(unroll):
+                    channel = (tile * unroll + step) * 32 + lane
+                    activation = T.alloc_var("float32")
+                    activation = 0
+                    if channel < depth:
+                        if routed:
+                            activation = T.cast(
+                                T.cast(x[0, rank, channel], "float16"), "float32"
+                            )
+                        else:
+                            activation = T.cast(
+                                T.cast(x[0, channel], "float16"), "float32"
+                            )
+                    for col in T.unroll(width):
+                        column = (block * warps + warp) * width + col
+                        if column < columns and channel < depth:
+                            coefficient = T.cast(
+                                T.cast(
+                                    read((w,), expert * columns + column, channel),
+                                    "float16",
+                                ),
+                                "float32",
+                            )
+                            accum[col] += activation * coefficient
+            for col in T.unroll(width):
+                for step in T.unroll(5):
+                    accum[col] += T.shfl_down(accum[col], 16 >> step)
+                column = (block * warps + warp) * width + col
+                if lane == 0 and column < columns:
+                    out[0, rank, column] = T.if_then_else(
+                        counts[expert] > 0, accum[col], 0
+                    )
+        return out
+
+    return compute
 
 
 def decode_moe_combine(spec: KernelSpec, schedule: Mapping[str, object]):

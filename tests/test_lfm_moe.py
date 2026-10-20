@@ -434,3 +434,153 @@ def test_attention_search_keeps_precision_references_distinct(tmp_path, monkeypa
         ),
     )
     assert {"float16", "float32"} <= set(precision)
+
+
+@pytest.mark.parametrize("provider", ["cuda", "webgpu"])
+def test_floating_attention_split_policy_resizes_producer_and_consumer(provider):
+    from akas.graph import Graph
+    from akas.ops.attention.definition import floating_attention, lower, search_policies
+
+    graph = Graph(contract="reference", phase="decode")
+    p = dict(
+        r=1,
+        h=4,
+        kh=1,
+        d=64,
+        capacity=128,
+        kv_dtype="float16",
+        optimized=True,
+        provider=provider,
+    )
+    q = graph.buffer("q", (1, 256), "float32", role="input")
+    kc = graph.buffer("kc", (1, 1, 128, 64), "float16", role="state")
+    vc = graph.buffer("vc", (1, 1, 128, 64), "float16", role="state")
+    ks = graph.buffer("ks", (1, 1, 128, 1), "float32", role="state")
+    vs = graph.buffer("vs", (1, 1, 128, 1), "float32", role="state")
+    out = graph.buffer("out", (256,), "float32", role="output")
+    pos = graph.buffer("positions", (1,), "int32", role="input")
+    enabled = graph.buffer("enabled", (1,), "int32", role="input")
+    floating_attention(graph, p, q, kc, vc, ks, vs, out, pos, enabled)
+    assert {"splits": 64} in search_policies(
+        graph, None, provider=provider, target="sm_89"
+    )
+    graph, _ = lower(graph, None, {"splits": 64}, provider=provider, target="sm_89")
+    assert [call.parameters["splits"] for call in graph.calls] == [64, 64]
+    assert graph.buffers["out.parts"].shape == (4 * 64 * 66,)
+    assert graph.buffers["out"].shape == (256,)
+
+
+@pytest.mark.parametrize("provider", ["cuda", "webgpu"])
+@pytest.mark.parametrize("cap,enabled", [(19, True), (257, True), (31, False)])
+def test_grouped_decode_partial_tail_scales_and_inactive(
+    tmp_path, provider, cap, enabled
+):
+    if os.environ.get("AKAS_LFM_MOE_" + provider.upper()) != "1":
+        pytest.skip("opt-in grouped decode qualification")
+    import tensor
+    from akas.compilation.selection import source
+    from akas.compilation.emit import build_artifact
+    from akas.kernels.registry import validation
+    from tensor.artifacts.format import read_artifact
+
+    p = dict(
+        r=2,
+        h=4,
+        kh=1,
+        d=64,
+        capacity=cap,
+        splits=16,
+        chunk=1,
+        kv_dtype="float16",
+        provider=provider,
+        optimized=True,
+    )
+    target = "sm_89" if provider == "cuda" else "webgpu-portable-v1"
+    entry, artifact = tmp_path / "kernel.py", tmp_path / "kernel.tbin"
+    entry.write_text(
+        source(
+            "attention_partial",
+            p,
+            contract="reference",
+            provider=provider,
+            target=target,
+            preferred="attention.grouped_decode",
+        ).render()
+    )
+    build_artifact(entry, artifact, provider=provider, target=target)
+    meta, _ = read_artifact(artifact)
+    case = validation("attention_partial", p, meta["arguments"])
+    if not enabled:
+        case.arguments["enabled"][:] = 0
+        parts = case.expected["out"].reshape(2, 4, 16, 66)
+        parts[:] = 0
+        parts[..., 64] = -np.inf
+    with tensor.Device(provider=provider) as device, ExitStack() as stack:
+        buffers = {n: device.from_numpy(a) for n, a in case.arguments.items()}
+        for buffer in buffers.values():
+            stack.callback(buffer.release)
+        module = stack.enter_context(device.load(artifact))
+        module.launch(*(buffers[a["name"]] for a in meta["arguments"]))
+        for name, buffer in buffers.items():
+            expected = case.expected[name] if name == "out" else case.arguments[name]
+            np.testing.assert_allclose(
+                buffer.to_numpy(), expected, rtol=case.rtol, atol=case.atol
+            )
+
+
+@pytest.mark.parametrize(
+    "chunk,cap,query_rows,key_rows,stages",
+    [(4, 19, 32, 64, 2), (33, 97, 32, 64, 2), (33, 129, 64, 32, 3)],
+)
+def test_cuda_pipelined_attention_tail_and_inactive(
+    tmp_path, chunk, cap, query_rows, key_rows, stages
+):
+    if os.environ.get("AKAS_LFM_MOE_CUDA") != "1":
+        pytest.skip("opt-in pipelined attention qualification")
+    import tensor
+    from akas.compilation.selection import source
+    from akas.compilation.emit import build_artifact
+    from akas.kernels.registry import validation
+    from tensor.artifacts.format import read_artifact
+
+    p = dict(
+        r=2 * chunk,
+        h=4,
+        kh=1,
+        d=64,
+        capacity=cap,
+        chunk=chunk,
+        kv_dtype="float16",
+        provider="cuda",
+        optimized=True,
+        unit_scales=True,
+        prefill_precision="float16",
+        query_rows=query_rows,
+        key_rows=key_rows,
+        stages=stages,
+        async_loads=True,
+    )
+    entry, artifact = tmp_path / "kernel.py", tmp_path / "kernel.tbin"
+    entry.write_text(
+        source(
+            "attention",
+            p,
+            contract="reference",
+            provider="cuda",
+            target="sm_89",
+            preferred="attention.cuda.pipelined",
+        ).render()
+    )
+    build_artifact(entry, artifact, provider="cuda", target="sm_89")
+    meta, _ = read_artifact(artifact)
+    case = validation("attention", p, meta["arguments"])
+    with tensor.Device(provider="cuda") as device, ExitStack() as stack:
+        buffers = {n: device.from_numpy(a) for n, a in case.arguments.items()}
+        for buffer in buffers.values():
+            stack.callback(buffer.release)
+        module = stack.enter_context(device.load(artifact))
+        module.launch(*(buffers[a["name"]] for a in meta["arguments"]))
+        for name, buffer in buffers.items():
+            np.testing.assert_allclose(
+                buffer.to_numpy(), case.expected[name], rtol=case.rtol, atol=case.atol
+            )

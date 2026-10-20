@@ -245,7 +245,7 @@ def main():
     parser.add_argument(
         "--shape-timeout",
         default=None,
-        help="maximum seconds per (batch, prefix) shape measurement, e.g. 15s",
+        help="maximum duration per measurement repetition, including diagnostics, e.g. 2m",
     )
     args = parser.parse_args()
     if args.no_autotune:

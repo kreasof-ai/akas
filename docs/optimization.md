@@ -47,6 +47,16 @@ over repeated loopback HTTP bursts. TTFT starts before submitting the burst;
 TPOT averages the interval between the first and final output token for each
 request. These are observed pilot limits, not a production percentile guarantee.
 
+Use `--shape-timeout 2m` to bound each diagnostic or measurement repetition,
+including warmup, native token phases, scheduler requests and HTTP requests.
+Native execution checks the deadline between synchronized prefill chunks and
+small decode groups; an executing GPU kernel cannot be preempted by this limit.
+A timeout rejects a searched candidate and retains completed measurements. It
+does not turn partial coverage into a qualified deployment. The worker deadline
+also applies during validation and measurement. Without a shape limit, HTTP has
+no separate ten-minute cap. Measurement limits are retained in run provenance;
+changing them requires a new campaign directory.
+
 Built-in model families are discovered from checkpoint architecture metadata.
 Use `--definition module:class` only for a custom model. Model developers declare
 architecture identifiers and optimization capabilities beside their definition;

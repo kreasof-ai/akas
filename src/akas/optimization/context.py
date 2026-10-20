@@ -187,6 +187,10 @@ def arguments(parser):
         type=float,
         help="optional maximum serving time per subsequent output token",
     )
+    parser.add_argument(
+        "--shape-timeout",
+        help="maximum duration per measurement repetition, including diagnostics, e.g. 2m",
+    )
     parser.add_argument("--history", type=Path, default=Path("benchmarks"))
     parser.set_defaults(run=command)
 
@@ -194,6 +198,10 @@ def arguments(parser):
 def command(args):
     from akas.optimization.supervisor import optimize
 
+    if args.shape_timeout is not None:
+        import os
+
+        os.environ["AKAS_SHAPE_TIMEOUT"] = str(duration(args.shape_timeout))
     checkpoint = args.model.resolve()
     context = Context(
         str(checkpoint),

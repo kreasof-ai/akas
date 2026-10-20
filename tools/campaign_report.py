@@ -466,7 +466,7 @@ def fmt(value):
 
 
 def clean(value):
-    return str(value or "").replace("|", "\\|").replace("\n", " ")
+    return str(value or "").replace("|", "\\|").replace("\n", " ").strip()
 
 
 def evidence_link(run_id, out, history):
@@ -482,7 +482,12 @@ def csv_file(path, rows, fields):
         stream, fieldnames=fields, extrasaction="ignore", lineterminator="\n"
     )
     writer.writeheader()
-    writer.writerows(rows)
+    writer.writerows(
+        {**row, "error": str(row["error"]).strip()}
+        if row.get("error") is not None
+        else row
+        for row in rows
+    )
     text(path, stream.getvalue())
 
 

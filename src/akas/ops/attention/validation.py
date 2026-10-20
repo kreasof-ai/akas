@@ -197,7 +197,9 @@ def canonical_validation(kind, p, signature):
             values[name][:] = values[name].astype("float16")
     for name in ("ks", "vs"):
         if name in values:
-            values[name][:] = np.abs(values[name]) + 0.01
+            values[name][:] = (
+                1 if p.get("unit_scales", False) else np.abs(values[name]) + 0.01
+            )
     if kind == "attention_merge":
         parts = values["parts"].reshape(r, h, splits, d + 2)
         parts[:, :, :, -1] = np.abs(parts[:, :, :, -1]) + 1
@@ -303,8 +305,9 @@ def canonical_validation(kind, p, signature):
             maximum = np.full((chunk, kh, group), -np.inf, dtype="float64")
             normalizer = np.zeros((chunk, kh, group), dtype="float64")
             accumulated = np.zeros((chunk, kh, group, d), dtype="float64")
-            for begin in range(0, max_len, 64):
-                end = min(max_len, begin + 64)
+            tile = p.get("key_rows", 64)
+            for begin in range(0, max_len, tile):
+                end = min(max_len, begin + tile)
                 k_idx = np.arange(begin, end)
                 valid = k_idx[None, :] <= pos[:, None]
                 if not np.any(valid):

@@ -188,7 +188,12 @@ def test_resumed_candidate_cannot_reuse_stale_fast_timing(tmp_path):
     assert result.schedule == {} and result.score == 1
 
 
-def test_timeout_terminates_worker_process_group_and_retains_log(tmp_path, monkeypatch):
+@pytest.mark.parametrize("phase", [None, "validating-and-measuring", "http-validation"])
+def test_timeout_terminates_worker_process_group_and_retains_log(
+    tmp_path, monkeypatch, phase
+):
+    if phase is not None:
+        write(tmp_path / "progress.json", dict(phase=phase))
     real = subprocess.Popen
     launched = []
 
@@ -503,3 +508,154 @@ def test_long_context_search_refines_before_costly_small_prefills():
     assert {p["id"] for p in ordered if "id" in p} == {p["id"] for p in plans}
     regular = search_order(plans, dict(prefix_tokens=[32, 2048]))
     assert regular[: len(plans)] == plans
+
+
+def test_native_session_timeout_checks_prefill_chunks_and_releases_slot(monkeypatch):
+    from types import SimpleNamespace
+    from akas.benchmarking import session as module
+
+    clock, released = [0.0], []
+    monkeypatch.setattr(module.time, "perf_counter", lambda: clock[0])
+
+    def prefill(slots, prompts, *, chunk, check):
+        for _ in range(4):
+            clock[0] += 0.6
+            check()
+        raise AssertionError("deadline did not stop prefill")
+
+    executor = SimpleNamespace(
+        capacity=1,
+        context=16,
+        config=SimpleNamespace(vocab=8),
+        device=SimpleNamespace(synchronize=lambda: None),
+        program={},
+        admit=lambda: 0,
+        release=released.append,
+        prefill=prefill,
+    )
+    with pytest.raises(TimeoutError, match="native shape B1"):
+        with module.Session(executor, batch=1, chunk=2, timeout=1) as session:
+            session.reset()
+            session.prefill([[1] * 8])
+    assert released == [0] and clock[0] == pytest.approx(1.2)
+
+
+def test_native_session_timeout_bounds_decode_without_host_token_readbacks(monkeypatch):
+    from types import SimpleNamespace
+    from akas.benchmarking import session as module
+
+    clock, calls = [0.0], []
+    monkeypatch.setattr(module.time, "perf_counter", lambda: clock[0])
+
+    def decode(slots, tokens, steps, *, read):
+        calls.append((tokens, steps, read))
+        clock[0] += steps * 0.1
+
+    executor = SimpleNamespace(
+        capacity=1,
+        context=128,
+        config=SimpleNamespace(vocab=8),
+        device=SimpleNamespace(synchronize=lambda: None),
+        program={},
+        admit=lambda: 0,
+        release=lambda _: None,
+        decode_steps=decode,
+    )
+    with module.Session(executor, batch=1, chunk=2, timeout=1) as session:
+        session.reset()
+        session.tokens = [3]
+        with pytest.raises(TimeoutError):
+            session.decode(127, read=False)
+    assert calls == [([3], 8, False), (None, 8, False)]
+
+
+def test_http_shape_timeout_rejects_slow_candidate(monkeypatch):
+    import asyncio
+    from contextlib import contextmanager
+    from test_serving import Independent
+    from akas.engine import Engine
+    from akas.serving.http import Service
+    from akas.optimization.evaluation import http_benchmark
+
+    class Slow(Independent):
+        def prefill_batch(self, requests, sequences, chunk):
+            time.sleep(0.05)
+            return super().prefill_batch(requests, sequences, chunk)
+
+    @contextmanager
+    def service():
+        model = Slow(19)
+        model.capacity = 1
+        with Engine(model) as engine:
+            yield Service(engine)
+
+    monkeypatch.setenv("AKAS_SHAPE_TIMEOUT", "0.01")
+    monkeypatch.setenv("AKAS_BENCHMARK_WARMUP", "0")
+    rows = [
+        dict(
+            case=dict(batch=1, prompt=2, generated=4),
+            output_ids=[[3, 4, 5, 6]],
+            serving=dict(seconds=1),
+        )
+    ]
+    with pytest.raises(asyncio.TimeoutError):
+        asyncio.run(http_benchmark(service, rows, vocab=19))
+
+
+def test_shape_timeout_keeps_independent_native_phase_measurements(monkeypatch):
+    from dataclasses import asdict
+    from types import SimpleNamespace
+    import numpy as np
+    from akas.optimization import evaluation
+
+    settings, measured = [], []
+
+    class Session:
+        allocated_bytes = 1
+
+        def __init__(self, executor, **kwargs):
+            settings.append(kwargs)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *error):
+            pass
+
+    def native(session, case, **kwargs):
+        measured.append(case.prompt)
+        return dict(
+            case=asdict(case), status="ok", summary={"native": True}, samples=[]
+        )
+
+    monkeypatch.setenv("AKAS_SHAPE_TIMEOUT", "2")
+    monkeypatch.setattr(evaluation, "Session", Session)
+    monkeypatch.setattr(evaluation, "run", native)
+    monkeypatch.setattr(evaluation, "diagnostic", lambda *a, **k: np.ones((3, 1, 4)))
+    monkeypatch.setattr(
+        evaluation,
+        "Engine",
+        lambda *a, **k: SimpleNamespace(
+            scheduler=SimpleNamespace(stats={}), close=lambda: None
+        ),
+    )
+    monkeypatch.setattr(
+        evaluation,
+        "measured_requests",
+        lambda *a, **k: dict(
+            seconds=1,
+            output_tokens_per_second=4,
+            ttft_ms=100,
+            tpot_ms=300,
+            output_ids=[[1, 2, 3, 4]],
+        ),
+    )
+    recipe = dict(chunk=32, window=None, prefill_requests=1)
+    rows, _, _ = evaluation.evaluate(
+        SimpleNamespace(),
+        recipe,
+        dict(batches=[1], prefix_tokens=[32, 64], output_tokens=4),
+    )
+    assert measured == [32, 64]
+    assert all(row["summary"] == {"native": True} for row in rows)
+    assert [s["timeout"] for s in settings if "timeout" in s] == [2, 2]

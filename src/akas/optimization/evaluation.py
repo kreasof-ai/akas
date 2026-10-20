@@ -34,7 +34,7 @@ def diagnostic_values(values, frame, feature):
     return values[-1:].copy()
 
 
-def diagnostic(executor, recipe, batch, prefix):
+def diagnostic(executor, recipe, batch, prefix, *, timeout=0):
     """Sample declared logits at prefill and two decode boundaries, including slot reuse."""
     features = []
     diag_prefix = (
@@ -42,7 +42,9 @@ def diagnostic(executor, recipe, batch, prefix):
         if os.environ.get("AKAS_SKIP_AUTOTUNE") == "1"
         else prefix
     )
-    with Session(executor, batch=batch, chunk=recipe["chunk"]) as session:
+    with Session(
+        executor, batch=batch, chunk=recipe["chunk"], timeout=timeout
+    ) as session:
         session.reset()
         session.prefill(prompts(executor.config.vocab, batch, diag_prefix))
         for step in range(3):
@@ -128,35 +130,57 @@ def evaluate(executor, recipe, workload, *, reference=None, evidence=None):
         alloc_bytes = first_session.allocated_bytes
     diagnostics = {}
     native = {}
-    for b_idx, batch in enumerate(workload["batches"]):
-        for p_idx, prefix in enumerate(workload["prefix_tokens"]):
-            key = f"b{batch}-p{prefix}"
-            if skip_autotune and (b_idx > 0 or p_idx > 0):
-                values = np.zeros((0,), dtype="float32")
-            else:
-                values = diagnostic(executor, recipe, batch, prefix)
-            diagnostics[key] = values
-            if evidence is not None and values.size:
-                expected = evidence[key]
-                if expected.size:
-                    if values.shape != expected.shape:
-                        raise ValueError("model diagnostic layout changed")
-                    delta = np.linalg.norm(values.astype("float64") - expected)
-                    scale = max(
-                        float(np.linalg.norm(expected.astype("float64"))), 1e-30
+    try:
+        for b_idx, batch in enumerate(workload["batches"]):
+            for p_idx, prefix in enumerate(workload["prefix_tokens"]):
+                key = f"b{batch}-p{prefix}"
+                if skip_autotune and (b_idx > 0 or p_idx > 0):
+                    values = np.zeros((0,), dtype="float32")
+                else:
+                    values = diagnostic(
+                        executor, recipe, batch, prefix, timeout=shape_timeout
                     )
-                    if delta / scale > 0.01:
-                        raise ValueError(
-                            f"model logits differ from qualified baseline: {key}"
+                diagnostics[key] = values
+                if evidence is not None and values.size:
+                    expected = evidence[key]
+                    if expected.size:
+                        if values.shape != expected.shape:
+                            raise ValueError("model diagnostic layout changed")
+                        delta = np.linalg.norm(values.astype("float64") - expected)
+                        scale = max(
+                            float(np.linalg.norm(expected.astype("float64"))), 1e-30
                         )
-            if not skip_autotune and shape_timeout <= 0:
-                with Session(executor, batch=batch, chunk=recipe["chunk"]) as session:
-                    native[key] = run(
-                        session,
-                        Case(batch, prefix, workload["output_tokens"]),
-                        warmup=warmup,
-                        repeats=repeats,
-                    )
+                        if delta / scale > 0.01:
+                            raise ValueError(
+                                f"model logits differ from qualified baseline: {key}"
+                            )
+                if not skip_autotune:
+                    with Session(
+                        executor,
+                        batch=batch,
+                        chunk=recipe["chunk"],
+                        timeout=shape_timeout,
+                    ) as session:
+                        native[key] = run(
+                            session,
+                            Case(batch, prefix, workload["output_tokens"]),
+                            warmup=warmup,
+                            repeats=repeats,
+                        )
+    except TimeoutError as error:
+        error.results = list(native.values())
+        error.results.append(
+            dict(
+                case=dict(
+                    batch=batch, prompt=prefix, generated=workload["output_tokens"]
+                ),
+                status="timeout",
+                error=str(error),
+                samples=[],
+                summary={},
+            )
+        )
+        raise
     backend = executor
     if recipe["window"]:
         from akas.generation.speculative.decoding import SpeculativeDecoder
@@ -240,6 +264,17 @@ def evaluate(executor, recipe, workload, *, reference=None, evidence=None):
                         for _ in range(repeats)
                     ]
                 except TimeoutError as err:
+                    if not skip_autotune:
+                        err.results = rows + [
+                            dict(
+                                case=asdict(case),
+                                status="timeout",
+                                error=str(err),
+                                samples=[],
+                                summary={},
+                            )
+                        ]
+                        raise
                     timed_out_prefixes.add(prefix)
                     rows.append(
                         dict(
@@ -377,7 +412,10 @@ async def http_benchmark(factory, rows, *, vocab):
         site = web.TCPSite(app, "127.0.0.1", 0)
         await site.start()
         port = site._server.sockets[0].getsockname()[1]
-        timeout = max(120, int(os.environ.get("AKAS_HTTP_TIMEOUT", "600")))
+        # The explicit shape limit owns measurement deadlines. An absent limit
+        # must also allow valid long-context requests beyond ten minutes.
+        value = os.environ.get("AKAS_HTTP_TIMEOUT")
+        timeout = float(value) if value is not None else None
         async with ClientSession(
             timeout=ClientTimeout(total=timeout), connector=TCPConnector(limit=0)
         ) as client:

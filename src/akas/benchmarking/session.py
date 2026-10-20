@@ -1,21 +1,31 @@
 """Benchmark token-step protocol over the common compiled-program executor."""
 
+import time
+
 
 class Session:
-    def __init__(self, executor, *, batch, chunk=32):
+    def __init__(self, executor, *, batch, chunk=32, timeout=0):
         if type(batch) is not int or not 1 <= batch <= executor.capacity:
             raise ValueError("benchmark batch exceeds request capacity")
         if type(chunk) is not int or not 1 <= chunk <= executor.context:
             raise ValueError("invalid benchmark prefill chunk")
         self.executor, self.batch, self.prefill_chunk = executor, batch, chunk
-        self.capacity, self.device, self.config = executor.context, executor.device, executor.config
+        self.timeout, self.deadline = timeout, None
+        self.capacity, self.device, self.config = (
+            executor.context,
+            executor.device,
+            executor.config,
+        )
         self.kv_dtype = executor.program.get("model_options", {}).get("kv_dtype")
         self.slots, self.tokens, self.feedback_ready = [], None, False
         self.last_chunk = None
 
     @property
     def allocated_bytes(self):
-        buffers = [*self.executor.weights.values(), *self.executor.batches.states.values()]
+        buffers = [
+            *self.executor.weights.values(),
+            *self.executor.batches.states.values(),
+        ]
         for frame in self.executor.batches.frames.values():
             buffers.extend(frame.buffers.values())
         storage = {}
@@ -24,6 +34,13 @@ class Session:
                 buffer = buffer._base
             storage[id(buffer)] = buffer
         return sum(buffer.nbytes for buffer in storage.values())
+
+    def _check_timeout(self):
+        self.device.synchronize()
+        if self.deadline is not None and time.perf_counter() >= self.deadline:
+            raise TimeoutError(
+                f"native shape B{self.batch} exceeded {self.timeout:.1f}s measurement timeout"
+            )
 
     def reset(self):
         self.close()
@@ -35,21 +52,47 @@ class Session:
             raise
         self.tokens, self.feedback_ready = None, False
         self.last_chunk = None
+        self.deadline = time.perf_counter() + self.timeout if self.timeout > 0 else None
 
     def prefill(self, prompts, *, read=True):
         if len(prompts) != self.batch or len(self.slots) != self.batch:
             raise ValueError("one prompt per admitted benchmark request is required")
-        self.tokens = self.executor.prefill(self.slots, [[int(token) for token in prompt] for prompt in prompts],
-                                            chunk=self.prefill_chunk)
+        options = {"check": self._check_timeout} if self.deadline is not None else {}
+        self.tokens = self.executor.prefill(
+            self.slots,
+            [[int(token) for token in prompt] for prompt in prompts],
+            chunk=self.prefill_chunk,
+            **options,
+        )
         self.feedback_ready = False
-        self.last_chunk = getattr(self.executor,"last_prefill_chunk",None) or self.prefill_chunk
+        self.last_chunk = (
+            getattr(self.executor, "last_prefill_chunk", None) or self.prefill_chunk
+        )
         return self.tokens if read else None
 
     def decode(self, steps, *, read=True):
+        if type(steps) is not int or steps < 1:
+            raise ValueError("decode steps must be positive")
         if self.tokens is None:
             raise ValueError("benchmark decode requires prefill")
-        result = self.executor.decode_steps(self.slots, None if self.feedback_ready else self.tokens,
-                                            steps, read=read)
+        if self.deadline is None:
+            result = self.executor.decode_steps(
+                self.slots,
+                None if self.feedback_ready else self.tokens,
+                steps,
+                read=read,
+            )
+        else:
+            for begin in range(0, steps, 8):
+                self._check_timeout()
+                result = self.executor.decode_steps(
+                    self.slots,
+                    None if self.feedback_ready else self.tokens,
+                    min(8, steps - begin),
+                    read=read and begin + 8 >= steps,
+                )
+                self.feedback_ready = True
+            self._check_timeout()
         self.feedback_ready = True
         self.last_chunk = 1
         return result
@@ -68,17 +111,17 @@ class Session:
         """Read a model-declared diagnostic feature from the last token phase."""
         if self.last_chunk is None or len(self.slots) != self.batch:
             raise ValueError("feature read requires a completed token phase")
-        frame = getattr(self.executor,"last_frame",None)
+        frame = getattr(self.executor, "last_frame", None)
         if frame is None:
-            frame = self.executor.batches.select(self.batch,self.last_chunk)
-        live = tuple(getattr(frame,"slots",self.slots))
+            frame = self.executor.batches.select(self.batch, self.last_chunk)
+        live = tuple(getattr(frame, "slots", self.slots))
         self.last_feature_slots = live
         if name not in frame.features:
             raise ValueError(f"phase does not declare feature {name!r}")
         values = frame.feature(name).to_numpy()
         if values.size % frame.rows:
             raise ValueError("feature does not have a request-row layout")
-        return values.reshape(frame.rows,-1)[:len(live)].copy()
+        return values.reshape(frame.rows, -1)[: len(live)].copy()
 
     def close(self):
         while self.slots:

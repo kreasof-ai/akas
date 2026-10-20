@@ -1,0 +1,90 @@
+{
+  "context": {
+    "checkpoint": "/home/sagemaker-user/akas/build/checkpoints/lfm2.5-24b-a2b/q4_0.gguf",
+    "definition": "akas.models.lfm2.model:LFM2MoE",
+    "workload": {
+      "schema": "akas.workload.v1",
+      "id": "single-user-long-context-v1",
+      "description": "Single-user text inference from short prompts to a 131072-token total context window.",
+      "batches": [
+        1
+      ],
+      "prefix_tokens": [
+        32,
+        512,
+        2048,
+        8192,
+        16384,
+        32768,
+        65536,
+        130944
+      ],
+      "output_tokens": 128,
+      "cached_prefix_tokens": 0,
+      "early_eos": false,
+      "sampling": {
+        "temperature": 0
+      },
+      "prefix_cache": false,
+      "cpu_offload": false,
+      "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens. The longest prompt reserves 128 positions inside the 131072-token model context.",
+      "metrics": [
+        "prefill_tokens_per_second",
+        "decode_tokens_per_second",
+        "ttft_seconds",
+        "inter_token_seconds",
+        "peak_vram_bytes",
+        "cpu_peak_rss_bytes"
+      ]
+    },
+    "backend": "cuda",
+    "device": 0,
+    "memory_bytes": null,
+    "ttft_ms": null,
+    "tpot_ms": null,
+    "kv_dtype": null,
+    "mode": "ar"
+  },
+  "identity": "125f00d88b9f07de376ab2b97fb1a8d6b20839c082e4ab43f32b51cd59cf1988",
+  "checkpoint_sha256": "d1c03f73ecaf61017d70419eec9e5dc0b05d50ae26c23d522829b934fbabf8a5",
+  "history": "/home/sagemaker-user/akas/benchmarks",
+  "action": "candidate",
+  "recipe": {
+    "provider": "cuda",
+    "target": "sm_89",
+    "chunk": 512,
+    "prefill_requests": 1,
+    "graphs": true,
+    "trials": 8,
+    "policy": {},
+    "model_options": {
+      "kv_dtype": "float16",
+      "optimized": true
+    },
+    "window": null,
+    "deferred": false,
+    "head": null,
+    "id": "1e5adbc7dc7026bf"
+  },
+  "device": {
+    "ordinal": 0,
+    "name": "NVIDIA L4",
+    "arch": "sm_89",
+    "provider": "cuda",
+    "uuid": "GPU-b03cd627-998c-2476-6169-f62b483e2c27",
+    "free_bytes": 23659020288,
+    "total_bytes": 24152899584,
+    "driver": "595.91.07"
+  },
+  "cache_sources": [
+    "/home/sagemaker-user/akas/build/shared-program-cache",
+    "/home/sagemaker-user/akas/build/single-user-long-context/lfm2.5-24b-a2b-q4_0-cuda-default-ar/jobs/eec85b9542449ad4/attempt-0001/program",
+    "/home/sagemaker-user/akas/build/single-user-long-context/lfm2.5-24b-a2b-q4_0-cuda-default-ar/jobs/c72da9852b805149/attempt-0001/program",
+    "/home/sagemaker-user/akas/build/single-user-long-context/lfm2.5-24b-a2b-q4_0-cuda-default-ar/jobs/ee9b3acb399892d0/attempt-0001/program",
+    "/home/sagemaker-user/akas/build/single-user-long-context/lfm2.5-24b-a2b-q4_0-cuda-default-ar/jobs/c3ae021132df74fb/attempt-0001/program"
+  ],
+  "reference": "/home/sagemaker-user/akas/build/single-user-long-context/lfm2.5-24b-a2b-q4_0-cuda-default-ar/jobs/eec85b9542449ad4/attempt-0001/report.json",
+  "evidence": "/home/sagemaker-user/akas/build/single-user-long-context/lfm2.5-24b-a2b-q4_0-cuda-default-ar/jobs/eec85b9542449ad4/attempt-0001/diagnostics.npz",
+  "parent_run": "20261019141813878138-8c4f153b",
+  "supervisor_pid": 559563
+}

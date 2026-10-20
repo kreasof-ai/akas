@@ -194,19 +194,22 @@ class Executor(DeviceOwner):
     def prefill_batch(self, requests, sequences, chunk):
         return self.prefill([r.slot for r in requests], sequences, chunk=self.prefill_geometry(chunk))
 
-    def _prefill_groups(self, slots, sequences, chunk):
+    def _prefill_groups(self, slots, sequences, chunk, *, check=None):
         self._check()
         slots, sequences = self._validate_batch(slots, sequences, chunk)
         result = []
         group_size = self._phase_rows(chunk)
         for start in range(0, len(slots), group_size):
+            if check is not None:
+                check()
             stop = start + group_size
             result.extend(
                 self.run_batch(slots[start:stop], sequences[start:stop], chunk=chunk)
             )
         return result
 
-    def prefill(self, slots, prompts, *, chunk=None):
+    def prefill(self, slots, prompts, *, chunk=None, check=None):
+        """Execute prompt chunks, optionally checking a measurement deadline between groups."""
         self._check()
         slots, prompts = list(slots), [list(p) for p in prompts]
         if chunk is None:
@@ -237,6 +240,8 @@ class Executor(DeviceOwner):
         self.last_prefill_chunk, self.last_prefill_frame = None, None
         begin = 0
         while begin < max(map(len,prompts)):
+            if check is not None:
+                check()
             remaining = max(len(prompt)-begin for prompt in prompts)
             wanted = min(budget,remaining)
             chunk = min((value for value in qualified if value >= wanted),default=max(qualified))
@@ -253,16 +258,20 @@ class Executor(DeviceOwner):
                     self._execute_batch([slots[i] for i in indexes],
                                         [prompts[i][begin:begin + chunk] for i in indexes],
                                         chunk, phase="prefill_state", read=False)
+                    if check is not None:
+                        check()
             final = [i for i in active if i not in intermediate]
             if final:
                 result = self._prefill_groups(
                     [slots[i] for i in final],
-                    [prompts[i][begin:begin + chunk] for i in final], chunk)
+                    [prompts[i][begin:begin + chunk] for i in final], chunk, check=check)
                 for index, token in zip(final, result):
                     predicted[index] = token
                 self.last_prefill_chunk = chunk
                 self.last_prefill_frame = getattr(self,"last_frame",None)
             begin += chunk
+        if check is not None:
+            check()
         return predicted
 
     def verify(self, slots, sequences, *, chunk):

@@ -30,8 +30,8 @@
       "computations": [
         "launch:0cf46137694273634a93d7681dadb9f1ee662c224c902a8a2fa630d59ff933f9",
         "launch:14f0347be39f126af2610ae5940d11f823fe8252a02b8b377b8850794a26c857",
-        "launch:1c03e6f3f06b78171a3ea31d4e5e96563523955dbf93e3a0ff9f881e1bddb1e0",
         "launch:1c840fd24314da15a3f6e7a2af252787bc3d359dd6c088264788b010937851bb",
+        "launch:37d4f8b55331bb496617e57c7997bc701cfc6761345e39f456ca8f0680bb8fbc",
         "launch:3c6d03ef9ca782caa79cd48f4b500ab53c448a8694e5e984178146ac77eb354f",
         "launch:3ca6f1c4578f28d0ae84a5c693a9d23e140dabde0002e45d1db3728b604eb1a2",
         "launch:4384ebe33ce4ebd06ed3927b3fb3bf2e96b903028acab096ab1b63d3005b1fe1",
@@ -51,6 +51,21 @@
         "launch:c95878730d5ea9a23a59c7006f612a10a3bb2e2c784d147a1a13907c7ed021a3",
         "launch:e1c3e5fbccc9717e2e1dcd497f84da5b4c5f3d7496acba1674aa9b92c1ab0d9a",
         "launch:f2042a958e61a325fa4be832cff431acb17373cc9946902f05e9af7cc4bdf11f"
+      ],
+      "algorithm_updates": [
+        {
+          "reason": "Replace fixed floating prefill with qualified tile geometry and native FP16 asynchronous staging; preserve legacy scaled-cache eligibility.",
+          "previous": [
+            "launch:1c03e6f3f06b78171a3ea31d4e5e96563523955dbf93e3a0ff9f881e1bddb1e0"
+          ],
+          "replacement": [
+            "launch:37d4f8b55331bb496617e57c7997bc701cfc6761345e39f456ca8f0680bb8fbc"
+          ],
+          "validation": [
+            "tests/test_lfm_moe.py::test_cuda_pipelined_attention_tail_and_inactive",
+            "tests/test_lfm_moe.py::test_moe_model_prefill_decode_and_slot_reuse"
+          ]
+        }
       ]
     },
     {

@@ -81,34 +81,28 @@ def tiled_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
 
     maximum, total = reduction(True), reduction(False)
 
-    def query_dot(queries, keys, i, warp, channel, lane):
-        left = vector(
+    def query_vector(queries, i, warp, channel):
+        return vector(
             [queries[i, warp, channel * dot_width + j] for j in range(dot_width)]
         )
-        right = vector(
+
+    def key_vector(keys, channel, lane):
+        return vector(
             [
                 T.cast(keys[channel * dot_width + j, lane], "float32")
                 for j in range(dot_width)
             ]
         )
-        return (
-            left * right
-            if dot_width == 1
-            else T.call_extern("float32", "dot", left, right)
-        )
 
-    def value_dot(scores, values, i, warp, key, lane):
-        left = vector([scores[i, warp, key * dot_width + j] for j in range(dot_width)])
-        right = vector(
+    def probability_vector(scores, i, warp, key):
+        return vector([scores[i, warp, key * dot_width + j] for j in range(dot_width)])
+
+    def value_vector(values, key, lane):
+        return vector(
             [
                 T.cast(values[key * dot_width + j, lane], "float32")
                 for j in range(dot_width)
             ]
-        )
-        return (
-            left * right
-            if dot_width == 1
-            else T.call_extern("float32", "dot", left, right)
         )
 
     def span(positions, enabled, base):
@@ -120,8 +114,7 @@ def tiled_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
 
     @T.macro
     def probabilities(
-        queries,
-        keys,
+        score: T.Ref,
         scores,
         positions,
         enabled,
@@ -142,11 +135,6 @@ def tiled_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
             and tile * bk + lane < cap
             and tile * bk + lane <= positions[row]
         )
-        score = T.alloc_var("float32")
-        score = 0
-        if valid:
-            for channel in T.serial(d // dot_width):
-                score += query_dot(queries, keys, i, warp, channel, lane)
         score = T.if_then_else(valid, score * 0.125, -T.infinity("float32"))
         peak = T.alloc_var("float32")
         peak = score
@@ -179,10 +167,11 @@ def tiled_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
         warp,
         lane,
     ):
+        dots = registers((bm,))
+        dot_tiles(queries, keys, dots, warp, lane)
         for i in range(bm):
             probabilities(
-                queries,
-                keys,
+                dots[i,][0],
                 scores,
                 positions,
                 enabled,
@@ -197,27 +186,58 @@ def tiled_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
             )
 
     @T.macro
-    def update_values(
-        acc0: T.Ref, acc1: T.Ref, correction, scores, values, warp, lane, i
-    ):
-        acc0 = acc0 * correction
-        acc1 = acc1 * correction
+    def add_score(acc: T.Ref, queries, right, warp, channel, i):
+        left = query_vector(queries, i, warp, channel)
+        if dot_width == 1:
+            acc += left * right
+        else:
+            acc += T.call_extern("float32", "dot", left, right)
+
+    def score_rows(dots, queries, right, warp, channel):
+        for i in range(bm):
+            add_score(dots[i,][0], queries, right, warp, channel, i)
+
+    @T.macro
+    def dot_tiles(queries, keys, dots, warp, lane):
+        for channel in T.serial(d // dot_width):
+            right = T.alloc_var("float32x4" if dot_width == 4 else "float32")
+            right = key_vector(keys, channel, lane)
+            score_rows(dots, queries, right, warp, channel)
+
+    @T.macro
+    def rescale(acc: T.Ref, factor):
+        acc *= factor
+
+    @T.macro
+    def add_value(acc0: T.Ref, acc1: T.Ref, scores, right0, right1, warp, key, i):
+        left = probability_vector(scores, i, warp, key)
+        if dot_width == 1:
+            acc0 += left * right0
+            acc1 += left * right1
+        else:
+            acc0 += T.call_extern("float32", "dot", left, right0)
+            acc1 += T.call_extern("float32", "dot", left, right1)
+
+    def value_rows(accum, scores, right0, right1, warp, key):
+        for i in range(bm):
+            add_value(
+                accum[i, 0][0], accum[i, 1][0], scores, right0, right1, warp, key, i
+            )
+
+    @T.macro
+    def value_tiles(accum, scores, values, warp, lane):
         for key in T.serial(bk // dot_width):
-            acc0 += value_dot(scores, values, i, warp, key, lane)
-            acc1 += value_dot(scores, values, i, warp, key, lane + 32)
+            right0 = T.alloc_var("float32x4" if dot_width == 4 else "float32")
+            right1 = T.alloc_var("float32x4" if dot_width == 4 else "float32")
+            right0 = value_vector(values, key, lane)
+            right1 = value_vector(values, key, lane + 32)
+            value_rows(accum, scores, right0, right1, warp, key)
 
     def accumulate(accum, factors, scores, values, warp, lane):
         for i in range(bm):
-            update_values(
-                accum[i, 0][0],
-                accum[i, 1][0],
-                factors[i,][0],
-                scores,
-                values,
-                warp,
-                lane,
-                i,
-            )
+            for side in range(2):
+                rescale(accum[i, side][0], factors[i,][0])
+        value_tiles(accum, scores, values, warp, lane)
 
     @T.macro
     def store(out, enabled, value, norm, base, head, lane, i, side):

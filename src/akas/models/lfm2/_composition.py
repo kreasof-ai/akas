@@ -210,6 +210,7 @@ def compose(
                 d=d,
                 capacity=capacity,
                 kv_dtype=kv_dtype,
+                unit_scales=kv_dtype in ("float16", "float32"),
                 provider=provider,
                 **{"chunk": chunk} if chunk > 1 else {},
                 **{"optimized": True} if optimized else {},

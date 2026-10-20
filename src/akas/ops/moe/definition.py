@@ -966,6 +966,12 @@ IMPLEMENTATIONS += (
         "akas.ops.moe.cuda",
         "reference",
         factory="quantized_experts_warp",
+        defaults=(("columns_per_warp", 1), ("threads", 128), ("unroll", 1)),
+        space=(
+            ("columns_per_warp", (1, 2, 4)),
+            ("threads", (128, 256)),
+            ("unroll", (1, 2, 4)),
+        ),
         priority=30,
         accepts=lambda p: p["r"] == 1,
     ),

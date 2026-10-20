@@ -19,6 +19,14 @@ def cache_reader(p):
         shape = (p["r"] // p.get("chunk", 1), p["kh"], p["capacity"], p["d"])
         codec = get(p["kv_dtype"]).bind(shape, provider=p["provider"])
         read = cache_arguments(codec.read)
+    elif p.get("unit_scales", False):
+
+        @T.macro
+        def read(cache, metadata, slot, head, position, channel):
+            return (
+                T.cast(cache[slot, head, position, channel], "float32")
+                * metadata[slot, head, 0, 0]
+            )
     else:
 
         @T.macro
@@ -89,6 +97,114 @@ def merge_floating(spec: KernelSpec, schedule: Mapping[str, object]):
         return out
 
     return compute
+
+
+def tiled_partial_floating(spec: KernelSpec, schedule: Mapping[str, object]):
+    """Reuse a KV tile across grouped heads and normalize once per key tile."""
+    import tilelang.language as T
+    from akas.ops.attention.kernel import cache_reader
+
+    p = {**spec.parameters, **schedule}
+    rows, heads, kh, d, cap = (p[n] for n in ("r", "h", "kh", "d", "capacity"))
+    group, splits = heads // kh, p.get("splits", 16)
+    if d != 64 or heads % kh or group not in (1, 2, 4, 8):
+        raise ValueError("unsupported grouped floating decode geometry")
+    storage, read = cache_reader(p)
+    webgpu = p["provider"] == "webgpu"
+
+    @T.macro
+    def exchange(value, offset):
+        if webgpu:
+            return T.call_extern(
+                "float32", "subgroupShuffleXor", value, T.uint32(offset)
+            )
+        else:
+            return T.shfl_xor(value, offset)
+
+    @kernel
+    def compute(
+        q: Tensor((rows, heads * d), "float32"),
+        kc: Tensor(storage.values.shape, storage.values.dtype),
+        vc: Tensor(storage.values.shape, storage.values.dtype),
+        ks: Tensor(storage.metadata[0].shape, "float32"),
+        vs: Tensor(storage.metadata[0].shape, "float32"),
+        positions: Tensor(rows, "int32"),
+        enabled: Tensor(rows, "int32"),
+    ) -> Tensor(rows * heads * splits * 66, "float32"):
+        out = output(rows * heads * splits * 66, "float32", position=5)
+        with T.Kernel(kh, rows, splits, threads=group * 32) as (kv_head, slot, split):
+            tx = T.get_thread_binding()
+            head, lane = tx // 32, tx % 32
+            length = T.if_then_else(
+                enabled[slot] != 0, T.min(positions[slot] + 1, cap), 0
+            )
+            span = T.truncdiv(length + splits - 1, splits)
+            begin, end = split * span, T.min((split + 1) * span, length)
+            queries = T.alloc_shared((group, d), "float32")
+            keys = T.alloc_shared((d, 33), "float32")
+            values = T.alloc_shared((32, d), "float32")
+            probabilities = T.alloc_shared((group, 32), "float32")
+            maximum, normalizer = T.alloc_var("float32"), T.alloc_var("float32")
+            acc0, acc1 = T.alloc_var("float32"), T.alloc_var("float32")
+            maximum, normalizer, acc0, acc1 = -T.infinity("float32"), 0, 0, 0
+            queries[head, lane] = q[slot, (kv_head * group + head) * d + lane]
+            queries[head, lane + 32] = q[slot, (kv_head * group + head) * d + lane + 32]
+            T.sync_threads()
+            for tile in T.serial(T.truncdiv(T.max(end - begin, 0) + 31, 32)):
+                base = begin + tile * 32
+                for key, channel in T.Parallel(32, d):
+                    keys[channel, key] = T.if_then_else(
+                        base + key < end,
+                        read(kc, ks, slot, kv_head, base + key, channel),
+                        0,
+                    )
+                    values[key, channel] = T.if_then_else(
+                        base + key < end,
+                        read(vc, vs, slot, kv_head, base + key, channel),
+                        0,
+                    )
+                T.sync_threads()
+                score = T.alloc_var("float32")
+                score = 0
+                for channel in T.serial(d // 4):
+                    for j in T.unroll(4):
+                        score += (
+                            queries[head, channel * 4 + j] * keys[channel * 4 + j, lane]
+                        )
+                score = T.if_then_else(
+                    base + lane < end, score * 0.125, -T.infinity("float32")
+                )
+                peak = T.alloc_var("float32")
+                peak = score
+                for step in T.unroll(5):
+                    peak = T.max(peak, exchange(peak, 16 >> step))
+                next_max = T.max(maximum, peak)
+                correction = T.exp(maximum - next_max)
+                probability = T.if_then_else(
+                    base + lane < end, T.exp(score - next_max), 0
+                )
+                norm = T.alloc_var("float32")
+                norm = probability
+                for step in T.unroll(5):
+                    norm += exchange(norm, 16 >> step)
+                normalizer = normalizer * correction + norm
+                maximum = next_max
+                probabilities[head, lane] = probability
+                acc0, acc1 = acc0 * correction, acc1 * correction
+                T.sync_threads()
+                for key in T.serial(32):
+                    acc0 += probabilities[head, key] * values[key, lane]
+                    acc1 += probabilities[head, key] * values[key, lane + 32]
+                T.sync_threads()
+            offset = ((slot * heads + kv_head * group + head) * splits + split) * 66
+            out[offset + lane] = acc0
+            out[offset + lane + 32] = acc1
+            if lane == 0:
+                out[offset + 64] = maximum
+                out[offset + 65] = normalizer
+        return out
+
+    return compute.with_attr("tirx.noalias", True)
 
 
 def partial_floating(spec: KernelSpec, schedule: Mapping[str, object]):

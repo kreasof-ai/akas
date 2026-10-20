@@ -77,6 +77,12 @@ output rows at a time for the independent host expectation. Immutable inputs
 share their original arrays. Validation memory therefore includes the packed
 input bank and small working tiles, without a full floating expert-bank copy.
 
+CUDA packed expert decode exposes columns per warp, thread count and depth-loop
+unrolling. Activation values can be reused across output columns while retaining
+FP16 operand rounding, FP32 accumulation and the same per-column summation
+order. Larger tiles are candidates rather than presumed improvements; the
+single-column schedule remains the default.
+
 ## How to extend
 
 Define route indices, counts, padding, tie handling and output accumulation

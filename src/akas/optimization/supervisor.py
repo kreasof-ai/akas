@@ -138,11 +138,10 @@ def execute(
                         phase = json.loads(progress_path.read_text()).get("phase")
                     except (OSError, ValueError):
                         pass
-                measuring = phase in ("validating-and-measuring", "http-validation")
-                if not measuring and time.monotonic() >= end:
+                if time.monotonic() >= end:
                     result = dict(
                         status="budget_exhausted",
-                        error="worker wall-clock deadline exceeded",
+                        error=f"worker wall-clock deadline exceeded during {phase or 'startup'}",
                     )
                     break
                 if changed():
@@ -193,9 +192,7 @@ def execute(
                             break
                     except (OSError, subprocess.SubprocessError, ValueError):
                         pass
-                time.sleep(
-                    0.2 if measuring else min(0.2, max(0, end - time.monotonic()))
-                )
+                time.sleep(min(0.2, max(0, end - time.monotonic())))
             if result is None:
                 result = (
                     json.loads(result_path.read_text())
@@ -264,6 +261,10 @@ def optimize(context: Context, out, *, budget, history="benchmarks"):
         checkpoint_sha256=checkpoint_hash,
         source_sha256=source["tree_sha256"],
         software=software(),
+        measurement_limits=dict(
+            shape_timeout_seconds=float(os.environ.get("AKAS_SHAPE_TIMEOUT", "0")),
+            http_timeout_seconds=os.environ.get("AKAS_HTTP_TIMEOUT"),
+        ),
     )
     fingerprint = identity(frozen)
     with (

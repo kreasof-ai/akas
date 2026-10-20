@@ -173,6 +173,9 @@ def candidate(job, output):
         needed = max(bound["largest_buffer_bytes"] for bound in bounds)
         memory = context.get("memory_bytes")
         # Raw graph sizes are upper estimates; actual allocations are measured below.
+        metadata["shape_timeout_seconds"] = float(
+            os.environ.get("AKAS_SHAPE_TIMEOUT", "0")
+        )
         metadata["memory_estimate"] = bounds
         metadata["memory_bound"] = memory_bound([g for _, g in graphs])
         available = (
@@ -292,6 +295,8 @@ def candidate(job, output):
             deployment=str(root / "candidate.json"),
         )
     except BaseException as error:
+        if isinstance(error, TimeoutError) and hasattr(error, "results"):
+            report["results"] = error.results
         result.update(
             status="oom"
             if isinstance(error, MemoryError) or "out of memory" in str(error).lower()
@@ -301,7 +306,10 @@ def candidate(job, output):
         )
         report["metadata"]["error"] = result["error"]
         for row in report["results"]:
-            row.update(status="error", error=result["error"])
+            row.update(
+                status="timeout" if row.get("status") == "timeout" else "error",
+                error=result["error"],
+            )
         print(result["traceback"], flush=True)
     finally:
         if (root / "telemetry.json").exists():
