@@ -28,6 +28,12 @@ def dequantize(spec, schedule):
     return dequantize(spec, schedule)
 
 
+def stage(spec, schedule):
+    from .kernel import stage
+
+    return stage(spec, schedule, provider="webgpu")
+
+
 AVAILABLE = "webgpu" in dict(FORMAT.providers)
-CAPABILITIES = ("read", "read_tile", "write", "quantize", "dequantize")
+CAPABILITIES = ("read", "read_tile", "write", "quantize", "dequantize", "stage")
 IMPLEMENTATIONS = tuple(choice for choice in _CHOICES if choice.provider == "webgpu")

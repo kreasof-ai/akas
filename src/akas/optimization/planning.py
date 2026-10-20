@@ -139,8 +139,9 @@ def probe(context, provider):
             )
             graph = composed.graph if isinstance(composed, Composition) else composed
             chunks.append(chunk)
-            if len(chunks) == 1:
-                policies = candidates(graph, provider=provider, target=device["arch"])
+            for policy in candidates(graph, provider=provider, target=device["arch"]):
+                if policy not in policies:
+                    policies.append(policy)
         except (ValueError, TypeError, NotImplementedError) as error:
             failures.append(dict(chunk=chunk, error=str(error)))
     if not chunks:
@@ -297,7 +298,8 @@ def recipes(context, probes):
         for group in dict.fromkeys(min(capacity, n) for n in (1, 8, 64)):
             add(p, group=group)
         for policy in p["policies"]:
-            add(p, policy=policy)
+            for chunk in p["chunks"]:
+                add(p, chunk=chunk, policy=policy)
         for options in p.get("option_variants", ()):
             add(p, model_options=options)
         for window in p["windows"]:

@@ -29446,6 +29446,126 @@
       "shapes": [],
       "search_phases": 0,
       "path": "runs/20261020164832022700-f09e0d7b/run.json"
+    },
+    {
+      "id": "20261020170127736154-28a52ca6",
+      "started_at": "2026-10-20T17:01:27.736154Z",
+      "status": "passed",
+      "revision": "302a6e5edbebba8f11fa9879e19f8bda69004b05",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": null,
+      "weight_format": null,
+      "change": {
+        "kind": "algorithm",
+        "description": "Qualify live-query extent reduction in native pipelined attention",
+        "parent_run": null
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020170127736154-28a52ca6/run.json"
+    },
+    {
+      "id": "20261020171535495972-1467d3ea",
+      "started_at": "2026-10-20T17:15:35.495972Z",
+      "status": "passed",
+      "revision": "302a6e5edbebba8f11fa9879e19f8bda69004b05",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": null,
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Evaluate Pattention-style complete Q4 expert fusion against materialized and packed staged execution",
+        "parent_run": null
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020171535495972-1467d3ea/run.json"
+    },
+    {
+      "id": "20261020171720584346-843bdded",
+      "started_at": "2026-10-20T17:17:20.584346Z",
+      "status": "passed",
+      "revision": "302a6e5edbebba8f11fa9879e19f8bda69004b05",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "fp8",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "diagnostic",
+        "description": "Measure per-layer real expert load imbalance and useful row fractions before selecting fusion geometry",
+        "parent_run": "20261020152431734974-3777f95e"
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020171720584346-843bdded/run.json"
+    },
+    {
+      "id": "20261020171909376914-af450157",
+      "started_at": "2026-10-20T17:19:09.376914Z",
+      "status": "passed",
+      "revision": "302a6e5edbebba8f11fa9879e19f8bda69004b05",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": null,
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Evaluate Pattention-style complete Q4 expert fusion against materialized and packed staged execution",
+        "parent_run": null
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020171909376914-af450157/run.json"
+    },
+    {
+      "id": "20261020172052480924-ed16a947",
+      "started_at": "2026-10-20T17:20:52.480924Z",
+      "status": "passed",
+      "revision": "302a6e5edbebba8f11fa9879e19f8bda69004b05",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": null,
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Evaluate Pattention-style complete Q4 expert fusion against materialized and packed staged execution",
+        "parent_run": null
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261020172052480924-ed16a947/run.json"
     }
   ]
 }

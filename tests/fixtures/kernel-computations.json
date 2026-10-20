@@ -66,6 +66,21 @@
             "tests/test_lfm_moe.py::test_moe_model_prefill_decode_and_slot_reuse"
           ]
         }
+      ],
+      "qualified_replacements": [
+        {
+          "original": [
+            "launch:37d4f8b55331bb496617e57c7997bc701cfc6761345e39f456ca8f0680bb8fbc"
+          ],
+          "replacement": [
+            "launch:416008a945e89aef0f67a3a431d401e03d2cf8f70bea33ed067b984f5d1d4ae0"
+          ],
+          "reason": "Use the maximum enabled query position for each native attention tile so inactive tails cannot truncate a live prefix; arithmetic remains bitwise equivalent on the original valid-query domain.",
+          "qualification_tests": [
+            "tests/test_attention_cache_staging.py::test_staged_attention_matches_fp8_oracle_with_poisoned_padding"
+          ],
+          "qualification_run": "20261020170127736154-28a52ca6"
+        }
       ]
     },
     {

@@ -2093,9 +2093,17 @@ def floating(spec: KernelSpec, schedule: Mapping[str, object]):
             T.clear(result)
             T.clear(normalizer)
             T.fill(maximum, -T.infinity("float32"))
-            tile_count = T.ceildiv(
-                positions[slot * chunk + T.min(chunk - 1, (bx + 1) * bq - 1)] + 1, bk
-            )
+            limits = T.alloc_fragment((bq,), "int32")
+            live = T.alloc_fragment((1,), "int32")
+            for i in T.Parallel(bq):
+                row = slot * chunk + T.min(bx * bq + i, chunk - 1)
+                limits[i] = T.if_then_else(
+                    bx * bq + i < chunk and enabled[row] != 0,
+                    positions[row] + 1,
+                    0,
+                )
+            T.reduce_max(limits, live, dim=0)
+            tile_count = T.ceildiv(live[0], bk)
             pipeline_tiles = 4 if async_loads else 1
             for block in T.serial(T.ceildiv(tile_count, pipeline_tiles)):
                 for local in T.Pipelined(pipeline_tiles, num_stages=stages):
@@ -3575,6 +3583,7 @@ def decode(spec: KernelSpec, schedule: Mapping[str, object]):
 from .kernel import (
     attention as shared_attention,
     attention_flat,
+    cache_extent,
     cache_write,
     chunk_active,
     merge_floating,

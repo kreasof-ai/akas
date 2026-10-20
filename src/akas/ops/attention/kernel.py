@@ -1,5 +1,43 @@
 """Shared TileLang computations for attention."""
 
+
+def cache_extent(spec, schedule):
+    """Return each request's live cache prefix from its enabled query rows."""
+    import tilelang.language as T
+    from akas.kernels.kernel import Tensor, kernel, output
+    from akas.kernels.reductions import tree_reduce
+
+    p = {**spec.parameters, **schedule}
+    slots, chunk, capacity = (p[name] for name in ("slots", "chunk", "capacity"))
+    rows = slots * chunk
+    maximum = tree_reduce(128, "max")
+
+    @kernel
+    def compute(
+        positions: Tensor((rows,), "int32"),
+        enabled: Tensor((rows,), "int32"),
+    ) -> Tensor((slots,), "int32"):
+        lengths = output((slots,), "int32")
+        with T.Kernel(slots, threads=128) as slot:
+            tx = T.get_thread_binding()
+            scratch = T.alloc_shared((128,), "int32")
+            value = T.alloc_var("int32")
+            value = 0
+            for tile in T.serial(T.ceildiv(chunk, 128)):
+                index = tile * 128 + tx
+                row = slot * chunk + T.min(index, chunk - 1)
+                if index < chunk and enabled[row] != 0:
+                    value = T.max(value, positions[row] + 1)
+            scratch[tx] = value
+            T.sync_threads()
+            maximum(scratch, tx)
+            if tx == 0:
+                lengths[slot] = T.min(T.max(scratch[0], 0), capacity)
+        return lengths
+
+    return compute
+
+
 from collections.abc import Mapping
 from akas.kernels.definition import KernelSpec
 from akas.kernels.kernel import Tensor, kernel, output

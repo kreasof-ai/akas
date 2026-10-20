@@ -74,6 +74,22 @@ improve occupancy. Native F16 prefill keeps its direct-load implementation.
 The maximum **live** query position determines the cache extent, so inactive
 query tails cannot expose future cache entries to the value product.
 
+The compiler can also materialize decoded KV once per prefill operation.
+`attention_cache_extent(positions, enabled) -> lengths` establishes the live
+prefix, then the quantization codec's `kv_stage` produces temporary FP16 keys,
+values and unit metadata. Native pipelined attention reads these coefficients
+directly. FP8 payloads and F32 cache scales remain persistent; the FP16 values
+have the same rounding as the fused FP8-to-MMA path. One temporary pair is
+shared across compatible attention calls, rather than allocated per layer.
+
+The CUDA `decoded_kv` graph-policy candidate applies to chunks of at least 256
+tokens and capacities divisible by 512, so native load groups stay in bounds.
+Smaller chunks keep their fused path. Search measures the complete conversion
+and attention plan, including its extra temporary memory. Both providers expose
+extent and conversion operations; selecting this full attention policy is
+currently qualified on CUDA. A conversion capability alone establishes no
+WebGPU model speedup.
+
 Complete groups of four key tiles use `T.Pipelined`. At most four final tiles
 use guarded loads, keeping unused or nonfinite future cache entries out of PV.
 Separating the tail also avoids asking the compiler to pipeline a dynamically

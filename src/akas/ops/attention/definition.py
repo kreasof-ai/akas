@@ -2,6 +2,7 @@
 
 from akas.kernels.contracts import OutputABI
 from akas.ops.attention.validation import validation
+from akas.ops.attention.validation import extent_validation
 from akas.kernels.contracts import Implementation
 from akas.quantization.kv import is_quantized
 from akas.ops.attention.validation import pipeline_validation as pipeline_validation
@@ -168,7 +169,12 @@ def search_policies(graph, commit, *, provider, target):
             and call.parameters.get("optimized")
             for call in graph.calls
         ):
-            return [{"splits": count} for count in (32, 64, 128)]
+            choices = [{"splits": count} for count in (32, 64, 128)]
+            if provider == "cuda" and any(
+                _can_stage_prefill(call) for call in graph.calls
+            ):
+                choices += [dict(choice, decoded_kv=True) for choice in choices]
+            return choices
         return []
     if (
         graph.contract != "block-fp8"
@@ -183,6 +189,100 @@ def search_policies(graph, commit, *, provider, target):
     if target == "sm_90a":
         choices.append({"hopper": True, "decoded_kv": True, "splits": 2})
     return choices
+
+
+def _can_stage_prefill(call):
+    """Limit full-cache materialization to compatible, amortized MMA chunks."""
+    p = call.parameters
+    eligible = (
+        call.kind == "attention"
+        and p.get("optimized", False)
+        and p.get("kv_dtype") not in (None, "float16", "float32", "bfloat16")
+        and p.get("chunk", 1) >= 256
+        and p.get("d") == 64
+        and p.get("capacity", 0) >= 4096
+        and p["capacity"] % 512 == 0
+    )
+    if not eligible:
+        return False
+    from akas.quantization.kv import get
+
+    try:
+        return get(p["kv_dtype"]).supports(
+            "stage",
+            (p["r"] // p["chunk"], p["kh"], p["capacity"], p["d"]),
+            provider="cuda",
+        )
+    except ValueError:
+        return False
+
+
+def _stage_prefill(graph, call, workspaces):
+    """Expose conversion to qualification/search and share temporary allocations."""
+    from akas.graph import Call
+
+    p = call.parameters
+    slots, heads, capacity, depth = (
+        p["r"] // p["chunk"],
+        p["kh"],
+        p["capacity"],
+        p["d"],
+    )
+    names = (
+        dict(call.bindings)
+        if call.bindings
+        else dict(
+            zip(
+                ("q", "kc", "vc", "ks", "vs", "out", "positions", "enabled"),
+                call.arguments,
+            )
+        )
+    )
+    if set(names) != {"q", "kc", "vc", "ks", "vs", "out", "positions", "enabled"}:
+        raise ValueError("cache staging requires the floating attention ABI")
+    shape = (slots, heads, capacity, depth)
+    if shape not in workspaces:
+        prefix = f"pipeline.attention.stage.{len(workspaces)}."
+        workspaces[shape] = (
+            graph.buffer(prefix + "lengths", (slots,), "int32"),
+            graph.buffer(prefix + "keys", shape, "float16"),
+            graph.buffer(prefix + "values", shape, "float16"),
+            graph.buffer(prefix + "scales", (*shape[:-1], 1), "float32"),
+        )
+    lengths, keys, values, scales = workspaces[shape]
+    extent = Call(
+        "attention_cache_extent",
+        dict(slots=slots, chunk=p["chunk"], capacity=capacity),
+        (names["positions"], names["enabled"], lengths.name),
+    )
+    stage = Call(
+        "kv_stage",
+        dict(
+            slots=slots,
+            kv_heads=heads,
+            capacity=capacity,
+            d=depth,
+            kv_dtype=p["kv_dtype"],
+        ),
+        tuple(names[name] for name in ("kc", "vc", "ks", "vs"))
+        + (lengths.name, keys.name, values.name, scales.name),
+    )
+    attention = Call(
+        "attention",
+        {**p, "kv_dtype": "float16", "unit_scales": True, "staged_kv": True},
+        (
+            names["q"],
+            keys.name,
+            values.name,
+            scales.name,
+            scales.name,
+            names["out"],
+            names["positions"],
+            names["enabled"],
+        ),
+        label=call.label,
+    )
+    return extent, stage, attention
 
 
 def lower(graph, commit, settings, *, provider, target):
@@ -205,20 +305,30 @@ def lower(graph, commit, settings, *, provider, target):
     if graph.contract == "reference":
         from dataclasses import replace
 
-        if (
-            set(settings) != {"splits"}
-            or type(settings["splits"]) is not int
+        if not settings or set(settings) - {"splits", "decoded_kv"}:
+            raise ValueError("unknown floating attention policy")
+        if "splits" in settings and (
+            type(settings["splits"]) is not int
             or settings["splits"] not in (1, 2, 4, 8, 16, 32, 64, 128)
         ):
             raise ValueError(
                 "floating attention policy requires a supported split count"
             )
-        calls = []
+        if "decoded_kv" in settings and type(settings["decoded_kv"]) is not bool:
+            raise ValueError("decoded KV policy must be a boolean")
+        if settings.get("decoded_kv") and provider != "cuda":
+            raise ValueError("staged floating attention is currently qualified on CUDA")
+        calls, workspaces = [], {}
         for call in graph.calls:
-            if call.kind in (
-                "attention_partial",
-                "attention_merge",
-            ) and call.parameters.get("optimized"):
+            if (
+                "splits" in settings
+                and call.kind
+                in (
+                    "attention_partial",
+                    "attention_merge",
+                )
+                and call.parameters.get("optimized")
+            ):
                 p = {**call.parameters, "splits": settings["splits"]}
                 if call.kind == "attention_partial":
                     name = (
@@ -235,6 +345,9 @@ def lower(graph, commit, settings, *, provider, target):
                     object.__setattr__(buffer, "_graph", graph)
                     graph.buffers[name] = buffer
                 call = replace(call, parameters=p)
+            if settings.get("decoded_kv") and _can_stage_prefill(call):
+                calls.extend(_stage_prefill(graph, call, workspaces))
+                continue
             calls.append(call)
         graph.calls = calls
         return graph, commit
@@ -464,6 +577,7 @@ OUTPUT_ARGUMENTS = {
         "attention": (5,),
         "attention_partial": (5,),
         "attention_merge": (1,),
+        "attention_cache_extent": OutputABI((-1,), ("lengths",)),
     }
 }
 OUTPUT_ARGUMENTS["block-fp8"] = {
@@ -519,6 +633,7 @@ VALIDATIONS = {
         "attention_kv",
     )
 }
+VALIDATIONS["attention_cache_extent"] = extent_validation
 VALIDATIONS.update(
     {
         name: pipeline_validation
@@ -906,6 +1021,18 @@ IMPLEMENTATIONS = (
         factory="attention",
         name="attention.hardware.hopper.prefill",
     ),
+)
+
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        "attention_cache_extent",
+        f"akas.ops.attention.{provider}",
+        "reference",
+        provider=provider,
+        factory="cache_extent",
+        name="attention.cache_extent",
+    )
+    for provider in ("cuda", "webgpu")
 )
 
 IMPLEMENTATIONS += (

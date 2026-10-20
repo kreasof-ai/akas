@@ -1,6 +1,28 @@
 """Independent numerical and state qualification for attention."""
 
 
+def extent_validation(kind, p, signature):
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    values = sample_arguments(signature)
+    slots, chunk, capacity = (p[name] for name in ("slots", "chunk", "capacity"))
+    positions = values["positions"].reshape(slots, chunk)
+    active = values["enabled"].reshape(slots, chunk)
+    positions[:] = np.arange(chunk) + max(0, capacity - chunk)
+    active[:] = 1
+    active[:, -1] = 0
+    if slots > 1:
+        active[-1] = 0
+    expected = dict(values)
+    expected["lengths"] = (
+        np.maximum(np.where(active != 0, positions + 1, 0).max(axis=1), 0)
+        .clip(max=capacity)
+        .astype("int32")
+    )
+    return ValidationCase(values, expected, rtol=0, atol=0)
+
+
 def pipeline_validation(kind, p, signature):
     import numpy as np
     from tensor.runtime.dtypes import decode_bfloat16, encode_bfloat16

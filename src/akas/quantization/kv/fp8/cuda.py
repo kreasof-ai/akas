@@ -232,6 +232,64 @@ def dequantize(spec, schedule):
     return kv_decode(spec, schedule)
 
 
+def stage(spec, schedule):
+    """Decode each FP8 coefficient once for a native F16 cache consumer."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    slots, heads, capacity, depth = (
+        p[name] for name in ("slots", "kv_heads", "capacity", "d")
+    )
+    shape = (slots, heads, capacity, depth)
+    metadata = (slots, heads, capacity, (depth + BLOCK - 1) // BLOCK)
+    units = (slots, heads, capacity, 1)
+    block = 128
+
+    @kernel
+    def compute(
+        kc: Tensor(shape, "uint8"),
+        vc: Tensor(shape, "uint8"),
+        ks: Tensor(metadata, "float32"),
+        vs: Tensor(metadata, "float32"),
+        lengths: Tensor((slots,), "int32"),
+    ) -> tuple[
+        Tensor(shape, "float16"),
+        Tensor(shape, "float16"),
+        Tensor(units, "float32"),
+    ]:
+        keys = output(shape, "float16")
+        values = output(shape, "float16")
+        scales = output(units, "float32")
+        encoded_k = T.meta_var(T.view(kc, dtype=PACKED_DTYPE))
+        encoded_v = T.meta_var(T.view(vc, dtype=PACKED_DTYPE))
+        with T.Kernel(T.ceildiv(capacity, block), heads, slots, threads=256) as (
+            tile,
+            head,
+            slot,
+        ):
+            for i, j in T.Parallel(block, depth):
+                position = tile * block + i
+                if position < capacity:
+                    keys[slot, head, position, j] = T.if_then_else(
+                        position < lengths[slot],
+                        T.cast(encoded_k[slot, head, position, j], "float32")
+                        * ks[slot, head, position, j // BLOCK],
+                        0,
+                    )
+                    values[slot, head, position, j] = T.if_then_else(
+                        position < lengths[slot],
+                        T.cast(encoded_v[slot, head, position, j], "float32")
+                        * vs[slot, head, position, j // BLOCK],
+                        0,
+                    )
+            for i in T.Parallel(block):
+                if tile * block + i < capacity:
+                    scales[slot, head, tile * block + i, 0] = 1
+        return keys, values, scales
+
+    return compute
+
+
 AVAILABLE = "cuda" in dict(FORMAT.providers)
 CAPABILITIES = (
     "read",
@@ -241,5 +299,6 @@ CAPABILITIES = (
     "read_packed",
     "quantize",
     "dequantize",
+    "stage",
 )
 IMPLEMENTATIONS = tuple(choice for choice in _CHOICES if choice.provider == "cuda")

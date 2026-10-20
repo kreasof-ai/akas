@@ -1,0 +1,182 @@
+[
+  {
+    "name": "small",
+    "parameters": {
+      "r": 33,
+      "top": 2,
+      "experts": 4,
+      "k": 256,
+      "hidden": 128,
+      "o": 128,
+      "block_m": 16,
+      "block_n": 32,
+      "block_k": 64,
+      "block_d": 64,
+      "threads": 128,
+      "weight_parts": [
+        {
+          "rows": 512,
+          "format": "ggml",
+          "options": {
+            "encoding": 2
+          }
+        }
+      ],
+      "down_parts": [
+        {
+          "rows": 512,
+          "format": "ggml",
+          "options": {
+            "encoding": 2
+          }
+        }
+      ]
+    },
+    "passed": true,
+    "seconds": 7.637646713992581
+  },
+  {
+    "name": "full-16-32-128-128",
+    "parameters": {
+      "r": 4096,
+      "top": 4,
+      "experts": 64,
+      "k": 2048,
+      "hidden": 1536,
+      "o": 2048,
+      "block_m": 16,
+      "block_n": 32,
+      "block_k": 64,
+      "block_d": 128,
+      "threads": 128,
+      "weight_parts": [
+        {
+          "rows": 98304,
+          "format": "ggml",
+          "options": {
+            "encoding": 2
+          }
+        }
+      ],
+      "down_parts": [
+        {
+          "rows": 131072,
+          "format": "ggml",
+          "options": {
+            "encoding": 2
+          }
+        }
+      ]
+    },
+    "passed": true,
+    "seconds": 4.584194268973079
+  },
+  {
+    "name": "full-16-32-512-128",
+    "parameters": {
+      "r": 4096,
+      "top": 4,
+      "experts": 64,
+      "k": 2048,
+      "hidden": 1536,
+      "o": 2048,
+      "block_m": 16,
+      "block_n": 32,
+      "block_k": 64,
+      "block_d": 512,
+      "threads": 128,
+      "weight_parts": [
+        {
+          "rows": 98304,
+          "format": "ggml",
+          "options": {
+            "encoding": 2
+          }
+        }
+      ],
+      "down_parts": [
+        {
+          "rows": 131072,
+          "format": "ggml",
+          "options": {
+            "encoding": 2
+          }
+        }
+      ]
+    },
+    "passed": true,
+    "seconds": 4.466959526995197
+  },
+  {
+    "name": "full-16-32-1024-128",
+    "parameters": {
+      "r": 4096,
+      "top": 4,
+      "experts": 64,
+      "k": 2048,
+      "hidden": 1536,
+      "o": 2048,
+      "block_m": 16,
+      "block_n": 32,
+      "block_k": 64,
+      "block_d": 1024,
+      "threads": 128,
+      "weight_parts": [
+        {
+          "rows": 98304,
+          "format": "ggml",
+          "options": {
+            "encoding": 2
+          }
+        }
+      ],
+      "down_parts": [
+        {
+          "rows": 131072,
+          "format": "ggml",
+          "options": {
+            "encoding": 2
+          }
+        }
+      ]
+    },
+    "passed": true,
+    "seconds": 4.635787840001285
+  },
+  {
+    "name": "full-32-32-1024-256",
+    "parameters": {
+      "r": 4096,
+      "top": 4,
+      "experts": 64,
+      "k": 2048,
+      "hidden": 1536,
+      "o": 2048,
+      "block_m": 32,
+      "block_n": 32,
+      "block_k": 64,
+      "block_d": 1024,
+      "threads": 256,
+      "weight_parts": [
+        {
+          "rows": 98304,
+          "format": "ggml",
+          "options": {
+            "encoding": 2
+          }
+        }
+      ],
+      "down_parts": [
+        {
+          "rows": 131072,
+          "format": "ggml",
+          "options": {
+            "encoding": 2
+          }
+        }
+      ]
+    },
+    "passed": true,
+    "seconds": 4.5248096660361625
+  }
+]

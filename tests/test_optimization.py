@@ -112,6 +112,9 @@ def test_automatic_recipes_preserve_model_precision_and_use_operation_policies()
     assert not choices[0]["graphs"] and choices[0]["trials"] == 1
     assert len({c["id"] for c in choices}) == len(choices)
     assert any(c["policy"] for c in choices)
+    assert {
+        c["chunk"] for c in choices if c["policy"] == dict(linear=dict(partitions=2))
+    } == {32, 128, 1}
     assert {c["window"] for c in choices} == {None, 2, 4}
     assert all(c["model_options"] == p["model_options"] for c in choices)
     assert all(c["trials"] == 1 for c in choices)
@@ -123,6 +126,48 @@ def test_automatic_recipes_preserve_model_precision_and_use_operation_policies()
         and deeper["id"] != selected["id"]
     )
     assert refine(deeper, 8) is None
+
+
+def test_probe_discovers_policies_from_later_chunk_geometries(monkeypatch):
+    from dataclasses import dataclass
+    from types import SimpleNamespace
+    import akas.optimization.planning as planning
+    import akas.compilation.policy as policy
+    from akas.graph import Graph
+
+    @dataclass
+    class Config:
+        width: int = 64
+
+    def compose(checkpoint, **options):
+        graph = Graph(contract="reference")
+        graph.chunk = options["chunk"]
+        return graph
+
+    model = SimpleNamespace(
+        checkpoint_type=lambda path: SimpleNamespace(config=Config()),
+        compose=compose,
+        optimization_chunks=(32, 4096),
+        optimization_space=(),
+    )
+    monkeypatch.setattr(planning, "symbol", lambda name: model)
+    monkeypatch.setattr(planning, "hardware", lambda *args: dict(arch="sm_89"))
+    monkeypatch.setattr(planning, "software", lambda: {})
+    monkeypatch.setattr(
+        policy,
+        "candidates",
+        lambda graph, **kwargs: (
+            [{}, dict(attention=dict(decoded_kv=True))] if graph.chunk == 4096 else [{}]
+        ),
+    )
+    settings = {
+        **context(),
+        "mode": "ar",
+        "workload": {**context()["workload"], "prefix_tokens": [32, 8192]},
+    }
+    result = planning.probe(settings, "cuda")
+    assert result["status"] == "ok"
+    assert dict(attention=dict(decoded_kv=True)) in result["policies"]
 
 
 def test_partial_beam_progress_resumes_and_requalifies_winner(tmp_path):

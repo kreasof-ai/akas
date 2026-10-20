@@ -42,10 +42,11 @@ OUTPUT_ARGUMENTS = {
     "*": {
         "kv_encode": OutputABI((4, 5, 6, 7), ("kc", "vc", "ks", "vs")),
         "kv_decode": OutputABI((-2, -1), ("keys", "values")),
+        "kv_stage": OutputABI((-3, -2, -1), ("keys", "values", "scales")),
     },
 }
 
-VALIDATIONS = {kind: validation for kind in ("kv_encode", "kv_decode")}
+VALIDATIONS = {kind: validation for kind in ("kv_encode", "kv_decode", "kv_stage")}
 IMPLEMENTATIONS = (
     Implementation(
         "kv_encode",
@@ -70,4 +71,17 @@ IMPLEMENTATIONS = (
         provider="webgpu",
     )
     for kind, factory in (("kv_encode", "quantize"), ("kv_decode", "dequantize"))
+)
+
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        "kv_stage",
+        f"akas.quantization.kv.fp8.{provider}",
+        "*",
+        factory="stage",
+        provider=provider,
+        name="akas.quantization.kv.fp8.stage",
+        accepts=lambda p: p.get("kv_dtype", "fp8") == "fp8",
+    )
+    for provider in ("cuda", "webgpu")
 )

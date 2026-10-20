@@ -12,6 +12,14 @@ rounds source projections to BF16 before encoding; decoding returns BF16 precisi
 (CUDA BF16 buffers, WebGPU F32 buffers containing BF16-rounded values). Inactive
 rows retain their existing cache payloads and scales.
 
+`kv_stage(kc, vc, ks, vs, lengths) -> (keys, values, scales)` materializes a
+temporary native FP16 cache. Values before each request's length decode with
+the original F32 scales and round once to FP16; later positions are zero.
+The returned native-cache metadata is one, so K and V may share it. Persistent
+FP8 data and its metadata are read only. Attention supplies the valid prefix;
+the codec owns decoding and rounding. CUDA uses native FP8 conversions, while
+WebGPU uses the shared packed-word reader behind the same callable contract.
+
 ## Why share and specialize
 
 Share the portable cache writer, decoder and exact scaling arithmetic. The

@@ -278,3 +278,66 @@ def dequantize(spec, schedule):
         return keys, values
 
     return compute
+
+
+def stage(spec, schedule, *, provider="webgpu"):
+    """Decode a live cache prefix to F16, zero padding, and return unit scales.
+
+    The consumer supplies valid prefix lengths. Persistent payloads and their
+    F32 scales are read only; this temporary representation does not requantize
+    either cache or change its declared precision.
+    """
+    import tilelang.language as T
+    from akas.kernels.kernel import Tensor, kernel, output
+    from .definition import FORMAT
+
+    p = {**spec.parameters, **schedule}
+    slots, heads, capacity, depth = (
+        p[name] for name in ("slots", "kv_heads", "capacity", "d")
+    )
+    shape = (slots, heads, capacity, depth)
+    binding = FORMAT.bind(shape, provider=provider)
+    payload, metadata = binding.storage.buffers
+    read = binding.read
+    block = 128
+    units = (slots, heads, capacity, 1)
+
+    @kernel
+    def compute(
+        kc: Tensor(payload.shape, payload.dtype),
+        vc: Tensor(payload.shape, payload.dtype),
+        ks: Tensor(metadata.shape, metadata.dtype),
+        vs: Tensor(metadata.shape, metadata.dtype),
+        lengths: Tensor((slots,), "int32"),
+    ) -> tuple[
+        Tensor(shape, "float16"),
+        Tensor(shape, "float16"),
+        Tensor(units, "float32"),
+    ]:
+        keys = output(shape, "float16")
+        values = output(shape, "float16")
+        scales = output(units, "float32")
+        with T.Kernel(T.ceildiv(capacity, block), heads, slots, threads=128) as (
+            tile,
+            head,
+            slot,
+        ):
+            for i, j in T.Parallel(block, depth):
+                position = tile * block + i
+                if position < capacity:
+                    keys[slot, head, position, j] = T.if_then_else(
+                        position < lengths[slot],
+                        read((kc, ks), slot, head, position, j),
+                        0,
+                    )
+                    values[slot, head, position, j] = T.if_then_else(
+                        position < lengths[slot],
+                        read((vc, vs), slot, head, position, j),
+                        0,
+                    )
+            for i in T.Parallel(block):
+                if tile * block + i < capacity:
+                    scales[slot, head, tile * block + i, 0] = 1
+        return keys, values, scales
+
+    return compute
