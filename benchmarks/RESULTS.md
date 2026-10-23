@@ -1,9 +1,50 @@
 # Benchmark results
 
-Generated from run records. See [the benchmark guide](../docs/benchmarking.md).
+Generated from run records. See [the benchmark guide](../build/worktrees/f16-prefill/docs/benchmarking.md).
 
 | UTC | Hardware | Runtime / model | Backend / weights / mode / KV | Shapes (B/P/O) | Purpose | Status | Source | Record |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-10-23T15:15:33.293524Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / dspark / float16 | 1/33/128, 1/48/128, 1/24/128, 1/73/128, 1/38/128 | benchmark | passed | 2d9e7702f3 | [run](runs/20261023151533293524-174061e4/run.json) |
+| 2026-10-23T15:14:32.143989Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / dspark / float16 | 1/57/128, 1/29/128, 1/36/128, 1/48/128, 1/43/128 | benchmark | passed | 2d9e7702f3 | [run](runs/20261023151432143989-67b63b5e/run.json) |
+| 2026-10-23T15:09:57.552648Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / dspark / float16 |  | kernel | passed | 46a537e177 + snapshot | [run](runs/20261023150957552648-3b7700a5/run.json) |
+| 2026-10-23T15:09:52.083397Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / dspark / float16 |  | kernel | passed | 46a537e177 + snapshot | [run](runs/20261023150952083397-755db661/run.json) |
+| 2026-10-23T15:08:45.889495Z | NVIDIA L4 | akas /  | cuda / unspecified / ar / unspecified |  | kernel | passed | 46a537e177 + snapshot | [run](runs/20261023150845889495-b7f47b8b/run.json) |
+| 2026-10-23T15:08:11.637265Z | NVIDIA L4 | akas /  | cuda / unspecified / ar / unspecified |  | kernel | passed | 46a537e177 + snapshot | [run](runs/20261023150811637265-a73624c0/run.json) |
+| 2026-10-23T15:05:07.936170Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / dspark / float16 |  | kernel | passed | 46a537e177 + snapshot | [run](runs/20261023150507936170-c1ee7d1b/run.json) |
+| 2026-10-23T14:57:16.980617Z | NVIDIA L4 | akas /  | cuda / unspecified / ar / unspecified |  | kernel | passed | 46a537e177 + snapshot | [run](runs/20261023145716980617-3c29a595/run.json) |
+| 2026-10-23T14:56:32.426223Z | NVIDIA L4 | akas /  | cuda / unspecified / ar / unspecified |  | kernel | failed | 46a537e177 + snapshot | [run](runs/20261023145632426223-e01a0be5/run.json) |
+| 2026-10-23T14:54:24.043306Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / dspark / float16 |  | compilation | passed | 2d9e7702f3 | [run](runs/20261023145424043306-e22b91f8/run.json) |
+| 2026-10-23T14:52:02.380878Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / dspark / float16 | 1/33/128, 1/57/128, 1/48/128, 1/29/128, 1/36/128, 1/24/128, 1/48/128, 1/43/128, 1/73/128, 1/38/128, 1/33/128, 1/57/128, 1/48/128, 1/29/128, 1/36/128, 1/24/128, 1/48/128, 1/43/128, 1/73/128, 1/38/128 | kernel | passed | 46a537e177 + snapshot | [run](runs/20261023145202380878-9c040e07/run.json) |
+| 2026-10-23T14:47:18.227141Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / dspark / float16 |  | kernel | passed | 46a537e177 + snapshot | [run](runs/20261023144718227141-9149f472/run.json) |
+| 2026-10-23T14:44:13.744130Z | NVIDIA L4 | akas /  | cuda / unspecified / ar / unspecified |  | kernel | passed | 46a537e177 + snapshot | [run](runs/20261023144413744130-a47f4533/run.json) |
+| 2026-10-23T14:40:40.777521Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / dspark / float16 | 1/33/128, 1/24/128, 1/48/128, 1/33/128, 1/24/128, 1/48/128 | kernel | passed | 46a537e177 + snapshot | [run](runs/20261023144040777521-8ebf9e84/run.json) |
+| 2026-10-23T14:40:34.539272Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / dspark / float16 |  | kernel | passed | 46a537e177 + snapshot | [run](runs/20261023144034539272-16f5736c/run.json) |
+| 2026-10-23T14:40:28.441172Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / dspark / float16 |  | kernel | passed | 46a537e177 + snapshot | [run](runs/20261023144028441172-e212a87a/run.json) |
+| 2026-10-23T14:40:18.430696Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / dspark / float16 |  | profiling | passed | 46a537e177 + snapshot | [run](runs/20261023144018430696-851cd392/run.json) |
+| 2026-10-23T14:38:26.928937Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / dspark / float16 |  | kernel | passed | 46a537e177 + snapshot | [run](runs/20261023143826928937-a6660f7e/run.json) |
+| 2026-10-23T14:36:57.013537Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / dspark / float16 |  | kernel | failed | 46a537e177 + snapshot | [run](runs/20261023143657013537-66d89c2a/run.json) |
+| 2026-10-23T14:36:07.450493Z | NVIDIA L4 | akas /  | cuda / unspecified / ar / unspecified |  | kernel | passed | 46a537e177 + snapshot | [run](runs/20261023143607450493-b1d45acc/run.json) |
+| 2026-10-23T14:33:35.378902Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / dspark / float16 |  | kernel | passed | 46a537e177 + snapshot | [run](runs/20261023143335378902-70c87f12/run.json) |
+| 2026-10-23T14:33:18.514434Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / dspark / float16 |  | kernel | failed | 46a537e177 + snapshot | [run](runs/20261023143318514434-ac239236/run.json) |
+| 2026-10-23T14:31:59.278629Z | NVIDIA L4 | akas /  | cuda / unspecified / ar / unspecified |  | kernel | passed | 46a537e177 + snapshot | [run](runs/20261023143159278629-6962df4e/run.json) |
+| 2026-10-23T14:29:36.242329Z | NVIDIA L4 | akas /  | cuda / unspecified / ar / unspecified |  | kernel | passed | 46a537e177 + snapshot | [run](runs/20261023142936242329-1a26b3b8/run.json) |
+| 2026-10-23T14:29:34.809160Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / dspark / float16 |  | kernel | passed | 46a537e177 + snapshot | [run](runs/20261023142934809160-b3c9e9d8/run.json) |
+| 2026-10-23T14:29:09.468817Z | NVIDIA L4 | akas /  | cuda / unspecified / ar / unspecified |  | kernel | failed | 46a537e177 + snapshot | [run](runs/20261023142909468817-d4b8aef3/run.json) |
+| 2026-10-23T14:27:42.635322Z | NVIDIA L4 | akas /  | cuda / unspecified / ar / unspecified |  | kernel | passed | 46a537e177 + snapshot | [run](runs/20261023142742635322-992b08dc/run.json) |
+| 2026-10-23T14:25:49.040369Z | NVIDIA L4 | akas /  | cuda / unspecified / ar / unspecified |  | kernel | failed | 46a537e177 + snapshot | [run](runs/20261023142549040369-4cb439fb/run.json) |
+| 2026-10-23T14:25:16.300438Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / dspark / float16 |  | kernel | passed | 46a537e177 + snapshot | [run](runs/20261023142516300438-40cc0805/run.json) |
+| 2026-10-23T14:25:11.031950Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / dspark / float16 |  | kernel | passed | 46a537e177 + snapshot | [run](runs/20261023142511031950-41ef6a0a/run.json) |
+| 2026-10-23T14:24:49.327180Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / dspark / float16 |  | profiling | passed | 46a537e177 + snapshot | [run](runs/20261023142449327180-56203be0/run.json) |
+| 2026-10-23T14:24:11.079205Z | NVIDIA L4 | akas /  | cuda / unspecified / ar / unspecified |  | kernel | passed | 46a537e177 + snapshot | [run](runs/20261023142411079205-38a29562/run.json) |
+| 2026-10-23T14:23:55.387272Z | NVIDIA L4 | akas /  | cuda / unspecified / ar / unspecified |  | kernel | failed | 46a537e177 + snapshot | [run](runs/20261023142355387272-3908075b/run.json) |
+| 2026-10-23T14:18:46.231502Z | NVIDIA L4 | akas /  | cuda / unspecified / ar / unspecified |  | kernel | passed | 46a537e177 + snapshot | [run](runs/20261023141846231502-26bcd97d/run.json) |
+| 2026-10-23T14:18:09.896664Z | NVIDIA L4 | akas /  | cuda / unspecified / ar / unspecified |  | kernel | failed | 46a537e177 + snapshot | [run](runs/20261023141809896664-772aa053/run.json) |
+| 2026-10-23T14:16:42.289918Z | NVIDIA L4 | akas /  | cuda / unspecified / ar / unspecified |  | kernel | failed | 46a537e177 + snapshot | [run](runs/20261023141642289918-b1bbd142/run.json) |
+| 2026-10-23T14:16:14.790331Z | NVIDIA L4 | akas /  | cuda / unspecified / ar / unspecified |  | kernel | failed | 46a537e177 + snapshot | [run](runs/20261023141614790331-3f0c71de/run.json) |
+| 2026-10-23T14:13:10.075935Z | NVIDIA L4 | akas /  | cuda / unspecified / ar / unspecified |  | kernel | passed | 46a537e177 + snapshot | [run](runs/20261023141310075935-f61d9fd8/run.json) |
+| 2026-10-23T14:11:18.005047Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / dspark / float16 |  | profiling | passed | 46a537e177 + snapshot | [run](runs/20261023141118005047-055399b4/run.json) |
+| 2026-10-23T14:10:06.816108Z | NVIDIA L4 | akas /  | cuda / unspecified / ar / unspecified |  | kernel | failed | 46a537e177 + snapshot | [run](runs/20261023141006816108-90206588/run.json) |
+| 2026-10-23T14:07:40.842000Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / dspark / float16 |  | profiling | failed | 46a537e177 | [run](runs/20261023140740842000-9ec01d26/run.json) |
 | 2026-10-23T13:50:28.708663Z | {} | akas /  | cuda / unspecified / ar / float16 | 1/33/128, 1/57/128, 1/48/128, 1/29/128, 1/36/128, 1/24/128, 1/48/128, 1/43/128, 1/73/128, 1/38/128 | profiling | passed | 4a457fefbb | [run](runs/20261023135028708663-743b0598/run.json) |
 | 2026-10-23T13:23:31.975932Z | {} | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / dspark / float16 | 1/33/128, 1/48/128, 1/24/128, 1/73/128, 1/38/128 | benchmark | passed | 7a89b84231 + snapshot | [run](runs/20261023132331975932-f38d7467/run.json) |
 | 2026-10-23T13:22:26.213745Z | {} | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / dspark / float16 | 1/57/128, 1/29/128, 1/36/128, 1/48/128, 1/43/128 | benchmark | passed | 7a89b84231 + snapshot | [run](runs/20261023132226213745-5931c276/run.json) |

@@ -162,3 +162,27 @@ Draft weights: `q8_0`. Target/draft KV: `float16` / `float16`. Evidence: [202610
 | mtbench:122:24 | coding | 24 | 432.55 | 437.13 | 130.28 | 105.93 | 0.813x | 63.6% | 3.34 | yes | 128 |
 | gsm8k-test:0:73 | math | 73 | 541.70 | 527.84 | 130.17 | 137.88 | 1.059x | 66.4% | 4.88 | yes | 128 |
 | gsm8k-test:1:38 | math | 38 | 317.29 | 310.41 | 129.93 | 152.61 | 1.175x | 70.9% | 6.35 | yes | 128 |
+
+### calibration; confidence 0.5; Codec-owned compressed expert staging, Q8_0 draft
+
+Draft weights: `q8_0`. Target/draft KV: `float16` / `float16`. Evidence: [20261023151432143989-67b63b5e](../../runs/20261023151432143989-67b63b5e/run.json); AR reference: [20261023151432143989-67b63b5e](../../runs/20261023151432143989-67b63b5e/run.json).
+
+| Example | Category | Prefix | AR prefill | Speculative prefill | AR decode | Speculative decode | Decode speedup | Acceptance | Tokens/round | Exact output | Common prefix |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: |
+| mtbench:82:57 | writing | 57 | 433.93 | 446.62 | 131.66 | 143.49 | 1.090x | 61.4% | 4.23 | yes | 128 |
+| mtbench:104:29 | reasoning | 29 | 533.13 | 531.15 | 131.10 | 126.73 | 0.967x | 51.6% | 3.97 | no | 107 |
+| mtbench:121:36 | coding | 36 | 294.94 | 300.13 | 131.25 | 107.30 | 0.818x | 53.9% | 2.89 | no | 52 |
+| gsm8k-train:0:48 | math | 48 | 384.93 | 382.16 | 131.03 | 206.83 | 1.578x | 80.3% | 7.47 | yes | 128 |
+| gsm8k-train:1:43 | math | 43 | 353.64 | 348.18 | 130.94 | 142.85 | 1.091x | 58.6% | 4.54 | yes | 128 |
+
+### heldout; confidence 0.5; Codec-owned compressed expert staging, Q8_0 draft
+
+Draft weights: `q8_0`. Target/draft KV: `float16` / `float16`. Evidence: [20261023151533293524-174061e4](../../runs/20261023151533293524-174061e4/run.json); AR reference: [20261023151533293524-174061e4](../../runs/20261023151533293524-174061e4/run.json).
+
+| Example | Category | Prefix | AR prefill | Speculative prefill | AR decode | Speculative decode | Decode speedup | Acceptance | Tokens/round | Exact output | Common prefix |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: |
+| mtbench:81:33 | writing | 33 | 281.74 | 278.64 | 130.95 | 110.96 | 0.847x | 64.7% | 2.54 | yes | 128 |
+| mtbench:101:48 | reasoning | 48 | 381.01 | 386.44 | 130.79 | 142.57 | 1.090x | 67.8% | 4.23 | yes | 128 |
+| mtbench:122:24 | coding | 24 | 435.47 | 436.07 | 130.35 | 121.60 | 0.933x | 63.6% | 3.34 | yes | 128 |
+| gsm8k-test:0:73 | math | 73 | 538.28 | 532.07 | 130.32 | 159.76 | 1.226x | 66.4% | 4.88 | yes | 128 |
+| gsm8k-test:1:38 | math | 38 | 317.63 | 308.36 | 130.17 | 178.48 | 1.371x | 70.9% | 6.35 | yes | 128 |

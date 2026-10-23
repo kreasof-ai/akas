@@ -1,0 +1,22 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "kernel",
+    "protocol": "kernel-latency-v1",
+    "provider": "cuda",
+    "target": "sm_89",
+    "device": {
+      "name": "NVIDIA L4"
+    },
+    "weight_format": "q4_0",
+    "mode": "dspark",
+    "kv_dtype": "float16",
+    "model": "akas.models.lfm2.model:LFM2MoE",
+    "checks": [],
+    "qualification": "Actual packed Q4 gate/up banks with balanced, skewed and fully active ten-token routing. Independent sampled F64 products with F16 operands; full-output reference is the qualified three-kernel gate/up/SwiGLU sequence. Inactive entries retained. Kernel-only diagnostic; full-model verification required.",
+    "traceback": "Traceback (most recent call last):\n  File \"/home/sagemaker-user/akas/build/lfm-moe/qualify-fused-short.py\", line 75, in <module>\n    if layout!='full':np.testing.assert_array_equal(actual[-1],arrays['out'][-1])\n                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sagemaker-user/akas/.venv/lib/python3.12/site-packages/numpy/testing/_private/utils.py\", line 1128, in assert_array_equal\n    assert_array_compare(operator.__eq__, actual, desired, err_msg=err_msg,\n  File \"/home/sagemaker-user/akas/.venv/lib/python3.12/site-packages/numpy/testing/_private/utils.py\", line 988, in assert_array_compare\n    raise AssertionError(msg)\nAssertionError: \nArrays are not equal\n\nMismatched elements: 6144 / 6144 (100%)\nFirst 5 mismatches are at indices:\n [0, 0]: 0.0 (ACTUAL), 1.25 (DESIRED)\n [0, 1]: 0.0 (ACTUAL), 1.25 (DESIRED)\n [0, 2]: 0.0 (ACTUAL), 1.25 (DESIRED)\n [0, 3]: 0.0 (ACTUAL), 1.25 (DESIRED)\n [0, 4]: 0.0 (ACTUAL), 1.25 (DESIRED)\nMax absolute difference among violations: 1.25\nMax relative difference among violations: 1.\n ACTUAL: array([[0., 0., 0., ..., 0., 0., 0.],\n       [0., 0., 0., ..., 0., 0., 0.],\n       [0., 0., 0., ..., 0., 0., 0.],\n       [0., 0., 0., ..., 0., 0., 0.]], shape=(4, 1536), dtype=float32)\n DESIRED: array([[1.25, 1.25, 1.25, ..., 1.25, 1.25, 1.25],\n       [1.25, 1.25, 1.25, ..., 1.25, 1.25, 1.25],\n       [1.25, 1.25, 1.25, ..., 1.25, 1.25, 1.25],...\n",
+    "cpu_peak_rss_bytes": 1202638848
+  },
+  "results": []
+}
