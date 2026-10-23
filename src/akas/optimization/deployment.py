@@ -66,11 +66,15 @@ def service(path, *, candidate=False):
             if recipe["window"]:
                 from akas.generation.speculative.decoding import SpeculativeDecoder
 
+                options = dict(recipe.get("head_options", {}))
+                for name in ("checkpoint", "bundle"):
+                    if name in options:
+                        options[name] = str((path.parent / options[name]).resolve())
                 backend = SpeculativeDecoder(
                     target,
-                    symbol(recipe["head"])(target),
+                    symbol(recipe["head"])(target, **options),
                     window=recipe["window"],
-                    capture=recipe["graphs"],
+                    capture=recipe.get("round_capture", recipe["graphs"]),
                     deferred=recipe["deferred"],
                 )
             with Engine(
@@ -125,23 +129,23 @@ def describe(
     manifest = read_program(program)
     files = {program / "program.json"}
 
-    def visit(value):
+    def visit(value, root=program):
         if isinstance(value, dict):
             if "path" in value and "sha256" in value:
-                path = (program / value["path"]).resolve()
-                if not path.is_relative_to(program):
+                path = (root / value["path"]).resolve()
+                if not path.is_relative_to(root):
                     raise ValueError("deployment dependency escapes program")
                 if digest(path) != value["sha256"]:
                     raise ValueError("deployment dependency checksum mismatch")
                 if path not in files:
                     files.add(path)
                     if path.suffix == ".json":
-                        visit(json.loads(path.read_text()))
+                        visit(json.loads(path.read_text()), root)
             for child in value.values():
-                visit(child)
+                visit(child, root)
         elif isinstance(value, list):
             for child in value:
-                visit(child)
+                visit(child, root)
 
     visit(manifest)
     # Paths are relative to the deployment directory, which is the program's parent.
@@ -149,6 +153,21 @@ def describe(
     from akas.optimization.planning import software
 
     base = program.parent
+    recipe = dict(recipe)
+    if recipe.get("head_options"):
+        options = dict(recipe["head_options"])
+        if "bundle" in options:
+            draft_program = Path(options["bundle"]).resolve()
+            draft_manifest = read_program(draft_program)
+            files.add(draft_program / "program.json")
+            visit(draft_manifest, draft_program)
+            options["program_sha256"] = digest(draft_program / "program.json")
+            options["bundle"] = os.path.relpath(draft_program, base)
+        if "checkpoint" in options:
+            draft_checkpoint = Path(options["checkpoint"]).resolve()
+            options["checkpoint_sha256"] = digest(draft_checkpoint)
+            options["checkpoint"] = os.path.relpath(draft_checkpoint, base)
+        recipe["head_options"] = options
     return dict(
         schema="akas.deployment.v1",
         status="candidate",

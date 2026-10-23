@@ -11,6 +11,7 @@ Start with [the measurement guide](../../../docs/benchmarking.md) and
 | --- | --- |
 | `cases.py` | Request batches, prompt/output lengths and cache depth |
 | `session.py` | Common executor adapter |
+| `speculative.py` | Complete block-round measurements and committed-token accounting |
 | `runner.py` | Synchronized warmups, samples and token accounting |
 | `report.py` | Reports and matched comparisons |
 | `history.py` | Source snapshots, run records, indexes and incumbent schedule exports |

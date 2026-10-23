@@ -130,6 +130,8 @@ def evaluate(executor, recipe, workload, *, reference=None, evidence=None):
         alloc_bytes = first_session.allocated_bytes
     diagnostics = {}
     native = {}
+    native_speculation = {}
+    mode = recipe.get("mode", "mtp" if recipe["window"] else "ar")
     try:
         for b_idx, batch in enumerate(workload["batches"]):
             for p_idx, prefix in enumerate(workload["prefix_tokens"]):
@@ -154,7 +156,7 @@ def evaluate(executor, recipe, workload, *, reference=None, evidence=None):
                             raise ValueError(
                                 f"model logits differ from qualified baseline: {key}"
                             )
-                if not skip_autotune:
+                if not skip_autotune and not recipe["window"]:
                     with Session(
                         executor,
                         batch=batch,
@@ -188,9 +190,9 @@ def evaluate(executor, recipe, workload, *, reference=None, evidence=None):
 
         backend = SpeculativeDecoder(
             executor,
-            symbol(recipe["head"])(executor),
+            symbol(recipe["head"])(executor, **recipe.get("head_options", {})),
             window=recipe["window"],
-            capture=recipe["graphs"],
+            capture=recipe.get("round_capture", recipe["graphs"]),
             deferred=recipe["deferred"],
         )
     engine = Engine(
@@ -240,12 +242,23 @@ def evaluate(executor, recipe, workload, *, reference=None, evidence=None):
                             samples=[],
                             summary={},
                             serving=dict(samples=[]),
-                            native_phase_mode="ar-target",
-                            mode="mtp" if recipe["window"] else "ar",
+                            native_phase_mode="serving-request",
+                            mode=mode,
                         )
                     )
                     continue
                 try:
+                    if not skip_autotune and recipe["window"]:
+                        from akas.benchmarking.speculative import SpeculativeSession
+
+                        before = dict(backend.stats)
+                        with SpeculativeSession(backend, batch=batch, chunk=recipe["chunk"],
+                                                timeout=shape_timeout) as session:
+                            native[key] = run(session, case, warmup=warmup, repeats=repeats)
+                            native[key]["native_output_ids"] = [list(r.output) for r in session.requests]
+                            native[key]["native_speculation"] = session.stats
+                        native_speculation[key] = {name: value - before[name]
+                                                   for name, value in backend.stats.items()}
                     for _ in range(warmup):
                         measured_requests(
                             engine,
@@ -302,13 +315,15 @@ def evaluate(executor, recipe, workload, *, reference=None, evidence=None):
                             samples=[],
                             summary={},
                             serving=dict(samples=[]),
-                            native_phase_mode="ar-target",
-                            mode="mtp" if recipe["window"] else "ar",
+                            native_phase_mode="serving-request",
+                            mode=mode,
                         )
                     )
                     continue
                 ids = samples[0]["output_ids"]
                 validation_error = None
+                if "native_output_ids" in native.get(key, {}) and ids != native[key]["native_output_ids"]:
+                    validation_error = "native speculative and serving outputs differ"
                 if any(sample["output_ids"] != ids for sample in samples):
                     validation_error = (
                         "generation is not deterministic across request-slot reuse"
@@ -390,8 +405,9 @@ def evaluate(executor, recipe, workload, *, reference=None, evidence=None):
                             for s in samples
                         ],
                     ),
-                    native_phase_mode="ar-target",
-                    mode="mtp" if recipe["window"] else "ar",
+                    native_phase_mode=(mode if recipe["window"] else "ar-target")
+                    if not skip_autotune else "serving-request",
+                    mode=mode,
                 )
                 rows.append(row)
                 if validation_error is not None:
@@ -403,7 +419,8 @@ def evaluate(executor, recipe, workload, *, reference=None, evidence=None):
                         )
                     raise ValueError(validation_error)
         stats = dict(engine.scheduler.stats)
-        speculation = dict(backend.stats) if recipe["window"] else None
+        speculation = ({name: value - sum(row.get(name, 0) for row in native_speculation.values())
+                        for name, value in backend.stats.items()} if recipe["window"] else None)
     except BaseException as error:
         # Native phases precede serving validation. Keep their measurements
         # even when a later shape fails determinism or model equivalence.
