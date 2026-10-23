@@ -48,6 +48,14 @@ The result owns the draft executor. Supply it to `SpeculativeDecoder` with
 `window=head.config.block_size + 1` and `capture=False`, then use the ordinary
 `Engine`. Target and draft programs must include matching context geometries.
 
+Confidence filtering can leave fewer tokens than the nine-position draft block.
+Compile small target verification chunks, such as 1, 2 and 4, alongside the full
+ten-token window, and include matching draft `context` chunks. The common decoder
+selects the smallest qualified verification chunk that fits the actual proposal;
+repair consumes features from that same chunk. The draft's trained proposal
+geometry remains nine positions. Measure the complete round after changing these
+shapes: an acceptance percentage alone does not establish a decode speedup.
+
 A deployment records this factory as its `head`, its arguments in `head_options`,
 and `round_capture=False`. The descriptor retains the draft program and every
 compiled dependency alongside the target artifacts, and locks both draft program
