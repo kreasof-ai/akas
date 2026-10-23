@@ -409,6 +409,7 @@ def text_comparisons(state, history, evidence):
         groups.append(dict(run_id=run_id, confidence_threshold=meta["confidence_threshold"],
                            split=meta["dataset_split"], kv_dtype=meta["kv_dtype"],
                            draft_kv_dtype=meta["draft_kv_dtype"], sources=workload["sources"],
+                           ar_reference_run_id=meta.get("ar_reference_run_id", run_id),
                            qualification=meta["qualification"], cases=selected))
         evidence[run_id] = metadata_for(data)
     return groups
@@ -872,13 +873,16 @@ def render(data, out, history):
         lines += ["", "## Real-text speculative decoding", "",
                   "Matched real prompts distinguish draft acceptance from synthetic shape tests. "
                   "Calibration and held-out examples are separate. Long cases with one sample are diagnostic measurements. "
-                  "Dataset revisions, example IDs, prompt hashes, crop recipes and both outputs remain in report.json and the checksummed workload artifacts."]
+                  "All rates are tokens/second for one request generating 128 tokens with EOS disabled.",
+                  "", "AR uses device token feedback. Speculative decode includes proposal, verification, commit, repair and coordinator readbacks. "
+                  "Short cases use one warmup and three samples; long cases use one sample. "
+                  "Dataset revisions, example IDs, prompt hashes, crop recipes, full methodology and both outputs remain in report.json and the checksummed workload artifacts."]
     for comparison in data.get("text_comparisons", []):
         lines += ["", f"### {comparison['split']}; confidence {comparison['confidence_threshold']}", "",
                   f"Target/draft KV: `{comparison['kv_dtype']}` / `{comparison['draft_kv_dtype']}`. "
-                  f"Evidence: {evidence_link(comparison['run_id'], out, history)}.",
-                  "", comparison["qualification"], "",
-                  "| Example | Category | Prefix | AR prefill | DSpark prefill | AR decode | DSpark decode | Decode speedup | Acceptance | Tokens/round | Exact output | Common prefix |",
+                  f"Evidence: {evidence_link(comparison['run_id'], out, history)}; "
+                  f"AR reference: {evidence_link(comparison.get('ar_reference_run_id', comparison['run_id']), out, history)}.", "",
+                  "| Example | Category | Prefix | AR prefill | Speculative prefill | AR decode | Speculative decode | Decode speedup | Acceptance | Tokens/round | Exact output | Common prefix |",
                   "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: |"]
         for row in comparison["cases"]:
             agreement = row["output_agreement"]

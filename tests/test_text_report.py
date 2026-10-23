@@ -45,7 +45,7 @@ def test_text_report_preserves_acceptance_outputs_and_prompt_identity(saved):
     assert "probe" in evidence
 
 
-@pytest.mark.parametrize("change", ["checksum", "failed", "checkpoint", "prompt", "split", "incomplete", "accounting"])
+@pytest.mark.parametrize("change", ["checksum", "failed", "checkpoint", "prompt", "split", "incomplete", "accounting", "outputs"])
 def test_text_report_rejects_changed_inputs_or_incomplete_evidence(saved, change):
     history, folder, data, state, evidence = saved
     if change == "checksum":
@@ -62,6 +62,8 @@ def test_text_report_rejects_changed_inputs_or_incomplete_evidence(saved, change
         data["results"] = []
     elif change == "accounting":
         data["results"][0]["native_speculation"]["emitted"] = 5
+    elif change == "outputs":
+        data["results"][0]["output_ids"] = [[1, 2, 3, 9]]
     write(folder / "run.json", data)
     with pytest.raises(ValueError):
         text_comparisons(state, history, evidence)
