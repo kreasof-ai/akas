@@ -36,7 +36,7 @@ def verification_validation(kind, p, signature):
     values = sample_arguments(signature)
     rows, channels, length, chunk = (p[n] for n in ("r", "c", "length", "chunk"))
     expected = {n: a.copy() for n, a in values.items()}
-    if kind == "conv_commit":
+    if kind == "conv_commit_prefix":
         values["accepted"][:] = chunk
         if rows > 1:
             values["accepted"][1] = 0

@@ -37,7 +37,7 @@ def test_convolution_verification_reference_retains_state_and_every_history_pref
 
 
 def test_convolution_commit_reference_covers_full_empty_and_partial_acceptance():
-    from akas.ops.convolution.validation import verification_validation
+    from akas.kernels.registry import validation
 
     p, _ = signature(rows=3)
     fields = [
@@ -48,7 +48,7 @@ def test_convolution_commit_reference_covers_full_empty_and_partial_acceptance()
             ("accepted", [3], "int32"),
         ]
     ]
-    case = verification_validation("conv_commit", p, fields)
+    case = validation("conv_commit_prefix", p, fields)
     np.testing.assert_array_equal(case.arguments["accepted"], [3, 0, 2])
     np.testing.assert_array_equal(
         case.expected["state"][0], case.arguments["journal"][0, 2]
@@ -76,7 +76,7 @@ def test_convolution_verification_gpu_bitwise_prefix_commit_and_poisoned_inactiv
     p, _ = signature()
     target = "sm_89" if provider == "cuda" else "webgpu-portable-v1"
     artifacts = {}
-    for kind in ("conv", "conv_verify", "conv_commit"):
+    for kind in ("conv", "conv_verify", "conv_commit_prefix"):
         spec = dict(kind=kind, parameters=p, contract="reference", phase="verify")
         capabilities = dict(provider=provider, target=target)
         implementation, schedule = definition(spec, {}, capabilities)
@@ -127,7 +127,7 @@ def test_convolution_verification_gpu_bitwise_prefix_commit_and_poisoned_inactiv
             module.launch(*(mapping[a["name"]] for a in module.manifest["arguments"]))
             write(device, accepted, np.array([count, 0], dtype="int32"))
             mapping = dict(buffers, accepted=accepted)
-            module = modules["conv_commit"]
+            module = modules["conv_commit_prefix"]
             module.launch(*(mapping[a["name"]] for a in module.manifest["arguments"]))
             np.testing.assert_array_equal(
                 buffers["state"].to_numpy().view("uint32"),

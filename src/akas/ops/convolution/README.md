@@ -1,5 +1,11 @@
 # Convolution
 
+`conv_verify` produces outputs and a journal of every history prefix without
+changing persistent history. `conv_commit_prefix` restores the history after
+the accepted input count; zero acceptance leaves it unchanged. Both use shared
+CUDA/WebGPU bodies. This prefix-journal contract differs from GDN's existing
+`conv_commit`, which replays raw projected inputs into its history.
+
 ## Purpose
 
 LFM-style gated short convolution with persistent history. Conceptually: `convolution(x,
