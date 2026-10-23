@@ -42,3 +42,15 @@ defines a nine-position block and five target feature layers. A full proposal ca
 produce up to ten target outputs after verification, including its bonus token;
 actual speed depends on acceptance and the cost of both forwards. Cache and weight
 precision, accepted tokens and timing boundaries must accompany any report.
+
+Open a compiled pair through `proposer.load(target, checkpoint=path, bundle=program)`.
+The result owns the draft executor. Supply it to `SpeculativeDecoder` with
+`window=head.config.block_size + 1` and `capture=False`, then use the ordinary
+`Engine`. Target and draft programs must include matching context geometries.
+
+A deployment records this factory as its `head`, its arguments in `head_options`,
+and `round_capture=False`. The descriptor retains the draft program and every
+compiled dependency alongside the target artifacts, and locks both draft program
+and checkpoint identities. Loading resolves their recorded paths and checks those
+identities before allocation. Individual target and draft graphs remain captured
+when `graphs=True`.

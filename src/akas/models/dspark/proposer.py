@@ -4,6 +4,26 @@ import math
 import numpy as np
 
 
+def load(target, *, checkpoint, bundle, graphs=True, confidence_threshold=0.0,
+         checkpoint_sha256=None, program_sha256=None):
+    """Open a paired draft from deployment data, checking supplied identities."""
+    from pathlib import Path
+    from akas.artifacts.write import checksum
+    from akas.models.dspark.model import DSparkDraft
+
+    if checkpoint_sha256 is not None and checksum(Path(checkpoint)) != checkpoint_sha256:
+        raise ValueError("draft checkpoint bytes have changed")
+    if program_sha256 is not None and checksum(Path(bundle) / "program.json") != program_sha256:
+        raise ValueError("draft program manifest has changed")
+    draft = DSparkDraft(checkpoint, bundle, target.device, graphs=graphs,
+                        checkpoint_options=dict(target=target))
+    try:
+        return DSparkProposer(target, draft, confidence_threshold=confidence_threshold)
+    except BaseException:
+        draft.close()
+        raise
+
+
 class DSparkProposer:
     """Own the draft executor; the common decoder owns verification and acceptance.
 

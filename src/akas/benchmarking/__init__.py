@@ -2,5 +2,6 @@
 
 from akas.benchmarking.cases import Case, matrix
 from akas.benchmarking.runner import run
+from akas.benchmarking.speculative import SpeculativeSession
 
-__all__ = ["Case", "matrix", "run"]
+__all__ = ["Case", "matrix", "run", "SpeculativeSession"]

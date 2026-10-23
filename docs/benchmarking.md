@@ -268,6 +268,13 @@ rate or concurrency limit. Count committed speculative tokens, including draft,
 verification and repair costs. Never compare proposed-token rates with AR
 output-token rates. Record observed acceptance rates and effective GPU batches.
 
+`SpeculativeSession` measures the whole block round through the same coordinator
+used by serving, including draft execution, readbacks and cache repair. It clips
+the final round to the requested output count. `native_phase_mode` identifies the
+measured mode; older records marked `ar-target` retain AR target phase timings
+even when their separate serving samples enable speculation. Native speculation
+counters belong to native samples and are excluded from serving counters.
+
 Keep comparisons within matching model, shape, precision and protocol. Report
 AR-to-AR and MTP-to-MTP, then the best mode each runtime offers. Preserve losing,
 OOM, unsupported and interrupted rows alongside wins. Hardware changes require
