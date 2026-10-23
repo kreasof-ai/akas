@@ -57,12 +57,19 @@ class DSparkDraftCheckpoint:
             raise GGUFError("DSpark sidecar has missing or unsupported tensors")
         for name, shape in expected.items():
             info = self.gguf.tensors[name]
-            if info.shape != shape or info.type not in (
-                (0,) if len(shape) == 1 else (0, 1)
-            ):
+            if info.shape != shape:
+                raise GGUFError(f"{name}: DSpark tensor dimensions differ")
+            if len(shape) == 1 and info.type != 0:
                 raise GGUFError(
-                    f"{name}: DSpark requires matching native floating weights"
+                    f"{name}: DSpark requires native floating norm and bias weights"
                 )
+            if len(shape) > 1:
+                if info.type not in (0, 1, 8):
+                    raise GGUFError(f"{name}: DSpark matrices require F32, F16 or Q8_0")
+                try:
+                    weight_storage(info.type, shape[-1])
+                except ValueError as error:
+                    raise GGUFError(f"{name}: invalid draft weight row encoding") from error
         names = self.target_checkpoint.gguf.tensors
         head = "output.weight" if "output.weight" in names else "token_embd.weight"
         self.shared = {"embedding": "token_embd.weight", "head": head}

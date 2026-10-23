@@ -22,6 +22,12 @@ position adds a low-rank Markov bias conditioned on the preceding sampled token.
 The confidence head scores those choices. Proposal execution leaves logical draft
 positions unchanged.
 
+Draft matrices may use F32, F16 or GGUF Q8_0 storage. Norms and biases remain F32.
+Encoded matrices bind the ordinary GGML codec at their operation loads; adding a
+draft format does not require a second set of DSpark kernels. Keep draft weight
+precision separate from target weights and both KV-cache precisions in reports,
+and remeasure acceptance after quantization.
+
 The common `SpeculativeDecoder` verifies `[anchor, *draft_tokens]` with the target.
 Target convolution histories are journaled and commit only the accepted prefix.
 `DSparkProposer.repair()` replaces temporary draft KV with the accepted target

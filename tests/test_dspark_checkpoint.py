@@ -125,6 +125,25 @@ def test_dspark_reader_rejects_missing_or_quantized_draft_norm(paired):
         DSparkDraftCheckpoint("sidecar.gguf", target=target)
 
 
+@pytest.mark.parametrize("provider", ["cuda", "webgpu"])
+def test_dspark_q8_matrix_uses_the_shared_codec_and_retains_float_norms(paired, provider):
+    target, gguf = paired
+    name = "blk.0.ffn_gate.weight"
+    gguf.tensors[name].type = 8
+    checkpoint = DSparkDraftCheckpoint("sidecar.gguf", target=target)
+    weights = checkpoint.graph_weights(Graph(contract="reference"), provider=provider)
+    assert weights.parameters(name) == dict(ggml=True, type=8)
+    assert weights[name].dtype == ("uint8" if provider == "cuda" else "uint32")
+    assert weights["output_norm.weight"].dtype == "float32"
+
+
+def test_dspark_rejects_q8_rows_without_complete_blocks(paired):
+    target, gguf = paired
+    gguf.tensors["markov_w1.weight"].type = 8  # This small fixture has a rank of four.
+    with pytest.raises(GGUFError, match="row encoding"):
+        DSparkDraftCheckpoint("sidecar.gguf", target=target)
+
+
 class Buffer:
     def __init__(self, device, *, fail=False):
         self.device = device
