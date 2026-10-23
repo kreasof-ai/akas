@@ -741,12 +741,28 @@ def render(data, out, history):
     for reason, count in errors.most_common():
         lines.append(f"| {clean(reason)} | {count} |")
     for comparison in data.get("precision_comparisons", []):
+        positions = sum(row["teacher_forced_steps"] for row in comparison["cases"])
+        agreement = (
+            sum(
+                row["top1_agreement"] * row["teacher_forced_steps"]
+                for row in comparison["cases"]
+            )
+            / positions
+        )
+        divergence = (
+            sum(
+                row["mean_kl_f16_to_candidate"] * row["teacher_forced_steps"]
+                for row in comparison["cases"]
+            )
+            / positions
+        )
         lines += [
             "",
             "## Cache precision and generated outputs",
             "",
             f"Reference: `{comparison['reference_kv_dtype']}`; candidate: `{comparison['candidate_kv_dtype']}`. "
             f"{sum(row['exact'] for row in comparison['cases'])}/{len(comparison['cases'])} greedy outputs match exactly.",
+            f"Across {positions} shared-history positions, top-1 agreement is **{agreement:.2%}** and mean KL divergence is **{divergence:.6f}**.",
             "",
             comparison["qualification"],
             "",
