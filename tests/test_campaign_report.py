@@ -9,7 +9,58 @@ import shutil
 import pytest
 
 from akas.benchmarking.history import digest, write
-from tools.campaign_report import check, export, read, render, validate
+from tools.campaign_report import check, export, read, render, speculative_baselines, validate
+
+
+@pytest.mark.parametrize("corruption", [None, "counter", "prompt", "coverage", "workload"])
+def test_speculative_baseline_preserves_verified_acceptance(tmp_path, corruption):
+    from akas.benchmarking.workload import prompt_digest
+
+    path = tmp_path / "runs/upstream"
+    prompt_hash = prompt_digest([[1, 2]])
+    case = dict(id="example", token_ids=[1, 2], prefix_tokens=2,
+                prompt_sha256=prompt_hash, category="math", split="heldout")
+    workload_path = path / "benchmark/text-workload.json"
+    write(workload_path, dict(tokenizer_checkpoint_sha256="target", output_tokens=3,
+                             cases=[case]))
+    sample = dict(proposed=4, accepted=2, acceptance=0.5, output_ids=[3, 4, 5],
+                  prefill_tokens_per_second=100, decode_tokens_per_second=50,
+                  counters=dict(spec_decode_num_draft_tokens_total=4,
+                                spec_decode_num_accepted_tokens_total=2,
+                                spec_decode_num_drafts_total=1))
+    row = dict(text_case=case, status="ok", prompt_sha256=prompt_hash,
+               case=dict(prompt=2, generated=3), output_ids=[[3, 4, 5]], output_text="answer",
+               samples=[sample])
+    data = dict(id="upstream", status="passed", started_at="start", completed_at="end",
+                source=dict(revision="test"),
+                metadata=dict(checkpoint_sha256="target", text_workload_sha256=digest(workload_path),
+                              repeats=1, warmup=1, runtime="llama.cpp", runtime_revision="upstream-sha",
+                              confidence_threshold=0.5, draft_weight_dtype="float16",
+                              kv_dtype="float16", draft_kv_dtype="float16", qualification="test"),
+                results=[row], artifacts=[dict(path="benchmark/text-workload.json",
+                                              sha256=digest(workload_path))])
+    if corruption == "counter":
+        sample["counters"]["spec_decode_num_accepted_tokens_total"] = 3
+    elif corruption == "prompt":
+        row["prompt_sha256"] = "different"
+    elif corruption == "coverage":
+        data["results"] = []
+    elif corruption == "workload":
+        workload_path.write_text("{}")
+    write(path / "report.json", dict(results=data["results"]))
+    data["artifacts"].append(dict(path="report.json", sha256=digest(path / "report.json")))
+    write(path / "run.json", data)
+    evidence = dict(reference=dict(checkpoint_sha256="target"))
+    state = dict(speculative_baseline_runs=["upstream"])
+    if corruption:
+        with pytest.raises(ValueError):
+            speculative_baselines(state, tmp_path, evidence)
+    else:
+        result = speculative_baselines(state, tmp_path, evidence)
+        assert result[0]["cases"][0]["acceptance"] == 0.5
+        assert result[0]["cases"][0]["accepted"] == 2
+        assert result[0]["cases"][0]["proposed"] == 4
+        assert evidence["upstream"]["metadata"]["runtime_revision"] == "upstream-sha"
 
 
 @pytest.fixture

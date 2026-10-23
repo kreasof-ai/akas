@@ -123,6 +123,17 @@ prefill/decode, acceptance, tokens per round and output agreement. The portable
 report retains both outputs and dataset provenance. These diagnostic rows remain
 separate from the synthetic shape matrix.
 
+Attach upstream speculative runtime checks through `speculative_baseline_runs`.
+The generated overview shows accepted/proposed counts and their ratio for every
+prompt, alongside the draft precision, confidence threshold, KV precision and
+upstream revision. Export checks prompt coverage, checkpoint and workload hashes,
+complete outputs, and agreement between per-response and cumulative server
+counters. Commands, raw samples and generated text remain in the run archive.
+Acceptance percentages exclude the target bonus token; tokens per verification
+step may include it. Confidence filtering changes the proposed-token denominator,
+so compare percentages only with the filtering settings shown. Keep runtime timing
+boundaries explicit and do not infer task accuracy from acceptance or text agreement.
+
 Native reports also retain process peak host RSS, including loading and any
 in-process compilation. Packed expert validation decodes small coefficient tiles;
 it does not expand the entire model on the CPU. GGUF uploads release mapped

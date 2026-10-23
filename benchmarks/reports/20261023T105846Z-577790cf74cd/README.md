@@ -186,3 +186,58 @@ Draft weights: `q8_0`. Target/draft KV: `float16` / `float16`. Evidence: [202610
 | mtbench:122:24 | coding | 24 | 435.47 | 436.07 | 130.35 | 121.60 | 0.933x | 63.6% | 3.34 | yes | 128 |
 | gsm8k-test:0:73 | math | 73 | 538.28 | 532.07 | 130.32 | 159.76 | 1.226x | 66.4% | 4.88 | yes | 128 |
 | gsm8k-test:1:38 | math | 38 | 317.63 | 308.36 | 130.17 | 178.48 | 1.371x | 70.9% | 6.35 | yes | 128 |
+
+## Upstream speculative acceptance
+
+These runs use the same pinned real-text token IDs and target checkpoint as the native tests. Acceptance is accepted draft tokens divided by proposed draft tokens, pooled over measured samples. It excludes the target bonus token and depends on confidence filtering. Prefill and decode rates use llama.cpp's reported server timing boundaries; cross-runtime speedups are not calculated. Different target arithmetic can change generated text and subsequent acceptance. Full outputs, per-sample counters, commands, checkpoint hashes and upstream source revision are retained in the linked evidence.
+
+### llama.cpp; draft float16; confidence 0.5
+
+Target/draft KV: `float16` / `float16`. Output tokens: 128; warmups: 1; repetitions: 2. Upstream revision: `620d2225cc436ab0b001e3200e590e3b286ef9ab`. Evidence: [20261023153020366805-120f2195](../../runs/20261023153020366805-120f2195/run.json).
+
+| Example | Split | Category | Prefix | Accepted / proposed | Acceptance | Prefill tok/s | Decode tok/s |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
+| mtbench:81:33 | heldout | writing | 33 | 158 / 232 | 68.1% | 655.46 | 103.06 |
+| mtbench:82:57 | calibration | writing | 57 | 202 / 300 | 67.3% | 909.07 | 151.24 |
+| mtbench:101:48 | heldout | reasoning | 48 | 188 / 292 | 64.4% | 845.72 | 127.41 |
+| mtbench:104:29 | calibration | reasoning | 29 | 192 / 382 | 50.3% | 659.43 | 119.48 |
+| mtbench:121:36 | calibration | coding | 36 | 174 / 288 | 60.4% | 658.40 | 111.75 |
+| mtbench:122:24 | heldout | coding | 24 | 192 / 274 | 70.1% | 544.63 | 132.61 |
+| gsm8k-train:0:48 | calibration | math | 48 | 218 / 300 | 72.7% | 848.51 | 180.81 |
+| gsm8k-train:1:43 | calibration | math | 43 | 200 / 328 | 61.0% | 761.36 | 139.33 |
+| gsm8k-test:0:73 | heldout | math | 73 | 206 / 306 | 67.3% | 1005.51 | 157.38 |
+| gsm8k-test:1:38 | heldout | math | 38 | 212 / 308 | 68.8% | 713.71 | 162.12 |
+
+### llama.cpp; draft float16; confidence 0.0
+
+Target/draft KV: `float16` / `float16`. Output tokens: 128; warmups: 1; repetitions: 2. Upstream revision: `620d2225cc436ab0b001e3200e590e3b286ef9ab`. Evidence: [20261023153519414727-f222e5b7](../../runs/20261023153519414727-f222e5b7/run.json).
+
+| Example | Split | Category | Prefix | Accepted / proposed | Acceptance | Prefill tok/s | Decode tok/s |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
+| mtbench:81:33 | heldout | writing | 33 | 172 / 690 | 24.9% | 657.64 | 89.47 |
+| mtbench:82:57 | calibration | writing | 57 | 196 / 514 | 38.1% | 892.51 | 118.55 |
+| mtbench:101:48 | heldout | reasoning | 48 | 196 / 480 | 40.8% | 857.74 | 119.55 |
+| mtbench:104:29 | calibration | reasoning | 29 | 192 / 540 | 35.6% | 668.32 | 111.90 |
+| mtbench:121:36 | calibration | coding | 36 | 188 / 530 | 35.5% | 684.65 | 107.22 |
+| mtbench:122:24 | heldout | coding | 24 | 200 / 480 | 41.7% | 558.37 | 122.67 |
+| gsm8k-train:0:48 | calibration | math | 48 | 218 / 310 | 70.3% | 846.85 | 184.16 |
+| gsm8k-train:1:43 | calibration | math | 43 | 200 / 468 | 42.7% | 781.70 | 125.78 |
+| gsm8k-test:0:73 | heldout | math | 73 | 204 / 434 | 47.0% | 966.99 | 136.51 |
+| gsm8k-test:1:38 | heldout | math | 38 | 214 / 356 | 60.1% | 722.16 | 165.56 |
+
+### llama.cpp; draft q8_0; confidence 0.5
+
+Target/draft KV: `float16` / `float16`. Output tokens: 128; warmups: 1; repetitions: 2. Upstream revision: `620d2225cc436ab0b001e3200e590e3b286ef9ab`. Evidence: [20261023154310543892-4e4811ca](../../runs/20261023154310543892-4e4811ca/run.json).
+
+| Example | Split | Category | Prefix | Accepted / proposed | Acceptance | Prefill tok/s | Decode tok/s |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
+| mtbench:81:33 | heldout | writing | 33 | 156 / 230 | 67.8% | 660.77 | 123.29 |
+| mtbench:82:57 | calibration | writing | 57 | 202 / 300 | 67.3% | 906.71 | 170.11 |
+| mtbench:101:48 | heldout | reasoning | 48 | 192 / 286 | 67.1% | 856.71 | 151.12 |
+| mtbench:104:29 | calibration | reasoning | 29 | 196 / 354 | 55.4% | 672.24 | 142.03 |
+| mtbench:121:36 | calibration | coding | 36 | 174 / 294 | 59.2% | 677.85 | 126.31 |
+| mtbench:122:24 | heldout | coding | 24 | 192 / 272 | 70.6% | 566.71 | 153.64 |
+| gsm8k-train:0:48 | calibration | math | 48 | 218 / 296 | 73.6% | 856.41 | 198.29 |
+| gsm8k-train:1:43 | calibration | math | 43 | 194 / 350 | 55.4% | 790.46 | 142.19 |
+| gsm8k-test:0:73 | heldout | math | 73 | 206 / 308 | 66.9% | 1002.20 | 172.37 |
+| gsm8k-test:1:38 | heldout | math | 38 | 214 / 302 | 70.9% | 730.46 | 183.21 |

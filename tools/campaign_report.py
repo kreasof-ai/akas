@@ -417,6 +417,77 @@ def text_comparisons(state, history, evidence):
     return groups
 
 
+def speculative_baselines(state, history, evidence):
+    """Retain upstream acceptance counters separately from native AR comparisons."""
+    groups = []
+    expected = {item.get("checkpoint_sha256") for item in evidence.values()
+                if item.get("checkpoint_sha256")}
+    for run_id in state.get("speculative_baseline_runs", []):
+        data = record(history, run_id)
+        if not data or data["status"] != "passed" or not data.get("completed_at"):
+            raise ValueError("speculative baseline requires a sealed, passed run")
+        meta = data["metadata"]
+        if meta.get("checkpoint_sha256") not in expected:
+            raise ValueError("speculative baseline checkpoint differs from campaign")
+        artifact = next((a for a in data["artifacts"]
+                         if a["path"] == "benchmark/text-workload.json"), None)
+        path = Path(history) / "runs" / run_id / "benchmark/text-workload.json"
+        if (not artifact or digest(path) != artifact["sha256"] or
+            artifact["sha256"] != meta.get("text_workload_sha256")):
+            raise ValueError("speculative baseline workload checksum mismatch")
+        workload = read(path)
+        if workload.get("tokenizer_checkpoint_sha256") != meta["checkpoint_sha256"]:
+            raise ValueError("speculative baseline tokenizer identity differs")
+        cases = {item["id"]: item for item in workload["cases"]}
+        selected, seen = [], set()
+        for row in data["results"]:
+            case = cases.get(row.get("text_case", {}).get("id"))
+            if (not case or case["id"] in seen or row["status"] != "ok" or
+                prompt_digest([case["token_ids"]]) != case["prompt_sha256"] or
+                row.get("prompt_sha256") != case["prompt_sha256"] or
+                row["case"]["prompt"] != case["prefix_tokens"] or
+                row["case"]["generated"] != workload["output_tokens"] or
+                len(row["output_ids"]) != 1 or
+                len(row["output_ids"][0]) != workload["output_tokens"]):
+                raise ValueError("speculative baseline inputs or outputs differ")
+            seen.add(case["id"])
+            samples = row["samples"]
+            if len(samples) != meta["repeats"]:
+                raise ValueError("incomplete speculative baseline repetitions")
+            for sample in samples:
+                proposed, accepted = sample["proposed"], sample["accepted"]
+                counters = sample["counters"]
+                if (proposed < 1 or not 0 <= accepted <= proposed or
+                    not math.isclose(sample["acceptance"], accepted / proposed) or
+                    counters["spec_decode_num_draft_tokens_total"] != proposed or
+                    counters["spec_decode_num_accepted_tokens_total"] != accepted or
+                    counters["spec_decode_num_drafts_total"] < 1 or
+                    len(sample["output_ids"]) != workload["output_tokens"] or
+                    any(not math.isfinite(sample[key]) or sample[key] <= 0
+                        for key in ("prefill_tokens_per_second", "decode_tokens_per_second"))):
+                    raise ValueError("invalid speculative baseline accounting")
+            selected.append(dict(
+                id=case["id"], category=case["category"], split=case["split"],
+                prefix_tokens=case["prefix_tokens"], prompt_sha256=case["prompt_sha256"],
+                accepted=sum(s["accepted"] for s in samples),
+                proposed=sum(s["proposed"] for s in samples),
+                acceptance=sum(s["accepted"] for s in samples) / sum(s["proposed"] for s in samples),
+                prefill_tps=median(samples, "prefill_tokens_per_second"),
+                decode_tps=median(samples, "decode_tokens_per_second"),
+                output_ids=row["output_ids"], output_text=row["output_text"], samples=samples))
+        if seen != set(cases):
+            raise ValueError("incomplete speculative baseline prompt coverage")
+        groups.append(dict(run_id=run_id, runtime=meta["runtime"],
+                           runtime_revision=meta["runtime_revision"],
+                           confidence_threshold=meta["confidence_threshold"],
+                           draft_weight_dtype=meta["draft_weight_dtype"],
+                           kv_dtype=meta["kv_dtype"], draft_kv_dtype=meta["draft_kv_dtype"],
+                           output_tokens=workload["output_tokens"], warmup=meta["warmup"],
+                           repeats=meta["repeats"], qualification=meta["qualification"], cases=selected))
+        evidence[run_id] = metadata_for(data)
+    return groups
+
+
 def collect(campaign, history):
     campaign = Path(campaign).resolve()
     history = Path(history).resolve()
@@ -649,6 +720,7 @@ def collect(campaign, history):
         schedules=schedules,
         precision_comparisons=precision_comparisons(state, history, evidence),
         text_comparisons=text_comparisons(state, history, evidence),
+        speculative_baselines=speculative_baselines(state, history, evidence),
     )
 
 
@@ -896,6 +968,26 @@ def render(data, out, history):
                          f"{row['ar_decode_tps']:.2f} | {row['speculative_decode_tps']:.2f} | "
                          f"{row['decode_speedup']:.3f}x | {row['acceptance']:.1%} | "
                          f"{row['tokens_per_round']:.2f} | {'yes' if agreement['exact'] else 'no'} | {agreement['common_prefix_tokens']} |")
+    if data.get("speculative_baselines"):
+        lines += ["", "## Upstream speculative acceptance", "",
+                  "These runs use the same pinned real-text token IDs and target checkpoint as the native tests. "
+                  "Acceptance is accepted draft tokens divided by proposed draft tokens, pooled over measured samples. "
+                  "It excludes the target bonus token and depends on confidence filtering. "
+                  "Prefill and decode rates use llama.cpp's reported server timing boundaries; cross-runtime speedups are not calculated. "
+                  "Different target arithmetic can change generated text and subsequent acceptance. "
+                  "Full outputs, per-sample counters, commands, checkpoint hashes and upstream source revision are retained in the linked evidence."]
+    for baseline in data.get("speculative_baselines", []):
+        lines += ["", f"### {baseline['runtime']}; draft {baseline['draft_weight_dtype']}; confidence {baseline['confidence_threshold']}", "",
+                  f"Target/draft KV: `{baseline['kv_dtype']}` / `{baseline['draft_kv_dtype']}`. "
+                  f"Output tokens: {baseline['output_tokens']}; warmups: {baseline['warmup']}; repetitions: {baseline['repeats']}. "
+                  f"Upstream revision: `{baseline['runtime_revision']}`. "
+                  f"Evidence: {evidence_link(baseline['run_id'], out, history)}.", "",
+                  "| Example | Split | Category | Prefix | Accepted / proposed | Acceptance | Prefill tok/s | Decode tok/s |",
+                  "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: |"]
+        for row in baseline["cases"]:
+            lines.append(f"| {clean(row['id'])} | {row['split']} | {row['category']} | {row['prefix_tokens']} | "
+                         f"{row['accepted']} / {row['proposed']} | {row['acceptance']:.1%} | "
+                         f"{row['prefill_tps']:.2f} | {row['decode_tps']:.2f} |")
     text(out / "README.md", "\n".join(lines) + "\n")
     for kind, profiles, filename in [
         ("akas", akas, "AKAS.md"),

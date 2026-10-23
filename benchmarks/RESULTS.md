@@ -1,9 +1,13 @@
 # Benchmark results
 
-Generated from run records. See [the benchmark guide](../build/worktrees/f16-prefill/docs/benchmarking.md).
+Generated from run records. See [the benchmark guide](../docs/benchmarking.md).
 
 | UTC | Hardware | Runtime / model | Backend / weights / mode / KV | Shapes (B/P/O) | Purpose | Status | Source | Record |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-10-23T15:43:10.543892Z | NVIDIA L4 | llama.cpp / LiquidAI/LFM2.5-24B-A2B | cuda / q4_0 / dspark / float16 | 1/33/128, 1/57/128, 1/48/128, 1/29/128, 1/36/128, 1/24/128, 1/48/128, 1/43/128, 1/73/128, 1/38/128 | benchmark | passed | c81f0d5b93 + snapshot | [run](runs/20261023154310543892-4e4811ca/run.json) |
+| 2026-10-23T15:40:09.762846Z | NVIDIA L4 | llama.cpp / LiquidAI/LFM2.5-24B-A2B | cuda / q4_0 / dspark / float16 |  | benchmark | invalidated | c81f0d5b93 + snapshot | [run](runs/20261023154009762846-831b52f6/run.json) |
+| 2026-10-23T15:35:19.414727Z | NVIDIA L4 | llama.cpp / LiquidAI/LFM2.5-24B-A2B | cuda / q4_0 / dspark / float16 | 1/33/128, 1/57/128, 1/48/128, 1/29/128, 1/36/128, 1/24/128, 1/48/128, 1/43/128, 1/73/128, 1/38/128 | benchmark | passed | c81f0d5b93 + snapshot | [run](runs/20261023153519414727-f222e5b7/run.json) |
+| 2026-10-23T15:30:20.366805Z | NVIDIA L4 | llama.cpp / LiquidAI/LFM2.5-24B-A2B | cuda / q4_0 / dspark / float16 | 1/33/128, 1/57/128, 1/48/128, 1/29/128, 1/36/128, 1/24/128, 1/48/128, 1/43/128, 1/73/128, 1/38/128 | benchmark | passed | c81f0d5b93 | [run](runs/20261023153020366805-120f2195/run.json) |
 | 2026-10-23T15:15:33.293524Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / dspark / float16 | 1/33/128, 1/48/128, 1/24/128, 1/73/128, 1/38/128 | benchmark | passed | 2d9e7702f3 | [run](runs/20261023151533293524-174061e4/run.json) |
 | 2026-10-23T15:14:32.143989Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / dspark / float16 | 1/57/128, 1/29/128, 1/36/128, 1/48/128, 1/43/128 | benchmark | passed | 2d9e7702f3 | [run](runs/20261023151432143989-67b63b5e/run.json) |
 | 2026-10-23T15:09:57.552648Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / dspark / float16 |  | kernel | passed | 46a537e177 + snapshot | [run](runs/20261023150957552648-3b7700a5/run.json) |
