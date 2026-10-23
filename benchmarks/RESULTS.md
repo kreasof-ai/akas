@@ -4,6 +4,7 @@ Generated from run records. See [the benchmark guide](../docs/benchmarking.md).
 
 | UTC | Hardware | Runtime / model | Backend / weights / mode / KV | Shapes (B/P/O) | Purpose | Status | Source | Record |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-10-23T13:50:28.708663Z | {} | akas /  | cuda / unspecified / ar / float16 | 1/33/128, 1/57/128, 1/48/128, 1/29/128, 1/36/128, 1/24/128, 1/48/128, 1/43/128, 1/73/128, 1/38/128 | profiling | passed | 4a457fefbb | [run](runs/20261023135028708663-743b0598/run.json) |
 | 2026-10-23T13:23:31.975932Z | {} | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / dspark / float16 | 1/33/128, 1/48/128, 1/24/128, 1/73/128, 1/38/128 | benchmark | passed | 7a89b84231 + snapshot | [run](runs/20261023132331975932-f38d7467/run.json) |
 | 2026-10-23T13:22:26.213745Z | {} | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / dspark / float16 | 1/57/128, 1/29/128, 1/36/128, 1/48/128, 1/43/128 | benchmark | passed | 7a89b84231 + snapshot | [run](runs/20261023132226213745-5931c276/run.json) |
 | 2026-10-23T13:17:13.690673Z | {} | akas /  | cuda / unspecified / ar / float16 |  | compilation | passed | ebc773730a + snapshot | [run](runs/20261023131713690673-0631a631/run.json) |
