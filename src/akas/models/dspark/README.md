@@ -40,5 +40,5 @@ this external feature handoff and must not reuse assumptions of a shared MTP hea
 The model's [official sidecar](https://huggingface.co/LiquidAI/LFM2.5-24B-A2B-DSpark-GGUF)
 defines a nine-position block and five target feature layers. A full proposal can
 produce up to ten target outputs after verification, including its bonus token;
-actual speed depends on acceptance and the cost of both forwards. F16 cache and
-weight precision, accepted tokens and timing boundaries must accompany any report.
+actual speed depends on acceptance and the cost of both forwards. Cache and weight
+precision, accepted tokens and timing boundaries must accompany any report.

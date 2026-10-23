@@ -154,6 +154,14 @@ F64. Cross-checks compare both host paths with identical fixtures and unchanged
 tolerances. Single-block cache scales broadcast over channels, avoiding a full
 materialized scale matrix. GPU arithmetic is independent of this host policy.
 
+For native F16 KV on CUDA SM89, the `native_tail` policy exposes live-prefix
+calculation and `cache_pad(kc, vc, lengths) -> (kc, vc)` before ordered attention.
+It zeroes at most 255 unused positions per head, preserving every live cache bit
+and its scale metadata. This supplies the finite padding needed by async loads
+without converting or copying a complete cache. Search can compare this pipeline
+with the guarded native path. The zeroing body is shared with WebGPU; the complete
+ordered-attention policy is qualified for CUDA SM89.
+
 For mapped native attention, only live rows of a freshly returned output are
 defined. Padding rows are not borrowed state and need not preserve old buffer
 contents. Qualification compares live output rows numerically and checks all

@@ -1,6 +1,33 @@
 """Shared TileLang computations for attention."""
 
 
+def cache_pad(spec, schedule):
+    """Zero only the unused native F16 tail read by four async key tiles."""
+    import tilelang.language as T
+    from akas.kernels.kernel import Tensor, kernel
+
+    p = {**spec.parameters, **schedule}
+    slots, heads, capacity, depth = (p[n] for n in ("slots", "heads", "capacity", "d"))
+    shape = (slots, heads, capacity, depth)
+
+    @kernel
+    def compute(
+        kc: Tensor(shape, "float16"),
+        vc: Tensor(shape, "float16"),
+        lengths: Tensor((slots,), "int32"),
+    ) -> tuple[Tensor(shape, "float16"), Tensor(shape, "float16")]:
+        with T.Kernel(heads, slots, threads=128) as (head, slot):
+            live = T.min(T.max(lengths[slot], 0), capacity)
+            for index in T.Parallel(256 * depth):
+                position = live + index // depth
+                if position < T.ceildiv(live, 256) * 256 and position < capacity:
+                    kc[slot, head, position, index % depth] = 0
+                    vc[slot, head, position, index % depth] = 0
+        return kc, vc
+
+    return compute
+
+
 def cache_extent(spec, schedule):
     """Return each request's live cache prefix from its enabled query rows."""
     import tilelang.language as T

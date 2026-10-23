@@ -1,6 +1,21 @@
 """Independent numerical and state qualification for attention."""
 
 
+def pad_validation(kind, p, signature):
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    values = sample_arguments(signature)
+    lengths = np.resize(np.array([257, 0, 1, 255, 256, p["capacity"]], dtype="int32"),
+                        p["slots"])
+    values["lengths"][:] = np.minimum(lengths, p["capacity"])
+    expected = {name: value.copy() for name, value in values.items()}
+    for name in ("kc", "vc"):
+        for slot, live in enumerate(values["lengths"]):
+            expected[name][slot, :, live:min((int(live) + 255) // 256 * 256, p["capacity"])] = 0
+    return ValidationCase(values, expected, rtol=0, atol=0)
+
+
 def extent_validation(kind, p, signature):
     import numpy as np
     from akas.kernels.contracts import ValidationCase, sample_arguments

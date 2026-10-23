@@ -3584,6 +3584,7 @@ from .kernel import (
     attention as shared_attention,
     attention_flat,
     cache_extent,
+    cache_pad,
     cache_write,
     chunk_active,
     merge_floating,

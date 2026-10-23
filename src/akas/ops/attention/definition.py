@@ -3,6 +3,7 @@
 from akas.kernels.contracts import OutputABI
 from akas.ops.attention.validation import validation
 from akas.ops.attention.validation import extent_validation
+from akas.ops.attention.validation import pad_validation
 from akas.kernels.contracts import Implementation
 from akas.quantization.kv import is_quantized
 from akas.ops.attention.validation import pipeline_validation as pipeline_validation
@@ -174,6 +175,11 @@ def search_policies(graph, commit, *, provider, target):
                 _can_stage_prefill(call) for call in graph.calls
             ):
                 choices += [dict(choice, decoded_kv=True) for choice in choices]
+            if provider == "cuda" and target == "sm_89" and any(
+                _can_pad_prefill(call) for call in graph.calls
+            ):
+                choices += [dict(choice, native_tail=True) for choice in choices
+                            if not choice.get("decoded_kv")]
             return choices
         return []
     if (
@@ -189,6 +195,37 @@ def search_policies(graph, commit, *, provider, target):
     if target == "sm_90a":
         choices.append({"hopper": True, "decoded_kv": True, "splits": 2})
     return choices
+
+
+def _can_pad_prefill(call):
+    p = call.parameters
+    return (
+        call.kind == "attention" and p.get("optimized", False)
+        and p.get("kv_dtype") == "float16" and p.get("unit_scales", False)
+        and p.get("chunk", 1) >= 256 and p.get("d") == 64
+        and p.get("capacity", 0) >= 4096 and p["capacity"] % 256 == 0
+    )
+
+
+def _pad_prefill(graph, call, workspaces):
+    from dataclasses import replace
+    from akas.graph import Call
+
+    p = call.parameters
+    slots, heads, capacity, depth = p["r"] // p["chunk"], p["kh"], p["capacity"], p["d"]
+    fields = (dict(call.bindings) if call.bindings else dict(zip(
+        ("q", "kc", "vc", "ks", "vs", "out", "positions", "enabled"), call.arguments)))
+    shape = (slots, heads, capacity, depth)
+    if shape not in workspaces:
+        workspaces[shape] = graph.buffer(f"pipeline.attention.tail.{len(workspaces)}.lengths",
+                                        (slots,), "int32")
+    lengths = workspaces[shape]
+    extent = Call("attention_cache_extent",
+                  dict(slots=slots, chunk=p["chunk"], capacity=capacity),
+                  (fields["positions"], fields["enabled"], lengths.name))
+    pad = Call("attention_cache_pad", dict(slots=slots, heads=heads, capacity=capacity, d=depth),
+               (fields["kc"], fields["vc"], lengths.name))
+    return extent, pad, replace(call, parameters={**p, "staged_kv": True})
 
 
 def _can_stage_prefill(call):
@@ -299,13 +336,14 @@ def lower(graph, commit, settings, *, provider, target):
         "threads",
         "value_splits",
         "packed_loads",
+        "native_tail",
     }
     if set(settings) - allowed:
         raise ValueError("unknown attention pipeline policy")
     if graph.contract == "reference":
         from dataclasses import replace
 
-        if not settings or set(settings) - {"splits", "decoded_kv"}:
+        if not settings or set(settings) - {"splits", "decoded_kv", "native_tail"}:
             raise ValueError("unknown floating attention policy")
         if "splits" in settings and (
             type(settings["splits"]) is not int
@@ -318,7 +356,11 @@ def lower(graph, commit, settings, *, provider, target):
             raise ValueError("decoded KV policy must be a boolean")
         if settings.get("decoded_kv") and provider != "cuda":
             raise ValueError("staged floating attention is currently qualified on CUDA")
-        calls, workspaces = [], {}
+        if "native_tail" in settings and type(settings["native_tail"]) is not bool:
+            raise ValueError("native tail preparation must be a boolean")
+        if settings.get("native_tail") and (provider != "cuda" or target != "sm_89"):
+            raise ValueError("native tail attention currently requires CUDA sm_89")
+        calls, workspaces, tails = [], {}, {}
         for call in graph.calls:
             if (
                 "splits" in settings
@@ -347,6 +389,9 @@ def lower(graph, commit, settings, *, provider, target):
                 call = replace(call, parameters=p)
             if settings.get("decoded_kv") and _can_stage_prefill(call):
                 calls.extend(_stage_prefill(graph, call, workspaces))
+                continue
+            if settings.get("native_tail") and _can_pad_prefill(call):
+                calls.extend(_pad_prefill(graph, call, tails))
                 continue
             calls.append(call)
         graph.calls = calls
@@ -578,6 +623,7 @@ OUTPUT_ARGUMENTS = {
         "attention_partial": (5,),
         "attention_merge": (1,),
         "attention_cache_extent": OutputABI((-1,), ("lengths",)),
+        "attention_cache_pad": OutputABI((0, 1), ("kc", "vc")),
     }
 }
 OUTPUT_ARGUMENTS["block-fp8"] = {
@@ -634,6 +680,7 @@ VALIDATIONS = {
     )
 }
 VALIDATIONS["attention_cache_extent"] = extent_validation
+VALIDATIONS["attention_cache_pad"] = pad_validation
 VALIDATIONS.update(
     {
         name: pipeline_validation
@@ -1021,6 +1068,18 @@ IMPLEMENTATIONS = (
         factory="attention",
         name="attention.hardware.hopper.prefill",
     ),
+)
+
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        "attention_cache_pad",
+        f"akas.ops.attention.{provider}",
+        "reference",
+        provider=provider,
+        factory="cache_pad",
+        name="attention.cache_pad",
+    )
+    for provider in ("cuda", "webgpu")
 )
 
 IMPLEMENTATIONS += tuple(
