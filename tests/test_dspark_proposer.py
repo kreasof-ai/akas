@@ -32,8 +32,8 @@ def pair():
     target = NS(device=device, capacity=4, context=32, positions=np.zeros(4, dtype="int32"))
     config = NS(target_layers=(2, 10), width=2, feature_width=4, block_size=3, mask_token=99)
     features = {f"layer.{i}": f"layer.{i}" for i in config.target_layers}
-    target.batches = NS(records=[dict(phase="prefill", features=features),
-                                 dict(phase="verify", features=features)])
+    target.batches = NS(records=[dict(phase="prefill", rows=2, chunk=3, features=features),
+                                 dict(phase="verify", rows=2, chunk=3, features=features)])
     teacher = NS(rows=2, chunk=3, slots=(3, 1))
     hidden = {name: Buffer(np.arange(12, dtype="float32") + index * 100)
               for index, name in enumerate(features)}
@@ -41,7 +41,7 @@ def pair():
     target.last_frame = teacher
     target.batches.select = lambda *args, **kw: teacher
     context_input = Buffer(np.zeros(24, dtype="float32"))
-    context = NS(feature=lambda name: context_input)
+    context = NS(rows=2, feature=lambda name: context_input)
     proposal_tokens = Buffer(np.array([[7, 8, 9], [11, 12, 13]], dtype="int32"))
     proposal_conf = Buffer(np.array([[.95, .4, .99], [.9, .9, .9]], dtype="float32"))
     prepared, uploads, forwards = [], [], []
@@ -53,7 +53,8 @@ def pair():
                                         "confidence": proposal_conf}[name])
     draft = NS(device=device, capacity=4, context=32, config=config,
                checkpoint=NS(target=target), positions=np.zeros(4, dtype="int32"),
-               batches=NS(select=lambda *args, **kw: context,
+               batches=NS(records=[dict(phase="context", rows=2, chunk=3)],
+                          select=lambda *args, **kw: context,
                           select_window=lambda *args, **kw: proposal),
                _validate_batch=lambda *args: None,
                close=lambda: forwards.append("closed"))
@@ -116,6 +117,12 @@ def test_missing_target_features_and_stale_context_fail_before_draft_execution(p
     with pytest.raises(ValueError, match="aligned"):
         proposer.propose(p.requests, [3, 3], target=p.target)
     assert p.forwards == []
+
+
+def test_draft_rejects_uncompiled_context_geometry_before_admission(pair):
+    pair.draft.batches.records[0]["rows"] = 4
+    with pytest.raises(ValueError, match="matching context geometry"):
+        DSparkProposer(pair.target, pair.draft)
 
 
 def test_streaming_prefill_consumes_every_actual_target_chunk():

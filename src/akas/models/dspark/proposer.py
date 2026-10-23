@@ -33,6 +33,12 @@ class DSparkProposer:
                for record in target.batches.records
                if record["phase"] in ("decode", "prefill", "prefill_state", "verify")):
             raise ValueError("target program does not expose all DSpark hidden features")
+        contexts = {(record["rows"], record["chunk"]) for record in draft.batches.records
+                    if record["phase"] == "context"}
+        if any((record["rows"], record["chunk"]) not in contexts
+               for record in target.batches.records
+               if record["phase"] in ("decode", "prefill", "prefill_state", "verify")):
+            raise ValueError("draft needs a matching context geometry for every target phase")
         self._views = {}
         self.closed = False
 
@@ -59,6 +65,8 @@ class DSparkProposer:
         if not np.array_equal(self.draft.positions[slots], starts):
             raise ValueError("draft context is not aligned with the target prefix")
         frame = self.draft.batches.select(teacher.rows, teacher.chunk, phase="context")
+        if frame.rows != teacher.rows:
+            raise ValueError("target and draft feature rows must have matching geometry")
         count, width = teacher.rows * teacher.chunk, self.config.width
         destination = self._matrix(frame.feature("hidden_input"),
                                    (count, self.config.feature_width))
