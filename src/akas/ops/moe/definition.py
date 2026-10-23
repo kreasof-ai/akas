@@ -1141,6 +1141,28 @@ IMPLEMENTATIONS += tuple(
 
 from .validation import expert_swiglu_validation
 
+IMPLEMENTATIONS += (
+    Implementation(
+        "quantized_experts",
+        "akas.ops.moe.cuda",
+        "reference",
+        factory="staged_experts",
+        name="moe.cuda.staged",
+        priority=35,
+        accepts=lambda p: (
+            p["r"] > 1
+            and p.get("tile_map", False)
+            and p["o"] % 32 == 0
+            and p["k"] % 256 == 0
+            and supports_parts(p["weight_parts"], p["k"], "stage_tile", provider="cuda")
+        ),
+        defaults=(("block_m", 16), ("columns", 64), ("block_k", 256),
+                  ("threads", 128), ("stages", 1)),
+        space=(("block_m", (16, 32)), ("columns", (32, 64, 128)),
+               ("block_k", (128, 256)), ("threads", (128, 256)), ("stages", (1, 2))),
+    ),
+)
+
 OUTPUT_ARGUMENTS["reference"]["expert_swiglu"] = OutputABI((-1,), ("out",))
 VALIDATIONS["expert_swiglu"] = expert_swiglu_validation
 

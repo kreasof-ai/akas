@@ -95,6 +95,16 @@ tiles to preserve summation order. It requires Q4_0 and a channel count divisibl
 unavailable specializations keep the ordinary reader path. Unpermuted single
 weight pieces retain packed capabilities through `bind_parts`.
 
+Some consumers can prefetch compressed tiles before decoding them. The optional
+`stage_tile((rows, columns), dtype)` capability returns a `StagedTile` with a
+physical shared-memory `storage` specification and two macros:
+`load(encoded, staged, first_row, first_column)` and `decode(staged, destination)`.
+The operation allocates that storage and chooses pipeline stages. The codec owns
+block alignment and coefficient reconstruction. Unlike `read_tile`, this access
+requires a complete physical tile; consumers must reject or handle boundary
+tiles explicitly. CUDA GGML provides this capability for its raw layouts without
+requantizing weights or allocating a persistent floating-point copy.
+
 ## Fused computation
 
 [Linear](../ops/linear/README.md) supplies an additive `quantized_linear` operation

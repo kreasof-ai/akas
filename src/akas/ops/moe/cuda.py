@@ -150,6 +150,15 @@ def quantized_experts(spec, schedule):
 
 def compact_experts(spec, schedule):
     """Grouped tensor-core projection dispatched through compact expert tiles."""
+    return _compact_experts(spec, schedule, staged=False)
+
+
+def staged_experts(spec, schedule):
+    """Pipeline compressed codec tiles before grouped expert projection."""
+    return _compact_experts(spec, schedule, staged=True)
+
+
+def _compact_experts(spec, schedule, *, staged):
     import tilelang.language as T
     from akas.quantization.weights import bind_parts
 
@@ -158,7 +167,8 @@ def compact_experts(spec, schedule):
         p[n] for n in ("r", "top", "experts", "o", "k")
     )
     bm, bn, bk = p.get("block_m", 16), p.get("columns", 64), p.get("block_k", 32)
-    if bm not in (16, 32, 64) or bn not in (32, 64, 128) or bk not in (32, 64, 128):
+    allowed_depths = (32, 64, 128, 256, 512) if staged else (32, 64, 128)
+    if bm not in (16, 32, 64) or bn not in (32, 64, 128) or bk not in allowed_depths:
         raise ValueError("invalid compact CUDA expert tile")
     threads = p.get("threads", 128)
     if threads not in (128, 256):
@@ -168,6 +178,12 @@ def compact_experts(spec, schedule):
     layout = bm.bit_length() - 3
     binding = bind_parts(p["weight_parts"], depth, provider="cuda")
     storage, read_tile = binding.storage.values, binding.require("read_tile")
+    tile = None
+    if staged:
+        if columns % bn or depth % bk:
+            raise ValueError("staged experts require complete output and depth tiles")
+        tile = binding.require("stage_tile")((bn, bk), "float16")
+    stages = p.get("stages", 2) if staged else 2
     routed = p.get("routed_input", False)
     shape = (rows, top, depth) if routed else (rows, depth)
     input_dtype = p.get("input_dtype", "float32")
@@ -195,20 +211,26 @@ def compact_experts(spec, schedule):
             if expert >= 0 and by * bm < counts[expert]:
                 lhs = T.alloc_shared((bm, bk), "float16")
                 rhs = T.alloc_shared((bn, bk), "float16")
+                if staged:
+                    encoded = T.alloc_shared(tile.storage.shape, tile.storage.dtype)
                 accum = T.alloc_fragment((bm, bn), "float32")
                 T.clear(accum)
-                for tile in T.Pipelined(T.ceildiv(depth, bk), num_stages=2):
+                for step in T.Pipelined(T.ceildiv(depth, bk), num_stages=stages):
                     for i, j in T.Parallel(bm, bk):
                         index = by * bm + i
                         route = routes[expert, T.min(index, rows - 1)]
                         lhs[i, j] = T.if_then_else(
-                            index < counts[expert] and tile * bk + j < depth,
+                            index < counts[expert] and step * bk + j < depth,
                             activation(
-                                x, T.max(route, 0), T.min(tile * bk + j, depth - 1)
+                                x, T.max(route, 0), T.min(step * bk + j, depth - 1)
                             ),
                             0,
                         )
-                    read_tile((w,), rhs, expert * columns + bx * bn, tile * bk)
+                    if staged:
+                        tile.load((w,), encoded, expert * columns + bx * bn, step * bk)
+                        tile.decode(encoded, rhs)
+                    else:
+                        read_tile((w,), rhs, expert * columns + bx * bn, step * bk)
                     T.gemm(lhs, rhs, accum, transpose_B=True)
                 for i, j in T.Parallel(bm, bn):
                     index = by * bm + i

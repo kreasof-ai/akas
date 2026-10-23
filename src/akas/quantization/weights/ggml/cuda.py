@@ -488,6 +488,11 @@ def supports(capability, shape, *, encoding, layout="raw"):
         return encoding in (1, 2, 12, 14)
     if capability == "dot":
         return encoding in (0, 1, 2, 12, 14) and shape[-1] % 256 == 0
+    if capability == "stage_tile":
+        from .definition import ENCODINGS
+
+        _, block, size = ENCODINGS[encoding]
+        return (shape[-1] // block * size) % 2 == 0
     return capability in CAPABILITIES
 
 
@@ -529,6 +534,9 @@ def bind(shape, *, encoding, layout="raw"):
         dot_float=packed_dot_float(shape)
         if supports("dot_float", shape, encoding=encoding)
         else None,
+        stage_tile=staged_tile(shape, encoding=encoding)
+        if supports("stage_tile", shape, encoding=encoding)
+        else None,
     )
 
 
@@ -547,8 +555,59 @@ CAPABILITIES = (
     "dot_half",
     "dot_float",
     "dequantize",
+    "stage_tile",
 )
 IMPLEMENTATIONS = tuple(choice for choice in _CHOICES if choice.provider == "cuda")
+
+
+def staged_tile(shape, *, encoding):
+    """Stage original embedded GGML blocks, then reuse their local tile reader.
+
+    A tile has the same encoding as a small independent matrix. There is no
+    persistent dequantized weight copy. Consumers select geometry and pipeline
+    stages; this capability supplies byte layout and coefficient arithmetic.
+    """
+    from math import prod
+    import tilelang.language as T
+    from akas.memory.state import BufferSpec
+    from akas.quantization.formats import StagedTile
+    from .definition import ENCODINGS
+
+    _, block, size = ENCODINGS[encoding]
+    rows, depth = prod(shape[:-1]), shape[-1]
+    stride = depth // block * size
+
+    def tile(tile_shape, dtype):
+        height, width = tile_shape
+        if (height < 1 or width < 1 or width % block or depth % width
+                or height > rows or dtype not in ("float16", "float32")):
+            raise ValueError("staged GGML tiles need complete aligned encoding blocks")
+        tile_bytes = width // block * size
+        unit = next((value for value in (8, 4, 2) if stride % value == 0
+                     and tile_bytes % value == 0), None)
+        if unit is None:
+            raise ValueError("staged GGML tile has no aligned word representation")
+        word_dtype = f"uint{unit * 8}"
+        physical = BufferSpec((height, tile_bytes // unit), word_dtype)
+        local = bind((height, width), encoding=encoding)
+        read = local.require("read_tile")
+
+        @T.macro
+        def load(encoded, staged, row, column):
+            words = T.meta_var(T.view(encoded[0], (rows, stride // unit),
+                                     dtype=word_dtype))
+            start = T.truncdiv(column * size, block * unit)
+            T.copy(words[row:row + height, start:start + tile_bytes // unit], staged)
+
+        @T.macro
+        def decode(staged, destination):
+            encoded = T.meta_var(T.view(staged, local.storage.values.shape,
+                                       dtype=local.storage.values.dtype))
+            read((encoded,), destination, 0, 0)
+
+        return StagedTile(physical, load, decode)
+
+    return tile
 
 
 def planar_dot_half(shape):

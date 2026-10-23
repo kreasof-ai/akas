@@ -104,6 +104,7 @@ def bind_parts(parts, depth, *, provider):
         dot=direct.dot if direct else None,
         dot_half=direct.dot_half if direct else None,
         dot_float=direct.dot_float if direct else None,
+        stage_tile=direct.stage_tile if direct else None,
     )
 
 

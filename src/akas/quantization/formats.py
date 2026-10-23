@@ -32,6 +32,20 @@ class Storage:
 
 
 @dataclass(frozen=True)
+class StagedTile:
+    """Codec-owned compressed tile layout and its load/decode macros.
+
+    The operation allocates ``storage`` in shared memory and schedules ``load``
+    before ``decode``. Encoding details and local coefficient reconstruction
+    remain in the codec. Full physical tiles require guarded consumer geometry.
+    """
+
+    storage: BufferSpec
+    load: Callable
+    decode: Callable
+
+
+@dataclass(frozen=True)
 class Codec:
     """Compile-time binding; inline functions receive an encoded-buffer tuple.
 
@@ -59,6 +73,7 @@ class Codec:
     read_packed: Callable | None = None
     packed_dtype: str | None = None
     read_fields: tuple[str, ...] | None = None
+    stage_tile: Callable | None = None
 
     @property
     def read_buffers(self):
@@ -78,6 +93,7 @@ class Codec:
             "write",
             "write_pair",
             "read_packed",
+            "stage_tile",
         ):
             raise ValueError(f"unknown inline codec capability: {capability}")
         function = getattr(self, capability)

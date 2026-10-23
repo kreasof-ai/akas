@@ -76,6 +76,14 @@ microtiles, vector dot width and shared-memory layout/padding. `warp_experts`
 uses subgroup reductions for decode. `portable_experts` remains a fallback with
 bounded reduction tiles. These are registered implementations of the same
 `quantized_experts` operation. LFM2 MoE uses this composition.
+CUDA's `staged_experts` is another implementation of that operation. It asks the
+weight codec for `stage_tile`, prefetches the compressed tile into shared memory,
+then decodes it for the same FP16 tensor-core projection and F32 accumulation.
+The codec defines byte layout; the operation defines tile sizes, thread count,
+and pipeline stages. Eligibility follows codec capability and complete tile
+geometry, with no model-name checks. The direct reader remains available for
+other layouts and shapes. Larger shared-memory footprints can reduce occupancy,
+so select staging and its geometry through qualification and measurement.
 WebGPU tile selection respects the portable compiler's 32 KiB workgroup budget;
 oversized combinations are rejected before lowering. The older `tiled_experts`
 and `portable_experts` implementations retain their original counts/routes ABI.
