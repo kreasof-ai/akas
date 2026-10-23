@@ -96,7 +96,7 @@ def compose(
         return out
 
     def rotate(name, x, heads):
-        out = scratch(name, heads * config.head_dim)
+        out = graph.buffer(name, (count, heads * config.head_dim), "float32")
         graph(
             "rope",
             dict(
@@ -111,7 +111,7 @@ def compose(
             out,
             row_positions,
         )
-        return out.view((count, heads * config.head_dim))
+        return out
 
     parameters = dict(
         r=count,

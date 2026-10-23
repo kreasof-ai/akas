@@ -92,6 +92,29 @@ def test_dspark_reader_keeps_shared_tied_head_as_one_borrowed_buffer(paired):
         checkpoint.upload(object())
 
 
+@pytest.mark.parametrize("provider", ["cuda", "webgpu"])
+@pytest.mark.parametrize("phase", ["context", "proposal"])
+def test_dspark_composition_preserves_rotary_matrix_and_phase_contracts(paired, provider, phase):
+    from akas.models.dspark import DSparkDraft
+
+    target, _ = paired
+    checkpoint = DSparkDraftCheckpoint("sidecar.gguf", target=target)
+    graph = DSparkDraft.compose(checkpoint, rows=2, chunk=3, max_requests=4,
+                               max_context=32, phase=phase, provider=provider).graph
+    for call in graph.calls:
+        if call.kind == "rope":
+            source, destination, _ = map(graph.buffers.__getitem__, call.arguments)
+            assert source.shape == (6 * call.parameters["h"] * 64,)
+            assert destination.shape == (6, call.parameters["h"] * 64)
+    if phase == "context":
+        assert graph.request["features"].keys() == {"hidden_input"}
+        assert [call.kind for call in graph.calls].count("advance") == 1
+    else:
+        assert graph.request["features"].keys() == {"tokens", "confidence", "logits", "anchor_input"}
+        assert all(call.kind != "advance" for call in graph.calls)
+        assert graph.buffers[graph.request["features"]["confidence"]].shape == (6,)
+
+
 def test_dspark_reader_rejects_missing_or_quantized_draft_norm(paired):
     target, gguf = paired
     gguf.tensors["output_norm.weight"].type = 1
