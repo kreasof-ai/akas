@@ -4,6 +4,8 @@
 
 Elementwise SwiGLU for separate gate/up tensors, packed projections, and routed expert
 rows. Conceptually: `swiglu(gate, up) -> out`.
+`sigmoid_bias(x, bias) -> out` applies a shared scalar bias and sigmoid. Its shared
+CUDA/WebGPU body is used by draft confidence heads.
 
 ## Backend choice
 

@@ -471,3 +471,25 @@ def prefill_tail(spec: KernelSpec, schedule: Mapping[str, object]):
         return (out, tail_control)
 
     return compute
+
+
+def block_limits(spec, schedule):
+    """Give each query access to its complete active token block."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    rows, chunk = p["r"], p["chunk"]
+
+    @kernel
+    def compute(
+        positions: Tensor((rows,), "int32"), lengths: Tensor((rows,), "int32")
+    ) -> Tensor((rows * chunk,), "int32"):
+        out = output((rows * chunk,), "int32")
+        with T.Kernel(T.ceildiv(rows * chunk, 128), threads=128) as block:
+            for lane in T.Parallel(128):
+                i = block * 128 + lane
+                if i < rows * chunk:
+                    out[i] = positions[i // chunk] + lengths[i // chunk] - 1
+        return out
+
+    return compute

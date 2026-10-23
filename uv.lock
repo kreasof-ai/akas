@@ -107,9 +107,9 @@ requires-dist = [
     { name = "huggingface-hub", marker = "extra == 'cloud'", specifier = ">=0.36,<2" },
     { name = "modal", marker = "extra == 'cloud'", specifier = ">=1,<2" },
     { name = "regex", specifier = "==2026.9.29" },
-    { name = "tensor-workspace", git = "https://github.com/kreasof-ai/tensor?rev=274d429ed9945b45ea5b8e492248355e1611a047" },
-    { name = "tensor-workspace", extras = ["compiler"], marker = "extra == 'compiler'", git = "https://github.com/kreasof-ai/tensor?rev=274d429ed9945b45ea5b8e492248355e1611a047" },
-    { name = "tensor-workspace", extras = ["webgpu"], marker = "extra == 'webgpu'", git = "https://github.com/kreasof-ai/tensor?rev=274d429ed9945b45ea5b8e492248355e1611a047" },
+    { name = "tensor-workspace", git = "https://github.com/kreasof-ai/tensor?rev=541d11ac9d93de92915082d09b68d7503f1c9741" },
+    { name = "tensor-workspace", extras = ["compiler"], marker = "extra == 'compiler'", git = "https://github.com/kreasof-ai/tensor?rev=541d11ac9d93de92915082d09b68d7503f1c9741" },
+    { name = "tensor-workspace", extras = ["webgpu"], marker = "extra == 'webgpu'", git = "https://github.com/kreasof-ai/tensor?rev=541d11ac9d93de92915082d09b68d7503f1c9741" },
     { name = "torch", marker = "extra == 'reference'", specifier = ">=2.8" },
     { name = "transformers", marker = "extra == 'reference'", specifier = ">=4.57,<6" },
 ]
@@ -1233,7 +1233,7 @@ wheels = [
 [[package]]
 name = "tensor-workspace"
 version = "0.1.0"
-source = { git = "https://github.com/kreasof-ai/tensor?rev=274d429ed9945b45ea5b8e492248355e1611a047#274d429ed9945b45ea5b8e492248355e1611a047" }
+source = { git = "https://github.com/kreasof-ai/tensor?rev=541d11ac9d93de92915082d09b68d7503f1c9741#541d11ac9d93de92915082d09b68d7503f1c9741" }
 dependencies = [
     { name = "numpy" },
 ]

@@ -24,8 +24,17 @@ device with a single control upload and optional final readback, for throughput
 measurement. Both consume the same compiled decode phase.
 
 `generation/speculative/decoding.py` owns the proposer-independent transaction flow.
-`models/qwen35/mtp.py` supplies one head implementation. Captured rounds and deferred
+`models/qwen35/mtp.py` supplies a shared-program head; `models/dspark/proposer.py`
+supplies an external draft that borrows target embedding and vocabulary weights.
+Captured rounds and deferred
 state use the common executor rather than a separate model runtime.
+
+`prefill(..., on_chunk=consumer)` exposes every executed chunk before its workspace
+is reused, including intermediate chunks without a vocabulary projection. Graphs
+declare which named features those chunks must retain. A consumer can copy feature
+columns on the device and run another compiled phase without downloading a full
+prompt's hidden states. `run_batch(..., phase="context", read=False)` executes such
+a phase while preserving the same slot validation and position bookkeeping.
 
 All model families open the same executor. Legacy numerical bindings, independent
 request adapters and token-step runtimes have been removed. Prefill uses qualified

@@ -138,3 +138,25 @@ def _swiglu(p):
             return out
 
         return compute
+
+
+def sigmoid_bias(spec, schedule):
+    """Apply a shared scalar bias and sigmoid to projection results."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    rows = p["r"]
+
+    @kernel
+    def compute(x: Tensor((rows,), "float32"), bias: Tensor((1,), "float32")) -> Tensor(
+        (rows,), "float32"
+    ):
+        out = output((rows,), "float32")
+        with T.Kernel(T.ceildiv(rows, 128), threads=128) as block:
+            for lane in T.Parallel(128):
+                row = block * 128 + lane
+                if row < rows:
+                    out[row] = 1 / (1 + T.exp(-(x[row] + bias[0])))
+        return out
+
+    return compute

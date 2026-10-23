@@ -52,8 +52,17 @@ class SpeculativeDecoder:
         for begin in range(0, len(requests), group_size):
             group = requests[begin:begin+group_size]
             tokens = sequences[begin:begin+group_size]
-            predictions = self.target.prefill_batch(group, tokens, chunk)
-            self.proposer.prefill(group, tokens, predictions, target=self.target, chunk=chunk)
+            if getattr(self.proposer, "stream_prefill", False):
+                by_slot = {request.slot: request for request in group}
+
+                def consume(slots, sequences, frame):
+                    self.proposer.prefill([by_slot[slot] for slot in slots], sequences,
+                                          None, target=self.target, chunk=frame.chunk)
+
+                predictions = self.target.prefill_batch(group, tokens, chunk, on_chunk=consume)
+            else:
+                predictions = self.target.prefill_batch(group, tokens, chunk)
+                self.proposer.prefill(group, tokens, predictions, target=self.target, chunk=chunk)
             result.extend(predictions)
         return result
 

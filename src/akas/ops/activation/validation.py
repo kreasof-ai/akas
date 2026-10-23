@@ -48,3 +48,15 @@ def validation(kind, p, signature):
             out = out.astype("float16").astype("float32")
         out_2d[begin:end] = out
     return ValidationCase(values, expected)
+
+
+def sigmoid_bias_validation(kind, p, signature):
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    values = sample_arguments(signature)
+    expected = dict(values)
+    expected["out"] = (
+        1 / (1 + np.exp(-(values["x"].astype("float64") + float(values["bias"][0]))))
+    ).astype("float32")
+    return ValidationCase(values, expected, rtol=2e-6, atol=1e-7)

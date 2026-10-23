@@ -4,6 +4,10 @@
 
 Clear selected persistent-state rows through a logical-row-to-request mapping.
 Conceptually: `clear_rows(mapping, state) -> state`.
+`select_token(x) -> out` gathers one fixed token position from each row;
+`replace_token(tokens, replacement) -> out` creates a block with one column
+replaced; `concatenate(left, right) -> out` joins feature columns in each row.
+These functions leave their input matrices unchanged.
 
 ## Backend choice
 
@@ -33,7 +37,7 @@ compilation, execution and performance.
 | [webgpu.py](webgpu.py) | WebGPU specializations, shared bindings and approved WebGPU registration inventory. |
 | [validation.py](validation.py) | Independent host expectations for qualification. |
 
-`kernel.clear_rows` is the shared body; backend modules reference it directly.
+All four bodies are shared in `kernel.py`; backend modules reference them directly.
 
 ## How to extend
 
@@ -49,6 +53,8 @@ registration boundary. Keep numerical expectations in `validation.py`.
 
 Check negative/out-of-range mappings, nonadjacent requests, channel tails and unchanged
 unselected rows. See [state mapping tests](../../../../tests/test_state_mapping.py) and
-[shared execution tests](../../../../tests/test_shared_execution.py).
+[shared execution tests](../../../../tests/test_shared_execution.py). The
+[draft primitive tests](../../../../tests/test_draft_primitives.py) check immutable
+gathers, column replacement and concatenation on CUDA and WebGPU.
 
 Return to the [operation index](../README.md).

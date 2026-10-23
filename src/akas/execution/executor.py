@@ -86,10 +86,10 @@ class Executor(DeviceOwner):
         self._check()
         self.state.free(slot, release=self._release_slot)
 
-    def run_batch(self, slots, sequences, *, chunk=1):
+    def run_batch(self, slots, sequences, *, chunk=1, phase=None, read=True):
         self._check()
         slots, sequences = self._validate_batch(slots, sequences, chunk)
-        return self._execute_batch(slots, sequences, chunk)
+        return self._execute_batch(slots, sequences, chunk, phase=phase, read=read)
 
     def _validate_batch(self, slots, sequences, chunk):
         slots, sequences = list(slots), [list(s) for s in sequences]
@@ -191,10 +191,11 @@ class Executor(DeviceOwner):
             raise ValueError("invalid execution batch size")
         return self.batches.select(count, chunk, phase="verify" if verify else None)
 
-    def prefill_batch(self, requests, sequences, chunk):
-        return self.prefill([r.slot for r in requests], sequences, chunk=self.prefill_geometry(chunk))
+    def prefill_batch(self, requests, sequences, chunk, *, on_chunk=None):
+        return self.prefill([r.slot for r in requests], sequences,
+                            chunk=self.prefill_geometry(chunk), on_chunk=on_chunk)
 
-    def _prefill_groups(self, slots, sequences, chunk, *, check=None):
+    def _prefill_groups(self, slots, sequences, chunk, *, check=None, on_chunk=None):
         self._check()
         slots, sequences = self._validate_batch(slots, sequences, chunk)
         result = []
@@ -206,10 +207,16 @@ class Executor(DeviceOwner):
             result.extend(
                 self.run_batch(slots[start:stop], sequences[start:stop], chunk=chunk)
             )
+            if on_chunk is not None:
+                on_chunk(slots[start:stop], sequences[start:stop], self.last_frame)
         return result
 
-    def prefill(self, slots, prompts, *, chunk=None, check=None):
-        """Execute prompt chunks, optionally checking a measurement deadline between groups."""
+    def prefill(self, slots, prompts, *, chunk=None, check=None, on_chunk=None):
+        """Execute chunks and consume exposed features before their workspace is reused.
+
+        on_chunk receives slots, token sequences and the actual compiled frame,
+        including intermediate chunks whose vocabulary projection was removed.
+        """
         self._check()
         slots, prompts = list(slots), [list(p) for p in prompts]
         if chunk is None:
@@ -258,13 +265,18 @@ class Executor(DeviceOwner):
                     self._execute_batch([slots[i] for i in indexes],
                                         [prompts[i][begin:begin + chunk] for i in indexes],
                                         chunk, phase="prefill_state", read=False)
+                    if on_chunk is not None:
+                        on_chunk([slots[i] for i in indexes],
+                                 [prompts[i][begin:begin + chunk] for i in indexes],
+                                 self.last_frame)
                     if check is not None:
                         check()
             final = [i for i in active if i not in intermediate]
             if final:
                 result = self._prefill_groups(
                     [slots[i] for i in final],
-                    [prompts[i][begin:begin + chunk] for i in final], chunk, check=check)
+                    [prompts[i][begin:begin + chunk] for i in final], chunk,
+                    check=check, on_chunk=on_chunk)
                 for index, token in zip(final, result):
                     predicted[index] = token
                 self.last_prefill_chunk = chunk

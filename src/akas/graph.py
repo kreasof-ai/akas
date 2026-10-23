@@ -119,6 +119,12 @@ class Graph:
                 while name is not None:
                     uses.setdefault(name, []).append(index)
                     name = self.buffers[name].alias_of
+        if self.request:
+            exposed = [self.request["prediction"], *self.request.get("features", {}).values()]
+            for name in exposed:
+                while name is not None:
+                    uses.setdefault(name, []).append(len(self.calls))
+                    name = self.buffers[name].alias_of
         return {name: (min(indices), max(indices)) for name, indices in uses.items()}
 
     def metadata(self):

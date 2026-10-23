@@ -4,6 +4,9 @@
 
 Build positions/masks, gather or store hidden state, select last rows/tails and advance
 sequences. Each callable declares the control or persistent-state buffers it changes.
+`block_limits(positions, lengths) -> out` repeats the last live position across
+each token block, for attention within a bidirectional draft block. Rotary positions
+remain distinct from these attention limits.
 
 ## Backend choice
 

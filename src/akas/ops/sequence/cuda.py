@@ -1,6 +1,7 @@
 """CUDA specializations and shared bindings for sequence."""
 
 from .kernel import (
+    block_limits,
     advance,
     baseline_advance,
     baseline_last,

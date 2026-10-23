@@ -135,3 +135,18 @@ VALIDATIONS = {
         "chunk_last",
     )
 }
+
+
+def block_limit_validation(kind, p, signature):
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    values = sample_arguments(signature)
+    values["lengths"][:] = p["chunk"]
+    if p["r"] > 1:
+        values["lengths"][-1] = 0
+    expected = dict(values)
+    expected["out"] = np.repeat(
+        values["positions"] + values["lengths"] - 1, p["chunk"]
+    ).astype("int32")
+    return ValidationCase(values, expected, rtol=0, atol=0)

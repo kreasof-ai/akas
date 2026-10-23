@@ -1,7 +1,7 @@
 """Contracts and implementation choices for activation."""
 
 from akas.kernels.contracts import OutputABI
-from akas.ops.activation.validation import validation
+from akas.ops.activation.validation import validation, sigmoid_bias_validation
 from akas.kernels.contracts import Implementation
 
 ROW_INDEPENDENT = ("swiglu",)
@@ -134,6 +134,21 @@ IMPLEMENTATIONS += tuple(
         provider=provider,
         factory="swiglu_experts",
         defaults=(("expert_rows", True),),
+    )
+    for provider in ("cuda", "webgpu")
+)
+
+
+OUTPUT_ARGUMENTS["reference"]["sigmoid_bias"] = (-1,)
+VALIDATIONS["sigmoid_bias"] = sigmoid_bias_validation
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        "sigmoid_bias",
+        "akas.ops.activation.kernel",
+        "reference",
+        provider=provider,
+        factory="sigmoid_bias",
+        name="activation.sigmoid_bias",
     )
     for provider in ("cuda", "webgpu")
 )

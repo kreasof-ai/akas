@@ -3,7 +3,7 @@
 from akas.kernels.contracts import OutputABI
 from akas.kernels.contracts import Implementation
 from akas.ops.sequence.validation import tail_validation as tail_validation
-from akas.ops.sequence.validation import VALIDATIONS
+from akas.ops.sequence.validation import VALIDATIONS, block_limit_validation
 
 ROW_INDEPENDENT = ("add",)
 OUTPUT_ARGUMENTS = {
@@ -312,4 +312,19 @@ IMPLEMENTATIONS = (
         factory="mapped_last_rows",
         name="sequence.cuda.bf16_batch",
     ),
+)
+
+
+OUTPUT_ARGUMENTS["reference"]["block_limits"] = (-1,)
+VALIDATIONS["block_limits"] = block_limit_validation
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        "block_limits",
+        "akas.ops.sequence.kernel",
+        "reference",
+        provider=provider,
+        factory="block_limits",
+        name="sequence.block_limits",
+    )
+    for provider in ("cuda", "webgpu")
 )

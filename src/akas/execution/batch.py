@@ -90,7 +90,7 @@ class Batch:
                 raise ValueError("batch has no request owner")
             if self.phase == "verify":
                 return self.owner.verify(slots, sequences, chunk=self.chunk)
-            return self.owner.run_batch(slots, sequences, chunk=self.chunk)
+            return self.owner.run_batch(slots, sequences, chunk=self.chunk, phase=self.phase)
         self.prepare(slots,sequences,positions)
         self.forward.run()
         result = self.forward.buffers[self.prediction].to_numpy()

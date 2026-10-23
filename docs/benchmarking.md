@@ -111,7 +111,7 @@ not reused; keep the revision aligned with `uv.lock` when upgrading Tensor.
 ```sh
 TENSOR_BUILD_WEBGPU_NATIVE=1 uv pip install --python .venv/bin/python \
   --reinstall --no-deps --no-cache \
-  'tensor-workspace @ git+https://github.com/kreasof-ai/tensor@274d429ed9945b45ea5b8e492248355e1611a047'
+  'tensor-workspace @ git+https://github.com/kreasof-ai/tensor@541d11ac9d93de92915082d09b68d7503f1c9741'
 ```
 
 Use `--check module:callable` to attach independent model correctness evidence.
