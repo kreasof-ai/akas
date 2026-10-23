@@ -114,3 +114,51 @@ Target/draft KV: `float16` / `float16`. Evidence: [20261023120702655988-e46a7e46
 | gsm8k-test:1:38 | math | 38 | 318.04 | 308.83 | 129.92 | 137.11 | 1.055x | 70.9% | 6.35 | yes | 128 |
 | longbench-v2:66fcffd9bb02136c067c94c5:8192 | long-document | 8192 | 3214.22 | 3999.18 | 120.02 | 130.87 | 1.090x | 77.0% | 5.52 | yes | 128 |
 | longbench-v2:66fcffd9bb02136c067c94c5:130944 | long-document | 130944 | 2784.57 | 2682.38 | 55.81 | 14.86 | 0.266x | 3.0% | 1.26 | no | 18 |
+
+### calibration; confidence 0.5; Smaller verification windows and tuned projections
+
+Target/draft KV: `float16` / `float16`. Evidence: [20261023124514712767-7ea28db7](../../runs/20261023124514712767-7ea28db7/run.json); AR reference: [20261023124514712767-7ea28db7](../../runs/20261023124514712767-7ea28db7/run.json).
+
+| Example | Category | Prefix | AR prefill | Speculative prefill | AR decode | Speculative decode | Decode speedup | Acceptance | Tokens/round | Exact output | Common prefix |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: |
+| mtbench:82:57 | writing | 57 | 436.83 | 440.92 | 131.68 | 119.39 | 0.907x | 61.4% | 4.23 | yes | 128 |
+| mtbench:104:29 | reasoning | 29 | 529.61 | 538.35 | 131.09 | 103.76 | 0.792x | 50.5% | 3.85 | no | 107 |
+| mtbench:121:36 | coding | 36 | 300.54 | 299.21 | 131.24 | 89.79 | 0.684x | 53.5% | 2.89 | no | 52 |
+| gsm8k-train:0:48 | math | 48 | 381.78 | 382.28 | 131.08 | 169.66 | 1.294x | 78.0% | 7.47 | yes | 128 |
+| gsm8k-train:1:43 | math | 43 | 350.87 | 350.15 | 130.93 | 119.23 | 0.911x | 58.6% | 4.54 | yes | 128 |
+
+### heldout; confidence 0.5; Smaller verification windows and tuned projections
+
+Target/draft KV: `float16` / `float16`. Evidence: [20261023124621285769-4582c3e0](../../runs/20261023124621285769-4582c3e0/run.json); AR reference: [20261023124621285769-4582c3e0](../../runs/20261023124621285769-4582c3e0/run.json).
+
+| Example | Category | Prefix | AR prefill | Speculative prefill | AR decode | Speculative decode | Decode speedup | Acceptance | Tokens/round | Exact output | Common prefix |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: |
+| mtbench:81:33 | writing | 33 | 274.56 | 280.53 | 130.57 | 93.50 | 0.716x | 64.7% | 2.54 | yes | 128 |
+| mtbench:101:48 | reasoning | 48 | 376.93 | 381.24 | 130.64 | 117.19 | 0.897x | 67.1% | 4.10 | yes | 128 |
+| mtbench:122:24 | coding | 24 | 432.76 | 434.40 | 130.29 | 101.72 | 0.781x | 63.6% | 3.34 | yes | 128 |
+| gsm8k-test:0:73 | math | 73 | 537.70 | 531.05 | 130.16 | 138.05 | 1.061x | 69.4% | 5.08 | yes | 128 |
+| gsm8k-test:1:38 | math | 38 | 314.80 | 312.39 | 129.94 | 148.92 | 1.146x | 70.9% | 6.35 | yes | 128 |
+
+### calibration; confidence 0.5; Q8_0 draft with smaller verification windows and tuned projections
+
+Draft weights: `q8_0`. Target/draft KV: `float16` / `float16`. Evidence: [20261023132226213745-5931c276](../../runs/20261023132226213745-5931c276/run.json); AR reference: [20261023132226213745-5931c276](../../runs/20261023132226213745-5931c276/run.json).
+
+| Example | Category | Prefix | AR prefill | Speculative prefill | AR decode | Speculative decode | Decode speedup | Acceptance | Tokens/round | Exact output | Common prefix |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: |
+| mtbench:82:57 | writing | 57 | 434.13 | 444.76 | 131.77 | 124.00 | 0.941x | 61.4% | 4.23 | yes | 128 |
+| mtbench:104:29 | reasoning | 29 | 533.10 | 539.75 | 131.14 | 109.89 | 0.838x | 51.6% | 3.97 | no | 107 |
+| mtbench:121:36 | coding | 36 | 299.06 | 298.51 | 131.31 | 93.28 | 0.710x | 53.9% | 2.89 | no | 52 |
+| gsm8k-train:0:48 | math | 48 | 384.71 | 383.59 | 131.10 | 176.66 | 1.347x | 80.3% | 7.47 | yes | 128 |
+| gsm8k-train:1:43 | math | 43 | 351.83 | 347.06 | 131.01 | 123.26 | 0.941x | 58.6% | 4.54 | yes | 128 |
+
+### heldout; confidence 0.5; Q8_0 draft with smaller verification windows and tuned projections
+
+Draft weights: `q8_0`. Target/draft KV: `float16` / `float16`. Evidence: [20261023132331975932-f38d7467](../../runs/20261023132331975932-f38d7467/run.json); AR reference: [20261023132331975932-f38d7467](../../runs/20261023132331975932-f38d7467/run.json).
+
+| Example | Category | Prefix | AR prefill | Speculative prefill | AR decode | Speculative decode | Decode speedup | Acceptance | Tokens/round | Exact output | Common prefix |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: |
+| mtbench:81:33 | writing | 33 | 279.16 | 280.97 | 130.94 | 98.50 | 0.752x | 64.7% | 2.54 | yes | 128 |
+| mtbench:101:48 | reasoning | 48 | 380.88 | 380.02 | 130.70 | 123.53 | 0.945x | 67.8% | 4.23 | yes | 128 |
+| mtbench:122:24 | coding | 24 | 432.55 | 437.13 | 130.28 | 105.93 | 0.813x | 63.6% | 3.34 | yes | 128 |
+| gsm8k-test:0:73 | math | 73 | 541.70 | 527.84 | 130.17 | 137.88 | 1.059x | 66.4% | 4.88 | yes | 128 |
+| gsm8k-test:1:38 | math | 38 | 317.29 | 310.41 | 129.93 | 152.61 | 1.175x | 70.9% | 6.35 | yes | 128 |

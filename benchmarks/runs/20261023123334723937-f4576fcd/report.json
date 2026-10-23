@@ -1,0 +1,24 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "compilation",
+    "provider": "cuda",
+    "target": "sm_89",
+    "max_context": 4096,
+    "kv_dtype": "float16",
+    "draft_kv_dtype": "float16",
+    "verify_chunks": [
+      1,
+      2,
+      4,
+      10
+    ],
+    "checkpoint_sha256": "d1c03f73ecaf61017d70419eec9e5dc0b05d50ae26c23d522829b934fbabf8a5",
+    "qualification": "Ordinary public operation qualification, inherited source/device-bound caches, measured bitwise short projection geometries. Target and draft context capacity reduced to 4096 for the explicitly short-only first gate. Full model measurements follow compilation.",
+    "error": "ValueError: rope qualification failed: \nNot equal to tolerance rtol=0.0002, atol=2e-05\n\nMismatched elements: 208 / 1048576 (0.0198%)\nFirst 5 mismatches are at indices:\n [133, 1570]: 0.0007573254406452179 (ACTUAL), 0.0007371472893282771 (DESIRED)\n [138, 833]: -0.030378352850675583 (ACTUAL), -0.030340947210788727 (DESIRED)\n [145, 1154]: -0.006476044189184904 (ACTUAL), -0.006452637258917093 (DESIRED)\n [155, 578]: 0.032157931476831436 (ACTUAL), 0.03212900459766388 (DESIRED)\n [160, 1762]: 0.02836494892835617 (ACTUAL), 0.028333580121397972 (DESIRED)\nMax absolute difference among violations: 6.190594e-05\nMax relative difference among violations: 0.35866782\n ACTUAL: array([[-1.374417e-01,  6.183820e-02, -5.470623e-02, ..., -1.859810e-01,\n        -3.059981e-02,  1.902906e-01],\n       [-1.663803e-04,  2.990286e-02,  2.480595e-02, ...,  3.199312e-01,...\n DESIRED: array([[-1.374417e-01,  6.183820e-02, -5.470623e-02, ..., -1.859810e-01,\n        -3.059981e-02,  1.902906e-01],\n       [-1.663798e-04,  2.990288e-02,  2.480596e-02, ...,  3.199312e-01,...",
+    "traceback": "Traceback (most recent call last):\n  File \"/home/sagemaker-user/akas/src/akas/compilation/tuning.py\", line 709, in qualify\n    result = tune(\n             ^^^^^\n  File \"/home/sagemaker-user/akas/src/akas/compilation/tuning.py\", line 113, in tune\n    raise ValueError(f\"invalid reference measurement: {workload.name}\")\nValueError: invalid reference measurement: 40f238d8035bc894b1435f6c\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/home/sagemaker-user/akas/build/lfm-moe/prepare-dspark-short.py\", line 60, in <module>\n    compile_program(loaded,destination,definition=compose,geometries=geometries,max_requests=1,max_context=4096,provider='cuda',target='sm_89',model_options=options,policy=chosen_policy,schedules=profile,search_settings=settings,device=device)\n  File \"/home/sagemaker-user/akas/src/akas/compilation/compile.py\", line 349, in compile_program\n    built = build(\n            ^^^^^^\n  File \"/home/sagemaker-user/akas/src/akas/compilation/compile.py\", line 36, in build\n    schedules, report = qualify(\n                        ^^^^^^^^\n  File \"/home/sagemaker-user/akas/src/akas/compilation/tuning.py\", line 729, in qualify\n    raise ValueError(\nValueError: rope qualification failed: \nNot equal to tolerance rtol=0.0002, atol=2e-05\n\nMismatched elements: 208 / 1048576 (0.0198%)\nFirst 5 mismatches are at indices:\n [133, 1570]: 0.0007573254406452179 (ACTUAL), 0.0007371472893282771 (DESIRED)\n [138, 833]: -0.030378352850675583 (ACTUAL), -0.030340947210788727 (DESIRED)\n [145, 1154]: -0.006476044189184904 (ACTUAL), -0.006452637258917093 (DESIRED)\n [155, 578]: 0.032157931476831436 (ACTUAL), 0.03212900459766388 (DESIRED)\n [160, 1762]: 0.02836494892835617 (ACTUAL), 0.028333580121397972 (DESIRED)\nMax absolute difference among violations: 6.190594e-05\nMax relative difference among violations: 0.35866782\n ACTUAL: array([[-1.374417e-01,  6.183820e-02, -5.470623e-02, ..., -1.859810e-01,\n        -3.059981e-02,  1.902906e-01],\n       [-1.663803e-04,  2.990286e-02,  2.480595e-02, ...,  3.199312e-01,...\n DESIRED: array([[-1.374417e-01,  6.183820e-02, -5.470623e-02, ..., -1.859810e-01,\n        -3.059981e-02,  1.902906e-01],\n       [-1.663798e-04,  2.990288e-02,  2.480596e-02, ...,  3.199312e-01,...\n",
+    "cpu_peak_rss_bytes": 1265479680
+  },
+  "results": []
+}
