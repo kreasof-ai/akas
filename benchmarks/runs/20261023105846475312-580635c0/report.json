@@ -1,0 +1,72 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "benchmark",
+    "protocol": "native-token-step-v2",
+    "provider": "cuda",
+    "target": "sm_89",
+    "device": {
+      "name": "NVIDIA L4",
+      "provider": "cuda"
+    },
+    "model": "akas.models.lfm2.model:LFM2MoE",
+    "definition": "akas.models.lfm2.model:LFM2MoE",
+    "mode": "dspark",
+    "native_phase_mode": "dspark",
+    "checkpoint": "/home/sagemaker-user/akas/build/checkpoints/lfm2.5-24b-a2b/q4_0.gguf",
+    "checkpoint_sha256": "d1c03f73ecaf61017d70419eec9e5dc0b05d50ae26c23d522829b934fbabf8a5",
+    "draft_checkpoint": "/home/sagemaker-user/akas/build/checkpoints/lfm2.5-24b-a2b/dspark-f16.gguf",
+    "draft_checkpoint_sha256": "0cd847ca049aeabf53cb41d62091ae20eb50245cf89594c75af204784a1b1a0f",
+    "weight_format": "q4_0",
+    "weight_dtype": "gguf-q4_0-mixed",
+    "draft_weight_dtype": "float16",
+    "kv_dtype": "float16",
+    "draft_kv_dtype": "float16",
+    "activation_dtype": "float32",
+    "chunk": 4096,
+    "window": 10,
+    "block_size": 9,
+    "confidence_threshold": 0,
+    "graphs": true,
+    "round_capture": false,
+    "requested_prefixes": [
+      32,
+      8192,
+      130944
+    ],
+    "output_tokens": 128,
+    "ignore_eos": true,
+    "warmup": 1,
+    "repeats": 3,
+    "policy": {
+      "attention": {
+        "splits": 64,
+        "decoded_kv": false,
+        "native_tail": true
+      },
+      "moe": {
+        "fused_swiglu": true
+      }
+    },
+    "shape_timeout_seconds": 120,
+    "ar_reference_run_id": "20261023101615391936-42d4989e",
+    "target_layers": [
+      2,
+      10,
+      18,
+      26,
+      34
+    ],
+    "qualification": "Independent operation references and full-draft NumPy reference; exact native block coordinator/Engine/portable deployment HTTP output consistency. F16 target and draft KV. AR differences retained separately; not a corpus accuracy claim. Three predeclared context gates, not the full eight-shape performance matrix.",
+    "target_compilation": {
+      "seconds": 110.72361521200037,
+      "peak_rss_bytes": 2581811200
+    },
+    "draft_compilation": {
+      "seconds": 355.58921345199997,
+      "peak_rss_bytes": 2607869952
+    }
+  },
+  "results": []
+}

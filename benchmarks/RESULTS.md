@@ -1,9 +1,17 @@
 # Benchmark results
 
-Generated from run records. See [the benchmark guide](../docs/benchmarking.md).
+Generated from run records. See [the benchmark guide](../build/worktrees/dspark-serving/docs/benchmarking.md).
 
 | UTC | Hardware | Runtime / model | Backend / weights / mode / KV | Shapes (B/P/O) | Purpose | Status | Source | Record |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-10-23T10:57:52.302437Z | NVIDIA L4 | akas /  | cuda / unspecified / ar / unspecified |  | kernel | passed | 1b2efafa15 | [run](runs/20261023105752302437-d139c922/run.json) |
+| 2026-10-23T10:57:36.277345Z | {} | akas /  | cuda / unspecified / ar / float16 |  | kernel | failed | 1b2efafa15 | [run](runs/20261023105736277345-eb86a233/run.json) |
+| 2026-10-23T10:16:15.391936Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / ar / float16 | 1/32/128, 1/512/128, 1/2048/128, 1/8192/128, 1/16384/128, 1/32768/128, 1/65536/128, 1/130944/128 | benchmark | passed | b56abb6da2 | [run](runs/20261023101615391936-42d4989e/run.json) |
+| 2026-10-23T10:08:06.678163Z | {} | akas / akas.models.lfm2.model:LFM2MoE | cuda / unspecified / dspark / float16 | 1/10/48, 1/13/48, 1/11/48, 1/70/48 | validation | passed | f46d99fc2b | [run](runs/20261023100806678163-765f4009/run.json) |
+| 2026-10-23T10:03:10.831676Z | {} | akas / akas.models.lfm2.model:LFM2MoE | cuda / unspecified / dspark / float16 | 1/10/48, 1/13/48, 1/11/48, 1/30/48 | validation | passed | f46d99fc2b | [run](runs/20261023100310831676-a89a1684/run.json) |
+| 2026-10-23T09:52:33.279505Z | {} | akas / akas.models.lfm2.model:LFM2MoE | cuda / unspecified / dspark / float16 |  | validation | failed | 8f15bccb45 | [run](runs/20261023095233279505-d5a09767/run.json) |
+| 2026-10-23T09:47:12.509907Z | {} | akas / akas.models.lfm2.model:LFM2MoE | cuda / unspecified / dspark / float16 |  | validation | failed | 9fe4b15e6d | [run](runs/20261023094712509907-779a6dfa/run.json) |
+| 2026-10-23T09:45:33.108701Z | {} | akas / akas.models.lfm2.model:LFM2MoE | cuda / unspecified / dspark / float16 |  | validation | failed | 95d5ed7038 | [run](runs/20261023094533108701-608527a1/run.json) |
 | 2026-10-23T08:47:15.832350Z | NVIDIA L4 | llama / LiquidAI/LFM2.5-24B-A2B | vulkan / q4_0 / ar / float16 | 1/32/128, 1/512/128, 1/2048/128, 1/8192/128, 1/16384/128, 1/32768/128, 1/65536/128, 1/130944/128 | baseline | passed | 1102164555 + snapshot | [run](runs/20261023084715832350-d710881c/run.json) |
 | 2026-10-23T08:43:33.060200Z | NVIDIA L4 | llama / LiquidAI/LFM2.5-24B-A2B | vulkan / q4_0 / ar / float16 | 1/32/128, 1/512/128, 1/2048/128, 1/8192/128, 1/16384/128, 1/32768/128, 1/65536/128, 1/130944/128 | baseline | failed | 1102164555 + snapshot | [run](runs/20261023084333060200-9b3ba8bd/run.json) |
 | 2026-10-23T08:37:00.844629Z | NVIDIA L4 | akas / akas.models.lfm2.model:LFM2MoE | cuda / q4_0 / ar / float16 | 1/32/128, 1/8192/128, 1/32/128, 1/8192/128, 1/32/128, 1/8192/128 | diagnostic | passed | 1102164555 + snapshot | [run](runs/20261023083700844629-ec6d22a0/run.json) |

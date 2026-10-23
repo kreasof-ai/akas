@@ -4,6 +4,7 @@ Each report contains the full requested matrix, all available AKAS and baseline 
 
 | Started UTC | Workload | Source | Qualified AKAS | Qualified baselines | Report |
 | --- | --- | --- | ---: | ---: | --- |
+| 2026-10-23T10:16:15.391936Z | single-user-long-context-v1 | `b56abb6da21d77590a098b139a25c7a1072c29cb` | 1/1 | 2/2 | [full tables](20261023T101615Z-655058ec8c38/README.md) |
 | 2026-10-23T09:03:56.573846Z | single-user-long-context-v1 | `1102164555deb2f734eedaf31ac07502b62fc479` | 1/1 | 2/2 | [full tables](20261023T090356Z-f9878f95f443/README.md) |
 | 2026-10-20T21:19:32.758011Z | single-user-long-context-v1 | `98fedcc76c834d813c86c92bf28e94497c79dfd6` | 1/1 | 2/2 | [full tables](20261020T211932Z-85e4360d3048/README.md) |
 | 2026-10-20T18:26:37.613063Z | single-user-long-context-v1 | `8365db71a386bb1a50dcc311c84bf854456ecae9` | 1/1 | 2/2 | [full tables](20261020T182637Z-f8a40b32d479/README.md) |
