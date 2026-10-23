@@ -81,6 +81,52 @@ def test_incomplete_verification_discards_pending_state():
     np.testing.assert_array_equal(target.positions, 0)
 
 
+@pytest.mark.parametrize("proposals,expected", [([[], []], 1), ([[4], [9]], 2)])
+def test_filtered_proposals_use_smallest_qualified_verifier(proposals, expected):
+    target = Target()
+    records = [dict(phase="verify", rows=4, chunk=chunk) for chunk in (1, 2, 4)]
+    selected, verified, repaired = [], [], []
+
+    def select(count, tokens, *, limit, chunks=None):
+        choices = [r["chunk"] for r in records if r["chunk"] >= tokens
+                   and r["chunk"] <= limit and (chunks is None or r["chunk"] in chunks)]
+        value = min(choices)
+        selected.append(value)
+        return SimpleNamespace(chunk=value)
+
+    target.batches = SimpleNamespace(records=records, select_window=select)
+    original = target.verify
+    def verify(*args, **kwargs):
+        verified.append(kwargs["chunk"])
+        return original(*args, **kwargs)
+    target.verify = verify
+    head = FixtureHead(proposals)
+    head.repair = lambda *args, **kwargs: repaired.append(kwargs["chunk"])
+    result = SpeculativeDecoder(target, head, window=4).decode_many(requests())
+    assert selected == [4, expected]
+    assert verified == repaired == [expected]
+    assert result == ([[4], [9]] if expected == 1 else [[4, 5], [9, 10]])
+
+
+def test_filtered_verification_keeps_shared_head_geometry_constraints():
+    target = Target()
+    records = [dict(phase="verify", rows=4, chunk=chunk) for chunk in (1, 2, 4)]
+    records.append(dict(phase="proposal", rows=4, chunk=4))
+    target.batches = SimpleNamespace(records=records)
+    def select(count, tokens, *, limit, chunks):
+        assert chunks == {4}
+        return SimpleNamespace(chunk=4)
+    target.batches.select_window = select
+    original = target.verify
+    def verify(*args, **kwargs):
+        assert kwargs["chunk"] == 4
+        return original(*args, **kwargs)
+    target.verify = verify
+    head = FixtureHead([[], []])
+    head.phase = "proposal"
+    assert SpeculativeDecoder(target, head).decode_many(requests()) == [[4], [9]]
+
+
 def test_captured_round_materializes_incompatible_windows_and_preserves_same_window_journals(monkeypatch):
     from akas.execution import replay as replay_module
     from akas.execution.executor import Executor

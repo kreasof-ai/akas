@@ -75,11 +75,11 @@ class SpeculativeDecoder:
             return [tokens for start in range(0, len(requests), size)
                     for tokens in self.decode_many(requests[start:start + size])]
         window = self.window
+        chunks = None
         if records and requests:
             needed = max(min(self.window, request.limit - len(request.output),
                              self.context - int(self.target.positions[request.slot]))
                          for request in requests)
-            chunks = None
             phase = getattr(self.proposer, "phase", None)
             if phase is not None:
                 chunks = {row["chunk"] for row in records if row["phase"] == phase}
@@ -109,6 +109,13 @@ class SpeculativeDecoder:
         if len(proposals) != len(requests) or any(len(row) > limit-1 for row, limit in zip(proposals, limits)):
             raise ValueError("proposer exceeded the verification budget")
         sequences = [[request.output[-1], *proposal] for request, proposal in zip(requests, proposals)]
+        # Confidence filtering can leave a much smaller live block than the
+        # proposal budget. Verify and repair through the smallest qualified
+        # geometry that fits it, retaining shared-head phase constraints.
+        if records:
+            window = self.target.batches.select_window(
+                len(requests), max(map(len, sequences)), limit=window, chunks=chunks
+            ).chunk
         positions = [int(self.target.positions[slot]) for slot in slots]
         inputs = np.zeros((len(slots), window), dtype="int32")
         verified = np.zeros_like(inputs)
