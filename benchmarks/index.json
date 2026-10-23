@@ -33952,6 +33952,378 @@
       ],
       "search_phases": 0,
       "path": "runs/20261023154310543892-4e4811ca/run.json"
+    },
+    {
+      "id": "20261023155400228961-efa6319e",
+      "started_at": "2026-10-23T15:54:00.228961Z",
+      "status": "passed",
+      "revision": "c135ff99c6f01d40f4222350f93f3dc92804acae",
+      "dirty": false,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "dspark",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "configuration",
+        "description": "Quick C4 AR/DSpark comparison over all eight context lengths",
+        "parent_run": "20261023151533293524-174061e4"
+      },
+      "purpose": "benchmark",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 512,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 8192,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 16384,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 32768,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 65536,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 130944,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 24,
+      "path": "runs/20261023155400228961-efa6319e/run.json"
+    },
+    {
+      "id": "20261023160017559155-595cea68",
+      "started_at": "2026-10-23T16:00:17.559155Z",
+      "status": "failed",
+      "revision": "c135ff99c6f01d40f4222350f93f3dc92804acae",
+      "dirty": true,
+      "hardware": "{}",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "dspark",
+      "kv_dtype": "fp8",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "configuration",
+        "description": "Prepare missing FP8 target feature/verification phases for C4 context sweep",
+        "parent_run": "20261023145424043306-e22b91f8"
+      },
+      "purpose": "compilation",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261023160017559155-595cea68/run.json"
+    },
+    {
+      "id": "20261023160119044206-03445087",
+      "started_at": "2026-10-23T16:01:19.044206Z",
+      "status": "passed",
+      "revision": "c135ff99c6f01d40f4222350f93f3dc92804acae",
+      "dirty": true,
+      "hardware": "{}",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "dspark",
+      "kv_dtype": "fp8",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "configuration",
+        "description": "Prepare missing FP8 target feature/verification phases for C4 context sweep",
+        "parent_run": "20261023145424043306-e22b91f8"
+      },
+      "purpose": "compilation",
+      "shapes": [],
+      "search_phases": 14,
+      "path": "runs/20261023160119044206-03445087/run.json"
+    },
+    {
+      "id": "20261023161702005532-82eb67d4",
+      "started_at": "2026-10-23T16:17:02.005532Z",
+      "status": "passed",
+      "revision": "c135ff99c6f01d40f4222350f93f3dc92804acae",
+      "dirty": true,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "dspark",
+      "kv_dtype": "fp8",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "configuration",
+        "description": "Quick C4 AR/DSpark comparison over all eight context lengths",
+        "parent_run": "20261023151533293524-174061e4"
+      },
+      "purpose": "benchmark",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 512,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 8192,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 16384,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 32768,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 65536,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 130944,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 24,
+      "path": "runs/20261023161702005532-82eb67d4/run.json"
+    },
+    {
+      "id": "20261023162435892403-5cca5399",
+      "started_at": "2026-10-23T16:24:35.892403Z",
+      "status": "passed",
+      "revision": "620d2225cc436ab0b001e3200e590e3b286ef9ab",
+      "dirty": false,
+      "hardware": "NVIDIA L4",
+      "model": "LiquidAI/LFM2.5-24B-A2B",
+      "runtime": "llama",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "configuration",
+        "description": "Audit DSpark acceptance against official llama.cpp implementation on matched short prompts",
+        "parent_run": "20261023151533293524-174061e4"
+      },
+      "purpose": "benchmark",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 512,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 8192,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 16384,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 32768,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 65536,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 130944,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261023162435892403-5cca5399/run.json"
+    },
+    {
+      "id": "20261023162947335687-fbeb0b96",
+      "started_at": "2026-10-23T16:29:47.335687Z",
+      "status": "passed",
+      "revision": "620d2225cc436ab0b001e3200e590e3b286ef9ab",
+      "dirty": false,
+      "hardware": "NVIDIA L4",
+      "model": "LiquidAI/LFM2.5-24B-A2B",
+      "runtime": "llama",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "dspark",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "configuration",
+        "description": "Audit DSpark acceptance against official llama.cpp implementation on matched short prompts",
+        "parent_run": "20261023151533293524-174061e4"
+      },
+      "purpose": "benchmark",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 512,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 2048,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 8192,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 16384,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 32768,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 65536,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 130944,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 0,
+      "path": "runs/20261023162947335687-fbeb0b96/run.json"
     }
   ]
 }

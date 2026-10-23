@@ -57,7 +57,7 @@ HTTP speedup below is against the first qualified AKAS candidate in the same con
 
 Matched real prompts distinguish draft acceptance from synthetic shape tests. Calibration and held-out examples are separate. Long cases with one sample are diagnostic measurements. All rates are tokens/second for one request generating 128 tokens with EOS disabled.
 
-AR uses device token feedback. Speculative decode includes proposal, verification, commit, repair and coordinator readbacks. Short cases use one warmup and three samples; long cases use one sample. Dataset revisions, example IDs, prompt hashes, crop recipes, full methodology and both outputs remain in report.json and the checksummed workload artifacts.
+AR uses device token feedback. Speculative decode includes proposal, verification, commit, repair and coordinator readbacks. Warmup and repetition counts are recorded per run; single-sample sweeps are diagnostic. Dataset revisions, example IDs, prompt hashes, crop recipes, full methodology and both outputs remain in report.json and the checksummed workload artifacts.
 
 ### calibration; confidence 0
 

@@ -180,6 +180,13 @@ def blank_rows(requested, status, reason):
 
 def baseline_combinations(state, model):
     formats = state["specification"]["formats"]
+    requested = state["specification"].get("baselines")
+    if requested is not None:
+        return [
+            (item["runtime"], item["provider"], item["weight_format"], item["mode"])
+            for item in requested
+            if item["weight_format"] in formats and item["mode"] in model["modes"]
+        ]
     return [
         (runtime, "cuda", "bf16", mode)
         for runtime in ("vllm", "sglang")
@@ -949,7 +956,7 @@ def render(data, out, history):
                   "Calibration and held-out examples are separate. Long cases with one sample are diagnostic measurements. "
                   "All rates are tokens/second for one request generating 128 tokens with EOS disabled.",
                   "", "AR uses device token feedback. Speculative decode includes proposal, verification, commit, repair and coordinator readbacks. "
-                  "Short cases use one warmup and three samples; long cases use one sample. "
+                  "Warmup and repetition counts are recorded per run; single-sample sweeps are diagnostic. "
                   "Dataset revisions, example IDs, prompt hashes, crop recipes, full methodology and both outputs remain in report.json and the checksummed workload artifacts."]
     for comparison in data.get("text_comparisons", []):
         variant = f"; {comparison['variant']}" if comparison.get("variant") else ""

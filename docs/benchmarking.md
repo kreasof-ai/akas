@@ -123,6 +123,18 @@ prefill/decode, acceptance, tokens per round and output agreement. The portable
 report retains both outputs and dataset provenance. These diagnostic rows remain
 separate from the synthetic shape matrix.
 
+For a context sweep, pin the dataset revision and concatenation recipe, tokenize
+once, and retain the exact prefix token IDs for every runtime. Nested prefixes
+from one text stream are one diagnostic example, not independent corpus samples.
+Record initialization requests separately from per-shape warmups and measured
+repetitions. Single-sample sweeps show coverage and large performance differences;
+repeat close comparisons before treating them as a stable ranking.
+
+The campaign specification can select baseline profiles through `baselines`,
+listing each runtime, provider, weight format and mode. This supports matched AR
+and speculative baselines without implying coverage of unrequested backends.
+Omitting the list retains the standard baseline matrix.
+
 Attach upstream speculative runtime checks through `speculative_baseline_runs`.
 The generated overview shows accepted/proposed counts and their ratio for every
 prompt, alongside the draft precision, confidence threshold, KV precision and

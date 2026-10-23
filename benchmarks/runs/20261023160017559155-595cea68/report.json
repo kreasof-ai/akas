@@ -1,0 +1,37 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "compilation",
+    "provider": "cuda",
+    "target": "sm_89",
+    "model": "akas.models.lfm2.model:LFM2MoE",
+    "mode": "dspark",
+    "weight_format": "q4_0",
+    "kv_dtype": "fp8",
+    "max_context": 131072,
+    "policy": {
+      "attention": {
+        "splits": 64,
+        "decoded_kv": true
+      },
+      "moe": {
+        "fused_swiglu": true
+      }
+    },
+    "model_options": {
+      "kv_dtype": "fp8",
+      "auxiliary_layers": [
+        2,
+        10,
+        18,
+        26,
+        34
+      ]
+    },
+    "qualification": "Public compiler with independent operation references and source-bound cache reuse. Existing measured schedules; no new geometry search campaign.",
+    "traceback": "Traceback (most recent call last):\n  File \"/home/sagemaker-user/akas/build/lfm-moe/c4-final/prepare-fp8.py\", line 42, in <module>\n    start=time.monotonic();compile_program(reader,OUT,definition=LFM2MoE.compose,geometries=geometries,max_requests=1,max_context=131072,provider='cuda',target='sm_89',model_options=options,policy=policy,schedules=profile,search_settings=SearchSettings(budget=1,width=1,warmup=0,samples=1,repeats=1),device=dev);meta['seconds']=time.monotonic()-start\n                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sagemaker-user/akas/src/akas/compilation/compile.py\", line 349, in compile_program\n    built = build(\n            ^^^^^^\n  File \"/home/sagemaker-user/akas/src/akas/compilation/compile.py\", line 36, in build\n    schedules, report = qualify(\n                        ^^^^^^^^\n  File \"/home/sagemaker-user/akas/src/akas/compilation/tuning.py\", line 709, in qualify\n    result = tune(\n             ^^^^^\n  File \"/home/sagemaker-user/akas/src/akas/compilation/tuning.py\", line 111, in tune\n    measured = measure(base, {**p, **preset}, workload)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sagemaker-user/akas/src/akas/compilation/tuning.py\", line 574, in measure_candidate\n    case = mapped_validation(\n           ^^^^^^^^^^^^^^^^^^\n  File \"/home/sagemaker-user/akas/src/akas/kernels/contracts.py\", line 172, in mapped_validation\n    local = validation(kind, parameters, original)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sagemaker-user/akas/src/akas/kernels/registry.py\", line 113, in validation\n    return matches[0](kind, parameters, signature)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sagemaker-user/akas/src/akas/ops/attention/validation.py\", line 969, in validation\n    return canonical_validation(kind, parameters, signature)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sagemaker-user/akas/src/akas/ops/attention/validation.py\", line 464, in canonical_validation\n    read_slot(\"kc\", \"ks\", row, max(1, length))\n  File \"/home/sagemaker-user/akas/src/akas/ops/attention/validation.py\", line 313, in read_slot\n    data = decode_storage(bits)\n           ^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sagemaker-user/akas/src/akas/quantization/_shared/e4m3.py\", line 9, in decode_storage\n    fraction = (bits & 7).astype(\"float32\")\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nKeyboardInterrupt\n",
+    "cpu_peak_rss_bytes": 2048225280
+  },
+  "results": []
+}
