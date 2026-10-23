@@ -408,6 +408,7 @@ def text_comparisons(state, history, evidence):
             raise ValueError("incomplete text workload split")
         groups.append(dict(run_id=run_id, confidence_threshold=meta["confidence_threshold"],
                            variant=meta.get("variant"),
+                           draft_weight_dtype=meta.get("draft_weight_dtype"),
                            split=meta["dataset_split"], kv_dtype=meta["kv_dtype"],
                            draft_kv_dtype=meta["draft_kv_dtype"], sources=workload["sources"],
                            ar_reference_run_id=meta.get("ar_reference_run_id", run_id),
@@ -880,8 +881,10 @@ def render(data, out, history):
                   "Dataset revisions, example IDs, prompt hashes, crop recipes, full methodology and both outputs remain in report.json and the checksummed workload artifacts."]
     for comparison in data.get("text_comparisons", []):
         variant = f"; {comparison['variant']}" if comparison.get("variant") else ""
+        draft_weights = (f"Draft weights: `{comparison['draft_weight_dtype']}`. "
+                         if comparison.get("draft_weight_dtype") else "")
         lines += ["", f"### {comparison['split']}; confidence {comparison['confidence_threshold']}{variant}", "",
-                  f"Target/draft KV: `{comparison['kv_dtype']}` / `{comparison['draft_kv_dtype']}`. "
+                  draft_weights + f"Target/draft KV: `{comparison['kv_dtype']}` / `{comparison['draft_kv_dtype']}`. "
                   f"Evidence: {evidence_link(comparison['run_id'], out, history)}; "
                   f"AR reference: {evidence_link(comparison.get('ar_reference_run_id', comparison['run_id']), out, history)}.", "",
                   "| Example | Category | Prefix | AR prefill | Speculative prefill | AR decode | Speculative decode | Decode speedup | Acceptance | Tokens/round | Exact output | Common prefix |",
