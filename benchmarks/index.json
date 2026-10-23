@@ -31318,6 +31318,420 @@
       "shapes": [],
       "search_phases": 0,
       "path": "runs/20261023105752302437-d139c922/run.json"
+    },
+    {
+      "id": "20261023105846475312-580635c0",
+      "started_at": "2026-10-23T10:58:46.475312Z",
+      "status": "passed",
+      "revision": "1b2efafa15c4a028e6cdc844ee5bd6a34909b192",
+      "dirty": false,
+      "hardware": "NVIDIA L4",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "dspark",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "algorithm",
+        "description": "Qualify paired F16 DSpark through public composition, shared target features, actual block timing and checksummed HTTP deployment at short, 8K and maximum context",
+        "parent_run": "20261023101615391936-42d4989e"
+      },
+      "purpose": "benchmark",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 32,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 8192,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 130944,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 16,
+      "path": "runs/20261023105846475312-580635c0/run.json"
+    },
+    {
+      "id": "20261023112355874235-0c3d3ef7",
+      "started_at": "2026-10-23T11:23:55.874235Z",
+      "status": "failed",
+      "revision": "1b2efafa15c4a028e6cdc844ee5bd6a34909b192",
+      "dirty": false,
+      "hardware": "{}",
+      "model": "",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": null,
+      "change": {
+        "kind": "algorithm",
+        "description": "Partition native F16 attention while sharing KV across speculative query tokens and GQA heads",
+        "parent_run": "20261023100806678163-765f4009"
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261023112355874235-0c3d3ef7/run.json"
+    },
+    {
+      "id": "20261023112622090940-abec6bb8",
+      "started_at": "2026-10-23T11:26:22.090940Z",
+      "status": "failed",
+      "revision": "1b2efafa15c4a028e6cdc844ee5bd6a34909b192",
+      "dirty": false,
+      "hardware": "{}",
+      "model": "",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": null,
+      "change": {
+        "kind": "algorithm",
+        "description": "Partition native F16 attention while sharing KV across speculative query tokens and GQA heads",
+        "parent_run": "20261023100806678163-765f4009"
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261023112622090940-abec6bb8/run.json"
+    },
+    {
+      "id": "20261023114121445042-c3bf62b3",
+      "started_at": "2026-10-23T11:41:21.445042Z",
+      "status": "failed",
+      "revision": "1b2efafa15c4a028e6cdc844ee5bd6a34909b192",
+      "dirty": false,
+      "hardware": "{}",
+      "model": "",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "ar",
+      "kv_dtype": "float16",
+      "weight_format": null,
+      "change": {
+        "kind": "algorithm",
+        "description": "Partition native F16 attention while sharing KV across speculative query tokens and GQA heads",
+        "parent_run": "20261023100806678163-765f4009"
+      },
+      "purpose": "kernel",
+      "shapes": [],
+      "search_phases": 0,
+      "path": "runs/20261023114121445042-c3bf62b3/run.json"
+    },
+    {
+      "id": "20261023115449810427-2d566c0f",
+      "started_at": "2026-10-23T11:54:49.810427Z",
+      "status": "passed",
+      "revision": "abe2635724c092c3d89fa69136baaae2e85531b2",
+      "dirty": true,
+      "hardware": "{}",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "dspark",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "configuration",
+        "description": "Measure real-text DSpark acceptance against the exact Q4 target before runtime calibration",
+        "parent_run": "20261023105846475312-580635c0"
+      },
+      "purpose": "benchmark",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 57,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 29,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 36,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 48,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 43,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 8192,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 130944,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 16,
+      "path": "runs/20261023115449810427-2d566c0f/run.json"
+    },
+    {
+      "id": "20261023120252406846-154985ec",
+      "started_at": "2026-10-23T12:02:52.406846Z",
+      "status": "passed",
+      "revision": "abe2635724c092c3d89fa69136baaae2e85531b2",
+      "dirty": true,
+      "hardware": "{}",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "dspark",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "configuration",
+        "description": "Calibrate the DSpark confidence cutoff on real-text calibration examples; weights unchanged",
+        "parent_run": "20261023115449810427-2d566c0f"
+      },
+      "purpose": "benchmark",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 57,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 29,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 36,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 48,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 43,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 8192,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 130944,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 16,
+      "path": "runs/20261023120252406846-154985ec/run.json"
+    },
+    {
+      "id": "20261023120428755115-73bb510f",
+      "started_at": "2026-10-23T12:04:28.755115Z",
+      "status": "passed",
+      "revision": "abe2635724c092c3d89fa69136baaae2e85531b2",
+      "dirty": true,
+      "hardware": "{}",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "dspark",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "configuration",
+        "description": "Calibrate the DSpark confidence cutoff on real-text calibration examples; weights unchanged",
+        "parent_run": "20261023115449810427-2d566c0f"
+      },
+      "purpose": "benchmark",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 57,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 29,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 36,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 48,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 43,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 8192,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 130944,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 16,
+      "path": "runs/20261023120428755115-73bb510f/run.json"
+    },
+    {
+      "id": "20261023120702655988-e46a7e46",
+      "started_at": "2026-10-23T12:07:02.655988Z",
+      "status": "passed",
+      "revision": "859eaced614d0357d309f2cd2cc2539938dd3d32",
+      "dirty": true,
+      "hardware": "{}",
+      "model": "akas.models.lfm2.model:LFM2MoE",
+      "runtime": "akas",
+      "workload": "custom",
+      "provider": "cuda",
+      "mode": "dspark",
+      "kv_dtype": "float16",
+      "weight_format": "q4_0",
+      "change": {
+        "kind": "configuration",
+        "description": "Measure real-text DSpark acceptance against the exact Q4 target before runtime calibration",
+        "parent_run": "20261023120252406846-154985ec"
+      },
+      "purpose": "benchmark",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix_tokens": 33,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 48,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 24,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 73,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 38,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 8192,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        },
+        {
+          "batch": 1,
+          "prefix_tokens": 130944,
+          "output_tokens": 128,
+          "cached_prefix_tokens": 0,
+          "ragged": false
+        }
+      ],
+      "search_phases": 16,
+      "path": "runs/20261023120702655988-e46a7e46/run.json"
     }
   ]
 }

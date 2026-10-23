@@ -1,0 +1,163 @@
+{
+  "schema": "akas.program.v1",
+  "provider": "cuda",
+  "target": "sm_89",
+  "config": {
+    "width": 2048,
+    "ff": 6144,
+    "heads": 32,
+    "kv_heads": 8,
+    "depth": 5,
+    "vocab": 128000,
+    "epsilon": 9.999999747378752e-06,
+    "theta": 10000000.0,
+    "max_context": 131072,
+    "block_size": 9,
+    "markov_rank": 256,
+    "mask_token": 125017,
+    "target_layers": [
+      2,
+      10,
+      18,
+      26,
+      34
+    ]
+  },
+  "max_requests": 1,
+  "max_context": 131072,
+  "phases": [
+    {
+      "phase": "context",
+      "rows": 1,
+      "chunk": 1,
+      "path": "programs/efbf9e9ad5da43aa8942881d739529f7/phases/context-b1-t1.json",
+      "sha256": "827493a79544687bab10595500520613ba7e77f88a0e1be2224f04ac35bd14fa",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "tokens",
+      "feedback": false,
+      "features": {
+        "hidden_input": "target_hidden"
+      }
+    },
+    {
+      "phase": "context",
+      "rows": 1,
+      "chunk": 32,
+      "path": "programs/efbf9e9ad5da43aa8942881d739529f7/phases/context-b1-t32.json",
+      "sha256": "3ea76ee23ac345469d9b394255ea18eb253b43f19981bd5035977ef806e10031",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "tokens",
+      "feedback": false,
+      "features": {
+        "hidden_input": "target_hidden"
+      }
+    },
+    {
+      "phase": "context",
+      "rows": 1,
+      "chunk": 512,
+      "path": "programs/efbf9e9ad5da43aa8942881d739529f7/phases/context-b1-t512.json",
+      "sha256": "f6ff775a4a49b9f6105bd372d812b3cf2699b497c45111415ed32931f7dc4952",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "tokens",
+      "feedback": false,
+      "features": {
+        "hidden_input": "target_hidden"
+      }
+    },
+    {
+      "phase": "context",
+      "rows": 1,
+      "chunk": 2048,
+      "path": "programs/efbf9e9ad5da43aa8942881d739529f7/phases/context-b1-t2048.json",
+      "sha256": "186aa7268ccbb9da01a6be50f6fa477fd68013c44de762fd02d5ddcdf565e596",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "tokens",
+      "feedback": false,
+      "features": {
+        "hidden_input": "target_hidden"
+      }
+    },
+    {
+      "phase": "context",
+      "rows": 1,
+      "chunk": 4096,
+      "path": "programs/efbf9e9ad5da43aa8942881d739529f7/phases/context-b1-t4096.json",
+      "sha256": "bbdcfef572d564a3a0d352788a62f5a821b51f6101d019f5c9380c20532e885a",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "tokens",
+      "feedback": false,
+      "features": {
+        "hidden_input": "target_hidden"
+      }
+    },
+    {
+      "phase": "context",
+      "rows": 1,
+      "chunk": 10,
+      "path": "programs/efbf9e9ad5da43aa8942881d739529f7/phases/context-b1-t10.json",
+      "sha256": "e52a171d5a8292ee6e8bc44b636f0ea7d942ea8dcdacca589f568667f93cf84f",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "tokens",
+      "feedback": false,
+      "features": {
+        "hidden_input": "target_hidden"
+      }
+    },
+    {
+      "phase": "proposal",
+      "rows": 1,
+      "chunk": 9,
+      "path": "programs/efbf9e9ad5da43aa8942881d739529f7/phases/proposal-b1-t9.json",
+      "sha256": "a7561a8e9a6e2d5647ebfd02ff845c0ad5da89ed498b916db8ba7d10b625cea3",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sample.8.predictions",
+      "feedback": false,
+      "features": {
+        "anchor_input": "anchor",
+        "tokens": "sample.8.predictions",
+        "confidence": "sample.8.confidences",
+        "logits": "base_logits"
+      }
+    }
+  ],
+  "reset": {
+    "path": "programs/efbf9e9ad5da43aa8942881d739529f7/phases/reset.json",
+    "sha256": "2294084a8fcc319f5deac6b60cb0e40232f7a51904092fe6754d66993caade52",
+    "mapping": "mapping"
+  },
+  "rounds": [],
+  "upload_options": {},
+  "model_options": {
+    "kv_dtype": "float16"
+  },
+  "policy": {}
+}

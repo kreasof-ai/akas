@@ -1,0 +1,18 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "kernel",
+    "protocol": "kernel-latency-v1",
+    "provider": "cuda",
+    "target": "sm_89",
+    "kv_dtype": "float16",
+    "operand_dtype": "float16",
+    "accumulator_dtype": "float32",
+    "checks": [],
+    "qualification": "Independent F64 sampled heads plus complete-output agreement with guarded native F16 attention; future KV NaN poison and inactive queries. Timings include partial and merge. Kernel evidence, not model throughput.",
+    "error": "AssertionError: \nNot equal to tolerance rtol=0.003, atol=0.0003\n\nnan location mismatch:\n ACTUAL: array([nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan,\n       nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan,\n       nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan,...\n DESIRED: array([ 0.038029, -0.040233, -0.037263, -0.059949,  0.0983  ,  0.086679,\n       -0.051179, -0.120067, -0.019007,  0.001171, -0.044042, -0.073995,\n       -0.047794, -0.015972, -0.057283, -0.003577,  0.15481 , -0.013425,...",
+    "traceback": "Traceback (most recent call last):\n  File \"/home/sagemaker-user/akas/build/lfm-moe/qualify-block-attention.py\", line 83, in <module>\n    np.testing.assert_allclose(expected[row,head],reference,rtol=.003,atol=.0003)\n  File \"/home/sagemaker-user/akas/.venv/lib/python3.12/site-packages/numpy/testing/_private/utils.py\", line 1780, in assert_allclose\n    assert_array_compare(compare, actual, desired, err_msg=str(err_msg),\n  File \"/home/sagemaker-user/akas/.venv/lib/python3.12/site-packages/numpy/testing/_private/utils.py\", line 852, in assert_array_compare\n    flagged = func_assert_same_pos(x, y, func=isnan, hasval='nan')\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sagemaker-user/akas/.venv/lib/python3.12/site-packages/numpy/testing/_private/utils.py\", line 795, in func_assert_same_pos\n    raise AssertionError(msg)\nAssertionError: \nNot equal to tolerance rtol=0.003, atol=0.0003\n\nnan location mismatch:\n ACTUAL: array([nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan,\n       nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan,\n       nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan,...\n DESIRED: array([ 0.038029, -0.040233, -0.037263, -0.059949,  0.0983  ,  0.086679,\n       -0.051179, -0.120067, -0.019007,  0.001171, -0.044042, -0.073995,\n       -0.047794, -0.015972, -0.057283, -0.003577,  0.15481 , -0.013425,...\n"
+  },
+  "results": []
+}

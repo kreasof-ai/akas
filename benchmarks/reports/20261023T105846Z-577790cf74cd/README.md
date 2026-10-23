@@ -1,0 +1,116 @@
+# Campaign benchmark report
+
+UTC: 2026-10-23T10:58:46.475312Z → 2026-10-23T11:23:53.422329Z. Status: `complete`. Active time: 0.00 hours; per-configuration ceiling: not set.
+
+Source: `1b2efafa15c4a028e6cdc844ee5bd6a34909b192`; measured source tree: `212db47ee21450c913acf84d3ce25e8d9d233b99f4ff8a4bb9d34f6efac1db08`.
+
+Qualified AKAS deployments: **1/1**. Qualified baseline profiles: **0/2**.
+
+- [Side-by-side tables for every requested shape](COMPARISON.md)
+- [All AKAS configurations and per-shape measurements](AKAS.md)
+- [All baseline profiles and per-shape measurements](BASELINES.md)
+- [Every candidate attempt](CANDIDATES.md)
+- [Full measurement CSV](measurements.csv) · [Candidate measurement CSV](candidate-measurements.csv) · [Candidate outcomes CSV](candidates.csv)
+- [Selected kernel implementations and schedules](SCHEDULES.json) · [Portable report data](report.json) · [Campaign snapshot](campaign.json)
+
+All throughput and displayed latency values are medians over the retained repetitions. AKAS native decode counts the outputs after the first token; burst throughput counts all outputs. AKAS burst timing includes loopback HTTP/SSE, vLLM and SGLang burst timing uses native engine calls, and llama.cpp burst timing uses concurrent HTTP requests. Phase rates have distinct protocols and cannot be compared as equivalent kernel timings. Weight labels describe source storage; execution precision is recorded per configuration and can differ between operations. Unqualified timing values remain visible with † and are excluded from qualified claims. — means no retained measurement, never zero throughput.
+
+## Hardware and measurement provenance
+
+| Hardware | Driver | Baseline/runtime | Version or revision | Source | Evidence |
+| --- | --- | --- | --- | --- | --- |
+| NVIDIA L4 |  | akas / lfm2.5-24b-a2b / q4_0 / dspark | 0.1.0 | `1b2efafa15c4a028e6cdc844ee5bd6a34909b192` | [20261023105846475312-580635c0](../../runs/20261023105846475312-580635c0/run.json) |
+| {} |  | llama / lfm2.5-24b-a2b / q4_0 / ar |  | `unknown` | — |
+| {} |  | llama / lfm2.5-24b-a2b / q4_0 / ar |  | `unknown` | — |
+
+Captured host: 4 logical CPUs; Linux-6.12.110-135.202.amzn2023.x86_64-x86_64-with-glibc2.39.
+
+```text
+index, uuid, name, driver_version, memory.total [MiB], power.limit [W], clocks.max.sm [MHz], clocks.max.memory [MHz]
+0, GPU-931f7610-9dd1-d8c2-b5a9-f7f0c04c3f46, NVIDIA L4, 595.91.07, 23034 MiB, 72.00 W, 2040 MHz, 6251 MHz
+```
+
+Full dependency versions, runtime hyperparameters, checkpoint hashes, UTC timestamps, sample values and artifact checksums are retained in the linked run records and report.json. Selected schedules include each operation’s parameters, implementation, geometry and qualification evidence.
+
+## Selected configurations
+
+HTTP speedup below is against the first qualified AKAS candidate in the same configuration. External baselines are shown separately in the side-by-side tables. Peak VRAM is sampled whole-device usage.
+
+| Configuration | KV dtype | Chunk | Prefill group | Replay | Trials allowance | HTTP speedup over own reference | Peak VRAM GiB | Evidence |
+| --- | --- | ---: | ---: | --- | ---: | ---: | ---: | --- |
+| lfm2.5-24b-a2b-q4_0-cuda-float16-dspark | float16 | 4096 | 1 | True | 1 | 1.000x | — | [20261023105846475312-580635c0](../../runs/20261023105846475312-580635c0/run.json) |
+
+## Complete requested AKAS coverage
+
+| Model | Weights | Backend | KV request | Mode | Outcome | Time min | Selected run | Reason |
+| --- | --- | --- | --- | --- | --- | ---: | --- | --- |
+| lfm2.5-24b-a2b | q4_0 | cuda | float16 | dspark | [qualified; complete](AKAS.md#lfm2.5-24b-a2b-q4_0-cuda-float16-dspark) | 0.0 | [20261023105846475312-580635c0](../../runs/20261023105846475312-580635c0/run.json) |  |
+
+## Candidate outcomes
+
+1 attempts: 1 passed.
+
+| Rejection or deadline | Attempts |
+| --- | ---: |
+
+## Real-text speculative decoding
+
+Matched real prompts distinguish draft acceptance from synthetic shape tests. Calibration and held-out examples are separate. Long cases with one sample are diagnostic measurements. All rates are tokens/second for one request generating 128 tokens with EOS disabled.
+
+AR uses device token feedback. Speculative decode includes proposal, verification, commit, repair and coordinator readbacks. Short cases use one warmup and three samples; long cases use one sample. Dataset revisions, example IDs, prompt hashes, crop recipes, full methodology and both outputs remain in report.json and the checksummed workload artifacts.
+
+### calibration; confidence 0
+
+Target/draft KV: `float16` / `float16`. Evidence: [20261023115449810427-2d566c0f](../../runs/20261023115449810427-2d566c0f/run.json); AR reference: [20261023115449810427-2d566c0f](../../runs/20261023115449810427-2d566c0f/run.json).
+
+| Example | Category | Prefix | AR prefill | Speculative prefill | AR decode | Speculative decode | Decode speedup | Acceptance | Tokens/round | Exact output | Common prefix |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: |
+| mtbench:82:57 | writing | 57 | 435.22 | 445.17 | 131.61 | 99.53 | 0.756x | 40.7% | 4.54 | yes | 128 |
+| mtbench:104:29 | reasoning | 29 | 530.86 | 551.74 | 131.44 | 88.53 | 0.674x | 35.6% | 4.10 | no | 107 |
+| mtbench:121:36 | coding | 36 | 299.25 | 305.17 | 131.39 | 65.81 | 0.501x | 25.2% | 3.10 | no | 52 |
+| gsm8k-train:0:48 | math | 48 | 384.14 | 385.09 | 131.19 | 156.04 | 1.189x | 75.3% | 7.47 | yes | 128 |
+| gsm8k-train:1:43 | math | 43 | 352.74 | 352.60 | 131.00 | 96.44 | 0.736x | 40.7% | 4.54 | yes | 128 |
+| longbench-v2:66f94f9ebb02136c067c4fde:8192 | long-document | 8192 | 3422.23 | 3994.39 | 120.86 | 81.63 | 0.675x | 36.0% | 3.85 | yes | 128 |
+| longbench-v2:66f94f9ebb02136c067c4fde:130944 | long-document | 130944 | 2820.62 | 2682.64 | 56.02 | 14.80 | 0.264x | 3.4% | 1.30 | yes | 128 |
+
+### calibration; confidence 0.5
+
+Target/draft KV: `float16` / `float16`. Evidence: [20261023120252406846-154985ec](../../runs/20261023120252406846-154985ec/run.json); AR reference: [20261023115449810427-2d566c0f](../../runs/20261023115449810427-2d566c0f/run.json).
+
+| Example | Category | Prefix | AR prefill | Speculative prefill | AR decode | Speculative decode | Decode speedup | Acceptance | Tokens/round | Exact output | Common prefix |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: |
+| mtbench:82:57 | writing | 57 | 435.22 | 438.57 | 131.61 | 107.07 | 0.814x | 61.4% | 4.23 | yes | 128 |
+| mtbench:104:29 | reasoning | 29 | 530.86 | 544.69 | 131.44 | 93.74 | 0.713x | 50.5% | 3.85 | no | 107 |
+| mtbench:121:36 | coding | 36 | 299.25 | 300.46 | 131.39 | 79.30 | 0.604x | 53.5% | 2.89 | no | 52 |
+| gsm8k-train:0:48 | math | 48 | 384.14 | 383.84 | 131.19 | 156.18 | 1.190x | 78.0% | 7.47 | yes | 128 |
+| gsm8k-train:1:43 | math | 43 | 352.74 | 347.82 | 131.00 | 108.06 | 0.825x | 58.6% | 4.54 | yes | 128 |
+| longbench-v2:66f94f9ebb02136c067c4fde:8192 | long-document | 8192 | 3422.23 | 3525.64 | 120.86 | 94.04 | 0.778x | 58.4% | 3.85 | yes | 128 |
+| longbench-v2:66f94f9ebb02136c067c4fde:130944 | long-document | 130944 | 2820.62 | 2713.81 | 56.02 | 15.78 | 0.282x | 5.0% | 1.30 | yes | 128 |
+
+### calibration; confidence 0.8
+
+Target/draft KV: `float16` / `float16`. Evidence: [20261023120428755115-73bb510f](../../runs/20261023120428755115-73bb510f/run.json); AR reference: [20261023115449810427-2d566c0f](../../runs/20261023115449810427-2d566c0f/run.json).
+
+| Example | Category | Prefix | AR prefill | Speculative prefill | AR decode | Speculative decode | Decode speedup | Acceptance | Tokens/round | Exact output | Common prefix |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: |
+| mtbench:82:57 | writing | 57 | 435.22 | 433.46 | 131.61 | 75.34 | 0.572x | 89.7% | 2.23 | yes | 128 |
+| mtbench:104:29 | reasoning | 29 | 530.86 | 539.34 | 131.44 | 94.38 | 0.718x | 96.6% | 3.02 | no | 107 |
+| mtbench:121:36 | coding | 36 | 299.25 | 291.56 | 131.39 | 69.71 | 0.531x | 97.0% | 2.02 | no | 52 |
+| gsm8k-train:0:48 | math | 48 | 384.14 | 369.69 | 131.19 | 137.98 | 1.052x | 91.2% | 5.52 | yes | 128 |
+| gsm8k-train:1:43 | math | 43 | 352.74 | 345.36 | 131.00 | 88.93 | 0.679x | 92.1% | 2.82 | yes | 128 |
+| longbench-v2:66f94f9ebb02136c067c4fde:8192 | long-document | 8192 | 3422.23 | 4074.71 | 120.86 | 83.97 | 0.695x | 100.0% | 2.76 | yes | 128 |
+| longbench-v2:66f94f9ebb02136c067c4fde:130944 | long-document | 130944 | 2820.62 | 2693.21 | 56.02 | 17.12 | 0.306x | 26.7% | 1.10 | yes | 128 |
+
+### heldout; confidence 0.5
+
+Target/draft KV: `float16` / `float16`. Evidence: [20261023120702655988-e46a7e46](../../runs/20261023120702655988-e46a7e46/run.json); AR reference: [20261023120702655988-e46a7e46](../../runs/20261023120702655988-e46a7e46/run.json).
+
+| Example | Category | Prefix | AR prefill | Speculative prefill | AR decode | Speculative decode | Decode speedup | Acceptance | Tokens/round | Exact output | Common prefix |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: |
+| mtbench:81:33 | writing | 33 | 277.94 | 287.65 | 131.10 | 79.42 | 0.606x | 64.7% | 2.54 | yes | 128 |
+| mtbench:101:48 | reasoning | 48 | 379.61 | 377.76 | 130.79 | 105.70 | 0.808x | 67.1% | 4.10 | yes | 128 |
+| mtbench:122:24 | coding | 24 | 432.07 | 444.35 | 130.29 | 90.59 | 0.695x | 63.6% | 3.34 | yes | 128 |
+| gsm8k-test:0:73 | math | 73 | 537.56 | 539.01 | 130.09 | 124.28 | 0.955x | 69.4% | 5.08 | yes | 128 |
+| gsm8k-test:1:38 | math | 38 | 318.04 | 308.83 | 129.92 | 137.11 | 1.055x | 70.9% | 6.35 | yes | 128 |
+| longbench-v2:66fcffd9bb02136c067c94c5:8192 | long-document | 8192 | 3214.22 | 3999.18 | 120.02 | 130.87 | 1.090x | 77.0% | 5.52 | yes | 128 |
+| longbench-v2:66fcffd9bb02136c067c94c5:130944 | long-document | 130944 | 2784.57 | 2682.38 | 55.81 | 14.86 | 0.266x | 3.0% | 1.26 | no | 18 |
