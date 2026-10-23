@@ -17,7 +17,12 @@ def state_prefill(graph):
             name = graph.buffers[name].alias_of
         return name
 
+    request = graph.request or {}
+    retained = {
+        name: request["features"][name] for name in request.get("prefill_features", ())
+    }
     live = {base(name) for name, spec in graph.buffers.items() if spec.role == "state"}
+    live.update(base(name) for name in retained.values())
     kept = []
     for call in reversed(graph.calls):
         outputs = graph_outputs(call, contract=graph.contract)
@@ -39,13 +44,17 @@ def state_prefill(graph):
     request = graph.request
     if request is None:
         return None
-    request.pop("features", None)
+    if retained:
+        request["features"] = retained
+    else:
+        request.pop("features", None)
     needed = {
         name
         for call in graph.calls
         for name in (*call.arguments, *call.bindings.values())
     }
     needed.update(request["inputs"].values())
+    needed.update(retained.values())
     needed.update(request.get("reset", ()))
     needed.add(request["prediction"])
     needed.update(name for name, spec in graph.buffers.items() if spec.role == "state")

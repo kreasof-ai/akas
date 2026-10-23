@@ -54,11 +54,15 @@ class Graph:
         self.calls = []
         self.request = None
 
-    def bind_requests(self, *, inputs, prediction, reset=(), features=None):
+    def bind_requests(self, *, inputs, prediction, reset=(), features=None, prefill_features=()):
         """Declare how token-phase fields bind to this graph's buffers."""
         if any(name not in self.buffers for name in (*inputs.values(), prediction, *reset, *(features or {}).values())):
             raise ValueError("request bindings reference an undeclared buffer")
+        if len(set(prefill_features)) != len(prefill_features) or set(prefill_features) - set(features or {}):
+            raise ValueError("prefill features must name distinct declared features")
         self.request = dict(inputs=dict(inputs), prediction=prediction, reset=list(reset))
+        if prefill_features:
+            self.request["prefill_features"] = list(prefill_features)
         if features:
             self.request["features"] = dict(features)
         return self

@@ -14,6 +14,8 @@ def compose(
     optimized=False,
     checkpoint=None,
     expert_weight_layout="raw",
+    verify=False,
+    auxiliary_layers=(),
 ):
     """Compose a chunk of tokens per slot with masked, persistent state."""
     from akas.graph import Graph
@@ -37,7 +39,11 @@ def compose(
         from akas.quantization.kv import get
 
         get(kv_dtype)
-    plan = Graph(contract="reference")
+    if any(
+        type(i) is not int or not 0 <= i < len(config.layers) for i in auxiliary_layers
+    ) or len(set(auxiliary_layers)) != len(auxiliary_layers):
+        raise ValueError("LFM auxiliary layers must be distinct valid layer indices")
+    plan = Graph(contract="reference", phase="verify" if verify else "forward")
     b, c = (batch * chunk, config.width)
     from akas.checkpoints.partition import Weights
 
@@ -162,20 +168,38 @@ def compose(
                 p + "conv_state", (batch, config.conv - 1, c), "float32", role="state"
             )
             mixed = scratch(p + "mixed", c)
-            plan(
-                "conv",
-                dict(
-                    r=batch,
-                    c=c,
-                    length=config.conv,
-                    **{"chunk": chunk} if chunk > 1 else {},
-                ),
-                projection,
-                weights[p + "shortconv.conv.weight"],
-                state,
-                mixed,
-                active,
-            )
+            if verify:
+                journal = plan.buffer(
+                    p + "conv_journal",
+                    (batch, chunk, config.conv - 1, c),
+                    "float32",
+                    role="journal",
+                )
+                plan(
+                    "conv_verify",
+                    dict(r=batch, c=c, length=config.conv, chunk=chunk),
+                    x=projection,
+                    w=weights[p + "shortconv.conv.weight"],
+                    state=state,
+                    journal=journal,
+                    out=mixed,
+                    enabled=active,
+                )
+            else:
+                plan(
+                    "conv",
+                    dict(
+                        r=batch,
+                        c=c,
+                        length=config.conv,
+                        **{"chunk": chunk} if chunk > 1 else {},
+                    ),
+                    projection,
+                    weights[p + "shortconv.conv.weight"],
+                    state,
+                    mixed,
+                    active,
+                )
             mixed = linear(
                 p + "operator_output", mixed, p + "shortconv.out_proj.weight", c, c
             )
@@ -300,28 +324,46 @@ def compose(
                 p + "ffn_output", activated, p + "ffn_down.weight", config.ff, c
             )
         hidden = residual(p + "output", hidden, mixed)
-    if chunk > 1:
+        if i in auxiliary_layers:
+            from dataclasses import replace
+
+            hidden = replace(hidden, role="output")
+            object.__setattr__(hidden, "_graph", plan)
+            plan.buffers[hidden.name] = hidden
+    if chunk > 1 and not verify:
         final = scratch("last_hidden", c, rows=batch)
         plan("chunk_last", dict(r=batch, c=c, chunk=chunk), hidden, final, active)
         hidden = final
-    hidden = norm("normalized_output", hidden, "token_embd_norm.weight", rows=batch)
+    head_rows = b if verify else batch
+    hidden = norm("normalized_output", hidden, "token_embd_norm.weight", rows=head_rows)
     head = "output.weight" if output else "token_embd.weight"
-    logits = plan.buffer("logits", (batch * config.vocab,), "float32", role="output")
+    logits = plan.buffer(
+        "logits", (head_rows * config.vocab,), "float32", role="output"
+    )
     projected = (
-        scratch("chunk_logits", config.vocab, rows=batch) if chunk > 1 else logits
+        scratch("chunk_logits", config.vocab, rows=batch)
+        if chunk > 1 and not verify
+        else logits
     )
-    project(hidden, head, c, config.vocab, projected, count=batch)
-    if chunk > 1:
+    project(hidden, head, c, config.vocab, projected, count=head_rows)
+    if chunk > 1 and not verify:
         plan("masked_copy", dict(r=batch, c=config.vocab), projected, logits, active)
-    sampled = plan.buffer("sampled", (batch,), "int32", role="output")
-    plan("argmax", dict(r=batch, c=config.vocab), logits, sampled, active)
-    plan("next_tokens", dict(r=batch), sampled, tokens)
+    sampled = plan.buffer("sampled", (head_rows,), "int32", role="output")
     plan(
-        "advance",
-        dict(r=batch, **{"chunk": chunk} if chunk > 1 else {}),
-        positions,
-        active,
+        "argmax",
+        dict(r=head_rows, c=config.vocab),
+        logits,
+        sampled,
+        row_active if verify else active,
     )
+    if not verify:
+        plan("next_tokens", dict(r=batch), sampled, tokens)
+        plan(
+            "advance",
+            dict(r=batch, **{"chunk": chunk} if chunk > 1 else {}),
+            positions,
+            active,
+        )
     if optimized:
         from akas.compilation.rewrites import optimize
 
@@ -342,6 +384,8 @@ def program(
     optimized=True,
     activation_quantization=None,
     expert_weight_layout="raw",
+    auxiliary_layers=(),
+    phase=None,
 ):
     """Compose token phases over the shared executor's persistent slot pool."""
     from dataclasses import replace
@@ -357,6 +401,8 @@ def program(
         optimized=optimized,
         checkpoint=checkpoint,
         expert_weight_layout=expert_weight_layout,
+        auxiliary_layers=auxiliary_layers,
+        verify=phase == "verify",
         **checkpoint.definition_options,
     )
     if activation_quantization is not None:
@@ -373,14 +419,18 @@ def program(
             object.__setattr__(value, "_graph", graph)
             graph.buffers[name] = value
     graph.buffer("mapping", (rows,), "int32", role="input")
-    return graph.bind_requests(
+    graph.bind_requests(
         inputs={
             "tokens": "prefill_tokens" if chunk > 1 else "tokens",
             "mapping": "mapping",
             "lengths": "active",
         },
         prediction="sampled",
-        features={"logits": "logits"},
+        features={
+            "logits": "logits",
+            **{f"layer.{i}": f"blk.{i}.output" for i in auxiliary_layers},
+        },
+        prefill_features=tuple(f"layer.{i}" for i in auxiliary_layers),
         reset=[
             name
             for name, spec in graph.buffers.items()
@@ -388,3 +438,19 @@ def program(
             and (name == "positions" or name.endswith("conv_state"))
         ],
     )
+
+    if phase != "verify":
+        return graph
+    from akas.graph import Graph
+    from akas.ops.convolution.definition import commit_histories
+
+    commit = Graph.from_metadata(graph.metadata())
+    commit.calls, commit.request = [], None
+    commit_histories(graph, commit)
+    commit(
+        "advance",
+        dict(r=rows, chunk=chunk),
+        commit.buffers["positions"],
+        commit.buffers["active"],
+    )
+    return graph, commit

@@ -22,26 +22,28 @@ def compose(
     optimized=True,
     activation_quantization=None,
     expert_weight_layout="raw",
+    auxiliary_layers=(),
 ):
     from akas.models.lfm2._composition import program
 
-    if phase not in (None, "decode", "prefill"):
-        raise ValueError("LFM2 supports decode and prefill phases")
-    return Composition(
-        program(
-            checkpoint,
-            rows=rows,
-            chunk=chunk,
-            max_requests=max_requests,
-            max_context=max_context,
-            provider=provider,
-            kv_dtype=kv_dtype,
-            max_weight_bytes=max_weight_bytes,
-            optimized=optimized,
-            activation_quantization=activation_quantization,
-            expert_weight_layout=expert_weight_layout,
-        )
+    if phase not in (None, "decode", "prefill", "verify"):
+        raise ValueError("LFM2 supports decode, prefill and verification phases")
+    result = program(
+        checkpoint,
+        rows=rows,
+        chunk=chunk,
+        max_requests=max_requests,
+        max_context=max_context,
+        provider=provider,
+        kv_dtype=kv_dtype,
+        max_weight_bytes=max_weight_bytes,
+        optimized=optimized,
+        activation_quantization=activation_quantization,
+        expert_weight_layout=expert_weight_layout,
+        auxiliary_layers=auxiliary_layers,
+        phase=phase,
     )
+    return Composition(*result) if isinstance(result, tuple) else Composition(result)
 
 
 class LFM2(Definition):

@@ -91,3 +91,88 @@ def convolution_flat(spec: KernelSpec, schedule: Mapping[str, object]):
         return (state, out)
 
     return compute
+
+
+def verify(spec: KernelSpec, schedule: Mapping[str, object]):
+    """Evaluate a token block and retain each history prefix without committing it."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    rows, channels, length, chunk = (p[n] for n in ("r", "c", "length", "chunk"))
+    if length < 2 or chunk < 1:
+        raise ValueError(
+            "Convolution verification requires a positive block and history"
+        )
+
+    @kernel
+    def compute(
+        x: Tensor((rows * chunk * 3 * channels,), "float32"),
+        w: Tensor((channels * length,), "float32"),
+        state: Tensor((rows, length - 1, channels), "float32"),
+        enabled: Tensor((rows,), "int32"),
+    ) -> tuple[
+        Tensor((rows, chunk, length - 1, channels), "float32"),
+        Tensor((rows * chunk * channels,), "float32"),
+    ]:
+        journal = output((rows, chunk, length - 1, channels), "float32", position=3)
+        out = output((rows * chunk * channels,), "float32", position=4)
+        with T.Kernel(T.ceildiv(channels, 64), rows, threads=64) as (block, row):
+            tx = T.get_thread_binding()
+            col = block * 64 + tx
+            history = T.alloc_local((length - 1,), "float32")
+            if col < channels:
+                for tap in T.serial(length - 1):
+                    history[tap] = state[row, tap, col]
+                for token in T.serial(chunk):
+                    index = row * chunk + token
+                    if token < enabled[row]:
+                        current = T.alloc_var("float32")
+                        acc = T.alloc_var("float32")
+                        current = (
+                            x[index * 3 * channels + col]
+                            * x[index * 3 * channels + 2 * channels + col]
+                        )
+                        acc = current * w[col * length + length - 1]
+                        for tap in T.serial(length - 1):
+                            acc += history[tap] * w[col * length + tap]
+                        out[index * channels + col] = (
+                            x[index * 3 * channels + channels + col] * acc
+                        )
+                        for tap in T.serial(length - 2):
+                            history[tap] = history[tap + 1]
+                        history[length - 2] = current
+                    else:
+                        out[index * channels + col] = 0
+                    for tap in T.serial(length - 1):
+                        journal[row, token, tap, col] = history[tap]
+        return journal, out
+
+    return compute
+
+
+def commit(spec: KernelSpec, schedule: Mapping[str, object]):
+    """Commit one verified history prefix; a rejected block leaves history intact."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    rows, channels, length, chunk = (p[n] for n in ("r", "c", "length", "chunk"))
+
+    @kernel
+    def compute(
+        state: Tensor((rows, length - 1, channels), "float32"),
+        journal: Tensor((rows, chunk, length - 1, channels), "float32"),
+        accepted: Tensor((rows,), "int32"),
+    ) -> Tensor((rows, length - 1, channels), "float32"):
+        with T.Kernel(T.ceildiv((length - 1) * channels, 128), rows, threads=128) as (
+            block,
+            row,
+        ):
+            for lane in T.Parallel(128):
+                index = block * 128 + lane
+                if index < (length - 1) * channels and 0 < accepted[row] <= chunk:
+                    state[row, index // channels, index % channels] = journal[
+                        row, accepted[row] - 1, index // channels, index % channels
+                    ]
+        return state
+
+    return compute

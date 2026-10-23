@@ -433,6 +433,11 @@ def compile_program(
                         inputs=dict(phase_inputs),
                         prediction=phase_prediction,
                         state_only=True,
+                        **(
+                            {"features": state_graph.request["features"]}
+                            if state_graph.request.get("features")
+                            else {}
+                        ),
                     )
                 )
         target = built["target"]
