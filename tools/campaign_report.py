@@ -14,6 +14,7 @@ import statistics
 import tempfile
 
 from akas.benchmarking.history import digest, write
+from akas.benchmarking.workload import prompt_digest
 from akas.optimization.context import workload
 
 SCHEMA = "akas.campaign-report.v1"
@@ -330,6 +331,89 @@ def precision_comparisons(state, history, evidence):
     return comparisons
 
 
+def text_comparisons(state, history, evidence):
+    """Keep each real example separate from synthetic shape measurements."""
+    groups = []
+    expected = {item.get("checkpoint_sha256") for item in evidence.values()
+                if item.get("checkpoint_sha256")}
+    for run_id in state.get("text_workload_runs", []):
+        data = record(history, run_id)
+        if not data or data["status"] != "passed" or not data.get("completed_at"):
+            raise ValueError("text comparison requires a sealed, passed run: " + run_id)
+        meta = data["metadata"]
+        if meta.get("checkpoint_sha256") not in expected:
+            raise ValueError("text comparison checkpoint differs from campaign")
+        artifact = next((a for a in data["artifacts"]
+                         if a["path"] == "benchmark/text-workload.json"), None)
+        path = Path(history) / "runs" / run_id / "benchmark/text-workload.json"
+        if (not artifact or digest(path) != artifact["sha256"] or
+            artifact["sha256"] != meta.get("text_workload_sha256")):
+            raise ValueError("text workload checksum mismatch")
+        workload = read(path)
+        if workload.get("tokenizer_checkpoint_sha256") != meta["checkpoint_sha256"]:
+            raise ValueError("text workload tokenizer identity differs")
+        cases = {item["id"]: item for item in workload["cases"]}
+        selected = []
+        seen = set()
+        for row in data["results"]:
+            item = row.get("text_case", {})
+            case = cases.get(item.get("id"))
+            ar = row.get("ar", {})
+            if (not case or case["id"] in seen or
+                case["split"] != meta.get("dataset_split") or
+                prompt_digest([case["token_ids"]]) != case["prompt_sha256"] or
+                any(candidate.get("prompt_sha256") != case["prompt_sha256"]
+                    for candidate in (row, ar)) or
+                row["case"] != ar.get("case") or
+                row["case"]["prompt"] != case["prefix_tokens"] or
+                row["case"]["generated"] != workload["output_tokens"]):
+                raise ValueError("text comparison inputs or split differ")
+            seen.add(case["id"])
+            stats = row["native_speculation"]
+            rounds, proposed = stats["request_rounds"], stats["proposed"]
+            ar_rate = ar["summary"]["decode_tokens_per_second"]["median"]
+            rate = row["summary"]["decode_tokens_per_second"]["median"]
+            ar_prefill = ar["summary"]["prefill_tokens_per_second"]["median"]
+            prefill = row["summary"]["prefill_tokens_per_second"]["median"]
+            if (rounds < 1 or not 0 <= stats["accepted"] <= proposed or
+                stats["emitted"] != row["decode_tokens"] or
+                any(not math.isfinite(value) or value <= 0
+                    for value in (rate, ar_rate, prefill, ar_prefill))):
+                raise ValueError("invalid text comparison accounting")
+            actual, reference = row["output_ids"], row["ar_output_ids"]
+            if (len(actual) != 1 or len(reference) != 1 or
+                any(len(ids) != workload["output_tokens"] for ids in (*actual, *reference))):
+                raise ValueError("incomplete real-text outputs")
+            agreement = dict(exact=actual == reference, common_prefix_tokens=next(
+                (i for i, (a, b) in enumerate(zip(actual[0], reference[0])) if a != b),
+                workload["output_tokens"]))
+            if agreement != row["output_agreement"]:
+                raise ValueError("text output agreement differs from retained tokens")
+            selected.append(dict(
+                id=case["id"], category=case["category"], split=case["split"],
+                source=case["source"], example_id=case["example_id"],
+                prefix_tokens=case["prefix_tokens"], prompt_sha256=case["prompt_sha256"],
+                preprocessing=case["preprocessing"], ar_decode_tps=ar_rate,
+                ar_prefill_tps=ar_prefill, speculative_prefill_tps=prefill,
+                speculative_decode_tps=rate, decode_speedup=rate / ar_rate,
+                accepted=stats["accepted"], proposed=proposed, emitted=stats["emitted"],
+                request_rounds=rounds, tokens_per_round=stats["emitted"] / rounds,
+                acceptance=stats["accepted"] / proposed if proposed else 0,
+                output_agreement=agreement,
+                output_ids=row["output_ids"], ar_output_ids=row["ar_output_ids"],
+                output_text=row["output_text"], ar_output_text=row["ar_output_text"],
+                warmup=row["warmup"], repeats=row["repeats"]))
+        if seen != {key for key, value in cases.items()
+                    if value["split"] == meta.get("dataset_split")}:
+            raise ValueError("incomplete text workload split")
+        groups.append(dict(run_id=run_id, confidence_threshold=meta["confidence_threshold"],
+                           split=meta["dataset_split"], kv_dtype=meta["kv_dtype"],
+                           draft_kv_dtype=meta["draft_kv_dtype"], sources=workload["sources"],
+                           qualification=meta["qualification"], cases=selected))
+        evidence[run_id] = metadata_for(data)
+    return groups
+
+
 def collect(campaign, history):
     campaign = Path(campaign).resolve()
     history = Path(history).resolve()
@@ -561,6 +645,7 @@ def collect(campaign, history):
         evidence=evidence,
         schedules=schedules,
         precision_comparisons=precision_comparisons(state, history, evidence),
+        text_comparisons=text_comparisons(state, history, evidence),
     )
 
 
@@ -783,6 +868,25 @@ def render(data, out, history):
                 f"{'yes' if row['exact'] else 'no'} | {row['common_prefix_tokens']} | {row['teacher_forced_steps']} | "
                 f"{row['top1_agreement']:.1%} | {row['mean_kl_f16_to_candidate']:.6f} |"
             )
+    if data.get("text_comparisons"):
+        lines += ["", "## Real-text speculative decoding", "",
+                  "Matched real prompts distinguish draft acceptance from synthetic shape tests. "
+                  "Calibration and held-out examples are separate. Long cases with one sample are diagnostic measurements. "
+                  "Dataset revisions, example IDs, prompt hashes, crop recipes and both outputs remain in report.json and the checksummed workload artifacts."]
+    for comparison in data.get("text_comparisons", []):
+        lines += ["", f"### {comparison['split']}; confidence {comparison['confidence_threshold']}", "",
+                  f"Target/draft KV: `{comparison['kv_dtype']}` / `{comparison['draft_kv_dtype']}`. "
+                  f"Evidence: {evidence_link(comparison['run_id'], out, history)}.",
+                  "", comparison["qualification"], "",
+                  "| Example | Category | Prefix | AR prefill | DSpark prefill | AR decode | DSpark decode | Decode speedup | Acceptance | Tokens/round | Exact output | Common prefix |",
+                  "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: |"]
+        for row in comparison["cases"]:
+            agreement = row["output_agreement"]
+            lines.append(f"| {clean(row['id'])} | {row['category']} | {row['prefix_tokens']} | "
+                         f"{row['ar_prefill_tps']:.2f} | {row['speculative_prefill_tps']:.2f} | "
+                         f"{row['ar_decode_tps']:.2f} | {row['speculative_decode_tps']:.2f} | "
+                         f"{row['decode_speedup']:.3f}x | {row['acceptance']:.1%} | "
+                         f"{row['tokens_per_round']:.2f} | {'yes' if agreement['exact'] else 'no'} | {agreement['common_prefix_tokens']} |")
     text(out / "README.md", "\n".join(lines) + "\n")
     for kind, profiles, filename in [
         ("akas", akas, "AKAS.md"),

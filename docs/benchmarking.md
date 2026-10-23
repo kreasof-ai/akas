@@ -114,6 +114,15 @@ one fixed comparison table, and portable report data includes both generated
 outputs. Report export rejects failed probes, changed artifacts and mismatched
 checkpoint or prompt identities.
 
+Campaigns attach real-text runtime probes through `text_workload_runs`. Export
+checks each sealed run against its checksummed `benchmark/text-workload.json`
+artifact, including the tokenizer identity, assigned split, prompt IDs, complete
+output counts and speculative accounting. The generated overview has a fixed
+per-example table for each split and confidence threshold, covering AR and draft
+prefill/decode, acceptance, tokens per round and output agreement. The portable
+report retains both outputs and dataset provenance. These diagnostic rows remain
+separate from the synthetic shape matrix.
+
 Native reports also retain process peak host RSS, including loading and any
 in-process compilation. Packed expert validation decodes small coefficient tiles;
 it does not expand the entire model on the CPU. GGUF uploads release mapped
