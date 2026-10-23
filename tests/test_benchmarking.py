@@ -102,6 +102,24 @@ def test_synchronized_measurements_count_only_executed_tokens():
     assert prompts[1] == prompts[3] == prompts[5]
 
 
+def test_explicit_text_tokens_and_cached_prefix_are_reused_without_sampling():
+    session = Session()
+    tokens = [[i, i + 1] for i in range(4)]
+    context = [[7] for _ in range(4)]
+    times = iter(range(12))
+    result = run(session, Case(4, 2, generated=2, depth=1), prompts=tokens,
+                 cached_prefixes=context, repeats=2, warmup=0,
+                 clock=lambda: next(times))
+    assert [v for v in session.calls if isinstance(v, list)] == [context, tokens] * 2
+    assert result["seed"] is None and result["prompt_source"] == "explicit"
+    with pytest.raises(ValueError, match="lengths"):
+        run(Session(), Case(4, 2), prompts=[[1, 99]] * 4)
+    with pytest.raises(ValueError, match="sequence"):
+        run(Session(), Case(4, 2, depth=1), prompts=tokens)
+    with pytest.raises(ValueError, match="seed"):
+        run(Session(), Case(4, 2), prompts=tokens, seed=1)
+
+
 @pytest.mark.parametrize("case", [Case(1, 2), Case(4, 995, generated=10)])
 def test_mismatched_session_is_rejected(case):
     with pytest.raises(ValueError, match="batch/capacity"):

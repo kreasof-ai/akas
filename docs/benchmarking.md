@@ -34,6 +34,26 @@ baselines. Native rows record the effective seed and SHA-256 fingerprints of
 the prompt and cached prefix. Regression comparisons reject different recorded
 inputs. Pass an explicit native `seed` to replay a historical measurement.
 
+Use real text when evaluating speculative acceptance. Random IDs can produce
+repetitive continuations and misleading draft speedups. The
+[text workload tool](../tools/text_workload.py) pins conversation, code, math and
+long-document sources and creates separate calibration and held-out prompts:
+
+```sh
+python -m tools.text_workload --checkpoint /path/to/lfm2-moe.gguf \
+  --cache build/datasets --output build/text-workload.json
+```
+
+Pass each manifest's token IDs to `benchmarking.run(..., prompts=[token_ids])`
+with a matching `Case`. Use identical IDs and output limits for AR, speculation
+and baselines. Retain the manifest as a run artifact, including its source
+revisions, example IDs, tokenizer identity and document-cropping recipe. Select
+runtime settings on the calibration split before measuring held-out examples.
+Report acceptance, emitted tokens per round, complete decode time and output
+agreement; acceptance alone does not measure a speedup. Cropped documents and a
+fixed 128-token output budget are runtime probes rather than dataset accuracy
+scores. Keep the original synthetic workload available for shape comparisons.
+
 `B` means independent active requests. A runtime's token batch budget, prefill
 chunk size and HTTP concurrency are different quantities; record them separately.
 Provision cache space for prompt + output + speculative guard, rounded to the

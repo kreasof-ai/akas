@@ -28,7 +28,8 @@ def summarize(values):
     )
 
 
-def run(session, case, *, repeats=5, warmup=1, seed=None, clock=time.perf_counter):
+def run(session, case, *, repeats=5, warmup=1, seed=None, prompts=None,
+        cached_prefixes=None, clock=time.perf_counter):
     if type(repeats) is not int or repeats < 1 or type(warmup) is not int or warmup < 0:
         raise ValueError("positive repeats and nonnegative warmup required")
     if session.batch != case.batch or case.capacity > session.capacity:
@@ -36,15 +37,36 @@ def run(session, case, *, repeats=5, warmup=1, seed=None, clock=time.perf_counte
     if case.generated < 2:
         raise ValueError("decode throughput requires at least two total output tokens")
     decode_steps = case.generated - 1  # Prefill already predicts the first token.
-    seed = prompt_seed(case.batch, case.prompt) if seed is None else seed
-    rng = np.random.default_rng(seed)
-    prompts = [
-        rng.integers(0, session.config.vocab, n, dtype="int32") for n in case.lengths
-    ]
-    context = [
-        rng.integers(0, session.config.vocab, case.depth, dtype="int32")
-        for _ in range(case.batch)
-    ]
+    if prompts is None:
+        if cached_prefixes is not None:
+            raise ValueError("cached prefixes require explicit prompts")
+        seed = prompt_seed(case.batch, case.prompt) if seed is None else seed
+        rng = np.random.default_rng(seed)
+        prompts = [rng.integers(0, session.config.vocab, n, dtype="int32")
+                   for n in case.lengths]
+        context = [rng.integers(0, session.config.vocab, case.depth, dtype="int32")
+                   for _ in range(case.batch)]
+        prompt_source = "synthetic"
+    else:
+        if seed is not None:
+            raise ValueError("explicit prompts do not use a random seed")
+        def checked(rows, lengths):
+            if rows is None or len(rows) != case.batch:
+                raise ValueError("one explicit token sequence per request is required")
+            result = []
+            for row, length in zip(rows, lengths):
+                values = np.asarray(row)
+                if (values.shape != (length,) or
+                    (values.size and (values.dtype.kind not in "iu" or
+                     np.any(values < 0) or np.any(values >= session.config.vocab)))):
+                    raise ValueError("explicit tokens must match case lengths and vocabulary")
+                result.append(values.astype("int32", copy=True))
+            return result
+        prompts = checked(prompts, case.lengths)
+        context = checked(cached_prefixes if case.depth else
+                          ([[] for _ in range(case.batch)] if cached_prefixes is None
+                           else cached_prefixes), [case.depth] * case.batch)
+        prompt_source = "explicit"
     samples = []
 
     def timed(action):
@@ -87,6 +109,7 @@ def run(session, case, *, repeats=5, warmup=1, seed=None, clock=time.perf_counte
         case=asdict(case),
         status="ok",
         seed=seed,
+        prompt_source=prompt_source,
         prompt_sha256=prompt_digest(prompts),
         cached_prefix_sha256=prompt_digest(context),
         repeats=repeats,
