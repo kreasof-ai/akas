@@ -74,6 +74,26 @@ include required control uploads, and exclude compile, load, reset and warmup.
 The protocol identifier prevents comparison with older reports that counted
 additional decode steps after the first output.
 
+Compare performance at the same KV-cache precision before attributing a gain to
+the compiler. Keep F16 and FP8 results separately labeled. Changing the cache
+can change logits, expert routing and greedy output tokens even when both paths
+pass their implementation checks.
+
+For a cache-precision comparison, retain identical prompts, checkpoint bytes,
+tokenizer and sampling settings. Compare the generated text and token IDs, then
+measure logits while supplying the same F16-generated continuation to both
+paths. This separates numerical drift from differences that compound after the
+first changed token. Record the prompt count, context lengths, generation limit,
+EOS behavior and number of shared-history steps. A small numerical probe does
+not establish corpus accuracy or task quality.
+
+Paired diagnostic runs use the ordinary checksummed run archive. Campaigns can
+attach their candidate run IDs through `precision_comparison_runs`; each candidate
+links to its F16 reference through its parent run. The generated overview includes
+one fixed comparison table, and portable report data includes both generated
+outputs. Report export rejects failed probes, changed artifacts and mismatched
+checkpoint or prompt identities.
+
 Native reports also retain process peak host RSS, including loading and any
 in-process compilation. Packed expert validation decodes small coefficient tiles;
 it does not expand the entire model on the CPU. GGUF uploads release mapped

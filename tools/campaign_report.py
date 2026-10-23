@@ -220,6 +220,116 @@ def job_record(history, job):
     return record(history, run_id) if run_id else None
 
 
+def precision_comparisons(state, history, evidence):
+    """Publish paired cache probes from checksummed, sealed diagnostic records."""
+    comparisons = []
+    expected_hashes = {
+        item.get("checkpoint_sha256")
+        for item in evidence.values()
+        if item.get("checkpoint_sha256")
+    }
+    for run_id in state.get("precision_comparison_runs", []):
+        data = record(history, run_id)
+        if (
+            not data
+            or data["status"] != "passed"
+            or data["metadata"].get("protocol") != "kv-output-comparison-v1"
+            or not data.get("completed_at")
+        ):
+            raise ValueError(
+                "precision comparison requires a sealed, passed probe: " + run_id
+            )
+        if data["metadata"].get("checkpoint_sha256") not in expected_hashes:
+            raise ValueError(
+                "precision comparison checkpoint differs from the campaign"
+            )
+        parent_id = data.get("change", {}).get("parent_run")
+        parent = record(history, parent_id) if parent_id else None
+        if (
+            not parent
+            or parent["status"] != "passed"
+            or parent["metadata"].get("kv_dtype") != "float16"
+            or parent["metadata"].get("protocol") != "kv-output-comparison-v1"
+            or parent["metadata"].get("checkpoint_sha256")
+            != data["metadata"].get("checkpoint_sha256")
+        ):
+            raise ValueError("precision comparison requires its matching F16 reference")
+
+        def outputs(item):
+            artifact = next(
+                (a for a in item["artifacts"] if a["path"] == "precision/outputs.json"),
+                None,
+            )
+            if artifact is None:
+                raise ValueError("precision comparison outputs are missing")
+            path = Path(history) / "runs" / item["id"] / artifact["path"]
+            if digest(path) != artifact["sha256"]:
+                raise ValueError("precision comparison output checksum mismatch")
+            payload = read(path)
+            if payload["run_id"] != item["id"]:
+                raise ValueError("precision comparison output identity mismatch")
+            return payload["cases"]
+
+        references = {row["name"]: row for row in outputs(parent)}
+        cases = []
+        for row in outputs(data):
+            reference = references.pop(row["name"], None)
+            if (
+                reference is None
+                or reference["prompt_sha256"] != row["prompt_sha256"]
+                or reference["output_ids"] != row["greedy_comparison"]["f16_output_ids"]
+            ):
+                raise ValueError("precision comparison prompt or continuation differs")
+            old, new = reference["output_ids"], row["output_ids"]
+            prefix = next(
+                (i for i, (a, b) in enumerate(zip(old, new)) if a != b),
+                min(len(old), len(new)),
+            )
+            steps = row["teacher_forced"]["steps"]
+            cases.append(
+                dict(
+                    name=row["name"],
+                    prefix_tokens=row["prefix"],
+                    prompt_sha256=row["prompt_sha256"],
+                    reference_output_ids=old,
+                    candidate_output_ids=new,
+                    reference_output_text=reference["output_text"],
+                    candidate_output_text=row["output_text"],
+                    exact=old == new,
+                    common_prefix_tokens=prefix,
+                    reference_tokens=len(old),
+                    candidate_tokens=len(new),
+                    teacher_forced_steps=len(steps),
+                    top1_agreement=statistics.mean(
+                        int(step["top1_equal"]) for step in steps
+                    ),
+                    mean_kl_f16_to_candidate=statistics.mean(
+                        step["kl_f16_to_fp8"] for step in steps
+                    ),
+                    mean_reference_token_nll_delta=statistics.mean(
+                        step["reference_token_nll_delta"] for step in steps
+                    ),
+                )
+            )
+        if references or not cases:
+            raise ValueError("precision comparison has incomplete prompt coverage")
+        evidence[data["id"]], evidence[parent["id"]] = (
+            metadata_for(data),
+            metadata_for(parent),
+        )
+        comparisons.append(
+            dict(
+                run_id=run_id,
+                reference_run_id=parent_id,
+                reference_kv_dtype=parent["metadata"]["kv_dtype"],
+                candidate_kv_dtype=data["metadata"]["kv_dtype"],
+                qualification=data["metadata"]["qualification"],
+                cases=cases,
+            )
+        )
+    return comparisons
+
+
 def collect(campaign, history):
     campaign = Path(campaign).resolve()
     history = Path(history).resolve()
@@ -450,6 +560,7 @@ def collect(campaign, history):
         attempts=attempts,
         evidence=evidence,
         schedules=schedules,
+        precision_comparisons=precision_comparisons(state, history, evidence),
     )
 
 
@@ -629,6 +740,33 @@ def render(data, out, history):
     ]
     for reason, count in errors.most_common():
         lines.append(f"| {clean(reason)} | {count} |")
+    for comparison in data.get("precision_comparisons", []):
+        lines += [
+            "",
+            "## Cache precision and generated outputs",
+            "",
+            f"Reference: `{comparison['reference_kv_dtype']}`; candidate: `{comparison['candidate_kv_dtype']}`. "
+            f"{sum(row['exact'] for row in comparison['cases'])}/{len(comparison['cases'])} greedy outputs match exactly.",
+            "",
+            comparison["qualification"],
+            "",
+            "Common prefix counts matching tokens before the first changed token. Shared-history top-1 and KL "
+            "compare both caches after supplying the same F16-generated continuation. Later free-generation "
+            "differences can compound after an earlier changed token; they are not an accuracy score.",
+            "",
+            f"Reference evidence: {evidence_link(comparison['reference_run_id'], out, history)}; "
+            f"candidate evidence: {evidence_link(comparison['run_id'], out, history)}. "
+            "Both generated texts and token IDs are retained in report.json; prompt IDs and per-step metrics remain in the checksummed run artifacts.",
+            "",
+            "| Prompt | Prefix | F16 outputs | Candidate outputs | Exact | Common prefix | Shared-history steps | Top-1 agreement | Mean KL |",
+            "| --- | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: |",
+        ]
+        for row in comparison["cases"]:
+            lines.append(
+                f"| {clean(row['name'])} | {row['prefix_tokens']} | {row['reference_tokens']} | {row['candidate_tokens']} | "
+                f"{'yes' if row['exact'] else 'no'} | {row['common_prefix_tokens']} | {row['teacher_forced_steps']} | "
+                f"{row['top1_agreement']:.1%} | {row['mean_kl_f16_to_candidate']:.6f} |"
+            )
     text(out / "README.md", "\n".join(lines) + "\n")
     for kind, profiles, filename in [
         ("akas", akas, "AKAS.md"),
