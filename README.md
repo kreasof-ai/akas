@@ -4,6 +4,37 @@ AKAS is an inference engine built on [Tensor](https://github.com/kreasof-ai/tens
 It owns model definitions, checkpoint loading, request scheduling, persistent state,
 generation and serving. Tensor provides compilation and device execution.
 
+## Benchmark showcase
+
+**LFM2.5-24B-A2B · Q4_0 weights · NVIDIA L4 (23,034 MiB) · CUDA**
+
+Selected results from the [October 23, 2026 comparison](benchmarks/reports/20261023T155400Z-cdcde64a14b5/COMPARISON.md),
+with one request generating 128 tokens. All rates are tokens per second; FP16 and
+FP8 below refer to the KV cache dtype.
+
+| Mode | Phase | Prefix tokens | AKAS FP16 KV | AKAS FP8 KV | llama.cpp FP16 KV |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Autoregressive | Prefill | 2,048 | 2,631.2 | 2,648.7 | 3,279.2 |
+| Autoregressive | Prefill | 16,384 | 4,259.0 | 4,220.0 | 3,112.6 |
+| Autoregressive | Prefill | 130,944 | 2,771.7 | 2,755.7 | 1,593.4 |
+| Autoregressive | Decode | 2,048 | 128.9 | 129.0 | 129.9 |
+| Autoregressive | Decode | 16,384 | 112.7 | 118.6 | 111.0 |
+| Autoregressive | Decode | 130,944 | 55.7 | 75.1 | 51.3 |
+| Dspark speculative | Prefill | 2,048 | 3,430.9 | 3,409.4 | 2,544.8 |
+| Dspark speculative | Decode | 2,048 | 256.1 | 191.0 | 171.2 |
+
+These are reported phase rates from a diagnostic context sweep with one retained
+sample per shape. AKAS uses `native-token-step-v2`; llama.cpp uses
+`llama-server-eval-real-text-v1`. Their timing boundaries differ, so these values
+do not establish equivalent kernel timings or end-to-end speedups. Complete-burst
+throughput was not measured. Speculative performance varies with context and draft
+acceptance; the [full comparison](benchmarks/reports/20261023T155400Z-cdcde64a14b5/COMPARISON.md)
+includes shorter and longer contexts, including speculative slowdowns. See the
+[campaign report](benchmarks/reports/20261023T155400Z-cdcde64a14b5/README.md)
+for hardware, retained settings, qualification and output agreement.
+
+## Getting started
+
 Use Python 3.12. `uv.lock` pins Tensor to a published Git revision.
 
 ```sh
