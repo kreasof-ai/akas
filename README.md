@@ -12,6 +12,11 @@ Selected results from the [October 23, 2026 comparison](benchmarks/reports/20261
 with one request generating 128 tokens. All rates are tokens per second; FP16 and
 FP8 below refer to the KV cache dtype.
 
+![Prefill and decode throughput across all measured prefix lengths for autoregressive and Dspark speculative decoding, comparing AKAS FP16 KV, AKAS FP8 KV and llama.cpp FP16 KV on NVIDIA L4.](benchmarks/reports/20261023T155400Z-cdcde64a14b5/throughput.svg)
+
+<details>
+<summary>Selected measurements (tokens per second)</summary>
+
 | Mode | Phase | Prefix tokens | AKAS FP16 KV | AKAS FP8 KV | llama.cpp FP16 KV |
 | --- | --- | ---: | ---: | ---: | ---: |
 | Autoregressive | Prefill | 2,048 | 2,631.2 | 2,648.7 | 3,279.2 |
@@ -23,6 +28,8 @@ FP8 below refer to the KV cache dtype.
 | Dspark speculative | Prefill | 2,048 | 3,430.9 | 3,409.4 | 2,544.8 |
 | Dspark speculative | Decode | 2,048 | 256.1 | 191.0 | 171.2 |
 
+</details>
+
 These are reported phase rates from a diagnostic context sweep with one retained
 sample per shape. AKAS uses `native-token-step-v2`; llama.cpp uses
 `llama-server-eval-real-text-v1`. Their timing boundaries differ, so these values
@@ -32,6 +39,8 @@ acceptance; the [full comparison](benchmarks/reports/20261023T155400Z-cdcde64a14
 includes shorter and longer contexts, including speculative slowdowns. See the
 [campaign report](benchmarks/reports/20261023T155400Z-cdcde64a14b5/README.md)
 for hardware, retained settings, qualification and output agreement.
+
+Regenerate the plot with `uv run python tools/plot_comparison.py`.
 
 ## Getting started
 
