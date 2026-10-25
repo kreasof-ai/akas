@@ -1,15 +1,19 @@
 # Campaign reports
 
-Each report contains the full requested matrix, all available AKAS and baseline measurements, failed or unsupported rows, runtime settings, source provenance and selected kernel schedules. Raw measurements remain under `../runs/`.
+Each report contains the full requested matrix, all available AKAS and baseline measurements, failed or unsupported rows, runtime settings, source provenance and selected kernel schedules. Archived reports and runs are pinned by commit in [the artifact catalog](../archive.json).
 
 | Started UTC | Workload | Source | Qualified AKAS | Qualified baselines | Report |
 | --- | --- | --- | ---: | ---: | --- |
-| 2026-10-23T15:54:00.228961Z | custom | `c135ff99c6f01d40f4222350f93f3dc92804acae` | 4/4 | 2/2 | [full tables](20261023T155400Z-cdcde64a14b5/README.md) |
-| 2026-10-23T10:58:46.475312Z | single-user-dspark-context-gates-v1 | `1b2efafa15c4a028e6cdc844ee5bd6a34909b192` | 1/1 | 0/2 | [full tables](20261023T105846Z-577790cf74cd/README.md) |
-| 2026-10-23T10:16:15.391936Z | single-user-long-context-v1 | `b56abb6da21d77590a098b139a25c7a1072c29cb` | 1/1 | 2/2 | [full tables](20261023T101615Z-655058ec8c38/README.md) |
-| 2026-10-23T09:03:56.573846Z | single-user-long-context-v1 | `1102164555deb2f734eedaf31ac07502b62fc479` | 1/1 | 2/2 | [full tables](20261023T090356Z-f9878f95f443/README.md) |
-| 2026-10-20T21:19:32.758011Z | single-user-long-context-v1 | `98fedcc76c834d813c86c92bf28e94497c79dfd6` | 1/1 | 2/2 | [full tables](20261020T211932Z-85e4360d3048/README.md) |
-| 2026-10-20T18:26:37.613063Z | single-user-long-context-v1 | `8365db71a386bb1a50dcc311c84bf854456ecae9` | 1/1 | 2/2 | [full tables](20261020T182637Z-f8a40b32d479/README.md) |
-| 2026-10-19T14:16:44.589723Z | single-user-long-context-v1 | `d1e28a0409b1b9334d47a2f902155279393c47f6` | 1/2 | 2/2 | [full tables](20261019T141644Z-cc2dba84de82/README.md) |
-| 2026-10-18T13:08:43.563125Z | standard-v1 | `5259580d29f1d0182f1346f43cd8ced15913a4e2` | 48/48 | 10/18 | [full tables](20261018T130843Z-15e7e1cfa6c8/README.md) |
-| 2026-10-15T22:28:44.060326Z | standard-v1 | `3e90ad81dc812a17acc17e0acda34ca3b69ee3b8` | 8/48 | 10/18 | [full tables](20261015T222844Z-5561462ee804/README.md) |
+| 2026-10-24T21:51:28.041404Z | custom | `6be2aa1e4755c0e1e5cff7be4fffaf735c430960` | 1/1 | 1/1 | [full tables](https://github.com/kreasof-ai/akas/blob/25f0e1fc23fe12cf483bbf80f1e699544f9bcd78/benchmarks/reports/20261024T215128Z-886ca6493fc3/README.md) |
+| 2026-10-24T19:10:42.883833Z | custom | `6be2aa1e4755c0e1e5cff7be4fffaf735c430960` | 1/1 | 1/1 | [full tables](https://github.com/kreasof-ai/akas/blob/25f0e1fc23fe12cf483bbf80f1e699544f9bcd78/benchmarks/reports/20261024T191042Z-de1f5c1f4100/README.md) |
+| 2026-10-24T19:10:42.883833Z | custom | `6be2aa1e4755c0e1e5cff7be4fffaf735c430960` | 1/1 | 1/1 | [full tables](https://github.com/kreasof-ai/akas/blob/1313601fac2716250811b46f727493a64df4b82d/benchmarks/reports/20261024T191042Z-60f28059ed28/README.md) |
+| 2026-10-24T18:24:01.411794Z | custom | `6be2aa1e4755c0e1e5cff7be4fffaf735c430960` | 1/1 | 1/1 | [full tables](https://github.com/kreasof-ai/akas/blob/0b702210b8c4d722b1c1f420e00272f418658136/benchmarks/reports/20261024T182401Z-5421deaffcc1/README.md) |
+| 2026-10-23T15:54:00.228961Z | custom | `c135ff99c6f01d40f4222350f93f3dc92804acae` | 4/4 | 2/2 | [full tables](https://github.com/kreasof-ai/akas/blob/0b702210b8c4d722b1c1f420e00272f418658136/benchmarks/reports/20261023T155400Z-cdcde64a14b5/README.md) |
+| 2026-10-23T10:58:46.475312Z | single-user-dspark-context-gates-v1 | `1b2efafa15c4a028e6cdc844ee5bd6a34909b192` | 1/1 | 0/2 | [full tables](https://github.com/kreasof-ai/akas/blob/0b702210b8c4d722b1c1f420e00272f418658136/benchmarks/reports/20261023T105846Z-577790cf74cd/README.md) |
+| 2026-10-23T10:16:15.391936Z | single-user-long-context-v1 | `b56abb6da21d77590a098b139a25c7a1072c29cb` | 1/1 | 2/2 | [full tables](https://github.com/kreasof-ai/akas/blob/0b702210b8c4d722b1c1f420e00272f418658136/benchmarks/reports/20261023T101615Z-655058ec8c38/README.md) |
+| 2026-10-23T09:03:56.573846Z | single-user-long-context-v1 | `1102164555deb2f734eedaf31ac07502b62fc479` | 1/1 | 2/2 | [full tables](https://github.com/kreasof-ai/akas/blob/0b702210b8c4d722b1c1f420e00272f418658136/benchmarks/reports/20261023T090356Z-f9878f95f443/README.md) |
+| 2026-10-20T21:19:32.758011Z | single-user-long-context-v1 | `98fedcc76c834d813c86c92bf28e94497c79dfd6` | 1/1 | 2/2 | [full tables](https://github.com/kreasof-ai/akas/blob/0b702210b8c4d722b1c1f420e00272f418658136/benchmarks/reports/20261020T211932Z-85e4360d3048/README.md) |
+| 2026-10-20T18:26:37.613063Z | single-user-long-context-v1 | `8365db71a386bb1a50dcc311c84bf854456ecae9` | 1/1 | 2/2 | [full tables](https://github.com/kreasof-ai/akas/blob/0b702210b8c4d722b1c1f420e00272f418658136/benchmarks/reports/20261020T182637Z-f8a40b32d479/README.md) |
+| 2026-10-19T14:16:44.589723Z | single-user-long-context-v1 | `d1e28a0409b1b9334d47a2f902155279393c47f6` | 1/2 | 2/2 | [full tables](https://github.com/kreasof-ai/akas/blob/0b7d7b86afbcaabeff2cb696403d2916b4e28709/benchmarks/reports/20261019T141644Z-cc2dba84de82/README.md) |
+| 2026-10-18T13:08:43.563125Z | standard-v1 | `5259580d29f1d0182f1346f43cd8ced15913a4e2` | 48/48 | 10/18 | [full tables](https://github.com/kreasof-ai/akas/blob/1d47790953eb88c0d0dab368fa6241209cd37d70/benchmarks/reports/20261018T130843Z-15e7e1cfa6c8/README.md) |
+| 2026-10-15T22:28:44.060326Z | standard-v1 | `3e90ad81dc812a17acc17e0acda34ca3b69ee3b8` | 8/48 | 10/18 | [full tables](https://github.com/kreasof-ai/akas/blob/1d47790953eb88c0d0dab368fa6241209cd37d70/benchmarks/reports/20261015T222844Z-5561462ee804/README.md) |

@@ -19,6 +19,8 @@ jobs:
       - run: uv run --no-sync python -m pytest
       - name: Verify benchmark report format and generated tables
         run: uv run --no-sync python -m tools.campaign_report --check
+      - name: Verify benchmark archive catalog
+        run: uv run --no-sync python -m tools.benchmark_archive check --tracked
       - run: uv run --no-sync python tools/bootstrap_nvrtc.py --out build/nvrtc-12.9
       - run: uv run --no-sync python tests/support/diagnostic.py --out build/diagnostic.gguf
       - run: uv run --no-sync python -m akas compile --definition akas.models.lfm2.model:LFM2 --checkpoint build/diagnostic.gguf --out build/diagnostic --config '{"search":false,"geometries":[[1,1],[1,32]],"max_requests":1,"max_context":384,"target":"sm_86"}'
