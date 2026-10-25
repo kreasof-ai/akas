@@ -1,0 +1,19 @@
+{
+  "schema": "akas.benchmark-model.v1",
+  "id": "lfm2.5-24b-a2b",
+  "model": "LiquidAI/LFM2.5-24B-A2B",
+  "aliases": ["lfm-moe"],
+  "modes": ["ar"],
+  "weights": {
+    "q4_0": {
+      "path": "build/checkpoints/lfm2.5-24b-a2b/q4_0.gguf",
+      "source": {
+        "repo": "LiquidAI/LFM2.5-24B-A2B-GGUF",
+        "revision": "0912d33141f77e10705345a6732bfd83f0252fdc",
+        "file": "LFM2.5-24B-A2B-QAD-Q4_0.gguf",
+        "sha256": "d1c03f73ecaf61017d70419eec9e5dc0b05d50ae26c23d522829b934fbabf8a5"
+      }
+    }
+  },
+  "runtime_options": {"llama": {}}
+}

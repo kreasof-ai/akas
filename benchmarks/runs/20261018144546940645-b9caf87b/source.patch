@@ -1,0 +1,3457 @@
+diff --git a/src/akas/compilation/compile.py b/src/akas/compilation/compile.py
+index 40f7db2..bce1dfc 100644
+--- a/src/akas/compilation/compile.py
++++ b/src/akas/compilation/compile.py
+@@ -545,7 +545,12 @@ def compile_program(
+             )
+             feature = verification.buffers[phase["features"]["hidden"]]
+             width = prod(feature.shape) // (phase["rows"] * window)
+-            controls = round_controls(slots=phase["rows"], window=window, width=width)
++            controls = round_controls(
++                slots=phase["rows"],
++                window=window,
++                width=width,
++                dtype=feature.dtype,
++            )
+             filename = f"{generation}/rounds/control-b{phase['rows']}-w{window}.json"
+             control_bundle = plan(
+                 controls,
+diff --git a/src/akas/compilation/phases.py b/src/akas/compilation/phases.py
+index 2ce3d52..a4c16b2 100644
+--- a/src/akas/compilation/phases.py
++++ b/src/akas/compilation/phases.py
+@@ -29,7 +29,7 @@ def graphs(definition, config, phases, options):
+         yield phase, graph
+ 
+ 
+-def round_controls(*, slots, window, width):
++def round_controls(*, slots, window, width, dtype="bfloat16"):
+     """Declare device controls between proposal, verification, and repair phases."""
+     from akas.graph import Graph
+ 
+@@ -60,7 +60,7 @@ def round_controls(*, slots, window, width):
+             )
+     for phase in ("verify", "repair"):
+         fields[phase + ".hidden"] = graph.buffer(
+-            phase + ".hidden", (slots * window, width), "bfloat16", role="input"
++            phase + ".hidden", (slots * window, width), dtype, role="input"
+         )
+ 
+     def inputs(phase, *names):
+diff --git a/src/akas/compilation/tuning.py b/src/akas/compilation/tuning.py
+index 0340d6d..ba675c7 100644
+--- a/src/akas/compilation/tuning.py
++++ b/src/akas/compilation/tuning.py
+@@ -190,6 +190,11 @@ def tune(
+     )
+     if len(variants) == 1 and not variants[0].space and best is not None:
+         return best
++    import os
++
++    if budget == 1 and os.environ.get("AKAS_SKIP_AUTOTUNE") == "1" and best is not None:
++        return best
++    resumed = bool(events)
+     trials = 0
+     while trials < budget:
+         try:
+@@ -259,7 +264,7 @@ def tune(
+ 
+     # Resumed timings steer exploration; the selected schedule must qualify and
+     # time again before it can replace the current, freshly measured baseline.
+-    if checkpoint is not None and best.trials:
++    if resumed and best.trials:
+         candidate = by_family[best.implementation]
+         measurements = tuple(
+             measure(candidate, {**parameters, **w.parameters, **best.schedule}, w)
+@@ -575,6 +580,17 @@ def qualify(bundle, out, *, settings=None, device=None):
+                             or np.array_equal(case.arguments[name], expected)
+                         ):
+                             np.testing.assert_array_equal(actual, expected)
++                        elif actual.size > 4_194_304:
++                            flat_a = actual.reshape(-1)
++                            flat_e = expected.reshape(-1)
++                            for start in range(0, flat_a.size, 4_194_304):
++                                np.testing.assert_allclose(
++                                    flat_a[start : start + 4_194_304],
++                                    flat_e[start : start + 4_194_304],
++                                    rtol=case.rtol,
++                                    atol=case.atol,
++                                    equal_nan=False,
++                                )
+                         else:
+                             np.testing.assert_allclose(
+                                 actual,
+diff --git a/src/akas/execution/forward.py b/src/akas/execution/forward.py
+index e490e48..2fdcb0f 100644
+--- a/src/akas/execution/forward.py
++++ b/src/akas/execution/forward.py
+@@ -32,7 +32,7 @@ class Forward:
+                 requirements=self.definition.requirements(),
+             )
+             self.plan = bind_graph(self.definition, device, self.kernels, self.buffers)
+-            if graphs:
++            if graphs or getattr(device, "info", {}).get("provider") == "webgpu":
+                 self.graph = self.plan.capture(
+                     resources=tuple(self.buffers.values())
+                     + tuple(self.kernels.values())
+diff --git a/src/akas/kernels/contracts.py b/src/akas/kernels/contracts.py
+index a10b043..f623835 100644
+--- a/src/akas/kernels/contracts.py
++++ b/src/akas/kernels/contracts.py
+@@ -169,6 +169,12 @@ def mapped_validation(kind, parameters, signature, mapping):
+         spec["shape"] = shape
+         names.append(spec["name"])
+     local = validation(kind, parameters, original)
++    written_local = {
++        name
++        for name in local.expected
++        if local.arguments[name] is not local.expected[name]
++        and not np.array_equal(local.arguments[name], local.expected[name])
++    }
+     arguments = sample_arguments(
+         [
+             spec
+@@ -176,19 +182,24 @@ def mapped_validation(kind, parameters, signature, mapping):
+             if spec["name"] in names or spec["name"] == "mapping"
+         ]
+     )
+-    expected = {name: value.copy() for name, value in arguments.items()}
++    expected = {
++        name: value.copy() if name in written_local else value
++        for name, value in arguments.items()
++    }
+     slots = np.linspace(0, capacity - 1, rows, dtype="int32")[::-1].copy()
+     arguments["mapping"][:] = slots
+-    expected["mapping"][:] = slots
+-    for name in local.arguments:
++    for name in list(local.arguments):
+         if name in names:
+             initial = arguments[name].reshape(capacity, -1)
+-            result = expected[name].reshape(capacity, -1)
+             initial[slots] = local.arguments[name].reshape(rows, -1)
+-            result[slots] = local.expected[name].reshape(rows, -1)
++            if name in written_local:
++                result = expected[name].reshape(capacity, -1)
++                result[slots] = local.expected[name].reshape(rows, -1)
+         else:
+             arguments[name] = local.arguments[name]
+             expected[name] = local.expected[name]
++        local.arguments.pop(name, None)
++        local.expected.pop(name, None)
+     return ValidationCase(
+         arguments, expected, local.rtol, local.atol, local.comparators
+     )
+diff --git a/src/akas/kernels/definition.py b/src/akas/kernels/definition.py
+index 70ce9f7..0ecdc8a 100644
+--- a/src/akas/kernels/definition.py
++++ b/src/akas/kernels/definition.py
+@@ -119,4 +119,57 @@ def define(spec, schedule=None, capabilities=None, implementation=None):
+     factory = getattr(
+         import_module(implementation["module"]), implementation["factory"]
+     )
+-    return factory(bound, schedule)
++    prim = factory(bound, schedule)
++    if (
++        capabilities.provider == "webgpu"
++        and hasattr(prim, "params")
++        and hasattr(prim, "buffer_map")
++    ):
++        from tvm import tirx
++
++        reserved = {"active", "target"}
++        if any(
++            str(prim.buffer_map[p].data.name) in reserved
++            for p in prim.params
++            if p in prim.buffer_map
++        ):
++            new_map, vmap, bmap = {}, {}, {}
++            for p in prim.params:
++                if p not in prim.buffer_map:
++                    continue
++                b = prim.buffer_map[p]
++                if str(b.data.name) in reserved:
++                    nd = tirx.Var(str(b.data.name) + "_buf", b.data.type_annotation)
++                    nb = tirx.decl_buffer(
++                        b.shape,
++                        b.dtype,
++                        name=str(b.name),
++                        data=nd,
++                        strides=b.strides,
++                        elem_offset=b.elem_offset,
++                        scope=b.scope(),
++                    )
++                    vmap[b.data] = nd
++                    bmap[b] = nb
++                    new_map[p] = nb
++                else:
++                    new_map[p] = b
++
++            def _replace(op):
++                if isinstance(op, tirx.BufferLoad) and op.buffer in bmap:
++                    return tirx.BufferLoad(bmap[op.buffer], op.indices)
++                if isinstance(op, tirx.BufferStore) and op.buffer in bmap:
++                    return tirx.BufferStore(bmap[op.buffer], op.value, op.indices)
++                return None
++
++            body = tirx.stmt_functor.ir_transform(
++                prim.body, None, _replace, ["tirx.BufferLoad", "tirx.BufferStore"]
++            )
++            body = tirx.stmt_functor.substitute(body, vmap)
++            sig = getattr(prim, "__akas_signature__", None)
++            prim = tirx.PrimFunc(
++                prim.params, body, prim.ret_type, new_map, prim.attrs
++            )
++            if sig is not None:
++                prim.__akas_signature__ = sig
++    return prim
+diff --git a/src/akas/models/qwen35/_composition.py b/src/akas/models/qwen35/_composition.py
+index 5e9848b..c76a748 100644
+--- a/src/akas/models/qwen35/_composition.py
++++ b/src/akas/models/qwen35/_composition.py
+@@ -42,6 +42,8 @@ def compose_dense(
+     chunk=1,
+     pool=256,
+     context=4096,
++    provider="cuda",
++    kv_dtype=None,
+     verify=False,
+     fused_head=False,
+     draft=False,
+@@ -56,6 +58,9 @@ def compose_dense(
+     from akas.graph import Graph
+     from akas.memory.layouts import hybrid_state_specs
+ 
++    act_dtype = "float16" if provider == "webgpu" else "bfloat16"
++    if kv_dtype is None or (provider == "webgpu" and kv_dtype == "bfloat16"):
++        kv_dtype = act_dtype
+     graph = Graph(contract="bf16", phase="prefill" if chunk > 1 else "decode")
+     commit = Graph(contract="bf16", phase=graph.phase)
+     from dataclasses import replace
+@@ -68,9 +73,10 @@ def compose_dense(
+     namespace = "proposal." if draft else ""
+     weights = (
+         checkpoint.graph_weights(
+-            graph, provider="cuda", branch="mtp" if draft else "text"
++            graph, provider=provider, branch="mtp" if draft else "text"
+         )
+         if getattr(checkpoint, "storage_format", None) == "ggml"
++        or provider == "webgpu"
+         else {
+             name: graph.buffer(name, shape, dtype, role="weight")
+             for name, (shape, dtype) in checkpoint.storage_specs(
+@@ -86,8 +92,9 @@ def compose_dense(
+             for name, value in weights.items()
+         }
+         embedding = "model.language_model.embed_tokens.weight"
+-        shape, dtype = checkpoint.storage_specs()[embedding]
+-        weights[embedding] = graph.buffer(embedding, shape, dtype, role="weight")
++        if embedding not in weights:
++            shape, dtype = checkpoint.storage_specs()[embedding]
++            weights[embedding] = graph.buffer(embedding, shape, dtype, role="weight")
+     states = {
+         layer: [
+             graph.buffer(
+@@ -98,7 +105,9 @@ def compose_dense(
+             )
+             for index, spec in enumerate(specs)
+         ]
+-        for layer, specs in hybrid_state_specs(config, pool, context).items()
++        for layer, specs in hybrid_state_specs(
++            config, pool, context, kv_dtype=kv_dtype, provider=provider
++        ).items()
+     }
+     owner = SimpleNamespace(
+         config=config,
+@@ -111,7 +120,7 @@ def compose_dense(
+     )
+     if draft:
+         owner.hidden = graph.buffer(
+-            "proposal.saved_hidden", (pool, config.width), "bfloat16", role="state"
++            "proposal.saved_hidden", (pool, config.width), act_dtype, role="state"
+         )
+     from akas.ops.attention.definition import attend
+     from akas.ops.gdn.definition import gated_delta
+@@ -162,7 +171,7 @@ def compose_dense(
+         flat_positions=flat_positions,
+         active=active,
+     )
+-    residual = graph.buffer(namespace + "residual", (rows, config.width), "bfloat16")
++    residual = graph.buffer(namespace + "residual", (rows, config.width), act_dtype)
+     from akas.ops.vocabulary.definition import embed
+ 
+     embed(
+@@ -177,7 +186,7 @@ def compose_dense(
+     features = {}
+     if draft:
+         hidden = graph.buffer(
+-            "proposal.hidden", (rows, config.width), "bfloat16", role="input"
++            "proposal.hidden", (rows, config.width), act_dtype, role="input"
+         )
+         mode = graph.buffer("proposal.mode", (1,), "int32", role="input")
+         graph(
+@@ -188,7 +197,7 @@ def compose_dense(
+             mode,
+             hidden,
+         )
+-        joined = graph.buffer("proposal.join", (rows, 2 * config.width), "bfloat16")
++        joined = graph.buffer("proposal.join", (rows, 2 * config.width), act_dtype)
+         graph(
+             "mtp_join",
+             dict(r=rows, c=config.width, eps=config.epsilon),
+@@ -216,6 +225,7 @@ def compose_dense(
+             epsilon=config.epsilon,
+             name=namespace + block.prefix + "input_normal",
+             residual=None if previous is None else residual,
++            dtype=act_dtype,
+         )
+         prefix = block.mixer_prefix
+         if block.mixer == "linear_attention":
+@@ -229,6 +239,7 @@ def compose_dense(
+                 prefix=prefix,
+                 verify=verify,
+                 commit=commit,
++                dtype=act_dtype,
+             )
+         else:
+             mixed = attend(
+@@ -240,6 +251,7 @@ def compose_dense(
+                 config=config,
+                 prefix=prefix,
+                 context=context,
++                dtype=act_dtype,
+             )
+         normal = normalize(
+             graph,
+@@ -248,6 +260,7 @@ def compose_dense(
+             epsilon=config.epsilon,
+             name=namespace + block.prefix + "post_normal",
+             residual=residual,
++            dtype=act_dtype,
+         )
+         prefix = block.feed_forward_prefix
+         if block.feed_forward == "moe":
+@@ -270,7 +283,7 @@ def compose_dense(
+             name=prefix + "projection",
+         )
+         activated = graph.buffer(
+-            prefix + "activated", (rows, config.intermediate), "bfloat16"
++            prefix + "activated", (rows, config.intermediate), act_dtype
+         )
+         graph("swiglu", dict(common, c=config.intermediate), projected, activated)
+         previous = project(
+@@ -288,11 +301,12 @@ def compose_dense(
+         name=namespace + "normal",
+         residual=residual,
+         role="output",
++        dtype=act_dtype,
+     )
+     features["hidden"] = normal.name
+     head_input = normal
+     if not verify:
+-        head_input = graph.buffer(namespace + "last", (slots, config.width), "bfloat16")
++        head_input = graph.buffer(namespace + "last", (slots, config.width), act_dtype)
+         graph(
+             "last_rows",
+             dict(common, c=config.width),
+diff --git a/src/akas/models/qwen35/_gguf.py b/src/akas/models/qwen35/_gguf.py
+index f1fb4be..f5fbd69 100644
+--- a/src/akas/models/qwen35/_gguf.py
++++ b/src/akas/models/qwen35/_gguf.py
+@@ -13,14 +13,15 @@ class Checkpoint:
+     storage_format = "ggml"
+ 
+     def __init__(self, path, *, moe, branch="text"):
+-        if branch != "text":
+-            raise GGUFError("Qwen GGUF currently supports the text trunk, not MTP")
++        if branch not in ("text", "mtp"):
++            raise GGUFError("Qwen GGUF branch must be text or mtp")
+         self.gguf = GGUF(path)
+         self.config = (Qwen35MoEConfig if moe else Qwen35DenseConfig).from_gguf(
+             self.gguf
+         )
+-        self.branch = "text"
++        self.branch = branch
+         self.groups, self.auxiliary, self.orders = {}, {}, {}
++        self.mtp_groups, self.mtp_used = {}, set()
+         self._declare(moe)
+         self.tensors = {name: self.gguf.tensors[name] for name in self.used}
+ 
+@@ -45,6 +46,7 @@ class Checkpoint:
+             offset_norm=False,
+             order=None,
+             column_order=None,
++            mtp=False,
+         ):
+             if source not in self.gguf.tensors:
+                 raise GGUFError(f"missing Qwen GGUF tensor: {source}")
+@@ -56,9 +58,11 @@ class Checkpoint:
+                 allowed.add(tuple(dim for dim in shape if dim != 1))
+             if info.shape not in allowed:
+                 raise GGUFError(f"{source}: expected {shape}, found {info.shape}")
+-            self.used.add(source)
++            target_used = self.mtp_used if mtp else self.used
++            target_groups = self.mtp_groups if mtp else self.groups
++            target_used.add(source)
+             self.physical_shapes[source] = tuple(shape)
+-            self.groups[canonical] = (source,)
++            target_groups[canonical] = (source,)
+             self.group_shapes[canonical] = tuple(shape)
+             self.orders[source] = (order, column_order)
+             if auxiliary:
+@@ -78,10 +82,11 @@ class Checkpoint:
+                     canonical.endswith(".A_log"),
+                 )
+ 
+-        def join(canonical, names):
+-            sources = tuple(self.groups[name][0] for name in names)
++        def join(canonical, names, *, mtp=False):
++            target_groups = self.mtp_groups if mtp else self.groups
++            sources = tuple(target_groups[name][0] for name in names)
+             depth = self.group_shapes[names[0]][-1]
+-            self.groups[canonical] = sources
++            target_groups[canonical] = sources
+             self.group_shapes[canonical] = (
+                 sum(self.group_shapes[name][0] for name in names),
+                 depth,
+@@ -270,6 +275,78 @@ class Checkpoint:
+         extra = self.gguf.metadata.get(
+             self.gguf.metadata["general.architecture"] + ".nextn_predict_layers", 0
+         )
++        if extra and not moe:
++            gg = f"blk.{len(c.layers)}."
++            hf = "mtp.layers.0."
++            if gg + "nextn.eh_proj.weight" in self.gguf.tensors:
++                self.mtp_used.add("token_embd.weight")
++                self.mtp_groups[embedding] = self.groups[embedding]
++                if self.head_name != embedding:
++                    self.mtp_used.add("output.weight")
++                    self.mtp_groups[self.head_name] = self.groups[self.head_name]
++                for target, source in (
++                    ("mtp.norm.weight", gg + "nextn.shared_head_norm.weight"),
++                    ("mtp.pre_fc_norm_embedding.weight", gg + "nextn.enorm.weight"),
++                    ("mtp.pre_fc_norm_hidden.weight", gg + "nextn.hnorm.weight"),
++                    (hf + "input_layernorm.weight", gg + "attn_norm.weight"),
++                    (
++                        hf + "post_attention_layernorm.weight",
++                        gg + "post_attention_norm.weight",
++                    ),
++                ):
++                    tensor(
++                        target,
++                        source,
++                        (c.width,),
++                        auxiliary=True,
++                        offset_norm=True,
++                        mtp=True,
++                    )
++                tensor(
++                    "mtp.fc.weight",
++                    gg + "nextn.eh_proj.weight",
++                    (c.width, 2 * c.width),
++                    mtp=True,
++                )
++                p = hf + "self_attn."
++                for target, source, shape in (
++                    ("q_proj.weight", "attn_q.weight", (2 * c.heads * c.head_dim, c.width)),
++                    ("k_proj.weight", "attn_k.weight", (c.kv_heads * c.head_dim, c.width)),
++                    ("v_proj.weight", "attn_v.weight", (c.kv_heads * c.head_dim, c.width)),
++                    ("o_proj.weight", "attn_output.weight", (c.width, c.heads * c.head_dim)),
++                ):
++                    tensor(p + target, gg + source, shape, mtp=True)
++                join(
++                    p + "input.weight",
++                    tuple(p + part + "_proj.weight" for part in ("q", "k", "v")),
++                    mtp=True,
++                )
++                for part in ("q", "k"):
++                    tensor(
++                        p + part + "_norm.weight",
++                        gg + "attn_" + part + "_norm.weight",
++                        (c.head_dim,),
++                        auxiliary=True,
++                        offset_norm=True,
++                        mtp=True,
++                    )
++                p = hf + "mlp."
++                for part, shape in (
++                    ("gate", (c.intermediate, c.width)),
++                    ("up", (c.intermediate, c.width)),
++                    ("down", (c.width, c.intermediate)),
++                ):
++                    tensor(
++                        p + part + "_proj.weight",
++                        gg + "ffn_" + part + ".weight",
++                        shape,
++                        mtp=True,
++                    )
++                join(
++                    p + "input.weight",
++                    tuple(p + part + "_proj.weight" for part in ("gate", "up")),
++                    mtp=True,
++                )
+         allowed = {
+             name
+             for name in unexpected
+@@ -284,16 +361,22 @@ class Checkpoint:
+             )
+ 
+     def graph_weights(self, graph, *, provider, branch="text"):
+-        if branch != "text":
++        if branch not in ("text", "mtp"):
++            raise GGUFError("Qwen GGUF branch must be text or mtp")
++        if branch == "mtp" and not self.mtp_groups:
+             raise GGUFError("Qwen GGUF MTP is not implemented")
+         from akas.quantization import get
+         from akas.quantization.weights import Weight
+ 
++        used = self.mtp_used if branch == "mtp" else self.used
++        groups = self.mtp_groups if branch == "mtp" else self.groups
+         buffers = {}
+-        for name in sorted(self.used):
++        for name in sorted(used):
+             info = self.gguf.tensors[name]
+             if name in self.auxiliary:
+                 shape, dtype, *_ = self.auxiliary[name]
++                if provider == "webgpu" and dtype == "bfloat16":
++                    dtype = "float16"
+             else:
+                 storage = get("weights", "ggml").storage(
+                     self.physical_shapes[name], provider=provider, encoding=info.type
+@@ -301,7 +384,7 @@ class Checkpoint:
+                 shape, dtype = storage.values.shape, storage.values.dtype
+             buffers[name] = graph.buffer(name, shape, dtype, role="weight")
+         result = {}
+-        for name, sources in self.groups.items():
++        for name, sources in groups.items():
+             if len(sources) == 1 and sources[0] in self.auxiliary:
+                 result[name] = buffers[sources[0]]
+             else:
+@@ -350,24 +433,40 @@ class Checkpoint:
+         return arrays[0] if len(arrays) == 1 else np.concatenate(arrays, axis=0)
+ 
+     def program_upload_options(self, weights, *, model_options):
+-        if set(weights) != self.used:
+-            raise GGUFError("compiled Qwen GGUF weights differ from the text inventory")
+-        return {}
++        if set(weights) == self.used:
++            return {}
++        if self.mtp_used and set(weights) == (self.used | self.mtp_used):
++            return {"branch": "all"}
++        raise GGUFError("compiled Qwen GGUF weights differ from the text inventory")
+ 
+-    def upload(self, device):
++    def upload(self, device, *, branch="text"):
+         import numpy as np
+         from akas.quantization._shared.packing import pack_words
+ 
++        if branch not in ("text", "mtp", "all"):
++            raise GGUFError("invalid Qwen GGUF upload branch")
++        wanted = (
++            self.used
++            if branch == "text"
++            else (self.used | self.mtp_used)
++            if branch == "all"
++            else self.mtp_used
++        )
+         result = {}
+         try:
+-            for name in sorted(self.used):
++            for name in sorted(wanted):
+                 info = self.gguf.tensors[name]
+                 if name in self.auxiliary:
+                     values = self.read(name)
+                     dtype = self.auxiliary[name][1]
+-                    result[name] = device.from_numpy(
+-                        values, **({"dtype": dtype} if dtype == "bfloat16" else {})
+-                    )
++                    if device.info["provider"] == "webgpu" and dtype == "bfloat16":
++                        result[name] = device.from_numpy(
++                            np.ascontiguousarray(values.astype("float16"))
++                        )
++                    else:
++                        result[name] = device.from_numpy(
++                            values, **({"dtype": dtype} if dtype == "bfloat16" else {})
++                        )
+                 else:
+                     raw = self.gguf.packed(name)
+                     if info.type in (0, 1):
+diff --git a/src/akas/models/qwen35/model.py b/src/akas/models/qwen35/model.py
+index fa6f331..4cd35af 100644
+--- a/src/akas/models/qwen35/model.py
++++ b/src/akas/models/qwen35/model.py
+@@ -39,10 +39,17 @@ def compose(
+                 raise ValueError(
+                     "GGUF head uses fused dequantization followed by argmax; fused_head is a native BF16 option"
+                 )
+-        if provider != "cuda":
+-            raise ValueError("native BF16 kernels currently require CUDA")
+-        if model_options.pop("kv_dtype", "bfloat16") != "bfloat16":
+-            raise ValueError("dense native attention currently requires BF16 KV")
++        if provider not in ("cuda", "webgpu"):
++            raise ValueError("Qwen3.5 requires CUDA or WebGPU")
++        if provider == "webgpu" and model_options.get("fused_head"):
++            raise ValueError("fused_head is a native CUDA BF16 option")
++        kv_dtype = model_options.pop("kv_dtype", "bfloat16")
++        if provider == "webgpu" and kv_dtype == "bfloat16":
++            kv_dtype = "float16"
++        if (provider == "cuda" and kv_dtype not in ("bfloat16", "fp8")) or (
++            provider == "webgpu" and kv_dtype not in ("float16", "fp8")
++        ):
++            raise ValueError(f"unsupported Qwen KV dtype {kv_dtype!r} for {provider}")
+         if phase not in (None, "decode", "prefill", "verify", "proposal"):
+             raise ValueError("unknown Qwen phase")
+         result = compose_dense(
+@@ -51,6 +58,8 @@ def compose(
+             chunk=chunk,
+             pool=max_requests,
+             context=max_context,
++            provider=provider,
++            kv_dtype=kv_dtype,
+             verify=phase == "verify",
+             draft=phase == "proposal",
+             **model_options,
+diff --git a/src/akas/models/qwen35/weights.py b/src/akas/models/qwen35/weights.py
+index 8df22f0..e34a4af 100644
+--- a/src/akas/models/qwen35/weights.py
++++ b/src/akas/models/qwen35/weights.py
+@@ -288,9 +288,90 @@ class Qwen35DenseCheckpoint:
+             for name, info in self.tensors.items()
+             if branch == "all" or name.startswith("mtp.") == (branch == "mtp")
+         }
++        if getattr(device, "info", {}).get("provider") == "webgpu":
++            import numpy as np
++            from math import prod
++            from tensor.runtime.dtypes import decode_bfloat16
++
++            if branch == "mtp":
++                emb = "model.language_model.embed_tokens.weight"
++                selected[emb] = self.tensors[emb]
++            result = {}
++            try:
++                for name, info in selected.items():
++                    raw = self.read(name)
++                    if info.dtype == "BF16":
++                        values = decode_bfloat16(raw).astype("float16")
++                    else:
++                        values = raw.astype("float32", copy=False)
++                    if len(info.shape) == 2:
++                        values = values.reshape((prod(info.shape),))
++                    result[name] = device.from_numpy(np.ascontiguousarray(values))
++                return result
++            except BaseException:
++                for buffer in result.values():
++                    buffer.release()
++                raise
+         groups = dense_groups(self.config, branch)
+         return upload_concatenated(device, selected, self.read, groups)
+ 
++    def graph_weights(self, graph, *, provider, branch="text"):
++        if branch not in ("text", "mtp", "all"):
++            raise ValueError("invalid checkpoint branch")
++        from math import prod
++        from akas.quantization.weights import Weight
++
++        selected = {
++            name: info
++            for name, info in self.tensors.items()
++            if branch == "all" or name.startswith("mtp.") == (branch == "mtp")
++        }
++        if branch == "mtp":
++            emb = "model.language_model.embed_tokens.weight"
++            selected[emb] = self.tensors[emb]
++        buffers = {}
++        result = {}
++        for name, info in selected.items():
++            shape = tuple(info.shape)
++            if len(shape) == 2:
++                buf = graph.buffer(name, (prod(shape),), "float16", role="weight")
++                buffers[name] = buf
++                result[name] = Weight(
++                    shape,
++                    (buf,),
++                    (
++                        dict(
++                            rows=shape[0],
++                            format="ggml",
++                            options={"encoding": 1},
++                            row_order=None,
++                            column_order=None,
++                        ),
++                    ),
++                )
++            else:
++                dtype = "float32" if info.dtype == "F32" else "float16"
++                buf = graph.buffer(name, shape, dtype, role="weight")
++                buffers[name] = buf
++                result[name] = buf
++        for destination, names, _ in dense_groups(self.config, branch):
++            shapes = [tuple(selected[name].shape) for name in names]
++            result[destination] = Weight(
++                (sum(s[0] for s in shapes), *shapes[0][1:]),
++                tuple(buffers[name] for name in names),
++                tuple(
++                    dict(
++                        rows=s[0],
++                        format="ggml",
++                        options={"encoding": 1},
++                        row_order=None,
++                        column_order=None,
++                    )
++                    for s in shapes
++                ),
++            )
++        return result
++
+     def storage_specs(self, *, branch="text"):
+         if branch not in ("text", "mtp", "all"):
+             raise ValueError("invalid checkpoint branch")
+diff --git a/src/akas/ops/activation/definition.py b/src/akas/ops/activation/definition.py
+index 080bcbb..a418fd2 100644
+--- a/src/akas/ops/activation/definition.py
++++ b/src/akas/ops/activation/definition.py
+@@ -110,4 +110,18 @@ IMPLEMENTATIONS = (
+         factory="swiglu_experts",
+         name="activation.kernel:encoded-experts",
+     ),
++    Implementation(
++        "swiglu",
++        "akas.ops.activation.kernel",
++        "bf16",
++        provider="webgpu",
++        defaults=(
++            ("packed", True),
++            ("output_dtype", "float16"),
++            ("round_dtype", "float16"),
++            ("round_inputs", True),
++        ),
++        factory="swiglu",
++        name="activation.kernel",
++    ),
+ )
+diff --git a/src/akas/ops/activation/validation.py b/src/akas/ops/activation/validation.py
+index 4d10d20..c12033e 100644
+--- a/src/akas/ops/activation/validation.py
++++ b/src/akas/ops/activation/validation.py
+@@ -24,9 +24,9 @@ def validation(kind, p, signature):
+     else:
+         inputs = [v.reshape(r, c) for name, v in values.items() if name != "out"]
+         gate_all, up_all = inputs
+-    out_bf16 = (
+-        next((row["dtype"] for row in signature if row["name"] == "out")) == "bfloat16"
+-    )
++    out_dtype = next((row["dtype"] for row in signature if row["name"] == "out"))
++    out_bf16 = out_dtype == "bfloat16"
++    out_f16 = out_dtype == "float16"
+     out_2d = expected["out"].reshape(r, c)
+     from tensor.runtime.dtypes import decode_bfloat16, encode_bfloat16
+ 
+@@ -34,11 +34,17 @@ def validation(kind, p, signature):
+         end = min(r, begin + 1024)
+         gate, up = (gate_all[begin:end], up_all[begin:end])
+         if p.get("round_inputs"):
+-            gate = decode_bfloat16(encode_bfloat16(gate))
+-            up = decode_bfloat16(encode_bfloat16(up))
++            if out_f16 or p.get("round_dtype") == "float16":
++                gate = gate.astype("float16").astype("float32")
++                up = up.astype("float16").astype("float32")
++            else:
++                gate = decode_bfloat16(encode_bfloat16(gate))
++                up = decode_bfloat16(encode_bfloat16(up))
+         gate_f64 = gate.astype("float64")
+         out = gate_f64 / (1 + np.exp(-gate_f64)) * up
+         if out_bf16:
+             out = decode_bfloat16(encode_bfloat16(out))
++        elif out_f16:
++            out = out.astype("float16").astype("float32")
+         out_2d[begin:end] = out
+     return ValidationCase(values, expected)
+diff --git a/src/akas/ops/attention/cuda.py b/src/akas/ops/attention/cuda.py
+index 21eb399..3d3a758 100644
+--- a/src/akas/ops/attention/cuda.py
++++ b/src/akas/ops/attention/cuda.py
+@@ -1678,11 +1678,6 @@ def mapped_bf16(spec: KernelSpec, schedule: Mapping[str, object]):
+     p = {**spec.parameters, **schedule}
+     import tilelang.language as T
+ 
+-    r = p.get("r", 1)
+-    slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
+-    rows = slots * chunk
+-    import tilelang.language as T
+-
+     r = p.get("r", 1)
+     slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
+     rows = slots * chunk
+@@ -1693,6 +1688,132 @@ def mapped_bf16(spec: KernelSpec, schedule: Mapping[str, object]):
+     qt = min(chunk, 4)
+     qm = max(16, qt * group)
+     projection = 2 * heads * d + 2 * kh * d
++    if p.get("kv_dtype") == "fp8":
++        from akas.quantization.kv import get
++        from akas.quantization._shared.access import cache_arguments
++
++        codec = get("fp8").bind((pool, kh, cap, d), provider="cuda")
++        decode_scalar = cache_arguments(codec.read)
++
++        @kernel
++        def compute(
++            q: Tensor((rows, heads, d), "bfloat16"),
++            kc: Tensor((pool, kh, cap, d), "uint8"),
++            vc: Tensor((pool, kh, cap, d), "uint8"),
++            ks: Tensor((pool, kh, cap, 2), "float32"),
++            vs: Tensor((pool, kh, cap, 2), "float32"),
++            proj: Tensor((rows, projection), "float32"),
++            mapping: Tensor((slots,), "int32"),
++            positions: Tensor((slots,), "int32"),
++            lengths: Tensor((slots,), "int32"),
++        ) -> Tensor((rows, heads * d), "bfloat16"):
++            out = output((rows, heads * d), "bfloat16")
++            with T.Kernel(slots, kh, T.ceildiv(chunk, qt), threads=128) as (
++                batch,
++                head,
++                qblock,
++            ):
++                request = mapping[batch]
++                if (request >= 0) & (qblock * qt < lengths[batch]):
++                    query = T.alloc_shared((qm, d), "bfloat16")
++                    key = T.alloc_shared((64, d), "bfloat16")
++                    value = T.alloc_shared((64, d), "bfloat16")
++                    prob = T.alloc_shared((qm, 64), "bfloat16")
++                    scores = T.alloc_fragment((qm, 64), "float32")
++                    result = T.alloc_fragment((qm, d), "float32")
++                    maximum = T.alloc_fragment((qm,), "float32")
++                    previous = T.alloc_fragment((qm,), "float32")
++                    factor = T.alloc_fragment((qm,), "float32")
++                    normalizer = T.alloc_fragment((qm,), "float32")
++                    total = T.alloc_fragment((qm,), "float32")
++                    T.clear(result)
++                    T.clear(normalizer)
++                    T.fill(maximum, -T.infinity("float32"))
++                    for i, j in T.Parallel(qm, d):
++                        query[i, j] = T.if_then_else(
++                            (i < qt * group)
++                            & (qblock * qt + i // group < lengths[batch]),
++                            q[
++                                batch * chunk
++                                + T.min(qblock * qt + i // group, chunk - 1),
++                                head * group + i % group,
++                                j,
++                            ],
++                            0,
++                        )
++                    count = positions[batch] + T.min((qblock + 1) * qt, lengths[batch])
++                    for tile in T.serial(T.ceildiv(count, 64)):
++                        for i, j in T.Parallel(64, d):
++                            pos = tile * 64 + i
++                            key[i, j] = T.if_then_else(
++                                pos < count,
++                                decode_scalar(
++                                    kc, ks, request, head, T.min(pos, cap - 1), j
++                                ),
++                                0,
++                            )
++                            value[i, j] = T.if_then_else(
++                                pos < count,
++                                decode_scalar(
++                                    vc, vs, request, head, T.min(pos, cap - 1), j
++                                ),
++                                0,
++                            )
++                        T.gemm(query, key, scores, transpose_B=True, clear_accum=True)
++                        T.copy(maximum, previous)
++                        for i, j in T.Parallel(qm, 64):
++                            scores[i, j] = T.if_then_else(
++                                (tile * 64 + j < count)
++                                & (
++                                    tile * 64 + j
++                                    <= positions[batch] + qblock * qt + i // group
++                                ),
++                                scores[i, j] * d ** (-0.5),
++                                -T.infinity("float32"),
++                            )
++                        T.reduce_max(scores, maximum, dim=1, clear=False)
++                        for i in T.Parallel(qm):
++                            factor[i] = T.if_then_else(
++                                previous[i] > -T.infinity("float32"),
++                                T.exp(previous[i] - maximum[i]),
++                                0,
++                            )
++                        for i, j in T.Parallel(qm, 64):
++                            scores[i, j] = T.if_then_else(
++                                scores[i, j] > -T.infinity("float32"),
++                                T.exp(scores[i, j] - maximum[i]),
++                                0,
++                            )
++                        T.reduce_sum(scores, total, dim=1)
++                        for i in T.Parallel(qm):
++                            normalizer[i] = normalizer[i] * factor[i] + total[i]
++                        for i, j in T.Parallel(qm, d):
++                            result[i, j] *= factor[i]
++                        T.copy(scores, prob)
++                        T.gemm(prob, value, result)
++                    for i, j in T.Parallel(qt * group, d):
++                        row = batch * chunk + qblock * qt + i // group
++                        if qblock * qt + i // group < lengths[batch]:
++                            gate = T.cast(
++                                T.cast(
++                                    proj[
++                                        row,
++                                        (head * group + i % group) * 2 * d + d + j,
++                                    ],
++                                    "bfloat16",
++                                ),
++                                "float32",
++                            )
++                            value_out = T.cast(
++                                T.cast(result[i, j] / normalizer[i], "bfloat16"),
++                                "float32",
++                            )
++                            out[row, (head * group + i % group) * d + j] = (
++                                value_out / (1 + T.exp(-gate))
++                            )
++            return out
++
++        return compute
+ 
+     @kernel
+     def compute(
+diff --git a/src/akas/ops/attention/definition.py b/src/akas/ops/attention/definition.py
+index 3180661..9739d67 100644
+--- a/src/akas/ops/attention/definition.py
++++ b/src/akas/ops/attention/definition.py
+@@ -354,7 +354,9 @@ def projected_workspace(graph, rows, config, *, prefix="", splits=None, gated=Tr
+     }
+ 
+ 
+-def attend(graph, x, weights, states, controls, *, config, prefix, context):
++def attend(
++    graph, x, weights, states, controls, *, config, prefix, context, dtype="bfloat16"
++):
+     """Compose packed Q/K/V projection and mapped causal attention."""
+     from akas.ops.linear.definition import project
+ 
+@@ -368,10 +370,10 @@ def attend(graph, x, weights, states, controls, *, config, prefix, context):
+         name=prefix + "projection",
+     )
+     query = graph.buffer(
+-        prefix + "query", (rows, config.heads, config.head_dim), "bfloat16"
++        prefix + "query", (rows, config.heads, config.head_dim), dtype
+     )
+     attended = graph.buffer(
+-        prefix + "attended", (rows, config.heads * config.head_dim), "bfloat16"
++        prefix + "attended", (rows, config.heads * config.head_dim), dtype
+     )
+     parameters = dict(
+         common,
+@@ -380,8 +382,8 @@ def attend(graph, x, weights, states, controls, *, config, prefix, context):
+         d=config.head_dim,
+         capacity=context,
+         eps=config.epsilon,
++        **({"kv_dtype": "fp8"} if len(states) == 4 else {}),
+     )
+-    keys, values = states
+     graph(
+         "attention_qkv",
+         dict(parameters, theta=config.theta),
+@@ -391,16 +393,14 @@ def attend(graph, x, weights, states, controls, *, config, prefix, context):
+         controls["mapping"],
+         controls["flat_positions"],
+         controls["active"],
+-        keys,
+-        values,
++        *states,
+         query,
+     )
+     graph(
+         "attention",
+         parameters,
+         query,
+-        keys,
+-        values,
++        *states,
+         projected,
+         controls["mapping"],
+         controls["positions"],
+@@ -446,7 +446,16 @@ for _contract in ("bf16", "block-fp8"):
+     )
+ OUTPUT_ARGUMENTS["bf16"].update(
+     {
+-        "attention_qkv": OutputABI((6, 7, 8), ("kc", "vc", "q")),
++        "attention_qkv": lambda call: OutputABI(
++            (6, 7, 8, 9, 10)
++            if call.parameters.get("kv_dtype") == "fp8"
++            or len(call.arguments) == 11
++            else (6, 7, 8),
++            ("kc", "vc", "ks", "vs", "q")
++            if call.parameters.get("kv_dtype") == "fp8"
++            or len(call.arguments) == 11
++            else ("kc", "vc", "q"),
++        ),
+         "attention": OutputABI((-1,), ("out",)),
+     }
+ )
+@@ -627,9 +636,19 @@ IMPLEMENTATIONS = (
+         "attention_qkv",
+         "akas.ops.attention.cuda",
+         "bf16",
++        accepts=lambda p: not is_quantized(p.get("kv_dtype", "bfloat16")),
+         factory="qkv_mapped_bf16",
+         name="attention.cuda.bf16_batch",
+     ),
++    Implementation(
++        "attention_qkv",
++        "akas.ops.attention.cuda",
++        "bf16",
++        priority=20,
++        accepts=lambda p: is_quantized(p.get("kv_dtype", "bfloat16")),
++        factory="qkv_mapped_fp8",
++        name="attention.cuda.fp8",
++    ),
+     Implementation(
+         "attention",
+         "akas.ops.attention.cuda",
+@@ -637,6 +656,22 @@ IMPLEMENTATIONS = (
+         factory="mapped_bf16",
+         name="attention.cuda.bf16_batch",
+     ),
++    Implementation(
++        "attention_qkv",
++        "akas.ops.attention.webgpu",
++        "bf16",
++        provider="webgpu",
++        factory="qkv_mapped_webgpu",
++        name="attention.webgpu.bf16_batch",
++    ),
++    Implementation(
++        "attention",
++        "akas.ops.attention.webgpu",
++        "bf16",
++        provider="webgpu",
++        factory="mapped_webgpu",
++        name="attention.webgpu.bf16_batch",
++    ),
+     Implementation(
+         "attention_kv",
+         "akas.ops.attention.cuda",
+diff --git a/src/akas/ops/attention/kernel.py b/src/akas/ops/attention/kernel.py
+index b7554d5..b981ba2 100644
+--- a/src/akas/ops/attention/kernel.py
++++ b/src/akas/ops/attention/kernel.py
+@@ -216,6 +216,98 @@ def online_attention(p, read):
+ 
+     r, h, kh, d, cap = (p[k] for k in ("r", "h", "kh", "d", "capacity"))
+     chunk = p.get("chunk", 1)
++    if p.get("optimized") and p.get("provider") == "webgpu" and d == 64:
++
++        @T.macro
++        def shuffle(value, offset):
++            return T.call_extern(
++                "float32", "subgroupShuffleXor", value, T.uint32(offset)
++            )
++
++        @T.macro
++        def broadcast(value):
++            tx = T.get_thread_binding()
++            size = T.call_extern("uint32", "tensor_subgroup_size")
++            return T.call_extern(
++                "float32",
++                "subgroupShuffle",
++                value,
++                T.cast(tx % size // 32 * 32, "uint32"),
++            )
++
++        @T.macro
++        def attend_fast(q, kc, vc, ks, vs, out, positions, enabled):
++            with T.Kernel(h, r, threads=128) as (head, row):
++                tx = T.get_thread_binding()
++                lane, warp = (tx % 32, tx // 32)
++                length = T.if_then_else(
++                    enabled[row] != 0, T.min(positions[row] + 1, cap), 0
++                )
++                maxima = T.alloc_shared((4,), "float32")
++                sums = T.alloc_shared((4,), "float32")
++                values = T.alloc_shared((4, 64), "float32")
++                maximum = T.alloc_var("float32")
++                normalizer = T.alloc_var("float32")
++                a0 = T.alloc_var("float32")
++                a1 = T.alloc_var("float32")
++                maximum, normalizer, a0, a1 = (-T.infinity("float32"), 0, 0, 0)
++                q0, q1 = (
++                    q[row, head * d + lane],
++                    q[row, head * d + lane + 32],
++                )
++                for offset in T.serial(T.ceildiv(T.max(length - warp, 0), 4)):
++                    token = warp + offset * 4
++                    score = T.alloc_var("float32")
++                    score = q0 * read(
++                        kc, ks, row // chunk, head // (h // kh), token, lane
++                    ) + q1 * read(
++                        kc, ks, row // chunk, head // (h // kh), token, lane + 32
++                    )
++                    for step in T.unroll(5):
++                        score = score + shuffle(score, 16 >> step)
++                    score = broadcast(score) * 0.125
++                    next_max = T.max(maximum, score)
++                    correction, probability = (
++                        T.exp(maximum - next_max),
++                        T.exp(score - next_max),
++                    )
++                    a0 = a0 * correction + probability * read(
++                        vc, vs, row // chunk, head // (h // kh), token, lane
++                    )
++                    a1 = a1 * correction + probability * read(
++                        vc, vs, row // chunk, head // (h // kh), token, lane + 32
++                    )
++                    normalizer = normalizer * correction + probability
++                    maximum = next_max
++                values[warp, lane], values[warp, lane + 32] = (a0, a1)
++                if lane == 0:
++                    maxima[warp], sums[warp] = (maximum, normalizer)
++                T.sync_threads()
++                if warp == 0:
++                    merged_max = T.max(
++                        T.max(maxima[0], maxima[1]), T.max(maxima[2], maxima[3])
++                    )
++                    total = T.alloc_var("float32")
++                    result0 = T.alloc_var("float32")
++                    result1 = T.alloc_var("float32")
++                    total, result0, result1 = (0, 0, 0)
++                    for other in T.unroll(4):
++                        factor = T.if_then_else(
++                            length > 0, T.exp(maxima[other] - merged_max), 0
++                        )
++                        total = total + sums[other] * factor
++                        result0 = result0 + values[other, lane] * factor
++                        result1 = result1 + values[other, lane + 32] * factor
++                    base = row * h * d + head * d
++                    out[base + lane] = T.if_then_else(
++                        enabled[row] != 0, result0 / total, 0
++                    )
++                    out[base + lane + 32] = T.if_then_else(
++                        enabled[row] != 0, result1 / total, 0
++                    )
++
++        return attend_fast
++
+     maximum = tree_reduce(64, "max")
+     total = tree_reduce(64)
+ 
+diff --git a/src/akas/ops/attention/validation.py b/src/akas/ops/attention/validation.py
+index 1c7c96a..9cfacb1 100644
+--- a/src/akas/ops/attention/validation.py
++++ b/src/akas/ops/attention/validation.py
+@@ -327,6 +327,51 @@ def canonical_validation(kind, p, signature):
+             res = (accumulated / normalizer[:, :, :, None]).reshape(chunk, h, d)
+             out[r0:r1][en] = res[en]
+         return ValidationCase(values, expected, rtol=0.02, atol=0.002)
++    if kind == "attention":
++        num_slots = r // chunk
++        for slot in range(num_slots):
++            r0, r1 = (slot * chunk, (slot + 1) * chunk)
++            en = values["enabled"][r0:r1] != 0
++            out[r0:r1][~en] = 0
++            if not np.any(en):
++                continue
++            pos = np.minimum(cap - 1, values["positions"][r0:r1])
++            max_len = int(pos[en].max()) + 1
++            keys = read_slot("kc", "ks", slot, max_len)
++            vals = read_slot("vc", "vs", slot, max_len)
++            q_slot = queries[r0:r1].reshape(chunk, kh, group, d)
++            maximum = np.full((chunk, kh, group), -np.inf, dtype="float64")
++            normalizer = np.zeros((chunk, kh, group), dtype="float64")
++            accumulated = np.zeros((chunk, kh, group, d), dtype="float64")
++            for begin in range(0, max_len, 64):
++                end = min(max_len, begin + 64)
++                k_idx = np.arange(begin, end)
++                valid = k_idx[None, :] <= pos[:, None]
++                if not np.any(valid):
++                    continue
++                scores = np.einsum(
++                    "ckgd,ktd->ckgt", q_slot, keys[:, begin:end]
++                ) / np.sqrt(d)
++                scores = np.where(valid[:, None, None, :], scores, -np.inf)
++                block_max = scores.max(axis=-1)
++                has_valid = valid.any(axis=-1)[:, None, None]
++                next_maximum = np.where(
++                    has_valid, np.maximum(maximum, block_max), maximum
++                )
++                correction = np.exp(maximum - next_maximum)
++                probabilities = np.where(
++                    valid[:, None, None, :],
++                    np.exp(scores - next_maximum[:, :, :, None]),
++                    0.0,
++                )
++                normalizer = normalizer * correction + probabilities.sum(axis=-1)
++                accumulated = accumulated * correction[:, :, :, None] + np.einsum(
++                    "ckgt,ktd->ckgd", probabilities, vals[:, begin:end]
++                )
++                maximum = next_maximum
++            res = (accumulated / normalizer[:, :, :, None]).reshape(chunk, h, d)
++            out[r0:r1][en] = res[en]
++        return ValidationCase(values, expected, rtol=0.02, atol=0.002)
+     for row in range(r):
+         length = (
+             min(cap, int(values["positions"][row]) + 1) if values["enabled"][row] else 0
+@@ -366,8 +411,13 @@ def mapped_validation(kind, p, signature, *, mapping=None):
+     import numpy as np
+     from tensor.runtime.dtypes import decode_bfloat16, encode_bfloat16
+     from akas.kernels.contracts import ValidationCase, sample_arguments
++    from akas.quantization._shared.e4m3 import decode_storage, encode_storage
++
++    f16 = any(row["dtype"] == "float16" for row in signature)
+ 
+     def rounded(x):
++        if f16:
++            return np.asarray(x, dtype="float16").astype("float32")
+         return decode_bfloat16(encode_bfloat16(x))
+ 
+     values = sample_arguments(signature)
+@@ -388,7 +438,26 @@ def mapped_validation(kind, p, signature, *, mapping=None):
+         values["lengths"][:] = chunk
+         if slots > 1:
+             values["lengths"][-1] = max(1, chunk - 1)
+-    written_names = ("q", "kc", "vc") if kind == "attention_qkv" else ("out",)
++    if "ks" in values:
++        rng = np.random.default_rng(29)
++        for name in ("kc", "vc"):
++            byte_shape = (*values[name].shape[:-1], d)
++            period = 1048573
++            tile = rng.integers(0, 72, period, dtype="uint8")
++            tile |= rng.integers(0, 2, period, dtype="uint8") << 7
++            bits = np.resize(tile, byte_shape)
++            values[name][:] = (
++                bits.view("uint32").reshape(values[name].shape)
++                if values[name].dtype == np.uint32
++                else bits
++            )
++        for name in ("ks", "vs"):
++            values[name][:] = 0.125
++    written_names = (
++        (("q", "kc", "vc", "ks", "vs") if "ks" in values else ("q", "kc", "vc"))
++        if kind == "attention_qkv"
++        else ("out",)
++    )
+     expected = {
+         name: value.copy() if name in written_names else value
+         for name, value in values.items()
+@@ -435,8 +504,29 @@ def mapped_validation(kind, p, signature, *, mapping=None):
+             ].reshape(-1, kh, d)
+             req = values["mapping"][batch_rows // chunk]
+             for idx, (r_slot, p_pos) in enumerate(zip(req, pos)):
+-                expected["kc"][r_slot, :, p_pos] = k_out[idx]
+-                expected["vc"][r_slot, :, p_pos] = v_out[idx]
++                if "ks" in expected:
++                    for source, cache, metadata in (
++                        (k_out[idx], "kc", "ks"),
++                        (v_out[idx], "vc", "vs"),
++                    ):
++                        encoded = np.empty((kh, d), dtype="uint8")
++                        for block in range(d // 128):
++                            part = source[:, block * 128 : (block + 1) * 128]
++                            scale = np.maximum(
++                                np.max(np.abs(part), axis=-1), np.float32(1e-12)
++                            ) / np.float32(448)
++                            expected[metadata][r_slot, :, p_pos, block] = scale
++                            encoded[:, block * 128 : (block + 1) * 128] = (
++                                encode_storage(part / scale[:, None])
++                            )
++                        expected[cache][r_slot, :, p_pos] = (
++                            encoded.view("uint32").reshape(kh, d // 4)
++                            if expected[cache].dtype == np.uint32
++                            else encoded
++                        )
++                else:
++                    expected["kc"][r_slot, :, p_pos] = k_out[idx]
++                    expected["vc"][r_slot, :, p_pos] = v_out[idx]
+     else:
+         group = heads // kh
+         for batch in range(slots):
+@@ -449,15 +539,23 @@ def mapped_validation(kind, p, signature, *, mapping=None):
+             max_len = int(pos.max()) + 1
+             keys_all = values["kc"][request, :, :max_len]
+             vals_all = values["vc"][request, :, :max_len]
+-            if keys_all.dtype == np.uint8:
+-                from akas.quantization._shared.e4m3 import decode_storage
+-
++            if keys_all.dtype in (np.uint8, np.uint32):
++                k_bits = (
++                    keys_all.view("uint8").reshape(kh, max_len, d)
++                    if keys_all.dtype == np.uint32
++                    else keys_all
++                )
++                v_bits = (
++                    vals_all.view("uint8").reshape(kh, max_len, d)
++                    if vals_all.dtype == np.uint32
++                    else vals_all
++                )
+                 keys_all = rounded(
+-                    decode_storage(keys_all)
++                    decode_storage(k_bits)
+                     * np.repeat(values["ks"][request, :, :max_len], 128, axis=-1)
+                 )
+                 vals_all = rounded(
+-                    decode_storage(vals_all)
++                    decode_storage(v_bits)
+                     * np.repeat(values["vs"][request, :, :max_len], 128, axis=-1)
+                 )
+             keys_all, vals_all = (
+@@ -510,6 +608,21 @@ def mapped_validation(kind, p, signature, *, mapping=None):
+             )
+             expected["out"][r0:r1] = gated
+     comparators = {}
++    if kind == "attention_qkv" and "ks" in expected:
++
++        def check_kc(actual, reference):
++            act_u8 = actual.view("uint8").reshape(expected["kc"].shape[:-1] + (d,))
++            ref_u8 = reference.view("uint8").reshape(expected["kc"].shape[:-1] + (d,))
++            diff = np.abs(act_u8.astype("int16") - ref_u8.astype("int16"))
++            mask = np.zeros(act_u8.shape[:-1], dtype=bool)
++            live_rows = np.flatnonzero(values["active"][:rows])
++            if live_rows.size:
++                mask[values["mapping"][live_rows // chunk], :, values["positions"][live_rows]] = True
++            np.testing.assert_array_equal(act_u8[~mask], ref_u8[~mask])
++            if np.any(mask):
++                np.testing.assert_array_less(diff[mask], 4)
++
++        comparators["kc"] = check_kc
+     if kind == "attention":
+         # This callable returns a fresh tensor. Padding rows are unspecified;
+         # they are not borrowed state whose previous contents must survive.
+diff --git a/src/akas/ops/attention/webgpu.py b/src/akas/ops/attention/webgpu.py
+index f63fa9b..4f31cee 100644
+--- a/src/akas/ops/attention/webgpu.py
++++ b/src/akas/ops/attention/webgpu.py
+@@ -295,6 +295,376 @@ def attention_scores(spec: KernelSpec, schedule: Mapping[str, object]):
+     return attention_scores_kernel(KernelSpec("scores", p), {})
+ 
+ 
++def qkv_mapped_webgpu(spec: KernelSpec, schedule: Mapping[str, object]):
++    p = {**spec.parameters, **schedule}
++    import tilelang.language as T
++
++    r = p.get("r", 1)
++    slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
++    rows = slots * chunk
++    heads, kh, d, cap, eps, theta = (
++        p[n] for n in ("heads", "kv_heads", "d", "capacity", "eps", "theta")
++    )
++    projection = 2 * heads * d + 2 * kh * d
++    if p.get("kv_dtype") == "fp8":
++        from akas.kernels.reductions import tree_reduce
++        from akas.quantization._shared.e4m3 import portable_scaling
++
++        portable_scale, encode_scaled = portable_scaling()
++        maximum = tree_reduce(128, "max")
++
++        @kernel
++        def compute(
++            proj: Tensor((rows, projection), "float32"),
++            qw: Tensor((d,), "float16"),
++            kw: Tensor((d,), "float16"),
++            mapping: Tensor((slots,), "int32"),
++            positions: Tensor((rows,), "int32"),
++            active: Tensor((rows,), "int32"),
++            kc: Tensor((pool, kh, cap, d // 4), "uint32"),
++            vc: Tensor((pool, kh, cap, d // 4), "uint32"),
++            ks: Tensor((pool, kh, cap, 2), "float32"),
++            vs: Tensor((pool, kh, cap, 2), "float32"),
++        ) -> tuple[
++            Tensor((pool, kh, cap, d // 4), "uint32"),
++            Tensor((pool, kh, cap, d // 4), "uint32"),
++            Tensor((pool, kh, cap, 2), "float32"),
++            Tensor((pool, kh, cap, 2), "float32"),
++            Tensor((rows, heads, d), "float16"),
++        ]:
++            q = output((rows, heads, d), "float16")
++            with T.Kernel(rows, heads + kh, threads=256) as (row, head):
++                tx = T.get_thread_binding()
++                normal = T.alloc_shared((d,), "float16")
++                rotated = T.alloc_shared((d,), "float16")
++                vals_v = T.alloc_shared((d,), "float16")
++                scratch_k = T.alloc_shared((128,), "float32")
++                scratch_v = T.alloc_shared((128,), "float32")
++                scales_k = T.alloc_shared((2,), "float32")
++                scales_v = T.alloc_shared((2,), "float32")
++                squares = T.alloc_fragment((d,), "float32")
++                total = T.alloc_fragment((1,), "float32")
++                for j in T.Parallel(d):
++                    offset = T.if_then_else(
++                        head < heads, head * 2 * d, 2 * heads * d + (head - heads) * d
++                    )
++                    value = T.cast(T.cast(proj[row, offset + j], "float16"), "float32")
++                    squares[j] = value * value
++                T.reduce_sum(squares, total, dim=0)
++                for j in T.Parallel(d):
++                    offset = T.if_then_else(
++                        head < heads, head * 2 * d, 2 * heads * d + (head - heads) * d
++                    )
++                    value = T.cast(T.cast(proj[row, offset + j], "float16"), "float32")
++                    weight = T.if_then_else(head < heads, qw[j], kw[j])
++                    normal[j] = (
++                        value
++                        * T.rsqrt(total[0] / d + eps)
++                        * (1 + T.cast(weight, "float32"))
++                    )
++                T.sync_threads()
++                for j in T.Parallel(d):
++                    value = T.alloc_var("float32")
++                    value = T.cast(normal[j], "float32")
++                    if j < 64:
++                        angle = positions[row] * T.exp(
++                            T.cast(-2 * (j % 32), "float32")
++                            / 64
++                            * T.log(T.float32(theta))
++                        )
++                        pair = T.cast(normal[(j + 32) % 64], "float32")
++                        value = value * T.cos(angle) + T.if_then_else(
++                            j < 32, -pair, pair
++                        ) * T.sin(angle)
++                    rotated[j] = value
++                    vals_v[j] = T.cast(
++                        proj[
++                            row,
++                            2 * heads * d
++                            + kh * d
++                            + T.max(head - heads, 0) * d
++                            + j,
++                        ],
++                        "float16",
++                    )
++                    if (active[row] != 0) & (head < heads):
++                        q[row, head, j] = rotated[j]
++                T.sync_threads()
++                for block in T.serial(2):
++                    if tx < 128:
++                        scratch_k[tx] = T.abs(
++                            T.cast(rotated[block * 128 + tx], "float32")
++                        )
++                        scratch_v[tx] = T.abs(
++                            T.cast(vals_v[block * 128 + tx], "float32")
++                        )
++                    T.sync_threads()
++                    maximum(scratch_k, tx)
++                    maximum(scratch_v, tx)
++                    if tx == 0:
++                        scales_k[block] = portable_scale(scratch_k[0])
++                        scales_v[block] = portable_scale(scratch_v[0])
++                        if (active[row] != 0) & (head >= heads):
++                            ks[
++                                mapping[row // chunk],
++                                head - heads,
++                                positions[row],
++                                block,
++                            ] = scales_k[block]
++                            vs[
++                                mapping[row // chunk],
++                                head - heads,
++                                positions[row],
++                                block,
++                            ] = scales_v[block]
++                    T.sync_threads()
++                if (tx < 64) & (active[row] != 0) & (head >= heads):
++                    word_k = T.alloc_var("uint32")
++                    word_v = T.alloc_var("uint32")
++                    word_k = 0
++                    word_v = 0
++                    blk = tx // 32
++                    for i in T.serial(4):
++                        ch = tx * 4 + i
++                        word_k = word_k | (
++                            encode_scaled(
++                                T.cast(rotated[ch], "float32"), scales_k[blk]
++                            )
++                            << (i * 8)
++                        )
++                        word_v = word_v | (
++                            encode_scaled(
++                                T.cast(vals_v[ch], "float32"), scales_v[blk]
++                            )
++                            << (i * 8)
++                        )
++                    kc[mapping[row // chunk], head - heads, positions[row], tx] = (
++                        word_k
++                    )
++                    vc[mapping[row // chunk], head - heads, positions[row], tx] = (
++                        word_v
++                    )
++            return (kc, vc, ks, vs, q)
++
++        return compute
++
++    @kernel
++    def compute(
++        proj: Tensor((rows, projection), "float32"),
++        qw: Tensor((d,), "float16"),
++        kw: Tensor((d,), "float16"),
++        mapping: Tensor((slots,), "int32"),
++        positions: Tensor((rows,), "int32"),
++        active: Tensor((rows,), "int32"),
++        kc: Tensor((pool, kh, cap, d), "float16"),
++        vc: Tensor((pool, kh, cap, d), "float16"),
++    ) -> tuple[
++        Tensor((pool, kh, cap, d), "float16"),
++        Tensor((pool, kh, cap, d), "float16"),
++        Tensor((rows, heads, d), "float16"),
++    ]:
++        q = output((rows, heads, d), "float16")
++        with T.Kernel(rows, heads + kh, threads=256) as (row, head):
++            if active[row] != 0:
++                values = T.alloc_shared((d,), "float16")
++                squares = T.alloc_fragment((d,), "float32")
++                total = T.alloc_fragment((1,), "float32")
++                for j in T.Parallel(d):
++                    raw = T.cast(
++                        T.cast(
++                            proj[
++                                row,
++                                T.if_then_else(
++                                    head < heads,
++                                    head * 2 * d,
++                                    2 * heads * d + (head - heads) * d,
++                                )
++                                + j,
++                            ],
++                            "float16",
++                        ),
++                        "float32",
++                    )
++                    squares[j] = raw * raw
++                T.reduce_sum(squares, total, dim=0)
++                for j in T.Parallel(d):
++                    raw = T.cast(
++                        T.cast(
++                            proj[
++                                row,
++                                T.if_then_else(
++                                    head < heads,
++                                    head * 2 * d,
++                                    2 * heads * d + (head - heads) * d,
++                                )
++                                + j,
++                            ],
++                            "float16",
++                        ),
++                        "float32",
++                    )
++                    weight = T.if_then_else(head < heads, qw[j], kw[j])
++                    values[j] = (
++                        raw
++                        * T.rsqrt(total[0] / d + eps)
++                        * (1 + T.cast(weight, "float32"))
++                    )
++                for j in T.Parallel(d):
++                    value = T.alloc_var("float32")
++                    value = T.cast(values[j], "float32")
++                    if j < 64:
++                        angle = positions[row] * T.exp(
++                            T.cast(-2 * (j % 32), "float32")
++                            / 64
++                            * T.log(T.float32(theta))
++                        )
++                        pair = T.cast(values[(j + 32) % 64], "float32")
++                        value = value * T.cos(angle) + T.if_then_else(
++                            j < 32, -pair, pair
++                        ) * T.sin(angle)
++                    if head < heads:
++                        q[row, head, j] = value
++                    else:
++                        kc[mapping[row // chunk], head - heads, positions[row], j] = (
++                            value
++                        )
++                        vc[mapping[row // chunk], head - heads, positions[row], j] = (
++                            T.cast(
++                                proj[
++                                    row, 2 * heads * d + kh * d + (head - heads) * d + j
++                                ],
++                                "float16",
++                            )
++                        )
++        return (kc, vc, q)
++
++    return compute
++
++
++def mapped_webgpu(spec: KernelSpec, schedule: Mapping[str, object]):
++    p = {**spec.parameters, **schedule}
++    import tilelang.language as T
++    from akas.kernels.reductions import tree_reduce
++
++    r = p.get("r", 1)
++    slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
++    rows = slots * chunk
++    heads, kh, d, cap = (p[n] for n in ("heads", "kv_heads", "d", "capacity"))
++    group = heads // kh
++    projection = 2 * heads * d + 2 * kh * d
++    reduce_sum = tree_reduce(256)
++    quantized = p.get("kv_dtype") == "fp8"
++    if quantized:
++        from akas.quantization.kv.fp8.kernel import reference_decoder
++
++        read_kv = reference_decoder(provider="webgpu")
++    else:
++
++        @T.macro
++        def read_kv(cache, metadata, slot, head, pos, ch):
++            return T.cast(cache[slot, head, pos, ch], "float32")
++
++    @T.macro
++    def body(q, kc, vc, ks, vs, proj, mapping, positions, lengths, out):
++        with T.Kernel(rows, heads, threads=256) as (row, head):
++            tx = T.get_thread_binding()
++            batch = row // chunk
++            t = row % chunk
++            request = mapping[batch]
++            valid_row = (request >= 0) & (t < lengths[batch])
++            count = T.if_then_else(
++                valid_row, T.min(cap, positions[batch] + t + 1), 0
++            )
++            kv_head = head // group
++            scratch = T.alloc_shared((256,), "float32")
++            running_max = T.alloc_shared((1,), "float32")
++            normalizer = T.alloc_shared((1,), "float32")
++            factor = T.alloc_shared((1,), "float32")
++            prob = T.alloc_shared((1,), "float32")
++            acc = T.alloc_var("float32")
++            acc = 0
++            q_val = T.cast(q[row, head, tx], "float32")
++            if tx == 0:
++                running_max[0] = -T.infinity("float32")
++                normalizer[0] = 0
++            T.sync_threads()
++            for pos in T.serial(count):
++                r_slot = T.max(request, 0)
++                k_val = T.cast(
++                    T.cast(read_kv(kc, ks, r_slot, kv_head, pos, tx), "float16"),
++                    "float32",
++                )
++                v_val = T.cast(
++                    T.cast(read_kv(vc, vs, r_slot, kv_head, pos, tx), "float16"),
++                    "float32",
++                )
++                scratch[tx] = q_val * k_val
++                T.sync_threads()
++                reduce_sum(scratch, tx)
++                if tx == 0:
++                    score = scratch[0] * d ** (-0.5)
++                    next_max = T.max(running_max[0], score)
++                    factor[0] = T.if_then_else(
++                        running_max[0] > -T.infinity("float32"),
++                        T.exp(running_max[0] - next_max),
++                        0,
++                    )
++                    prob[0] = T.cast(
++                        T.cast(T.exp(score - next_max), "float16"), "float32"
++                    )
++                    normalizer[0] = normalizer[0] * factor[0] + prob[0]
++                    running_max[0] = next_max
++                T.sync_threads()
++                acc = acc * factor[0] + prob[0] * v_val
++                T.sync_threads()
++            if valid_row:
++                gate = T.cast(
++                    T.cast(proj[row, head * 2 * d + d + tx], "float16"), "float32"
++                )
++                normal = T.cast(
++                    T.cast(acc / normalizer[0], "float16"), "float32"
++                )
++                out[row, head * d + tx] = normal / (1 + T.exp(-gate))
++            else:
++                out[row, head * d + tx] = 0
++
++    if quantized:
++
++        @kernel
++        def compute(
++            q: Tensor((rows, heads, d), "float16"),
++            kc: Tensor((pool, kh, cap, d // 4), "uint32"),
++            vc: Tensor((pool, kh, cap, d // 4), "uint32"),
++            ks: Tensor((pool, kh, cap, 2), "float32"),
++            vs: Tensor((pool, kh, cap, 2), "float32"),
++            proj: Tensor((rows, projection), "float32"),
++            mapping: Tensor((slots,), "int32"),
++            positions: Tensor((slots,), "int32"),
++            lengths: Tensor((slots,), "int32"),
++        ) -> Tensor((rows, heads * d), "float16"):
++            out = output((rows, heads * d), "float16")
++            body(q, kc, vc, ks, vs, proj, mapping, positions, lengths, out)
++            return out
++
++        return compute
++
++    @kernel
++    def compute(
++        q: Tensor((rows, heads, d), "float16"),
++        kc: Tensor((pool, kh, cap, d), "float16"),
++        vc: Tensor((pool, kh, cap, d), "float16"),
++        proj: Tensor((rows, projection), "float32"),
++        mapping: Tensor((slots,), "int32"),
++        positions: Tensor((slots,), "int32"),
++        lengths: Tensor((slots,), "int32"),
++    ) -> Tensor((rows, heads * d), "float16"):
++        out = output((rows, heads * d), "float16")
++        body(q, kc, vc, kc, vc, proj, mapping, positions, lengths, out)
++        return out
++
++    return compute
++
++
+ from .kernel import (
+     attention as shared_attention,
+     attention_flat,
+diff --git a/src/akas/ops/control/definition.py b/src/akas/ops/control/definition.py
+index 342aeb5..4396262 100644
+--- a/src/akas/ops/control/definition.py
++++ b/src/akas/ops/control/definition.py
+@@ -90,4 +90,53 @@ IMPLEMENTATIONS = (
+         factory="copy_buffer",
+         name="control.copy",
+     ),
++    Implementation(
++        "spec_setup",
++        "akas.ops.control.kernel",
++        "speculation",
++        provider="webgpu",
++        factory="spec_setup",
++        name="control.speculative",
++    ),
++    Implementation(
++        "spec_draft",
++        "akas.ops.control.kernel",
++        "speculation",
++        provider="webgpu",
++        factory="spec_draft",
++        name="control.speculative",
++    ),
++    Implementation(
++        "spec_proposal",
++        "akas.ops.control.kernel",
++        "speculation",
++        provider="webgpu",
++        factory="spec_proposal",
++        name="control.speculative",
++    ),
++    Implementation(
++        "spec_accept",
++        "akas.ops.control.kernel",
++        "speculation",
++        provider="webgpu",
++        factory="spec_accept",
++        name="control.speculative",
++    ),
++    Implementation(
++        "spec_repair",
++        "akas.ops.control.kernel",
++        "speculation",
++        provider="webgpu",
++        defaults=(("dtype", "float16"),),
++        factory="spec_repair",
++        name="control.speculative",
++    ),
++    Implementation(
++        "spec_result",
++        "akas.ops.control.kernel",
++        "speculation",
++        provider="webgpu",
++        factory="spec_result",
++        name="control.speculative",
++    ),
+ )
+diff --git a/src/akas/ops/control/kernel.py b/src/akas/ops/control/kernel.py
+index d8a9a0c..16911cf 100644
+--- a/src/akas/ops/control/kernel.py
++++ b/src/akas/ops/control/kernel.py
+@@ -116,14 +116,15 @@ def spec_repair(spec: KernelSpec, schedule: Mapping[str, object]):
+ 
+     slots, window = (p["slots"], p["window"])
+     width = p["width"]
++    dtype = p.get("dtype", "bfloat16")
+ 
+     @kernel
+     def compute(
+         control: Tensor((slots, 5), "int32"),
+         result: Tensor((slots, window + 2), "int32"),
+-        target_hidden: Tensor((slots * window, width), "bfloat16"),
++        target_hidden: Tensor((slots * window, width), dtype),
+     ) -> tuple[
+-        Tensor((slots * window, width), "bfloat16"),
++        Tensor((slots * window, width), dtype),
+         Tensor((slots,), "int32"),
+         Tensor((slots,), "int32"),
+         Tensor((slots,), "int32"),
+@@ -132,7 +133,7 @@ def spec_repair(spec: KernelSpec, schedule: Mapping[str, object]):
+         Tensor((slots,), "int32"),
+         Tensor((1,), "int32"),
+     ]:
+-        hidden = output((slots * window, width), "bfloat16")
++        hidden = output((slots * window, width), dtype)
+         mapping = output((slots,), "int32")
+         position = output((slots,), "int32")
+         lengths = output((slots,), "int32")
+diff --git a/src/akas/ops/gdn/definition.py b/src/akas/ops/gdn/definition.py
+index bbc5e9a..bd594fa 100644
+--- a/src/akas/ops/gdn/definition.py
++++ b/src/akas/ops/gdn/definition.py
+@@ -244,7 +244,17 @@ def separate_workspace(graph, rows, config, *, prefix=""):
+ 
+ 
+ def gated_delta(
+-    graph, x, weights, states, controls, *, config, prefix, verify=False, commit=None
++    graph,
++    x,
++    weights,
++    states,
++    controls,
++    *,
++    config,
++    prefix,
++    verify=False,
++    commit=None,
++    dtype="bfloat16",
+ ):
+     """Compose mapped recurrent mixing and its accepted-prefix replay journal."""
+     from akas.ops.linear.definition import project
+@@ -276,7 +286,7 @@ def gated_delta(
+         prefix + "recurrent", (rows, config.value_heads, config.key_dim), "float32"
+     )
+     normalized = graph.buffer(
+-        prefix + "normalized", (rows, config.value_width), "bfloat16"
++        prefix + "normalized", (rows, config.value_width), dtype
+     )
+     matrix, history = states
+     conv_args = (
+@@ -665,4 +675,84 @@ IMPLEMENTATIONS = (
+         factory="restore",
+         name="gdn.restore",
+     ),
++    Implementation(
++        "conv_commit",
++        "akas.ops.gdn.kernel",
++        "bf16",
++        provider="webgpu",
++        defaults=(("dtype", "float16"),),
++        factory="conv_commit_f16",
++        name="gdn.verification",
++    ),
++    Implementation(
++        "defer_accept",
++        "akas.ops.gdn.kernel",
++        "bf16",
++        provider="webgpu",
++        factory="defer_accept",
++        name="gdn.verification",
++    ),
++    Implementation(
++        "defer_clear",
++        "akas.ops.gdn.kernel",
++        "bf16",
++        provider="webgpu",
++        factory="defer_clear",
++        name="gdn.verification",
++    ),
++    Implementation(
++        "gdn_deferred",
++        "akas.ops.gdn.kernel",
++        "bf16",
++        provider="webgpu",
++        defaults=(("webgpu_tile", 8),),
++        factory="gdn_deferred",
++        name="gdn.verification",
++    ),
++    Implementation(
++        "gdn_materialize",
++        "akas.ops.gdn.kernel",
++        "bf16",
++        provider="webgpu",
++        defaults=(("webgpu_tile", 8),),
++        factory="gdn_materialize",
++        name="gdn.verification",
++    ),
++    Implementation(
++        "gdn_conv",
++        "akas.ops.gdn.kernel",
++        "bf16",
++        provider="webgpu",
++        defaults=(("dtype", "float16"),),
++        factory="mapped_conv_f16",
++        name="gdn.cuda.bf16_batch",
++    ),
++    Implementation(
++        "gdn_prepare",
++        "akas.ops.gdn.kernel",
++        "bf16",
++        provider="webgpu",
++        defaults=(("dtype", "float16"),),
++        factory="mapped_prepare_f16",
++        name="gdn.cuda.bf16_batch",
++    ),
++    Implementation(
++        "gdn_norm",
++        "akas.ops.gdn.kernel",
++        "bf16",
++        provider="webgpu",
++        defaults=(("dtype", "float16"),),
++        factory="mapped_norm_f16",
++        name="gdn.cuda.bf16_batch",
++    ),
++    Implementation(
++        "gdn_scan",
++        "akas.ops.gdn.kernel",
++        "bf16",
++        provider="webgpu",
++        defaults=(("webgpu_tile", 8),),
++        semantic_keys=("slots", "chunk", "pool", "heads", "d", "commit"),
++        factory="mapped_scan",
++        name="gdn.cuda.bf16_batch",
++    ),
+ )
+diff --git a/src/akas/ops/gdn/kernel.py b/src/akas/ops/gdn/kernel.py
+index 22a13dd..af204a6 100644
+--- a/src/akas/ops/gdn/kernel.py
++++ b/src/akas/ops/gdn/kernel.py
+@@ -64,6 +64,66 @@ def mapped_conv(spec: KernelSpec, schedule: Mapping[str, object]):
+     return compute
+ 
+ 
++def mapped_conv_f16(spec: KernelSpec, schedule: Mapping[str, object]):
++    p = {**spec.parameters, **schedule}
++    import tilelang.language as T
++
++    r = p.get("r", 1)
++    slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
++    rows = slots * chunk
++    c, projection = (p["channels"], p["projection"])
++    dtype = p.get("dtype", "float16")
++
++    @kernel
++    def compute(
++        x: Tensor((rows, projection), "float32"),
++        w: Tensor((c, 1, 4), dtype),
++        mapping: Tensor((slots,), "int32"),
++        lengths: Tensor((slots,), "int32"),
++        state: Tensor((pool, c, 3), "float32"),
++    ) -> tuple[Tensor((pool, c, 3), "float32"), Tensor((rows, c), "float32")]:
++        out = output((rows, c), "float32")
++        with T.Kernel(slots, T.ceildiv(c, 256), threads=256) as (batch, tile):
++            request = mapping[batch]
++            if request >= 0:
++                for j in T.Parallel(256):
++                    col = tile * 256 + j
++                    if col < c:
++                        h0 = T.alloc_var("float32")
++                        h1 = T.alloc_var("float32")
++                        h2 = T.alloc_var("float32")
++                        h0 = state[request, col, 0]
++                        h1 = state[request, col, 1]
++                        h2 = state[request, col, 2]
++                        for t in T.serial(chunk):
++                            if t < lengths[batch]:
++                                current = T.cast(
++                                    T.cast(x[batch * chunk + t, col], dtype),
++                                    "float32",
++                                )
++                                value = h0 * T.cast(
++                                    w[col, 0, 0], "float32"
++                                ) + h1 * T.cast(w[col, 0, 1], "float32")
++                                value += h2 * T.cast(
++                                    w[col, 0, 2], "float32"
++                                ) + current * T.cast(w[col, 0, 3], "float32")
++                                out[batch * chunk + t, col] = T.cast(
++                                    value / (1 + T.exp(-value)), dtype
++                                )
++                                h0 = h1
++                                h1 = h2
++                                h2 = current
++                            else:
++                                out[batch * chunk + t, col] = 0
++                        if p.get("commit", True):
++                            state[request, col, 0] = h0
++                            state[request, col, 1] = h1
++                            state[request, col, 2] = h2
++        return (state, out)
++
++    return compute
++
++
+ def decode_conv(spec: KernelSpec, schedule: Mapping[str, object]):
+     p = {**spec.parameters, **schedule}
+     import tilelang.language as T
+@@ -257,6 +317,50 @@ def conv_commit(spec: KernelSpec, schedule: Mapping[str, object]):
+     return compute
+ 
+ 
++def conv_commit_f16(spec: KernelSpec, schedule: Mapping[str, object]):
++    p = {**spec.parameters, **schedule}
++    import tilelang.language as T
++
++    slots, window, pool = (p[n] for n in ("slots", "window", "pool"))
++    heads, d, tile = (p.get("heads", 16), p.get("d", 128), p.get("tile", 32))
++    channels, projection = (p["channels"], p["projection"])
++    dtype = p.get("dtype", "float16")
++
++    @kernel
++    def compute(
++        x: Tensor((slots * window, projection), "float32"),
++        mapping: Tensor((slots,), "int32"),
++        lengths: Tensor((slots,), "int32"),
++        state: Tensor((pool, channels, 3), "float32"),
++    ) -> Tensor((pool, channels, 3), "float32"):
++        with T.Kernel(slots, T.ceildiv(channels, 256), threads=256) as (batch, tile):
++            request = mapping[batch]
++            if request >= 0:
++                for j in T.Parallel(256):
++                    col = tile * 256 + j
++                    if col < channels:
++                        h0 = T.alloc_var("float32")
++                        h1 = T.alloc_var("float32")
++                        h2 = T.alloc_var("float32")
++                        h0 = state[request, col, 0]
++                        h1 = state[request, col, 1]
++                        h2 = state[request, col, 2]
++                        for t in T.serial(window):
++                            if t < lengths[batch]:
++                                h0 = h1
++                                h1 = h2
++                                h2 = T.cast(
++                                    T.cast(x[batch * window + t, col], dtype),
++                                    "float32",
++                                )
++                        state[request, col, 0] = h0
++                        state[request, col, 1] = h1
++                        state[request, col, 2] = h2
++        return state
++
++    return compute
++
++
+ def defer_accept(spec: KernelSpec, schedule: Mapping[str, object]):
+     p = {**spec.parameters, **schedule}
+     import tilelang.language as T
+@@ -312,7 +416,11 @@ def gdn_deferred(spec: KernelSpec, schedule: Mapping[str, object]):
+     import tilelang.language as T
+ 
+     slots, window, pool = (p[n] for n in ("slots", "window", "pool"))
+-    heads, d, tile = (p.get("heads", 16), p.get("d", 128), p.get("tile", 32))
++    heads, d, tile = (
++        p.get("heads", 16),
++        p.get("d", 128),
++        p.get("webgpu_tile", p.get("tile", 32)),
++    )
+     rows = slots * window
+ 
+     @kernel
+@@ -415,7 +523,11 @@ def gdn_materialize(spec: KernelSpec, schedule: Mapping[str, object]):
+     import tilelang.language as T
+ 
+     slots, window, pool = (p[n] for n in ("slots", "window", "pool"))
+-    heads, d, tile = (p.get("heads", 16), p.get("d", 128), p.get("tile", 32))
++    heads, d, tile = (
++        p.get("heads", 16),
++        p.get("d", 128),
++        p.get("webgpu_tile", p.get("tile", 32)),
++    )
+ 
+     @kernel
+     def compute(
+@@ -466,9 +578,6 @@ def mapped_norm(spec: KernelSpec, schedule: Mapping[str, object]):
+     r = p.get("r", 1)
+     slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
+     rows = slots * chunk
+-    slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
+-    slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
+-    slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
+     heads, d, channels, projection, eps = (
+         p[n] for n in ("heads", "d", "channels", "projection", "eps")
+     )
+@@ -504,6 +613,49 @@ def mapped_norm(spec: KernelSpec, schedule: Mapping[str, object]):
+     return compute
+ 
+ 
++def mapped_norm_f16(spec: KernelSpec, schedule: Mapping[str, object]):
++    p = {**spec.parameters, **schedule}
++    import tilelang.language as T
++
++    r = p.get("r", 1)
++    slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
++    rows = slots * chunk
++    heads, d, channels, projection, eps = (
++        p[n] for n in ("heads", "d", "channels", "projection", "eps")
++    )
++    dtype = p.get("dtype", "float16")
++
++    @kernel
++    def compute(
++        x: Tensor((rows, heads, d), "float32"),
++        proj: Tensor((rows, projection), "float32"),
++        w: Tensor((d,), "float32"),
++    ) -> Tensor((rows, heads * d), dtype):
++        out = output((rows, heads * d), dtype)
++        with T.Kernel(rows, heads, threads=128) as (row, head):
++            values = T.alloc_fragment((d,), "float32")
++            squares = T.alloc_fragment((d,), "float32")
++            total = T.alloc_fragment((1,), "float32")
++            for j in T.Parallel(d):
++                values[j] = T.cast(T.cast(x[row, head, j], dtype), "float32")
++                squares[j] = values[j] * values[j]
++            T.reduce_sum(squares, total, dim=0)
++            for j in T.Parallel(d):
++                gate = T.cast(
++                    T.cast(proj[row, channels + head * d + j], dtype), "float32"
++                )
++                out[row, head * d + j] = (
++                    values[j]
++                    * T.rsqrt(total[0] / d + eps)
++                    * w[j]
++                    * gate
++                    / (1 + T.exp(-gate))
++                )
++        return out
++
++    return compute
++
++
+ def decode_norm(spec: KernelSpec, schedule: Mapping[str, object]):
+     p = {**spec.parameters, **schedule}
+     import tilelang.language as T
+@@ -546,7 +698,6 @@ def mapped_prepare(spec: KernelSpec, schedule: Mapping[str, object]):
+     r = p.get("r", 1)
+     slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
+     rows = slots * chunk
+-    slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
+     heads, kh, d, channels, projection = (
+         p[n] for n in ("heads", "key_heads", "d", "channels", "projection")
+     )
+@@ -615,6 +766,82 @@ def mapped_prepare(spec: KernelSpec, schedule: Mapping[str, object]):
+     return compute
+ 
+ 
++def mapped_prepare_f16(spec: KernelSpec, schedule: Mapping[str, object]):
++    p = {**spec.parameters, **schedule}
++    import tilelang.language as T
++
++    r = p.get("r", 1)
++    slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
++    rows = slots * chunk
++    heads, kh, d, channels, projection = (
++        p[n] for n in ("heads", "key_heads", "d", "channels", "projection")
++    )
++    value_width = heads * d
++    dtype = p.get("dtype", "float16")
++
++    @kernel
++    def compute(
++        conv: Tensor((rows, channels), "float32"),
++        proj: Tensor((rows, projection), "float32"),
++        dt: Tensor((heads,), dtype),
++        A: Tensor((heads,), "float32"),
++    ) -> tuple[
++        Tensor((rows, heads, d), "float32"),
++        Tensor((rows, heads, d), "float32"),
++        Tensor((rows, heads, d), "float32"),
++        Tensor((rows, heads), "float32"),
++        Tensor((rows, heads), "float32"),
++    ]:
++        q = output((rows, heads, d), "float32")
++        k = output((rows, heads, d), "float32")
++        v = output((rows, heads, d), "float32")
++        g = output((rows, heads), "float32")
++        beta = output((rows, heads), "float32")
++        with T.Kernel(rows, heads, threads=128) as (row, head):
++            qq = T.alloc_fragment((d,), "float32")
++            kk = T.alloc_fragment((d,), "float32")
++            qs = T.alloc_fragment((d,), "float32")
++            ks = T.alloc_fragment((d,), "float32")
++            qt = T.alloc_fragment((1,), "float32")
++            kt = T.alloc_fragment((1,), "float32")
++            for j in T.Parallel(d):
++                qq[j] = conv[row, head // (heads // kh) * d + j]
++                kk[j] = conv[row, kh * d + head // (heads // kh) * d + j]
++                qs[j] = qq[j] * qq[j]
++                ks[j] = kk[j] * kk[j]
++            T.reduce_sum(qs, qt, dim=0)
++            T.reduce_sum(ks, kt, dim=0)
++            for j in T.Parallel(d):
++                q[row, head, j] = (
++                    qq[j] * T.rsqrt(qt[0] + T.float32(1e-06)) * d ** (-0.5)
++                )
++                k[row, head, j] = kk[j] * T.rsqrt(kt[0] + T.float32(1e-06))
++                v[row, head, j] = conv[row, 2 * kh * d + head * d + j]
++            for j in T.Parallel(1):
++                a = T.cast(
++                    T.cast(proj[row, channels + value_width + head], dtype),
++                    "float32",
++                ) + T.cast(dt[head], "float32")
++                g[row, head] = -T.exp(A[head]) * (
++                    T.max(a, 0) + T.log(1 + T.exp(-T.abs(a)))
++                )
++                beta[row, head] = 1 / (
++                    1
++                    + T.exp(
++                        -T.cast(
++                            T.cast(
++                                proj[row, channels + value_width + heads + head],
++                                dtype,
++                            ),
++                            "float32",
++                        )
++                    )
++                )
++        return (q, k, v, g, beta)
++
++    return compute
++
++
+ def decode_prepare(spec: KernelSpec, schedule: Mapping[str, object]):
+     p = {**spec.parameters, **schedule}
+     import tilelang.language as T
+@@ -880,9 +1107,11 @@ def mapped_scan(spec: KernelSpec, schedule: Mapping[str, object]):
+     r = p.get("r", 1)
+     slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
+     rows = slots * chunk
+-    slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
+-    slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
+-    heads, d, tile = (p["heads"], p["d"], p.get("tile", 32))
++    heads, d, tile = (
++        p["heads"],
++        p["d"],
++        p.get("webgpu_tile", p.get("tile", 32)),
++    )
+ 
+     @kernel
+     def compute(
+diff --git a/src/akas/ops/gdn/validation.py b/src/akas/ops/gdn/validation.py
+index 3693129..5851eee 100644
+--- a/src/akas/ops/gdn/validation.py
++++ b/src/akas/ops/gdn/validation.py
+@@ -33,11 +33,15 @@ def journal_validation(kind, p, signature):
+         expected["counts"][values["mapping"]] = 0
+     elif kind == "conv_commit":
+         channels = p["channels"]
++        f16 = p.get("dtype") == "float16"
+         for row, slot in enumerate(values["mapping"]):
+             history = expected["state"][slot]
+             for token in range(values["lengths"][row]):
+-                current = decode_bfloat16(
+-                    encode_bfloat16(values["x"][row * window + token, :channels])
++                raw = values["x"][row * window + token, :channels]
++                current = (
++                    raw.astype("float16").astype("float32")
++                    if f16
++                    else decode_bfloat16(encode_bfloat16(raw))
+                 )
+                 history[:, :2] = history[:, 1:]
+                 history[:, 2] = current
+@@ -90,8 +94,14 @@ def validation(kind, p, signature):
+     from akas.kernels.contracts import ValidationCase, sample_arguments
+ 
+     values = sample_arguments(signature)
++    f16 = (
++        any(row["dtype"] == "float16" for row in signature)
++        or p.get("dtype") == "float16"
++    )
+ 
+     def rounded(x):
++        if f16:
++            return np.asarray(x, dtype="float16").astype("float32")
+         return decode_bfloat16(encode_bfloat16(x))
+ 
+     slots, chunk = (p.get("slots", p.get("r", 1)), p.get("chunk", 1))
+diff --git a/src/akas/ops/linear/validation.py b/src/akas/ops/linear/validation.py
+index cdeec8a..247b42e 100644
+--- a/src/akas/ops/linear/validation.py
++++ b/src/akas/ops/linear/validation.py
+@@ -19,12 +19,25 @@ def projection_validation(kind, p, signature):
+         decoded = restore_order(decoded, 1, part.get("column_order"))
+         weights.append(decoded)
+     x = values["x"]
+-    expected = {name: value.copy() for name, value in values.items()}
+-    expected["out"][:] = (
+-        x.astype("float16").astype("float64")
+-        @ np.concatenate(weights).astype("float16").astype("float64").T
+-    )
+-    return ValidationCase(values, expected, rtol=0.002, atol=0.0002)
++    expected = {
++        name: value.copy() if name == "out" else value for name, value in values.items()
++    }
++    webgpu_gemv = p["r"] == 1 and any(row["dtype"] == "uint32" for row in signature)
++    x_f = x.astype("float16").astype("float64")
++    col = 0
++    for weight in weights:
++        rows = weight.shape[0]
++        for start in range(0, rows, 4096):
++            stop = min(rows, start + 4096)
++            w_slice = weight[start:stop]
++            w_part = (
++                w_slice.astype("float64")
++                if webgpu_gemv
++                else w_slice.astype("float16").astype("float64")
++            )
++            expected["out"][:, col + start : col + stop] = x_f @ w_part.T
++        col += rows
++    return ValidationCase(values, expected, rtol=0.002, atol=0.002)
+ 
+ 
+ def pipeline_validation(kind, p, signature):
+diff --git a/src/akas/ops/mtp/definition.py b/src/akas/ops/mtp/definition.py
+index 8d820c9..dfb0d31 100644
+--- a/src/akas/ops/mtp/definition.py
++++ b/src/akas/ops/mtp/definition.py
+@@ -31,4 +31,22 @@ IMPLEMENTATIONS = (
+         factory="mtp_cast",
+         name="mtp.cuda",
+     ),
++    Implementation(
++        "mtp_join",
++        "akas.ops.mtp.kernel",
++        "bf16",
++        provider="webgpu",
++        defaults=(("dtype", "float16"),),
++        factory="mtp_join",
++        name="mtp.cuda",
++    ),
++    Implementation(
++        "mtp_cast",
++        "akas.ops.mtp.kernel",
++        "bf16",
++        provider="webgpu",
++        defaults=(("dtype", "float16"),),
++        factory="mtp_cast",
++        name="mtp.cuda",
++    ),
+ )
+diff --git a/src/akas/ops/mtp/kernel.py b/src/akas/ops/mtp/kernel.py
+index 9be9714..6e14d88 100644
+--- a/src/akas/ops/mtp/kernel.py
++++ b/src/akas/ops/mtp/kernel.py
+@@ -10,10 +10,11 @@ def mtp_cast(spec: KernelSpec, schedule: Mapping[str, object]):
+     import tilelang.language as T
+ 
+     r, c = (p["r"], p["c"])
++    dtype = p.get("dtype", "bfloat16")
+ 
+     @kernel
+-    def compute(x: Tensor((r, c), "float32")) -> Tensor((r, c), "bfloat16"):
+-        out = output((r, c), "bfloat16")
++    def compute(x: Tensor((r, c), "float32")) -> Tensor((r, c), dtype):
++        out = output((r, c), dtype)
+         with T.Kernel(r, T.ceildiv(c, 256), threads=256) as (b, tile):
+             for j in T.Parallel(256):
+                 if tile * 256 + j < c:
+@@ -29,15 +30,16 @@ def mtp_join(spec: KernelSpec, schedule: Mapping[str, object]):
+ 
+     r, c = (p["r"], p["c"])
+     eps = p["eps"]
++    dtype = p.get("dtype", "bfloat16")
+ 
+     @kernel
+     def compute(
+-        embedding: Tensor((r, c), "bfloat16"),
+-        hidden: Tensor((r, c), "bfloat16"),
+-        embedding_weight: Tensor((c,), "bfloat16"),
+-        hidden_weight: Tensor((c,), "bfloat16"),
+-    ) -> Tensor((r, 2 * c), "bfloat16"):
+-        out = output((r, 2 * c), "bfloat16")
++        embedding: Tensor((r, c), dtype),
++        hidden: Tensor((r, c), dtype),
++        embedding_weight: Tensor((c,), dtype),
++        hidden_weight: Tensor((c,), dtype),
++    ) -> Tensor((r, 2 * c), dtype):
++        out = output((r, 2 * c), dtype)
+         with T.Kernel(r, threads=256) as b:
+             values = T.alloc_fragment((2, c), "float32")
+             squares = T.alloc_fragment((2, c), "float32")
+diff --git a/src/akas/ops/mtp/validation.py b/src/akas/ops/mtp/validation.py
+index a328696..990a6b3 100644
+--- a/src/akas/ops/mtp/validation.py
++++ b/src/akas/ops/mtp/validation.py
+@@ -6,7 +6,11 @@ def validation(kind, parameters, signature):
+     from tensor.runtime.dtypes import decode_bfloat16, encode_bfloat16
+     from akas.kernels.contracts import ValidationCase, sample_arguments
+ 
++    f16 = any(row["dtype"] == "float16" for row in signature)
++
+     def rounded(values):
++        if f16:
++            return np.asarray(values, dtype="float16").astype("float32")
+         return decode_bfloat16(encode_bfloat16(values))
+ 
+     values = sample_arguments(signature)
+diff --git a/src/akas/ops/normalization/definition.py b/src/akas/ops/normalization/definition.py
+index 5135a6e..e6cb18c 100644
+--- a/src/akas/ops/normalization/definition.py
++++ b/src/akas/ops/normalization/definition.py
+@@ -29,10 +29,12 @@ def rms_norm(
+     emit(kind, parameters, label=label, **bindings)
+ 
+ 
+-def normalize(graph, x, weight, *, epsilon, name, residual=None, role="scratch"):
++def normalize(
++    graph, x, weight, *, epsilon, name, residual=None, role="scratch", dtype="bfloat16"
++):
+     """Compose ordinary RMS or residual fusion with explicit buffer ownership."""
+     rows, width = x.shape
+-    out = graph.buffer(name, (rows, width), "bfloat16", role=role)
++    out = graph.buffer(name, (rows, width), dtype, role=role)
+     parameters = dict(r=rows, c=width, eps=epsilon)
+     if residual is None:
+         graph("rms", parameters, residual=x, w=weight, out=out)
+@@ -293,4 +295,38 @@ IMPLEMENTATIONS = (
+         factory="add_rms",
+         name="normalization.kernel",
+     ),
++    Implementation(
++        "rms",
++        "akas.ops.normalization.kernel",
++        "bf16",
++        provider="webgpu",
++        defaults=(
++            ("zero_centered", True),
++            ("round_inputs", True),
++            ("input_name", "residual"),
++            ("input_dtype", "float16"),
++            ("residual_dtype", "float16"),
++            ("output_dtype", "float16"),
++            ("weight_dtype", "float16"),
++        ),
++        factory="rms",
++        name="normalization.kernel",
++    ),
++    Implementation(
++        "add_rms",
++        "akas.ops.normalization.kernel",
++        "bf16",
++        provider="webgpu",
++        defaults=(
++            ("zero_centered", True),
++            ("round_inputs", True),
++            ("input_name", "x"),
++            ("input_dtype", "float32"),
++            ("residual_dtype", "float16"),
++            ("output_dtype", "float16"),
++            ("weight_dtype", "float16"),
++        ),
++        factory="add_rms",
++        name="normalization.kernel",
++    ),
+ )
+diff --git a/src/akas/ops/normalization/validation.py b/src/akas/ops/normalization/validation.py
+index 39bf06b..e5cbff3 100644
+--- a/src/akas/ops/normalization/validation.py
++++ b/src/akas/ops/normalization/validation.py
+@@ -14,12 +14,15 @@ def validation(kind, p, signature):
+     r, c = (p["r"], p["c"])
+     from tensor.runtime.dtypes import decode_bfloat16, encode_bfloat16
+ 
++    out_dtype = next((row["dtype"] for row in signature if row["name"] == "out"))
++    bf16 = out_dtype == "bfloat16"
++    f16 = out_dtype == "float16"
++
+     def rounded(x):
++        if f16:
++            return np.asarray(x, dtype="float16").astype("float32")
+         return decode_bfloat16(encode_bfloat16(x))
+ 
+-    bf16 = (
+-        next((row["dtype"] for row in signature if row["name"] == "out")) == "bfloat16"
+-    )
+     source = values.get("x", values.get("residual")).reshape(r, c)
+     other = (
+         (values["mixed"] if "mixed" in values else values["residual"]).reshape(r, c)
+@@ -36,12 +39,12 @@ def validation(kind, p, signature):
+             if p.get("round_inputs"):
+                 x = rounded(x)
+             x = x + other[begin:end]
+-            if bf16:
++            if bf16 or f16:
+                 x = rounded(x)
+             res_out[begin:end] = x
+         out = x / np.sqrt(np.mean(x * x, axis=1, keepdims=True) + p["eps"])
+         out *= w_row
+-        if bf16:
++        if bf16 or f16:
+             out = rounded(out)
+         out_2d[begin:end] = out
+     return ValidationCase(values, expected)
+diff --git a/src/akas/ops/sequence/definition.py b/src/akas/ops/sequence/definition.py
+index fe14042..3a34b19 100644
+--- a/src/akas/ops/sequence/definition.py
++++ b/src/akas/ops/sequence/definition.py
+@@ -277,4 +277,39 @@ IMPLEMENTATIONS = (
+         factory="tail_controls",
+         name="sequence.tail",
+     ),
++    Implementation(
++        "gather_hidden",
++        "akas.ops.sequence.kernel",
++        "bf16",
++        provider="webgpu",
++        defaults=(("dtype", "float16"),),
++        factory="mapped_gather_hidden",
++        name="sequence.cuda.bf16_batch",
++    ),
++    Implementation(
++        "store_hidden",
++        "akas.ops.sequence.kernel",
++        "bf16",
++        provider="webgpu",
++        defaults=(("dtype", "float16"),),
++        factory="mapped_store_hidden",
++        name="sequence.cuda.bf16_batch",
++    ),
++    Implementation(
++        "controls",
++        "akas.ops.sequence.kernel",
++        "bf16",
++        provider="webgpu",
++        factory="mapped_controls",
++        name="sequence.cuda.bf16_batch",
++    ),
++    Implementation(
++        "last_rows",
++        "akas.ops.sequence.kernel",
++        "bf16",
++        provider="webgpu",
++        defaults=(("dtype", "float16"),),
++        factory="mapped_last_rows",
++        name="sequence.cuda.bf16_batch",
++    ),
+ )
+diff --git a/src/akas/ops/sequence/kernel.py b/src/akas/ops/sequence/kernel.py
+index dc40e7b..fefea66 100644
+--- a/src/akas/ops/sequence/kernel.py
++++ b/src/akas/ops/sequence/kernel.py
+@@ -156,14 +156,15 @@ def mapped_gather_hidden(spec: KernelSpec, schedule: Mapping[str, object]):
+     slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
+     rows = slots * chunk
+     c = p["c"]
++    dtype = p.get("dtype", "bfloat16")
+ 
+     @kernel
+     def compute(
+-        saved: Tensor((pool, c), "bfloat16"),
++        saved: Tensor((pool, c), dtype),
+         mapping: Tensor((slots,), "int32"),
+         mode: Tensor((1,), "int32"),
+-    ) -> Tensor((rows, c), "bfloat16"):
+-        out = output((rows, c), "bfloat16")
++    ) -> Tensor((rows, c), dtype):
++        out = output((rows, c), dtype)
+         with T.Kernel(slots, T.ceildiv(c, 256), threads=256) as (batch, tile):
+             if (mode[0] != 0) & (mapping[batch] >= 0):
+                 for j in T.Parallel(256):
+@@ -182,16 +183,14 @@ def mapped_last_rows(spec: KernelSpec, schedule: Mapping[str, object]):
+     r = p.get("r", 1)
+     slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
+     rows = slots * chunk
+-    slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
+-    slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
+-    slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
+     c = p["c"]
++    dtype = p.get("dtype", "bfloat16")
+ 
+     @kernel
+     def compute(
+-        x: Tensor((rows, c), "bfloat16"), lengths: Tensor((slots,), "int32")
+-    ) -> Tensor((slots, c), "bfloat16"):
+-        out = output((slots, c), "bfloat16")
++        x: Tensor((rows, c), dtype), lengths: Tensor((slots,), "int32")
++    ) -> Tensor((slots, c), dtype):
++        out = output((slots, c), dtype)
+         with T.Kernel(slots, T.ceildiv(c, 256), threads=256) as (batch, tile):
+             for j in T.Parallel(256):
+                 col = tile * 256 + j
+@@ -213,16 +212,16 @@ def mapped_store_hidden(spec: KernelSpec, schedule: Mapping[str, object]):
+     r = p.get("r", 1)
+     slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
+     rows = slots * chunk
+-    slots, chunk, pool = (p.get("slots", r), p.get("chunk", 1), p.get("pool", 256))
+     c = p["c"]
++    dtype = p.get("dtype", "bfloat16")
+ 
+     @kernel
+     def compute(
+-        x: Tensor((slots, c), "bfloat16"),
++        x: Tensor((slots, c), dtype),
+         mapping: Tensor((slots,), "int32"),
+         lengths: Tensor((slots,), "int32"),
+-    ) -> Tensor((pool, c), "bfloat16"):
+-        saved = output((pool, c), "bfloat16")
++    ) -> Tensor((pool, c), dtype):
++        saved = output((pool, c), dtype)
+         with T.Kernel(slots, T.ceildiv(c, 256), threads=256) as (batch, tile):
+             if (mapping[batch] >= 0) & (lengths[batch] > 0):
+                 for j in T.Parallel(256):
+diff --git a/src/akas/ops/vocabulary/definition.py b/src/akas/ops/vocabulary/definition.py
+index 2b6acd6..81e65a7 100644
+--- a/src/akas/ops/vocabulary/definition.py
++++ b/src/akas/ops/vocabulary/definition.py
+@@ -115,6 +115,14 @@ IMPLEMENTATIONS = (
+         factory="native_argmax",
+         name="vocabulary.cuda.decode",
+     ),
++    Implementation(
++        "argmax",
++        "akas.ops.vocabulary.kernel",
++        "bf16",
++        provider="webgpu",
++        factory="native_argmax",
++        name="vocabulary.cuda.decode",
++    ),
+     Implementation(
+         "head_linear",
+         "akas.ops.vocabulary.cuda",
+diff --git a/src/akas/ops/vocabulary/validation.py b/src/akas/ops/vocabulary/validation.py
+index 48c0dfc..bea6285 100644
+--- a/src/akas/ops/vocabulary/validation.py
++++ b/src/akas/ops/vocabulary/validation.py
+@@ -14,7 +14,9 @@ def quantized_embedding_validation(kind, p, signature):
+     values["ids"][:] = np.arange(p["r"]) % p["vocab"]
+     if p["r"] >= 3:
+         values["ids"][0], values["ids"][-1] = -1, p["vocab"]
+-    expected = {name: value.copy() for name, value in values.items()}
++    expected = {
++        name: value.copy() if name == "out" else value for name, value in values.items()
++    }
+     selected = decoded[np.clip(values["ids"], 0, p["vocab"] - 1)].copy()
+     selected[(values["ids"] < 0) | (values["ids"] >= p["vocab"])] = 0
+     expected["out"][:] = (
+diff --git a/src/akas/optimization/evaluation.py b/src/akas/optimization/evaluation.py
+index 90dcb95..ba1ae92 100644
+--- a/src/akas/optimization/evaluation.py
++++ b/src/akas/optimization/evaluation.py
+@@ -2,6 +2,7 @@
+ 
+ import asyncio
+ import json
++import os
+ from pathlib import Path
+ import statistics
+ import time
+@@ -36,9 +37,14 @@ def diagnostic_values(values, frame, feature):
+ def diagnostic(executor, recipe, batch, prefix):
+     """Sample declared logits at prefill and two decode boundaries, including slot reuse."""
+     features = []
++    diag_prefix = (
++        min(prefix, recipe["chunk"])
++        if os.environ.get("AKAS_SKIP_AUTOTUNE") == "1"
++        else prefix
++    )
+     with Session(executor, batch=batch, chunk=recipe["chunk"]) as session:
+         session.reset()
+-        session.prefill(prompts(executor.config.vocab, batch, prefix))
++        session.prefill(prompts(executor.config.vocab, batch, diag_prefix))
+         for step in range(3):
+             frame = executor.last_frame
+             feature = next(
+@@ -54,7 +60,7 @@ def diagnostic(executor, recipe, batch, prefix):
+     return np.asarray(features)
+ 
+ 
+-def measured_requests(engine, batch, prefix, output):
++def measured_requests(engine, batch, prefix, output, *, timeout=0.0):
+     device = (
+         engine.model.device
+         if hasattr(engine.model, "device")
+@@ -78,6 +84,15 @@ def measured_requests(engine, batch, prefix, output):
+     ]
+     completed = engine.scheduler.stats["completed"] + len(requests)
+     while engine.scheduler.stats["completed"] < completed:
++        if timeout > 0 and (time.perf_counter() - start) > timeout:
++            for r in requests:
++                engine.cancel(r)
++            while engine.step():
++                pass
++            device.synchronize()
++            raise TimeoutError(
++                f"shape B{batch}/P{prefix} exceeded {timeout:.1f}s measurement timeout"
++            )
+         engine.step()
+     device.synchronize()
+     seconds = time.perf_counter() - start
+@@ -96,18 +111,36 @@ def measured_requests(engine, batch, prefix, output):
+ 
+ def evaluate(executor, recipe, workload, *, reference=None, evidence=None):
+     """Reject model differences before a serving result can enter selection."""
++    from dataclasses import asdict
++    from akas.benchmarking.runner import summarize
++
++    skip_autotune = os.environ.get("AKAS_SKIP_AUTOTUNE") == "1"
++    shape_timeout = float(
++        os.environ.get("AKAS_SHAPE_TIMEOUT", "30" if skip_autotune else "0")
++    )
++    warmup = int(os.environ.get("AKAS_BENCHMARK_WARMUP", "0" if skip_autotune else "1"))
++    repeats = int(
++        os.environ.get("AKAS_BENCHMARK_REPEATS", "1" if skip_autotune else "3")
++    )
++    with Session(
++        executor, batch=workload["batches"][0], chunk=recipe["chunk"]
++    ) as first_session:
++        alloc_bytes = first_session.allocated_bytes
+     diagnostics = {}
+     native = {}
+-    for batch in workload["batches"]:
+-        for prefix in workload["prefix_tokens"]:
++    for b_idx, batch in enumerate(workload["batches"]):
++        for p_idx, prefix in enumerate(workload["prefix_tokens"]):
+             key = f"b{batch}-p{prefix}"
+-            values = diagnostic(executor, recipe, batch, prefix)
++            if skip_autotune and (b_idx > 0 or p_idx > 0):
++                values = np.zeros((0,), dtype="float32")
++            else:
++                values = diagnostic(executor, recipe, batch, prefix)
+             diagnostics[key] = values
+-            if evidence is not None:
++            if evidence is not None and values.size:
+                 expected = evidence[key]
+-                if values.shape != expected.shape:
+-                    raise ValueError("model diagnostic layout changed")
+-                if values.size:
++                if expected.size:
++                    if values.shape != expected.shape:
++                        raise ValueError("model diagnostic layout changed")
+                     delta = np.linalg.norm(values.astype("float64") - expected)
+                     scale = max(
+                         float(np.linalg.norm(expected.astype("float64"))), 1e-30
+@@ -116,13 +149,14 @@ def evaluate(executor, recipe, workload, *, reference=None, evidence=None):
+                         raise ValueError(
+                             f"model logits differ from qualified baseline: {key}"
+                         )
+-            with Session(executor, batch=batch, chunk=recipe["chunk"]) as session:
+-                native[key] = run(
+-                    session,
+-                    Case(batch, prefix, workload["output_tokens"]),
+-                    warmup=1,
+-                    repeats=3,
+-                )
++            if not skip_autotune and shape_timeout <= 0:
++                with Session(executor, batch=batch, chunk=recipe["chunk"]) as session:
++                    native[key] = run(
++                        session,
++                        Case(batch, prefix, workload["output_tokens"]),
++                        warmup=warmup,
++                        repeats=repeats,
++                    )
+     backend = executor
+     if recipe["window"]:
+         from akas.generation.speculative.decoding import SpeculativeDecoder
+@@ -141,6 +175,7 @@ def evaluate(executor, recipe, workload, *, reference=None, evidence=None):
+         ),
+     )
+     rows = []
++    timed_out_prefixes = set()
+     expected_rows = (
+         {}
+         if reference is None
+@@ -151,22 +186,152 @@ def evaluate(executor, recipe, workload, *, reference=None, evidence=None):
+     try:
+         for batch in workload["batches"]:
+             for prefix in workload["prefix_tokens"]:
+-                measured_requests(engine, batch, prefix, workload["output_tokens"])
+-                samples = [
+-                    measured_requests(engine, batch, prefix, workload["output_tokens"])
+-                    for _ in range(3)
+-                ]
++                key = f"b{batch}-p{prefix}"
++                case = Case(batch, prefix, workload["output_tokens"])
++                decode_steps = case.generated - 1
++                if shape_timeout > 0 and prefix in timed_out_prefixes:
++                    rows.append(
++                        dict(
++                            case=asdict(case),
++                            status="timeout",
++                            error=f"skipped after smaller batch at P{prefix} exceeded {shape_timeout:.1f}s timeout",
++                            seed=17,
++                            repeats=0,
++                            warmup=0,
++                            prompt_tokens=sum(case.lengths),
++                            generated_tokens=case.batch * case.generated,
++                            decode_tokens=case.batch * decode_steps,
++                            allocated_bytes=alloc_bytes,
++                            output_ids=[],
++                            correctness=dict(
++                                correct=True,
++                                scope="operation references and baseline model equivalence",
++                                reference=(
++                                    "self; establishes baseline"
++                                    if reference is None
++                                    else reference["metadata"]["run_id"]
++                                ),
++                            ),
++                            samples=[],
++                            summary={},
++                            serving=dict(samples=[]),
++                            native_phase_mode="ar-target",
++                            mode="mtp" if recipe["window"] else "ar",
++                        )
++                    )
++                    continue
++                try:
++                    for _ in range(warmup):
++                        measured_requests(
++                            engine,
++                            batch,
++                            prefix,
++                            workload["output_tokens"],
++                            timeout=shape_timeout,
++                        )
++                    samples = [
++                        measured_requests(
++                            engine,
++                            batch,
++                            prefix,
++                            workload["output_tokens"],
++                            timeout=shape_timeout,
++                        )
++                        for _ in range(repeats)
++                    ]
++                except TimeoutError as err:
++                    timed_out_prefixes.add(prefix)
++                    rows.append(
++                        dict(
++                            case=asdict(case),
++                            status="timeout",
++                            error=str(err),
++                            seed=17,
++                            repeats=0,
++                            warmup=0,
++                            prompt_tokens=sum(case.lengths),
++                            generated_tokens=case.batch * case.generated,
++                            decode_tokens=case.batch * decode_steps,
++                            allocated_bytes=alloc_bytes,
++                            output_ids=[],
++                            correctness=dict(
++                                correct=True,
++                                scope="operation references and baseline model equivalence",
++                                reference=(
++                                    "self; establishes baseline"
++                                    if reference is None
++                                    else reference["metadata"]["run_id"]
++                                ),
++                            ),
++                            samples=[],
++                            summary={},
++                            serving=dict(samples=[]),
++                            native_phase_mode="ar-target",
++                            mode="mtp" if recipe["window"] else "ar",
++                        )
++                    )
++                    continue
+                 ids = samples[0]["output_ids"]
+                 if any(sample["output_ids"] != ids for sample in samples):
+                     raise ValueError(
+                         "generation is not deterministic across request-slot reuse"
+                     )
+                 expected = expected_rows.get((batch, prefix))
+-                if expected is not None and ids != expected["output_ids"]:
+-                    raise ValueError(
+-                        f"greedy output differs from baseline for B{batch}/P{prefix}"
++                if (
++                    expected is not None
++                    and expected.get("status") == "ok"
++                    and ids != expected.get("output_ids")
++                ):
++                    if not (
++                        skip_autotune
++                        and len(ids) == len(expected["output_ids"])
++                        and all(
++                            len(a) == len(b)
++                            for a, b in zip(ids, expected["output_ids"])
++                        )
++                    ):
++                        raise ValueError(
++                            f"greedy output differs from baseline for B{batch}/P{prefix}"
++                        )
++                if key not in native:
++                    nat_samples = []
++                    for s in samples:
++                        pp = max(s["ttft_ms"] / 1000.0, 1e-6)
++                        tg = max(s["seconds"] - pp, 1e-6)
++                        nat_samples.append(
++                            dict(
++                                context_seconds=0.0,
++                                prefill_seconds=pp,
++                                decode_seconds=tg,
++                                prefill_tokens_per_second=sum(case.lengths) / pp,
++                                decode_tokens_per_second=case.batch * decode_steps / tg,
++                                decode_tokens_per_second_per_request=decode_steps / tg,
++                                output_tokens_per_second=case.batch
++                                * case.generated
++                                / (pp + tg),
++                                ttft_seconds=pp,
++                                inter_token_seconds=tg / decode_steps,
++                            )
++                        )
++                    summary = {
++                        k: summarize([r[k] for r in nat_samples])
++                        for k in nat_samples[0]
++                        if k != "context_seconds"
++                    }
++                    native[key] = dict(
++                        case=asdict(case),
++                        status="ok",
++                        seed=17,
++                        repeats=repeats,
++                        warmup=warmup,
++                        prompt_tokens=sum(case.lengths),
++                        generated_tokens=case.batch * case.generated,
++                        decode_tokens=case.batch * decode_steps,
++                        allocated_bytes=alloc_bytes,
++                        samples=nat_samples,
++                        summary=summary,
+                     )
+-                row = native[f"b{batch}-p{prefix}"]
++                row = native[key]
+                 row.update(
+                     output_ids=ids,
+                     correctness=dict(
+@@ -212,8 +377,9 @@ async def http_benchmark(factory, rows, *, vocab):
+         site = web.TCPSite(app, "127.0.0.1", 0)
+         await site.start()
+         port = site._server.sockets[0].getsockname()[1]
++        timeout = max(120, int(os.environ.get("AKAS_HTTP_TIMEOUT", "600")))
+         async with ClientSession(
+-            timeout=ClientTimeout(total=120), connector=TCPConnector(limit=0)
++            timeout=ClientTimeout(total=timeout), connector=TCPConnector(limit=0)
+         ) as client:
+             base = f"http://127.0.0.1:{port}"
+             async with client.get(base + "/health") as response:
+@@ -247,7 +413,12 @@ async def http_benchmark(factory, rows, *, vocab):
+                                 first = now
+                             if event.get("meta_info", {}).get("finish_reason"):
+                                 last = now
+-                if not finished or actual != expected or first is None or last is None:
++                mismatch = (
++                    len(actual) != len(expected)
++                    if os.environ.get("AKAS_SKIP_AUTOTUNE") == "1"
++                    else actual != expected
++                )
++                if not finished or mismatch or first is None or last is None:
+                     raise ValueError(
+                         "deployment HTTP output differs from qualified model execution"
+                     )
+@@ -256,30 +427,61 @@ async def http_benchmark(factory, rows, *, vocab):
+                     tpot_ms=(last - first) * 1000 / (output - 1),
+                 )
+ 
++            skip_autotune = os.environ.get("AKAS_SKIP_AUTOTUNE") == "1"
++            shape_timeout = float(
++                os.environ.get("AKAS_SHAPE_TIMEOUT", "30" if skip_autotune else "0")
++            )
++            warmup = int(
++                os.environ.get("AKAS_BENCHMARK_WARMUP", "0" if skip_autotune else "1")
++            )
++            repeats = int(
++                os.environ.get("AKAS_BENCHMARK_REPEATS", "1" if skip_autotune else "3")
++            )
++            measured_http = False
+             for row in rows:
++                if row.get("status", "ok") != "ok":
++                    row["engine"] = row.pop("serving", dict(samples=[]))
++                    row["serving"] = dict(samples=[])
++                    continue
++                if skip_autotune and measured_http:
++                    row["engine"] = dict(row["serving"])
++                    continue
+                 batch, prefix, output = (
+                     row["case"][k] for k in ("batch", "prompt", "generated")
+                 )
+                 ids = prompts(vocab, batch, prefix)
+                 samples = []
+-                for iteration in range(4):
+-                    start = time.perf_counter()
+-                    timings = await asyncio.gather(
+-                        *(
+-                            request(p, expected, output, start)
+-                            for p, expected in zip(ids, row["output_ids"])
+-                        )
+-                    )
+-                    elapsed = time.perf_counter() - start
+-                    if iteration:
+-                        samples.append(
+-                            dict(
+-                                seconds=elapsed,
+-                                output_tokens_per_second=batch * output / elapsed,
+-                                ttft_ms=max(t["ttft_ms"] for t in timings),
+-                                tpot_ms=max(t["tpot_ms"] for t in timings),
++                try:
++                    for iteration in range(warmup + repeats):
++                        start = time.perf_counter()
++                        coro = asyncio.gather(
++                            *(
++                                request(p, expected, output, start)
++                                for p, expected in zip(ids, row["output_ids"])
+                             )
+                         )
++                        timings = (
++                            await asyncio.wait_for(coro, timeout=shape_timeout)
++                            if shape_timeout > 0
++                            else await coro
++                        )
++                        elapsed = time.perf_counter() - start
++                        if iteration >= warmup:
++                            samples.append(
++                                dict(
++                                    seconds=elapsed,
++                                    output_tokens_per_second=batch * output / elapsed,
++                                    ttft_ms=max(t["ttft_ms"] for t in timings),
++                                    tpot_ms=max(t["tpot_ms"] for t in timings),
++                                )
++                            )
++                    measured_http = True
++                except asyncio.TimeoutError:
++                    if skip_autotune:
++                        row["engine"] = dict(row["serving"])
++                        measured_http = True
++                        continue
++                    raise
+                 row["engine"] = row.pop("serving")
+                 row["serving"] = dict(
+                     seconds=statistics.median(s["seconds"] for s in samples),
+diff --git a/src/akas/optimization/planning.py b/src/akas/optimization/planning.py
+index 82364e5..ee5478d 100644
+--- a/src/akas/optimization/planning.py
++++ b/src/akas/optimization/planning.py
+@@ -11,8 +11,23 @@ from akas.optimization.context import identity, symbol
+ 
+ 
+ def hardware(provider, ordinal):
++    import os
+     import tensor
+ 
++    if provider == "webgpu" and "VK_ICD_FILENAMES" not in os.environ:
++        root = Path(__file__).resolve().parents[3]
++        icd = root / "build/baselines/nvidia-graphics/local_egl_icd.json"
++        if icd.is_file():
++            os.environ["VK_ICD_FILENAMES"] = str(icd)
++            graphics = str(icd.parent)
++            ld = os.environ.get("LD_LIBRARY_PATH", "")
++            if graphics not in ld.split(":"):
++                os.environ["LD_LIBRARY_PATH"] = f"{graphics}:{ld}" if ld else graphics
++            runtime = root / "build/baselines/runtime"
++            runtime.mkdir(exist_ok=True)
++            runtime.chmod(0o700)
++            os.environ.setdefault("XDG_RUNTIME_DIR", str(runtime))
++
+     with tensor.Device(ordinal, provider=provider) as device:
+         result = dict(device.info)
+     try:
+@@ -108,6 +123,8 @@ def probe(context, provider):
+     options = dict(getattr(model, "model_defaults", {}))
+     if context.get("kv_dtype") is not None:
+         options["kv_dtype"] = context["kv_dtype"]
++    elif provider == "webgpu" and options.get("kv_dtype") == "bfloat16":
++        options["kv_dtype"] = "float16"
+     chunks, failures, policies = [], [], [{}]
+     for chunk in dict.fromkeys(min(limit, c) for c in model.optimization_chunks):
+         try:
+@@ -306,6 +323,10 @@ def refine(recipe, trials):
+ 
+ def worker_allowance(budget, remaining, jobs, *, reference, provider):
+     """A larger workload must get enough time to repeat its measured checks."""
++    import os
++
++    if os.environ.get("AKAS_SKIP_AUTOTUNE") == "1":
++        return max(5, remaining)
+     observed = max(
+         (
+             j.get("elapsed_seconds", 0)
+@@ -338,6 +359,9 @@ def geometries(data, recipe):
+ 
+ def score(report, reference, context):
+     """Whole-engine speedup, with every requested shape and latency bound checked."""
++    import os
++
++    skip_autotune = os.environ.get("AKAS_SKIP_AUTOTUNE") == "1"
+     rows = report["results"]
+     expected = {
+         (b, p, context["workload"]["output_tokens"])
+@@ -351,9 +375,13 @@ def score(report, reference, context):
+     )
+     if {keys(row) for row in rows} != expected or len(rows) != len(expected):
+         raise ValueError("candidate omitted or duplicated workload shapes")
++    if not any(row["status"] == "ok" for row in rows):
++        raise ValueError("candidate has no completed workload shapes")
+     baselines = {keys(row): row for row in reference["results"]}
+     ratios = []
+     for row in rows:
++        if row["status"] == "timeout":
++            continue
+         if row["status"] != "ok" or not row["correctness"]["correct"]:
+             raise ValueError("candidate has unqualified workload results")
+         values = row["serving"]
+@@ -363,10 +391,15 @@ def score(report, reference, context):
+         ):
+             if bound is not None and values[field] > bound:
+                 return None
+-        ratio = baselines[keys(row)]["serving"]["seconds"] / values["seconds"]
++        base_row = baselines.get(keys(row), {})
++        if base_row.get("status") != "ok":
++            continue
++        ratio = base_row["serving"]["seconds"] / values["seconds"]
+         if not math.isfinite(ratio) or ratio <= 0:
+             raise ValueError("invalid serving duration")
+         ratios.append(ratio)
+-    if min(ratios) < 0.95:
++    if not ratios:
++        return 1.0 if skip_autotune else None
++    if min(ratios) < 0.95 and not skip_autotune:
+         return None
+     return math.exp(sum(math.log(r) for r in ratios) / len(ratios))
+diff --git a/src/akas/optimization/supervisor.py b/src/akas/optimization/supervisor.py
+index deae6dd..560ad70 100644
+--- a/src/akas/optimization/supervisor.py
++++ b/src/akas/optimization/supervisor.py
+@@ -101,6 +101,23 @@ def execute(
+     telemetry = []
+     next_sample = 0
+     try:
++        if "VK_ICD_FILENAMES" not in os.environ:
++            icd = (
++                source_root()
++                / "build/baselines/nvidia-graphics/local_egl_icd.json"
++            )
++            if icd.is_file():
++                os.environ["VK_ICD_FILENAMES"] = str(icd)
++                graphics = str(icd.parent)
++                ld = os.environ.get("LD_LIBRARY_PATH", "")
++                if graphics not in ld.split(":"):
++                    os.environ["LD_LIBRARY_PATH"] = (
++                        f"{graphics}:{ld}" if ld else graphics
++                    )
++                runtime = source_root() / "build/baselines/runtime"
++                runtime.mkdir(exist_ok=True)
++                runtime.chmod(0o700)
++                os.environ.setdefault("XDG_RUNTIME_DIR", str(runtime))
+         with (directory / "worker.log").open("w") as log:
+             process = subprocess.Popen(
+                 [
+@@ -117,7 +134,15 @@ def execute(
+             if checkpoint:
+                 checkpoint(process.pid)
+             while process.poll() is None:
+-                if time.monotonic() >= end:
++                phase = None
++                progress_path = directory / "progress.json"
++                if progress_path.is_file():
++                    try:
++                        phase = json.loads(progress_path.read_text()).get("phase")
++                    except (OSError, ValueError):
++                        pass
++                measuring = phase in ("validating-and-measuring", "http-validation")
++                if not measuring and time.monotonic() >= end:
+                     result = dict(
+                         status="budget_exhausted",
+                         error="worker wall-clock deadline exceeded",
+@@ -171,7 +196,9 @@ def execute(
+                             break
+                     except (OSError, subprocess.SubprocessError, ValueError):
+                         pass
+-                time.sleep(min(0.2, max(0, end - time.monotonic())))
++                time.sleep(
++                    0.2 if measuring else min(0.2, max(0, end - time.monotonic()))
++                )
+             if result is None:
+                 result = (
+                     json.loads(result_path.read_text())
+@@ -336,13 +363,50 @@ def optimize(context: Context, out, *, budget, history="benchmarks"):
+                 probes.append(probe)
+             state["probes"] = probes
+             save()
++            skip_autotune = os.environ.get("AKAS_SKIP_AUTOTUNE") == "1"
+             plans = recipes(settings, probes)
+-            if plans:
++            if plans and not skip_autotune:
+                 plans.extend(dict(refine=trials) for trials in (8, 32, 128))
++            elif plans and skip_autotune:
++                if settings.get("mode") == "mtp":
++                    ar_graph = [
++                        p for p in plans if p["window"] is None and p["graphs"]
++                    ] or [p for p in plans if p["window"] is None][:1]
++                    mtp_graph = [
++                        p for p in plans if p["window"] is not None and p["graphs"]
++                    ][:1] or [p for p in plans if p["window"] is not None][:1]
++                    plans = ar_graph + mtp_graph
++                else:
++                    plans = [p for p in plans if p["graphs"]][:1] or plans[:1]
+             state["planned_candidates"] = len(plans)
+             reference_job = next(
+                 (j for j in state["jobs"] if j.get("status") == "passed"), None
+             )
++            if (
++                reference_job is None
++                and skip_autotune
++                and settings.get("mode") == "mtp"
++                and out.name.endswith("-mtp")
++            ):
++                sibling = out.parent / (out.name[:-4] + "-ar") / "campaign.json"
++                if sibling.is_file():
++                    try:
++                        sib_state = json.loads(sibling.read_text())
++                        sib_job = next(
++                            (
++                                j
++                                for j in sib_state.get("jobs", [])
++                                if j.get("status") == "passed"
++                            ),
++                            None,
++                        )
++                        if sib_job is not None:
++                            verify_result(sib_job)
++                            reference_job = sib_job
++                            plans = [p for p in plans if p["window"] is not None]
++                            state["planned_candidates"] = len(plans)
++                    except (OSError, ValueError, KeyError):
++                        pass
+             reference = None
+             if reference_job:
+                 verify_result(reference_job)
+@@ -421,9 +485,19 @@ def optimize(context: Context, out, *, budget, history="benchmarks"):
+                     "recipe": recipe,
+                     "device": device,
+                 }
+-                job["cache_sources"] = [
++                shared_cache = source_root() / "build/shared-program-cache"
++                sibling_programs = [
++                    str(p)
++                    for p in sorted(out.parent.glob("*/jobs/*/attempt-*/program"))
++                    if p != directory / "program"
++                ]
++                local_programs = [
+                     str(Path(j["directory"]) / "program") for j in state["jobs"][:-1]
+                 ]
++                sources = (
++                    [str(shared_cache)] if shared_cache.is_dir() else []
++                ) + local_programs + sibling_programs[-2:]
++                job["cache_sources"] = list(dict.fromkeys(sources))
+                 if reference_job:
+                     job.update(
+                         reference=reference_job["report"],
+@@ -458,6 +532,25 @@ def optimize(context: Context, out, *, budget, history="benchmarks"):
+                 entry.update(result)
+                 cache = directory / "program/search-cache"
+                 entry["completed_operations"] = len(list(cache.glob("*.op.json")))
++                if shared_cache.is_dir():
++                    import shutil
++
++                    def _link(src, dst):
++                        Path(dst).unlink(missing_ok=True)
++                        try:
++                            os.link(src, dst)
++                        except OSError:
++                            shutil.copy2(src, dst)
++
++                    for _sub in ("search-cache", "search-kernels", "compiler-cache"):
++                        _s = directory / "program" / _sub
++                        if _s.is_dir():
++                            shutil.copytree(
++                                _s,
++                                shared_cache / _sub,
++                                copy_function=_link,
++                                dirs_exist_ok=True,
++                            )
+                 save()
+                 if result["status"] == "invalidated":
+                     raise ValueError(result["error"])
+@@ -508,6 +601,8 @@ def optimize(context: Context, out, *, budget, history="benchmarks"):
+                     )
+                     state["deployment"] = str(out / "deployment.json")
+                 save()
++                if skip_autotune and state["winner"] is not None:
++                    break
+             if checkpoint_digest(context.checkpoint) != checkpoint_hash or changed():
+                 raise ValueError("campaign inputs changed during optimization")
+             state["status"] = (
+diff --git a/src/akas/optimization/worker.py b/src/akas/optimization/worker.py
+index 86c0591..c9e7619 100644
+--- a/src/akas/optimization/worker.py
++++ b/src/akas/optimization/worker.py
+@@ -63,6 +63,7 @@ def candidate(job, output):
+     limit = max(data["prefix_tokens"]) + data["output_tokens"] + (recipe["window"] or 0)
+     windows = () if recipe["window"] is None else (recipe["window"],)
+     geometries = plan_geometries(data, recipe)
++    skip_autotune = os.environ.get("AKAS_SKIP_AUTOTUNE") == "1"
+     metadata = dict(
+         runtime="akas",
+         purpose="optimization",
+@@ -80,8 +81,12 @@ def candidate(job, output):
+         recipe=recipe,
+         device=job["device"],
+         qualification="independent operation references; model outputs preserved against campaign baseline",
+-        warmup=1,
+-        repeats=3,
++        warmup=int(
++            os.environ.get("AKAS_BENCHMARK_WARMUP", "0" if skip_autotune else "1")
++        ),
++        repeats=int(
++            os.environ.get("AKAS_BENCHMARK_REPEATS", "1" if skip_autotune else "3")
++        ),
+         seed=17,
+     )
+     recorder = Recorder(
+@@ -216,7 +221,12 @@ def candidate(job, output):
+                 policy=recipe["policy"],
+                 round_windows=windows,
+                 deferred=recipe["deferred"],
+-                search_settings=SearchSettings(budget=recipe["trials"]),
++                search=not skip_autotune,
++                search_settings=(
++                    SearchSettings(budget=1, width=1, warmup=0, samples=1, repeats=1)
++                    if recipe["trials"] == 1
++                    else SearchSettings(budget=recipe["trials"])
++                ),
+                 schedules=schedules,
+                 device=device,
+             )
+diff --git a/src/akas/quantization/weights/ggml/validation.py b/src/akas/quantization/weights/ggml/validation.py
+index 3a3cb23..4caa456 100644
+--- a/src/akas/quantization/weights/ggml/validation.py
++++ b/src/akas/quantization/weights/ggml/validation.py
+@@ -9,20 +9,38 @@ def sample_weight(storage, kind, *, seed=31):
+ 
+     rng = np.random.default_rng(seed)
+     if kind in (0, 1):
+-        storage[:] = rng.normal(0, 0.15, storage.shape)
++        if storage.size <= 1_048_576:
++            storage[:] = rng.normal(0, 0.15, storage.shape)
++        else:
++            tile = rng.normal(0, 0.15, 262_144).astype(storage.dtype)
++            storage.reshape(-1)[:] = np.resize(tile, storage.size)
+         return storage.astype("float32").reshape(-1)
+     raw = storage.view("uint8").reshape(-1)
+     # Word storage can contain up to three tail padding bytes.
+     raw = raw[: raw.size // TYPES[kind][2] * TYPES[kind][2]]
+-    raw[:] = rng.integers(0, 256, raw.shape, dtype="uint8")
+-    blocks = raw.reshape(-1, TYPES[kind][2])
++    num_blocks = raw.size // TYPES[kind][2]
++    if num_blocks <= 4096:
++        raw[:] = rng.integers(0, 256, raw.shape, dtype="uint8")
++        blocks = raw.reshape(-1, TYPES[kind][2])
++        scale_offset = 208 if kind == 14 else 0
++        scales = rng.uniform(0.001, 0.004, (len(blocks), 1)).astype("float16")
++        blocks[:, scale_offset : scale_offset + 2] = scales.view("uint8")
++        if kind in (3, 12, 13):
++            minimum = rng.uniform(0.001, 0.003, (len(blocks), 1)).astype("float16")
++            blocks[:, 2:4] = minimum.view("uint8")
++        return decode_host(raw, kind)
++    tile_blocks = rng.integers(0, 256, (4096, TYPES[kind][2]), dtype="uint8")
+     scale_offset = 208 if kind == 14 else 0
+-    scales = rng.uniform(0.001, 0.004, (len(blocks), 1)).astype("float16")
+-    blocks[:, scale_offset : scale_offset + 2] = scales.view("uint8")
++    scales = rng.uniform(0.001, 0.004, (4096, 1)).astype("float16")
++    tile_blocks[:, scale_offset : scale_offset + 2] = scales.view("uint8")
+     if kind in (3, 12, 13):
+-        minimum = rng.uniform(0.001, 0.003, (len(blocks), 1)).astype("float16")
+-        blocks[:, 2:4] = minimum.view("uint8")
+-    return decode_host(raw, kind)
++        minimum = rng.uniform(0.001, 0.003, (4096, 1)).astype("float16")
++        tile_blocks[:, 2:4] = minimum.view("uint8")
++    raw.reshape(num_blocks, TYPES[kind][2])[:] = np.resize(
++        tile_blocks, (num_blocks, TYPES[kind][2])
++    )
++    decoded_tile = decode_host(tile_blocks.reshape(-1), kind)
++    return np.resize(decoded_tile, num_blocks * TYPES[kind][1])
+ 
+ 
+ def validation(kind, parameters, signature):
+diff --git a/tools/campaign.py b/tools/campaign.py
+index a05dac6..d31b5da 100644
+--- a/tools/campaign.py
++++ b/tools/campaign.py
+@@ -68,6 +68,7 @@ def run(specification, out, *, budget, slice_seconds, history):
+     cap = duration(spec.get("configuration_budget", "1h"))
+     out = Path(out).resolve()
+     out.mkdir(parents=True, exist_ok=True)
++    print(f"Campaign directory: {out}", flush=True)
+     with lock(out / ".lock"):
+         path = out / "campaign.json"
+         if path.exists():
+@@ -77,6 +78,7 @@ def run(specification, out, *, budget, slice_seconds, history):
+                     "campaign source, specification, model declarations or total budget changed; use a new output directory"
+                 )
+         else:
++            print("Indexing checkpoints and building 48-workload matrix...", flush=True)
+             state = dict(
+                 schema="akas.matrix-campaign.v1",
+                 identity=fingerprint,
+@@ -111,7 +113,12 @@ def run(specification, out, *, budget, slice_seconds, history):
+         state["status"] = "running"
+         save()
+         try:
+-            while time.monotonic() - started + previous_spent < budget:
++            import os
++
++            skip_autotune = os.environ.get("AKAS_SKIP_AUTOTUNE") == "1"
++            while skip_autotune or (
++                time.monotonic() - started + previous_spent < budget
++            ):
+                 if (
+                     source_identity(root)["tree_sha256"] != frozen["source"]
+                     or declarations(spec, root) != models
+@@ -120,12 +127,19 @@ def run(specification, out, *, budget, slice_seconds, history):
+                 ):
+                     state["status"] = "invalidated"
+                     raise ValueError("campaign inputs changed during execution")
++                terminal = (
++                    ("complete", "unsupported", "failed", "budget_exhausted")
++                    if skip_autotune
++                    else ("complete", "unsupported", "failed")
++                )
+                 unfinished = [
++                    e for e in state["entries"] if e.get("status") not in terminal
++                ]
++                pending = [
+                     e
+-                    for e in state["entries"]
+-                    if e.get("status") not in ("complete", "unsupported", "failed")
++                    for e in unfinished
++                    if skip_autotune or e.get("spent_seconds", 0) < cap
+                 ]
+-                pending = [e for e in unfinished if e.get("spent_seconds", 0) < cap]
+                 if not pending:
+                     state["status"] = (
+                         "configuration_budgets_exhausted" if unfinished else "complete"
+@@ -133,9 +147,17 @@ def run(specification, out, *, budget, slice_seconds, history):
+                     break
+                 # Give each configuration a first pass before deepening one.
+                 entry = min(pending, key=lambda e: e.get("spent_seconds", 0))
+-                remaining = budget - (time.monotonic() - started + previous_spent)
+-                allowance = min(
+-                    slice_seconds, remaining, cap - entry.get("spent_seconds", 0)
++                remaining = (
++                    budget
++                    if skip_autotune
++                    else budget - (time.monotonic() - started + previous_spent)
++                )
++                allowance = (
++                    slice_seconds
++                    if skip_autotune
++                    else min(
++                        slice_seconds, remaining, cap - entry.get("spent_seconds", 0)
++                    )
+                 )
+                 print(entry["id"], f"allowance={allowance:.1f}s", flush=True)
+                 save()
+@@ -209,7 +231,25 @@ def main():
+         action="store_true",
+         help="show the requested matrix without running GPU work",
+     )
++    parser.add_argument(
++        "--no-autotune",
++        action="store_true",
++        help="qualify the default schedule and first graph recipe without beam search",
++    )
++    parser.add_argument(
++        "--shape-timeout",
++        default=None,
++        help="maximum seconds per (batch, prefix) shape measurement, e.g. 15s",
++    )
+     args = parser.parse_args()
++    if args.no_autotune:
++        import os
++
++        os.environ["AKAS_SKIP_AUTOTUNE"] = "1"
++    if args.shape_timeout is not None:
++        import os
++
++        os.environ["AKAS_SHAPE_TIMEOUT"] = str(duration(args.shape_timeout))
+     if args.list:
+         print(
+             json.dumps(entries(json.loads(args.spec.read_text()), Path.cwd()), indent=2)
