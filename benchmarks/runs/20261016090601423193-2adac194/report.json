@@ -9,27 +9,27 @@
     "provider": "cuda",
     "target": "sm_89",
     "mode": "ar",
-    "kv_dtype": "float16",
+    "kv_dtype": "fp8",
     "graphs": true,
-    "checkpoint": "/home/sagemaker-user/akas/build/baselines/checkpoints/lfm-f16.gguf",
-    "checkpoint_sha256": "4d364976c7ae1b85bd380f743155aa2d532f7a10291beaa6b27a7d6c9b10527f",
-    "campaign_identity": "246bfe84c6fd1901158373dc55bf1720f869388396b14b3636f32282837b593f",
+    "checkpoint": "/home/sagemaker-user/akas/build/model-smoke/checkpoints/lfm-hf",
+    "checkpoint_sha256": "e06dd91009db3a89276d2e56c3dc26324c0f425a2062d4cc82df97fd435bf397",
+    "campaign_identity": "54a60ca42fd00d7926d2f3f777e0bdaa609dce0692e496bcb1f4545cb10661b9",
     "recipe": {
       "provider": "cuda",
       "target": "sm_89",
-      "chunk": 1,
+      "chunk": 32,
       "prefill_requests": 32,
       "graphs": true,
-      "trials": 1,
+      "trials": 8,
       "policy": {},
       "model_options": {
-        "kv_dtype": "float16",
+        "kv_dtype": "fp8",
         "optimized": true
       },
       "window": null,
       "deferred": false,
       "head": null,
-      "id": "e7804695b4875ae4"
+      "id": "ecc28f0821d59b3e"
     },
     "device": {
       "ordinal": 0,
@@ -45,7 +45,7 @@
     "warmup": 1,
     "repeats": 3,
     "seed": 17,
-    "run_id": "20261016084929152560-d080d109",
+    "run_id": "20261016090601423193-2adac194",
     "error": "worker wall-clock deadline exceeded"
   },
   "results": [
