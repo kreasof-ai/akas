@@ -3,6 +3,13 @@
   <img src="logo/logo-white.svg#gh-dark-mode-only" alt="Tensor" width="420">
 </p>
 
+<h1 align="center">Compiler-first model inference.</h1>
+
+<p align="center">
+  Compose models in pure Python, fuse quantization codecs at compile time. <br> 
+  Serve AOT-compiled .tbin programs without PyTorch or TileLang at runtime.
+</p>
+
 ---
 
 AKAS is an inference engine built on [Tensor](https://github.com/kreasof-ai/tensor).
