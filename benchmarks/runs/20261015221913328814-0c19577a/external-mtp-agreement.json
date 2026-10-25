@@ -1,0 +1,1042 @@
+{
+  "created_at": "2026-10-15T20:59:49.955328Z",
+  "runtimes": [
+    {
+      "runtime": "sglang",
+      "files": [
+        {
+          "path": "build/baselines/sglang-qwen3.5-0.8b-ar-cuda-bf16-optimized.json",
+          "sha256": "ded3f652b56f9829b0907fdfc98f4f6f69a2dc697c3a6788fc2dcddded16202a"
+        },
+        {
+          "path": "build/baselines/sglang-qwen3.5-0.8b-mtp-cuda-bf16-optimized.json",
+          "sha256": "1e7c6071df8d16aa3aa73f4f52d57b2dd99afd0c71e960a52fc70818c2aac305"
+        }
+      ],
+      "scope": "First measured output IDs versus matching AR run; all repeats remain in raw baseline records",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix": 32,
+          "changed_requests": 1,
+          "differences": [
+            {
+              "request": 0,
+              "first_difference": 2
+            }
+          ],
+          "mtp_deterministic": true
+        },
+        {
+          "batch": 1,
+          "prefix": 2048,
+          "changed_requests": 0,
+          "differences": [],
+          "mtp_deterministic": true
+        },
+        {
+          "batch": 4,
+          "prefix": 32,
+          "changed_requests": 0,
+          "differences": [],
+          "mtp_deterministic": true
+        },
+        {
+          "batch": 4,
+          "prefix": 2048,
+          "changed_requests": 0,
+          "differences": [],
+          "mtp_deterministic": true
+        },
+        {
+          "batch": 16,
+          "prefix": 32,
+          "changed_requests": 0,
+          "differences": [],
+          "mtp_deterministic": true
+        },
+        {
+          "batch": 16,
+          "prefix": 2048,
+          "changed_requests": 2,
+          "differences": [
+            {
+              "request": 4,
+              "first_difference": 41
+            },
+            {
+              "request": 10,
+              "first_difference": 36
+            }
+          ],
+          "mtp_deterministic": true
+        },
+        {
+          "batch": 64,
+          "prefix": 32,
+          "changed_requests": 8,
+          "differences": [
+            {
+              "request": 4,
+              "first_difference": 1
+            },
+            {
+              "request": 8,
+              "first_difference": 4
+            },
+            {
+              "request": 17,
+              "first_difference": 1
+            },
+            {
+              "request": 21,
+              "first_difference": 8
+            },
+            {
+              "request": 24,
+              "first_difference": 3
+            },
+            {
+              "request": 44,
+              "first_difference": 2
+            },
+            {
+              "request": 53,
+              "first_difference": 2
+            },
+            {
+              "request": 54,
+              "first_difference": 2
+            }
+          ],
+          "mtp_deterministic": true
+        },
+        {
+          "batch": 64,
+          "prefix": 2048,
+          "changed_requests": 10,
+          "differences": [
+            {
+              "request": 2,
+              "first_difference": 1
+            },
+            {
+              "request": 8,
+              "first_difference": 76
+            },
+            {
+              "request": 9,
+              "first_difference": 4
+            },
+            {
+              "request": 15,
+              "first_difference": 2
+            },
+            {
+              "request": 24,
+              "first_difference": 98
+            },
+            {
+              "request": 25,
+              "first_difference": 120
+            },
+            {
+              "request": 30,
+              "first_difference": 93
+            },
+            {
+              "request": 36,
+              "first_difference": 4
+            },
+            {
+              "request": 48,
+              "first_difference": 2
+            },
+            {
+              "request": 50,
+              "first_difference": 8
+            }
+          ],
+          "mtp_deterministic": true
+        },
+        {
+          "batch": 256,
+          "prefix": 32,
+          "changed_requests": 39,
+          "differences": [
+            {
+              "request": 1,
+              "first_difference": 7
+            },
+            {
+              "request": 4,
+              "first_difference": 1
+            },
+            {
+              "request": 5,
+              "first_difference": 19
+            },
+            {
+              "request": 9,
+              "first_difference": 1
+            },
+            {
+              "request": 12,
+              "first_difference": 28
+            },
+            {
+              "request": 18,
+              "first_difference": 9
+            },
+            {
+              "request": 21,
+              "first_difference": 11
+            },
+            {
+              "request": 26,
+              "first_difference": 6
+            },
+            {
+              "request": 34,
+              "first_difference": 1
+            },
+            {
+              "request": 40,
+              "first_difference": 14
+            },
+            {
+              "request": 41,
+              "first_difference": 2
+            },
+            {
+              "request": 79,
+              "first_difference": 21
+            },
+            {
+              "request": 100,
+              "first_difference": 6
+            },
+            {
+              "request": 112,
+              "first_difference": 2
+            },
+            {
+              "request": 124,
+              "first_difference": 7
+            },
+            {
+              "request": 125,
+              "first_difference": 7
+            },
+            {
+              "request": 127,
+              "first_difference": 5
+            },
+            {
+              "request": 130,
+              "first_difference": 58
+            },
+            {
+              "request": 140,
+              "first_difference": 9
+            },
+            {
+              "request": 145,
+              "first_difference": 7
+            },
+            {
+              "request": 157,
+              "first_difference": 18
+            },
+            {
+              "request": 158,
+              "first_difference": 1
+            },
+            {
+              "request": 159,
+              "first_difference": 9
+            },
+            {
+              "request": 169,
+              "first_difference": 3
+            },
+            {
+              "request": 177,
+              "first_difference": 9
+            },
+            {
+              "request": 181,
+              "first_difference": 3
+            },
+            {
+              "request": 188,
+              "first_difference": 1
+            },
+            {
+              "request": 192,
+              "first_difference": 5
+            },
+            {
+              "request": 205,
+              "first_difference": 1
+            },
+            {
+              "request": 217,
+              "first_difference": 6
+            },
+            {
+              "request": 222,
+              "first_difference": 22
+            },
+            {
+              "request": 225,
+              "first_difference": 5
+            },
+            {
+              "request": 230,
+              "first_difference": 1
+            },
+            {
+              "request": 237,
+              "first_difference": 2
+            },
+            {
+              "request": 238,
+              "first_difference": 2
+            },
+            {
+              "request": 239,
+              "first_difference": 41
+            },
+            {
+              "request": 240,
+              "first_difference": 8
+            },
+            {
+              "request": 243,
+              "first_difference": 4
+            },
+            {
+              "request": 252,
+              "first_difference": 1
+            }
+          ],
+          "mtp_deterministic": true
+        },
+        {
+          "batch": 256,
+          "prefix": 2048,
+          "changed_requests": 44,
+          "differences": [
+            {
+              "request": 0,
+              "first_difference": 4
+            },
+            {
+              "request": 2,
+              "first_difference": 17
+            },
+            {
+              "request": 3,
+              "first_difference": 2
+            },
+            {
+              "request": 14,
+              "first_difference": 70
+            },
+            {
+              "request": 15,
+              "first_difference": 4
+            },
+            {
+              "request": 16,
+              "first_difference": 30
+            },
+            {
+              "request": 18,
+              "first_difference": 12
+            },
+            {
+              "request": 20,
+              "first_difference": 47
+            },
+            {
+              "request": 26,
+              "first_difference": 4
+            },
+            {
+              "request": 32,
+              "first_difference": 13
+            },
+            {
+              "request": 38,
+              "first_difference": 5
+            },
+            {
+              "request": 40,
+              "first_difference": 9
+            },
+            {
+              "request": 44,
+              "first_difference": 4
+            },
+            {
+              "request": 50,
+              "first_difference": 1
+            },
+            {
+              "request": 51,
+              "first_difference": 1
+            },
+            {
+              "request": 71,
+              "first_difference": 40
+            },
+            {
+              "request": 78,
+              "first_difference": 4
+            },
+            {
+              "request": 83,
+              "first_difference": 1
+            },
+            {
+              "request": 97,
+              "first_difference": 1
+            },
+            {
+              "request": 99,
+              "first_difference": 4
+            },
+            {
+              "request": 108,
+              "first_difference": 8
+            },
+            {
+              "request": 114,
+              "first_difference": 3
+            },
+            {
+              "request": 119,
+              "first_difference": 1
+            },
+            {
+              "request": 122,
+              "first_difference": 1
+            },
+            {
+              "request": 124,
+              "first_difference": 36
+            },
+            {
+              "request": 129,
+              "first_difference": 43
+            },
+            {
+              "request": 132,
+              "first_difference": 1
+            },
+            {
+              "request": 134,
+              "first_difference": 2
+            },
+            {
+              "request": 142,
+              "first_difference": 8
+            },
+            {
+              "request": 145,
+              "first_difference": 74
+            },
+            {
+              "request": 153,
+              "first_difference": 1
+            },
+            {
+              "request": 157,
+              "first_difference": 18
+            },
+            {
+              "request": 160,
+              "first_difference": 19
+            },
+            {
+              "request": 164,
+              "first_difference": 4
+            },
+            {
+              "request": 168,
+              "first_difference": 43
+            },
+            {
+              "request": 174,
+              "first_difference": 1
+            },
+            {
+              "request": 179,
+              "first_difference": 1
+            },
+            {
+              "request": 180,
+              "first_difference": 40
+            },
+            {
+              "request": 201,
+              "first_difference": 1
+            },
+            {
+              "request": 204,
+              "first_difference": 5
+            },
+            {
+              "request": 215,
+              "first_difference": 37
+            },
+            {
+              "request": 225,
+              "first_difference": 1
+            },
+            {
+              "request": 254,
+              "first_difference": 2
+            },
+            {
+              "request": 255,
+              "first_difference": 2
+            }
+          ],
+          "mtp_deterministic": true
+        }
+      ]
+    },
+    {
+      "runtime": "vllm",
+      "files": [
+        {
+          "path": "build/baselines/vllm-qwen3.5-0.8b-ar-cuda-bf16-optimized.json",
+          "sha256": "328d04be40209ed12ddc3eb8c6fc7d0638769d86eac99894f627142318751827"
+        },
+        {
+          "path": "build/baselines/vllm-qwen3.5-0.8b-mtp-cuda-bf16-optimized.json",
+          "sha256": "97c630ddd86b926e034558c15bdefe358b2fb11b5fa8d3e489609dbed29a889f"
+        }
+      ],
+      "scope": "First measured output IDs versus matching AR run; all repeats remain in raw baseline records",
+      "shapes": [
+        {
+          "batch": 1,
+          "prefix": 32,
+          "changed_requests": 1,
+          "differences": [
+            {
+              "request": 0,
+              "first_difference": 10
+            }
+          ],
+          "mtp_deterministic": true
+        },
+        {
+          "batch": 1,
+          "prefix": 2048,
+          "changed_requests": 0,
+          "differences": [],
+          "mtp_deterministic": true
+        },
+        {
+          "batch": 4,
+          "prefix": 32,
+          "changed_requests": 0,
+          "differences": [],
+          "mtp_deterministic": true
+        },
+        {
+          "batch": 4,
+          "prefix": 2048,
+          "changed_requests": 0,
+          "differences": [],
+          "mtp_deterministic": true
+        },
+        {
+          "batch": 16,
+          "prefix": 32,
+          "changed_requests": 4,
+          "differences": [
+            {
+              "request": 0,
+              "first_difference": 14
+            },
+            {
+              "request": 11,
+              "first_difference": 105
+            },
+            {
+              "request": 12,
+              "first_difference": 3
+            },
+            {
+              "request": 14,
+              "first_difference": 4
+            }
+          ],
+          "mtp_deterministic": true
+        },
+        {
+          "batch": 16,
+          "prefix": 2048,
+          "changed_requests": 3,
+          "differences": [
+            {
+              "request": 2,
+              "first_difference": 127
+            },
+            {
+              "request": 4,
+              "first_difference": 21
+            },
+            {
+              "request": 10,
+              "first_difference": 36
+            }
+          ],
+          "mtp_deterministic": true
+        },
+        {
+          "batch": 64,
+          "prefix": 32,
+          "changed_requests": 6,
+          "differences": [
+            {
+              "request": 8,
+              "first_difference": 4
+            },
+            {
+              "request": 16,
+              "first_difference": 0
+            },
+            {
+              "request": 18,
+              "first_difference": 0
+            },
+            {
+              "request": 21,
+              "first_difference": 8
+            },
+            {
+              "request": 33,
+              "first_difference": 1
+            },
+            {
+              "request": 42,
+              "first_difference": 2
+            }
+          ],
+          "mtp_deterministic": false
+        },
+        {
+          "batch": 64,
+          "prefix": 2048,
+          "changed_requests": 11,
+          "differences": [
+            {
+              "request": 8,
+              "first_difference": 43
+            },
+            {
+              "request": 9,
+              "first_difference": 4
+            },
+            {
+              "request": 12,
+              "first_difference": 127
+            },
+            {
+              "request": 15,
+              "first_difference": 2
+            },
+            {
+              "request": 17,
+              "first_difference": 0
+            },
+            {
+              "request": 24,
+              "first_difference": 98
+            },
+            {
+              "request": 29,
+              "first_difference": 1
+            },
+            {
+              "request": 30,
+              "first_difference": 15
+            },
+            {
+              "request": 31,
+              "first_difference": 1
+            },
+            {
+              "request": 50,
+              "first_difference": 8
+            },
+            {
+              "request": 56,
+              "first_difference": 0
+            }
+          ],
+          "mtp_deterministic": true
+        },
+        {
+          "batch": 256,
+          "prefix": 32,
+          "changed_requests": 28,
+          "differences": [
+            {
+              "request": 5,
+              "first_difference": 19
+            },
+            {
+              "request": 10,
+              "first_difference": 9
+            },
+            {
+              "request": 12,
+              "first_difference": 28
+            },
+            {
+              "request": 40,
+              "first_difference": 14
+            },
+            {
+              "request": 69,
+              "first_difference": 7
+            },
+            {
+              "request": 72,
+              "first_difference": 30
+            },
+            {
+              "request": 76,
+              "first_difference": 13
+            },
+            {
+              "request": 130,
+              "first_difference": 49
+            },
+            {
+              "request": 140,
+              "first_difference": 9
+            },
+            {
+              "request": 145,
+              "first_difference": 7
+            },
+            {
+              "request": 148,
+              "first_difference": 2
+            },
+            {
+              "request": 149,
+              "first_difference": 13
+            },
+            {
+              "request": 157,
+              "first_difference": 43
+            },
+            {
+              "request": 159,
+              "first_difference": 9
+            },
+            {
+              "request": 169,
+              "first_difference": 3
+            },
+            {
+              "request": 181,
+              "first_difference": 3
+            },
+            {
+              "request": 188,
+              "first_difference": 1
+            },
+            {
+              "request": 192,
+              "first_difference": 4
+            },
+            {
+              "request": 221,
+              "first_difference": 3
+            },
+            {
+              "request": 222,
+              "first_difference": 22
+            },
+            {
+              "request": 230,
+              "first_difference": 1
+            },
+            {
+              "request": 236,
+              "first_difference": 4
+            },
+            {
+              "request": 237,
+              "first_difference": 2
+            },
+            {
+              "request": 239,
+              "first_difference": 65
+            },
+            {
+              "request": 243,
+              "first_difference": 0
+            },
+            {
+              "request": 251,
+              "first_difference": 18
+            },
+            {
+              "request": 252,
+              "first_difference": 1
+            },
+            {
+              "request": 255,
+              "first_difference": 1
+            }
+          ],
+          "mtp_deterministic": true
+        },
+        {
+          "batch": 256,
+          "prefix": 2048,
+          "changed_requests": 56,
+          "differences": [
+            {
+              "request": 2,
+              "first_difference": 6
+            },
+            {
+              "request": 3,
+              "first_difference": 127
+            },
+            {
+              "request": 7,
+              "first_difference": 78
+            },
+            {
+              "request": 14,
+              "first_difference": 7
+            },
+            {
+              "request": 20,
+              "first_difference": 102
+            },
+            {
+              "request": 32,
+              "first_difference": 36
+            },
+            {
+              "request": 38,
+              "first_difference": 127
+            },
+            {
+              "request": 39,
+              "first_difference": 6
+            },
+            {
+              "request": 40,
+              "first_difference": 7
+            },
+            {
+              "request": 57,
+              "first_difference": 1
+            },
+            {
+              "request": 58,
+              "first_difference": 2
+            },
+            {
+              "request": 66,
+              "first_difference": 0
+            },
+            {
+              "request": 71,
+              "first_difference": 40
+            },
+            {
+              "request": 78,
+              "first_difference": 0
+            },
+            {
+              "request": 83,
+              "first_difference": 2
+            },
+            {
+              "request": 89,
+              "first_difference": 127
+            },
+            {
+              "request": 92,
+              "first_difference": 3
+            },
+            {
+              "request": 94,
+              "first_difference": 127
+            },
+            {
+              "request": 95,
+              "first_difference": 1
+            },
+            {
+              "request": 97,
+              "first_difference": 1
+            },
+            {
+              "request": 99,
+              "first_difference": 4
+            },
+            {
+              "request": 101,
+              "first_difference": 2
+            },
+            {
+              "request": 108,
+              "first_difference": 8
+            },
+            {
+              "request": 124,
+              "first_difference": 54
+            },
+            {
+              "request": 129,
+              "first_difference": 23
+            },
+            {
+              "request": 133,
+              "first_difference": 4
+            },
+            {
+              "request": 134,
+              "first_difference": 2
+            },
+            {
+              "request": 139,
+              "first_difference": 1
+            },
+            {
+              "request": 141,
+              "first_difference": 6
+            },
+            {
+              "request": 145,
+              "first_difference": 76
+            },
+            {
+              "request": 153,
+              "first_difference": 1
+            },
+            {
+              "request": 157,
+              "first_difference": 50
+            },
+            {
+              "request": 168,
+              "first_difference": 57
+            },
+            {
+              "request": 173,
+              "first_difference": 0
+            },
+            {
+              "request": 174,
+              "first_difference": 1
+            },
+            {
+              "request": 176,
+              "first_difference": 0
+            },
+            {
+              "request": 177,
+              "first_difference": 0
+            },
+            {
+              "request": 180,
+              "first_difference": 40
+            },
+            {
+              "request": 190,
+              "first_difference": 127
+            },
+            {
+              "request": 192,
+              "first_difference": 1
+            },
+            {
+              "request": 193,
+              "first_difference": 0
+            },
+            {
+              "request": 198,
+              "first_difference": 5
+            },
+            {
+              "request": 202,
+              "first_difference": 1
+            },
+            {
+              "request": 204,
+              "first_difference": 2
+            },
+            {
+              "request": 208,
+              "first_difference": 127
+            },
+            {
+              "request": 215,
+              "first_difference": 57
+            },
+            {
+              "request": 220,
+              "first_difference": 127
+            },
+            {
+              "request": 221,
+              "first_difference": 2
+            },
+            {
+              "request": 222,
+              "first_difference": 2
+            },
+            {
+              "request": 225,
+              "first_difference": 1
+            },
+            {
+              "request": 226,
+              "first_difference": 127
+            },
+            {
+              "request": 228,
+              "first_difference": 1
+            },
+            {
+              "request": 230,
+              "first_difference": 1
+            },
+            {
+              "request": 239,
+              "first_difference": 127
+            },
+            {
+              "request": 243,
+              "first_difference": 4
+            },
+            {
+              "request": 254,
+              "first_difference": 2
+            }
+          ],
+          "mtp_deterministic": true
+        }
+      ]
+    }
+  ]
+}

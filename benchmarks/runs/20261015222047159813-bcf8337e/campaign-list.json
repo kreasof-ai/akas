@@ -1,0 +1,2210 @@
+[
+  {
+    "id": "lfm2.5-230m-bf16-cuda-default-ar",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/model-smoke/checkpoints/lfm-hf",
+      "definition": "akas.models.lfm2.model:LFM2",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "cuda",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": null,
+      "mode": "ar"
+    }
+  },
+  {
+    "id": "lfm2.5-230m-bf16-cuda-fp8-ar",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/model-smoke/checkpoints/lfm-hf",
+      "definition": "akas.models.lfm2.model:LFM2",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "cuda",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": "fp8",
+      "mode": "ar"
+    }
+  },
+  {
+    "id": "lfm2.5-230m-bf16-webgpu-default-ar",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/model-smoke/checkpoints/lfm-hf",
+      "definition": "akas.models.lfm2.model:LFM2",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "webgpu",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": null,
+      "mode": "ar"
+    }
+  },
+  {
+    "id": "lfm2.5-230m-bf16-webgpu-fp8-ar",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/model-smoke/checkpoints/lfm-hf",
+      "definition": "akas.models.lfm2.model:LFM2",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "webgpu",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": "fp8",
+      "mode": "ar"
+    }
+  },
+  {
+    "id": "lfm2.5-230m-f16-cuda-default-ar",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/baselines/checkpoints/lfm-f16.gguf",
+      "definition": "akas.models.lfm2.model:LFM2",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "cuda",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": null,
+      "mode": "ar"
+    }
+  },
+  {
+    "id": "lfm2.5-230m-f16-cuda-fp8-ar",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/baselines/checkpoints/lfm-f16.gguf",
+      "definition": "akas.models.lfm2.model:LFM2",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "cuda",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": "fp8",
+      "mode": "ar"
+    }
+  },
+  {
+    "id": "lfm2.5-230m-f16-webgpu-default-ar",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/baselines/checkpoints/lfm-f16.gguf",
+      "definition": "akas.models.lfm2.model:LFM2",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "webgpu",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": null,
+      "mode": "ar"
+    }
+  },
+  {
+    "id": "lfm2.5-230m-f16-webgpu-fp8-ar",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/baselines/checkpoints/lfm-f16.gguf",
+      "definition": "akas.models.lfm2.model:LFM2",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "webgpu",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": "fp8",
+      "mode": "ar"
+    }
+  },
+  {
+    "id": "lfm2.5-230m-q4_0-cuda-default-ar",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/baselines/checkpoints/lfm-q4_0.gguf",
+      "definition": "akas.models.lfm2.model:LFM2",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "cuda",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": null,
+      "mode": "ar"
+    }
+  },
+  {
+    "id": "lfm2.5-230m-q4_0-cuda-fp8-ar",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/baselines/checkpoints/lfm-q4_0.gguf",
+      "definition": "akas.models.lfm2.model:LFM2",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "cuda",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": "fp8",
+      "mode": "ar"
+    }
+  },
+  {
+    "id": "lfm2.5-230m-q4_0-webgpu-default-ar",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/baselines/checkpoints/lfm-q4_0.gguf",
+      "definition": "akas.models.lfm2.model:LFM2",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "webgpu",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": null,
+      "mode": "ar"
+    }
+  },
+  {
+    "id": "lfm2.5-230m-q4_0-webgpu-fp8-ar",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/baselines/checkpoints/lfm-q4_0.gguf",
+      "definition": "akas.models.lfm2.model:LFM2",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "webgpu",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": "fp8",
+      "mode": "ar"
+    }
+  },
+  {
+    "id": "lfm2.5-230m-q4_k_m-cuda-default-ar",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/model-smoke/checkpoints/lfm-gguf/LFM2.5-230M-Q4_K_M.gguf",
+      "definition": "akas.models.lfm2.model:LFM2",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "cuda",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": null,
+      "mode": "ar"
+    }
+  },
+  {
+    "id": "lfm2.5-230m-q4_k_m-cuda-fp8-ar",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/model-smoke/checkpoints/lfm-gguf/LFM2.5-230M-Q4_K_M.gguf",
+      "definition": "akas.models.lfm2.model:LFM2",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "cuda",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": "fp8",
+      "mode": "ar"
+    }
+  },
+  {
+    "id": "lfm2.5-230m-q4_k_m-webgpu-default-ar",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/model-smoke/checkpoints/lfm-gguf/LFM2.5-230M-Q4_K_M.gguf",
+      "definition": "akas.models.lfm2.model:LFM2",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "webgpu",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": null,
+      "mode": "ar"
+    }
+  },
+  {
+    "id": "lfm2.5-230m-q4_k_m-webgpu-fp8-ar",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/model-smoke/checkpoints/lfm-gguf/LFM2.5-230M-Q4_K_M.gguf",
+      "definition": "akas.models.lfm2.model:LFM2",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "webgpu",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": "fp8",
+      "mode": "ar"
+    }
+  },
+  {
+    "id": "qwen3.5-0.8b-bf16-cuda-default-ar",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/model-smoke/checkpoints/qwen-hf",
+      "definition": "akas.models.qwen35.model:Qwen35Dense",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "cuda",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": null,
+      "mode": "ar"
+    }
+  },
+  {
+    "id": "qwen3.5-0.8b-bf16-cuda-default-mtp",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/model-smoke/checkpoints/qwen-hf",
+      "definition": "akas.models.qwen35.model:Qwen35Dense",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "cuda",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": null,
+      "mode": "mtp"
+    }
+  },
+  {
+    "id": "qwen3.5-0.8b-bf16-cuda-fp8-ar",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/model-smoke/checkpoints/qwen-hf",
+      "definition": "akas.models.qwen35.model:Qwen35Dense",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "cuda",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": "fp8",
+      "mode": "ar"
+    }
+  },
+  {
+    "id": "qwen3.5-0.8b-bf16-cuda-fp8-mtp",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/model-smoke/checkpoints/qwen-hf",
+      "definition": "akas.models.qwen35.model:Qwen35Dense",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "cuda",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": "fp8",
+      "mode": "mtp"
+    }
+  },
+  {
+    "id": "qwen3.5-0.8b-bf16-webgpu-default-ar",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/model-smoke/checkpoints/qwen-hf",
+      "definition": "akas.models.qwen35.model:Qwen35Dense",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "webgpu",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": null,
+      "mode": "ar"
+    }
+  },
+  {
+    "id": "qwen3.5-0.8b-bf16-webgpu-default-mtp",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/model-smoke/checkpoints/qwen-hf",
+      "definition": "akas.models.qwen35.model:Qwen35Dense",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "webgpu",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": null,
+      "mode": "mtp"
+    }
+  },
+  {
+    "id": "qwen3.5-0.8b-bf16-webgpu-fp8-ar",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/model-smoke/checkpoints/qwen-hf",
+      "definition": "akas.models.qwen35.model:Qwen35Dense",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "webgpu",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": "fp8",
+      "mode": "ar"
+    }
+  },
+  {
+    "id": "qwen3.5-0.8b-bf16-webgpu-fp8-mtp",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/model-smoke/checkpoints/qwen-hf",
+      "definition": "akas.models.qwen35.model:Qwen35Dense",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "webgpu",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": "fp8",
+      "mode": "mtp"
+    }
+  },
+  {
+    "id": "qwen3.5-0.8b-f16-cuda-default-ar",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/baselines/checkpoints/qwen-f16.gguf",
+      "definition": "akas.models.qwen35.model:Qwen35Dense",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "cuda",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": null,
+      "mode": "ar"
+    }
+  },
+  {
+    "id": "qwen3.5-0.8b-f16-cuda-default-mtp",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/baselines/checkpoints/qwen-f16.gguf",
+      "definition": "akas.models.qwen35.model:Qwen35Dense",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "cuda",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": null,
+      "mode": "mtp"
+    }
+  },
+  {
+    "id": "qwen3.5-0.8b-f16-cuda-fp8-ar",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/baselines/checkpoints/qwen-f16.gguf",
+      "definition": "akas.models.qwen35.model:Qwen35Dense",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "cuda",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": "fp8",
+      "mode": "ar"
+    }
+  },
+  {
+    "id": "qwen3.5-0.8b-f16-cuda-fp8-mtp",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/baselines/checkpoints/qwen-f16.gguf",
+      "definition": "akas.models.qwen35.model:Qwen35Dense",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "cuda",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": "fp8",
+      "mode": "mtp"
+    }
+  },
+  {
+    "id": "qwen3.5-0.8b-f16-webgpu-default-ar",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/baselines/checkpoints/qwen-f16.gguf",
+      "definition": "akas.models.qwen35.model:Qwen35Dense",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "webgpu",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": null,
+      "mode": "ar"
+    }
+  },
+  {
+    "id": "qwen3.5-0.8b-f16-webgpu-default-mtp",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/baselines/checkpoints/qwen-f16.gguf",
+      "definition": "akas.models.qwen35.model:Qwen35Dense",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "webgpu",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": null,
+      "mode": "mtp"
+    }
+  },
+  {
+    "id": "qwen3.5-0.8b-f16-webgpu-fp8-ar",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/baselines/checkpoints/qwen-f16.gguf",
+      "definition": "akas.models.qwen35.model:Qwen35Dense",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "webgpu",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": "fp8",
+      "mode": "ar"
+    }
+  },
+  {
+    "id": "qwen3.5-0.8b-f16-webgpu-fp8-mtp",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/baselines/checkpoints/qwen-f16.gguf",
+      "definition": "akas.models.qwen35.model:Qwen35Dense",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "webgpu",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": "fp8",
+      "mode": "mtp"
+    }
+  },
+  {
+    "id": "qwen3.5-0.8b-q4_0-cuda-default-ar",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/baselines/checkpoints/qwen-q4_0.gguf",
+      "definition": "akas.models.qwen35.model:Qwen35Dense",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "cuda",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": null,
+      "mode": "ar"
+    }
+  },
+  {
+    "id": "qwen3.5-0.8b-q4_0-cuda-default-mtp",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/baselines/checkpoints/qwen-q4_0.gguf",
+      "definition": "akas.models.qwen35.model:Qwen35Dense",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "cuda",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": null,
+      "mode": "mtp"
+    }
+  },
+  {
+    "id": "qwen3.5-0.8b-q4_0-cuda-fp8-ar",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/baselines/checkpoints/qwen-q4_0.gguf",
+      "definition": "akas.models.qwen35.model:Qwen35Dense",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "cuda",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": "fp8",
+      "mode": "ar"
+    }
+  },
+  {
+    "id": "qwen3.5-0.8b-q4_0-cuda-fp8-mtp",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/baselines/checkpoints/qwen-q4_0.gguf",
+      "definition": "akas.models.qwen35.model:Qwen35Dense",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "cuda",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": "fp8",
+      "mode": "mtp"
+    }
+  },
+  {
+    "id": "qwen3.5-0.8b-q4_0-webgpu-default-ar",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/baselines/checkpoints/qwen-q4_0.gguf",
+      "definition": "akas.models.qwen35.model:Qwen35Dense",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "webgpu",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": null,
+      "mode": "ar"
+    }
+  },
+  {
+    "id": "qwen3.5-0.8b-q4_0-webgpu-default-mtp",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/baselines/checkpoints/qwen-q4_0.gguf",
+      "definition": "akas.models.qwen35.model:Qwen35Dense",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "webgpu",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": null,
+      "mode": "mtp"
+    }
+  },
+  {
+    "id": "qwen3.5-0.8b-q4_0-webgpu-fp8-ar",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/baselines/checkpoints/qwen-q4_0.gguf",
+      "definition": "akas.models.qwen35.model:Qwen35Dense",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "webgpu",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": "fp8",
+      "mode": "ar"
+    }
+  },
+  {
+    "id": "qwen3.5-0.8b-q4_0-webgpu-fp8-mtp",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/baselines/checkpoints/qwen-q4_0.gguf",
+      "definition": "akas.models.qwen35.model:Qwen35Dense",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "webgpu",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": "fp8",
+      "mode": "mtp"
+    }
+  },
+  {
+    "id": "qwen3.5-0.8b-q4_k_m-cuda-default-ar",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/model-smoke/checkpoints/qwen-gguf/Qwen3.5-0.8B-Q4_K_M.gguf",
+      "definition": "akas.models.qwen35.model:Qwen35Dense",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "cuda",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": null,
+      "mode": "ar"
+    }
+  },
+  {
+    "id": "qwen3.5-0.8b-q4_k_m-cuda-default-mtp",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/model-smoke/checkpoints/qwen-gguf/Qwen3.5-0.8B-Q4_K_M.gguf",
+      "definition": "akas.models.qwen35.model:Qwen35Dense",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "cuda",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": null,
+      "mode": "mtp"
+    }
+  },
+  {
+    "id": "qwen3.5-0.8b-q4_k_m-cuda-fp8-ar",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/model-smoke/checkpoints/qwen-gguf/Qwen3.5-0.8B-Q4_K_M.gguf",
+      "definition": "akas.models.qwen35.model:Qwen35Dense",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "cuda",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": "fp8",
+      "mode": "ar"
+    }
+  },
+  {
+    "id": "qwen3.5-0.8b-q4_k_m-cuda-fp8-mtp",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/model-smoke/checkpoints/qwen-gguf/Qwen3.5-0.8B-Q4_K_M.gguf",
+      "definition": "akas.models.qwen35.model:Qwen35Dense",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "cuda",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": "fp8",
+      "mode": "mtp"
+    }
+  },
+  {
+    "id": "qwen3.5-0.8b-q4_k_m-webgpu-default-ar",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/model-smoke/checkpoints/qwen-gguf/Qwen3.5-0.8B-Q4_K_M.gguf",
+      "definition": "akas.models.qwen35.model:Qwen35Dense",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "webgpu",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": null,
+      "mode": "ar"
+    }
+  },
+  {
+    "id": "qwen3.5-0.8b-q4_k_m-webgpu-default-mtp",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/model-smoke/checkpoints/qwen-gguf/Qwen3.5-0.8B-Q4_K_M.gguf",
+      "definition": "akas.models.qwen35.model:Qwen35Dense",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "webgpu",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": null,
+      "mode": "mtp"
+    }
+  },
+  {
+    "id": "qwen3.5-0.8b-q4_k_m-webgpu-fp8-ar",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/model-smoke/checkpoints/qwen-gguf/Qwen3.5-0.8B-Q4_K_M.gguf",
+      "definition": "akas.models.qwen35.model:Qwen35Dense",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "webgpu",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": "fp8",
+      "mode": "ar"
+    }
+  },
+  {
+    "id": "qwen3.5-0.8b-q4_k_m-webgpu-fp8-mtp",
+    "context": {
+      "checkpoint": "/home/sagemaker-user/akas/build/model-smoke/checkpoints/qwen-gguf/Qwen3.5-0.8B-Q4_K_M.gguf",
+      "definition": "akas.models.qwen35.model:Qwen35Dense",
+      "workload": {
+        "schema": "akas.workload.v1",
+        "id": "standard-v1",
+        "description": "Text inference at fixed active request counts, short and medium prompts.",
+        "batches": [
+          1,
+          4,
+          16,
+          64,
+          256
+        ],
+        "prefix_tokens": [
+          32,
+          2048
+        ],
+        "output_tokens": 128,
+        "cached_prefix_tokens": 0,
+        "early_eos": false,
+        "sampling": {
+          "temperature": 0
+        },
+        "prefix_cache": false,
+        "cpu_offload": false,
+        "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+        "metrics": [
+          "prefill_tokens_per_second",
+          "decode_tokens_per_second",
+          "ttft_seconds",
+          "inter_token_seconds",
+          "peak_vram_bytes"
+        ]
+      },
+      "backend": "webgpu",
+      "device": 0,
+      "memory_bytes": null,
+      "ttft_ms": null,
+      "tpot_ms": null,
+      "kv_dtype": "fp8",
+      "mode": "mtp"
+    }
+  }
+]
