@@ -1,12 +1,12 @@
 {
   "schema": "akas.benchmark-run.v1",
-  "id": "20261015222854981873-7cc19801",
-  "started_at": "2026-10-15T22:28:54.981873Z",
-  "completed_at": "2026-10-15T22:42:25.024599Z",
+  "id": "20261015225855469569-f856e301",
+  "started_at": "2026-10-15T22:58:55.469569Z",
+  "completed_at": "2026-10-15T23:12:25.532070Z",
   "status": "budget_exhausted",
   "source": {
     "revision": "3e90ad81dc812a17acc17e0acda34ca3b69ee3b8",
-    "dirty": false,
+    "dirty": true,
     "tree_sha256": "0b85cd888e417e2bf9da99c10e56d41b4a5ac0c9258fa6458af16ac57b754c4e",
     "files": {
       "MANIFEST.in": "8ae8b16a92b023dbf19648660ce8cf6a3ec82469a2f5ccf7875129ba1396fc5e",
@@ -415,7 +415,7 @@
       "tools/campaign.py": "760c3fcd42b6c6ab354e42a226e600950aef8506c9a77c285ce436bee425de86",
       "uv.lock": "2742182ac6828b8e5e64f37c60d187ac7ce6ec0cf7c090abf84ddd9832726cdf"
     },
-    "captured_at": "2026-10-15T22:28:54.981873Z"
+    "captured_at": "2026-10-15T22:58:55.469569Z"
   },
   "metadata": {
     "runtime": "akas",
@@ -426,11 +426,11 @@
     "provider": "cuda",
     "target": "sm_89",
     "mode": "ar",
-    "kv_dtype": "float16",
+    "kv_dtype": "fp8",
     "graphs": false,
     "checkpoint": "/home/sagemaker-user/akas/build/model-smoke/checkpoints/lfm-hf",
     "checkpoint_sha256": "e06dd91009db3a89276d2e56c3dc26324c0f425a2062d4cc82df97fd435bf397",
-    "campaign_identity": "7b6d76b74270af0c2d3bbb555a8b08f311d3bc8d9c79371ed8d7b41ac99bd6f9",
+    "campaign_identity": "54a60ca42fd00d7926d2f3f777e0bdaa609dce0692e496bcb1f4545cb10661b9",
     "recipe": {
       "provider": "cuda",
       "target": "sm_89",
@@ -440,13 +440,13 @@
       "trials": 1,
       "policy": {},
       "model_options": {
-        "kv_dtype": "float16",
+        "kv_dtype": "fp8",
         "optimized": true
       },
       "window": null,
       "deferred": false,
       "head": null,
-      "id": "22bfef8083fe7b4f"
+      "id": "08e1faea05e439f7"
     },
     "device": {
       "ordinal": 0,
@@ -462,7 +462,7 @@
     "warmup": 1,
     "repeats": 3,
     "seed": 17,
-    "run_id": "20261015222854981873-7cc19801",
+    "run_id": "20261015225855469569-f856e301",
     "error": "worker wall-clock deadline exceeded"
   },
   "change": {
@@ -812,13 +812,13 @@
   "artifacts": [
     {
       "path": "source.tar.gz",
-      "sha256": "c07c31283d594d932c3a61388d8a88f4afcc6086290de7ef49c4a5e1d23d436b",
+      "sha256": "1c2c365dd9c0704730e166f2b47beead53563549ff310a8aebb2b8af96cf6dbc",
       "bytes": 605743
     },
     {
       "path": "report.json",
-      "sha256": "1b74d694caa6fa81bdd6f54d781a62249bbc00f476d17500c343a738f91ba77e",
-      "bytes": 3837
+      "sha256": "54af09d631e9a83af9d46ea275d567630bd2dd1cff2b24b7dcdddb4ef016f948",
+      "bytes": 3829
     },
     {
       "path": "worker.log",
@@ -827,8 +827,8 @@
     },
     {
       "path": "result.json",
-      "sha256": "01dafcefe6ab24503d511508f3f862c18f97c8a7decd979516be9ba77df1a183",
-      "bytes": 67246
+      "sha256": "800c315db38b4d48ae2eba6a713d7964e6ad8fa98ea85e4ecc09fb44041ccb5e",
+      "bytes": 67110
     }
   ]
 }
