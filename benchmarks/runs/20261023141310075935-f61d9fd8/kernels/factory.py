@@ -36,7 +36,8 @@ def grouped(spec, schedule):
             tx=T.get_thread_binding();lane=tx%32;warp=tx//32
             expert=tile_experts[2,group]
             if expert>=0:
-                for index in T.serial(counts[expert]):
+                for offset in T.serial(counts[expert]-tile_rows[2,group]*16):
+                    index=tile_rows[2,group]*16+offset
                     route=routes[expert,index]
                     for part in T.unroll(width):
                         column=bx*warps*width+warp+part*warps
