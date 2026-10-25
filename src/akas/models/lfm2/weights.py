@@ -26,9 +26,10 @@ class LFM2Checkpoint:
     def definition_options(self):
         return {"output": "output.weight" in self.gguf.tensors}
 
-    def graph_weights(self, graph, *, provider, expert_weight_layout="raw"):
+    def graph_weights(self, graph, *, provider, expert_weight_layout="raw", dense_weight_layout="raw"):
         return PackedWeights(
-            graph, self, provider=provider, expert_weight_layout=expert_weight_layout
+            graph, self, provider=provider, expert_weight_layout=expert_weight_layout,
+            dense_weight_layout=dense_weight_layout,
         )
 
     def inventory(self):
@@ -43,17 +44,24 @@ class LFM2Checkpoint:
         layout = model_options.get("expert_weight_layout", "raw")
         if layout not in ("raw", "planar"):
             raise ValueError("expert weight layout must be raw or planar")
-        return {} if layout == "raw" else dict(expert_weight_layout=layout)
+        dense = model_options.get("dense_weight_layout", "raw")
+        if dense not in ("raw", "planar"):
+            raise ValueError("dense weight layout must be raw or planar")
+        return {**(dict(expert_weight_layout=layout) if layout != "raw" else {}),
+                **(dict(dense_weight_layout=dense) if dense != "raw" else {})}
 
-    def upload(self, device, *, expert_weight_layout="raw"):
+    def upload(self, device, *, expert_weight_layout="raw", dense_weight_layout="raw"):
         if expert_weight_layout not in ("raw", "planar"):
             raise ValueError("expert weight layout must be raw or planar")
+        if dense_weight_layout not in ("raw", "planar"):
+            raise ValueError("dense weight layout must be raw or planar")
+        if dense_weight_layout != "raw" and device.info["provider"] != "webgpu":
+            raise ValueError("dense planar weights currently require WebGPU")
         layouts = {
             name: "planar"
             for name, info in self.gguf.tensors.items()
-            if expert_weight_layout == "planar"
-            and len(info.shape) == 3
-            and info.type == 2
+            if (expert_weight_layout == "planar" and len(info.shape) == 3 and info.type == 2)
+            or dense_planar(name, info, dense_weight_layout)
         }
         return upload_packed(device, self.gguf, layouts=layouts)
 
@@ -279,20 +287,34 @@ def huggingface_names(config, *, output=False):
     return names
 
 
+def dense_planar(name, info, layout):
+    """Embedding gathers keep their existing layout; only dense Q4 dots move."""
+    return (layout == "planar" and len(info.shape) == 2 and info.type == 2
+            and name != "token_embd.weight")
+
+
 class PackedWeights:
     """Declare original GGML bytes; mathematical shapes stay with the checkpoint."""
 
-    def __init__(self, graph, checkpoint, *, provider, expert_weight_layout="raw"):
+    def __init__(self, graph, checkpoint, *, provider, expert_weight_layout="raw", dense_weight_layout="raw"):
         from math import prod
 
         from akas.quantization.weights.ggml.definition import weight_storage
 
         if expert_weight_layout not in ("raw", "planar"):
             raise ValueError("expert weight layout must be raw or planar")
+        if dense_weight_layout not in ("raw", "planar"):
+            raise ValueError("dense weight layout must be raw or planar")
+        if dense_weight_layout != "raw" and provider != "webgpu":
+            raise ValueError("dense planar weights currently require WebGPU")
         self.checkpoint = checkpoint
         self.expert_weight_layout = expert_weight_layout
+        self.dense_weight_layout = dense_weight_layout
         self.buffers = {}
         for name, info in checkpoint.gguf.tensors.items():
+            if dense_planar(name, info, dense_weight_layout):
+                from akas.quantization.weights.ggml.definition import validate_layout
+                validate_layout(info.shape, encoding=2, layout="planar")
             count, dtype = weight_storage(
                 info.type, prod(info.shape), packed_words=provider == "webgpu"
             )
@@ -305,7 +327,9 @@ class PackedWeights:
         return [(self.buffers[name], 0, self.checkpoint.gguf.tensors[name].shape[0])]
 
     def parameters(self, name):
-        return {"ggml": True, "type": self.checkpoint.gguf.tensors[name].type}
+        info = self.checkpoint.gguf.tensors[name]
+        return {"ggml": True, "type": info.type,
+                **(dict(weight_layout="planar") if dense_planar(name, info, self.dense_weight_layout) else {})}
 
     def parts(self, name):
         from math import prod
@@ -316,7 +340,7 @@ class PackedWeights:
             self.expert_weight_layout == "planar"
             and len(info.shape) == 3
             and info.type == 2
-        ):
+        ) or dense_planar(name, info, self.dense_weight_layout):
             from akas.quantization.weights.ggml.definition import validate_layout
 
             validate_layout(info.shape, encoding=2, layout="planar")

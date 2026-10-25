@@ -102,22 +102,62 @@ def validation(kind, p, signature):
             sample_weight(values["w2"], p["type"], seed=32, decode=False)
         x = x.astype("float64")
         out = np.empty((r, o), dtype="float64")
+        half = p.get("half_accum", False)
+        if half:
+            # Eight F16 FMAs per even/odd lane, then a F32 complete-K sum.
+            # Cover both permitted F16 rounding directions, plus subnormal
+            # absolute error. Ordinary F32 projections keep their old gate.
+            half_gamma = 8 * 2**-10 / (1 - 8 * 2**-10)
+            total_gamma = ((k + 15) // 16) * 2**-23
+            bounds = np.empty((r, o), dtype="float64")
+            absolute_x = np.abs(x)
         for start in range(0, o, 128):
             stop = min(o, start + 128)
             weight = decode_rows(values["w"], p["type"], k, start, stop)
             if r > 1:
                 weight = weight.astype("float16")
             section = x @ weight.astype("float64").T
+            if half:
+                error = ((half_gamma + total_gamma)
+                         * (absolute_x @ np.abs(weight.astype("float64")).T)
+                         + k * 2**-24)
             if kind == "ffn":
                 other = decode_rows(values["w2"], p["type"], k, start, stop)
                 if r > 1:
                     other = other.astype("float16")
                 up = x @ other.astype("float64").T
+                if half:
+                    up_error = ((half_gamma + total_gamma)
+                                * (absolute_x @ np.abs(other.astype("float64")).T)
+                                + k * 2**-24)
+                    error = (1.1 * np.abs(up) * error
+                             + np.abs(section / (1 + np.exp(-section))) * up_error
+                             + 1.1 * error * up_error)
                 section = section / (1 + np.exp(-section)) * up
             elif kind == "linear_add":
                 section += values["residual"].reshape(r, o)[:, start:stop]
+                if half:
+                    error += np.abs(section) * 2**-23
             out[:, start:stop] = section
+            if half:
+                bounds[:, start:stop] = error + np.abs(section) * 2**-21
         expected["out"][:] = out.reshape(values["out"].shape)
+        if p.get("weight_layout", "raw") == "planar":
+            if p["type"] != 2:
+                raise ValueError("planar dense validation requires Q4_0")
+            from akas.quantization.weights.ggml.kernel import repack_host
+            for name in ("w", "w2") if kind == "ffn" else ("w",):
+                raw = values[name].view("uint8").reshape(-1)
+                raw[:] = repack_host(raw)
+        if half:
+            def check_short_half(actual, wanted):
+                a, w = actual.astype("float64"), wanted.astype("float64")
+                assert np.isfinite(a).all()
+                assert np.all(np.abs(a - w) <= bounds.reshape(w.shape))
+                # The worst-case per-element cancellation bound alone is too
+                # permissive for a broken shader. Retain a separate RMS gate.
+                assert np.linalg.norm(a - w) / max(float(np.linalg.norm(w)), 1e-30) < .005
+            return ValidationCase(values, expected, comparators={"out": check_short_half})
         return ValidationCase(values, expected)
     if "scales" in values:
         from akas.quantization._shared.e4m3 import decode_storage, encode_storage
@@ -290,3 +330,21 @@ def q16_projection_validation(kind, parameters, signature):
     expected = {name: value.copy() for name, value in values.items()}
     expected["out"][:] = out.reshape(expected["out"].shape)
     return ValidationCase(values, expected)
+
+
+def half_input_validation(kind, parameters, signature):
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    values = sample_arguments(signature)
+    edges = np.array([0., -0., 2**-25, -2**-25, 3*2**-25, 2**-24,
+                      2**-14 - 2**-25, 1 + 2**-11, 1 + 3*2**-11, 65504.], "float32")
+    flat = values["x"].reshape(-1)
+    flat[:min(flat.size, edges.size)] = edges[:min(flat.size, edges.size)]
+    expected = {name: value.copy() for name, value in values.items()}
+    expected["out"][:] = values["x"].astype("float16")
+
+    def exact(actual, reference):
+        np.testing.assert_array_equal(actual.view("uint16"), reference.view("uint16"))
+
+    return ValidationCase(values, expected, comparators={"out": exact})

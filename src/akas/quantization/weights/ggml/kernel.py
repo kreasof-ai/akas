@@ -224,22 +224,27 @@ def dequantize(spec, schedule, *, provider):
     p = {**spec.parameters, **schedule}
     rows, depth = p["r"], p["k"]
     encoding = p["type"]
-    binding = FORMAT.bind((rows, depth), provider=provider, encoding=encoding)
+    binding = FORMAT.bind((rows, depth), provider=provider, encoding=encoding,
+                          **(dict(layout=p["weight_layout"]) if "weight_layout" in p else {}))
     values = binding.storage.values
     read = binding.read
+    dtype = p.get("output_dtype", "float32")
+    if dtype not in ("float16", "float32"):
+        raise ValueError("dequantization output must be F16 or F32")
+    from akas.quantization._shared.rounding import round_half
+    rounded = round_half()
 
     @kernel
     def compute(w: Tensor(values.shape, values.dtype)) -> Tensor(
-        (rows, depth), "float32"
+        (rows, depth), dtype
     ):
-        out = output((rows, depth), "float32")
+        out = output((rows, depth), dtype)
         with T.Kernel(T.ceildiv(rows * depth, 128), threads=128) as block:
             for lane in T.Parallel(128):
                 index = block * 128 + lane
                 if index < rows * depth:
-                    out[index // depth, index % depth] = read(
-                        (w,), index // depth, index % depth
-                    )
+                    value = read((w,), index // depth, index % depth)
+                    out[index // depth, index % depth] = rounded(value) if dtype == "float16" else value
         return out
 
     return compute

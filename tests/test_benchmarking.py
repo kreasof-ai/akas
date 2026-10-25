@@ -102,6 +102,30 @@ def test_synchronized_measurements_count_only_executed_tokens():
     assert prompts[1] == prompts[3] == prompts[5]
 
 
+def test_verification_capture_is_outside_phase_timers_and_only_on_final_sample():
+    now = [0.0]
+
+    class Timed(Session):
+        def prefill(self, prompts, *, read):
+            now[0] += 4
+
+        def decode(self, n, *, read):
+            now[0] += 2
+
+    captures = []
+
+    def capture(session):
+        captures.append(session)
+        now[0] += 100
+
+    session = Timed()
+    result = run(session, Case(4, 5, generated=2), repeats=2, warmup=1,
+                 clock=lambda: now[0], after_prefill=capture)
+    assert captures == [session]
+    assert [s["prefill_seconds"] for s in result["samples"]] == [4, 4]
+    assert [s["decode_seconds"] for s in result["samples"]] == [2, 2]
+
+
 def test_explicit_text_tokens_and_cached_prefix_are_reused_without_sampling():
     session = Session()
     tokens = [[i, i + 1] for i in range(4)]

@@ -52,3 +52,31 @@ def round_bfloat():
         )
 
     return rounded
+
+
+def round_half_branch():
+    """Keep exact half rounding while bypassing subnormal work for normal data.
+
+    In particular, do not replace this with pack2x16float: some Vulkan drivers
+    truncate that conversion. Both branches return an exactly representable
+    half value before the packed store, including ties and subnormals.
+    """
+    import tilelang.language as T
+
+    fallback = round_half()
+
+    @T.macro
+    def rounded(value):
+        bits = T.reinterpret("uint32", value)
+        exponent = T.cast(bits >> 23 & 255, "int32")
+        result = T.alloc_var("float32")
+        if exponent >= 113:
+            result = T.reinterpret("float32", bits + 4095 + (bits >> 13 & 1)
+                                   & T.uint32(4294959104))
+        elif exponent < 102:
+            result = T.if_then_else(bits >> 31 != 0, -T.float32(0), T.float32(0))
+        else:
+            result = fallback(value)
+        return result
+
+    return rounded

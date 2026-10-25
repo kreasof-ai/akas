@@ -341,6 +341,47 @@ def test_archive_check_is_read_only_and_independent_of_build(campaign_evidence):
     assert before == {p: p.read_bytes() for p in history.rglob("*") if p.is_file()}
 
 
+def test_archived_report_preserves_original_pages_and_pins_evidence(campaign_evidence):
+    from akas.benchmarking import archive
+    from tools.benchmark_archive import publish, prune, check as check_archive
+    campaign, history, build = campaign_evidence
+    repo = history.parent
+    archive.git(repo, "init", "-q")
+    archive.git(repo, "config", "user.name", "Test")
+    archive.git(repo, "config", "user.email", "test@example.invalid")
+    archive.git(repo, "add", ".")
+    archive.git(repo, "commit", "-qm", "fixture")
+    out = export(campaign, history=history)
+    original = (out / "README.md").read_bytes()
+    # These fixtures use historical campaign IDs; a portable index can be rebuilt
+    # independently of benchmark execution.
+    for path in (history / "runs").glob("*/run.json"):
+        data = read(path)
+        data.setdefault("schema", "akas.benchmark-run.v1")
+        data.setdefault("change", {})
+        data.setdefault("search", [])
+        data.setdefault("workload", dict(id="custom", shapes=[]))
+        data["source"].setdefault("dirty", False)
+        write(path, data)
+    (out / "README.md").write_bytes(original + b"\nUnrecorded performance claim.\n")
+    with pytest.raises(ValueError, match="Generated report differs"):
+        publish(history, repository_url="https://github.com/example/archive")
+    (out / "README.md").write_bytes(original)
+    publish(history, repository_url="https://github.com/example/archive")
+    identity = out.name
+    data = check_archive(history, objects=True)
+    assert len(data["reports"]) == 1
+    assert archive.read_file(history, "reports", identity, "originals/README.md") == original
+    assert b"https://github.com/example/archive/blob/" in archive.read_file(
+        history, "reports", identity, "README.md")
+    # Local originals intentionally differ from the navigable archived pages.
+    prune(history)
+    page = archive.read_file(history, "reports", identity, "README.md").decode()
+    assert "https://github.com/example/archive/blob/" in page
+    assert "../../runs/" not in page
+    check(history)
+
+
 @pytest.mark.parametrize(
     "change, message",
     [

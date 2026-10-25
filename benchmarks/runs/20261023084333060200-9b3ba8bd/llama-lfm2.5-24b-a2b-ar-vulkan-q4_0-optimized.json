@@ -1,7 +1,0 @@
-{
-  "started_at": "2026-10-23T08:43:33.740682+00:00",
-  "status": "failed",
-  "error": "CalledProcessError: Command '['/home/sagemaker-user/akas/build/baselines/llama.cpp/build-vulkan/bin/llama-server', '--list-devices']' returned non-zero exit status 127.",
-  "traceback": "Traceback (most recent call last):\n  File \"/home/sagemaker-user/akas/tools/baselines/common.py\", line 119, in main\n    report.update(run(config))\n                  ^^^^^^^^^^^\n  File \"/home/sagemaker-user/akas/tools/baselines/llama.py\", line 55, in run\n    listing = subprocess.check_output(\n              ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/conda/lib/python3.12/subprocess.py\", line 466, in check_output\n    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/conda/lib/python3.12/subprocess.py\", line 571, in run\n    raise CalledProcessError(retcode, process.args,\nsubprocess.CalledProcessError: Command '['/home/sagemaker-user/akas/build/baselines/llama.cpp/build-vulkan/bin/llama-server', '--list-devices']' returned non-zero exit status 127.\n",
-  "completed_at": "2026-10-23T08:43:33.776600+00:00"
-}

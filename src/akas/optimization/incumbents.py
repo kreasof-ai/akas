@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from akas.benchmarking.history import digest, records
+from akas.benchmarking.archive import directory
 from akas.optimization.context import identity
 
 
@@ -19,7 +20,7 @@ def seed(history, graphs, *, provider, target, checkpoint_sha256, hardware):
             )
     entries, origins = {}, []
     for record in reversed(
-        list(records(history, provider=provider, status="passed", runtime="akas"))
+        list(records(history, provider=provider, status="passed", runtime="akas", available_only=True))
     ):
         meta = record["metadata"]
         if (
@@ -60,7 +61,7 @@ def seed(history, graphs, *, provider, target, checkpoint_sha256, hardware):
                 (a for a in record["artifacts"] if a["path"] == phase["qualification"]),
                 None,
             )
-            path = Path(history) / "runs" / record["id"] / phase["qualification"]
+            path = directory(history, "runs", record["id"]) / phase["qualification"]
             if evidence is None or digest(path) != evidence["sha256"]:
                 raise ValueError("historical incumbent evidence checksum mismatch")
             qualified = json.loads(path.read_text())

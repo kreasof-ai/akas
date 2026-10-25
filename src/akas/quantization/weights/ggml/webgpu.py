@@ -36,6 +36,10 @@ def gemv_terms(p, *, fast_q4, lanes, row_count, dot_q4, dot_q6):
     from .kernel import weight_decoder
 
     k, q = p["k"], p["type"]
+    planar = p.get("weight_layout", "raw") == "planar"
+    if planar and (q != 2 or not fast_q4):
+        raise ValueError("planar dense GEMV requires whole packed Q4_0 blocks")
+    blocks = p["o"] * k // 32
     byte, half_value, word_value = packed_loads()
     decoder = weight_decoder(q, k, packed_words=True)
 
@@ -173,11 +177,15 @@ def gemv_terms(p, *, fast_q4, lanes, row_count, dot_q4, dot_q6):
     @T.macro
     def compute(acc, x, w, tile, lane, row, bx, slot):
         if fast_q4:
-            base = (
-                (bx * row_count + row) * (k // 32) + tile * (lanes // 4) + lane // 4
-            ) * 18
-            scale = half_value(w, base)
-            packed = word_value(w, base + 2 + lane % 4 * 4)
+            block = (bx * row_count + row) * (k // 32) + tile * (lanes // 4) + lane // 4
+            if planar:
+                scale = T.call_extern("float32", "tensor_unpack_f16",
+                    w[blocks * 4 + block // 2] >> (block % 2 * 16) & T.uint32(65535))
+                packed = w[block * 4 + lane % 4]
+            else:
+                base = block * 18
+                scale = half_value(w, base)
+                packed = word_value(w, base + 2 + lane % 4 * 4)
             index = tile * (lanes * 8) + lane // 4 * 32 + lane % 4 * 4
             q4_terms(acc, x, index, scale, packed, slot)
         elif q == 14:

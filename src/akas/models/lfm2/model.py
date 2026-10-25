@@ -18,10 +18,12 @@ def compose(
     provider="cuda",
     phase=None,
     kv_dtype="float16",
+    kv_padding=0,
     max_weight_bytes=64 * 1024 * 1024,
     optimized=True,
     activation_quantization=None,
     expert_weight_layout="raw",
+    dense_weight_layout="raw",
     auxiliary_layers=(),
 ):
     from akas.models.lfm2._composition import program
@@ -36,10 +38,12 @@ def compose(
         max_context=max_context,
         provider=provider,
         kv_dtype=kv_dtype,
+        kv_padding=kv_padding,
         max_weight_bytes=max_weight_bytes,
         optimized=optimized,
         activation_quantization=activation_quantization,
         expert_weight_layout=expert_weight_layout,
+        dense_weight_layout=dense_weight_layout,
         auxiliary_layers=auxiliary_layers,
         phase=phase,
     )

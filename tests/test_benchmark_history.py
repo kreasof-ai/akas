@@ -82,7 +82,7 @@ def test_dirty_source_snapshot_and_searchable_index_are_durable(tmp_path, source
             archive.extractfile("kernel.py").read()
             == (source / "kernel.py").read_bytes()
         )
-        assert archive.extractfile("new.py").read() == b"new = True\n"
+        assert archive.extractfile("new.py").read() == (source / "new.py").read_bytes()
     for artifact in record["artifacts"]:
         assert digest(run.directory / artifact["path"]) == artifact["sha256"]
     assert [

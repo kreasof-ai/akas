@@ -14,7 +14,12 @@ def cache_storage(p):
     from akas.quantization.kv import get
     from akas.quantization.kv.codec import Storage
 
-    shape = (p["r"] // p.get("chunk", 1), p["kh"], p["capacity"], p["d"])
+    padding = p.get("cache_padding", 0)
+    if type(padding) is not int or not 0 <= padding <= 4096 or padding % 32:
+        raise ValueError("cache padding must be a bounded multiple of 32 tokens")
+    if padding and p["kv_dtype"] not in ("float16", "float32"):
+        raise ValueError("physical cache padding requires native floating storage")
+    shape = (p["r"] // p.get("chunk", 1), p["kh"], p["capacity"] + padding, p["d"])
     if p["kv_dtype"] not in ("float16", "float32"):
         return get(p["kv_dtype"]).storage(shape, provider=p["provider"])
     return Storage(
@@ -337,17 +342,20 @@ def lower(graph, commit, settings, *, provider, target):
         "value_splits",
         "packed_loads",
         "native_tail",
+        "adaptive_splits",
     }
     if set(settings) - allowed:
         raise ValueError("unknown attention pipeline policy")
+    if "adaptive_splits" in settings and graph.contract != "reference":
+        raise ValueError("adaptive splits require the floating attention contract")
     if graph.contract == "reference":
         from dataclasses import replace
 
-        if not settings or set(settings) - {"splits", "decoded_kv", "native_tail"}:
+        if not settings or set(settings) - {"splits", "decoded_kv", "native_tail", "adaptive_splits"}:
             raise ValueError("unknown floating attention policy")
         if "splits" in settings and (
             type(settings["splits"]) is not int
-            or settings["splits"] not in (1, 2, 4, 8, 16, 32, 64, 128)
+            or settings["splits"] not in (1, 2, 4, 8, 16, 32, 64, 128, 256, 512)
         ):
             raise ValueError(
                 "floating attention policy requires a supported split count"
@@ -360,6 +368,10 @@ def lower(graph, commit, settings, *, provider, target):
             raise ValueError("native tail preparation must be a boolean")
         if settings.get("native_tail") and (provider != "cuda" or target != "sm_89"):
             raise ValueError("native tail attention currently requires CUDA sm_89")
+        if "adaptive_splits" in settings and type(settings["adaptive_splits"]) is not bool:
+            raise ValueError("adaptive attention splits must be a boolean")
+        if settings.get("adaptive_splits") and provider != "webgpu":
+            raise ValueError("adaptive floating attention currently requires WebGPU")
         calls, workspaces, tails = [], {}, {}
         for call in graph.calls:
             if (
@@ -367,12 +379,13 @@ def lower(graph, commit, settings, *, provider, target):
                 and call.kind
                 in (
                     "attention_partial",
+                    "attention_adaptive_partial",
                     "attention_merge",
                 )
                 and call.parameters.get("optimized")
             ):
                 p = {**call.parameters, "splits": settings["splits"]}
-                if call.kind == "attention_partial":
+                if call.kind in ("attention_partial", "attention_adaptive_partial"):
                     name = (
                         call.bindings.get("out") if call.bindings else call.arguments[5]
                     )
@@ -387,6 +400,10 @@ def lower(graph, commit, settings, *, provider, target):
                     object.__setattr__(buffer, "_graph", graph)
                     graph.buffers[name] = buffer
                 call = replace(call, parameters=p)
+            if settings.get("adaptive_splits") and call.kind == "attention_partial":
+                if not (call.parameters.get("unit_scales") and call.parameters["kv_dtype"] == "float16"):
+                    raise ValueError("adaptive floating attention requires unit-scale F16 KV")
+                call = replace(call, kind="attention_adaptive_partial")
             if settings.get("decoded_kv") and _can_stage_prefill(call):
                 calls.extend(_stage_prefill(graph, call, workspaces))
                 continue
@@ -621,6 +638,7 @@ OUTPUT_ARGUMENTS = {
         "cache_write": (2, 3, 4, 5),
         "attention": (5,),
         "attention_partial": (5,),
+        "attention_adaptive_partial": (5,),
         "attention_merge": (1,),
         "attention_cache_extent": OutputABI((-1,), ("lengths",)),
         "attention_cache_pad": OutputABI((0, 1), ("kc", "vc")),
@@ -673,6 +691,7 @@ VALIDATIONS = {
         "cache_write",
         "attention",
         "attention_partial",
+        "attention_adaptive_partial",
         "attention_merge",
         "attention_qkv",
         "attention_q",
@@ -1150,6 +1169,7 @@ IMPLEMENTATIONS += (
             ("key_pad", (0, 1)),
             ("shared_dtype", ("float16", "float32")),
             ("dot_width", (4, 1)),
+            ("packed_shared", (False, True)),
         ),
     ),
 )
@@ -1169,6 +1189,8 @@ IMPLEMENTATIONS += tuple(
         ),
         factory="tiled_partial_floating",
         name="attention.grouped_decode",
+        space=(("shared_dtype", ("float32", "float16")), ("dot_width", (1, 4)))
+        if provider == "webgpu" else (),
     )
     for provider in ("cuda", "webgpu")
 )
@@ -1185,6 +1207,93 @@ def _mma_cache_supported(p):
         )
     except ValueError:
         return False
+
+
+IMPLEMENTATIONS += (
+    Implementation(
+        "attention_partial", "akas.ops.attention.webgpu", "reference",
+        provider="webgpu", priority=34, factory="blocked_partial",
+        defaults=(("key_unroll", 4),), space=(("key_unroll", (4, 8, 2)),),
+        semantic_keys=("r", "h", "kh", "d", "capacity", "splits", "kv_dtype"),
+        accepts=lambda p: p.get("optimized", False) and p["d"] == 64
+        and p["kv_dtype"] in ("float16", "float32"),
+        name="attention.webgpu.blocked_decode",
+    ),
+    Implementation(
+        "attention_partial", "akas.ops.attention.webgpu", "reference",
+        provider="webgpu", priority=33, factory="channel_partial",
+        defaults=(("key_rows", 16),), space=(("key_rows", (16, 32)),),
+        semantic_keys=("r", "h", "kh", "d", "capacity", "splits", "kv_dtype"),
+        accepts=lambda p: p.get("optimized", False) and p["d"] == 64
+        and p["h"] % p["kh"] == 0 and p["h"] // p["kh"] in (1, 2, 4, 8)
+        and p["kv_dtype"] == "float16" and p.get("unit_scales", False),
+        name="attention.webgpu.channel_decode",
+    ),
+    Implementation(
+        "attention_adaptive_partial", "akas.ops.attention.webgpu", "reference",
+        provider="webgpu", priority=40, factory="channel_partial",
+        defaults=(("key_rows", 32), ("granule", 512)),
+        space=(("key_rows", (32, 16)), ("granule", (512, 128, 64))),
+        reference_keys=("granule",),
+        semantic_keys=("r", "h", "kh", "d", "capacity", "splits", "kv_dtype"),
+        accepts=lambda p: p.get("optimized", False) and p["d"] == 64
+        and p["h"] % p["kh"] == 0 and p["h"] // p["kh"] in (1, 2, 4, 8)
+        and p["kv_dtype"] == "float16" and p.get("unit_scales", False),
+        name="attention.webgpu.adaptive_decode",
+    ),
+    Implementation(
+        "attention_adaptive_partial", "akas.ops.attention.webgpu", "reference",
+        provider="webgpu", priority=39, factory="packed_channel_partial",
+        defaults=(("key_rows", 32), ("granule", 128), ("dot_chains", 1)),
+        space=(("key_rows", (32, 64, 128, 16)), ("granule", (128, 512, 64)),
+               ("dot_chains", (1, 4))),
+        reference_keys=("granule",),
+        semantic_keys=("r", "h", "kh", "d", "capacity", "splits", "kv_dtype"),
+        accepts=lambda p: p.get("optimized", False) and p["d"] == 64
+        and p["h"] % p["kh"] == 0 and p["h"] // p["kh"] in (1, 2, 4, 8)
+        and p["kv_dtype"] == "float16" and p.get("unit_scales", False),
+        name="attention.webgpu.packed_decode",
+    ),
+    Implementation(
+        "attention_adaptive_partial", "akas.ops.attention.webgpu", "reference",
+        provider="webgpu", priority=39, factory="two_pass_partial",
+        defaults=(("granule", 128), ("key_lanes", 8), ("value_unroll", 8), ("value_chains", 4)),
+        space=(("key_lanes", (8, 16, 4)), ("value_unroll", (8, 16, 4)),
+               ("value_chains", (4, 1))), reference_keys=("granule",),
+        semantic_keys=("r", "h", "kh", "d", "capacity", "splits", "kv_dtype"),
+        accepts=lambda p: p.get("optimized", False) and p["d"] == 64
+        and p["h"] % p["kh"] == 0 and p["h"] // p["kh"] in (1, 2, 4, 8)
+        and p["kv_dtype"] == "float16" and p.get("unit_scales", False)
+        and (p["capacity"] <= 16384 or p["capacity"] % 128 == 0)
+        and ((p["capacity"] + p.get("splits", 16) * 128 - 1)
+             // (p.get("splits", 16) * 128) * 128 * (p["h"] // p["kh"])
+             + (p["h"] // p["kh"])
+             + 2 * (p["h"] // p["kh"])) * 4 <= 32768,
+        name="attention.webgpu.two_pass_decode",
+    ),
+    Implementation(
+        "attention_adaptive_partial", "akas.ops.attention.webgpu", "reference",
+        provider="webgpu", priority=38, factory="buffered_partial",
+        defaults=(("granule", 128), ("key_lanes", 8), ("value_unroll", 8),
+                  ("value_chains", 4), ("cache_rows", 64), ("cache_dtype", "float16")),
+        space=(("key_lanes", (8, 16, 4)), ("cache_dtype", ("float16", "float32")),
+               ("cache_rows", (64, 32)), ("value_unroll", (8, 16))),
+        reference_keys=("granule",),
+        semantic_keys=("r", "h", "kh", "d", "capacity", "splits", "kv_dtype"),
+        accepts=lambda p: p.get("optimized", False) and p["d"] == 64
+        and p["h"] % p["kh"] == 0 and p["h"] // p["kh"] in (1, 2, 4)
+        and p.get("splits", 16) >= 256 and p["kv_dtype"] == "float16"
+        and p.get("unit_scales", False)
+        and (p["capacity"] <= 16384 or p["capacity"] % 128 == 0),
+        name="attention.webgpu.buffered_decode",
+    ),
+    Implementation(
+        "attention_merge", "akas.ops.attention.webgpu", "reference",
+        provider="webgpu", priority=31, factory="stream_merge",
+        accepts=lambda p: p.get("optimized", False) and p["d"] == 64 and p["splits"] <= 512,
+        name="attention.webgpu.stream_merge",
+    ),
+)
 
 
 IMPLEMENTATIONS += (

@@ -29,7 +29,7 @@ def summarize(values):
 
 
 def run(session, case, *, repeats=5, warmup=1, seed=None, prompts=None,
-        cached_prefixes=None, clock=time.perf_counter):
+        cached_prefixes=None, clock=time.perf_counter, after_prefill=None):
     if type(repeats) is not int or repeats < 1 or type(warmup) is not int or warmup < 0:
         raise ValueError("positive repeats and nonnegative warmup required")
     if session.batch != case.batch or case.capacity > session.capacity:
@@ -85,6 +85,9 @@ def run(session, case, *, repeats=5, warmup=1, seed=None, prompts=None,
             timed(lambda: session.prefill(context, read=False)) if case.depth else 0.0
         )
         pp = timed(lambda: session.prefill(prompts, read=False))
+        if after_prefill is not None and iteration == warmup + repeats - 1:
+            # Optional verification state capture is outside both phase timers.
+            after_prefill(session)
         tg = timed(lambda: session.decode(decode_steps, read=False))
         if iteration >= warmup:
             samples.append(

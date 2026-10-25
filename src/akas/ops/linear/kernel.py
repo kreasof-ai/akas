@@ -346,11 +346,12 @@ def webgpu_abi(p, algorithm, paired=False, add_residual=False):
 
     r, k, o, q = (p.get("r", 1), p["k"], p["o"], p["type"])
     count, dtype = weight_storage(q, k * o, packed_words=True)
+    input_dtype = p.get("input_dtype", "float32")
     if paired:
 
         @kernel
         def compute(
-            x: Tensor(r * k, "float32"),
+            x: Tensor(r * k, input_dtype),
             w: Tensor(count, dtype),
             w2: Tensor(count, dtype),
         ) -> Tensor(r * o, "float32"):
@@ -363,7 +364,7 @@ def webgpu_abi(p, algorithm, paired=False, add_residual=False):
 
         @kernel
         def compute(
-            x: Tensor(r * k, "float32"),
+            x: Tensor(r * k, input_dtype),
             w: Tensor(count, dtype),
             residual: Tensor(r * o, "float32"),
         ) -> Tensor(r * o, "float32"):
@@ -374,7 +375,7 @@ def webgpu_abi(p, algorithm, paired=False, add_residual=False):
         return compute
 
     @kernel
-    def compute(x: Tensor(r * k, "float32"), w: Tensor(count, dtype)) -> Tensor(
+    def compute(x: Tensor(r * k, input_dtype), w: Tensor(count, dtype)) -> Tensor(
         r * o, "float32"
     ):
         out = output(r * o, "float32")

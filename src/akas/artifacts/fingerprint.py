@@ -12,7 +12,7 @@ def _modules(*owners):
         path = root / owner.replace(".", "/")
         if path.is_dir():
             names.update(
-                "akas." + str(p.relative_to(root).with_suffix("")).replace("/", ".")
+                "akas." + p.relative_to(root).with_suffix("").as_posix().replace("/", ".")
                 for p in path.rglob("*.py")
                 if p.name != "__init__.py"
             )

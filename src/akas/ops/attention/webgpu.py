@@ -20,6 +20,9 @@ def tiled_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
     dtype = p.get(
         "shared_dtype", "float16" if p["kv_dtype"] == "float16" else "float32"
     )
+    packed = p.get("packed_shared", False)
+    if packed and not (dtype == "float16" and p["kv_dtype"] == "float16" and p.get("unit_scales")):
+        raise ValueError("packed prefill staging requires unit-scale native F16 KV")
     bm = p.get("block_q", min(8, chunk))
     if dtype not in ("float16", "float32") or (
         dtype == "float16" and p["kv_dtype"] != "float16"
@@ -87,6 +90,10 @@ def tiled_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
         )
 
     def key_vector(keys, channel, lane):
+        if packed:
+            return vector([T.call_extern("float32", "tensor_unpack_f16",
+                keys[(channel * dot_width + j) // 2, lane] >> (((channel * dot_width + j) % 2) * 16))
+                for j in range(dot_width)])
         return vector(
             [
                 T.cast(keys[channel * dot_width + j, lane], "float32")
@@ -98,6 +105,10 @@ def tiled_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
         return vector([scores[i, warp, key * dot_width + j] for j in range(dot_width)])
 
     def value_vector(values, key, lane):
+        if packed:
+            return vector([T.call_extern("float32", "tensor_unpack_f16",
+                values[key * dot_width + j, lane // 2] >> ((lane % 2) * 16))
+                for j in range(dot_width)])
         return vector(
             [
                 T.cast(values[key * dot_width + j, lane], "float32")
@@ -288,8 +299,8 @@ def tiled_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
             slot = base // chunk
             length = span(positions, enabled, base)
             queries = T.alloc_shared((bm, group, d), "float32")
-            keys = T.alloc_shared((d, bk + pad), dtype)
-            values = T.alloc_shared((bk, d), dtype)
+            keys = T.alloc_shared((d // 2 if packed else d, bk + pad), "uint32" if packed else dtype)
+            values = T.alloc_shared((bk, d // 2 if packed else d), "uint32" if packed else dtype)
             scores = T.alloc_shared((bm, group, 32), "float32")
             maxima, norms, factors = (
                 registers((bm,)),
@@ -298,24 +309,45 @@ def tiled_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
             )
             accum = registers((bm, 2))
             initialize_maxima(maxima)
-            for i, channel in T.Parallel(bm * group, d):
-                queries[i // group, i % group, channel] = q[
-                    (base + i // group), (kv_head * group + i % group) * d + channel
-                ]
+            if packed:
+                for load in T.serial(T.ceildiv(bm * group * d, group * 32)):
+                    flat = load * (group * 32) + tx
+                    i, channel = flat // d, flat % d
+                    if i < bm * group:
+                        queries[i // group, i % group, channel] = q[
+                            (base + i // group), (kv_head * group + i % group) * d + channel
+                        ]
+            else:
+                for i, channel in T.Parallel(bm * group, d):
+                    queries[i // group, i % group, channel] = q[
+                        (base + i // group), (kv_head * group + i % group) * d + channel
+                    ]
             T.sync_threads()
             for tile in T.serial(T.truncdiv(length + bk - 1, bk)):
-                for key, channel in T.Parallel(bk, d):
-                    position = tile * bk + key
-                    keys[channel, key] = T.if_then_else(
-                        position < length,
-                        read(kc, ks, slot, kv_head, position, channel),
-                        0,
-                    )
-                    values[key, channel] = T.if_then_else(
-                        position < length,
-                        read(vc, vs, slot, kv_head, position, channel),
-                        0,
-                    )
+                if packed:
+                    for load in T.serial(T.ceildiv(bk * (d // 2), group * 32)):
+                        flat = load * (group * 32) + tx
+                        key, pair = flat // (d // 2), flat % (d // 2)
+                        position = tile * bk + key
+                        a = T.if_then_else(position < length, read(kc, ks, slot, kv_head, position, pair * 2), 0)
+                        b = T.if_then_else(position < length, read(kc, ks, slot, kv_head, position, pair * 2 + 1), 0)
+                        c = T.if_then_else(position < length, read(vc, vs, slot, kv_head, position, pair * 2), 0)
+                        e = T.if_then_else(position < length, read(vc, vs, slot, kv_head, position, pair * 2 + 1), 0)
+                        keys[pair, key] = T.call_extern("uint32", "pack2x16float", T.call_extern("float32x2", "vec2<f32>", a, b))
+                        values[key, pair] = T.call_extern("uint32", "pack2x16float", T.call_extern("float32x2", "vec2<f32>", c, e))
+                else:
+                    for key, channel in T.Parallel(bk, d):
+                        position = tile * bk + key
+                        keys[channel, key] = T.if_then_else(
+                            position < length,
+                            read(kc, ks, slot, kv_head, position, channel),
+                            0,
+                        )
+                        values[key, channel] = T.if_then_else(
+                            position < length,
+                            read(vc, vs, slot, kv_head, position, channel),
+                            0,
+                        )
                 T.sync_threads()
                 make_probabilities(
                     queries,
@@ -1001,3 +1033,651 @@ from .kernel import (
 from .definition import IMPLEMENTATIONS as _CHOICES
 
 IMPLEMENTATIONS = tuple((choice for choice in _CHOICES if choice.provider == "webgpu"))
+
+
+def blocked_partial(spec, schedule):
+    """Batch independent key dots before updating online softmax state."""
+    import tilelang.language as T
+    from tensor.compiler.webgpu.schedules.registers import registers
+    from akas.ops.attention.kernel import cache_reader
+
+    p = {**spec.parameters, **schedule}
+    r, h, kh, d, cap = (p[n] for n in ("r", "h", "kh", "d", "capacity"))
+    splits, unroll = p.get("splits", 16), p.get("key_unroll", 4)
+    if d != 64 or h % kh or unroll not in (2, 4, 8):
+        raise ValueError("unsupported register-tiled attention")
+    storage, read = cache_reader(p)
+
+    @T.macro
+    def exchange(value, offset):
+        return T.call_extern("float32", "subgroupShuffleXor", value, T.uint32(offset))
+
+    @T.macro
+    def score_key(score: T.Ref, q0, q1, kc, ks, slot, head, token, lane, end):
+        score = T.if_then_else(
+            token < end,
+            q0 * read(kc, ks, slot, head, token, lane)
+            + q1 * read(kc, ks, slot, head, token, lane + 32), 0)
+        for step in T.unroll(5):
+            score += exchange(score, 16 >> step)
+        score = T.if_then_else(token < end, score * 0.125, -T.infinity("float32"))
+
+    def score_keys(scores, q0, q1, kc, ks, slot, head, base, lane, end):
+        for j in range(unroll):
+            score_key(scores[j,][0], q0, q1, kc, ks, slot, head,
+                      base + j * 4, lane, end)
+
+    @T.macro
+    def max_key(peak: T.Ref, score):
+        peak = T.max(peak, score)
+
+    def maximum_key(peak, scores):
+        for j in range(unroll):
+            max_key(peak, scores[j,][0])
+
+    @T.macro
+    def accumulate(a0: T.Ref, a1: T.Ref, norm: T.Ref, score, peak,
+                   vc, vs, slot, head, token, lane, end):
+        probability = T.if_then_else(token < end, T.exp(score - peak), 0)
+        a0 += probability * T.if_then_else(
+            token < end, read(vc, vs, slot, head, token, lane), 0)
+        a1 += probability * T.if_then_else(
+            token < end, read(vc, vs, slot, head, token, lane + 32), 0)
+        norm += probability
+
+    def accumulate_keys(a0, a1, norm, scores, peak, vc, vs, slot, head, base, lane, end):
+        for j in range(unroll):
+            accumulate(a0, a1, norm, scores[j,][0], peak, vc, vs, slot,
+                       head, base + j * 4, lane, end)
+
+    @kernel
+    def compute(
+        q: Tensor((r, h * d), "float32"),
+        kc: Tensor(storage.values.shape, storage.values.dtype),
+        vc: Tensor(storage.values.shape, storage.values.dtype),
+        ks: Tensor(storage.metadata[0].shape, "float32"),
+        vs: Tensor(storage.metadata[0].shape, "float32"),
+        positions: Tensor(r, "int32"), enabled: Tensor(r, "int32"),
+    ) -> Tensor(r * h * splits * 66, "float32"):
+        out = output(r * h * splits * 66, "float32", position=5)
+        with T.Kernel(h * r, splits, threads=128) as (index, split):
+            head, slot = index % h, index // h
+            tx = T.get_thread_binding()
+            lane, warp = tx % 32, tx // 32
+            length = T.if_then_else(enabled[slot] != 0, T.min(positions[slot] + 1, cap), 0)
+            span = T.ceildiv(length, splits)
+            begin, end = split * span, T.min((split + 1) * span, length)
+            maxima = T.alloc_shared((4,), "float32")
+            sums = T.alloc_shared((4,), "float32")
+            values = T.alloc_shared((4, 64), "float32")
+            maximum, normalizer = T.alloc_var("float32"), T.alloc_var("float32")
+            a0, a1 = T.alloc_var("float32"), T.alloc_var("float32")
+            maximum, normalizer, a0, a1 = -T.infinity("float32"), 0, 0, 0
+            q0, q1 = q[slot, head * d + lane], q[slot, head * d + lane + 32]
+            scores = registers((unroll,))
+            for tile in T.serial(T.ceildiv(T.max(end - begin, 0), 4 * unroll)):
+                base = begin + tile * 4 * unroll + warp
+                score_keys(scores, q0, q1, kc, ks, slot, head // (h // kh), base, lane, end)
+                peak = T.alloc_var("float32")
+                peak = maximum
+                maximum_key(peak, scores)
+                correction = T.if_then_else(maximum == -T.infinity("float32"),
+                                             0, T.exp(maximum - peak))
+                normalizer, a0, a1 = normalizer * correction, a0 * correction, a1 * correction
+                accumulate_keys(a0, a1, normalizer, scores, peak, vc, vs, slot,
+                                head // (h // kh), base, lane, end)
+                maximum = peak
+            values[warp, lane], values[warp, lane + 32] = a0, a1
+            if lane == 0:
+                maxima[warp], sums[warp] = maximum, normalizer
+            T.sync_threads()
+            if warp == 0:
+                merged = T.max(T.max(maxima[0], maxima[1]), T.max(maxima[2], maxima[3]))
+                norm, result0, result1 = T.alloc_var("float32"), T.alloc_var("float32"), T.alloc_var("float32")
+                norm, result0, result1 = 0, 0, 0
+                for other in T.unroll(4):
+                    factor = T.if_then_else(end > begin, T.exp(maxima[other] - merged), 0)
+                    norm += sums[other] * factor
+                    result0 += values[other, lane] * factor
+                    result1 += values[other, lane + 32] * factor
+                offset = (index * splits + split) * 66
+                out[offset + lane], out[offset + lane + 32] = result0, result1
+                if lane == 0:
+                    out[offset + 64], out[offset + 65] = merged, norm
+        return out
+
+    return compute
+
+
+def channel_partial(spec, schedule):
+    import tilelang.language as T
+    from tensor.compiler.webgpu.schedules.registers import registers, vector
+    from akas.ops.attention.kernel import cache_reader
+
+    p = {**spec.parameters, **schedule}
+    r, h, kh, d, cap = (p[n] for n in ("r", "h", "kh", "d", "capacity"))
+    group, splits, bk = h // kh, p.get("splits", 16), p.get("key_rows", 16)
+    adaptive = spec.kind == "attention_adaptive_partial"
+    granule = p.get("granule", 512)
+    packed_shared = p.get("packed_shared", False)
+    chains = p.get("dot_chains", 1)
+    if chains not in (1, 4):
+        raise ValueError("attention dot chains must be one or four")
+    if adaptive and (granule not in (64, 128, 512) or granule % bk):
+        raise ValueError("unsupported adaptive cache block size")
+    if d != 64 or h % kh or group not in (1, 2, 4, 8) or bk not in (16, 32, 64, 128):
+        raise ValueError("unsupported channel-cooperative attention")
+    if p["kv_dtype"] != "float16" or not p.get("unit_scales", False):
+        raise ValueError("channel-cooperative attention requires unit-scale half KV")
+    if bk == 128 and not packed_shared:
+        raise ValueError("128-token tiles require packed shared KV")
+    lanes = 2 if bk >= 64 else 64 // bk
+    terms = d // lanes
+    storage, read = cache_reader(p)
+
+    @T.macro
+    def exchange(value, stride):
+        return T.call_extern("float32", "subgroupShuffleXor", value, T.uint32(stride))
+
+    @T.macro
+    def load_query(value: T.Ref, q, slot, head, channel):
+        value = q[slot, head * d + channel]
+
+    def load_queries(queries, q, slot, head, channel_group):
+        for j in range(terms):
+            load_query(queries[j,][0], q, slot, head, channel_group * terms + j)
+
+    def tile_range(length, split):
+        if adaptive:
+            begin = split * granule
+            return begin, length, T.ceildiv(T.max(length - begin, 0), splits * granule) * (granule // bk)
+        span = T.ceildiv(length, splits)
+        begin, end = split * span, T.min((split + 1) * span, length)
+        return begin, end, T.ceildiv(T.max(end - begin, 0), bk)
+
+    def tile_start(begin, tile):
+        if adaptive:
+            return begin + tile // (granule // bk) * (splits * granule) + tile % (granule // bk) * bk
+        return begin + tile * bk
+
+    @T.macro
+    def dot_term(score: T.Ref, left, right):
+        score += T.call_extern("float32", "dot", left, right)
+
+    def dot_keys(score, queries, keys, key, channel_group):
+        if chains == 4:
+            partial = registers((4,))
+            for j in range(terms // 4):
+                for component in range(4):
+                    channel = channel_group * terms + j * 4 + component
+                    right = (T.call_extern("float32", "tensor_unpack_f16",
+                             keys[(channel // 2) * (bk + 1) + key] >> (16 * (channel % 2)))
+                             if packed_shared else T.cast(keys[channel * (bk + 1) + key], "float32"))
+                    fma_term(partial[component,][0], queries[j * 4 + component,][0], right)
+            combine_chains(score, *(partial[j,][0] for j in range(4)))
+            return
+        for j in range(terms // 4):
+            left = vector([queries[j * 4 + k,][0] for k in range(4)])
+            if packed_shared:
+                right = vector([T.call_extern("float32", "tensor_unpack_f16",
+                    keys[(channel_group * (terms // 2) + j * 2 + k // 2) * (bk + 1) + key] >> (16 * (k % 2)))
+                    for k in range(4)])
+            else:
+                right = vector([T.cast(keys[(channel_group * terms + j * 4 + k) * (bk + 1) + key], "float32")
+                                for k in range(4)])
+            dot_term(score, left, right)
+
+    def dot_values(acc, probabilities, values, keys, head, channel):
+        if chains == 4:
+            partial = registers((4,))
+            for j in range(bk // 4):
+                for component in range(4):
+                    token = j * 4 + component
+                    word = (keys[token * (d // 2) + channel // 2] if bk == 128 else
+                            values[token, channel // 2]) if packed_shared else None
+                    right = (T.call_extern("float32", "tensor_unpack_f16", word >> ((channel % 2) * 16))
+                             if packed_shared else T.cast(values[token, channel], "float32"))
+                    fma_term(partial[component,][0], probabilities[head, token], right)
+            combine_chains(acc, *(partial[j,][0] for j in range(4)))
+            return
+        for j in range(bk // 4):
+            left = vector([probabilities[head, j * 4 + k] for k in range(4)])
+            if packed_shared:
+                right = vector([T.call_extern("float32", "tensor_unpack_f16",
+                    (keys[(j * 4 + k) * (d // 2) + channel // 2] if bk == 128 else
+                     values[j * 4 + k, channel // 2]) >> ((channel % 2) * 16)) for k in range(4)])
+            else:
+                right = vector([T.cast(values[j * 4 + k, channel], "float32") for k in range(4)])
+            dot_term(acc, left, right)
+
+    @T.macro
+    def fma_term(acc: T.Ref, left, right):
+        acc = T.call_extern("float32", "fma", left, right, acc)
+
+    @T.macro
+    def combine_chains(acc: T.Ref, a, b, c, e):
+        acc += (a + b) + (c + e)
+
+    @T.macro
+    def raw_score(scores, probabilities, head, token):
+        if bk >= 64:
+            return scores[head, token]
+        else:
+            return probabilities[head, token]
+
+    @kernel
+    def compute(
+        q: Tensor((r, h * d), "float32"),
+        kc: Tensor(storage.values.shape, storage.values.dtype),
+        vc: Tensor(storage.values.shape, storage.values.dtype),
+        ks: Tensor(storage.metadata[0].shape, "float32"),
+        vs: Tensor(storage.metadata[0].shape, "float32"),
+        positions: Tensor(r, "int32"), enabled: Tensor(r, "int32"),
+    ) -> Tensor(r * h * splits * 66, "float32"):
+        out = output(r * h * splits * 66, "float32", position=5)
+        with T.Kernel(kh, r, splits, threads=group * 64) as (kv_head, slot, split):
+            tx = T.get_thread_binding()
+            head, local = tx // 64, tx % 64
+            key, channel_group = local // lanes, local % lanes
+            length = T.if_then_else(enabled[slot] != 0, T.min(positions[slot] + 1, cap), 0)
+            begin, end, tile_count = tile_range(length, split)
+            keys = T.alloc_shared(((d // 2 if packed_shared else d) * (bk + 1),),
+                                  "uint32" if packed_shared else "float16")
+            values = T.alloc_shared((1 if bk == 128 else bk, 1 if bk == 128 else d // 2 if packed_shared else d),
+                                    "uint32" if packed_shared else "float16")
+            probabilities = T.alloc_shared((group, bk), "float32")
+            scores = T.alloc_shared((group if bk >= 64 else 1, bk if bk >= 64 else 1), "float32")
+            queries = registers((terms,))
+            if not adaptive:
+                load_queries(queries, q, slot, kv_head * group + head, channel_group)
+            elif begin < length:
+                load_queries(queries, q, slot, kv_head * group + head, channel_group)
+            maximum, normalizer, acc = T.alloc_var("float32"), T.alloc_var("float32"), T.alloc_var("float32")
+            maximum, normalizer, acc = -T.infinity("float32"), 0, 0
+            for tile in T.serial(tile_count):
+                base = tile_start(begin, tile)
+                if base < end:
+                    if packed_shared:
+                        for load in T.serial(T.ceildiv(bk * (d // 2), group * 64)):
+                            flat = load * (group * 64) + tx
+                            token, pair = flat // (d // 2), flat % (d // 2)
+                            a = T.if_then_else(base + token < end,
+                                read(kc, ks, slot, kv_head, base + token, pair * 2), 0)
+                            b = T.if_then_else(base + token < end,
+                                read(kc, ks, slot, kv_head, base + token, pair * 2 + 1), 0)
+                            if bk != 128:
+                                c = T.if_then_else(base + token < end,
+                                    read(vc, vs, slot, kv_head, base + token, pair * 2), 0)
+                                e = T.if_then_else(base + token < end,
+                                    read(vc, vs, slot, kv_head, base + token, pair * 2 + 1), 0)
+                            keys[pair * (bk + 1) + token] = T.call_extern("uint32", "pack2x16float",
+                                T.call_extern("float32x2", "vec2<f32>", a, b))
+                            if bk != 128:
+                                values[token, pair] = T.call_extern("uint32", "pack2x16float",
+                                    T.call_extern("float32x2", "vec2<f32>", c, e))
+                    else:
+                        for load in T.serial(T.ceildiv(bk * d, group * 64)):
+                            flat = load * (group * 64) + tx
+                            token, channel = flat // d, flat % d
+                            keys[channel * (bk + 1) + token] = T.if_then_else(base + token < end,
+                                read(kc, ks, slot, kv_head, base + token, channel), 0)
+                            values[token, channel] = T.if_then_else(base + token < end,
+                                read(vc, vs, slot, kv_head, base + token, channel), 0)
+                    T.sync_threads()
+                    for score_tile in T.unroll(bk // 32 if bk >= 64 else 1):
+                        key_index = key + score_tile * 32
+                        score = T.alloc_var("float32")
+                        score = 0
+                        dot_keys(score, queries, keys, key_index, channel_group)
+                        for step in T.unroll(lanes.bit_length() - 1):
+                            score += exchange(score, lanes >> (step + 1))
+                        if channel_group == 0:
+                            if bk >= 64:
+                                scores[head, key_index] = T.if_then_else(base + key_index < end,
+                                    score * 0.125, -T.infinity("float32"))
+                            else:
+                                probabilities[head, key_index] = T.if_then_else(base + key_index < end,
+                                    score * 0.125, -T.infinity("float32"))
+                    T.sync_threads()
+                    if bk == 128:
+                        for load in T.serial(T.ceildiv(bk * (d // 2), group * 64)):
+                            flat = load * (group * 64) + tx
+                            token, pair = flat // (d // 2), flat % (d // 2)
+                            a = T.if_then_else(base + token < end,
+                                read(vc, vs, slot, kv_head, base + token, pair * 2), 0)
+                            b = T.if_then_else(base + token < end,
+                                read(vc, vs, slot, kv_head, base + token, pair * 2 + 1), 0)
+                            keys[flat] = T.call_extern("uint32", "pack2x16float",
+                                T.call_extern("float32x2", "vec2<f32>", a, b))
+                    probability = T.alloc_var("float32")
+                    probability = raw_score(scores, probabilities, head, local % bk)
+                    peak = T.alloc_var("float32")
+                    peak = probability
+                    if bk == 128:
+                        peak = T.max(peak, scores[head, local + 64])
+                    if bk >= 64:
+                        if T.call_extern("uint32", "tensor_subgroup_size") >= 64:
+                            peak = T.max(peak, exchange(peak, 32))
+                        else:
+                            peak = T.max(peak, scores[head, local ^ 32])
+                            if bk == 128:
+                                peak = T.max(peak, scores[head, (local ^ 32) + 64])
+                    for step in T.unroll(min(bk, 32).bit_length() - 1):
+                        peak = T.max(peak, exchange(peak, min(bk, 32) >> (step + 1)))
+                    next_max = T.max(maximum, peak)
+                    correction = T.if_then_else(maximum == -T.infinity("float32"),
+                                                 0, T.exp(maximum - next_max))
+                    probability = T.if_then_else(base + local % bk < end,
+                                                  T.exp(probability - next_max), 0)
+                    norm = T.alloc_var("float32")
+                    norm = probability
+                    second = T.alloc_var("float32")
+                    if bk == 128:
+                        second = T.if_then_else(base + local + 64 < end,
+                            T.exp(scores[head, local + 64] - next_max), 0)
+                        norm += second
+                    if bk >= 64:
+                        if T.call_extern("uint32", "tensor_subgroup_size") >= 64:
+                            norm += exchange(probability, 32)
+                            if bk == 128:
+                                norm += exchange(second, 32)
+                        else:
+                            norm += T.if_then_else(base + (local ^ 32) < end,
+                                T.exp(scores[head, local ^ 32] - next_max), 0)
+                            if bk == 128:
+                                norm += T.if_then_else(base + (local ^ 32) + 64 < end,
+                                    T.exp(scores[head, (local ^ 32) + 64] - next_max), 0)
+                    for step in T.unroll(min(bk, 32).bit_length() - 1):
+                        norm += exchange(norm, min(bk, 32) >> (step + 1))
+                    normalizer = normalizer * correction + norm
+                    maximum = next_max
+                    if local < bk:
+                        probabilities[head, local] = probability
+                    if bk == 128:
+                        probabilities[head, local + 64] = second
+                    acc *= correction
+                    T.sync_threads()
+                    dot_values(acc, probabilities, values, keys, head, local)
+                    T.sync_threads()
+            offset = ((slot * h + kv_head * group + head) * splits + split) * 66
+            out[offset + local] = acc
+            if local == 0:
+                out[offset + 64], out[offset + 65] = maximum, normalizer
+        return out
+
+    return compute
+
+
+def packed_channel_partial(spec, schedule):
+    return channel_partial(spec, {**schedule, "packed_shared": True})
+
+
+def two_pass_partial(spec, schedule):
+    """Bounded shared scores: one K pass, one softmax, one coalesced V pass."""
+    import tilelang.language as T
+    from tensor.compiler.webgpu.schedules.registers import registers, vector
+    from akas.ops.attention.kernel import cache_reader
+
+    p = {**spec.parameters, **schedule}
+    r, h, kh, d, cap = (p[n] for n in ("r", "h", "kh", "d", "capacity"))
+    group, splits = h // kh, p.get("splits", 128)
+    granule, lanes = p.get("granule", 128), p.get("key_lanes", 8)
+    unroll = p.get("value_unroll", 8)
+    chains = p.get("value_chains", 4)
+    cached = p.get("stage_cache", False)
+    bk = p.get("cache_rows", 64)
+    cache_dtype = p.get("cache_dtype", "float16")
+    cache_bytes = bk * 65 * (2 if cache_dtype == "float16" else 4) if cached else 0
+    extent = (cap + splits * granule - 1) // (splits * granule) * granule
+    if (d != 64 or h % kh or group not in (1, 2, 4, 8)
+            or lanes not in (4, 8, 16) or unroll not in (4, 8, 16)
+            or chains not in (1, 4) or unroll % chains
+            or granule not in (64, 128, 512)
+            or (cap > 16384 and cap % 128)
+            or (cached and (bk not in (32, 64) or cache_dtype not in ("float16", "float32")))
+            or ((extent + 1) * group + group * 2) * 4 + cache_bytes > 32768):
+        raise ValueError("unsupported two-pass decode geometry, capacity alignment or shared storage")
+    if p["kv_dtype"] != "float16" or not p.get("unit_scales", False):
+        raise ValueError("two-pass decode requires unit-scale half KV")
+    keys_per_step, terms = 64 // lanes, d // lanes
+    storage, read = cache_reader(p)
+
+    @T.macro
+    def read(cache, metadata, slot, head, token, channel):
+        return T.cast(cache[slot, head, token, channel], "float32")
+
+    @T.macro
+    def exchange(value, stride):
+        return T.call_extern("float32", "subgroupShuffleXor", value, T.uint32(stride))
+
+    @T.macro
+    def query(value: T.Ref, q, slot, head, channel):
+        value = q[slot, head * d + channel]
+
+    def load_query(values, q, slot, head, lane):
+        for j in range(terms):
+            query(values[j,][0], q, slot, head, lane * terms + j)
+
+    @T.macro
+    def add_dot(score: T.Ref, left, right):
+        score += T.call_extern("float32", "dot", left, right)
+
+    def score_dot(score, values, kc, ks, slot, kv_head, token, lane, cache=None, key=0):
+        for j in range(terms // 4):
+            left = vector([values[j * 4 + k,][0] for k in range(4)])
+            if cached:
+                right = vector([T.cast(cache[key, lane * terms + j * 4 + k], "float32")
+                                for k in range(4)])
+            else:
+                right = vector([read(kc, ks, slot, kv_head, T.min(token, cap - 1), lane * terms + j * 4 + k)
+                                for k in range(4)])
+            add_dot(score, left, right)
+
+    @T.macro
+    def add_value(acc: T.Ref, weight, value):
+        acc += weight * T.cast(value, "float32")
+
+    def value_step(accum, scores, vc, vs, slot, kv_head, head, channel, tile, length, count, begin,
+                   cache=None, base=0):
+        for u in range(unroll):
+            index = base + tile * unroll + u
+            token = begin + index // granule * (splits * granule) + index % granule
+            if cached:
+                add_value(accum[u % chains,][0], scores[head, index],
+                          cache[tile * unroll + u, channel])
+            else:
+                with T.If((index < count) & (token < length)):
+                    with T.Then():
+                        add_value(accum[u % chains,][0], scores[head, index],
+                                  read(vc, vs, slot, kv_head, T.min(token, cap - 1), channel))
+
+    @T.macro
+    def load_cache(cache, staged, slot, kv_head, base, length):
+        tx = T.get_thread_binding()
+        for load in T.serial(T.ceildiv(bk * d, group * 64)):
+            flat = load * (group * 64) + tx
+            token, channel = flat // d, flat % d
+            staged[token, channel] = T.if_then_else(base + token < length,
+                T.cast(cache[slot, kv_head, T.min(base + token, cap - 1), channel], cache_dtype), 0)
+
+    @T.macro
+    def sum_values(value: T.Ref, other):
+        value += other
+
+    def finish_values(accum, value):
+        for chain in range(chains):
+            sum_values(value, accum[chain,][0])
+
+    @kernel
+    def compute(
+        q: Tensor((r, h * d), "float32"),
+        kc: Tensor(storage.values.shape, storage.values.dtype),
+        vc: Tensor(storage.values.shape, storage.values.dtype),
+        ks: Tensor(storage.metadata[0].shape, "float32"),
+        vs: Tensor(storage.metadata[0].shape, "float32"),
+        positions: Tensor(r, "int32"), enabled: Tensor(r, "int32"),
+    ) -> Tensor(r * h * splits * 66, "float32"):
+        out = output(r * h * splits * 66, "float32", position=5)
+        with T.Kernel(kh, r, splits, threads=group * 64) as (kv_head, slot, split):
+            tx = T.get_thread_binding()
+            head, local = tx // 64, tx % 64
+            lane = local % lanes
+            length = T.if_then_else(enabled[slot] != 0, T.min(positions[slot] + 1, cap), 0)
+            begin = split * granule
+            count = T.ceildiv(T.max(length - begin, 0), splits * granule) * granule
+            scores = T.alloc_shared((group, extent + 1), "float32")
+            reductions = T.alloc_shared((group, 2), "float32")
+            if cached:
+                cache_tile = T.alloc_shared((bk, d + 1), cache_dtype)
+            queries = registers((terms,))
+            accum = registers((chains,))
+            maximum = T.alloc_var("float32")
+            normalizer = T.alloc_var("float32")
+            result = T.alloc_var("float32")
+            maximum, normalizer, result = -T.infinity("float32"), 0, 0
+            if begin < length:
+                load_query(queries, q, slot, kv_head * group + head, lane)
+                if cached:
+                    for tile in T.serial(T.ceildiv(count, bk)):
+                        base_index = tile * bk
+                        base = begin + base_index // granule * (splits * granule) + base_index % granule
+                        load_cache(kc, cache_tile, slot, kv_head, base, length)
+                        T.sync_threads()
+                        for item in T.serial(bk // keys_per_step):
+                            key = item * keys_per_step + local // lanes
+                            index, token = base_index + key, base + key
+                            score = T.alloc_var("float32")
+                            score = 0
+                            score_dot(score, queries, kc, ks, slot, kv_head, token, lane, cache_tile, key)
+                            for step in T.unroll(lanes.bit_length() - 1):
+                                score += exchange(score, lanes >> (step + 1))
+                            score = T.if_then_else(token < length,
+                                score * 0.125 * ks[slot, kv_head, 0, 0], -T.infinity("float32"))
+                            maximum = T.max(maximum, score)
+                            if lane == 0:
+                                scores[head, index] = score
+                        T.sync_threads()
+                else:
+                    for tile in T.serial(T.ceildiv(count, keys_per_step)):
+                        index = tile * keys_per_step + local // lanes
+                        token = begin + index // granule * (splits * granule) + index % granule
+                        score = T.alloc_var("float32")
+                        score = 0
+                        if token < length:
+                            score_dot(score, queries, kc, ks, slot, kv_head, token, lane)
+                        for step in T.unroll(lanes.bit_length() - 1):
+                            score += exchange(score, lanes >> (step + 1))
+                        score = T.if_then_else(token < length,
+                            score * 0.125 * ks[slot, kv_head, 0, 0], -T.infinity("float32"))
+                        maximum = T.max(maximum, score)
+                        if lane == 0:
+                            scores[head, index] = score
+                for step in T.unroll(5):
+                    maximum = T.max(maximum, exchange(maximum, 16 >> step))
+                if local % 32 == 0:
+                    reductions[head, local // 32] = maximum
+                T.sync_threads()
+                maximum = T.max(reductions[head, 0], reductions[head, 1])
+                for tile in T.serial(T.ceildiv(count, 64)):
+                    index = tile * 64 + local
+                    if index < count:
+                        probability = T.exp(scores[head, index] - maximum)
+                        scores[head, index] = probability
+                        normalizer += probability
+                for step in T.unroll(5):
+                    normalizer += exchange(normalizer, 16 >> step)
+                if local % 32 == 0:
+                    reductions[head, local // 32] = normalizer
+                T.sync_threads()
+                normalizer = reductions[head, 0] + reductions[head, 1]
+                if cached:
+                    for tile in T.serial(T.ceildiv(count, bk)):
+                        base_index = tile * bk
+                        base = begin + base_index // granule * (splits * granule) + base_index % granule
+                        load_cache(vc, cache_tile, slot, kv_head, base, length)
+                        T.sync_threads()
+                        for item in T.serial(bk // unroll):
+                            value_step(accum, scores, vc, vs, slot, kv_head, head, local,
+                                       item, length, count, begin, cache_tile, base_index)
+                        T.sync_threads()
+                else:
+                    for tile in T.serial(T.ceildiv(count, unroll)):
+                        value_step(accum, scores, vc, vs, slot, kv_head, head, local,
+                                   tile, length, count, begin)
+                finish_values(accum, result)
+                result *= vs[slot, kv_head, 0, 0]
+            offset = ((slot * h + kv_head * group + head) * splits + split) * 66
+            out[offset + local] = result
+            if local == 0:
+                out[offset + 64], out[offset + 65] = maximum, normalizer
+        return out
+
+    return compute
+
+
+def buffered_partial(spec, schedule):
+    return two_pass_partial(spec, {**schedule, "stage_cache": True})
+
+
+def stream_merge(spec, schedule):
+    """Reduce split statistics without a splits-by-depth shared product array."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    r, h, d, splits = (p[n] for n in ("r", "h", "d", "splits"))
+    if d != 64 or splits > 512:
+        raise ValueError("streaming merge requires D64 and at most 512 splits")
+
+    @T.macro
+    def exchange(value, stride):
+        return T.call_extern("float32", "subgroupShuffleXor", value, T.uint32(stride))
+
+    @kernel
+    def compute(parts: Tensor(r * h * splits * 66, "float32"),
+                enabled: Tensor(r, "int32")) -> Tensor(r * h * d, "float32"):
+        out = output(r * h * d, "float32", position=1)
+        with T.Kernel(r * h, threads=64) as head:
+            tx = T.get_thread_binding()
+            weights = T.alloc_shared((splits,), "float32")
+            reductions = T.alloc_shared((2,), "float32")
+            limits = T.alloc_shared((2,), "float32")
+            active_end = T.alloc_var("float32")
+            maximum, normalizer, result = T.alloc_var("float32"), T.alloc_var("float32"), T.alloc_var("float32")
+            maximum, normalizer, result = -T.infinity("float32"), 0, 0
+            active_end = 0
+            for tile in T.serial(T.ceildiv(splits, 64)):
+                part = tile * 64 + tx
+                if part < splits:
+                    if parts[(head * splits + part) * 66 + 65] > 0:
+                        maximum = T.max(maximum, parts[(head * splits + part) * 66 + 64])
+                        active_end = T.max(active_end, T.cast(part + 1, "float32"))
+            for step in T.unroll(5):
+                maximum = T.max(maximum, exchange(maximum, 16 >> step))
+                active_end = T.max(active_end, exchange(active_end, 16 >> step))
+            if tx % 32 == 0:
+                reductions[tx // 32] = maximum
+                limits[tx // 32] = active_end
+            T.sync_threads()
+            maximum = T.max(reductions[0], reductions[1])
+            last = T.cast(T.max(limits[0], limits[1]), "int32")
+            for tile in T.serial(T.ceildiv(last, 64)):
+                part = tile * 64 + tx
+                if part < last:
+                    norm = parts[(head * splits + part) * 66 + 65]
+                    factor = T.if_then_else(norm > 0,
+                        T.exp(parts[(head * splits + part) * 66 + 64] - maximum), 0)
+                    weights[part] = factor
+                    normalizer += norm * factor
+            for step in T.unroll(5):
+                normalizer += exchange(normalizer, 16 >> step)
+            if tx % 32 == 0:
+                reductions[tx // 32] = normalizer
+            T.sync_threads()
+            normalizer = reductions[0] + reductions[1]
+            for part in T.serial(last):
+                result += parts[(head * splits + part) * 66 + tx] * weights[part]
+            out[head * d + tx] = T.if_then_else(
+                (enabled[head // h] != 0) & (normalizer > 0), result / normalizer, 0)
+        return out
+
+    return compute

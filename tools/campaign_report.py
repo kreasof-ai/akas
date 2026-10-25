@@ -3,6 +3,7 @@
 import argparse
 from collections import Counter
 import csv
+import hashlib
 from datetime import datetime, timezone
 import io
 import itertools
@@ -14,6 +15,7 @@ import statistics
 import tempfile
 
 from akas.benchmarking.history import digest, write
+from akas.benchmarking import archive
 from akas.benchmarking.workload import prompt_digest
 from akas.optimization.context import workload
 
@@ -45,7 +47,7 @@ METRICS = (
 
 
 def read(path):
-    return json.loads(Path(path).read_text())
+    return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
 def report_directory(state, history):
@@ -121,14 +123,15 @@ def measurement(row, kind, qualified, run_id, protocol=None):
 
 
 def record(history, run_id):
-    path = Path(history) / "runs" / run_id / "run.json"
-    if not path.exists():
+    try:
+        data = json.loads(archive.read_file(history, "runs", run_id, "run.json"))
+    except FileNotFoundError:
         return None
-    data = read(path)
     for item in data.get("artifacts", []):
         if (
             item["path"] == "report.json"
-            and digest(path.parent / item["path"]) != item["sha256"]
+            and hashlib.sha256(archive.read_file(
+                history, "runs", run_id, item["path"])).hexdigest() != item["sha256"]
         ):
             raise ValueError("benchmark report checksum mismatch: " + run_id)
     return data
@@ -270,7 +273,7 @@ def precision_comparisons(state, history, evidence):
             )
             if artifact is None:
                 raise ValueError("precision comparison outputs are missing")
-            path = Path(history) / "runs" / item["id"] / artifact["path"]
+            path = archive.directory(history, "runs", item["id"]) / artifact["path"]
             if digest(path) != artifact["sha256"]:
                 raise ValueError("precision comparison output checksum mismatch")
             payload = read(path)
@@ -352,7 +355,7 @@ def text_comparisons(state, history, evidence):
             raise ValueError("text comparison checkpoint differs from campaign")
         artifact = next((a for a in data["artifacts"]
                          if a["path"] == "benchmark/text-workload.json"), None)
-        path = Path(history) / "runs" / run_id / "benchmark/text-workload.json"
+        path = archive.directory(history, "runs", run_id) / "benchmark/text-workload.json"
         if (not artifact or digest(path) != artifact["sha256"] or
             artifact["sha256"] != meta.get("text_workload_sha256")):
             raise ValueError("text workload checksum mismatch")
@@ -438,7 +441,7 @@ def speculative_baselines(state, history, evidence):
             raise ValueError("speculative baseline checkpoint differs from campaign")
         artifact = next((a for a in data["artifacts"]
                          if a["path"] == "benchmark/text-workload.json"), None)
-        path = Path(history) / "runs" / run_id / "benchmark/text-workload.json"
+        path = archive.directory(history, "runs", run_id) / "benchmark/text-workload.json"
         if (not artifact or digest(path) != artifact["sha256"] or
             artifact["sha256"] != meta.get("text_workload_sha256")):
             raise ValueError("speculative baseline workload checksum mismatch")
@@ -735,7 +738,8 @@ def text(path, content):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(path.suffix + ".tmp")
-    temporary.write_text(content.rstrip() + "\n" if path.suffix == ".md" else content)
+    temporary.write_text(content.rstrip() + "\n" if path.suffix == ".md" else content,
+                         encoding="utf-8", newline="\n")
     temporary.replace(path)
 
 
@@ -750,7 +754,8 @@ def clean(value):
 def evidence_link(run_id, out, history):
     if not run_id:
         return "—"
-    path = os.path.relpath(Path(history) / "runs" / run_id / "run.json", out)
+    path = (archive.link(history, "runs", run_id, "run.json") or
+            Path(os.path.relpath(Path(history) / "runs" / run_id / "run.json", out)).as_posix())
     return f"[{run_id}]({path})"
 
 
@@ -1154,7 +1159,7 @@ def render(data, out, history):
             configurations={
                 key: {
                     **value,
-                    "record": os.path.relpath(
+                    "record": archive.link(history, "runs", value["run_id"], "run.json") or os.path.relpath(
                         Path(history) / "runs" / value["run_id"] / "run.json", out
                     ),
                 }
@@ -1250,6 +1255,51 @@ def comparisons(data, out, history, notes):
                             cells.append(cell)
                         lines.append(f"| {b} | {prefix} | " + " | ".join(cells) + " |")
                     lines.append("")
+    if data.get("calibration"):
+        pilot = data["calibration"]
+        lines += ["## Native prefill tuning pilots", "",
+                  f"Reference: {evidence_link(pilot['reference_run_id'], out, history)}; "
+                  f"selected pilot: {evidence_link(pilot['selected_run_id'], out, history)}. "
+                  f"Chunks: {pilot['before_chunk']} → {pilot['after_chunk']}. "
+                  f"Each uses {pilot['warmup']} warmup and {pilot['repeats']} retained repetitions. "
+                  "These calibration prefixes use identical weights, inputs, cache precision and native timing protocol. "
+                  "The speedup below compares native prefill within AKAS; it does not compare runtimes.", "",
+                  "| Prefix | Before prefill | After prefill | Prefill speedup | Before decode | After decode | Exact output IDs |",
+                  "| ---: | ---: | ---: | ---: | ---: | ---: | --- |"]
+        for row in pilot["cases"]:
+            lines.append(f"| {row['prefix']} | {fmt(row['before_prefill'])} | {fmt(row['after_prefill'])} | "
+                         f"{row['prefill_speedup']:.3f}x | {fmt(row['before_decode'])} | {fmt(row['after_decode'])} | "
+                         f"{'yes' if row['exact_output'] else 'no'} |")
+        lines.append("")
+    if data.get("tuning_evidence"):
+        tuning = data["tuning_evidence"]
+        lines += ["## Tuning evidence", "",
+                  f"{evidence_link(tuning['run_id'], out, history)}: {clean(tuning['scope'])}", ""]
+    if data.get("retuning"):
+        tuned = data["retuning"]
+        lines += ["## Previous AKAS sweep", "",
+                  f"Previous: {evidence_link(tuned['reference_run_id'], out, history)}; "
+                  f"selected: {evidence_link(tuned['selected_run_id'], out, history)}. "
+                  "Weights, input IDs, cache precision, shape, repetition counts and native timing protocol match. "
+                  "These ratios compare AKAS with its own previous sweep, not with another runtime.", "",
+                  "| Prefix | Before prefill | After prefill | Prefill ratio | Before decode | After decode | Decode ratio | Exact output IDs |",
+                  "| ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |"]
+        for row in tuned["cases"]:
+            lines.append(f"| {row['prefix']} | {fmt(row['before_prefill'])} | {fmt(row['after_prefill'])} | "
+                         f"{row['after_prefill'] / row['before_prefill']:.3f}x | {fmt(row['before_decode'])} | "
+                         f"{fmt(row['after_decode'])} | {row['after_decode'] / row['before_decode']:.3f}x | "
+                         f"{'yes' if row['exact_output'] else 'no'} |")
+        lines.append("")
+    if data.get("output_comparisons"):
+        lines += ["## Greedy output agreement", "",
+                  "The untimed AKAS greedy pass is compared with the first retained llama.cpp response. "
+                  "Both use the same input IDs, checkpoint and cache precision. Different arithmetic can "
+                  "change the trajectory; agreement is not a corpus accuracy score.", "",
+                  "| Prefix | Output tokens | Exact IDs | Common prefix tokens |",
+                  "| ---: | ---: | --- | ---: |"]
+        for row in data["output_comparisons"]:
+            lines.append(f"| {row['prefix']} | {row['output']} | {'yes' if row['exact'] else 'no'} | {row['common_prefix_tokens']} |")
+        lines.append("")
     text(out / "COMPARISON.md", "\n".join(lines) + "\n")
 
 
@@ -1259,19 +1309,24 @@ def index(history):
     lines = [
         "# Campaign reports",
         "",
-        "Each report contains the full requested matrix, all available AKAS and baseline measurements, failed or unsupported rows, runtime settings, source provenance and selected kernel schedules. Raw measurements remain under `../runs/`.",
+        "Each report contains the full requested matrix, all available AKAS and baseline measurements, failed or unsupported rows, runtime settings, source provenance and selected kernel schedules. Archived reports and runs are pinned by commit in [the artifact catalog](../archive.json).",
         "",
         "| Started UTC | Workload | Source | Qualified AKAS | Qualified baselines | Report |",
         "| --- | --- | --- | ---: | ---: | --- |",
     ]
-    for path in sorted(reports.glob("*/report.json"), reverse=True):
+    archived = archive.catalog(history)
+    entries = {identity: (entry["summary"], archive.url(archived, entry, "README.md"))
+               for identity, entry in archived["reports"].items()}
+    from tools.benchmark_archive import report_summary
+    for path in reports.glob("*/report.json"):
+        if path.parent.name in entries:
+            continue
         data = read(path)
-        profiles = data["profiles"]
-        a = [p for p in profiles if p["kind"] == "akas"]
-        b = [p for p in profiles if p["kind"] == "baseline"]
-        state = data["campaign"]
+        entries[path.parent.name] = (report_summary(data), path.parent.name + "/README.md")
+    for identity in sorted(entries, reverse=True):
+        summary, target = entries[identity]
         lines.append(
-            f"| {state['created_at']} | {data['workload'].get('id', 'custom')} | `{state['source'].get('revision')}` | {sum(p['qualifying_status'] == 'passed' for p in a)}/{len(a)} | {sum(p['qualifying_status'] == 'passed' for p in b)}/{len(b)} | [full tables]({path.parent.name}/README.md) |"
+            f"| {summary['started_at']} | {summary['workload']} | `{summary['revision']}` | {summary['akas']} | {summary['baseline']} | [full tables]({target}) |"
         )
     text(reports / "README.md", "\n".join(lines) + "\n")
 
@@ -1350,7 +1405,8 @@ def check(history="benchmarks"):
     """Read-only audit of the canonical report layout and generated content."""
     history = Path(history).resolve()
     reports = history / "reports"
-    allowed_guides = {history / "README.md", history / "RESULTS.md"}
+    archived = archive.catalog(history)
+    allowed_guides = {history / name for name in ("README.md", "RESULTS.md", "ARCHIVE.md")}
     for path in history.rglob("*.md"):
         relative = path.relative_to(history)
         if ".ipynb_checkpoints" in relative.parts:
@@ -1362,10 +1418,19 @@ def check(history="benchmarks"):
         )
     with tempfile.TemporaryDirectory(prefix="akas-report-check-") as temporary:
         staged_history = Path(temporary) / "benchmarks"
+        if (history / "archive.json").exists():
+            write(staged_history / "archive.json", archived)
         for folder in sorted(reports.iterdir()):
             if folder.name == ".ipynb_checkpoints":
                 continue
             if folder.name == "README.md" and folder.is_file():
+                continue
+            if folder.name in archived["reports"]:
+                from tools.benchmark_archive import file_manifest
+                expected = archived["reports"][folder.name]
+                expected = expected.get("source_files", expected["files"])
+                if file_manifest(folder) != expected:
+                    raise ValueError(f"Archived report checksum mismatch: {folder}")
                 continue
             if not folder.is_dir() or not (folder / "report.json").is_file():
                 raise ValueError(f"Unexpected report entry: {folder}")

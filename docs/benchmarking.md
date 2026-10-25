@@ -170,6 +170,153 @@ Use `--check module:callable` to attach independent model correctness evidence.
 Kernel search qualification is recorded separately; a timed model is not
 necessarily accuracy-qualified. Run one GPU measurement process at a time.
 
+### A local Vulkan context sweep
+
+`tools.context_sweep` measures the dense LFM2.5-2.6B Q4_0 checkpoint on a hardware
+Vulkan adapter, including Windows AMD hosts. AKAS executes WebGPU over Vulkan;
+llama.cpp executes its direct Vulkan backend. Install the locked compiler,
+WebGPU and serving dependencies and Tensor's native prepared-submission helper.
+Keep the checkpoint and the pinned llama.cpp Vulkan executable under `build/`.
+The pinned model declaration is `benchmarks/models/lfm2.5-2.6b.json`.
+
+Use one shared `akas.text-workload.v1` manifest containing the exact token IDs
+for all eight prefixes. The C4 manifest retained in the reference report can
+also be supplied directly; its original tokenizer/checkpoint provenance remains
+in the archived input artifact. This reuses a text token stream, not a corpus
+accuracy evaluation. Compile and run GPU commands serially:
+
+```sh
+python -m tools.context_sweep compile --checkpoint build/checkpoints/lfm2.5-2.6b/q4_0.gguf \
+  --program build/vulkan-context/program --chunk 128 --trials 2 --out build/vulkan-context/compile.json
+python -m tools.context_sweep akas --checkpoint build/checkpoints/lfm2.5-2.6b/q4_0.gguf \
+  --program build/vulkan-context/program --chunk 128 --prompts build/text-workload.json \
+  --out build/vulkan-context/akas.json
+python -m tools.context_sweep llama --checkpoint build/checkpoints/lfm2.5-2.6b/q4_0.gguf \
+  --binary build/baselines/llama-b11856-vulkan/llama-server.exe \
+  --prompts build/text-workload.json --out build/vulkan-context/llama.json
+python -m tools.context_sweep report --runs AKAS_RUN_ID LLAMA_RUN_ID --out build/vulkan-context/report
+```
+
+Defaults are B1, prefixes 32 through 130944, 128 outputs, FP16 KV, one warmup and
+three retained repetitions. Use `--prefixes 32 512 2048` for an initial pilot.
+Compare prefill chunks through the same qualified program before selecting a
+full sweep. The tool requests sufficient buffer space for the packed vocabulary
+matrix and bounds an AMD driver limit that otherwise becomes WebGPU's undefined
+limit sentinel. It rejects software adapters and changed prompt fingerprints.
+Run records retain checkpoint and runtime hashes, operation qualification,
+native helper identity, every response and generated IDs. Report generation
+checks matched checkpoints, prompts, shapes and cache precision and uses the
+standard campaign renderer. Phase rates retain their distinct protocol labels;
+they do not establish an end-to-end cross-runtime speedup.
+
+For a focused Vulkan search, `python -m tools.vulkan_profile` attributes a
+compiled phase using isolated repeated call groups. Supply `--program`,
+`--checkpoint`, `--chunk`, `--position` and `--out`. Those hot-buffer timings
+are diagnostics and must not be summed into an inference speedup.
+
+`python -m tools.vulkan_tune --program PROGRAM --chunk 1 --kinds linear ffn
+linear_add --trials 32 --out DIRECTORY` independently qualifies candidate
+schedules from that program's operation geometry and writes `profile.json` and
+the full qualification trace. Attention searches can also select `--splits`
+and a representative `--capacity`; shorter-capacity results need qualification
+again at the deployed capacity. Pass a selected profile to `context_sweep
+compile --schedule-profile PROFILE`, and a JSON operation policy through
+`--policy POLICY`. Recompile into a new directory to preserve the incumbent.
+The complete program compiler requalifies the selected operations before model
+benchmarks. Measure the combined program on the original text manifest before
+claiming gains; individually faster kernels can lose when composed.
+
+`context_sweep compile --activation-quantization mixed` explicitly selects
+short even/odd F16 FMA chains with F32 totals for paired FFNs and triple-width
+input projections, and two signed-Q8 activation components for other Q4_0
+prefill projections. Decode remains floating point. This is a different
+prefill arithmetic contract. The short-half operation gate includes an
+analytic chain-rounding bound and a 0.5% RMS limit; ordinary F32 gates are
+unchanged. The Q8 encoder corrects approximate division and explicitly fuses
+its residual update to match its independent reference.
+
+`--activation-quantization half` applies the same short-half contract to every
+Q4_0 prefill projection. It is an experimental alternative, subject to the
+same model regression check. `half_k=16/32/64` changes shared staging depth
+while retaining eight-FMA partials; `integer_k=32/64/128` changes two-component
+staging depth. Legal tiles must fit the device's shared memory.
+
+`{"linear":{"stage_inputs":true}}` rounds each short-half projection's input
+once into temporary F16 storage. Its separate operation checks exact FP16 bits,
+including ties and subnormals, and the projection's ABI declares the new input
+dtype. Conversion work remains inside prefill timing; decode is unchanged.
+
+`attention.webgpu.packed_decode` packs pairs of native F16 cache values into
+shared words, then uses F32 dot products and softmax. The tiled prefill family
+exposes the same storage change through `packed_shared=true`. These options
+preserve the external F16 KV format. Larger tiles and more physical splits
+must be measured on the composed model; an isolated attention win can regress
+full decoding. The 64/128-token decoder tiles keep score storage separate from
+probability storage so their cross-subgroup reads finish before overwrite.
+
+Before accepting changed arithmetic, `python -m tools.vulkan_quality` can
+capture frozen-program logits with retained C4 inputs and replay all reference
+tokens through the candidate. It requires identical predicted token IDs,
+less than 1% relative logit RMS error and cosine above 0.9999 at sampled steps.
+Use `--reference` to supply a previous `.npz` capture. This checks regression
+against a qualified program, not corpus accuracy or an independent model oracle.
+
+`context_sweep akas --reuse-prefill-check` captures the small recurrent state
+outside both phase timers, then rewinds it for an untimed greedy replay.
+Decode only appends KV after the completed prefix, so that prefix can be
+retained instead of computing it a second time. The first predicted token is
+retained from the timed prefill. Snapshot bytes and verification mode are
+recorded; the native phase work and token accounting do not change.
+
+The optional `linear.webgpu.packed:archived-decode` candidate replays the
+RX 6700 XT packed F32 schedules retained in Tensor commit `d5ee508`.
+`normalization.webgpu.parallel-subgroup` exposes the accompanying parallel RMS
+reduction for widths divisible by 256. `linear.webgpu.packed:padded-prefill`
+searches an unpadded control, one-word shared padding, and workgroup grid order
+while retaining F32 totals. Select these through schedule profiles or targeted
+`vulkan_tune --implementation` searches. Historical QAD weights and short-context
+host-logit timings do not establish performance on the current standard Q4_0
+checkpoint or long-context greedy workload. Requalify and measure the transfer.
+
+`context_sweep compile --dense-weight-layout planar` enables the reversible
+Q4 payload/scale permutation for encoded dense WebGPU projections. It uses the
+same bytes and FP16 scales, and leaves embedding gathers in their original
+layout. Upload and kernel declarations must agree; this option belongs to the
+compiled program. It does not quantize activations. FP16 staging retains the
+explicit rounding step because Vulkan packed conversions can truncate.
+For a matched follow-up report, supply `context_sweep report --reference-run
+PREVIOUS_AKAS_RUN` to include the prior native sweep alongside llama.cpp.
+
+The floating attention policy `{"splits":64,"adaptive_splits":true}` assigns
+512-token cache blocks across the available parts. Unused parts contribute
+zero to the merge, so short contexts avoid loading queries and KV in most
+workgroups. The independently checked partial-buffer reference follows that
+partitioning. `{"linear":{"split_ffn":true}}` is a separate prefill policy
+for comparing two projection calls plus SwiGLU with the fused projection.
+Add `"split_ffn_min_rows":128` inside the linear policy to keep small FFNs fused.
+Choose both policies through measurements of the composed program.
+
+`{"linear":{"stage_weights":true}}` tests transient F16 weight staging for
+packed projections with at least 128 input rows. It decodes original GGML
+weights with explicit ties-to-even half rounding, then reuses that scratch
+across matrix row tiles. Decode and small prefill chunks retain packed weights.
+The temporary buffers participate in the normal workspace lifetime allocator;
+model weights and cache precision remain unchanged. Include conversion calls
+in all reported prefill timing.
+
+`python -m tools.vulkan_link --prefill PREFILL_PROGRAM --decode DECODE_PROGRAM
+--out NEW_PROGRAM` combines independently qualified autoregressive phases. It
+requires matching configuration, capacities, upload options and shared
+weight/state buffer declarations, preserves immutable generation directories,
+and records both producer hashes. It does not retime kernels. Validate the
+combined real-text pilot before selecting it for a sweep.
+
+`context_sweep compile --decode-only` produces a smaller screening program for
+`python -m tools.vulkan_decode_probe`. That probe assigns logical prefix
+positions to synthetic Gaussian KV values and measures decode only. It is not
+a text benchmark or a quality evaluation. Confirm its selected schedules with
+the full real-text sweep before publishing a performance result.
+
 ## Find a previous result
 
 All published performance results use the generated archive described below.
@@ -182,7 +329,8 @@ performance tables or research logs to the authoring guides.
 The [campaign report index](../benchmarks/reports/README.md) provides complete
 tables for a matrix: all requested configurations and shapes, available baseline
 prefill/decode and burst rates, qualification failures, latency, settings and
-selected kernel schedules. Reports live in `benchmarks/reports/`; compiled
+selected kernel schedules. New local reports live in `benchmarks/reports/`;
+published reports are linked by their archive commits. Compiled
 programs and temporary build logs remain in `build/`.
 
 The matrix runner generates these reports when an invocation finishes or is
@@ -196,8 +344,12 @@ Each report keeps its campaign snapshot and portable `report.json`. Its Markdown
 CSV tables and selected schedules can be regenerated after cleaning build files:
 
 ```sh
-python -m tools.campaign_report --render benchmarks/reports/REPORT_ID/report.json
+python -m tools.benchmark_archive fetch reports REPORT_ID
+python -m tools.campaign_report --render REPORT_DIRECTORY/report.json --out build/report-preview
 ```
+
+Use the verified `REPORT_DIRECTORY` printed by the fetch command. Preview output
+stays separate from the sealed historical bundle.
 
 Baseline selection uses matching full-workload records completed before the
 campaign began. Failed profiles retain their measured values and qualification
@@ -231,12 +383,49 @@ Before publishing, run the same read-only check used by CI:
 python -m tools.campaign_report --check
 ```
 
-The check rejects unknown schemas, missing configurations or shapes, missing
+For new local reports, the check rejects unknown schemas, missing configurations or shapes, missing
 metrics, added report files, handwritten changes to generated tables and a stale
-report index. It regenerates the archive in temporary storage and compares every
+report index. It regenerates local reports in temporary storage and compares every
 file; it does not compile models or run benchmarks. Keep benchmark documentation
 under `benchmarks/` limited to its guide entry point, generated indexes and these
 report bundles. Sealed files under `runs/` remain measurement evidence.
+
+Published payloads live on separate `codex/artifacts/<YYYY-MM>-<shard>` branches.
+The [archive catalog](../benchmarks/archive.json) maps each run/report ID to its
+branch, full commit hash, directory and file checksums. Generated indexes link to
+those immutable commits. Original historical report pages are retained under each
+archived report's `originals/` when links were updated for archive navigation.
+Historical snapshots are verified by their checksums; they are not regenerated by
+the current renderer. Source snapshots and checksummed run evidence stay unchanged.
+
+```sh
+python -m tools.benchmark_archive publish
+python -m tools.benchmark_archive check --objects
+# Push the archive branches listed in benchmarks/archive.json before publishing the catalog.
+python -m tools.benchmark_archive prune
+```
+
+Each commit replaces the previous batch; commits hold at most 192 MiB and a branch
+holds at most 512 MiB across its history. A new shard has no parent. Payloads are
+ignored on main, while definitions, schemas, summaries and the catalog stay tracked.
+Do not merge archive branches into main or delete/rewrite referenced archive refs.
+See [the archive workflow](../benchmarks/README.md) for clone and retention details.
+
+Fetch one bundle explicitly when its commit is unavailable locally:
+
+```sh
+python -m tools.benchmark_archive fetch runs RUN_ID
+python -m tools.benchmark_archive fetch reports REPORT_ID
+```
+
+The command prints a verified directory under `build/benchmark-archive/`. Supply
+that directory when a tool needs an archived file path. `akas history show` and
+`seed` resolve locally available commits; `akas history list` uses summaries and
+works without downloading archive objects. `python -m tools.benchmark_archive
+check` checks catalog structure offline; add `--objects --fetch` to download needed
+branches and verify every archived file's bytes.
+Automatic incumbent search uses locally available evidence and does not require
+archive downloads for a new compilation.
 
 `akas bench` automatically writes a durable run under `benchmarks/runs/` as well as
 `--out`. Use `--history /path/to/history` to select another archive or

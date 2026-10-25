@@ -46,13 +46,24 @@ def _packed(p, paired=False, add_residual=False):
     from tensor.compiler.webgpu.schedules.register_matmul import register_matmul
     from akas.ops.linear.kernel import _epilogue as projection_epilogue
     from akas.ops.linear.kernel import webgpu_abi as projection_abi
-    from akas.quantization._shared.rounding import round_half
+    from akas.quantization._shared.rounding import round_half, round_half_branch
     from akas.quantization.weights.ggml.kernel import weight_decoder
 
     r, k, o, q = (p[n] for n in ("r", "k", "o", "type"))
     parts = 2 if paired else 1
     tm, tn, bk = p.get("tile", (16, 32, 64))
-    rounded, decoder = (round_half(), weight_decoder(q, k, packed_words=True))
+    rounded = round_half_branch() if p.get("branch_staging", False) else round_half()
+    if p.get("weight_layout", "raw") == "planar":
+        if q != 2:
+            raise ValueError("planar dense projection requires Q4_0")
+        from akas.quantization.weights.ggml.kernel import planar_reader
+        planar = planar_reader((o, k))
+
+        @T.macro
+        def decoder(w, row, column):
+            return planar((w,), row, column)
+    else:
+        decoder = weight_decoder(q, k, packed_words=True)
     epilogue = projection_epilogue(paired=paired, add_residual=add_residual)
 
     @T.macro
@@ -63,6 +74,8 @@ def _packed(p, paired=False, add_residual=False):
             return rounded(decoder(w, col, channel))
 
     if p.get("schedule") == "outer":
+        if p.get("half_accum") and not p["outer"].get("half_accum"):
+            raise ValueError("short-half contract requires a half-accumulating outer schedule")
         if q not in (1, 2, 14):
             raise ValueError("outer-product prefill requires F16, Q4_0 or Q6_K weights")
         dtype = p.get("outer_shared_dtype", "float16")
@@ -97,6 +110,8 @@ def _packed(p, paired=False, add_residual=False):
             **config,
         )
     else:
+        if p.get("half_accum"):
+            raise ValueError("short-half contract requires an outer schedule")
         algorithm = register_matmul(
             r,
             k,
@@ -372,6 +387,52 @@ def gemv_packed(p, paired=False, add_residual=False):
     return projection_abi(p, gemv, paired=paired, add_residual=add_residual)
 
 
+def vector_decode(spec: KernelSpec, schedule: Mapping[str, object]):
+    """Coupled vector and independent-accumulator decode candidates."""
+    p = {**spec.parameters, **schedule}
+    layouts = (
+        (128, 32, 2, 2, True),
+        (256, 32, 2, 2, True),
+        (128, 16, 4, 4, True),
+        (256, 16, 4, 4, True),
+        (128, 32, 1, 1, False),
+        (128, 16, 1, 1, False),
+        (512, 32, 2, 2, True),
+        (128, 32, 4, 4, True),
+    )
+    threads, lanes, unroll, chains, dot = layouts[p.get("decode_layout", 0)]
+    tiles = p["k"] // (lanes * 8) if p["type"] == 2 else p["k"] // 256
+    while tiles % unroll:
+        unroll //= 2
+    chains = min(chains, unroll)
+    return gemv_packed(
+        {**p, "sg": True, "gemv_threads": threads, "gemv_lanes": lanes,
+         "gemv_unroll": unroll, "gemv_chains": chains,
+         "gemv_dot": dot, "gemv_q6_dot": True,
+         "gemv_accumulators": 1 if dot or p["type"] != 2 else 4},
+        paired=spec.kind == "ffn", add_residual=spec.kind == "linear_add",
+    )
+
+
+def archived_decode(spec: KernelSpec, schedule: Mapping[str, object]):
+    """Replay the RX 6700 XT packed F32 schedules retained at Tensor d5ee508."""
+    p = {**spec.parameters, **schedule}
+    selected = {
+        (2048, 128000, 14): dict(gemv_q6_dot=True, gemv_threads=256,
+                               gemv_unroll=4, gemv_chains=1),
+        (2048, 6144, 2): dict(gemv_unroll=8, gemv_chains=8),
+        (10752, 2048, 2): dict(gemv_lanes=16, gemv_threads=64,
+                             gemv_dot=True, gemv_unroll=4),
+        (2048, 2048, 2): dict(gemv_unroll=8, gemv_chains=8),
+        (2048, 512, 2): dict(gemv_lanes=32, gemv_threads=64,
+                            gemv_dot=True, gemv_unroll=4),
+    }
+    # Paired gate/up retained the subgroup control in the archive.
+    config = {} if spec.kind == "ffn" else selected.get((p["k"], p["o"], p["type"]), {})
+    return gemv_packed({**p, "sg": True, **config}, paired=spec.kind == "ffn",
+                       add_residual=spec.kind == "linear_add")
+
+
 def q8(spec: KernelSpec, schedule: Mapping[str, object]):
     from akas.quantization.weights.ggml.webgpu import q8_dot
 
@@ -392,6 +453,275 @@ def q8(spec: KernelSpec, schedule: Mapping[str, object]):
         return out
 
     return compute
+
+
+def outer_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
+    """Staged packed projections with a scalar, resumable search axis."""
+    p = {**spec.parameters, **schedule}
+    rows = p.get("outer_rows", 32)
+    return _packed(
+        {**p, "schedule": "outer", "outer": dict(
+            tile_m=rows, tile_n=64, tile_k=16, micro_m=rows // 16,
+            micro_n=4, threads=256, lhs_layout="km", unroll=4,
+            dot_width=2, packed_pairs=True)},
+        paired=spec.kind == "ffn",
+    )
+
+
+def blocked_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
+    """Explore larger reuse tiles while retaining FP32 accumulation."""
+    p = {**spec.parameters, **schedule}
+    # M, N, K, private M, private N, threads. Scalar selectors keep
+    # resumable search keys hashable while the ownership moves together.
+    layouts = (
+        (64, 64, 16, 4, 4, 256),
+        (64, 64, 32, 4, 4, 256),
+        (64, 128, 32, 4, 8, 256),
+        (64, 128, 32, 8, 4, 256),
+        (64, 64, 32, 4, 8, 128),
+        (128, 64, 32, 8, 4, 256),
+        (128, 128, 32, 8, 8, 256),
+        (32, 128, 32, 4, 4, 256),
+        (32, 64, 32, 4, 4, 128),
+    )
+    m, n, k, mm, mn, threads = layouts[p.get("outer_layout", 0)]
+    return _packed(
+        {**p, "schedule": "outer", "outer": dict(
+            tile_m=m, tile_n=n, tile_k=k, micro_m=mm, micro_n=mn,
+            threads=threads, lhs_layout="km", unroll=4,
+            dot_width=2, packed_pairs=True)},
+        paired=spec.kind == "ffn", add_residual=spec.kind == "linear_add",
+    )
+
+
+def branched_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
+    """Bypass subnormal rounding work for normal operands, retaining exact RNE."""
+    return blocked_prefill(spec, {**schedule, "branch_staging": True})
+
+
+def padded_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
+    """Replay archived shared padding and grid order with F32 totals."""
+    p = {**spec.parameters, **schedule}
+    # A packed word of padding was the archived FFN layout winner. Keep a
+    # matched unpadded control and separate padding from grid placement.
+    pad, order = ((0, "column"), (1, "column"), (1, "row"), (2, "row"))[
+        p.get("shared_layout", 0)
+    ]
+    wide = p["o"] == 6144
+    return _packed(
+        {**p, "schedule": "outer", "outer": dict(
+            tile_m=64, tile_n=128 if wide else 64, tile_k=16,
+            micro_m=4, micro_n=8 if wide else 4, threads=256,
+            lhs_layout="km", unroll=8, explicit_unroll=True,
+            dot_width=2, packed_pairs=True, lhs_pad=pad, rhs_pad=pad,
+            group_order=order)},
+        paired=spec.kind == "ffn", add_residual=spec.kind == "linear_add",
+    )
+
+
+def half_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
+    """Eight adjacent even/odd F16 FMAs followed by a complete-K F32 total."""
+    p = {**spec.parameters, **schedule}
+    layouts = (
+        (32, 64, 4, 4, 128),
+        (64, 64, 4, 4, 256),
+        (64, 128, 4, 8, 256),
+        (32, 128, 4, 8, 128),
+        (64, 128, 8, 8, 128),
+        (128, 128, 8, 8, 256),
+    )
+    m, n, mm, mn, threads = layouts[p.get("half_layout", 0)]
+    if p["r"] <= 8:
+        m, n, mm, mn, threads = 8, 64, 1, 4, 128
+    pad = p.get("half_pad", 1)
+    if p.get("input_dtype") == "float16" and not p.get("half_native", True):
+        raise ValueError("staged F16 input requires the native half-pair kernel")
+    if not p.get("half_native", True) and p.get("half_k", 16) != 16:
+        raise ValueError("generic short-half staging uses a fixed depth of 16")
+    if p.get("half_native", True):
+        return native_half_pairs({**p, "half_tile": (m, n, mm, mn, threads), "half_pad": pad},
+                                 paired=spec.kind == "ffn", add_residual=spec.kind == "linear_add")
+    primitive = _packed(
+        {**p, "schedule": "outer", "outer": dict(
+            tile_m=m, tile_n=n, tile_k=16, micro_m=mm, micro_n=mn,
+            threads=threads, lhs_layout="km", unroll=8, explicit_unroll=True,
+            dot_width=2, packed_pairs=True, half_accum=True,
+            lhs_pad=pad, rhs_pad=pad, group_order="row")},
+        paired=spec.kind == "ffn", add_residual=spec.kind == "linear_add",
+    )
+    return primitive
+
+
+def half_input(spec: KernelSpec, schedule: Mapping[str, object]):
+    """Round once before tiled reuse, including ties and half subnormals."""
+    import tilelang.language as T
+    from akas.quantization._shared.rounding import round_half
+
+    count = spec.parameters["r"] * spec.parameters["k"]
+    rounded = round_half()
+
+    @kernel
+    def compute(x: Tensor(count, "float32")) -> Tensor(count, "float16"):
+        out = output(count, "float16")
+        with T.Kernel(T.ceildiv(count, 256), threads=256) as block:
+            index = block * 256 + T.get_thread_binding()
+            if index < count:
+                out[index] = T.cast(rounded(x[index]), "float16")
+        return out
+
+    return compute
+
+
+def native_half_pairs(p, paired=False, add_residual=False):
+    """Typed half-pair shared tiles avoid unpack/narrow conversions per FMA."""
+    import tilelang.language as T
+    from itertools import product
+    from tensor.compiler.webgpu.schedules.registers import registers, shared_buffers
+    from akas.ops.linear.kernel import _epilogue, webgpu_abi
+    from akas.quantization._shared.rounding import round_half
+    from akas.quantization.weights.ggml.kernel import weight_decoder
+
+    r, k, o, q = (p[n] for n in ("r", "k", "o", "type"))
+    m, n, mm, mn, threads = p["half_tile"]
+    pad, parts = p["half_pad"], 2 if paired else 1
+    bk = p.get("half_k", 16)
+    if bk not in (16, 32, 64) or k % bk:
+        raise ValueError("short-half staging depth must divide K and be 16/32/64")
+    pairs = bk // 2
+    if pairs * 4 * (m + pad + parts * (n + pad)) > 32768:
+        raise ValueError("short-half staging exceeds 32 KiB")
+    rm, rn = m // mm, n // mn
+    rounded, decode = round_half(), weight_decoder(q, k, packed_words=True)
+    epilogue = _epilogue(paired=paired, add_residual=add_residual)
+
+    @T.macro
+    def input_value(x, index):
+        if p.get("input_dtype") == "float16":
+            return T.cast(x[index], "float32")
+        else:
+            return rounded(x[index])
+
+    @T.macro
+    def weight(w, row, channel):
+        if q == 1:
+            return decode(w, row, channel)
+        else:
+            return rounded(decode(w, row, channel))
+
+    @T.macro
+    def stage_a(x, lhs, by, tile, tx):
+        for load in T.serial(T.ceildiv(m * pairs, threads)):
+            flat = load * threads + tx
+            row, pair = flat // pairs, flat % pairs
+            if row < m:
+                a, b = T.alloc_var("float32"), T.alloc_var("float32")
+                a, b = 0, 0
+                if (by * m + row < r) & (tile * bk + pair * 2 < k):
+                    a = input_value(x, (by * m + row) * k + tile * bk + pair * 2)
+                if (by * m + row < r) & (tile * bk + pair * 2 + 1 < k):
+                    b = input_value(x, (by * m + row) * k + tile * bk + pair * 2 + 1)
+                lhs[pair, row, 0] = T.cast(a, "float16")
+                lhs[pair, row, 1] = T.cast(b, "float16")
+
+    @T.macro
+    def stage_b(w, rhs, bx, tile, tx):
+        for load in T.serial(T.ceildiv(n * pairs, threads)):
+            flat = load * threads + tx
+            row, pair = flat // pairs, flat % pairs
+            if row < n:
+                a, b = T.alloc_var("float32"), T.alloc_var("float32")
+                a, b = 0, 0
+                if (bx * n + row < o) & (tile * bk + pair * 2 < k):
+                    a = weight(w, bx * n + row, tile * bk + pair * 2)
+                if (bx * n + row < o) & (tile * bk + pair * 2 + 1 < k):
+                    b = weight(w, bx * n + row, tile * bk + pair * 2 + 1)
+                rhs[pair, row, 0] = T.cast(a, "float16")
+                rhs[pair, row, 1] = T.cast(b, "float16")
+
+    def stage_rhs(w, rhs, w2, bx, tile, tx):
+        stage_b(w, rhs[0], bx, tile, tx)
+        if paired:
+            stage_b(w2, rhs[1], bx, tile, tx)
+
+    @T.macro
+    def clear(value: T.Ref):
+        value = T.call_extern("float16x2", "vec2<f16>", T.cast(0, "float16"))
+
+    @T.macro
+    def fma(value: T.Ref, left0, left1, right0, right1):
+        value = T.call_extern("float16x2", "fma",
+            T.call_extern("float16x2", "vec2<f16>", left0, left1),
+            T.call_extern("float16x2", "vec2<f16>", right0, right1), value)
+
+    def multiply(partial, lhs, rhs, kk, mr, nr):
+        for part, i, j in product(range(parts), range(mm), range(mn)):
+            fma(partial[part, i, j][0], lhs[kk, mr + i * rm, 0], lhs[kk, mr + i * rm, 1],
+                rhs[part][kk, nr + j * rn, 0], rhs[part][kk, nr + j * rn, 1])
+
+    @T.macro
+    def accumulate(total: T.Ref, value):
+        total += T.call_extern("float32", "tensor_sum2_f16_vec", value)
+
+    def add_partials(total, partial):
+        for key in total:
+            accumulate(total[key][0], partial[key][0])
+
+    def clear_partials(partial):
+        for value in partial.values():
+            clear(value[0])
+
+    @T.macro
+    def store(out, residual, gate, up, row, col):
+        if (row < r) & (col < o):
+            epilogue(out, residual, row * o + col, gate, up)
+
+    def store_all(out, residual, total, by, bx, mr, nr):
+        for i, j in product(range(mm), range(mn)):
+            store(out, residual, total[0, i, j][0], total[1, i, j][0] if paired else 0,
+                  by * m + mr + i * rm, bx * n + nr + j * rn)
+
+    @T.macro
+    def matmul(x, w, out, w2=None, residual=None):
+        T.func_attr({"tensor.webgpu.loop_unroll": "explicit"})
+        with T.Kernel(T.ceildiv(r, m), T.ceildiv(o, n), threads=threads) as (by, bx):
+            tx = T.get_thread_binding()
+            mr, nr = tx // rn, tx % rn
+            lhs = T.alloc_shared((pairs, m + pad, 2), "float16")
+            rhs = shared_buffers((pairs, n + pad, 2), "float16", parts)
+            total = registers((parts, mm, mn))
+            partial = registers((parts, mm, mn), "float16x2", initialize=False)
+            for tile in T.serial(T.ceildiv(k, bk)):
+                stage_a(x, lhs, by, tile, tx)
+                stage_rhs(w, rhs, w2, bx, tile, tx)
+                T.sync_threads()
+                for segment in T.unroll(bk // 16):
+                    clear_partials(partial)
+                    for kk in T.unroll(8):
+                        multiply(partial, lhs, rhs, segment * 8 + kk, mr, nr)
+                    add_partials(total, partial)
+                T.sync_threads()
+            store_all(out, residual, total, by, bx, mr, nr)
+
+    return webgpu_abi(p, matmul, paired=paired, add_residual=add_residual)
+
+
+def integer_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
+    """Coupled reuse/ownership search for the declared two-component ABI."""
+    p = {**spec.parameters, **schedule}
+    layouts = (
+        (16, 32, 2, 2, 128),
+        (32, 64, 2, 4, 256),
+        (64, 128, 4, 8, 256),
+        (32, 128, 4, 8, 128),
+        (64, 64, 4, 4, 256),
+    )
+    m, n, mm, mn, threads = layouts[p.get("integer_layout", 0)]
+    return _integer(
+        {**p, "integer": {**p.get("integer", {}), "tile_m": m, "tile_n": n,
+            "micro_m": mm, "micro_n": mn, "threads": threads,
+            "owner_axis": "column", "group_order": "row", "tile_k": p.get("integer_k", 32)}},
+        paired=spec.kind == "ffn", add_residual=spec.kind == "linear_add",
+    )
 
 
 def ffn(spec: KernelSpec, schedule: Mapping[str, object]):

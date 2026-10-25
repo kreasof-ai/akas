@@ -14,6 +14,7 @@ import tarfile
 import uuid
 
 from akas.benchmarking.workload import STANDARD, STANDARD_SHA256
+from akas.benchmarking import archive
 
 SCHEMA = "akas.benchmark-run.v1"
 
@@ -30,11 +31,28 @@ def digest(path):
     return value.hexdigest()
 
 
-def write(path, value):
+def write(path, value, *, compact_entries=False):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(path.name + "." + uuid.uuid4().hex + ".tmp")
-    temporary.write_text(json.dumps(value, indent=2, allow_nan=False) + "\n")
+    content = json.dumps(value, indent=2, allow_nan=False) + "\n"
+    if compact_entries:
+        # One line per run/bundle keeps generated catalogs small and their diffs
+        # useful without changing the ordinary evidence JSON serialization.
+        encode = lambda item: json.dumps(item, allow_nan=False, separators=(",", ":"))
+        fields = []
+        for key, item in value.items():
+            if isinstance(item, (dict, list)):
+                opening, closing = ("{", "}") if isinstance(item, dict) else ("[", "]")
+                entries = ([encode(k) + ":" + encode(v) for k, v in item.items()]
+                           if isinstance(item, dict) else [encode(v) for v in item])
+                body = opening + "\n" + ",\n".join("    " + e for e in entries) + "\n  " + closing
+            else:
+                body = encode(item)
+            fields.append("  " + encode(key) + ": " + body)
+        content = "{\n" + ",\n".join(fields) + "\n}\n"
+    temporary.write_text(content,
+                         encoding="utf-8", newline="\n")
     temporary.replace(path)
 
 
@@ -383,11 +401,32 @@ class Recorder:
         return self.record
 
 
-def records(root, **filters):
-    for path in sorted((Path(root) / "runs").glob("*/run.json")):
-        record = json.loads(path.read_text())
-        if record.get("schema") != SCHEMA:
-            raise ValueError(f"unsupported benchmark record: {path}")
+def load_record(root, run_id):
+    record = json.loads(archive.read_file(root, "runs", run_id, "run.json"))
+    if record.get("schema") != SCHEMA or record["id"] != run_id:
+        raise ValueError(f"unsupported benchmark record: {run_id}")
+    return record
+
+
+def records(root, *, available_only=False, **filters):
+    archived = archive.catalog(root)["runs"]
+    local = {path.parent.name for path in (Path(root) / "runs").glob("*/run.json")}
+    available = {}
+    for run_id in sorted(local | archived.keys()):
+        # Filter compact catalog summaries before reading large historical records.
+        if run_id in archived and not matches(archived[run_id]["summary"], filters):
+            continue
+        if available_only and run_id in archived and run_id not in local:
+            entry = archived[run_id]
+            if entry["commit"] not in available:
+                try:
+                    archive.ensure_commit(root, entry)
+                    available[entry["commit"]] = True
+                except ValueError:
+                    available[entry["commit"]] = False
+            if not available[entry["commit"]]:
+                continue
+        record = load_record(root, run_id)
         meta = record["metadata"]
         values = dict(
             status=record["status"],
@@ -406,10 +445,23 @@ def records(root, **filters):
             yield record
 
 
-def rebuild_index(root):
+def matches(entry, filters):
+    return all(value is None or str(value).lower() in str(entry.get(key, "")).lower()
+               for key, value in filters.items())
+
+
+def index_entries(root):
     root = Path(root)
+    data = archive.catalog(root)
+    saved = {identity: dict(entry["summary"],
+                           path=archive.url(data, entry, "run.json"))
+             for identity, entry in data["runs"].items()}
     entries = []
-    for record in records(root):
+    for path in sorted((root / "runs").glob("*/run.json")):
+        if path.parent.name in saved:
+            # Restored bundles must not replace or duplicate archived summaries.
+            continue
+        record = json.loads(path.read_text(encoding="utf-8"))
         meta = record["metadata"]
         device = meta.get("device", {})
         entries.append(
@@ -436,8 +488,16 @@ def rebuild_index(root):
                 path=f"runs/{record['id']}/run.json",
             )
         )
-    write(root / "index.json", dict(schema="akas.benchmark-index.v1", runs=entries))
-    guide = Path(__file__).resolve().parents[3] / "docs/benchmarking.md"
+    entries.extend(saved.values())
+    entries.sort(key=lambda entry: (entry["started_at"], entry["id"]))
+    return entries
+
+
+def rebuild_index(root):
+    root = Path(root)
+    entries = index_entries(root)
+    write(root / "index.json", dict(schema="akas.benchmark-index.v1", runs=entries), compact_entries=True)
+    guide = root.parent / "docs/benchmarking.md"
     guide_link = (
         os.path.relpath(guide, root)
         if guide.is_file()
@@ -473,15 +533,14 @@ def rebuild_index(root):
         lines.append(
             f"| {entry['started_at']} | {clean(entry['hardware'])} | {clean(entry['runtime'])} / {clean(entry['model'])} | {clean(configuration)} | {geometry} | {entry['purpose']} | {entry['status']} | {revision} | [run]({entry['path']}) |"
         )
-    (root / "RESULTS.md").write_text("\n".join(lines) + "\n")
+    (root / "RESULTS.md").write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
 
 
 def export_profile(root, run_id, *, phase, batch, chunk, provider, target, out):
     """Export a qualified incumbent; future compilation must qualify it again."""
-    matching = [row for row in records(root) if row["id"] == run_id]
-    if len(matching) != 1 or matching[0]["status"] != "passed":
+    record = load_record(root, run_id)
+    if record["status"] != "passed":
         raise ValueError("schedule export requires a passed, unchanged run")
-    record = matching[0]
     selected = [
         row
         for row in record["search"]
@@ -497,7 +556,7 @@ def export_profile(root, run_id, *, phase, batch, chunk, provider, target, out):
             "select exactly one matching phase/batch/chunk/provider/target"
         )
     entry = selected[0]
-    directory = Path(root) / "runs" / run_id
+    directory = archive.directory(root, "runs", run_id)
     artifact = next(
         a for a in record["artifacts"] if a["path"] == entry["qualification"]
     )
@@ -550,43 +609,22 @@ def arguments(parser):
 
 def command(args):
     if args.action == "list":
-        found = list(
-            records(
-                args.root,
-                **{
-                    k: getattr(args, k)
-                    for k in (
-                        "hardware",
-                        "model",
-                        "runtime",
-                        "status",
-                        "workload",
-                        "provider",
-                        "mode",
-                        "purpose",
-                    )
-                },
-            )
-        )
-        if args.json:
-            print(json.dumps(found, indent=2))
-        else:
-            for row in found:
-                meta = row["metadata"]
-                print(
-                    row["id"],
-                    row["status"],
-                    meta.get("runtime", "akas"),
-                    meta.get("model", meta.get("definition", "")),
-                    meta.get("purpose", "benchmark"),
-                    len(row["workload"]["shapes"]),
-                    "shapes",
-                )
+        filters = {k: getattr(args, k) for k in (
+            "hardware", "model", "runtime", "status", "workload", "provider",
+            "mode", "purpose")}
+        if not args.json:
+            path = Path(args.root) / "index.json"
+            if not path.exists():
+                rebuild_index(args.root)
+            entries = json.loads(path.read_text(encoding="utf-8"))["runs"]
+            for row in entries:
+                if matches(row, filters):
+                    print(row["id"], row["status"], row["runtime"], row["model"],
+                          row["purpose"], len(row["shapes"]), "shapes")
+            return
+        print(json.dumps(list(records(args.root, **filters)), indent=2))
     elif args.action == "show":
-        found = [row for row in records(args.root) if row["id"] == args.run_id]
-        if len(found) != 1:
-            raise ValueError("benchmark run not found")
-        print(json.dumps(found[0], indent=2))
+        print(json.dumps(load_record(args.root, args.run_id), indent=2))
     elif args.action == "seed":
         export_profile(
             args.root,

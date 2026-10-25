@@ -1,7 +1,8 @@
 """Explicit activation-storage lowering before operation schedule search."""
 
 
-def q16_activations(graph, *, subgroup=True, fixed_residual=False, schedules=None):
+def q16_activations(graph, *, subgroup=True, fixed_residual=False, schedules=None, mixed=False,
+                    half_only=False):
     """Reuse two-plane activations for Q4_0 projections sharing one input.
 
     This changes the declared arithmetic policy: half-rounded inputs become two
@@ -24,6 +25,9 @@ def q16_activations(graph, *, subgroup=True, fixed_residual=False, schedules=Non
             or p["r"] == 1
         ):
             result.append(call)
+            continue
+        if half_only or mixed and (call.kind == "ffn" or p["o"] == 3 * p["k"]):
+            result.append(replace(call, parameters={**p, "half_accum": True}))
             continue
         source = call.arguments[0]
         key = source, p["r"], p["k"]

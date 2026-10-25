@@ -176,6 +176,19 @@ def tiled_partial_floating(spec: KernelSpec, schedule: Mapping[str, object]):
         raise ValueError("unsupported grouped floating decode geometry")
     storage, read = cache_reader(p)
     webgpu = p["provider"] == "webgpu"
+    shared_dtype = p.get("shared_dtype", "float32")
+    dot_width = p.get("dot_width", 1)
+    if shared_dtype not in ("float16", "float32") or dot_width not in (1, 4):
+        raise ValueError("unsupported grouped decode staging")
+    if shared_dtype == "float16" and p["kv_dtype"] != "float16":
+        raise ValueError("half staging requires native half KV")
+
+    def dot_terms(queries, keys, head, channel, lane):
+        from tensor.compiler.webgpu.schedules.registers import vector
+
+        left = vector([queries[head, channel * 4 + j] for j in range(4)])
+        right = vector([T.cast(keys[channel * 4 + j, lane], "float32") for j in range(4)])
+        return T.call_extern("float32", "dot", left, right)
 
     @T.macro
     def exchange(value, offset):
@@ -206,8 +219,8 @@ def tiled_partial_floating(spec: KernelSpec, schedule: Mapping[str, object]):
             span = T.truncdiv(length + splits - 1, splits)
             begin, end = split * span, T.min((split + 1) * span, length)
             queries = T.alloc_shared((group, d), "float32")
-            keys = T.alloc_shared((d, 33), "float32")
-            values = T.alloc_shared((32, d), "float32")
+            keys = T.alloc_shared((d, 33), shared_dtype)
+            values = T.alloc_shared((32, d), shared_dtype)
             probabilities = T.alloc_shared((group, 32), "float32")
             maximum, normalizer = T.alloc_var("float32"), T.alloc_var("float32")
             acc0, acc1 = T.alloc_var("float32"), T.alloc_var("float32")
@@ -232,10 +245,14 @@ def tiled_partial_floating(spec: KernelSpec, schedule: Mapping[str, object]):
                 score = T.alloc_var("float32")
                 score = 0
                 for channel in T.serial(d // 4):
-                    for j in T.unroll(4):
-                        score += (
-                            queries[head, channel * 4 + j] * keys[channel * 4 + j, lane]
-                        )
+                    if dot_width == 4:
+                        score += dot_terms(queries, keys, head, channel, lane)
+                    else:
+                        for j in T.unroll(4):
+                            score += (
+                                queries[head, channel * 4 + j]
+                                * T.cast(keys[channel * 4 + j, lane], "float32")
+                            )
                 score = T.if_then_else(
                     base + lane < end, score * 0.125, -T.infinity("float32")
                 )
@@ -258,8 +275,8 @@ def tiled_partial_floating(spec: KernelSpec, schedule: Mapping[str, object]):
                 acc0, acc1 = acc0 * correction, acc1 * correction
                 T.sync_threads()
                 for key in T.serial(32):
-                    acc0 += probabilities[head, key] * values[key, lane]
-                    acc1 += probabilities[head, key] * values[key, lane + 32]
+                    acc0 += probabilities[head, key] * T.cast(values[key, lane], "float32")
+                    acc1 += probabilities[head, key] * T.cast(values[key, lane + 32], "float32")
                 T.sync_threads()
             offset = ((slot * heads + kv_head * group + head) * splits + split) * 66
             out[offset + lane] = acc0
@@ -753,7 +770,7 @@ def rope(spec: KernelSpec, schedule: Mapping[str, object]):
     import math
 
     p = {**spec.parameters, **schedule}
-    if p.get("position_limit", 0) > 8192:
+    if p.get("position_limit", 0) > 8192 or p.get("provider") == "webgpu":
         return precise_rope(spec, schedule)
     import tilelang.language as T
 
@@ -796,7 +813,7 @@ def precise_rope(spec: KernelSpec, schedule: Mapping[str, object]):
     if d != 64:
         raise ValueError("portable reference attention requires 64-channel heads")
     h, theta = (p["h"], p["theta"])
-    precise = p.get("position_limit", 0) > 8192
+    precise = p.get("position_limit", 0) > 8192 or p.get("provider") == "webgpu"
     fma = "fma" if p.get("provider") == "webgpu" else "fmaf"
 
     def single(value):
@@ -807,6 +824,11 @@ def precise_rope(spec: KernelSpec, schedule: Mapping[str, object]):
     low = tuple(single(value - rounded) for value, rounded in zip(frequencies, high))
     tau_high = single(2 * math.pi)
     tau_low = single(2 * math.pi - tau_high)
+    digits = max(1, ((max(1, p.get("position_limit", 131072)) - 1).bit_length() + 3) // 4)
+    phases = tuple(
+        single(math.remainder(frequency * (16 ** digit), 2 * math.pi))
+        for digit in range(digits) for frequency in frequencies
+    )
 
     def exact(value):
         if p.get("provider") == "webgpu":
@@ -816,10 +838,13 @@ def precise_rope(spec: KernelSpec, schedule: Mapping[str, object]):
         return T.float32(value)
 
     def constant(index, values):
-        value = exact(values[-1])
-        for i in range(len(values) - 2, -1, -1):
-            value = T.if_then_else(index == i, exact(values[i]), value)
-        return value
+        def select(begin, end):
+            if end - begin == 1:
+                return exact(values[begin])
+            middle = (begin + end) // 2
+            return T.if_then_else(index < middle, select(begin, middle), select(middle, end))
+
+        return select(0, len(values))
 
     @T.macro
     def product_error(integer, coefficient, rounded):
@@ -849,21 +874,19 @@ def precise_rope(spec: KernelSpec, schedule: Mapping[str, object]):
                 leading = T.alloc_var("float32")
                 trailing = T.alloc_var("float32")
                 turns = T.alloc_var("int32")
-                frequency = constant(half, high)
-                leading = position * frequency
                 if p.get("provider") == "webgpu":
-                    trailing = product_error(
-                        positions[row], frequency, leading
-                    ) + position * constant(half, low)
-                    turns = T.cast(T.floor(leading / (2 * math.pi) + 0.5), "int32")
-                    removed = T.alloc_var("float32")
-                    remainder = T.alloc_var("float32")
-                    removed = T.cast(turns, "float32") * exact(tau_high)
-                    remainder = product_error(turns, exact(tau_high), removed)
-                    angle = (leading - removed) + (
-                        trailing - remainder - T.cast(turns, "float32") * exact(tau_low)
-                    )
+                    # Form bounded angles from base-16 position digits. Large
+                    # float products lose their low bits, and Vulkan drivers may
+                    # contract the compensated product's cancellation sequence.
+                    angle = 0
+                    for digit in T.unroll(digits):
+                        coefficient = constant(half + digit * (d // 2), phases)
+                        angle = angle + T.cast((positions[row] >> (digit * 4)) & 15,
+                                               "float32") * coefficient
+                        angle = angle - T.floor(angle / (2 * math.pi) + 0.5) * exact(tau_high)
                 else:
+                    frequency = constant(half, high)
+                    leading = position * frequency
                     trailing = T.call_extern(
                         "float32", fma, position, frequency, -leading
                     ) + position * constant(half, low)
@@ -881,10 +904,30 @@ def precise_rope(spec: KernelSpec, schedule: Mapping[str, object]):
                 )
             left = x[(row * h + head) * d + half]
             right = x[(row * h + head) * d + half + d // 2]
+            cosine = T.alloc_var("float32")
+            sine = T.alloc_var("float32")
+            if p.get("provider") == "webgpu":
+                # Vulkan sin/cos accuracy varies by driver. After compensated
+                # reduction to [-pi, pi], reflect into [-pi/2, pi/2] and use
+                # bounded polynomials rather than the approximate intrinsics.
+                reduced = T.alloc_var("float32")
+                square = T.alloc_var("float32")
+                reduced = T.min(T.abs(angle), T.float32(math.pi) - T.abs(angle))
+                square = reduced * reduced
+                sine = reduced * (1 + square * (-1 / 6 + square * (1 / 120 + square *
+                       (-1 / 5040 + square * (1 / 362880 - square / 39916800)))))
+                cosine = 1 + square * (-1 / 2 + square * (1 / 24 + square *
+                         (-1 / 720 + square * (1 / 40320 + square *
+                         (-1 / 3628800 + square / 479001600)))))
+                sine = T.if_then_else(angle < 0, -sine, sine)
+                cosine = T.if_then_else(T.abs(angle) > math.pi / 2, -cosine, cosine)
+            else:
+                cosine = T.cos(angle)
+                sine = T.sin(angle)
             out[row, head * d + tx] = T.if_then_else(
                 tx < d // 2,
-                left * T.cos(angle) - right * T.sin(angle),
-                left * T.sin(angle) + right * T.cos(angle),
+                left * cosine - right * sine,
+                left * sine + right * cosine,
             )
         return out
 

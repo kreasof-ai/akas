@@ -36,6 +36,71 @@ def test_q16_lowering_reuses_source_quantization():
     assert graph.calls[1].parameters["q16"]
 
 
+@pytest.mark.parametrize("half_only", [False, True])
+def test_mixed_prefill_declares_arithmetic_and_keeps_decode_abi(half_only):
+    from akas.graph import Graph
+    from akas.compilation.quantization import q16_activations
+
+    graph = Graph(contract="reference")
+    for rows in (1, 32):
+        x = graph.buffer(f"x{rows}", (rows * 256,), "float32", role="input")
+        for kind, columns in (("linear", 768), ("linear", 128), ("ffn", 512)):
+            label = f"r{rows}_{kind}_{columns}"
+            w = graph.buffer(label + ".w", (columns * 256 // 32 * 18 // 4,), "uint32", role="weight")
+            out = graph.buffer(label + ".out", (rows * columns,), "float32", role="output")
+            args = [x, w]
+            if kind == "ffn":
+                args.append(graph.buffer(label + ".up", w.shape, "uint32", role="weight"))
+            graph(kind, dict(r=rows, k=256, o=columns, ggml=True, type=2), *args, out, label=label)
+    q16_activations(graph, mixed=True, half_only=half_only)
+    projections = [c for c in graph.calls if c.kind in ("linear", "ffn")]
+    assert all(not c.parameters.get("half_accum") and not c.parameters.get("q16")
+               for c in projections if c.parameters["r"] == 1)
+    assert all(c.parameters.get("half_accum") and not c.parameters.get("q16")
+               for c in projections if c.parameters["r"] == 32 and c.parameters["o"] in (768, 512))
+    quantized = next(c for c in projections if c.parameters["r"] == 32 and c.parameters["o"] == 128)
+    if half_only:
+        assert quantized.parameters["half_accum"] and len(quantized.arguments) == 3
+        assert not any(c.kind == "quantize_q16" for c in graph.calls)
+        return
+    assert quantized.parameters["q16"] and len(quantized.arguments) == 5
+    assert len([c for c in graph.calls if c.kind == "quantize_q16"]) == 1
+
+
+@pytest.mark.skipif(os.environ.get("AKAS_FORWARD_WEBGPU") != "1", reason="native WebGPU")
+@pytest.mark.parametrize("subgroup", [True, False])
+def test_q16_bytes_match_fused_reference_at_real_prefill_geometry(tmp_path, subgroup):
+    from contextlib import ExitStack
+    from akas.compilation.selection import source
+    from akas.compilation.emit import build_artifact
+    from akas.kernels.registry import validation
+    from tensor.artifacts.format import read_artifact
+    from tools.context_sweep import vulkan_device
+
+    p = dict(r=32, k=2048, sg=subgroup)
+    entry, artifact = tmp_path / "quantize.py", tmp_path / "quantize.tbin"
+    entry.write_text(source("quantize_q16", p, contract="reference", provider="webgpu",
+        target="webgpu-portable-v1").render())
+    build_artifact(entry, artifact, provider="webgpu", target="webgpu-portable-v1")
+    metadata, _ = read_artifact(artifact)
+    case = validation("quantize_q16", p, metadata["arguments"])
+    with vulkan_device() as device, ExitStack() as stack:
+        buffers = []
+        for arg in metadata["arguments"]:
+            buffer = device.from_numpy(case.arguments[arg["name"]])
+            stack.callback(buffer.release)
+            buffers.append(buffer)
+        executable = stack.enter_context(device.load(artifact))
+        executable.launch(*buffers)
+        for arg, buffer in zip(metadata["arguments"], buffers):
+            actual = buffer.to_numpy()
+            expected = case.expected[arg["name"]]
+            if arg["name"] in case.comparators:
+                case.comparators[arg["name"]](actual, expected)
+            else:
+                np.testing.assert_array_equal(actual, expected)
+
+
 @pytest.mark.skipif(os.environ.get("AKAS_FORWARD_WEBGPU") != "1", reason="native WebGPU")
 def test_q16_common_default_search_qualifies_quantizer_and_projection(tmp_path):
     from akas.graph import Graph

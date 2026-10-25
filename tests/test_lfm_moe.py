@@ -121,7 +121,8 @@ CASES = [
             r=8, h=4, kh=1, d=64, capacity=64, chunk=4, kv_dtype="fp8", optimized=True
         ),
     ),
-    ("rope", dict(r=4, h=32, d=64, theta=10000000.0, position_limit=131072)),
+    *(("rope", dict(r=4, h=32, d=64, theta=10000000.0, position_limit=limit))
+      for limit in (2048, 8192, 130945, 131072)),
 ] + [
     (
         "quantized_experts",
@@ -170,7 +171,8 @@ def test_moe_kernel_device_qualification(tmp_path, provider, kind, parameters):
     meta, _ = read_artifact(artifact)
     case = validation(kind, parameters, meta["arguments"])
     if kind == "rope":
-        case.arguments["positions"][:] = [0, 8191, 65535, 131071]
+        limit = parameters["position_limit"]
+        case.arguments["positions"][:] = [0, min(8191, limit - 1), min(65535, limit - 1), limit - 1]
         x = case.arguments["x"].reshape(4, 32, 64).astype("float64")
         angles = case.arguments["positions"][:, None, None] * 10000000.0 ** (
             -2 * np.arange(32)[None, None, :] / 64
@@ -532,8 +534,10 @@ def test_floating_attention_split_policy_resizes_producer_and_consumer(provider)
 
 @pytest.mark.parametrize("provider", ["cuda", "webgpu"])
 @pytest.mark.parametrize("cap,enabled", [(19, True), (257, True), (31, False)])
+@pytest.mark.parametrize("staging", ["full", "half-vector", "blocked2", "blocked4", "blocked8",
+                                     "channel16", "channel32", "adaptive16", "adaptive32", "adaptive32g128"])
 def test_grouped_decode_partial_tail_scales_and_inactive(
-    tmp_path, provider, cap, enabled
+    tmp_path, provider, cap, enabled, staging
 ):
     if os.environ.get("AKAS_LFM_MOE_" + provider.upper()) != "1":
         pytest.skip("opt-in grouped decode qualification")
@@ -555,24 +559,43 @@ def test_grouped_decode_partial_tail_scales_and_inactive(
         provider=provider,
         optimized=True,
     )
+    preferred = "attention.grouped_decode"
+    kind = "attention_partial"
+    if staging != "full":
+        if provider != "webgpu":
+            pytest.skip("WebGPU staging candidate")
+        if staging == "half-vector":
+            p.update(shared_dtype="float16", dot_width=4)
+        elif staging.startswith("channel"):
+            p.update(key_rows=int(staging[len("channel"):]), unit_scales=True)
+            preferred = "attention.webgpu.channel_decode"
+        elif staging.startswith("adaptive"):
+            shape = staging[len("adaptive"):].split("g")
+            p.update(key_rows=int(shape[0]), unit_scales=True, splits=64,
+                     granule=int(shape[1]) if len(shape) > 1 else 512)
+            preferred = "attention.webgpu.adaptive_decode"
+            kind = "attention_adaptive_partial"
+        else:
+            p.update(key_unroll=int(staging[-1]))
+            preferred = "attention.webgpu.blocked_decode"
     target = "sm_89" if provider == "cuda" else "webgpu-portable-v1"
     entry, artifact = tmp_path / "kernel.py", tmp_path / "kernel.tbin"
     entry.write_text(
         source(
-            "attention_partial",
+            kind,
             p,
             contract="reference",
             provider=provider,
             target=target,
-            preferred="attention.grouped_decode",
+            preferred=preferred,
         ).render()
     )
     build_artifact(entry, artifact, provider=provider, target=target)
     meta, _ = read_artifact(artifact)
-    case = validation("attention_partial", p, meta["arguments"])
+    case = validation(kind, p, meta["arguments"])
     if not enabled:
         case.arguments["enabled"][:] = 0
-        parts = case.expected["out"].reshape(2, 4, 16, 66)
+        parts = case.expected["out"].reshape(2, 4, p["splits"], 66)
         parts[:] = 0
         parts[..., 64] = -np.inf
     with tensor.Device(provider=provider) as device, ExitStack() as stack:

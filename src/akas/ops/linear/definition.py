@@ -38,9 +38,92 @@ def lower(graph, commit, settings, *, provider, target):
         "mma_reorder",
         "async_mma",
         "packed_widen",
+        "split_ffn",
+        "split_ffn_min_rows",
+        "stage_weights",
+        "stage_inputs",
     }
     if set(settings) - allowed:
         raise ValueError("unknown projection pipeline policy")
+    if graph.contract == "reference":
+        if set(settings) - {"split_ffn", "split_ffn_min_rows", "stage_weights", "stage_inputs"}:
+            raise ValueError("unknown floating projection policy")
+        if type(settings.get("split_ffn", False)) is not bool:
+            raise ValueError("split FFN policy must be a boolean")
+        minimum_rows = settings.get("split_ffn_min_rows", 2)
+        if type(minimum_rows) is not int or minimum_rows < 2:
+            raise ValueError("split FFN minimum rows must be an integer >= 2")
+        if type(settings.get("stage_weights", False)) is not bool:
+            raise ValueError("weight staging policy must be a boolean")
+        if settings.get("stage_weights") and provider != "webgpu":
+            raise ValueError("floating weight staging currently requires WebGPU")
+        if type(settings.get("stage_inputs", False)) is not bool:
+            raise ValueError("input staging policy must be a boolean")
+        if settings.get("stage_inputs") and provider != "webgpu":
+            raise ValueError("floating input staging currently requires WebGPU")
+        if settings.get("split_ffn"):
+            from akas.graph import Call
+            calls = []
+            for index, call in enumerate(graph.calls):
+                p = call.parameters
+                if call.kind != "ffn" or p["r"] < minimum_rows or not p.get("ggml"):
+                    calls.append(call)
+                    continue
+                if call.bindings:
+                    x, w, w2, out = (call.bindings[n] for n in ("x", "w", "w2", "out"))
+                else:
+                    x, w, w2, out = call.arguments
+                gate = graph.buffer(f"pipeline.gate.{index}", (p["r"] * p["o"],), "float32")
+                up = graph.buffer(f"pipeline.up.{index}", (p["r"] * p["o"],), "float32")
+                calls += [Call("linear", dict(p), (x, w, gate.name)),
+                          Call("linear", dict(p), (x, w2, up.name)),
+                          Call("swiglu", dict(r=p["r"], c=p["o"]),
+                               (gate.name, up.name, out), label=call.label)]
+            graph.calls = calls
+        if settings.get("stage_weights"):
+            from akas.graph import Call
+            calls = []
+            for index, call in enumerate(graph.calls):
+                p = call.parameters
+                if (call.kind not in ("linear", "linear_add", "ffn") or p["r"] < 128
+                        or not p.get("ggml") or p.get("q16") or p.get("type") not in (2, 14)):
+                    calls.append(call)
+                    continue
+                if call.bindings:
+                    raise ValueError("staged packed projections require positional bindings")
+                arguments = list(call.arguments)
+                for argument in (1, 2) if call.kind == "ffn" else (1,):
+                    staged = graph.buffer(f"pipeline.weight.{index}.{argument}",
+                                          (p["o"], p["k"]), "float16")
+                    flat = graph.view(staged.name + ".flat", staged, (p["o"] * p["k"],))
+                    calls.append(Call("dequantize_ggml", dict(r=p["o"], k=p["k"], type=p["type"],
+                        output_dtype="float16", **(dict(weight_layout=p["weight_layout"])
+                                                   if "weight_layout" in p else {})),
+                        (arguments[argument], staged.name)))
+                    arguments[argument] = flat.name
+                parameters = {k:v for k,v in p.items() if k != "weight_layout"}
+                calls.append(replace(call, parameters={**parameters, "type": 1}, arguments=tuple(arguments)))
+            graph.calls = calls
+        if settings.get("stage_inputs"):
+            from akas.graph import Call
+            calls = []
+            for index, call in enumerate(graph.calls):
+                p = call.parameters
+                if (call.kind not in ("linear", "linear_add", "ffn")
+                        or not p.get("half_accum") or p["r"] == 1):
+                    calls.append(call)
+                    continue
+                if call.bindings or p.get("input_dtype", "float32") != "float32":
+                    raise ValueError("input staging requires positional F32 projections")
+                staged = graph.buffer(f"pipeline.input.{index}", (p["r"] * p["k"],), "float16")
+                calls.append(Call("linear_half_input", dict(r=p["r"], k=p["k"]),
+                                  (call.arguments[0], staged.name)))
+                calls.append(replace(call, parameters={**p, "input_dtype": "float16"},
+                                     arguments=(staged.name, *call.arguments[1:])))
+            graph.calls = calls
+        return graph, commit
+    if set(settings) & {"split_ffn", "split_ffn_min_rows", "stage_weights", "stage_inputs"}:
+        raise ValueError("prefill projection policies require the floating contract")
     if graph.contract != "block-fp8":
         return (graph, commit)
     if provider != "cuda":
@@ -369,6 +452,10 @@ def schedule(rows, k, o, width):
 REWRITES = (fuse_projections, fuse_residual_projection)
 ROW_INDEPENDENT = ("linear",)
 OUTPUT_ARGUMENTS = {"reference": {"linear": (-1,), "ffn": (-1,), "linear_add": (-1,)}}
+OUTPUT_ARGUMENTS["reference"]["linear_half_input"] = OutputABI((-1,), ("out",))
+from .validation import half_input_validation
+
+VALIDATIONS["linear_half_input"] = half_input_validation
 for _contract in ("reference", "packed", "packed-baseline", "bf16", "block-fp8"):
     OUTPUT_ARGUMENTS.setdefault(_contract, {}).update(
         {
@@ -388,6 +475,10 @@ VALIDATIONS.update(
     {name: pipeline_validation for name in ("projection_partial", "projection_merge")}
 )
 IMPLEMENTATIONS = (
+    Implementation(
+        "linear_half_input", "akas.ops.linear.webgpu", "reference", provider="webgpu",
+        factory="half_input", name="linear.webgpu.half_input",
+    ),
     Implementation(
         "fp8_linear",
         "akas.ops.linear.cuda",
@@ -1019,10 +1110,114 @@ IMPLEMENTATIONS += tuple(
     for provider in ("cuda", "webgpu")
     for tiled in (False, True)
 )
+# Packed prefill previously exposed only the register schedule to automatic
+# search. Keep that incumbent and independently qualify staged weight reuse.
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        kind, "akas.ops.linear.webgpu", "reference", provider="webgpu",
+        priority=39, factory="outer_prefill",
+        defaults=(("outer_rows", 32),),
+        space=(("outer_rows", (32, 64, 16)),),
+        semantic_keys=("r", "k", "o", "type", "ggml"),
+        accepts=lambda p: p.get("ggml", False) and p["r"] > 1 and p["type"] in (1, 2, 14),
+        variant="outer-prefill", name="linear.webgpu.packed:outer-prefill",
+    )
+    for kind in ("linear", "ffn")
+)
+
 OUTPUT_ARGUMENTS["*"] = {"quantized_projection": OutputABI((-1,), ("out",))}
 from .validation import projection_validation
 
 VALIDATIONS["quantized_projection"] = projection_validation
+
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        kind, "akas.ops.linear.webgpu", "reference", provider="webgpu",
+        priority=43, factory="integer_prefill",
+        defaults=(("integer_layout", 0), ("integer_k", 32)),
+        space=(("integer_layout", tuple(range(5))), ("integer_k", (32, 64, 128))),
+        semantic_keys=("r", "k", "o", "type", "ggml", "q16"),
+        accepts=lambda p: p.get("ggml", False) and p.get("q16", False)
+        and p["r"] > 1 and p["type"] == 2,
+        name="linear.webgpu.two_component",
+    )
+    for kind in ("linear", "ffn", "linear_add")
+)
+
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        kind, "akas.ops.linear.webgpu", "reference", provider="webgpu",
+        priority=43, factory="half_prefill",
+        defaults=(("half_layout", 0), ("half_pad", 1), ("half_native", True), ("half_k", 16)),
+        space=(("half_layout", (0, 1, 2, 3, 4, 5)), ("half_pad", (1, 0)),
+               ("half_native", (True, False)), ("half_k", (16, 32, 64))),
+        semantic_keys=("r", "k", "o", "type", "ggml", "half_accum"),
+        accepts=lambda p: p.get("ggml", False) and p.get("half_accum", False)
+        and p["r"] > 1 and p["type"] in (1, 2, 14),
+        name="linear.webgpu.short_half",
+    )
+    for kind in ("linear", "ffn", "linear_add")
+)
+
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        kind, "akas.ops.linear.webgpu", "reference", provider="webgpu",
+        priority=38, factory="blocked_prefill",
+        defaults=(("outer_layout", 0),),
+        space=(("outer_layout", tuple(range(9))),),
+        semantic_keys=("r", "k", "o", "type", "ggml"),
+        accepts=lambda p: p.get("ggml", False) and p["r"] > 1 and p["type"] in (1, 2, 14),
+        variant="blocked-prefill", name="linear.webgpu.packed:blocked-prefill",
+    )
+    for kind in ("linear", "ffn", "linear_add")
+)
+
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        kind, "akas.ops.linear.webgpu", "reference", provider="webgpu",
+        priority=39, factory="vector_decode",
+        defaults=(("decode_layout", 0),), space=(("decode_layout", tuple(range(8))),),
+        semantic_keys=("r", "k", "o", "type", "ggml"),
+        accepts=lambda p: p.get("ggml", False) and p["r"] == 1 and p["type"] in (2, 14),
+        variant="vector-decode", name="linear.webgpu.packed:vector-decode",
+    )
+    for kind in ("linear", "ffn", "linear_add")
+)
+
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        kind, "akas.ops.linear.webgpu", "reference", provider="webgpu",
+        priority=37, factory="branched_prefill",
+        defaults=(("outer_layout", 0),), space=(("outer_layout", tuple(range(9))),),
+        semantic_keys=("r", "k", "o", "type", "ggml"),
+        accepts=lambda p: p.get("ggml", False) and p["r"] > 1 and p["type"] in (1, 2, 14),
+        variant="branch-prefill", name="linear.webgpu.packed:branch-prefill",
+    )
+    for kind in ("linear", "ffn", "linear_add")
+)
+
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        kind, "akas.ops.linear.webgpu", "reference", provider="webgpu",
+        priority=37, factory="archived_decode",
+        semantic_keys=("r", "k", "o", "type", "ggml"),
+        accepts=lambda p: p.get("ggml", False) and p["r"] == 1 and p["type"] in (2, 14),
+        variant="archived-decode", name="linear.webgpu.packed:archived-decode",
+    )
+    for kind in ("linear", "ffn", "linear_add")
+)
+
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        kind, "akas.ops.linear.webgpu", "reference", provider="webgpu",
+        priority=36, factory="padded_prefill",
+        defaults=(("shared_layout", 0),), space=(("shared_layout", (0, 1, 2, 3)),),
+        semantic_keys=("r", "k", "o", "type", "ggml"),
+        accepts=lambda p: p.get("ggml", False) and p["r"] >= 128 and p["type"] in (1, 2, 14),
+        variant="padded-prefill", name="linear.webgpu.packed:padded-prefill",
+    )
+    for kind in ("linear", "ffn", "linear_add")
+)
 
 IMPLEMENTATIONS += (
     Implementation(

@@ -521,13 +521,18 @@ def canonical_validation(kind, p, signature):
                 span = (length + splits - 1) // splits
                 for part in range(splits):
                     begin, end = (part * span, min(length, (part + 1) * span))
-                    if begin >= end:
+                    if p.get("adaptive_splits"):
+                        indices = np.flatnonzero(np.arange(length) // p.get("granule", 512) % splits == part)
+                        block_scores, block_values = scores[indices], vals[indices]
+                    else:
+                        block_scores, block_values = scores[begin:end], vals[begin:end]
+                    if not len(block_scores):
                         out[row, head, part, :d] = 0
                         out[row, head, part, d:] = [-np.inf, 0]
                         continue
-                    maximum = scores[begin:end].max()
-                    probabilities = np.exp(scores[begin:end] - maximum)
-                    out[row, head, part, :d] = probabilities @ vals[begin:end]
+                    maximum = block_scores.max()
+                    probabilities = np.exp(block_scores - maximum)
+                    out[row, head, part, :d] = probabilities @ block_values
                     out[row, head, part, d:] = [maximum, probabilities.sum()]
     return ValidationCase(values, expected, rtol=0.02, atol=0.002)
 
@@ -927,6 +932,9 @@ def split_validation(kind, p, signature):
 
 
 def validation(kind, parameters, signature):
+    if kind == "attention_adaptive_partial":
+        kind = "attention_partial"
+        parameters = {**parameters, "adaptive_splits": True}
     if "heads" in parameters and any((row["name"] == "mapping" for row in signature)):
         return mapped_validation(kind, parameters, signature)
     if kind in ("attention_q", "attention_kv") or any(

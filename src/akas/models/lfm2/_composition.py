@@ -8,12 +8,14 @@ def compose(
     capacity=None,
     provider="cuda",
     kv_dtype="float16",
+    kv_padding=0,
     output=False,
     max_weight_bytes=64 * 1024 * 1024,
     chunk=1,
     optimized=False,
     checkpoint=None,
     expert_weight_layout="raw",
+    dense_weight_layout="raw",
     verify=False,
     auxiliary_layers=(),
 ):
@@ -39,6 +41,10 @@ def compose(
         from akas.quantization.kv import get
 
         get(kv_dtype)
+    if type(kv_padding) is not int or not 0 <= kv_padding <= 4096 or kv_padding % 32:
+        raise ValueError("KV padding must be a bounded multiple of 32")
+    if kv_padding and (provider != "webgpu" or kv_dtype not in ("float16", "float32")):
+        raise ValueError("KV padding currently requires native floating WebGPU storage")
     if any(
         type(i) is not int or not 0 <= i < len(config.layers) for i in auxiliary_layers
     ) or len(set(auxiliary_layers)) != len(auxiliary_layers):
@@ -49,6 +55,12 @@ def compose(
 
     if expert_weight_layout not in ("raw", "planar"):
         raise ValueError("expert weight layout must be raw or planar")
+    if dense_weight_layout not in ("raw", "planar"):
+        raise ValueError("dense weight layout must be raw or planar")
+    if dense_weight_layout != "raw" and (
+        provider != "webgpu" or not optimized or not hasattr(checkpoint, "gguf")
+    ):
+        raise ValueError("dense planar weights require an optimized WebGPU GGUF graph")
     if expert_weight_layout != "raw" and (
         not isinstance(config, LFM2MoEConfig) or checkpoint is None
     ):
@@ -63,6 +75,7 @@ def compose(
                 if expert_weight_layout != "raw"
                 else {}
             ),
+            **(dict(dense_weight_layout=dense_weight_layout) if dense_weight_layout != "raw" else {}),
         )
         if checkpoint is not None and hasattr(checkpoint, "graph_weights")
         else Weights(
@@ -251,6 +264,7 @@ def compose(
                 kv_dtype=kv_dtype,
                 unit_scales=kv_dtype in ("float16", "float32"),
                 provider=provider,
+                **({"cache_padding": kv_padding} if kv_padding else {}),
                 **{"chunk": chunk} if chunk > 1 else {},
                 **{"optimized": True} if optimized else {},
             )
@@ -380,10 +394,12 @@ def program(
     max_context,
     provider="cuda",
     kv_dtype="float16",
+    kv_padding=0,
     max_weight_bytes=64 * 1024 * 1024,
     optimized=True,
     activation_quantization=None,
     expert_weight_layout="raw",
+    dense_weight_layout="raw",
     auxiliary_layers=(),
     phase=None,
 ):
@@ -397,20 +413,25 @@ def program(
         capacity=max_context,
         provider=provider,
         kv_dtype=kv_dtype,
+        kv_padding=kv_padding,
         max_weight_bytes=max_weight_bytes,
         optimized=optimized,
         checkpoint=checkpoint,
         expert_weight_layout=expert_weight_layout,
+        dense_weight_layout=dense_weight_layout,
         auxiliary_layers=auxiliary_layers,
         verify=phase == "verify",
         **checkpoint.definition_options,
     )
     if activation_quantization is not None:
-        if activation_quantization != "q16" or provider != "webgpu":
-            raise ValueError("q16 activation storage requires WebGPU")
+        if dense_weight_layout != "raw":
+            raise ValueError("q16 activation storage currently requires raw dense weights")
+        if activation_quantization not in ("q16", "mixed", "half") or provider != "webgpu":
+            raise ValueError("q16/mixed/half activation arithmetic requires WebGPU")
         from akas.compilation.quantization import q16_activations
 
-        graph = q16_activations(graph)
+        graph = q16_activations(graph, mixed=activation_quantization == "mixed",
+                                half_only=activation_quantization == "half")
     for name, spec in tuple(graph.buffers.items()):
         if spec.role == "state":
             if spec.shape[0] != rows:

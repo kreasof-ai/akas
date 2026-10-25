@@ -330,3 +330,17 @@ IMPLEMENTATIONS = (
         name="normalization.kernel",
     ),
 )
+
+# The archived RX 6700 XT producer used parallel subgroup RMS for model-width
+# rows. Keep it opt-in and independently qualify reduction reassociation.
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        kind, "akas.ops.normalization.kernel", "reference", provider="webgpu",
+        priority=-1, defaults=(("algorithm", "parallel-tree"), ("sg", True)),
+        space=(("sg", (True, False)),), factory=kind,
+        semantic_keys=("r", "c", "eps"),
+        accepts=lambda p: p["c"] >= 256 and p["c"] % 256 == 0,
+        variant="parallel-subgroup", name="normalization.webgpu.parallel-subgroup",
+    )
+    for kind in ("rms", "add_rms")
+)

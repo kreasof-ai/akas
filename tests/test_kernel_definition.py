@@ -13,6 +13,21 @@ from akas.kernels.definition import definition
 from akas.kernels.registry import candidates
 
 
+@pytest.mark.parametrize("kind", ["linear", "ffn"])
+@pytest.mark.parametrize("encoding", [1, 2, 14])
+def test_packed_prefill_search_can_explore_weight_reuse_without_changing_default(kind, encoding):
+    from akas.kernels.registry import select
+
+    parameters = dict(r=32, k=2048, o=512, ggml=True, type=encoding)
+    options = dict(contract="reference", provider="webgpu", target="webgpu-portable-v1")
+    choices = candidates(kind, parameters, **options)
+    outer = next(choice for choice in choices if choice.variant == "outer-prefill")
+    assert dict(outer.defaults)["outer_rows"] == 32
+    assert select(kind, parameters, **options).variant != "outer-prefill"
+    assert not any(choice.variant == "outer-prefill" for choice in
+                   candidates(kind, dict(parameters, r=1), **options))
+
+
 @pytest.mark.parametrize("provider", ["cuda", "webgpu"])
 def test_saved_profile_selects_nested_packed_weight_parameters(tmp_path, provider):
     from tensor.compiler.search import ScheduleProfile
@@ -204,6 +219,8 @@ def test_serialized_source_hashes_selected_dynamic_leaf(monkeypatch):
 @pytest.mark.parametrize("provider", ["cuda", "webgpu"])
 @pytest.mark.parametrize("kind", ["linear", "ffn", "embedding"])
 def test_packed_weights_route_under_common_graph_contract(provider, kind):
+    from akas.kernels.registry import select
+
     parameters = dict(r=4, k=256, o=32, type=2, ggml=True)
     eligible = candidates(
         kind,
@@ -213,14 +230,16 @@ def test_packed_weights_route_under_common_graph_contract(provider, kind):
         phase="prefill",
         target=None,
     )
-    assert len(eligible) == 1
-    assert eligible[0].factory in (
+    assert eligible
+    chosen = select(kind, parameters, contract="reference", provider=provider,
+                    phase="prefill", target=None)
+    assert chosen.factory in (
         kind,
         "kernel_" + kind,
         "embedding_packed",
         "packed_word_embedding",
     )
-    assert eligible[0].name is not None
+    assert chosen.name is not None
 
 
 def test_existing_hardware_algorithm_uses_common_boundary_without_dispatch_wrapper(

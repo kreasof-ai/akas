@@ -12,6 +12,15 @@ from akas.memory.layouts import allocate_hybrid_states
 from akas.models.qwen35.weights import Qwen35DenseCheckpoint
 
 
+def test_source_fingerprints_use_importable_names_on_every_platform():
+    from importlib.util import find_spec
+    from akas.artifacts.fingerprint import _modules
+
+    names = _modules("execution", "ops")
+    assert "akas.execution.executor" in names
+    assert all("\\" not in name and find_spec(name) is not None for name in names)
+
+
 class Resource:
     def __init__(self):
         self.released = False

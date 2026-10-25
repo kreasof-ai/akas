@@ -16,6 +16,7 @@ Start with [the measurement guide](../../../docs/benchmarking.md) and
 | `text.py` | Bounded real-text dataset reading, fixed splits and document crops |
 | `report.py` | Reports and matched comparisons |
 | `history.py` | Source snapshots, run records, indexes and incumbent schedule exports |
+| `archive.py` | Commit-pinned artifact lookup, checksums and on-demand bundle retrieval |
 | `replay.py` | Independent numerical evidence |
 | `research.py` | Program preparation and token workload execution |
 

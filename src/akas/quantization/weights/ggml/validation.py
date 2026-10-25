@@ -103,4 +103,9 @@ def validation(kind, parameters, signature):
     decoded = sample_weight(values["w"], parameters["type"])
     expected = {name: value.copy() for name, value in values.items()}
     expected["out"][:] = decoded.reshape(expected["out"].shape)
+    if parameters.get("weight_layout", "raw") == "planar":
+        from .kernel import repack_host
+        raw = values["w"].view("uint8").reshape(-1)
+        raw[:] = repack_host(raw)
+        expected["w"] = values["w"].copy()
     return ValidationCase(values, expected, rtol=1e-6, atol=1e-6)

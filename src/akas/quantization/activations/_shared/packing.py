@@ -18,6 +18,12 @@ def packing(p, *, components, provider="webgpu"):
         round_half(),
     )
 
+    @T.macro
+    def divide(value, divisor):
+        estimate = value / divisor
+        residual = T.call_extern("float32", "fma", -estimate, divisor, value)
+        return estimate + residual / divisor
+
     def shared_components(
         packed, scales, sums, quants, values, scratch, factor, block, tx
     ):
@@ -58,10 +64,10 @@ def packing(p, *, components, provider="webgpu"):
         T.sync_threads()
         maximum(scratch, tx)
         if component == 1 and p.get("fixed_residual"):
-            factor = scales[block] / 254
+            factor = divide(scales[block], T.float32(254))
         else:
-            factor = T.max(scratch[0] / 127, 1e-20)
-        quants[component, tx] = T.cast(T.round(values[tx] / factor), "int32")
+            factor = T.max(divide(scratch[0], T.float32(127)), 1e-20)
+        quants[component, tx] = T.cast(T.round(divide(values[tx], factor)), "int32")
         T.sync_threads()
         if tx < 8:
             packed[block * 8 + tx + component * words] = (
@@ -71,7 +77,8 @@ def packing(p, *, components, provider="webgpu"):
                 | (T.reinterpret("uint32", quants[component, tx * 4 + 3]) & 255) << 24
             )
         if components == 2:
-            values[tx] = values[tx] - T.cast(quants[component, tx], "float32") * factor
+            values[tx] = T.call_extern("float32", "fma",
+                -T.cast(quants[component, tx], "float32"), factor, values[tx])
         scratch[tx] = T.cast(quants[component, tx], "float32")
         T.sync_threads()
         total_reduce(scratch, tx)
@@ -86,12 +93,12 @@ def packing(p, *, components, provider="webgpu"):
         packed, scales, sums, value: T.Ref, factor: T.Ref, block, tx, component
     ):
         if component == 1 and p.get("fixed_residual"):
-            factor = factor / 254
+            factor = divide(factor, T.float32(254))
         else:
             factor = T.max(
-                T.call_extern("float32", "subgroupMax", T.abs(value)) / 127, 1e-20
+                divide(T.call_extern("float32", "subgroupMax", T.abs(value)), T.float32(127)), 1e-20
             )
-        quant = T.cast(T.round(value / factor), "int32")
+        quant = T.cast(T.round(divide(value, factor)), "int32")
         bits = (
             T.reinterpret(
                 "uint32",
@@ -135,7 +142,7 @@ def packing(p, *, components, provider="webgpu"):
         if tx == 0:
             scales[block + component * blocks] = factor
             sums[block + component * blocks] = total
-        value = value - T.cast(quant, "float32") * factor
+        value = T.call_extern("float32", "fma", -T.cast(quant, "float32"), factor, value)
 
     @T.macro
     def quantize(x, packed, scales, sums):
