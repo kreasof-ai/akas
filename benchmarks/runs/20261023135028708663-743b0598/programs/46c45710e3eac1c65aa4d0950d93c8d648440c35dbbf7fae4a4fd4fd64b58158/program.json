@@ -1,0 +1,393 @@
+{
+  "schema": "akas.program.v1",
+  "provider": "cuda",
+  "target": "sm_89",
+  "config": {
+    "width": 2048,
+    "ff": 11776,
+    "heads": 32,
+    "kv_heads": 8,
+    "layers": [
+      "conv",
+      "conv",
+      "attention",
+      "conv",
+      "conv",
+      "conv",
+      "attention",
+      "conv",
+      "conv",
+      "conv",
+      "attention",
+      "conv",
+      "conv",
+      "conv",
+      "attention",
+      "conv",
+      "conv",
+      "conv",
+      "attention",
+      "conv",
+      "conv",
+      "conv",
+      "attention",
+      "conv",
+      "conv",
+      "conv",
+      "attention",
+      "conv",
+      "conv",
+      "conv",
+      "attention",
+      "conv",
+      "conv",
+      "conv",
+      "attention",
+      "conv",
+      "conv",
+      "conv",
+      "attention",
+      "conv"
+    ],
+    "vocab": 128000,
+    "conv": 3,
+    "epsilon": 9.999999747378752e-06,
+    "theta": 10000000.0,
+    "max_context": 131072,
+    "experts": 64,
+    "top_k": 4,
+    "expert_width": 1536,
+    "dense_layers": 2,
+    "routing_scale": 1.0,
+    "normalize_routes": true
+  },
+  "max_requests": 1,
+  "max_context": 131072,
+  "phases": [
+    {
+      "phase": "decode",
+      "rows": 1,
+      "chunk": 1,
+      "path": "programs/203ae62f55964fa78689b547e420b3a2/phases/decode-b1-t1.json",
+      "sha256": "45c644ba8eb2f410420820279f1a6b47dad25dad13888a470ff1127d3c1f1097",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "feedback": true,
+      "features": {
+        "logits": "logits",
+        "layer.2": "blk.2.output",
+        "layer.10": "blk.10.output",
+        "layer.18": "blk.18.output",
+        "layer.26": "blk.26.output",
+        "layer.34": "blk.34.output"
+      }
+    },
+    {
+      "phase": "prefill",
+      "rows": 1,
+      "chunk": 32,
+      "path": "programs/203ae62f55964fa78689b547e420b3a2/phases/prefill-b1-t32.json",
+      "sha256": "e9f7385555864e639d89ef7adfa51a4f2ee4909214021afa440e0259109df91e",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "feedback": false,
+      "features": {
+        "logits": "logits",
+        "layer.2": "blk.2.output",
+        "layer.10": "blk.10.output",
+        "layer.18": "blk.18.output",
+        "layer.26": "blk.26.output",
+        "layer.34": "blk.34.output"
+      }
+    },
+    {
+      "phase": "prefill_state",
+      "rows": 1,
+      "chunk": 32,
+      "path": "programs/203ae62f55964fa78689b547e420b3a2/phases/prefill-state-b1-t32.json",
+      "sha256": "9b0ad70a34aebd1a84211344ec7f2beecd01966796609e0eefc4ee4f9684e56f",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "state_only": true,
+      "features": {
+        "layer.2": "blk.2.output",
+        "layer.10": "blk.10.output",
+        "layer.18": "blk.18.output",
+        "layer.26": "blk.26.output",
+        "layer.34": "blk.34.output"
+      }
+    },
+    {
+      "phase": "prefill",
+      "rows": 1,
+      "chunk": 512,
+      "path": "programs/203ae62f55964fa78689b547e420b3a2/phases/prefill-b1-t512.json",
+      "sha256": "8b8bf06378c819247667c9bd6a9baa73532b93a68411b0e03dbc3197138a2f2d",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "feedback": false,
+      "features": {
+        "logits": "logits",
+        "layer.2": "blk.2.output",
+        "layer.10": "blk.10.output",
+        "layer.18": "blk.18.output",
+        "layer.26": "blk.26.output",
+        "layer.34": "blk.34.output"
+      }
+    },
+    {
+      "phase": "prefill_state",
+      "rows": 1,
+      "chunk": 512,
+      "path": "programs/203ae62f55964fa78689b547e420b3a2/phases/prefill-state-b1-t512.json",
+      "sha256": "57cfa1b83b56d3101f0165c9e50c739ec9c3a1f830a8f8f537c6178b64371c0a",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "state_only": true,
+      "features": {
+        "layer.2": "blk.2.output",
+        "layer.10": "blk.10.output",
+        "layer.18": "blk.18.output",
+        "layer.26": "blk.26.output",
+        "layer.34": "blk.34.output"
+      }
+    },
+    {
+      "phase": "prefill",
+      "rows": 1,
+      "chunk": 2048,
+      "path": "programs/203ae62f55964fa78689b547e420b3a2/phases/prefill-b1-t2048.json",
+      "sha256": "c22746e495e6f87ce10c2b31000e169fe6e9e6931ca8b3e3abefa005022e96c4",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "feedback": false,
+      "features": {
+        "logits": "logits",
+        "layer.2": "blk.2.output",
+        "layer.10": "blk.10.output",
+        "layer.18": "blk.18.output",
+        "layer.26": "blk.26.output",
+        "layer.34": "blk.34.output"
+      }
+    },
+    {
+      "phase": "prefill_state",
+      "rows": 1,
+      "chunk": 2048,
+      "path": "programs/203ae62f55964fa78689b547e420b3a2/phases/prefill-state-b1-t2048.json",
+      "sha256": "fcd94b6228b7e6b38f8aaf7ea842472c97b26a98bd6f547f05d5285e16f79fcc",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "state_only": true,
+      "features": {
+        "layer.2": "blk.2.output",
+        "layer.10": "blk.10.output",
+        "layer.18": "blk.18.output",
+        "layer.26": "blk.26.output",
+        "layer.34": "blk.34.output"
+      }
+    },
+    {
+      "phase": "prefill",
+      "rows": 1,
+      "chunk": 4096,
+      "path": "programs/203ae62f55964fa78689b547e420b3a2/phases/prefill-b1-t4096.json",
+      "sha256": "5fd5887dc0c366fb66d7371b49a2937cca91ddd53ef0dda49f6c288974668552",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "feedback": false,
+      "features": {
+        "logits": "logits",
+        "layer.2": "blk.2.output",
+        "layer.10": "blk.10.output",
+        "layer.18": "blk.18.output",
+        "layer.26": "blk.26.output",
+        "layer.34": "blk.34.output"
+      }
+    },
+    {
+      "phase": "prefill_state",
+      "rows": 1,
+      "chunk": 4096,
+      "path": "programs/203ae62f55964fa78689b547e420b3a2/phases/prefill-state-b1-t4096.json",
+      "sha256": "809a6d5310d709855efdadeb53949307915267bb36261429ec5d47742067f656",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "state_only": true,
+      "features": {
+        "layer.2": "blk.2.output",
+        "layer.10": "blk.10.output",
+        "layer.18": "blk.18.output",
+        "layer.26": "blk.26.output",
+        "layer.34": "blk.34.output"
+      }
+    },
+    {
+      "phase": "verify",
+      "rows": 1,
+      "chunk": 1,
+      "path": "programs/203ae62f55964fa78689b547e420b3a2/phases/verify-b1-t1.json",
+      "sha256": "e17d1b860cafaedaca7a2b27970be809233ffa5956e1a20da656bcc45c665372",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "feedback": false,
+      "features": {
+        "logits": "logits",
+        "layer.2": "blk.2.output",
+        "layer.10": "blk.10.output",
+        "layer.18": "blk.18.output",
+        "layer.26": "blk.26.output",
+        "layer.34": "blk.34.output"
+      },
+      "commit": {
+        "path": "programs/203ae62f55964fa78689b547e420b3a2/phases/commit-b1-t1.json",
+        "sha256": "bf66572ca6f65740a7286af047dcc0ffc744504bd8225375cdfa42404849dcc0"
+      }
+    },
+    {
+      "phase": "verify",
+      "rows": 1,
+      "chunk": 2,
+      "path": "programs/203ae62f55964fa78689b547e420b3a2/phases/verify-b1-t2.json",
+      "sha256": "0b3ae1216b5dbb3f0ca5ccf4a8c3ced2aa4bba1bfcce9b368d127ba0b1b931af",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "feedback": false,
+      "features": {
+        "logits": "logits",
+        "layer.2": "blk.2.output",
+        "layer.10": "blk.10.output",
+        "layer.18": "blk.18.output",
+        "layer.26": "blk.26.output",
+        "layer.34": "blk.34.output"
+      },
+      "commit": {
+        "path": "programs/203ae62f55964fa78689b547e420b3a2/phases/commit-b1-t2.json",
+        "sha256": "40333319746d8ec686c752a0a0ad4848889e91a4f4390fe4520d614dab1227e5"
+      }
+    },
+    {
+      "phase": "verify",
+      "rows": 1,
+      "chunk": 4,
+      "path": "programs/203ae62f55964fa78689b547e420b3a2/phases/verify-b1-t4.json",
+      "sha256": "b3be82d1d0bea9da6e2c5483471e2da817307f4444d4e0caf9ea35fa485be1f9",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "feedback": false,
+      "features": {
+        "logits": "logits",
+        "layer.2": "blk.2.output",
+        "layer.10": "blk.10.output",
+        "layer.18": "blk.18.output",
+        "layer.26": "blk.26.output",
+        "layer.34": "blk.34.output"
+      },
+      "commit": {
+        "path": "programs/203ae62f55964fa78689b547e420b3a2/phases/commit-b1-t4.json",
+        "sha256": "4a3046bef39adab3f14cb962200b795989ff90b3fe36f0050093e3027d107c9b"
+      }
+    },
+    {
+      "phase": "verify",
+      "rows": 1,
+      "chunk": 10,
+      "path": "programs/203ae62f55964fa78689b547e420b3a2/phases/verify-b1-t10.json",
+      "sha256": "ede026419ea5dd623eb8520351db07061a1344a1dfec1dda7f05d698307c25df",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "feedback": false,
+      "features": {
+        "logits": "logits",
+        "layer.2": "blk.2.output",
+        "layer.10": "blk.10.output",
+        "layer.18": "blk.18.output",
+        "layer.26": "blk.26.output",
+        "layer.34": "blk.34.output"
+      },
+      "commit": {
+        "path": "programs/203ae62f55964fa78689b547e420b3a2/phases/commit-b1-t10.json",
+        "sha256": "9205d6b5072b95db30322d054f4ad327ab7075efc12488c2b2e8663fb11b96e5"
+      }
+    }
+  ],
+  "reset": {
+    "path": "programs/203ae62f55964fa78689b547e420b3a2/phases/reset.json",
+    "sha256": "265528d9f69208fb8161b442f84987c7169393f553b90bf2274e577b032adf3c",
+    "mapping": "mapping"
+  },
+  "rounds": [],
+  "upload_options": {},
+  "model_options": {
+    "kv_dtype": "float16",
+    "auxiliary_layers": [
+      2,
+      10,
+      18,
+      26,
+      34
+    ]
+  },
+  "policy": {
+    "attention": {
+      "splits": 64,
+      "decoded_kv": false,
+      "native_tail": true
+    },
+    "moe": {
+      "fused_swiglu": true
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "profiling",
+    "protocol": "captured-verifier-operation-events-v1",
+    "model": "akas.models.lfm2.model:LFM2MoE",
+    "mode": "dspark",
+    "provider": "cuda",
+    "target": "sm_89",
+    "device": {
+      "name": "NVIDIA L4"
+    },
+    "weight_format": "q4_0",
+    "draft_weight_dtype": "q8_0",
+    "kv_dtype": "float16",
+    "draft_kv_dtype": "float16",
+    "checkpoint_sha256": "d1c03f73ecaf61017d70419eec9e5dc0b05d50ae26c23d522829b934fbabf8a5",
+    "shape_timeout_seconds": 120,
+    "profiles": [],
+    "qualification": "Event nodes are inserted between operation launches inside a single whole-forward CUDA graph. All operations execute in original order with live inputs, avoiding isolated stale workspace replay and host gaps. Event nodes perturb performance, so these are diagnostic attributions. Unchanged verifier predictions and final speculative output required.",
+    "traceback": "Traceback (most recent call last):\n  File \"/home/sagemaker-user/akas/build/lfm-moe/profile-verifier-device.py\", line 74, in <module>\n    session.reset();session.prefill([item['token_ids']]);session.decode(127)\n                                                         ^^^^^^^^^^^^^^^^^^^\n  File \"/home/sagemaker-user/akas/src/akas/benchmarking/speculative.py\", line 89, in decode\n    outputs = self.decoder.decode_many(active)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sagemaker-user/akas/src/akas/generation/speculative/decoding.py\", line 123, in decode_many\n    predictions = self.target.verify(slots, sequences, chunk=window)\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sagemaker-user/akas/build/lfm-moe/profile-verifier-device.py\", line 52, in observe\n    elapsed=c.c_float();dev.driver.call('cuEventElapsedTime',c.byref(elapsed),start,end);times.append(elapsed.value)\n                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sagemaker-user/akas/.venv/lib/python3.12/site-packages/tensor/providers/cuda/driver.py\", line 126, in call\n    raise error\ntensor.providers.cuda.driver.CudaError: cuEventElapsedTime: CUDA_ERROR_INVALID_VALUE (1): invalid argument\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/home/sagemaker-user/akas/build/lfm-moe/profile-verifier-device.py\", line 73, in <module>\n    with SpeculativeSession(decoder,batch=1,chunk=512,timeout=120) as session:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sagemaker-user/akas/src/akas/benchmarking/session.py\", line 136, in __exit__\n    self.close()\n  File \"/home/sagemaker-user/akas/src/akas/benchmarking/speculative.py\", line 106, in close\n    self.decoder.release(request.slot)\n  File \"/home/sagemaker-user/akas/src/akas/generation/speculative/decoding.py\", line 34, in release\n    self.target.release(slot)\n  File \"/home/sagemaker-user/akas/src/akas/execution/executor.py\", line 87, in release\n    self.state.free(slot, release=self._release_slot)\n  File \"/home/sagemaker-user/akas/src/akas/execution/state.py\", line 32, in free\n    raise ValueError(\"discard pending verification before releasing its request\")\nValueError: discard pending verification before releasing its request\n",
+    "cpu_peak_rss_bytes": 718327808
+  },
+  "results": []
+}
