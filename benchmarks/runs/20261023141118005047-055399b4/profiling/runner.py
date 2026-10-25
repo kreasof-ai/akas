@@ -29,6 +29,8 @@ rec=Recorder(ROOT/'benchmarks',meta,kind='algorithm',parent='2026102313502870866
 report=dict(schema='akas.benchmark.v1',metadata=meta,results=[]);write(OUT/'run-id.json',dict(run_id=rec.id));print('RUN',rec.id,flush=True);passed=False
 try:
  with tensor.Device(provider='cuda') as dev,ExitStack() as owned:
+  dev.driver.lib.cuEventRecordWithFlags.argtypes=[c.c_void_p,c.c_void_p,c.c_uint]
+  dev.driver.lib.cuEventRecordWithFlags.restype=c.c_int
   target=owned.enter_context(LFM2MoE(CP,TARGET,dev,graphs=True))
   head=load(target,checkpoint=CP.with_name('dspark-q8_0.gguf'),bundle=DRAFT,graphs=True,confidence_threshold=.5);owned.callback(head.close)
   decoder=SpeculativeDecoder(target,head,window=10,capture=False);original=target.verify;done=set();case_id=None
@@ -41,9 +43,9 @@ try:
     for _ in range(len(f.plan)+1):
      event=c.c_void_p();dev.driver.call('cuEventCreate',c.byref(event),0);events.append(event)
     def submit():
-     dev.driver.call('cuEventRecord',events[0],dev.stream)
+     dev.driver.call('cuEventRecordWithFlags',events[0],dev.stream,1)
      for i,entry in enumerate(f.plan):
-      dev._launch(entry[0],entry[1]);dev.driver.call('cuEventRecord',events[i+1],dev.stream)
+      dev._launch(entry[0],entry[1]);dev.driver.call('cuEventRecordWithFlags',events[i+1],dev.stream,1)
     with CudaGraph(dev,submit,resources=tuple(f.buffers.values())+tuple(f.kernels.values())) as graph:
      samples=[];totals=[]
      for sample in range(5):
