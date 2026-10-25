@@ -1,0 +1,38 @@
+ffn {'r': 512, 'k': 2048, 'o': 10752, 'optimized': True, 'ggml': True, 'type': 2} 27 289.16
+linear {'r': 512, 'k': 10752, 'o': 2048, 'optimized': True, 'ggml': True, 'type': 2} 27 207.375
+linear {'r': 512, 'k': 2048, 'o': 6144, 'optimized': True, 'ggml': True, 'type': 2} 20 79.516
+attention {'r': 512, 'h': 32, 'kh': 8, 'd': 64, 'capacity': 131072, 'kv_dtype': 'float16', 'unit_scales': True, 'provider': 'webgpu', 'chunk': 512, 'optimized': True} 7 77.846
+linear {'r': 512, 'k': 2048, 'o': 2048, 'optimized': True, 'ggml': True, 'type': 2} 34 49.105
+linear {'r': 512, 'k': 2048, 'o': 512, 'optimized': True, 'ggml': True, 'type': 2} 16 14.42
+conv {'r': 1, 'c': 2048, 'length': 3, 'chunk': 512} 20 8.492
+linear {'r': 8, 'k': 10752, 'o': 2048, 'optimized': True, 'ggml': True, 'type': 2} 2 2.26
+rms {'r': 512, 'c': 2048, 'eps': 9.999999747378752e-06} 55 2.079
+add {'r': 512, 'c': 2048} 54 2.037
+ffn {'r': 8, 'k': 2048, 'o': 10752, 'optimized': True, 'ggml': True, 'type': 2} 2 1.39
+rope {'r': 512, 'h': 32, 'd': 64, 'theta': 10000000.0, 'provider': 'webgpu', 'position_limit': 131072} 7 0.852
+linear {'r': 8, 'k': 2048, 'o': 2048, 'optimized': True, 'ggml': True, 'type': 2} 3 0.815
+linear {'r': 1, 'k': 2048, 'o': 128000, 'optimized': True, 'ggml': True, 'type': 14} 1 0.789
+attention {'r': 8, 'h': 32, 'kh': 8, 'd': 64, 'capacity': 131072, 'kv_dtype': 'float16', 'unit_scales': True, 'provider': 'webgpu', 'chunk': 8, 'optimized': True} 1 0.711
+linear {'r': 8, 'k': 2048, 'o': 6144, 'optimized': True, 'ggml': True, 'type': 2} 2 0.641
+rope {'r': 512, 'h': 8, 'd': 64, 'theta': 10000000.0, 'provider': 'webgpu', 'position_limit': 131072} 8 0.342
+argmax {'r': 1, 'c': 128000} 1 0.294
+cache_write {'r': 512, 'h': 32, 'kh': 8, 'd': 64, 'capacity': 131072, 'kv_dtype': 'float16', 'unit_scales': True, 'provider': 'webgpu', 'chunk': 512, 'optimized': True} 8 0.244
+rms {'r': 16384, 'c': 64, 'eps': 9.999999747378752e-06} 7 0.217
+ffn {'r': 1, 'k': 2048, 'o': 10752, 'optimized': True, 'ggml': True, 'type': 2} 1 0.172
+rms {'r': 8, 'c': 2048, 'eps': 9.999999747378752e-06} 4 0.16
+rms {'r': 4096, 'c': 64, 'eps': 9.999999747378752e-06} 8 0.127
+linear_add {'r': 1, 'k': 10752, 'o': 2048, 'optimized': True, 'ggml': True, 'type': 2} 1 0.113
+rms {'r': 1, 'c': 2048, 'eps': 9.999999747378752e-06} 2 0.079
+add {'r': 8, 'c': 2048} 4 0.052
+embedding {'r': 512, 'c': 2048, 'v': 128000, 'start': 0, 'ggml': True, 'type': 14} 1 0.038
+conv {'r': 1, 'c': 2048, 'length': 3, 'chunk': 8} 2 0.036
+chunk_last {'r': 1, 'c': 2048, 'chunk': 8} 2 0.027
+chunk_tail {'r': 1, 'c': 2048, 'chunk': 512, 'tail': 8} 2 0.026
+linear_add {'r': 1, 'k': 2048, 'o': 2048, 'optimized': True, 'ggml': True, 'type': 2} 1 0.026
+next_tokens {'r': 1} 1 0.022
+rope {'r': 8, 'h': 32, 'd': 64, 'theta': 10000000.0, 'provider': 'webgpu', 'position_limit': 131072} 1 0.016
+masked_copy {'r': 1, 'c': 128000} 1 0.013
+tail_controls {'r': 1, 'chunk': 512, 'tail': 8} 1 0.013
+chunk_controls {'r': 1, 'chunk': 512} 1 0.013
+rms {'r': 256, 'c': 64, 'eps': 9.999999747378752e-06} 1 0.013
+advance {'r': 1, 'chunk': 512} 1 0.012

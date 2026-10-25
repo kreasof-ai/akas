@@ -1,0 +1,26 @@
+{
+  "schema": "tensor.schedule-profile.v1",
+  "provider": "webgpu",
+  "target": "webgpu-portable-v1",
+  "entries": [
+    {
+      "operation": "attention_partial",
+      "parameters": {
+        "r": 1,
+        "h": 32,
+        "kh": 8,
+        "d": 64,
+        "capacity": 131072,
+        "kv_dtype": "float16",
+        "unit_scales": true,
+        "provider": "webgpu",
+        "optimized": true,
+        "splits": 64
+      },
+      "schedule": {
+        "key_rows": 32,
+        "implementation": "attention.webgpu.channel_decode"
+      }
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "schema": "tensor.schedule-profile.v1",
+  "provider": "webgpu",
+  "target": "webgpu-portable-v1",
+  "entries": [
+    {
+      "operation": "linear",
+      "parameters": {
+        "r": 512,
+        "k": 2048,
+        "o": 10752,
+        "optimized": true,
+        "ggml": true,
+        "type": 2
+      },
+      "schedule": {
+        "outer_layout": 2,
+        "implementation": "linear.webgpu.packed:blocked-prefill"
+      }
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+____________________ test_packed_half_rounding_boundaries _____________________
+tests\test_vulkan_rounding.py:46: in test_packed_half_rounding_boundaries
+    np.testing.assert_array_equal(out.to_numpy(), values.astype("float16").astype("float32"))
+E   AssertionError: 
+E   Arrays are not equal
+E   
+E   Mismatched elements: 14 / 42 (33.3%)
+E   First 5 mismatches are at indices:
+E    [1]: 0.0 (ACTUAL), 5.960464477539063e-08 (DESIRED)
+E    [2]: 6.097555160522461e-05 (ACTUAL), 6.103515625e-05 (DESIRED)
+E    [6]: 65472.0 (ACTUAL), 65504.0 (DESIRED)
+E    [11]: 1.0009765625 (ACTUAL), 1.001953125 (DESIRED)
+E    [14]: 0.0 (ACTUAL), 5.960464477539063e-08 (DESIRED)
+E   Max absolute difference among violations: 32.
+E   Max relative difference among violations: 1.
+E    ACTUAL: array([ 0.000000e+00,  0.000000e+00,  6.097555e-05,  1.000000e+00,
+E           1.000977e+00, -0.000000e+00,  6.547200e+04,  0.000000e+00,
+E           5.960464e-08,  6.103516e-05,  1.000000e+00,  1.000977e+00,...
+E    DESIRED: array([ 0.000000e+00,  5.960464e-08,  6.103516e-05,  1.000000e+00,
+E           1.000977e+00, -0.000000e+00,  6.550400e+04,  0.000000e+00,
+E           5.960464e-08,  6.103516e-05,  1.000000e+00,  1.001953e+00,...
+=========================== short test summary info ===========================
+FAILED tests/test_vulkan_rounding.py::test_packed_half_rounding_boundaries - ...

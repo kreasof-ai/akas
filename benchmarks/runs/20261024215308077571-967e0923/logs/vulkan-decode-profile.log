@@ -1,0 +1,20 @@
+attention_partial {'r': 1, 'h': 32, 'kh': 8, 'd': 64, 'capacity': 131072, 'kv_dtype': 'float16', 'unit_scales': True, 'provider': 'webgpu', 'optimized': True, 'splits': 16} 8 16.002
+ffn {'r': 1, 'k': 2048, 'o': 10752, 'optimized': True, 'ggml': True, 'type': 2} 30 6.669
+linear_add {'r': 1, 'k': 10752, 'o': 2048, 'optimized': True, 'ggml': True, 'type': 2} 30 3.831
+rms {'r': 1, 'c': 2048, 'eps': 9.999999747378752e-06} 61 1.838
+linear_add {'r': 1, 'k': 2048, 'o': 2048, 'optimized': True, 'ggml': True, 'type': 2} 30 1.019
+linear {'r': 1, 'k': 2048, 'o': 128000, 'optimized': True, 'ggml': True, 'type': 14} 1 0.777
+linear {'r': 1, 'k': 2048, 'o': 6144, 'optimized': True, 'ggml': True, 'type': 2} 22 0.754
+linear {'r': 1, 'k': 2048, 'o': 512, 'optimized': True, 'ggml': True, 'type': 2} 16 0.545
+conv {'r': 1, 'c': 2048, 'length': 3} 22 0.376
+linear {'r': 1, 'k': 2048, 'o': 2048, 'optimized': True, 'ggml': True, 'type': 2} 8 0.346
+argmax {'r': 1, 'c': 128000} 1 0.286
+rope {'r': 1, 'h': 8, 'd': 64, 'theta': 10000000.0, 'provider': 'webgpu', 'position_limit': 131072} 8 0.216
+rope {'r': 1, 'h': 32, 'd': 64, 'theta': 10000000.0, 'provider': 'webgpu', 'position_limit': 131072} 8 0.212
+cache_write {'r': 1, 'h': 32, 'kh': 8, 'd': 64, 'capacity': 131072, 'kv_dtype': 'float16', 'unit_scales': True, 'provider': 'webgpu', 'optimized': True} 8 0.173
+rms {'r': 32, 'c': 64, 'eps': 9.999999747378752e-06} 8 0.16
+rms {'r': 8, 'c': 64, 'eps': 9.999999747378752e-06} 8 0.16
+attention_merge {'r': 1, 'h': 32, 'kh': 8, 'd': 64, 'capacity': 131072, 'kv_dtype': 'float16', 'unit_scales': True, 'provider': 'webgpu', 'optimized': True, 'splits': 16} 8 0.137
+embedding {'r': 1, 'c': 2048, 'v': 128000, 'start': 0, 'ggml': True, 'type': 14} 1 0.013
+advance {'r': 1} 1 0.013
+next_tokens {'r': 1} 1 0.012

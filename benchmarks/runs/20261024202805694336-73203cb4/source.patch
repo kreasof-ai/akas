@@ -1,0 +1,934 @@
+diff --git a/src/akas/artifacts/fingerprint.py b/src/akas/artifacts/fingerprint.py
+index d3a1627..49fc059 100644
+--- a/src/akas/artifacts/fingerprint.py
++++ b/src/akas/artifacts/fingerprint.py
+@@ -12,7 +12,7 @@ def _modules(*owners):
+         path = root / owner.replace(".", "/")
+         if path.is_dir():
+             names.update(
+-                "akas." + str(p.relative_to(root).with_suffix("")).replace("/", ".")
++                "akas." + p.relative_to(root).with_suffix("").as_posix().replace("/", ".")
+                 for p in path.rglob("*.py")
+                 if p.name != "__init__.py"
+             )
+diff --git a/src/akas/benchmarking/history.py b/src/akas/benchmarking/history.py
+index 8a74882..72c726b 100644
+--- a/src/akas/benchmarking/history.py
++++ b/src/akas/benchmarking/history.py
+@@ -34,7 +34,8 @@ def write(path, value):
+     path = Path(path)
+     path.parent.mkdir(parents=True, exist_ok=True)
+     temporary = path.with_name(path.name + "." + uuid.uuid4().hex + ".tmp")
+-    temporary.write_text(json.dumps(value, indent=2, allow_nan=False) + "\n")
++    temporary.write_text(json.dumps(value, indent=2, allow_nan=False) + "\n",
++                         encoding="utf-8", newline="\n")
+     temporary.replace(path)
+ 
+ 
+@@ -473,7 +474,7 @@ def rebuild_index(root):
+         lines.append(
+             f"| {entry['started_at']} | {clean(entry['hardware'])} | {clean(entry['runtime'])} / {clean(entry['model'])} | {clean(configuration)} | {geometry} | {entry['purpose']} | {entry['status']} | {revision} | [run]({entry['path']}) |"
+         )
+-    (root / "RESULTS.md").write_text("\n".join(lines) + "\n")
++    (root / "RESULTS.md").write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
+ 
+ 
+ def export_profile(root, run_id, *, phase, batch, chunk, provider, target, out):
+diff --git a/src/akas/models/lfm2/_composition.py b/src/akas/models/lfm2/_composition.py
+index 131bc53..edd15c6 100644
+--- a/src/akas/models/lfm2/_composition.py
++++ b/src/akas/models/lfm2/_composition.py
+@@ -14,6 +14,7 @@ def compose(
+     optimized=False,
+     checkpoint=None,
+     expert_weight_layout="raw",
++    dense_weight_layout="raw",
+     verify=False,
+     auxiliary_layers=(),
+ ):
+@@ -49,6 +50,12 @@ def compose(
+ 
+     if expert_weight_layout not in ("raw", "planar"):
+         raise ValueError("expert weight layout must be raw or planar")
++    if dense_weight_layout not in ("raw", "planar"):
++        raise ValueError("dense weight layout must be raw or planar")
++    if dense_weight_layout != "raw" and (
++        provider != "webgpu" or not optimized or not hasattr(checkpoint, "gguf")
++    ):
++        raise ValueError("dense planar weights require an optimized WebGPU GGUF graph")
+     if expert_weight_layout != "raw" and (
+         not isinstance(config, LFM2MoEConfig) or checkpoint is None
+     ):
+@@ -63,6 +70,7 @@ def compose(
+                 if expert_weight_layout != "raw"
+                 else {}
+             ),
++            **(dict(dense_weight_layout=dense_weight_layout) if dense_weight_layout != "raw" else {}),
+         )
+         if checkpoint is not None and hasattr(checkpoint, "graph_weights")
+         else Weights(
+@@ -384,6 +392,7 @@ def program(
+     optimized=True,
+     activation_quantization=None,
+     expert_weight_layout="raw",
++    dense_weight_layout="raw",
+     auxiliary_layers=(),
+     phase=None,
+ ):
+@@ -401,11 +410,14 @@ def program(
+         optimized=optimized,
+         checkpoint=checkpoint,
+         expert_weight_layout=expert_weight_layout,
++        dense_weight_layout=dense_weight_layout,
+         auxiliary_layers=auxiliary_layers,
+         verify=phase == "verify",
+         **checkpoint.definition_options,
+     )
+     if activation_quantization is not None:
++        if dense_weight_layout != "raw":
++            raise ValueError("q16 activation storage currently requires raw dense weights")
+         if activation_quantization != "q16" or provider != "webgpu":
+             raise ValueError("q16 activation storage requires WebGPU")
+         from akas.compilation.quantization import q16_activations
+diff --git a/src/akas/models/lfm2/model.py b/src/akas/models/lfm2/model.py
+index 5e2667b..b0f441f 100644
+--- a/src/akas/models/lfm2/model.py
++++ b/src/akas/models/lfm2/model.py
+@@ -22,6 +22,7 @@ def compose(
+     optimized=True,
+     activation_quantization=None,
+     expert_weight_layout="raw",
++    dense_weight_layout="raw",
+     auxiliary_layers=(),
+ ):
+     from akas.models.lfm2._composition import program
+@@ -40,6 +41,7 @@ def compose(
+         optimized=optimized,
+         activation_quantization=activation_quantization,
+         expert_weight_layout=expert_weight_layout,
++        dense_weight_layout=dense_weight_layout,
+         auxiliary_layers=auxiliary_layers,
+         phase=phase,
+     )
+diff --git a/src/akas/models/lfm2/weights.py b/src/akas/models/lfm2/weights.py
+index 8bc62b2..597dda1 100644
+--- a/src/akas/models/lfm2/weights.py
++++ b/src/akas/models/lfm2/weights.py
+@@ -26,9 +26,10 @@ class LFM2Checkpoint:
+     def definition_options(self):
+         return {"output": "output.weight" in self.gguf.tensors}
+ 
+-    def graph_weights(self, graph, *, provider, expert_weight_layout="raw"):
++    def graph_weights(self, graph, *, provider, expert_weight_layout="raw", dense_weight_layout="raw"):
+         return PackedWeights(
+-            graph, self, provider=provider, expert_weight_layout=expert_weight_layout
++            graph, self, provider=provider, expert_weight_layout=expert_weight_layout,
++            dense_weight_layout=dense_weight_layout,
+         )
+ 
+     def inventory(self):
+@@ -43,17 +44,24 @@ class LFM2Checkpoint:
+         layout = model_options.get("expert_weight_layout", "raw")
+         if layout not in ("raw", "planar"):
+             raise ValueError("expert weight layout must be raw or planar")
+-        return {} if layout == "raw" else dict(expert_weight_layout=layout)
++        dense = model_options.get("dense_weight_layout", "raw")
++        if dense not in ("raw", "planar"):
++            raise ValueError("dense weight layout must be raw or planar")
++        return {**(dict(expert_weight_layout=layout) if layout != "raw" else {}),
++                **(dict(dense_weight_layout=dense) if dense != "raw" else {})}
+ 
+-    def upload(self, device, *, expert_weight_layout="raw"):
++    def upload(self, device, *, expert_weight_layout="raw", dense_weight_layout="raw"):
+         if expert_weight_layout not in ("raw", "planar"):
+             raise ValueError("expert weight layout must be raw or planar")
++        if dense_weight_layout not in ("raw", "planar"):
++            raise ValueError("dense weight layout must be raw or planar")
++        if dense_weight_layout != "raw" and device.info["provider"] != "webgpu":
++            raise ValueError("dense planar weights currently require WebGPU")
+         layouts = {
+             name: "planar"
+             for name, info in self.gguf.tensors.items()
+-            if expert_weight_layout == "planar"
+-            and len(info.shape) == 3
+-            and info.type == 2
++            if (expert_weight_layout == "planar" and len(info.shape) == 3 and info.type == 2)
++            or dense_planar(name, info, dense_weight_layout)
+         }
+         return upload_packed(device, self.gguf, layouts=layouts)
+ 
+@@ -279,20 +287,34 @@ def huggingface_names(config, *, output=False):
+     return names
+ 
+ 
++def dense_planar(name, info, layout):
++    """Embedding gathers keep their existing layout; only dense Q4 dots move."""
++    return (layout == "planar" and len(info.shape) == 2 and info.type == 2
++            and name != "token_embd.weight")
++
++
+ class PackedWeights:
+     """Declare original GGML bytes; mathematical shapes stay with the checkpoint."""
+ 
+-    def __init__(self, graph, checkpoint, *, provider, expert_weight_layout="raw"):
++    def __init__(self, graph, checkpoint, *, provider, expert_weight_layout="raw", dense_weight_layout="raw"):
+         from math import prod
+ 
+         from akas.quantization.weights.ggml.definition import weight_storage
+ 
+         if expert_weight_layout not in ("raw", "planar"):
+             raise ValueError("expert weight layout must be raw or planar")
++        if dense_weight_layout not in ("raw", "planar"):
++            raise ValueError("dense weight layout must be raw or planar")
++        if dense_weight_layout != "raw" and provider != "webgpu":
++            raise ValueError("dense planar weights currently require WebGPU")
+         self.checkpoint = checkpoint
+         self.expert_weight_layout = expert_weight_layout
++        self.dense_weight_layout = dense_weight_layout
+         self.buffers = {}
+         for name, info in checkpoint.gguf.tensors.items():
++            if dense_planar(name, info, dense_weight_layout):
++                from akas.quantization.weights.ggml.definition import validate_layout
++                validate_layout(info.shape, encoding=2, layout="planar")
+             count, dtype = weight_storage(
+                 info.type, prod(info.shape), packed_words=provider == "webgpu"
+             )
+@@ -305,7 +327,9 @@ class PackedWeights:
+         return [(self.buffers[name], 0, self.checkpoint.gguf.tensors[name].shape[0])]
+ 
+     def parameters(self, name):
+-        return {"ggml": True, "type": self.checkpoint.gguf.tensors[name].type}
++        info = self.checkpoint.gguf.tensors[name]
++        return {"ggml": True, "type": info.type,
++                **(dict(weight_layout="planar") if dense_planar(name, info, self.dense_weight_layout) else {})}
+ 
+     def parts(self, name):
+         from math import prod
+@@ -316,7 +340,7 @@ class PackedWeights:
+             self.expert_weight_layout == "planar"
+             and len(info.shape) == 3
+             and info.type == 2
+-        ):
++        ) or dense_planar(name, info, self.dense_weight_layout):
+             from akas.quantization.weights.ggml.definition import validate_layout
+ 
+             validate_layout(info.shape, encoding=2, layout="planar")
+diff --git a/src/akas/ops/attention/definition.py b/src/akas/ops/attention/definition.py
+index 49e869a..30862ac 100644
+--- a/src/akas/ops/attention/definition.py
++++ b/src/akas/ops/attention/definition.py
+@@ -1169,6 +1169,8 @@ IMPLEMENTATIONS += tuple(
+         ),
+         factory="tiled_partial_floating",
+         name="attention.grouped_decode",
++        space=(("shared_dtype", ("float32", "float16")), ("dot_width", (1, 4)))
++        if provider == "webgpu" else (),
+     )
+     for provider in ("cuda", "webgpu")
+ )
+@@ -1187,6 +1189,29 @@ def _mma_cache_supported(p):
+         return False
+ 
+ 
++IMPLEMENTATIONS += (
++    Implementation(
++        "attention_partial", "akas.ops.attention.decode_webgpu", "reference",
++        provider="webgpu", priority=34, factory="blocked_partial",
++        defaults=(("key_unroll", 4),), space=(("key_unroll", (4, 8, 2)),),
++        semantic_keys=("r", "h", "kh", "d", "capacity", "splits", "kv_dtype"),
++        accepts=lambda p: p.get("optimized", False) and p["d"] == 64
++        and p["kv_dtype"] in ("float16", "float32"),
++        name="attention.webgpu.blocked_decode",
++    ),
++    Implementation(
++        "attention_partial", "akas.ops.attention.channel_webgpu", "reference",
++        provider="webgpu", priority=33, factory="channel_partial",
++        defaults=(("key_rows", 16),), space=(("key_rows", (16, 32)),),
++        semantic_keys=("r", "h", "kh", "d", "capacity", "splits", "kv_dtype"),
++        accepts=lambda p: p.get("optimized", False) and p["d"] == 64
++        and p["h"] % p["kh"] == 0 and p["h"] // p["kh"] in (1, 2, 4, 8)
++        and p["kv_dtype"] == "float16" and p.get("unit_scales", False),
++        name="attention.webgpu.channel_decode",
++    ),
++)
++
++
+ IMPLEMENTATIONS += (
+     Implementation(
+         "attention_partial",
+diff --git a/src/akas/ops/attention/kernel.py b/src/akas/ops/attention/kernel.py
+index fb7beb1..ec1e933 100644
+--- a/src/akas/ops/attention/kernel.py
++++ b/src/akas/ops/attention/kernel.py
+@@ -176,6 +176,19 @@ def tiled_partial_floating(spec: KernelSpec, schedule: Mapping[str, object]):
+         raise ValueError("unsupported grouped floating decode geometry")
+     storage, read = cache_reader(p)
+     webgpu = p["provider"] == "webgpu"
++    shared_dtype = p.get("shared_dtype", "float32")
++    dot_width = p.get("dot_width", 1)
++    if shared_dtype not in ("float16", "float32") or dot_width not in (1, 4):
++        raise ValueError("unsupported grouped decode staging")
++    if shared_dtype == "float16" and p["kv_dtype"] != "float16":
++        raise ValueError("half staging requires native half KV")
++
++    def dot_terms(queries, keys, head, channel, lane):
++        from tensor.compiler.webgpu.schedules.registers import vector
++
++        left = vector([queries[head, channel * 4 + j] for j in range(4)])
++        right = vector([T.cast(keys[channel * 4 + j, lane], "float32") for j in range(4)])
++        return T.call_extern("float32", "dot", left, right)
+ 
+     @T.macro
+     def exchange(value, offset):
+@@ -206,8 +219,8 @@ def tiled_partial_floating(spec: KernelSpec, schedule: Mapping[str, object]):
+             span = T.truncdiv(length + splits - 1, splits)
+             begin, end = split * span, T.min((split + 1) * span, length)
+             queries = T.alloc_shared((group, d), "float32")
+-            keys = T.alloc_shared((d, 33), "float32")
+-            values = T.alloc_shared((32, d), "float32")
++            keys = T.alloc_shared((d, 33), shared_dtype)
++            values = T.alloc_shared((32, d), shared_dtype)
+             probabilities = T.alloc_shared((group, 32), "float32")
+             maximum, normalizer = T.alloc_var("float32"), T.alloc_var("float32")
+             acc0, acc1 = T.alloc_var("float32"), T.alloc_var("float32")
+@@ -232,10 +245,14 @@ def tiled_partial_floating(spec: KernelSpec, schedule: Mapping[str, object]):
+                 score = T.alloc_var("float32")
+                 score = 0
+                 for channel in T.serial(d // 4):
+-                    for j in T.unroll(4):
+-                        score += (
+-                            queries[head, channel * 4 + j] * keys[channel * 4 + j, lane]
+-                        )
++                    if dot_width == 4:
++                        score += dot_terms(queries, keys, head, channel, lane)
++                    else:
++                        for j in T.unroll(4):
++                            score += (
++                                queries[head, channel * 4 + j]
++                                * T.cast(keys[channel * 4 + j, lane], "float32")
++                            )
+                 score = T.if_then_else(
+                     base + lane < end, score * 0.125, -T.infinity("float32")
+                 )
+@@ -258,8 +275,8 @@ def tiled_partial_floating(spec: KernelSpec, schedule: Mapping[str, object]):
+                 acc0, acc1 = acc0 * correction, acc1 * correction
+                 T.sync_threads()
+                 for key in T.serial(32):
+-                    acc0 += probabilities[head, key] * values[key, lane]
+-                    acc1 += probabilities[head, key] * values[key, lane + 32]
++                    acc0 += probabilities[head, key] * T.cast(values[key, lane], "float32")
++                    acc1 += probabilities[head, key] * T.cast(values[key, lane + 32], "float32")
+                 T.sync_threads()
+             offset = ((slot * heads + kv_head * group + head) * splits + split) * 66
+             out[offset + lane] = acc0
+@@ -753,7 +770,7 @@ def rope(spec: KernelSpec, schedule: Mapping[str, object]):
+     import math
+ 
+     p = {**spec.parameters, **schedule}
+-    if p.get("position_limit", 0) > 8192:
++    if p.get("position_limit", 0) > 8192 or p.get("provider") == "webgpu":
+         return precise_rope(spec, schedule)
+     import tilelang.language as T
+ 
+@@ -796,7 +813,7 @@ def precise_rope(spec: KernelSpec, schedule: Mapping[str, object]):
+     if d != 64:
+         raise ValueError("portable reference attention requires 64-channel heads")
+     h, theta = (p["h"], p["theta"])
+-    precise = p.get("position_limit", 0) > 8192
++    precise = p.get("position_limit", 0) > 8192 or p.get("provider") == "webgpu"
+     fma = "fma" if p.get("provider") == "webgpu" else "fmaf"
+ 
+     def single(value):
+@@ -807,6 +824,11 @@ def precise_rope(spec: KernelSpec, schedule: Mapping[str, object]):
+     low = tuple(single(value - rounded) for value, rounded in zip(frequencies, high))
+     tau_high = single(2 * math.pi)
+     tau_low = single(2 * math.pi - tau_high)
++    digits = max(1, ((max(1, p.get("position_limit", 131072)) - 1).bit_length() + 3) // 4)
++    phases = tuple(
++        single(math.remainder(frequency * (16 ** digit), 2 * math.pi))
++        for digit in range(digits) for frequency in frequencies
++    )
+ 
+     def exact(value):
+         if p.get("provider") == "webgpu":
+@@ -816,10 +838,13 @@ def precise_rope(spec: KernelSpec, schedule: Mapping[str, object]):
+         return T.float32(value)
+ 
+     def constant(index, values):
+-        value = exact(values[-1])
+-        for i in range(len(values) - 2, -1, -1):
+-            value = T.if_then_else(index == i, exact(values[i]), value)
+-        return value
++        def select(begin, end):
++            if end - begin == 1:
++                return exact(values[begin])
++            middle = (begin + end) // 2
++            return T.if_then_else(index < middle, select(begin, middle), select(middle, end))
++
++        return select(0, len(values))
+ 
+     @T.macro
+     def product_error(integer, coefficient, rounded):
+@@ -849,21 +874,19 @@ def precise_rope(spec: KernelSpec, schedule: Mapping[str, object]):
+                 leading = T.alloc_var("float32")
+                 trailing = T.alloc_var("float32")
+                 turns = T.alloc_var("int32")
+-                frequency = constant(half, high)
+-                leading = position * frequency
+                 if p.get("provider") == "webgpu":
+-                    trailing = product_error(
+-                        positions[row], frequency, leading
+-                    ) + position * constant(half, low)
+-                    turns = T.cast(T.floor(leading / (2 * math.pi) + 0.5), "int32")
+-                    removed = T.alloc_var("float32")
+-                    remainder = T.alloc_var("float32")
+-                    removed = T.cast(turns, "float32") * exact(tau_high)
+-                    remainder = product_error(turns, exact(tau_high), removed)
+-                    angle = (leading - removed) + (
+-                        trailing - remainder - T.cast(turns, "float32") * exact(tau_low)
+-                    )
++                    # Form bounded angles from base-16 position digits. Large
++                    # float products lose their low bits, and Vulkan drivers may
++                    # contract the compensated product's cancellation sequence.
++                    angle = 0
++                    for digit in T.unroll(digits):
++                        coefficient = constant(half + digit * (d // 2), phases)
++                        angle = angle + T.cast((positions[row] >> (digit * 4)) & 15,
++                                               "float32") * coefficient
++                        angle = angle - T.floor(angle / (2 * math.pi) + 0.5) * exact(tau_high)
+                 else:
++                    frequency = constant(half, high)
++                    leading = position * frequency
+                     trailing = T.call_extern(
+                         "float32", fma, position, frequency, -leading
+                     ) + position * constant(half, low)
+@@ -881,10 +904,30 @@ def precise_rope(spec: KernelSpec, schedule: Mapping[str, object]):
+                 )
+             left = x[(row * h + head) * d + half]
+             right = x[(row * h + head) * d + half + d // 2]
++            cosine = T.alloc_var("float32")
++            sine = T.alloc_var("float32")
++            if p.get("provider") == "webgpu":
++                # Vulkan sin/cos accuracy varies by driver. After compensated
++                # reduction to [-pi, pi], reflect into [-pi/2, pi/2] and use
++                # bounded polynomials rather than the approximate intrinsics.
++                reduced = T.alloc_var("float32")
++                square = T.alloc_var("float32")
++                reduced = T.min(T.abs(angle), T.float32(math.pi) - T.abs(angle))
++                square = reduced * reduced
++                sine = reduced * (1 + square * (-1 / 6 + square * (1 / 120 + square *
++                       (-1 / 5040 + square * (1 / 362880 - square / 39916800)))))
++                cosine = 1 + square * (-1 / 2 + square * (1 / 24 + square *
++                         (-1 / 720 + square * (1 / 40320 + square *
++                         (-1 / 3628800 + square / 479001600)))))
++                sine = T.if_then_else(angle < 0, -sine, sine)
++                cosine = T.if_then_else(T.abs(angle) > math.pi / 2, -cosine, cosine)
++            else:
++                cosine = T.cos(angle)
++                sine = T.sin(angle)
+             out[row, head * d + tx] = T.if_then_else(
+                 tx < d // 2,
+-                left * T.cos(angle) - right * T.sin(angle),
+-                left * T.sin(angle) + right * T.cos(angle),
++                left * cosine - right * sine,
++                left * sine + right * cosine,
+             )
+         return out
+ 
+diff --git a/src/akas/ops/linear/definition.py b/src/akas/ops/linear/definition.py
+index 6f28ad5..ac933ba 100644
+--- a/src/akas/ops/linear/definition.py
++++ b/src/akas/ops/linear/definition.py
+@@ -1019,11 +1019,63 @@ IMPLEMENTATIONS += tuple(
+     for provider in ("cuda", "webgpu")
+     for tiled in (False, True)
+ )
++# Packed prefill previously exposed only the register schedule to automatic
++# search. Keep that incumbent and independently qualify staged weight reuse.
++IMPLEMENTATIONS += tuple(
++    Implementation(
++        kind, "akas.ops.linear.webgpu", "reference", provider="webgpu",
++        priority=39, factory="outer_prefill",
++        defaults=(("outer_rows", 32),),
++        space=(("outer_rows", (32, 64, 16)),),
++        semantic_keys=("r", "k", "o", "type", "ggml"),
++        accepts=lambda p: p.get("ggml", False) and p["r"] > 1 and p["type"] in (1, 2, 14),
++        variant="outer-prefill", name="linear.webgpu.packed:outer-prefill",
++    )
++    for kind in ("linear", "ffn")
++)
++
+ OUTPUT_ARGUMENTS["*"] = {"quantized_projection": OutputABI((-1,), ("out",))}
+ from .validation import projection_validation
+ 
+ VALIDATIONS["quantized_projection"] = projection_validation
+ 
++IMPLEMENTATIONS += tuple(
++    Implementation(
++        kind, "akas.ops.linear.webgpu", "reference", provider="webgpu",
++        priority=38, factory="blocked_prefill",
++        defaults=(("outer_layout", 0),),
++        space=(("outer_layout", tuple(range(9))),),
++        semantic_keys=("r", "k", "o", "type", "ggml"),
++        accepts=lambda p: p.get("ggml", False) and p["r"] > 1 and p["type"] in (1, 2, 14),
++        variant="blocked-prefill", name="linear.webgpu.packed:blocked-prefill",
++    )
++    for kind in ("linear", "ffn", "linear_add")
++)
++
++IMPLEMENTATIONS += tuple(
++    Implementation(
++        kind, "akas.ops.linear.webgpu", "reference", provider="webgpu",
++        priority=39, factory="vector_decode",
++        defaults=(("decode_layout", 0),), space=(("decode_layout", tuple(range(8))),),
++        semantic_keys=("r", "k", "o", "type", "ggml"),
++        accepts=lambda p: p.get("ggml", False) and p["r"] == 1 and p["type"] in (2, 14),
++        variant="vector-decode", name="linear.webgpu.packed:vector-decode",
++    )
++    for kind in ("linear", "ffn", "linear_add")
++)
++
++IMPLEMENTATIONS += tuple(
++    Implementation(
++        kind, "akas.ops.linear.webgpu", "reference", provider="webgpu",
++        priority=37, factory="branched_prefill",
++        defaults=(("outer_layout", 0),), space=(("outer_layout", tuple(range(9))),),
++        semantic_keys=("r", "k", "o", "type", "ggml"),
++        accepts=lambda p: p.get("ggml", False) and p["r"] > 1 and p["type"] in (1, 2, 14),
++        variant="branch-prefill", name="linear.webgpu.packed:branch-prefill",
++    )
++    for kind in ("linear", "ffn", "linear_add")
++)
++
+ IMPLEMENTATIONS += (
+     Implementation(
+         "linear",
+diff --git a/src/akas/ops/linear/validation.py b/src/akas/ops/linear/validation.py
+index 7201dc1..485a588 100644
+--- a/src/akas/ops/linear/validation.py
++++ b/src/akas/ops/linear/validation.py
+@@ -118,6 +118,13 @@ def validation(kind, p, signature):
+                 section += values["residual"].reshape(r, o)[:, start:stop]
+             out[:, start:stop] = section
+         expected["out"][:] = out.reshape(values["out"].shape)
++        if p.get("weight_layout", "raw") == "planar":
++            if p["type"] != 2:
++                raise ValueError("planar dense validation requires Q4_0")
++            from akas.quantization.weights.ggml.kernel import repack_host
++            for name in ("w", "w2") if kind == "ffn" else ("w",):
++                raw = values[name].view("uint8").reshape(-1)
++                raw[:] = repack_host(raw)
+         return ValidationCase(values, expected)
+     if "scales" in values:
+         from akas.quantization._shared.e4m3 import decode_storage, encode_storage
+diff --git a/src/akas/ops/linear/webgpu.py b/src/akas/ops/linear/webgpu.py
+index 523cb35..288c522 100644
+--- a/src/akas/ops/linear/webgpu.py
++++ b/src/akas/ops/linear/webgpu.py
+@@ -46,13 +46,24 @@ def _packed(p, paired=False, add_residual=False):
+     from tensor.compiler.webgpu.schedules.register_matmul import register_matmul
+     from akas.ops.linear.kernel import _epilogue as projection_epilogue
+     from akas.ops.linear.kernel import webgpu_abi as projection_abi
+-    from akas.quantization._shared.rounding import round_half
++    from akas.quantization._shared.rounding import round_half, round_half_branch
+     from akas.quantization.weights.ggml.kernel import weight_decoder
+ 
+     r, k, o, q = (p[n] for n in ("r", "k", "o", "type"))
+     parts = 2 if paired else 1
+     tm, tn, bk = p.get("tile", (16, 32, 64))
+-    rounded, decoder = (round_half(), weight_decoder(q, k, packed_words=True))
++    rounded = round_half_branch() if p.get("branch_staging", False) else round_half()
++    if p.get("weight_layout", "raw") == "planar":
++        if q != 2:
++            raise ValueError("planar dense projection requires Q4_0")
++        from akas.quantization.weights.ggml.kernel import planar_reader
++        planar = planar_reader((o, k))
++
++        @T.macro
++        def decoder(w, row, column):
++            return planar((w,), row, column)
++    else:
++        decoder = weight_decoder(q, k, packed_words=True)
+     epilogue = projection_epilogue(paired=paired, add_residual=add_residual)
+ 
+     @T.macro
+@@ -372,6 +383,33 @@ def gemv_packed(p, paired=False, add_residual=False):
+     return projection_abi(p, gemv, paired=paired, add_residual=add_residual)
+ 
+ 
++def vector_decode(spec: KernelSpec, schedule: Mapping[str, object]):
++    """Coupled vector and independent-accumulator decode candidates."""
++    p = {**spec.parameters, **schedule}
++    layouts = (
++        (128, 32, 2, 2, True),
++        (256, 32, 2, 2, True),
++        (128, 16, 4, 4, True),
++        (256, 16, 4, 4, True),
++        (128, 32, 1, 1, False),
++        (128, 16, 1, 1, False),
++        (512, 32, 2, 2, True),
++        (128, 32, 4, 4, True),
++    )
++    threads, lanes, unroll, chains, dot = layouts[p.get("decode_layout", 0)]
++    tiles = p["k"] // (lanes * 8) if p["type"] == 2 else p["k"] // 256
++    while tiles % unroll:
++        unroll //= 2
++    chains = min(chains, unroll)
++    return gemv_packed(
++        {**p, "sg": True, "gemv_threads": threads, "gemv_lanes": lanes,
++         "gemv_unroll": unroll, "gemv_chains": chains,
++         "gemv_dot": dot, "gemv_q6_dot": True,
++         "gemv_accumulators": 1 if dot or p["type"] != 2 else 4},
++        paired=spec.kind == "ffn", add_residual=spec.kind == "linear_add",
++    )
++
++
+ def q8(spec: KernelSpec, schedule: Mapping[str, object]):
+     from akas.quantization.weights.ggml.webgpu import q8_dot
+ 
+@@ -394,6 +432,50 @@ def q8(spec: KernelSpec, schedule: Mapping[str, object]):
+     return compute
+ 
+ 
++def outer_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
++    """Staged packed projections with a scalar, resumable search axis."""
++    p = {**spec.parameters, **schedule}
++    rows = p.get("outer_rows", 32)
++    return _packed(
++        {**p, "schedule": "outer", "outer": dict(
++            tile_m=rows, tile_n=64, tile_k=16, micro_m=rows // 16,
++            micro_n=4, threads=256, lhs_layout="km", unroll=4,
++            dot_width=2, packed_pairs=True)},
++        paired=spec.kind == "ffn",
++    )
++
++
++def blocked_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
++    """Explore larger reuse tiles while retaining FP32 accumulation."""
++    p = {**spec.parameters, **schedule}
++    # M, N, K, private M, private N, threads. Scalar selectors keep
++    # resumable search keys hashable while the ownership moves together.
++    layouts = (
++        (64, 64, 16, 4, 4, 256),
++        (64, 64, 32, 4, 4, 256),
++        (64, 128, 32, 4, 8, 256),
++        (64, 128, 32, 8, 4, 256),
++        (64, 64, 32, 4, 8, 128),
++        (128, 64, 32, 8, 4, 256),
++        (128, 128, 32, 8, 8, 256),
++        (32, 128, 32, 4, 4, 256),
++        (32, 64, 32, 4, 4, 128),
++    )
++    m, n, k, mm, mn, threads = layouts[p.get("outer_layout", 0)]
++    return _packed(
++        {**p, "schedule": "outer", "outer": dict(
++            tile_m=m, tile_n=n, tile_k=k, micro_m=mm, micro_n=mn,
++            threads=threads, lhs_layout="km", unroll=4,
++            dot_width=2, packed_pairs=True)},
++        paired=spec.kind == "ffn", add_residual=spec.kind == "linear_add",
++    )
++
++
++def branched_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
++    """Bypass subnormal rounding work for normal operands, retaining exact RNE."""
++    return blocked_prefill(spec, {**schedule, "branch_staging": True})
++
++
+ def ffn(spec: KernelSpec, schedule: Mapping[str, object]):
+     from akas.ops.linear.webgpu import _integer as integer_prefill_kernel
+     from akas.ops.linear.webgpu import _packed as prefill_kernel
+diff --git a/src/akas/quantization/_shared/rounding.py b/src/akas/quantization/_shared/rounding.py
+index bb388d8..3934674 100644
+--- a/src/akas/quantization/_shared/rounding.py
++++ b/src/akas/quantization/_shared/rounding.py
+@@ -52,3 +52,31 @@ def round_bfloat():
+         )
+ 
+     return rounded
++
++
++def round_half_branch():
++    """Keep exact half rounding while bypassing subnormal work for normal data.
++
++    In particular, do not replace this with pack2x16float: some Vulkan drivers
++    truncate that conversion. Both branches return an exactly representable
++    half value before the packed store, including ties and subnormals.
++    """
++    import tilelang.language as T
++
++    fallback = round_half()
++
++    @T.macro
++    def rounded(value):
++        bits = T.reinterpret("uint32", value)
++        exponent = T.cast(bits >> 23 & 255, "int32")
++        result = T.alloc_var("float32")
++        if exponent >= 113:
++            result = T.reinterpret("float32", bits + 4095 + (bits >> 13 & 1)
++                                   & T.uint32(4294959104))
++        elif exponent < 102:
++            result = T.if_then_else(bits >> 31 != 0, -T.float32(0), T.float32(0))
++        else:
++            result = fallback(value)
++        return result
++
++    return rounded
+diff --git a/src/akas/quantization/weights/ggml/webgpu.py b/src/akas/quantization/weights/ggml/webgpu.py
+index 60d86e9..4fa4436 100644
+--- a/src/akas/quantization/weights/ggml/webgpu.py
++++ b/src/akas/quantization/weights/ggml/webgpu.py
+@@ -36,6 +36,10 @@ def gemv_terms(p, *, fast_q4, lanes, row_count, dot_q4, dot_q6):
+     from .kernel import weight_decoder
+ 
+     k, q = p["k"], p["type"]
++    planar = p.get("weight_layout", "raw") == "planar"
++    if planar and (q != 2 or not fast_q4):
++        raise ValueError("planar dense GEMV requires whole packed Q4_0 blocks")
++    blocks = p["o"] * k // 32
+     byte, half_value, word_value = packed_loads()
+     decoder = weight_decoder(q, k, packed_words=True)
+ 
+@@ -173,11 +177,15 @@ def gemv_terms(p, *, fast_q4, lanes, row_count, dot_q4, dot_q6):
+     @T.macro
+     def compute(acc, x, w, tile, lane, row, bx, slot):
+         if fast_q4:
+-            base = (
+-                (bx * row_count + row) * (k // 32) + tile * (lanes // 4) + lane // 4
+-            ) * 18
+-            scale = half_value(w, base)
+-            packed = word_value(w, base + 2 + lane % 4 * 4)
++            block = (bx * row_count + row) * (k // 32) + tile * (lanes // 4) + lane // 4
++            if planar:
++                scale = T.call_extern("float32", "tensor_unpack_f16",
++                    w[blocks * 4 + block // 2] >> (block % 2 * 16) & T.uint32(65535))
++                packed = w[block * 4 + lane % 4]
++            else:
++                base = block * 18
++                scale = half_value(w, base)
++                packed = word_value(w, base + 2 + lane % 4 * 4)
+             index = tile * (lanes * 8) + lane // 4 * 32 + lane % 4 * 4
+             q4_terms(acc, x, index, scale, packed, slot)
+         elif q == 14:
+diff --git a/tests/test_kernel_definition.py b/tests/test_kernel_definition.py
+index b562496..19fac4b 100644
+--- a/tests/test_kernel_definition.py
++++ b/tests/test_kernel_definition.py
+@@ -13,6 +13,21 @@ from akas.kernels.definition import definition
+ from akas.kernels.registry import candidates
+ 
+ 
++@pytest.mark.parametrize("kind", ["linear", "ffn"])
++@pytest.mark.parametrize("encoding", [1, 2, 14])
++def test_packed_prefill_search_can_explore_weight_reuse_without_changing_default(kind, encoding):
++    from akas.kernels.registry import select
++
++    parameters = dict(r=32, k=2048, o=512, ggml=True, type=encoding)
++    options = dict(contract="reference", provider="webgpu", target="webgpu-portable-v1")
++    choices = candidates(kind, parameters, **options)
++    outer = next(choice for choice in choices if choice.variant == "outer-prefill")
++    assert dict(outer.defaults)["outer_rows"] == 32
++    assert select(kind, parameters, **options).variant != "outer-prefill"
++    assert not any(choice.variant == "outer-prefill" for choice in
++                   candidates(kind, dict(parameters, r=1), **options))
++
++
+ @pytest.mark.parametrize("provider", ["cuda", "webgpu"])
+ def test_saved_profile_selects_nested_packed_weight_parameters(tmp_path, provider):
+     from tensor.compiler.search import ScheduleProfile
+@@ -204,6 +219,8 @@ def test_serialized_source_hashes_selected_dynamic_leaf(monkeypatch):
+ @pytest.mark.parametrize("provider", ["cuda", "webgpu"])
+ @pytest.mark.parametrize("kind", ["linear", "ffn", "embedding"])
+ def test_packed_weights_route_under_common_graph_contract(provider, kind):
++    from akas.kernels.registry import select
++
+     parameters = dict(r=4, k=256, o=32, type=2, ggml=True)
+     eligible = candidates(
+         kind,
+@@ -213,14 +230,16 @@ def test_packed_weights_route_under_common_graph_contract(provider, kind):
+         phase="prefill",
+         target=None,
+     )
+-    assert len(eligible) == 1
+-    assert eligible[0].factory in (
++    assert eligible
++    chosen = select(kind, parameters, contract="reference", provider=provider,
++                    phase="prefill", target=None)
++    assert chosen.factory in (
+         kind,
+         "kernel_" + kind,
+         "embedding_packed",
+         "packed_word_embedding",
+     )
+-    assert eligible[0].name is not None
++    assert chosen.name is not None
+ 
+ 
+ def test_existing_hardware_algorithm_uses_common_boundary_without_dispatch_wrapper(
+diff --git a/tests/test_lfm_moe.py b/tests/test_lfm_moe.py
+index 776e1d1..c8e55c6 100644
+--- a/tests/test_lfm_moe.py
++++ b/tests/test_lfm_moe.py
+@@ -121,7 +121,8 @@ CASES = [
+             r=8, h=4, kh=1, d=64, capacity=64, chunk=4, kv_dtype="fp8", optimized=True
+         ),
+     ),
+-    ("rope", dict(r=4, h=32, d=64, theta=10000000.0, position_limit=131072)),
++    *(("rope", dict(r=4, h=32, d=64, theta=10000000.0, position_limit=limit))
++      for limit in (2048, 8192, 130945, 131072)),
+ ] + [
+     (
+         "quantized_experts",
+@@ -170,7 +171,8 @@ def test_moe_kernel_device_qualification(tmp_path, provider, kind, parameters):
+     meta, _ = read_artifact(artifact)
+     case = validation(kind, parameters, meta["arguments"])
+     if kind == "rope":
+-        case.arguments["positions"][:] = [0, 8191, 65535, 131071]
++        limit = parameters["position_limit"]
++        case.arguments["positions"][:] = [0, min(8191, limit - 1), min(65535, limit - 1), limit - 1]
+         x = case.arguments["x"].reshape(4, 32, 64).astype("float64")
+         angles = case.arguments["positions"][:, None, None] * 10000000.0 ** (
+             -2 * np.arange(32)[None, None, :] / 64
+@@ -532,8 +534,10 @@ def test_floating_attention_split_policy_resizes_producer_and_consumer(provider)
+ 
+ @pytest.mark.parametrize("provider", ["cuda", "webgpu"])
+ @pytest.mark.parametrize("cap,enabled", [(19, True), (257, True), (31, False)])
++@pytest.mark.parametrize("staging", ["full", "half-vector", "blocked2", "blocked4", "blocked8",
++                                     "channel16", "channel32"])
+ def test_grouped_decode_partial_tail_scales_and_inactive(
+-    tmp_path, provider, cap, enabled
++    tmp_path, provider, cap, enabled, staging
+ ):
+     if os.environ.get("AKAS_LFM_MOE_" + provider.upper()) != "1":
+         pytest.skip("opt-in grouped decode qualification")
+@@ -555,6 +559,18 @@ def test_grouped_decode_partial_tail_scales_and_inactive(
+         provider=provider,
+         optimized=True,
+     )
++    preferred = "attention.grouped_decode"
++    if staging != "full":
++        if provider != "webgpu":
++            pytest.skip("WebGPU staging candidate")
++        if staging == "half-vector":
++            p.update(shared_dtype="float16", dot_width=4)
++        elif staging.startswith("channel"):
++            p.update(key_rows=int(staging[len("channel"):]), unit_scales=True)
++            preferred = "attention.webgpu.channel_decode"
++        else:
++            p.update(key_unroll=int(staging[-1]))
++            preferred = "attention.webgpu.blocked_decode"
+     target = "sm_89" if provider == "cuda" else "webgpu-portable-v1"
+     entry, artifact = tmp_path / "kernel.py", tmp_path / "kernel.tbin"
+     entry.write_text(
+@@ -564,7 +580,7 @@ def test_grouped_decode_partial_tail_scales_and_inactive(
+             contract="reference",
+             provider=provider,
+             target=target,
+-            preferred="attention.grouped_decode",
++            preferred=preferred,
+         ).render()
+     )
+     build_artifact(entry, artifact, provider=provider, target=target)
+diff --git a/tests/test_shared_backbone.py b/tests/test_shared_backbone.py
+index 55f008b..06f2f55 100644
+--- a/tests/test_shared_backbone.py
++++ b/tests/test_shared_backbone.py
+@@ -12,6 +12,15 @@ from akas.memory.layouts import allocate_hybrid_states
+ from akas.models.qwen35.weights import Qwen35DenseCheckpoint
+ 
+ 
++def test_source_fingerprints_use_importable_names_on_every_platform():
++    from importlib.util import find_spec
++    from akas.artifacts.fingerprint import _modules
++
++    names = _modules("execution", "ops")
++    assert "akas.execution.executor" in names
++    assert all("\\" not in name and find_spec(name) is not None for name in names)
++
++
+ class Resource:
+     def __init__(self):
+         self.released = False
+diff --git a/tools/campaign_report.py b/tools/campaign_report.py
+index 77864a4..7a33f52 100644
+--- a/tools/campaign_report.py
++++ b/tools/campaign_report.py
+@@ -45,7 +45,7 @@ METRICS = (
+ 
+ 
+ def read(path):
+-    return json.loads(Path(path).read_text())
++    return json.loads(Path(path).read_text(encoding="utf-8"))
+ 
+ 
+ def report_directory(state, history):
+@@ -735,7 +735,8 @@ def text(path, content):
+     path = Path(path)
+     path.parent.mkdir(parents=True, exist_ok=True)
+     temporary = path.with_suffix(path.suffix + ".tmp")
+-    temporary.write_text(content.rstrip() + "\n" if path.suffix == ".md" else content)
++    temporary.write_text(content.rstrip() + "\n" if path.suffix == ".md" else content,
++                         encoding="utf-8", newline="\n")
+     temporary.replace(path)
+ 
+ 
+@@ -750,7 +751,7 @@ def clean(value):
+ def evidence_link(run_id, out, history):
+     if not run_id:
+         return "—"
+-    path = os.path.relpath(Path(history) / "runs" / run_id / "run.json", out)
++    path = Path(os.path.relpath(Path(history) / "runs" / run_id / "run.json", out)).as_posix()
+     return f"[{run_id}]({path})"
+ 
+ 
+@@ -1250,6 +1251,51 @@ def comparisons(data, out, history, notes):
+                             cells.append(cell)
+                         lines.append(f"| {b} | {prefix} | " + " | ".join(cells) + " |")
+                     lines.append("")
++    if data.get("calibration"):
++        pilot = data["calibration"]
++        lines += ["## Native prefill tuning pilots", "",
++                  f"Reference: {evidence_link(pilot['reference_run_id'], out, history)}; "
++                  f"selected pilot: {evidence_link(pilot['selected_run_id'], out, history)}. "
++                  f"Chunks: {pilot['before_chunk']} → {pilot['after_chunk']}. "
++                  f"Each uses {pilot['warmup']} warmup and {pilot['repeats']} retained repetitions. "
++                  "These calibration prefixes use identical weights, inputs, cache precision and native timing protocol. "
++                  "The speedup below compares native prefill within AKAS; it does not compare runtimes.", "",
++                  "| Prefix | Before prefill | After prefill | Prefill speedup | Before decode | After decode | Exact output IDs |",
++                  "| ---: | ---: | ---: | ---: | ---: | ---: | --- |"]
++        for row in pilot["cases"]:
++            lines.append(f"| {row['prefix']} | {fmt(row['before_prefill'])} | {fmt(row['after_prefill'])} | "
++                         f"{row['prefill_speedup']:.3f}x | {fmt(row['before_decode'])} | {fmt(row['after_decode'])} | "
++                         f"{'yes' if row['exact_output'] else 'no'} |")
++        lines.append("")
++    if data.get("tuning_evidence"):
++        tuning = data["tuning_evidence"]
++        lines += ["## Tuning evidence", "",
++                  f"{evidence_link(tuning['run_id'], out, history)}: {clean(tuning['scope'])}", ""]
++    if data.get("retuning"):
++        tuned = data["retuning"]
++        lines += ["## Previous AKAS sweep", "",
++                  f"Previous: {evidence_link(tuned['reference_run_id'], out, history)}; "
++                  f"selected: {evidence_link(tuned['selected_run_id'], out, history)}. "
++                  "Weights, input IDs, cache precision, shape, repetition counts and native timing protocol match. "
++                  "These ratios compare AKAS with its own previous sweep, not with another runtime.", "",
++                  "| Prefix | Before prefill | After prefill | Prefill ratio | Before decode | After decode | Decode ratio | Exact output IDs |",
++                  "| ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |"]
++        for row in tuned["cases"]:
++            lines.append(f"| {row['prefix']} | {fmt(row['before_prefill'])} | {fmt(row['after_prefill'])} | "
++                         f"{row['after_prefill'] / row['before_prefill']:.3f}x | {fmt(row['before_decode'])} | "
++                         f"{fmt(row['after_decode'])} | {row['after_decode'] / row['before_decode']:.3f}x | "
++                         f"{'yes' if row['exact_output'] else 'no'} |")
++        lines.append("")
++    if data.get("output_comparisons"):
++        lines += ["## Greedy output agreement", "",
++                  "The untimed AKAS greedy pass is compared with the first retained llama.cpp response. "
++                  "Both use the same input IDs, checkpoint and cache precision. Different arithmetic can "
++                  "change the trajectory; agreement is not a corpus accuracy score.", "",
++                  "| Prefix | Output tokens | Exact IDs | Common prefix tokens |",
++                  "| ---: | ---: | --- | ---: |"]
++        for row in data["output_comparisons"]:
++            lines.append(f"| {row['prefix']} | {row['output']} | {'yes' if row['exact'] else 'no'} | {row['common_prefix_tokens']} |")
++        lines.append("")
+     text(out / "COMPARISON.md", "\n".join(lines) + "\n")
+ 
+ 

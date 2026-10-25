@@ -1,0 +1,160 @@
+{
+  "schema": "tensor.schedule-profile.v1",
+  "provider": "webgpu",
+  "target": "webgpu-portable-v1",
+  "entries": [
+    {
+      "operation": "linear",
+      "parameters": {
+        "r": 1,
+        "k": 2048,
+        "o": 6144,
+        "optimized": true,
+        "ggml": true,
+        "type": 2
+      },
+      "schedule": {
+        "sg": true,
+        "gemv_threads": 128,
+        "gemv_lanes": 32,
+        "gemv_unroll": 2,
+        "gemv_chains": 1,
+        "implementation": "linear.webgpu.packed:quantized-decode"
+      }
+    },
+    {
+      "operation": "linear_add",
+      "parameters": {
+        "r": 1,
+        "k": 2048,
+        "o": 2048,
+        "optimized": true,
+        "ggml": true,
+        "type": 2
+      },
+      "schedule": {
+        "sg": true,
+        "gemv_threads": 64,
+        "gemv_lanes": 16,
+        "gemv_unroll": 4,
+        "gemv_chains": 1,
+        "implementation": "linear.webgpu.packed:quantized-decode"
+      }
+    },
+    {
+      "operation": "ffn",
+      "parameters": {
+        "r": 1,
+        "k": 2048,
+        "o": 10752,
+        "optimized": true,
+        "ggml": true,
+        "type": 2
+      },
+      "schedule": {
+        "sg": true,
+        "gemv_threads": 128,
+        "gemv_lanes": 16,
+        "gemv_unroll": 8,
+        "gemv_chains": 1,
+        "implementation": "linear.webgpu.packed:quantized-decode"
+      }
+    },
+    {
+      "operation": "linear_add",
+      "parameters": {
+        "r": 1,
+        "k": 10752,
+        "o": 2048,
+        "optimized": true,
+        "ggml": true,
+        "type": 2
+      },
+      "schedule": {
+        "sg": true,
+        "gemv_threads": 128,
+        "gemv_lanes": 32,
+        "gemv_unroll": 2,
+        "gemv_chains": 2,
+        "implementation": "linear.webgpu.packed:quantized-decode"
+      }
+    },
+    {
+      "operation": "linear",
+      "parameters": {
+        "r": 1,
+        "k": 2048,
+        "o": 2048,
+        "optimized": true,
+        "ggml": true,
+        "type": 2
+      },
+      "schedule": {
+        "sg": true,
+        "gemv_threads": 128,
+        "gemv_lanes": 16,
+        "gemv_unroll": 1,
+        "gemv_chains": 1,
+        "implementation": "linear.webgpu.packed:quantized-decode"
+      }
+    },
+    {
+      "operation": "linear",
+      "parameters": {
+        "r": 1,
+        "k": 2048,
+        "o": 512,
+        "optimized": true,
+        "ggml": true,
+        "type": 2
+      },
+      "schedule": {
+        "sg": false,
+        "gemv_threads": 64,
+        "gemv_lanes": 16,
+        "gemv_unroll": 2,
+        "gemv_chains": 1,
+        "implementation": "linear.webgpu.packed:quantized-decode"
+      }
+    },
+    {
+      "operation": "attention_partial",
+      "parameters": {
+        "r": 1,
+        "h": 32,
+        "kh": 8,
+        "d": 64,
+        "capacity": 131072,
+        "kv_dtype": "float16",
+        "unit_scales": true,
+        "provider": "webgpu",
+        "optimized": true,
+        "splits": 16
+      },
+      "schedule": {
+        "shared_dtype": "float16",
+        "dot_width": 4,
+        "implementation": "attention.grouped_decode"
+      }
+    },
+    {
+      "operation": "linear",
+      "parameters": {
+        "r": 1,
+        "k": 2048,
+        "o": 128000,
+        "optimized": true,
+        "ggml": true,
+        "type": 14
+      },
+      "schedule": {
+        "sg": true,
+        "gemv_threads": 128,
+        "gemv_lanes": 32,
+        "gemv_unroll": 2,
+        "gemv_chains": 1,
+        "implementation": "linear.webgpu.packed:quantized-decode"
+      }
+    }
+  ]
+}

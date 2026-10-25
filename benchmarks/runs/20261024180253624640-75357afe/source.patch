@@ -1,0 +1,247 @@
+diff --git a/src/akas/artifacts/fingerprint.py b/src/akas/artifacts/fingerprint.py
+index d3a1627..49fc059 100644
+--- a/src/akas/artifacts/fingerprint.py
++++ b/src/akas/artifacts/fingerprint.py
+@@ -12,7 +12,7 @@ def _modules(*owners):
+         path = root / owner.replace(".", "/")
+         if path.is_dir():
+             names.update(
+-                "akas." + str(p.relative_to(root).with_suffix("")).replace("/", ".")
++                "akas." + p.relative_to(root).with_suffix("").as_posix().replace("/", ".")
+                 for p in path.rglob("*.py")
+                 if p.name != "__init__.py"
+             )
+diff --git a/src/akas/benchmarking/history.py b/src/akas/benchmarking/history.py
+index 8a74882..72c726b 100644
+--- a/src/akas/benchmarking/history.py
++++ b/src/akas/benchmarking/history.py
+@@ -34,7 +34,8 @@ def write(path, value):
+     path = Path(path)
+     path.parent.mkdir(parents=True, exist_ok=True)
+     temporary = path.with_name(path.name + "." + uuid.uuid4().hex + ".tmp")
+-    temporary.write_text(json.dumps(value, indent=2, allow_nan=False) + "\n")
++    temporary.write_text(json.dumps(value, indent=2, allow_nan=False) + "\n",
++                         encoding="utf-8", newline="\n")
+     temporary.replace(path)
+ 
+ 
+@@ -473,7 +474,7 @@ def rebuild_index(root):
+         lines.append(
+             f"| {entry['started_at']} | {clean(entry['hardware'])} | {clean(entry['runtime'])} / {clean(entry['model'])} | {clean(configuration)} | {geometry} | {entry['purpose']} | {entry['status']} | {revision} | [run]({entry['path']}) |"
+         )
+-    (root / "RESULTS.md").write_text("\n".join(lines) + "\n")
++    (root / "RESULTS.md").write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
+ 
+ 
+ def export_profile(root, run_id, *, phase, batch, chunk, provider, target, out):
+diff --git a/src/akas/ops/attention/kernel.py b/src/akas/ops/attention/kernel.py
+index fb7beb1..9d31d60 100644
+--- a/src/akas/ops/attention/kernel.py
++++ b/src/akas/ops/attention/kernel.py
+@@ -753,7 +753,7 @@ def rope(spec: KernelSpec, schedule: Mapping[str, object]):
+     import math
+ 
+     p = {**spec.parameters, **schedule}
+-    if p.get("position_limit", 0) > 8192:
++    if p.get("position_limit", 0) > 8192 or p.get("provider") == "webgpu":
+         return precise_rope(spec, schedule)
+     import tilelang.language as T
+ 
+@@ -796,7 +796,7 @@ def precise_rope(spec: KernelSpec, schedule: Mapping[str, object]):
+     if d != 64:
+         raise ValueError("portable reference attention requires 64-channel heads")
+     h, theta = (p["h"], p["theta"])
+-    precise = p.get("position_limit", 0) > 8192
++    precise = p.get("position_limit", 0) > 8192 or p.get("provider") == "webgpu"
+     fma = "fma" if p.get("provider") == "webgpu" else "fmaf"
+ 
+     def single(value):
+@@ -807,6 +807,11 @@ def precise_rope(spec: KernelSpec, schedule: Mapping[str, object]):
+     low = tuple(single(value - rounded) for value, rounded in zip(frequencies, high))
+     tau_high = single(2 * math.pi)
+     tau_low = single(2 * math.pi - tau_high)
++    digits = max(1, ((max(1, p.get("position_limit", 131072)) - 1).bit_length() + 3) // 4)
++    phases = tuple(
++        single(math.remainder(frequency * (16 ** digit), 2 * math.pi))
++        for digit in range(digits) for frequency in frequencies
++    )
+ 
+     def exact(value):
+         if p.get("provider") == "webgpu":
+@@ -816,10 +821,13 @@ def precise_rope(spec: KernelSpec, schedule: Mapping[str, object]):
+         return T.float32(value)
+ 
+     def constant(index, values):
+-        value = exact(values[-1])
+-        for i in range(len(values) - 2, -1, -1):
+-            value = T.if_then_else(index == i, exact(values[i]), value)
+-        return value
++        def select(begin, end):
++            if end - begin == 1:
++                return exact(values[begin])
++            middle = (begin + end) // 2
++            return T.if_then_else(index < middle, select(begin, middle), select(middle, end))
++
++        return select(0, len(values))
+ 
+     @T.macro
+     def product_error(integer, coefficient, rounded):
+@@ -849,21 +857,19 @@ def precise_rope(spec: KernelSpec, schedule: Mapping[str, object]):
+                 leading = T.alloc_var("float32")
+                 trailing = T.alloc_var("float32")
+                 turns = T.alloc_var("int32")
+-                frequency = constant(half, high)
+-                leading = position * frequency
+                 if p.get("provider") == "webgpu":
+-                    trailing = product_error(
+-                        positions[row], frequency, leading
+-                    ) + position * constant(half, low)
+-                    turns = T.cast(T.floor(leading / (2 * math.pi) + 0.5), "int32")
+-                    removed = T.alloc_var("float32")
+-                    remainder = T.alloc_var("float32")
+-                    removed = T.cast(turns, "float32") * exact(tau_high)
+-                    remainder = product_error(turns, exact(tau_high), removed)
+-                    angle = (leading - removed) + (
+-                        trailing - remainder - T.cast(turns, "float32") * exact(tau_low)
+-                    )
++                    # Form bounded angles from base-16 position digits. Large
++                    # float products lose their low bits, and Vulkan drivers may
++                    # contract the compensated product's cancellation sequence.
++                    angle = 0
++                    for digit in T.unroll(digits):
++                        coefficient = constant(half + digit * (d // 2), phases)
++                        angle = angle + T.cast((positions[row] >> (digit * 4)) & 15,
++                                               "float32") * coefficient
++                        angle = angle - T.floor(angle / (2 * math.pi) + 0.5) * exact(tau_high)
+                 else:
++                    frequency = constant(half, high)
++                    leading = position * frequency
+                     trailing = T.call_extern(
+                         "float32", fma, position, frequency, -leading
+                     ) + position * constant(half, low)
+@@ -881,10 +887,30 @@ def precise_rope(spec: KernelSpec, schedule: Mapping[str, object]):
+                 )
+             left = x[(row * h + head) * d + half]
+             right = x[(row * h + head) * d + half + d // 2]
++            cosine = T.alloc_var("float32")
++            sine = T.alloc_var("float32")
++            if p.get("provider") == "webgpu":
++                # Vulkan sin/cos accuracy varies by driver. After compensated
++                # reduction to [-pi, pi], reflect into [-pi/2, pi/2] and use
++                # bounded polynomials rather than the approximate intrinsics.
++                reduced = T.alloc_var("float32")
++                square = T.alloc_var("float32")
++                reduced = T.min(T.abs(angle), T.float32(math.pi) - T.abs(angle))
++                square = reduced * reduced
++                sine = reduced * (1 + square * (-1 / 6 + square * (1 / 120 + square *
++                       (-1 / 5040 + square * (1 / 362880 - square / 39916800)))))
++                cosine = 1 + square * (-1 / 2 + square * (1 / 24 + square *
++                         (-1 / 720 + square * (1 / 40320 + square *
++                         (-1 / 3628800 + square / 479001600)))))
++                sine = T.if_then_else(angle < 0, -sine, sine)
++                cosine = T.if_then_else(T.abs(angle) > math.pi / 2, -cosine, cosine)
++            else:
++                cosine = T.cos(angle)
++                sine = T.sin(angle)
+             out[row, head * d + tx] = T.if_then_else(
+                 tx < d // 2,
+-                left * T.cos(angle) - right * T.sin(angle),
+-                left * T.sin(angle) + right * T.cos(angle),
++                left * cosine - right * sine,
++                left * sine + right * cosine,
+             )
+         return out
+ 
+diff --git a/tests/test_lfm_moe.py b/tests/test_lfm_moe.py
+index 776e1d1..e75be11 100644
+--- a/tests/test_lfm_moe.py
++++ b/tests/test_lfm_moe.py
+@@ -121,7 +121,8 @@ CASES = [
+             r=8, h=4, kh=1, d=64, capacity=64, chunk=4, kv_dtype="fp8", optimized=True
+         ),
+     ),
+-    ("rope", dict(r=4, h=32, d=64, theta=10000000.0, position_limit=131072)),
++    *(("rope", dict(r=4, h=32, d=64, theta=10000000.0, position_limit=limit))
++      for limit in (2048, 8192, 130945, 131072)),
+ ] + [
+     (
+         "quantized_experts",
+@@ -170,7 +171,8 @@ def test_moe_kernel_device_qualification(tmp_path, provider, kind, parameters):
+     meta, _ = read_artifact(artifact)
+     case = validation(kind, parameters, meta["arguments"])
+     if kind == "rope":
+-        case.arguments["positions"][:] = [0, 8191, 65535, 131071]
++        limit = parameters["position_limit"]
++        case.arguments["positions"][:] = [0, min(8191, limit - 1), min(65535, limit - 1), limit - 1]
+         x = case.arguments["x"].reshape(4, 32, 64).astype("float64")
+         angles = case.arguments["positions"][:, None, None] * 10000000.0 ** (
+             -2 * np.arange(32)[None, None, :] / 64
+diff --git a/tests/test_shared_backbone.py b/tests/test_shared_backbone.py
+index 55f008b..06f2f55 100644
+--- a/tests/test_shared_backbone.py
++++ b/tests/test_shared_backbone.py
+@@ -12,6 +12,15 @@ from akas.memory.layouts import allocate_hybrid_states
+ from akas.models.qwen35.weights import Qwen35DenseCheckpoint
+ 
+ 
++def test_source_fingerprints_use_importable_names_on_every_platform():
++    from importlib.util import find_spec
++    from akas.artifacts.fingerprint import _modules
++
++    names = _modules("execution", "ops")
++    assert "akas.execution.executor" in names
++    assert all("\\" not in name and find_spec(name) is not None for name in names)
++
++
+ class Resource:
+     def __init__(self):
+         self.released = False
+diff --git a/tools/campaign_report.py b/tools/campaign_report.py
+index 77864a4..4a77f01 100644
+--- a/tools/campaign_report.py
++++ b/tools/campaign_report.py
+@@ -45,7 +45,7 @@ METRICS = (
+ 
+ 
+ def read(path):
+-    return json.loads(Path(path).read_text())
++    return json.loads(Path(path).read_text(encoding="utf-8"))
+ 
+ 
+ def report_directory(state, history):
+@@ -735,7 +735,8 @@ def text(path, content):
+     path = Path(path)
+     path.parent.mkdir(parents=True, exist_ok=True)
+     temporary = path.with_suffix(path.suffix + ".tmp")
+-    temporary.write_text(content.rstrip() + "\n" if path.suffix == ".md" else content)
++    temporary.write_text(content.rstrip() + "\n" if path.suffix == ".md" else content,
++                         encoding="utf-8", newline="\n")
+     temporary.replace(path)
+ 
+ 
+@@ -750,7 +751,7 @@ def clean(value):
+ def evidence_link(run_id, out, history):
+     if not run_id:
+         return "—"
+-    path = os.path.relpath(Path(history) / "runs" / run_id / "run.json", out)
++    path = Path(os.path.relpath(Path(history) / "runs" / run_id / "run.json", out)).as_posix()
+     return f"[{run_id}]({path})"
+ 
+ 
+@@ -1250,6 +1251,16 @@ def comparisons(data, out, history, notes):
+                             cells.append(cell)
+                         lines.append(f"| {b} | {prefix} | " + " | ".join(cells) + " |")
+                     lines.append("")
++    if data.get("output_comparisons"):
++        lines += ["## Greedy output agreement", "",
++                  "The untimed AKAS greedy pass is compared with the first retained llama.cpp response. "
++                  "Both use the same input IDs, checkpoint and cache precision. Different arithmetic can "
++                  "change the trajectory; agreement is not a corpus accuracy score.", "",
++                  "| Prefix | Output tokens | Exact IDs | Common prefix tokens |",
++                  "| ---: | ---: | --- | ---: |"]
++        for row in data["output_comparisons"]:
++            lines.append(f"| {row['prefix']} | {row['output']} | {'yes' if row['exact'] else 'no'} | {row['common_prefix_tokens']} |")
++        lines.append("")
+     text(out / "COMPARISON.md", "\n".join(lines) + "\n")
+ 
+ 
