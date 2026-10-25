@@ -1,8 +1,8 @@
 {
   "schema": "akas.benchmark-run.v1",
-  "id": "20261016033501324505-6bbea884",
-  "started_at": "2026-10-16T03:35:01.324505Z",
-  "completed_at": "2026-10-16T03:42:41.681225Z",
+  "id": "20261016041229277323-21f0fffb",
+  "started_at": "2026-10-16T04:12:29.277323Z",
+  "completed_at": "2026-10-16T04:12:44.207738Z",
   "status": "budget_exhausted",
   "source": {
     "revision": "3e90ad81dc812a17acc17e0acda34ca3b69ee3b8",
@@ -415,7 +415,7 @@
       "tools/campaign.py": "760c3fcd42b6c6ab354e42a226e600950aef8506c9a77c285ce436bee425de86",
       "uv.lock": "2742182ac6828b8e5e64f37c60d187ac7ce6ec0cf7c090abf84ddd9832726cdf"
     },
-    "captured_at": "2026-10-16T03:35:01.324505Z"
+    "captured_at": "2026-10-16T04:12:29.277323Z"
   },
   "metadata": {
     "runtime": "akas",
@@ -426,27 +426,27 @@
     "provider": "cuda",
     "target": "sm_89",
     "mode": "ar",
-    "kv_dtype": "float16",
+    "kv_dtype": "fp8",
     "graphs": true,
     "checkpoint": "/home/sagemaker-user/akas/build/model-smoke/checkpoints/lfm-gguf/LFM2.5-230M-Q4_K_M.gguf",
     "checkpoint_sha256": "7bbd90384d3deffe4c646ec9643b212802d32d4ce417c90a1ec9282100650062",
-    "campaign_identity": "a3407ffa03cd3240d7697d0f11e47488e9e8ec2c4e505dd870f5407725f66975",
+    "campaign_identity": "092434f43bd21a433f004e494bc5e1a16c0bcc35de5a32dccc747c8011492106",
     "recipe": {
       "provider": "cuda",
       "target": "sm_89",
-      "chunk": 32,
+      "chunk": 128,
       "prefill_requests": 32,
       "graphs": true,
       "trials": 1,
       "policy": {},
       "model_options": {
-        "kv_dtype": "float16",
+        "kv_dtype": "fp8",
         "optimized": true
       },
       "window": null,
       "deferred": false,
       "head": null,
-      "id": "9f34d665a4a48c1b"
+      "id": "bba667189f4eceac"
     },
     "device": {
       "ordinal": 0,
@@ -462,13 +462,13 @@
     "warmup": 1,
     "repeats": 3,
     "seed": 17,
-    "run_id": "20261016033501324505-6bbea884",
+    "run_id": "20261016041229277323-21f0fffb",
     "error": "worker wall-clock deadline exceeded"
   },
   "change": {
     "kind": "configuration",
     "description": "Automatic compilation and serving optimization",
-    "parent_run": "20261016032615871098-620bd5b1"
+    "parent_run": "20261016035618049129-2c352905"
   },
   "dependencies": {
     "fsspec": "2026.9.0",
@@ -812,13 +812,13 @@
   "artifacts": [
     {
       "path": "source.tar.gz",
-      "sha256": "ccc98beb43e07f50a4675c1963040dea160600adb960662cd44692ba6846a8e3",
+      "sha256": "540ad8de55da78afd80dc4e6c80c1fc3f95d7e36d262006f102a8da1143910bb",
       "bytes": 605743
     },
     {
       "path": "report.json",
-      "sha256": "8b41172adbaaf2fd50b3cebb6d6c666ab803926beb2a9e98b7784bff62a0e95c",
-      "bytes": 3861
+      "sha256": "c61ddcd46dc83f01f2a89364aad235ee9c29f981e5fef308274dac106c2c532a",
+      "bytes": 3854
     },
     {
       "path": "worker.log",
@@ -827,8 +827,8 @@
     },
     {
       "path": "result.json",
-      "sha256": "139bab3a84f35a5ce81889f2fe27f865983d946b6b894c3885676f4d5eccf3d7",
-      "bytes": 38614
+      "sha256": "3f35b46e11783157b655e1be74283a9e68e3f0e588c0e9fee600750be94b1cd5",
+      "bytes": 1505
     }
   ]
 }

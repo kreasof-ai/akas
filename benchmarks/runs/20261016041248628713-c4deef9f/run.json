@@ -1,9 +1,9 @@
 {
   "schema": "akas.benchmark-run.v1",
-  "id": "20261016034245537560-6a8850ba",
-  "started_at": "2026-10-16T03:42:45.537560Z",
-  "completed_at": "2026-10-16T03:56:15.627517Z",
-  "status": "budget_exhausted",
+  "id": "20261016041248628713-c4deef9f",
+  "started_at": "2026-10-16T04:12:48.628713Z",
+  "completed_at": "2026-10-16T04:13:18.732626Z",
+  "status": "failed",
   "source": {
     "revision": "3e90ad81dc812a17acc17e0acda34ca3b69ee3b8",
     "dirty": true,
@@ -415,7 +415,7 @@
       "tools/campaign.py": "760c3fcd42b6c6ab354e42a226e600950aef8506c9a77c285ce436bee425de86",
       "uv.lock": "2742182ac6828b8e5e64f37c60d187ac7ce6ec0cf7c090abf84ddd9832726cdf"
     },
-    "captured_at": "2026-10-16T03:42:45.537560Z"
+    "captured_at": "2026-10-16T04:12:48.628713Z"
   },
   "metadata": {
     "runtime": "akas",
@@ -423,38 +423,89 @@
     "protocol": "native-token-step-v2",
     "model": "akas.models.lfm2.model:LFM2",
     "definition": "akas.models.lfm2.model:LFM2",
-    "provider": "cuda",
-    "target": "sm_89",
+    "provider": "webgpu",
+    "target": "webgpu-portable-v1",
     "mode": "ar",
-    "kv_dtype": "fp8",
+    "kv_dtype": "float16",
     "graphs": false,
     "checkpoint": "/home/sagemaker-user/akas/build/model-smoke/checkpoints/lfm-gguf/LFM2.5-230M-Q4_K_M.gguf",
     "checkpoint_sha256": "7bbd90384d3deffe4c646ec9643b212802d32d4ce417c90a1ec9282100650062",
-    "campaign_identity": "092434f43bd21a433f004e494bc5e1a16c0bcc35de5a32dccc747c8011492106",
+    "campaign_identity": "2fb7a18af40f348348c52f66690f505eb22af0d1f00207dfcf3a546f92d0d496",
     "recipe": {
-      "provider": "cuda",
-      "target": "sm_89",
+      "provider": "webgpu",
+      "target": "webgpu-portable-v1",
       "chunk": 32,
       "prefill_requests": 32,
       "graphs": false,
       "trials": 1,
       "policy": {},
       "model_options": {
-        "kv_dtype": "fp8",
+        "kv_dtype": "float16",
         "optimized": true
       },
       "window": null,
       "deferred": false,
       "head": null,
-      "id": "08e1faea05e439f7"
+      "id": "ca2c221f7c944c5f"
     },
     "device": {
       "ordinal": 0,
+      "provider": "webgpu",
+      "arch": "webgpu-portable-v1",
       "name": "NVIDIA L4",
-      "arch": "sm_89",
-      "provider": "cuda",
+      "adapter": {
+        "vendor": "NVIDIA",
+        "architecture": "",
+        "device": "NVIDIA L4",
+        "description": "595.91.07",
+        "stackgroup_min_size": 4,
+        "stackgroup_max_size": 128,
+        "vendor_id": 4318,
+        "device_id": 10168,
+        "adapter_type": "DiscreteGPU",
+        "backend_type": "Vulkan"
+      },
+      "features": [
+        "shader-f16",
+        "subgroup"
+      ],
+      "limits": {
+        "max-bind-groups": 8,
+        "max-bind-groups-plus-vertex-buffers": 0,
+        "max-bindings-per-bind-group": 1000,
+        "max-buffer-size": 134217728,
+        "max-color-attachment-bytes-per-sample": 0,
+        "max-color-attachments": 0,
+        "max-compute-invocations-per-workgroup": 1024,
+        "max-compute-workgroup-size-x": 1024,
+        "max-compute-workgroup-size-y": 1024,
+        "max-compute-workgroup-size-z": 64,
+        "max-compute-workgroup-storage-size": 32768,
+        "max-compute-workgroups-per-dimension": 65535,
+        "max-dynamic-storage-buffers-per-pipeline-layout": 16,
+        "max-dynamic-uniform-buffers-per-pipeline-layout": 15,
+        "max-inter-stage-shader-variables": 0,
+        "max-non-sampler-bindings": 1000000,
+        "max-push-constant-size": 256,
+        "max-sampled-textures-per-shader-stage": 1048576,
+        "max-samplers-per-shader-stage": 1048576,
+        "max-storage-buffer-binding-size": 134217728,
+        "max-storage-buffers-per-shader-stage": 1048576,
+        "max-storage-textures-per-shader-stage": 1048576,
+        "max-texture-array-layers": 2048,
+        "max-texture-dimension-1d": 32768,
+        "max-texture-dimension-2d": 32768,
+        "max-texture-dimension-3d": 16384,
+        "max-uniform-buffer-binding-size": 65536,
+        "max-uniform-buffers-per-shader-stage": 1048576,
+        "max-vertex-attributes": 32,
+        "max-vertex-buffer-array-stride": 2048,
+        "max-vertex-buffers": 16,
+        "min-storage-buffer-offset-alignment": 32,
+        "min-uniform-buffer-offset-alignment": 64
+      },
       "uuid": "GPU-d777b838-7002-124f-aa67-71409daa8935",
-      "free_bytes": 23659020288,
+      "free_bytes": 23613931520,
       "total_bytes": 24152899584,
       "driver": "595.91.07"
     },
@@ -462,8 +513,8 @@
     "warmup": 1,
     "repeats": 3,
     "seed": 17,
-    "run_id": "20261016034245537560-6a8850ba",
-    "error": "worker wall-clock deadline exceeded"
+    "run_id": "20261016041248628713-c4deef9f",
+    "error": "worker exited with code -9"
   },
   "change": {
     "kind": "configuration",
@@ -706,7 +757,7 @@
         "mixed": false
       },
       "status": "error",
-      "error": "worker wall-clock deadline exceeded"
+      "error": "worker exited with code -9"
     },
     {
       "case": {
@@ -717,7 +768,7 @@
         "mixed": false
       },
       "status": "error",
-      "error": "worker wall-clock deadline exceeded"
+      "error": "worker exited with code -9"
     },
     {
       "case": {
@@ -728,7 +779,7 @@
         "mixed": false
       },
       "status": "error",
-      "error": "worker wall-clock deadline exceeded"
+      "error": "worker exited with code -9"
     },
     {
       "case": {
@@ -739,7 +790,7 @@
         "mixed": false
       },
       "status": "error",
-      "error": "worker wall-clock deadline exceeded"
+      "error": "worker exited with code -9"
     },
     {
       "case": {
@@ -750,7 +801,7 @@
         "mixed": false
       },
       "status": "error",
-      "error": "worker wall-clock deadline exceeded"
+      "error": "worker exited with code -9"
     },
     {
       "case": {
@@ -761,7 +812,7 @@
         "mixed": false
       },
       "status": "error",
-      "error": "worker wall-clock deadline exceeded"
+      "error": "worker exited with code -9"
     },
     {
       "case": {
@@ -772,7 +823,7 @@
         "mixed": false
       },
       "status": "error",
-      "error": "worker wall-clock deadline exceeded"
+      "error": "worker exited with code -9"
     },
     {
       "case": {
@@ -783,7 +834,7 @@
         "mixed": false
       },
       "status": "error",
-      "error": "worker wall-clock deadline exceeded"
+      "error": "worker exited with code -9"
     },
     {
       "case": {
@@ -794,7 +845,7 @@
         "mixed": false
       },
       "status": "error",
-      "error": "worker wall-clock deadline exceeded"
+      "error": "worker exited with code -9"
     },
     {
       "case": {
@@ -805,30 +856,30 @@
         "mixed": false
       },
       "status": "error",
-      "error": "worker wall-clock deadline exceeded"
+      "error": "worker exited with code -9"
     }
   ],
   "search": [],
   "artifacts": [
     {
       "path": "source.tar.gz",
-      "sha256": "2afdbc1fc5f7c06618748e39c4e2b6b837aa563d13daea77a74ea0125af4c84c",
+      "sha256": "ad62c58b963ca4dfd0fed8b2d352d2cea4100fe387200ec1654c71615852903f",
       "bytes": 605743
     },
     {
       "path": "report.json",
-      "sha256": "339bed78c12f6bd223b6e19915621e8bca7bbd1737587ec8df74b1bea7625e17",
-      "bytes": 3855
+      "sha256": "79028431e4daa8a6ecf1c82ec91dafd97ee2f4afa7e377155ed1a037b7aead50",
+      "bytes": 5836
     },
     {
       "path": "worker.log",
-      "sha256": "f496ad5339119938d47296952c0680ffe55792533a353ce1fad55be22ede5207",
-      "bytes": 30747
+      "sha256": "41637352e2c5bc12eca323ee75b224c35078b16fcb50eb813de68085ea4332e2",
+      "bytes": 143
     },
     {
       "path": "result.json",
-      "sha256": "690d2e402f865694f185709ec120bde038af95d03d4653774d37f048750a6907",
-      "bytes": 67129
+      "sha256": "4f76668adca458387c2f8eb115def23bb98d2bf6b2c232aed88ac8e72464db68",
+      "bytes": 2521
     }
   ]
 }

@@ -9,27 +9,27 @@
     "provider": "cuda",
     "target": "sm_89",
     "mode": "ar",
-    "kv_dtype": "float16",
+    "kv_dtype": "fp8",
     "graphs": true,
     "checkpoint": "/home/sagemaker-user/akas/build/model-smoke/checkpoints/lfm-gguf/LFM2.5-230M-Q4_K_M.gguf",
     "checkpoint_sha256": "7bbd90384d3deffe4c646ec9643b212802d32d4ce417c90a1ec9282100650062",
-    "campaign_identity": "a3407ffa03cd3240d7697d0f11e47488e9e8ec2c4e505dd870f5407725f66975",
+    "campaign_identity": "092434f43bd21a433f004e494bc5e1a16c0bcc35de5a32dccc747c8011492106",
     "recipe": {
       "provider": "cuda",
       "target": "sm_89",
-      "chunk": 32,
+      "chunk": 128,
       "prefill_requests": 32,
       "graphs": true,
       "trials": 1,
       "policy": {},
       "model_options": {
-        "kv_dtype": "float16",
+        "kv_dtype": "fp8",
         "optimized": true
       },
       "window": null,
       "deferred": false,
       "head": null,
-      "id": "9f34d665a4a48c1b"
+      "id": "bba667189f4eceac"
     },
     "device": {
       "ordinal": 0,
@@ -45,7 +45,7 @@
     "warmup": 1,
     "repeats": 3,
     "seed": 17,
-    "run_id": "20261016033501324505-6bbea884",
+    "run_id": "20261016041229277323-21f0fffb",
     "error": "worker wall-clock deadline exceeded"
   },
   "results": [
