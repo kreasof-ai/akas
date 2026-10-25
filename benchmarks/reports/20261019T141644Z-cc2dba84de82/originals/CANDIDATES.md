@@ -1,0 +1,18 @@
+# Candidate attempts
+
+[Campaign overview](README.md) · [All measured candidate shapes](candidate-measurements.csv) · [CSV](candidates.csv)
+
+| Configuration | Recipe | Trials allowance | Outcome | Last phase | Seconds | Peak device GiB | Selected | Evidence | Reason |
+| --- | --- | ---: | --- | --- | ---: | ---: | --- | --- | --- |
+| lfm2.5-24b-a2b-q4_0-cuda-default-ar | `eec85b9542449ad4` | 1 | passed | http-validation | 3,918.1 | 15.7 |  | [20261019141813878138-8c4f153b](../../runs/20261019141813878138-8c4f153b/run.json) |  |
+| lfm2.5-24b-a2b-q4_0-cuda-default-ar | `c72da9852b805149` | 1 | passed | http-validation | 3,653.7 | 15.7 |  | [20261019152453876435-44cee15f](../../runs/20261019152453876435-44cee15f/run.json) |  |
+| lfm2.5-24b-a2b-q4_0-cuda-default-ar | `ee9b3acb399892d0` | 1 | passed | http-validation | 2,888.5 | 15.8 | yes | [20261019162711688563-1782af6e](../../runs/20261019162711688563-1782af6e/run.json) |  |
+| lfm2.5-24b-a2b-q4_0-cuda-default-ar | `c3ae021132df74fb` | 1 | passed | http-validation | 3,151.2 | 16.0 |  | [20261019171632807946-ef207f22](../../runs/20261019171632807946-ef207f22/run.json) |  |
+| lfm2.5-24b-a2b-q4_0-cuda-default-ar | `1e5adbc7dc7026bf` | 8 | failed | validating-and-measuring | 810.9 | 15.7 |  | [20261019180905615447-f93c954b](../../runs/20261019180905615447-f93c954b/run.json) | ValueError: model logits differ from qualified baseline: b1-p512 |
+| lfm2.5-24b-a2b-q4_0-cuda-default-ar | `2923b74f6f2504c2` | 32 | failed | validating-and-measuring | 2,656.9 | 15.8 |  | [20261019182238163701-ba148017](../../runs/20261019182238163701-ba148017/run.json) | ValueError: greedy output differs from baseline for B1/P32768 |
+| lfm2.5-24b-a2b-q4_0-cuda-default-ar | `368ce50de5431e99` | 128 | failed | validating-and-measuring | 2,913.8 | 15.7 |  | [20261019190657255801-287815ba](../../runs/20261019190657255801-287815ba/run.json) | ValueError: model logits differ from qualified baseline: b1-p512 |
+| lfm2.5-24b-a2b-q4_0-cuda-default-ar | `3fa839e9585d89c7` | 1 | passed | http-validation | 4,773.4 | 15.7 |  | [20261019195533088959-8edd63ea](../../runs/20261019195533088959-8edd63ea/run.json) |  |
+| lfm2.5-24b-a2b-q4_0-cuda-default-ar | `9710e44aacd7a66b` | 1 | passed | http-validation | 9,446.2 | 15.6 |  | [20261019211509659938-8c886190](../../runs/20261019211509659938-8c886190/run.json) |  |
+| lfm2.5-24b-a2b-q4_0-cuda-default-ar | `847e24ae89ca70a7` | 1 | failed | validating-and-measuring | 137.7 | 15.6 |  | [20261019235238660430-0eb8e3d6](../../runs/20261019235238660430-0eb8e3d6/run.json) | ValueError: model logits differ from qualified baseline: b1-p512 |
+| lfm2.5-24b-a2b-q4_0-webgpu-default-ar | `8a20ca0caa43dbcf` | 1 | failed | http-validation | 20,430.0 | 15.6 |  | [20261019235748301427-fdb5ef2b](../../runs/20261019235748301427-fdb5ef2b/run.json) | TimeoutError: |
+| lfm2.5-24b-a2b-q4_0-webgpu-default-ar | `c739003c9ffeec3c` | 1 | running | validating-and-measuring | — | — |  | [20261020053820844217-3b0765e7](../../runs/20261020053820844217-3b0765e7/run.json) |  |
