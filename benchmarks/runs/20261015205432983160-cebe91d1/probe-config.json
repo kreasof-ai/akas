@@ -1,8 +1,8 @@
 {
   "device_name": "NVIDIA L4",
-  "checkpoint": "/home/sagemaker-user/akas/build/baselines/checkpoints/lfm-q4_0.gguf",
-  "mode": "ar",
-  "provider": "vulkan",
+  "checkpoint": "/home/sagemaker-user/akas/build/model-smoke/checkpoints/qwen-hf",
+  "mode": "mtp",
+  "provider": "cuda",
   "output_tokens": 128,
   "shapes": [
     [
@@ -46,11 +46,11 @@
       2048
     ]
   ],
-  "runtime_options": {},
+  "runtime_options": {
+    "language_model_only": true
+  },
   "optimized": true,
   "warmup": 1,
   "repeats": 3,
-  "vocab": 65536,
-  "binary": "/home/sagemaker-user/akas/build/baselines/llama.cpp/build-vulkan/bin/llama-server",
-  "runtime_revision": "620d2225cc436ab0b001e3200e590e3b286ef9ab"
+  "vocab": 248320
 }
