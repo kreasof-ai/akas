@@ -1,0 +1,231 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "kernel",
+    "protocol": "kernel-latency-v1",
+    "provider": "cuda",
+    "target": "sm_89",
+    "checks": [
+      {
+        "matrix": "markov",
+        "parameters": {
+          "r": 1,
+          "k": 256,
+          "o": 128000,
+          "optimized": true,
+          "ggml": true,
+          "type": 1
+        },
+        "weight_name": "markov_w2.weight",
+        "geometry": null,
+        "correct": true,
+        "bitwise": true,
+        "max_abs_error": 0.0,
+        "independent_columns": 39,
+        "timing": {
+          "gpu_seconds": [
+            0.0002525183916091919,
+            0.0002527231931686401,
+            0.0002531327962875366,
+            0.00025210878849029543,
+            0.0002520639896392822
+          ],
+          "completed_seconds": [
+            0.0002556501996878069,
+            0.0002549180004280061,
+            0.0002547039999626577,
+            0.00025377420024597086,
+            0.00025373600001330485
+          ],
+          "median_gpu_seconds": 0.0002525183916091919,
+          "median_completed_seconds": 0.0002547039999626577,
+          "warmup": 3,
+          "samples": 5,
+          "repeats": 5,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.0002525183916091919
+        }
+      },
+      {
+        "matrix": "markov",
+        "parameters": {
+          "r": 1,
+          "k": 256,
+          "o": 128000,
+          "optimized": true,
+          "ggml": true,
+          "type": 1
+        },
+        "weight_name": "markov_w2.weight",
+        "geometry": [
+          128,
+          1,
+          4
+        ],
+        "correct": true,
+        "bitwise": true,
+        "max_abs_error": 0.0,
+        "independent_columns": 39,
+        "timing": {
+          "gpu_seconds": [
+            0.0002525183916091919,
+            0.00025231359004974365,
+            0.0002515136003494263,
+            0.0002512896060943604,
+            0.0002510848045349121
+          ],
+          "completed_seconds": [
+            0.0002554222002800088,
+            0.0002545019997342024,
+            0.0002531542006181553,
+            0.0002526780001062434,
+            0.0002526860000216402
+          ],
+          "median_gpu_seconds": 0.0002515136003494263,
+          "median_completed_seconds": 0.0002531542006181553,
+          "warmup": 3,
+          "samples": 5,
+          "repeats": 5,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.0002515136003494263
+        }
+      },
+      {
+        "matrix": "markov",
+        "parameters": {
+          "r": 1,
+          "k": 256,
+          "o": 128000,
+          "optimized": true,
+          "ggml": true,
+          "type": 1
+        },
+        "weight_name": "markov_w2.weight",
+        "geometry": [
+          256,
+          1,
+          4
+        ],
+        "correct": true,
+        "bitwise": true,
+        "max_abs_error": 0.0,
+        "independent_columns": 39,
+        "timing": {
+          "gpu_seconds": [
+            0.0002519040107727051,
+            0.0002512576103210449,
+            0.0002512896060943604,
+            0.0002529279947280884,
+            0.0002514944076538086
+          ],
+          "completed_seconds": [
+            0.00025405019987374545,
+            0.0002529220000724308,
+            0.0002531959995394573,
+            0.00025511420026305134,
+            0.00025367800044477916
+          ],
+          "median_gpu_seconds": 0.0002514944076538086,
+          "median_completed_seconds": 0.00025367800044477916,
+          "warmup": 3,
+          "samples": 5,
+          "repeats": 5,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.0002514944076538086
+        }
+      },
+      {
+        "matrix": "markov",
+        "parameters": {
+          "r": 1,
+          "k": 256,
+          "o": 128000,
+          "optimized": true,
+          "ggml": true,
+          "type": 1
+        },
+        "weight_name": "markov_w2.weight",
+        "geometry": [
+          128,
+          1,
+          8
+        ],
+        "correct": true,
+        "bitwise": false,
+        "max_abs_error": 1.1920928955078125e-06,
+        "independent_columns": 39,
+        "timing": {
+          "gpu_seconds": [
+            0.0002527231931686401,
+            0.0002524735927581787,
+            0.00025130879878997806,
+            0.0002514688014984131,
+            0.0002510848045349121
+          ],
+          "completed_seconds": [
+            0.00025514000008115546,
+            0.0002538720000302419,
+            0.0002528762001020368,
+            0.0002531099999032449,
+            0.00025285399970016443
+          ],
+          "median_gpu_seconds": 0.0002514688014984131,
+          "median_completed_seconds": 0.0002531099999032449,
+          "warmup": 3,
+          "samples": 5,
+          "repeats": 5,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.0002514688014984131
+        }
+      },
+      {
+        "matrix": "markov",
+        "parameters": {
+          "r": 1,
+          "k": 256,
+          "o": 128000,
+          "optimized": true,
+          "ggml": true,
+          "type": 1
+        },
+        "weight_name": "markov_w2.weight",
+        "geometry": [
+          256,
+          1,
+          8
+        ],
+        "correct": true,
+        "bitwise": false,
+        "max_abs_error": 1.1920928955078125e-06,
+        "independent_columns": 39,
+        "timing": {
+          "gpu_seconds": [
+            0.0002508800029754639,
+            0.00025165441036224367,
+            0.0002504512071609497,
+            0.0002512896060943604,
+            0.0002508800029754639
+          ],
+          "completed_seconds": [
+            0.00025261219998355954,
+            0.0002529439996578731,
+            0.00025213000044459476,
+            0.0002533279999624938,
+            0.00025262420022045264
+          ],
+          "median_gpu_seconds": 0.0002508800029754639,
+          "median_completed_seconds": 0.00025262420022045264,
+          "warmup": 3,
+          "samples": 5,
+          "repeats": 5,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.0002508800029754639
+        }
+      }
+    ],
+    "qualification": "Actual Q4_0, Q6_K and F16 checkpoint matrices; bounded sampled F64 products with established F16 operand rounding, whole-output bitwise comparison against the retained model kernel. CUDA event timing of each complete projection. No model speedup is inferred from kernel timing alone.",
+    "cpu_peak_rss_bytes": 350638080
+  },
+  "results": []
+}

@@ -1,0 +1,197 @@
+{
+  "schema": "akas.program.v1",
+  "provider": "cuda",
+  "target": "sm_89",
+  "config": {
+    "width": 2048,
+    "ff": 6144,
+    "heads": 32,
+    "kv_heads": 8,
+    "depth": 5,
+    "vocab": 128000,
+    "epsilon": 9.999999747378752e-06,
+    "theta": 10000000.0,
+    "max_context": 131072,
+    "block_size": 9,
+    "markov_rank": 256,
+    "mask_token": 125017,
+    "target_layers": [
+      2,
+      10,
+      18,
+      26,
+      34
+    ]
+  },
+  "max_requests": 1,
+  "max_context": 131072,
+  "phases": [
+    {
+      "phase": "context",
+      "rows": 1,
+      "chunk": 1,
+      "path": "programs/b14ecc3eaa884fb0a51cb47e4065953f/phases/context-b1-t1.json",
+      "sha256": "e9343423f61e95cc9591171b9b194a688a2918bf02ef9ca24c9ed56d519d1527",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "tokens",
+      "feedback": false,
+      "features": {
+        "hidden_input": "target_hidden"
+      }
+    },
+    {
+      "phase": "context",
+      "rows": 1,
+      "chunk": 2,
+      "path": "programs/b14ecc3eaa884fb0a51cb47e4065953f/phases/context-b1-t2.json",
+      "sha256": "dd97220d0130e15160ebf8b7feda4bdbd86359ec9e89c116ee21e47f822cd84f",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "tokens",
+      "feedback": false,
+      "features": {
+        "hidden_input": "target_hidden"
+      }
+    },
+    {
+      "phase": "context",
+      "rows": 1,
+      "chunk": 4,
+      "path": "programs/b14ecc3eaa884fb0a51cb47e4065953f/phases/context-b1-t4.json",
+      "sha256": "31ddf9d77fc45379cd4a1de09aa6025dfd2966c6bbcde52e70ae872def6b9ddb",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "tokens",
+      "feedback": false,
+      "features": {
+        "hidden_input": "target_hidden"
+      }
+    },
+    {
+      "phase": "context",
+      "rows": 1,
+      "chunk": 10,
+      "path": "programs/b14ecc3eaa884fb0a51cb47e4065953f/phases/context-b1-t10.json",
+      "sha256": "37e5f915c4e58ce5f0eb36114dde5b1152afb0e23b132dfdf725c4a688435f1e",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "tokens",
+      "feedback": false,
+      "features": {
+        "hidden_input": "target_hidden"
+      }
+    },
+    {
+      "phase": "context",
+      "rows": 1,
+      "chunk": 32,
+      "path": "programs/b14ecc3eaa884fb0a51cb47e4065953f/phases/context-b1-t32.json",
+      "sha256": "2b8db389fabcc041b40ba6b697a1ba16e48dfd9bf2b727e5510bfdd53b7af5ac",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "tokens",
+      "feedback": false,
+      "features": {
+        "hidden_input": "target_hidden"
+      }
+    },
+    {
+      "phase": "context",
+      "rows": 1,
+      "chunk": 512,
+      "path": "programs/b14ecc3eaa884fb0a51cb47e4065953f/phases/context-b1-t512.json",
+      "sha256": "a70205b4b837ddde26a20eda9dec2f20efbbc33bb0f2e09e84bde0cff83f4fdd",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "tokens",
+      "feedback": false,
+      "features": {
+        "hidden_input": "target_hidden"
+      }
+    },
+    {
+      "phase": "context",
+      "rows": 1,
+      "chunk": 2048,
+      "path": "programs/b14ecc3eaa884fb0a51cb47e4065953f/phases/context-b1-t2048.json",
+      "sha256": "d74eb42b8c6c699d92125079ea390edff5f3d3b43d4fe4ed3e98b27758c30b9a",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "tokens",
+      "feedback": false,
+      "features": {
+        "hidden_input": "target_hidden"
+      }
+    },
+    {
+      "phase": "context",
+      "rows": 1,
+      "chunk": 4096,
+      "path": "programs/b14ecc3eaa884fb0a51cb47e4065953f/phases/context-b1-t4096.json",
+      "sha256": "5cae86e1e2eac968a861a6b457e96e79d5c7518b42fb756b6d10e3283a95b3ad",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "tokens",
+      "feedback": false,
+      "features": {
+        "hidden_input": "target_hidden"
+      }
+    },
+    {
+      "phase": "proposal",
+      "rows": 1,
+      "chunk": 9,
+      "path": "programs/b14ecc3eaa884fb0a51cb47e4065953f/phases/proposal-b1-t9.json",
+      "sha256": "13020d28a97f5a361369d084a6d4e7a7f3e6e93b73a042322ab8e5a94363fc26",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sample.8.predictions",
+      "feedback": false,
+      "features": {
+        "anchor_input": "anchor",
+        "tokens": "sample.8.predictions",
+        "confidence": "sample.8.confidences",
+        "logits": "base_logits"
+      }
+    }
+  ],
+  "reset": {
+    "path": "programs/b14ecc3eaa884fb0a51cb47e4065953f/phases/reset.json",
+    "sha256": "5c02485a6da7508e15136d7d097ccce28f0b85e8442528b1a263bce1758f8d38",
+    "mapping": "mapping"
+  },
+  "rounds": [],
+  "upload_options": {},
+  "model_options": {
+    "kv_dtype": "float16"
+  },
+  "policy": {}
+}

@@ -1,0 +1,197 @@
+{
+  "schema": "akas.program.v1",
+  "provider": "cuda",
+  "target": "sm_89",
+  "config": {
+    "width": 2048,
+    "ff": 6144,
+    "heads": 32,
+    "kv_heads": 8,
+    "depth": 5,
+    "vocab": 128000,
+    "epsilon": 9.999999747378752e-06,
+    "theta": 10000000.0,
+    "max_context": 131072,
+    "block_size": 9,
+    "markov_rank": 256,
+    "mask_token": 125017,
+    "target_layers": [
+      2,
+      10,
+      18,
+      26,
+      34
+    ]
+  },
+  "max_requests": 1,
+  "max_context": 131072,
+  "phases": [
+    {
+      "phase": "context",
+      "rows": 1,
+      "chunk": 1,
+      "path": "programs/8cf2c3683df8445c905c2777038b01c6/phases/context-b1-t1.json",
+      "sha256": "6a733c842bf12930ebddd8ca44348b50f4600f88470691920f257c1f658ca0db",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "tokens",
+      "feedback": false,
+      "features": {
+        "hidden_input": "target_hidden"
+      }
+    },
+    {
+      "phase": "context",
+      "rows": 1,
+      "chunk": 2,
+      "path": "programs/8cf2c3683df8445c905c2777038b01c6/phases/context-b1-t2.json",
+      "sha256": "c55389893eb262534d56bae537996b1bbe60f2a2963947a09c1e1bcc23392644",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "tokens",
+      "feedback": false,
+      "features": {
+        "hidden_input": "target_hidden"
+      }
+    },
+    {
+      "phase": "context",
+      "rows": 1,
+      "chunk": 4,
+      "path": "programs/8cf2c3683df8445c905c2777038b01c6/phases/context-b1-t4.json",
+      "sha256": "8688da734922cf12816873947a2fc294da44bede2e642726d905ee95e8ae31a0",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "tokens",
+      "feedback": false,
+      "features": {
+        "hidden_input": "target_hidden"
+      }
+    },
+    {
+      "phase": "context",
+      "rows": 1,
+      "chunk": 10,
+      "path": "programs/8cf2c3683df8445c905c2777038b01c6/phases/context-b1-t10.json",
+      "sha256": "02414fd68125a874eaea5f5e9a32393de04e6f496e2608b2ef2c04210bf071b0",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "tokens",
+      "feedback": false,
+      "features": {
+        "hidden_input": "target_hidden"
+      }
+    },
+    {
+      "phase": "context",
+      "rows": 1,
+      "chunk": 32,
+      "path": "programs/8cf2c3683df8445c905c2777038b01c6/phases/context-b1-t32.json",
+      "sha256": "7e051151b5150c397f81a36d00ea269b1a42593f61bdc086c00df8e536311702",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "tokens",
+      "feedback": false,
+      "features": {
+        "hidden_input": "target_hidden"
+      }
+    },
+    {
+      "phase": "context",
+      "rows": 1,
+      "chunk": 512,
+      "path": "programs/8cf2c3683df8445c905c2777038b01c6/phases/context-b1-t512.json",
+      "sha256": "42b75cdb9e7ec55ac2ca2730e57f818c7b75302eb2199e4db845b59a1a8bace0",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "tokens",
+      "feedback": false,
+      "features": {
+        "hidden_input": "target_hidden"
+      }
+    },
+    {
+      "phase": "context",
+      "rows": 1,
+      "chunk": 2048,
+      "path": "programs/8cf2c3683df8445c905c2777038b01c6/phases/context-b1-t2048.json",
+      "sha256": "9c4de91c37e35796d48a4ff86ee687cc115074e4d1599c3838716e3a2775d171",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "tokens",
+      "feedback": false,
+      "features": {
+        "hidden_input": "target_hidden"
+      }
+    },
+    {
+      "phase": "context",
+      "rows": 1,
+      "chunk": 4096,
+      "path": "programs/8cf2c3683df8445c905c2777038b01c6/phases/context-b1-t4096.json",
+      "sha256": "3a5297da4590bdc36354a539d4e4d10e6e4285407139a95f177817b6e79599ea",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "tokens",
+      "feedback": false,
+      "features": {
+        "hidden_input": "target_hidden"
+      }
+    },
+    {
+      "phase": "proposal",
+      "rows": 1,
+      "chunk": 9,
+      "path": "programs/8cf2c3683df8445c905c2777038b01c6/phases/proposal-b1-t9.json",
+      "sha256": "b6ab5cf8adb77391725ecc23021c4e81a4e3486e2c987ffeffa33b8808c78ae1",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sample.8.predictions",
+      "feedback": false,
+      "features": {
+        "anchor_input": "anchor",
+        "tokens": "sample.8.predictions",
+        "confidence": "sample.8.confidences",
+        "logits": "base_logits"
+      }
+    }
+  ],
+  "reset": {
+    "path": "programs/8cf2c3683df8445c905c2777038b01c6/phases/reset.json",
+    "sha256": "846e8d590d72fb102312abafe970f907b4724853a0cb7cf963b7c362f114ff28",
+    "mapping": "mapping"
+  },
+  "rounds": [],
+  "upload_options": {},
+  "model_options": {
+    "kv_dtype": "float16"
+  },
+  "policy": {}
+}
