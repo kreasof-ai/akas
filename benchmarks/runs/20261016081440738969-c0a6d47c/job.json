@@ -1,0 +1,90 @@
+{
+  "context": {
+    "checkpoint": "/home/sagemaker-user/akas/build/model-smoke/checkpoints/lfm-hf",
+    "definition": "akas.models.lfm2.model:LFM2",
+    "workload": {
+      "schema": "akas.workload.v1",
+      "id": "standard-v1",
+      "description": "Text inference at fixed active request counts, short and medium prompts.",
+      "batches": [
+        1,
+        4,
+        16,
+        64,
+        256
+      ],
+      "prefix_tokens": [
+        32,
+        2048
+      ],
+      "output_tokens": 128,
+      "cached_prefix_tokens": 0,
+      "early_eos": false,
+      "sampling": {
+        "temperature": 0
+      },
+      "prefix_cache": false,
+      "cpu_offload": false,
+      "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens.",
+      "metrics": [
+        "prefill_tokens_per_second",
+        "decode_tokens_per_second",
+        "ttft_seconds",
+        "inter_token_seconds",
+        "peak_vram_bytes"
+      ]
+    },
+    "backend": "cuda",
+    "device": 0,
+    "memory_bytes": null,
+    "ttft_ms": null,
+    "tpot_ms": null,
+    "kv_dtype": null,
+    "mode": "ar"
+  },
+  "identity": "7b6d76b74270af0c2d3bbb555a8b08f311d3bc8d9c79371ed8d7b41ac99bd6f9",
+  "checkpoint_sha256": "e06dd91009db3a89276d2e56c3dc26324c0f425a2062d4cc82df97fd435bf397",
+  "history": "/home/sagemaker-user/akas/benchmarks",
+  "action": "candidate",
+  "recipe": {
+    "provider": "cuda",
+    "target": "sm_89",
+    "chunk": 32,
+    "prefill_requests": 8,
+    "graphs": true,
+    "trials": 1,
+    "policy": {},
+    "model_options": {
+      "kv_dtype": "float16",
+      "optimized": true
+    },
+    "window": null,
+    "deferred": false,
+    "head": null,
+    "id": "5027777666bd97de"
+  },
+  "device": {
+    "ordinal": 0,
+    "name": "NVIDIA L4",
+    "arch": "sm_89",
+    "provider": "cuda",
+    "uuid": "GPU-d777b838-7002-124f-aa67-71409daa8935",
+    "free_bytes": 23659020288,
+    "total_bytes": 24152899584,
+    "driver": "595.91.07"
+  },
+  "cache_sources": [
+    "/home/sagemaker-user/akas/build/standard-campaign/lfm2.5-230m-bf16-cuda-default-ar/jobs/22bfef8083fe7b4f/attempt-0001/program",
+    "/home/sagemaker-user/akas/build/standard-campaign/lfm2.5-230m-bf16-cuda-default-ar/jobs/22bfef8083fe7b4f/attempt-0002/program",
+    "/home/sagemaker-user/akas/build/standard-campaign/lfm2.5-230m-bf16-cuda-default-ar/jobs/9f34d665a4a48c1b/attempt-0001/program",
+    "/home/sagemaker-user/akas/build/standard-campaign/lfm2.5-230m-bf16-cuda-default-ar/jobs/9f34d665a4a48c1b/attempt-0002/program",
+    "/home/sagemaker-user/akas/build/standard-campaign/lfm2.5-230m-bf16-cuda-default-ar/jobs/d83f417016dae3d9/attempt-0001/program",
+    "/home/sagemaker-user/akas/build/standard-campaign/lfm2.5-230m-bf16-cuda-default-ar/jobs/c537fc00eaa50933/attempt-0001/program",
+    "/home/sagemaker-user/akas/build/standard-campaign/lfm2.5-230m-bf16-cuda-default-ar/jobs/e7804695b4875ae4/attempt-0001/program",
+    "/home/sagemaker-user/akas/build/standard-campaign/lfm2.5-230m-bf16-cuda-default-ar/jobs/9710e44aacd7a66b/attempt-0001/program"
+  ],
+  "reference": "/home/sagemaker-user/akas/build/standard-campaign/lfm2.5-230m-bf16-cuda-default-ar/jobs/22bfef8083fe7b4f/attempt-0002/report.json",
+  "evidence": "/home/sagemaker-user/akas/build/standard-campaign/lfm2.5-230m-bf16-cuda-default-ar/jobs/22bfef8083fe7b4f/attempt-0002/diagnostics.npz",
+  "parent_run": "20261015224229130665-1d7bfb21",
+  "supervisor_pid": 131104
+}
