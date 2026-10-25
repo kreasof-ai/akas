@@ -1,0 +1,589 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "device": {
+      "ordinal": 0,
+      "name": "NVIDIA L4",
+      "arch": "sm_89",
+      "provider": "cuda"
+    },
+    "schedule_profile_sha256": null,
+    "correctness": "not checked",
+    "definition": "akas.models.lfm2.model:LFM2MoE",
+    "checkpoint": "/home/sagemaker-user/akas/build/checkpoints/lfm2.5-24b-a2b/q4_0.gguf",
+    "checkpoint_sha256": "d1c03f73ecaf61017d70419eec9e5dc0b05d50ae26c23d522829b934fbabf8a5",
+    "provider": "cuda",
+    "target": "sm_89",
+    "kv_dtype": "float16",
+    "graphs": true,
+    "revision": "3dab352cc803ac62d7073e77e5e5b47603e0edf9",
+    "python": "3.12.14",
+    "seed": 17,
+    "timestamp": 1792414609.561179,
+    "protocol": "native-token-step-v2",
+    "input": "seeded synthetic token IDs; greedy device sampling",
+    "timing": "wall clock, synchronize before/after; compile/load/reset excluded; prefill includes control uploads",
+    "ttft": "prefill to first greedy token, including logits/head/sampling; no network",
+    "prefill": "chunked",
+    "prefill_chunk": 512,
+    "repeats": 1,
+    "warmup": 0,
+    "cpu_peak_rss_bytes": 400658432,
+    "runtime": "akas",
+    "purpose": "preflight",
+    "weight_format": "q4_0",
+    "mode": "ar",
+    "run_id": "20261019122942203747-eb3739b1",
+    "qualification": {
+      "operations": "independent numerical references for every selected kernel",
+      "text": "real checkpoint generation contains Paris; not a whole-model long-context oracle",
+      "capacity": "131072 total tokens, FP16 KV, no CPU offload"
+    },
+    "compilation_resources": {
+      "provider": "cuda",
+      "peak_rss_bytes": 3538862080,
+      "seconds": 525.5681560639932
+    },
+    "kernel_seed_search_resources": [
+      {
+        "provider": "cuda",
+        "chunk": 32,
+        "seconds": 198.09642568300478,
+        "entries": [
+          {
+            "operation": "attention",
+            "parameters": {
+              "r": 32,
+              "h": 32,
+              "kh": 8,
+              "d": 64,
+              "capacity": 131072,
+              "kv_dtype": "float16",
+              "provider": "cuda",
+              "chunk": 32,
+              "optimized": true
+            },
+            "schedule": {
+              "implementation": "attention.cuda.floating"
+            }
+          },
+          {
+            "operation": "quantized_experts",
+            "parameters": {
+              "r": 32,
+              "top": 4,
+              "experts": 64,
+              "o": 1536,
+              "k": 2048,
+              "input_dtype": "float32",
+              "round_inputs": true,
+              "tile_map": true,
+              "routed_input": false,
+              "weight_parts": [
+                {
+                  "rows": 98304,
+                  "format": "ggml",
+                  "options": {
+                    "encoding": 2
+                  }
+                }
+              ]
+            },
+            "schedule": {
+              "block_m": 16,
+              "columns": 32,
+              "block_k": 128,
+              "implementation": "akas.ops.moe.cuda:compact_experts"
+            }
+          },
+          {
+            "operation": "quantized_experts",
+            "parameters": {
+              "r": 32,
+              "top": 4,
+              "experts": 64,
+              "o": 2048,
+              "k": 1536,
+              "input_dtype": "float32",
+              "round_inputs": true,
+              "tile_map": true,
+              "routed_input": true,
+              "weight_parts": [
+                {
+                  "rows": 131072,
+                  "format": "ggml",
+                  "options": {
+                    "encoding": 2
+                  }
+                }
+              ]
+            },
+            "schedule": {
+              "block_m": 16,
+              "columns": 32,
+              "block_k": 64,
+              "implementation": "akas.ops.moe.cuda:compact_experts"
+            }
+          }
+        ],
+        "cpu_peak_rss_bytes": 3416637440
+      },
+      {
+        "provider": "cuda",
+        "chunk": 256,
+        "seconds": 519.457906494994,
+        "entries": [
+          {
+            "operation": "attention",
+            "parameters": {
+              "r": 256,
+              "h": 32,
+              "kh": 8,
+              "d": 64,
+              "capacity": 131072,
+              "kv_dtype": "float16",
+              "provider": "cuda",
+              "chunk": 256,
+              "optimized": true
+            },
+            "schedule": {
+              "implementation": "attention.cuda.floating"
+            }
+          },
+          {
+            "operation": "quantized_experts",
+            "parameters": {
+              "r": 256,
+              "top": 4,
+              "experts": 64,
+              "o": 1536,
+              "k": 2048,
+              "input_dtype": "float32",
+              "round_inputs": true,
+              "tile_map": true,
+              "routed_input": false,
+              "weight_parts": [
+                {
+                  "rows": 98304,
+                  "format": "ggml",
+                  "options": {
+                    "encoding": 2
+                  }
+                }
+              ]
+            },
+            "schedule": {
+              "block_m": 16,
+              "columns": 64,
+              "block_k": 64,
+              "implementation": "akas.ops.moe.cuda:compact_experts"
+            }
+          },
+          {
+            "operation": "quantized_experts",
+            "parameters": {
+              "r": 256,
+              "top": 4,
+              "experts": 64,
+              "o": 2048,
+              "k": 1536,
+              "input_dtype": "float32",
+              "round_inputs": true,
+              "tile_map": true,
+              "routed_input": true,
+              "weight_parts": [
+                {
+                  "rows": 131072,
+                  "format": "ggml",
+                  "options": {
+                    "encoding": 2
+                  }
+                }
+              ]
+            },
+            "schedule": {
+              "block_m": 16,
+              "columns": 128,
+              "block_k": 128,
+              "implementation": "akas.ops.moe.cuda:compact_experts"
+            }
+          }
+        ],
+        "cpu_peak_rss_bytes": 3416637440
+      },
+      {
+        "provider": "cuda",
+        "chunk": 512,
+        "seconds": 928.532309089991,
+        "entries": [
+          {
+            "operation": "attention",
+            "parameters": {
+              "r": 512,
+              "h": 32,
+              "kh": 8,
+              "d": 64,
+              "capacity": 131072,
+              "kv_dtype": "float16",
+              "provider": "cuda",
+              "chunk": 512,
+              "optimized": true
+            },
+            "schedule": {
+              "implementation": "attention.cuda.floating"
+            }
+          },
+          {
+            "operation": "quantized_experts",
+            "parameters": {
+              "r": 512,
+              "top": 4,
+              "experts": 64,
+              "o": 1536,
+              "k": 2048,
+              "input_dtype": "float32",
+              "round_inputs": true,
+              "tile_map": true,
+              "routed_input": false,
+              "weight_parts": [
+                {
+                  "rows": 98304,
+                  "format": "ggml",
+                  "options": {
+                    "encoding": 2
+                  }
+                }
+              ]
+            },
+            "schedule": {
+              "block_m": 32,
+              "columns": 64,
+              "block_k": 64,
+              "implementation": "akas.ops.moe.cuda:compact_experts"
+            }
+          },
+          {
+            "operation": "quantized_experts",
+            "parameters": {
+              "r": 512,
+              "top": 4,
+              "experts": 64,
+              "o": 2048,
+              "k": 1536,
+              "input_dtype": "float32",
+              "round_inputs": true,
+              "tile_map": true,
+              "routed_input": true,
+              "weight_parts": [
+                {
+                  "rows": 131072,
+                  "format": "ggml",
+                  "options": {
+                    "encoding": 2
+                  }
+                }
+              ]
+            },
+            "schedule": {
+              "block_m": 32,
+              "columns": 64,
+              "block_k": 64,
+              "implementation": "akas.ops.moe.cuda:compact_experts"
+            }
+          }
+        ],
+        "cpu_peak_rss_bytes": 3416637440
+      }
+    ]
+  },
+  "results": [
+    {
+      "case": {
+        "batch": 1,
+        "prompt": 32,
+        "generated": 128,
+        "depth": 0,
+        "mixed": false
+      },
+      "status": "ok",
+      "seed": 17,
+      "repeats": 1,
+      "warmup": 0,
+      "prompt_tokens": 32,
+      "generated_tokens": 128,
+      "decode_tokens": 127,
+      "allocated_bytes": 16347605700,
+      "samples": [
+        {
+          "context_seconds": 0.0,
+          "prefill_seconds": 0.3482991920027416,
+          "decode_seconds": 1.6437294089992065,
+          "prefill_tokens_per_second": 91.87503369157432,
+          "decode_tokens_per_second": 77.2633252801169,
+          "decode_tokens_per_second_per_request": 77.2633252801169,
+          "output_tokens_per_second": 64.25610552761076,
+          "ttft_seconds": 0.3482991920027416,
+          "inter_token_seconds": 0.012942751251962255
+        }
+      ],
+      "summary": {
+        "prefill_seconds": {
+          "mean": 0.3482991920027416,
+          "stdev": 0,
+          "median": 0.3482991920027416,
+          "p95": 0.3482991920027416,
+          "min": 0.3482991920027416,
+          "max": 0.3482991920027416
+        },
+        "decode_seconds": {
+          "mean": 1.6437294089992065,
+          "stdev": 0,
+          "median": 1.6437294089992065,
+          "p95": 1.6437294089992065,
+          "min": 1.6437294089992065,
+          "max": 1.6437294089992065
+        },
+        "prefill_tokens_per_second": {
+          "mean": 91.87503369157432,
+          "stdev": 0,
+          "median": 91.87503369157432,
+          "p95": 91.87503369157432,
+          "min": 91.87503369157432,
+          "max": 91.87503369157432
+        },
+        "decode_tokens_per_second": {
+          "mean": 77.2633252801169,
+          "stdev": 0,
+          "median": 77.2633252801169,
+          "p95": 77.2633252801169,
+          "min": 77.2633252801169,
+          "max": 77.2633252801169
+        },
+        "decode_tokens_per_second_per_request": {
+          "mean": 77.2633252801169,
+          "stdev": 0,
+          "median": 77.2633252801169,
+          "p95": 77.2633252801169,
+          "min": 77.2633252801169,
+          "max": 77.2633252801169
+        },
+        "output_tokens_per_second": {
+          "mean": 64.25610552761076,
+          "stdev": 0,
+          "median": 64.25610552761076,
+          "p95": 64.25610552761076,
+          "min": 64.25610552761076,
+          "max": 64.25610552761076
+        },
+        "ttft_seconds": {
+          "mean": 0.3482991920027416,
+          "stdev": 0,
+          "median": 0.3482991920027416,
+          "p95": 0.3482991920027416,
+          "min": 0.3482991920027416,
+          "max": 0.3482991920027416
+        },
+        "inter_token_seconds": {
+          "mean": 0.012942751251962255,
+          "stdev": 0,
+          "median": 0.012942751251962255,
+          "p95": 0.012942751251962255,
+          "min": 0.012942751251962255,
+          "max": 0.012942751251962255
+        }
+      }
+    },
+    {
+      "case": {
+        "batch": 1,
+        "prompt": 8192,
+        "generated": 128,
+        "depth": 0,
+        "mixed": false
+      },
+      "status": "ok",
+      "seed": 17,
+      "repeats": 1,
+      "warmup": 0,
+      "prompt_tokens": 8192,
+      "generated_tokens": 128,
+      "decode_tokens": 127,
+      "allocated_bytes": 16573657312,
+      "samples": [
+        {
+          "context_seconds": 0.0,
+          "prefill_seconds": 5.388234116981039,
+          "decode_seconds": 1.5901263389969245,
+          "prefill_tokens_per_second": 1520.3496771201687,
+          "decode_tokens_per_second": 79.86786765642377,
+          "decode_tokens_per_second_per_request": 79.86786765642377,
+          "output_tokens_per_second": 18.3424173640027,
+          "ttft_seconds": 5.388234116981039,
+          "inter_token_seconds": 0.012520679834621452
+        }
+      ],
+      "summary": {
+        "prefill_seconds": {
+          "mean": 5.388234116981039,
+          "stdev": 0,
+          "median": 5.388234116981039,
+          "p95": 5.388234116981039,
+          "min": 5.388234116981039,
+          "max": 5.388234116981039
+        },
+        "decode_seconds": {
+          "mean": 1.5901263389969245,
+          "stdev": 0,
+          "median": 1.5901263389969245,
+          "p95": 1.5901263389969245,
+          "min": 1.5901263389969245,
+          "max": 1.5901263389969245
+        },
+        "prefill_tokens_per_second": {
+          "mean": 1520.3496771201687,
+          "stdev": 0,
+          "median": 1520.3496771201687,
+          "p95": 1520.3496771201687,
+          "min": 1520.3496771201687,
+          "max": 1520.3496771201687
+        },
+        "decode_tokens_per_second": {
+          "mean": 79.86786765642377,
+          "stdev": 0,
+          "median": 79.86786765642377,
+          "p95": 79.86786765642377,
+          "min": 79.86786765642377,
+          "max": 79.86786765642377
+        },
+        "decode_tokens_per_second_per_request": {
+          "mean": 79.86786765642377,
+          "stdev": 0,
+          "median": 79.86786765642377,
+          "p95": 79.86786765642377,
+          "min": 79.86786765642377,
+          "max": 79.86786765642377
+        },
+        "output_tokens_per_second": {
+          "mean": 18.3424173640027,
+          "stdev": 0,
+          "median": 18.3424173640027,
+          "p95": 18.3424173640027,
+          "min": 18.3424173640027,
+          "max": 18.3424173640027
+        },
+        "ttft_seconds": {
+          "mean": 5.388234116981039,
+          "stdev": 0,
+          "median": 5.388234116981039,
+          "p95": 5.388234116981039,
+          "min": 5.388234116981039,
+          "max": 5.388234116981039
+        },
+        "inter_token_seconds": {
+          "mean": 0.012520679834621452,
+          "stdev": 0,
+          "median": 0.012520679834621452,
+          "p95": 0.012520679834621452,
+          "min": 0.012520679834621452,
+          "max": 0.012520679834621452
+        }
+      }
+    },
+    {
+      "case": {
+        "batch": 1,
+        "prompt": 130944,
+        "generated": 128,
+        "depth": 0,
+        "mixed": false
+      },
+      "status": "ok",
+      "seed": 17,
+      "repeats": 1,
+      "warmup": 0,
+      "prompt_tokens": 130944,
+      "generated_tokens": 128,
+      "decode_tokens": 127,
+      "allocated_bytes": 16573657312,
+      "samples": [
+        {
+          "context_seconds": 0.0,
+          "prefill_seconds": 107.9995203470171,
+          "decode_seconds": 4.554275993985357,
+          "prefill_tokens_per_second": 1212.4498292146038,
+          "decode_tokens_per_second": 27.885881349247086,
+          "decode_tokens_per_second_per_request": 27.885881349247086,
+          "output_tokens_per_second": 1.1372339642121039,
+          "ttft_seconds": 107.9995203470171,
+          "inter_token_seconds": 0.035860440897522494
+        }
+      ],
+      "summary": {
+        "prefill_seconds": {
+          "mean": 107.9995203470171,
+          "stdev": 0,
+          "median": 107.9995203470171,
+          "p95": 107.9995203470171,
+          "min": 107.9995203470171,
+          "max": 107.9995203470171
+        },
+        "decode_seconds": {
+          "mean": 4.554275993985357,
+          "stdev": 0,
+          "median": 4.554275993985357,
+          "p95": 4.554275993985357,
+          "min": 4.554275993985357,
+          "max": 4.554275993985357
+        },
+        "prefill_tokens_per_second": {
+          "mean": 1212.4498292146038,
+          "stdev": 0,
+          "median": 1212.4498292146038,
+          "p95": 1212.4498292146038,
+          "min": 1212.4498292146038,
+          "max": 1212.4498292146038
+        },
+        "decode_tokens_per_second": {
+          "mean": 27.885881349247086,
+          "stdev": 0,
+          "median": 27.885881349247086,
+          "p95": 27.885881349247086,
+          "min": 27.885881349247086,
+          "max": 27.885881349247086
+        },
+        "decode_tokens_per_second_per_request": {
+          "mean": 27.885881349247086,
+          "stdev": 0,
+          "median": 27.885881349247086,
+          "p95": 27.885881349247086,
+          "min": 27.885881349247086,
+          "max": 27.885881349247086
+        },
+        "output_tokens_per_second": {
+          "mean": 1.1372339642121039,
+          "stdev": 0,
+          "median": 1.1372339642121039,
+          "p95": 1.1372339642121039,
+          "min": 1.1372339642121039,
+          "max": 1.1372339642121039
+        },
+        "ttft_seconds": {
+          "mean": 107.9995203470171,
+          "stdev": 0,
+          "median": 107.9995203470171,
+          "p95": 107.9995203470171,
+          "min": 107.9995203470171,
+          "max": 107.9995203470171
+        },
+        "inter_token_seconds": {
+          "mean": 0.035860440897522494,
+          "stdev": 0,
+          "median": 0.035860440897522494,
+          "p95": 0.035860440897522494,
+          "min": 0.035860440897522494,
+          "max": 0.035860440897522494
+        }
+      }
+    }
+  ]
+}

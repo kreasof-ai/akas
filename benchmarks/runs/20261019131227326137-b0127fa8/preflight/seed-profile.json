@@ -1,0 +1,232 @@
+{
+  "schema": "tensor.schedule-profile.v1",
+  "provider": "cuda",
+  "target": "sm_89",
+  "entries": [
+    {
+      "operation": "attention",
+      "parameters": {
+        "r": 32,
+        "h": 32,
+        "kh": 8,
+        "d": 64,
+        "capacity": 131072,
+        "kv_dtype": "float16",
+        "provider": "cuda",
+        "chunk": 32,
+        "optimized": true
+      },
+      "schedule": {
+        "implementation": "attention.cuda.floating"
+      }
+    },
+    {
+      "operation": "quantized_experts",
+      "parameters": {
+        "r": 32,
+        "top": 4,
+        "experts": 64,
+        "o": 1536,
+        "k": 2048,
+        "input_dtype": "float32",
+        "round_inputs": true,
+        "tile_map": true,
+        "routed_input": false,
+        "weight_parts": [
+          {
+            "rows": 98304,
+            "format": "ggml",
+            "options": {
+              "encoding": 2
+            }
+          }
+        ]
+      },
+      "schedule": {
+        "block_m": 16,
+        "columns": 32,
+        "block_k": 128,
+        "implementation": "akas.ops.moe.cuda:compact_experts"
+      }
+    },
+    {
+      "operation": "quantized_experts",
+      "parameters": {
+        "r": 32,
+        "top": 4,
+        "experts": 64,
+        "o": 2048,
+        "k": 1536,
+        "input_dtype": "float32",
+        "round_inputs": true,
+        "tile_map": true,
+        "routed_input": true,
+        "weight_parts": [
+          {
+            "rows": 131072,
+            "format": "ggml",
+            "options": {
+              "encoding": 2
+            }
+          }
+        ]
+      },
+      "schedule": {
+        "block_m": 16,
+        "columns": 32,
+        "block_k": 64,
+        "implementation": "akas.ops.moe.cuda:compact_experts"
+      }
+    },
+    {
+      "operation": "attention",
+      "parameters": {
+        "r": 256,
+        "h": 32,
+        "kh": 8,
+        "d": 64,
+        "capacity": 131072,
+        "kv_dtype": "float16",
+        "provider": "cuda",
+        "chunk": 256,
+        "optimized": true
+      },
+      "schedule": {
+        "implementation": "attention.cuda.floating"
+      }
+    },
+    {
+      "operation": "quantized_experts",
+      "parameters": {
+        "r": 256,
+        "top": 4,
+        "experts": 64,
+        "o": 1536,
+        "k": 2048,
+        "input_dtype": "float32",
+        "round_inputs": true,
+        "tile_map": true,
+        "routed_input": false,
+        "weight_parts": [
+          {
+            "rows": 98304,
+            "format": "ggml",
+            "options": {
+              "encoding": 2
+            }
+          }
+        ]
+      },
+      "schedule": {
+        "block_m": 16,
+        "columns": 64,
+        "block_k": 64,
+        "implementation": "akas.ops.moe.cuda:compact_experts"
+      }
+    },
+    {
+      "operation": "quantized_experts",
+      "parameters": {
+        "r": 256,
+        "top": 4,
+        "experts": 64,
+        "o": 2048,
+        "k": 1536,
+        "input_dtype": "float32",
+        "round_inputs": true,
+        "tile_map": true,
+        "routed_input": true,
+        "weight_parts": [
+          {
+            "rows": 131072,
+            "format": "ggml",
+            "options": {
+              "encoding": 2
+            }
+          }
+        ]
+      },
+      "schedule": {
+        "block_m": 16,
+        "columns": 128,
+        "block_k": 128,
+        "implementation": "akas.ops.moe.cuda:compact_experts"
+      }
+    },
+    {
+      "operation": "attention",
+      "parameters": {
+        "r": 512,
+        "h": 32,
+        "kh": 8,
+        "d": 64,
+        "capacity": 131072,
+        "kv_dtype": "float16",
+        "provider": "cuda",
+        "chunk": 512,
+        "optimized": true
+      },
+      "schedule": {
+        "implementation": "attention.cuda.floating"
+      }
+    },
+    {
+      "operation": "quantized_experts",
+      "parameters": {
+        "r": 512,
+        "top": 4,
+        "experts": 64,
+        "o": 1536,
+        "k": 2048,
+        "input_dtype": "float32",
+        "round_inputs": true,
+        "tile_map": true,
+        "routed_input": false,
+        "weight_parts": [
+          {
+            "rows": 98304,
+            "format": "ggml",
+            "options": {
+              "encoding": 2
+            }
+          }
+        ]
+      },
+      "schedule": {
+        "block_m": 32,
+        "columns": 64,
+        "block_k": 64,
+        "implementation": "akas.ops.moe.cuda:compact_experts"
+      }
+    },
+    {
+      "operation": "quantized_experts",
+      "parameters": {
+        "r": 512,
+        "top": 4,
+        "experts": 64,
+        "o": 2048,
+        "k": 1536,
+        "input_dtype": "float32",
+        "round_inputs": true,
+        "tile_map": true,
+        "routed_input": true,
+        "weight_parts": [
+          {
+            "rows": 131072,
+            "format": "ggml",
+            "options": {
+              "encoding": 2
+            }
+          }
+        ]
+      },
+      "schedule": {
+        "block_m": 32,
+        "columns": 64,
+        "block_k": 64,
+        "implementation": "akas.ops.moe.cuda:compact_experts"
+      }
+    }
+  ]
+}
