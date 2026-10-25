@@ -1,0 +1,163 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "optimization",
+    "protocol": "native-token-step-v2",
+    "model": "akas.models.qwen35.model:Qwen35Dense",
+    "definition": "akas.models.qwen35.model:Qwen35Dense",
+    "provider": "cuda",
+    "target": "sm_89",
+    "mode": "ar",
+    "kv_dtype": "bfloat16",
+    "graphs": false,
+    "checkpoint": "/home/sagemaker-user/akas/build/baselines/checkpoints/qwen-f16.gguf",
+    "checkpoint_sha256": "4cd3e1efde08153536604d1c1a071965dfa589b20c5ce6538bd2807866227b1a",
+    "campaign_identity": "d391e8e0cef313fe4f8156b78619d4c5abe2410a09396bd794c1d1cf0dac7628",
+    "recipe": {
+      "provider": "cuda",
+      "target": "sm_89",
+      "chunk": 32,
+      "prefill_requests": 32,
+      "graphs": false,
+      "trials": 1,
+      "policy": {},
+      "model_options": {
+        "fused_head": false,
+        "kv_dtype": "bfloat16"
+      },
+      "window": null,
+      "deferred": false,
+      "head": null,
+      "id": "b2851ae00524aeb1"
+    },
+    "device": {
+      "ordinal": 0,
+      "name": "NVIDIA L4",
+      "arch": "sm_89",
+      "provider": "cuda",
+      "uuid": "GPU-d777b838-7002-124f-aa67-71409daa8935",
+      "free_bytes": 23659020288,
+      "total_bytes": 24152899584,
+      "driver": "595.91.07"
+    },
+    "qualification": "independent operation references; model outputs preserved against campaign baseline",
+    "warmup": 1,
+    "repeats": 3,
+    "seed": 17,
+    "run_id": "20261016051925351915-cb3b88cc",
+    "error": "worker exited with code -9"
+  },
+  "results": [
+    {
+      "case": {
+        "batch": 1,
+        "prompt": 32,
+        "generated": 128,
+        "depth": 0,
+        "mixed": false
+      },
+      "status": "error",
+      "error": "worker exited with code -9"
+    },
+    {
+      "case": {
+        "batch": 1,
+        "prompt": 2048,
+        "generated": 128,
+        "depth": 0,
+        "mixed": false
+      },
+      "status": "error",
+      "error": "worker exited with code -9"
+    },
+    {
+      "case": {
+        "batch": 4,
+        "prompt": 32,
+        "generated": 128,
+        "depth": 0,
+        "mixed": false
+      },
+      "status": "error",
+      "error": "worker exited with code -9"
+    },
+    {
+      "case": {
+        "batch": 4,
+        "prompt": 2048,
+        "generated": 128,
+        "depth": 0,
+        "mixed": false
+      },
+      "status": "error",
+      "error": "worker exited with code -9"
+    },
+    {
+      "case": {
+        "batch": 16,
+        "prompt": 32,
+        "generated": 128,
+        "depth": 0,
+        "mixed": false
+      },
+      "status": "error",
+      "error": "worker exited with code -9"
+    },
+    {
+      "case": {
+        "batch": 16,
+        "prompt": 2048,
+        "generated": 128,
+        "depth": 0,
+        "mixed": false
+      },
+      "status": "error",
+      "error": "worker exited with code -9"
+    },
+    {
+      "case": {
+        "batch": 64,
+        "prompt": 32,
+        "generated": 128,
+        "depth": 0,
+        "mixed": false
+      },
+      "status": "error",
+      "error": "worker exited with code -9"
+    },
+    {
+      "case": {
+        "batch": 64,
+        "prompt": 2048,
+        "generated": 128,
+        "depth": 0,
+        "mixed": false
+      },
+      "status": "error",
+      "error": "worker exited with code -9"
+    },
+    {
+      "case": {
+        "batch": 256,
+        "prompt": 32,
+        "generated": 128,
+        "depth": 0,
+        "mixed": false
+      },
+      "status": "error",
+      "error": "worker exited with code -9"
+    },
+    {
+      "case": {
+        "batch": 256,
+        "prompt": 2048,
+        "generated": 128,
+        "depth": 0,
+        "mixed": false
+      },
+      "status": "error",
+      "error": "worker exited with code -9"
+    }
+  ]
+}

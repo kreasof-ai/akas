@@ -1,0 +1,195 @@
+{
+  "schema": "akas.program.v1",
+  "provider": "cuda",
+  "target": "sm_89",
+  "config": {
+    "width": 1024,
+    "ff": 2560,
+    "heads": 16,
+    "kv_heads": 8,
+    "layers": [
+      "conv",
+      "conv",
+      "attention",
+      "conv",
+      "attention",
+      "conv",
+      "attention",
+      "conv",
+      "attention",
+      "conv",
+      "attention",
+      "conv",
+      "attention",
+      "conv"
+    ],
+    "vocab": 65536,
+    "conv": 3,
+    "epsilon": 9.999999747378752e-06,
+    "theta": 1000000.0,
+    "max_context": 128000
+  },
+  "max_requests": 256,
+  "max_context": 2176,
+  "phases": [
+    {
+      "phase": "decode",
+      "rows": 1,
+      "chunk": 1,
+      "path": "programs/80a9fc21c53f47c98ab83a092d8a9d74/phases/decode-b1-t1.json",
+      "sha256": "b53c7bb41b8c6db9de7de199764c8dc83af3e2c0954006e5529eea671f545eea",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "feedback": true,
+      "features": {
+        "logits": "logits"
+      }
+    },
+    {
+      "phase": "decode",
+      "rows": 4,
+      "chunk": 1,
+      "path": "programs/80a9fc21c53f47c98ab83a092d8a9d74/phases/decode-b4-t1.json",
+      "sha256": "64bb7149809fd07d7fdd89ad84fa6f5e422e0f76c43c9197d095042bfdb73de1",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "feedback": true,
+      "features": {
+        "logits": "logits"
+      }
+    },
+    {
+      "phase": "decode",
+      "rows": 16,
+      "chunk": 1,
+      "path": "programs/80a9fc21c53f47c98ab83a092d8a9d74/phases/decode-b16-t1.json",
+      "sha256": "0ec3221dcdaa9fbd7ac8d2e0321ab5b0450ba9b39fda34a9e9852f13b8cca5e1",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "feedback": true,
+      "features": {
+        "logits": "logits"
+      }
+    },
+    {
+      "phase": "decode",
+      "rows": 64,
+      "chunk": 1,
+      "path": "programs/80a9fc21c53f47c98ab83a092d8a9d74/phases/decode-b64-t1.json",
+      "sha256": "1903950c818a891330f22418b35bc22aef7bc71f54ac7a3fbe489fa6c2e8b781",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "feedback": true,
+      "features": {
+        "logits": "logits"
+      }
+    },
+    {
+      "phase": "decode",
+      "rows": 256,
+      "chunk": 1,
+      "path": "programs/80a9fc21c53f47c98ab83a092d8a9d74/phases/decode-b256-t1.json",
+      "sha256": "0b7f057aa110649a104311f746c9175370c087868802ecc0d891ce6ea796b0c4",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "feedback": true,
+      "features": {
+        "logits": "logits"
+      }
+    },
+    {
+      "phase": "prefill",
+      "rows": 1,
+      "chunk": 128,
+      "path": "programs/80a9fc21c53f47c98ab83a092d8a9d74/phases/prefill-b1-t128.json",
+      "sha256": "afe320a852bfe8c3f15e70536e0bfe5b5e705ce226d55190e732b6f373234294",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "feedback": false,
+      "features": {
+        "logits": "logits"
+      }
+    },
+    {
+      "phase": "prefill_state",
+      "rows": 1,
+      "chunk": 128,
+      "path": "programs/80a9fc21c53f47c98ab83a092d8a9d74/phases/prefill-state-b1-t128.json",
+      "sha256": "7c4be56d14a5847f04fa9ea459fc6eaca513156a6be1c5825d9503077480c319",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "state_only": true
+    },
+    {
+      "phase": "prefill",
+      "rows": 32,
+      "chunk": 128,
+      "path": "programs/80a9fc21c53f47c98ab83a092d8a9d74/phases/prefill-b32-t128.json",
+      "sha256": "a85ce8ad2cf189fd9d081ee1c2e26adc63a3afd309ea4daad718c25a2c7e4fba",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "feedback": false,
+      "features": {
+        "logits": "logits"
+      }
+    },
+    {
+      "phase": "prefill_state",
+      "rows": 32,
+      "chunk": 128,
+      "path": "programs/80a9fc21c53f47c98ab83a092d8a9d74/phases/prefill-state-b32-t128.json",
+      "sha256": "5501bf52a770ffcf9e10580d9fe469560548a0eff3eaa9022693a031a936b740",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "state_only": true
+    }
+  ],
+  "reset": {
+    "path": "programs/80a9fc21c53f47c98ab83a092d8a9d74/phases/reset.json",
+    "sha256": "3eda358059d4e813468183e66ba8e76c7481a51f2b7f1ea8245753eb9675ab8d",
+    "mapping": "mapping"
+  },
+  "rounds": [],
+  "upload_options": {},
+  "model_options": {
+    "kv_dtype": "fp8",
+    "optimized": true
+  },
+  "policy": {}
+}

@@ -1,0 +1,326 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "optimization",
+    "protocol": "native-token-step-v2",
+    "model": "akas.models.lfm2.model:LFM2",
+    "definition": "akas.models.lfm2.model:LFM2",
+    "provider": "cuda",
+    "target": "sm_89",
+    "mode": "ar",
+    "kv_dtype": "float16",
+    "graphs": true,
+    "checkpoint": "/home/sagemaker-user/akas/build/baselines/checkpoints/lfm-q4_0.gguf",
+    "checkpoint_sha256": "430fbec5b1b355e9bb12cd0638c9f2a8f21fedd6eafb4103e42c7e88887daa73",
+    "campaign_identity": "9ff4a8e8528d6d3d35c99c2c327252404d4af679ba538bf39cdbb4f82990933f",
+    "recipe": {
+      "provider": "cuda",
+      "target": "sm_89",
+      "chunk": 1,
+      "prefill_requests": 32,
+      "graphs": true,
+      "trials": 1,
+      "policy": {},
+      "model_options": {
+        "kv_dtype": "float16",
+        "optimized": true
+      },
+      "window": null,
+      "deferred": false,
+      "head": null,
+      "id": "e7804695b4875ae4"
+    },
+    "device": {
+      "ordinal": 0,
+      "name": "NVIDIA L4",
+      "arch": "sm_89",
+      "provider": "cuda",
+      "uuid": "GPU-d777b838-7002-124f-aa67-71409daa8935",
+      "free_bytes": 23659020288,
+      "total_bytes": 24152899584,
+      "driver": "595.91.07"
+    },
+    "qualification": "independent operation references; model outputs preserved against campaign baseline",
+    "warmup": 1,
+    "repeats": 3,
+    "seed": 17,
+    "run_id": "20261016064920495847-e7182d29",
+    "weight_format": "q4_0",
+    "gguf_file_type": 2,
+    "weight_encodings": [
+      "F32",
+      "Q4_0",
+      "Q6_K"
+    ],
+    "memory_estimate": [
+      {
+        "graph_bytes": 7223812112,
+        "largest_buffer_bytes": 570425344
+      },
+      {
+        "graph_bytes": 7228252224,
+        "largest_buffer_bytes": 570425344
+      },
+      {
+        "graph_bytes": 7245553920,
+        "largest_buffer_bytes": 570425344
+      },
+      {
+        "graph_bytes": 7314760704,
+        "largest_buffer_bytes": 570425344
+      },
+      {
+        "graph_bytes": 7591587840,
+        "largest_buffer_bytes": 570425344
+      }
+    ],
+    "memory_bound": {
+      "persistent_bytes": 7222484992,
+      "cached_frame_upper_bytes": 128505168,
+      "total_upper_bytes": 7350990160
+    },
+    "incumbents": [
+      {
+        "run_id": "20261016063808250178-8db8eb5a",
+        "phase": "decode",
+        "entries": 20
+      },
+      {
+        "run_id": "20261016063808250178-8db8eb5a",
+        "phase": "decode",
+        "entries": 20
+      },
+      {
+        "run_id": "20261016063808250178-8db8eb5a",
+        "phase": "decode",
+        "entries": 20
+      },
+      {
+        "run_id": "20261016063808250178-8db8eb5a",
+        "phase": "decode",
+        "entries": 20
+      },
+      {
+        "run_id": "20261016063808250178-8db8eb5a",
+        "phase": "decode",
+        "entries": 20
+      }
+    ],
+    "error": "ValueError: model logits differ from qualified baseline: b1-p2048",
+    "memory": {
+      "scope": "sampled whole-device use",
+      "samples": [
+        {
+          "seconds": 0.03707095599384047,
+          "device_used_bytes": 0
+        },
+        {
+          "seconds": 1.1194089999917196,
+          "device_used_bytes": 0
+        },
+        {
+          "seconds": 2.143195854005171,
+          "device_used_bytes": 0
+        },
+        {
+          "seconds": 3.2206462159956573,
+          "device_used_bytes": 0
+        },
+        {
+          "seconds": 4.242680850991746,
+          "device_used_bytes": 203423744
+        },
+        {
+          "seconds": 5.323457659003907,
+          "device_used_bytes": 203423744
+        },
+        {
+          "seconds": 6.345150934997946,
+          "device_used_bytes": 203423744
+        },
+        {
+          "seconds": 7.426074946997687,
+          "device_used_bytes": 203423744
+        },
+        {
+          "seconds": 8.447803183997166,
+          "device_used_bytes": 203423744
+        },
+        {
+          "seconds": 9.51636423599848,
+          "device_used_bytes": 203423744
+        },
+        {
+          "seconds": 10.540360080005485,
+          "device_used_bytes": 203423744
+        },
+        {
+          "seconds": 11.621702121992712,
+          "device_used_bytes": 203423744
+        },
+        {
+          "seconds": 12.644220008005504,
+          "device_used_bytes": 203423744
+        },
+        {
+          "seconds": 13.7645865319937,
+          "device_used_bytes": 203423744
+        },
+        {
+          "seconds": 14.793526655994356,
+          "device_used_bytes": 203423744
+        },
+        {
+          "seconds": 15.884277727993322,
+          "device_used_bytes": 203423744
+        },
+        {
+          "seconds": 16.90584707999369,
+          "device_used_bytes": 203423744
+        },
+        {
+          "seconds": 17.972965360997478,
+          "device_used_bytes": 203423744
+        },
+        {
+          "seconds": 18.995163118001074,
+          "device_used_bytes": 203423744
+        },
+        {
+          "seconds": 20.06275001099857,
+          "device_used_bytes": 203423744
+        },
+        {
+          "seconds": 21.08456157099863,
+          "device_used_bytes": 7457472512
+        },
+        {
+          "seconds": 22.158514137001475,
+          "device_used_bytes": 7457472512
+        },
+        {
+          "seconds": 23.18183171900455,
+          "device_used_bytes": 7457472512
+        },
+        {
+          "seconds": 24.25913898300496,
+          "device_used_bytes": 163577856
+        }
+      ],
+      "sampled_peak_device_bytes": 7457472512
+    }
+  },
+  "results": [
+    {
+      "case": {
+        "batch": 1,
+        "prompt": 32,
+        "generated": 128,
+        "depth": 0,
+        "mixed": false
+      },
+      "status": "error",
+      "error": "ValueError: model logits differ from qualified baseline: b1-p2048"
+    },
+    {
+      "case": {
+        "batch": 1,
+        "prompt": 2048,
+        "generated": 128,
+        "depth": 0,
+        "mixed": false
+      },
+      "status": "error",
+      "error": "ValueError: model logits differ from qualified baseline: b1-p2048"
+    },
+    {
+      "case": {
+        "batch": 4,
+        "prompt": 32,
+        "generated": 128,
+        "depth": 0,
+        "mixed": false
+      },
+      "status": "error",
+      "error": "ValueError: model logits differ from qualified baseline: b1-p2048"
+    },
+    {
+      "case": {
+        "batch": 4,
+        "prompt": 2048,
+        "generated": 128,
+        "depth": 0,
+        "mixed": false
+      },
+      "status": "error",
+      "error": "ValueError: model logits differ from qualified baseline: b1-p2048"
+    },
+    {
+      "case": {
+        "batch": 16,
+        "prompt": 32,
+        "generated": 128,
+        "depth": 0,
+        "mixed": false
+      },
+      "status": "error",
+      "error": "ValueError: model logits differ from qualified baseline: b1-p2048"
+    },
+    {
+      "case": {
+        "batch": 16,
+        "prompt": 2048,
+        "generated": 128,
+        "depth": 0,
+        "mixed": false
+      },
+      "status": "error",
+      "error": "ValueError: model logits differ from qualified baseline: b1-p2048"
+    },
+    {
+      "case": {
+        "batch": 64,
+        "prompt": 32,
+        "generated": 128,
+        "depth": 0,
+        "mixed": false
+      },
+      "status": "error",
+      "error": "ValueError: model logits differ from qualified baseline: b1-p2048"
+    },
+    {
+      "case": {
+        "batch": 64,
+        "prompt": 2048,
+        "generated": 128,
+        "depth": 0,
+        "mixed": false
+      },
+      "status": "error",
+      "error": "ValueError: model logits differ from qualified baseline: b1-p2048"
+    },
+    {
+      "case": {
+        "batch": 256,
+        "prompt": 32,
+        "generated": 128,
+        "depth": 0,
+        "mixed": false
+      },
+      "status": "error",
+      "error": "ValueError: model logits differ from qualified baseline: b1-p2048"
+    },
+    {
+      "case": {
+        "batch": 256,
+        "prompt": 2048,
+        "generated": 128,
+        "depth": 0,
+        "mixed": false
+      },
+      "status": "error",
+      "error": "ValueError: model logits differ from qualified baseline: b1-p2048"
+    }
+  ]
+}
