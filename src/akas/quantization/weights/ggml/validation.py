@@ -40,6 +40,16 @@ def sample_weight(storage, kind, *, seed=31, decode=True):
     from akas.quantization.weights.ggml.kernel import decode_host
 
     rng = np.random.default_rng(seed)
+    if kind == 30:
+        raw = storage.view("uint8").reshape(-1)
+        bits = raw[: raw.size // 2 * 2].view("uint16")
+        tile = (
+            rng.normal(0, 0.15, min(bits.size, 262144)).astype("float32").view("uint32")
+            >> 16
+        ).astype("uint16")
+        for start in range(0, bits.size, tile.size):
+            bits[start : start + tile.size] = tile[: min(tile.size, bits.size - start)]
+        return decode_host(raw, kind) if decode else None
     if kind in (0, 1):
         if storage.size <= 1_048_576:
             storage[:] = rng.normal(0, 0.15, storage.shape)
@@ -105,6 +115,7 @@ def validation(kind, parameters, signature):
     expected["out"][:] = decoded.reshape(expected["out"].shape)
     if parameters.get("weight_layout", "raw") == "planar":
         from .kernel import repack_host
+
         raw = values["w"].view("uint8").reshape(-1)
         raw[:] = repack_host(raw)
         expected["w"] = values["w"].copy()

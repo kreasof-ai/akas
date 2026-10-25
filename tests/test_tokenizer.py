@@ -256,3 +256,18 @@ def test_qwen_gguf_profile_normalizes_text_and_keeps_user_tokens_literal():
     assert "<think>" not in tokenizer.special
     assert tokenizer.decode([258], skip_special=True) == "<think>"
     assert tokenizer.decode([256, 257], skip_special=True) == ""
+
+
+def test_ordered_isolated_splits_preserve_individual_digit_boundaries():
+    from akas.text.tokenizer import ENCODE_BYTE
+
+    vocab = {char: i for i, char in enumerate(ENCODE_BYTE.values())}
+    vocab["12"] = len(vocab)
+    rules = Rules(
+        vocab=vocab,
+        merges=(("1", "2"),),
+        pattern=r".+",
+        split_patterns=(r"\p{N}{1,3}", r"\p{N}"),
+    )
+    tokenizer = Tokenizer(rules)
+    assert tokenizer.encode("a123") == [vocab[c] for c in "a123"]

@@ -975,3 +975,124 @@ def validation(kind, parameters, signature):
             restore(case.arguments), restore(case.expected), case.rtol, case.atol
         )
     return canonical_validation(kind, parameters, signature)
+
+
+def window_validation(kind, p, signature):
+    """Independent NumPy rotary, ring addressing and grouped softmax oracles."""
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    v = sample_arguments(signature)
+    expected = {k: a.copy() for k, a in v.items()}
+    r, h, d = (p[k] for k in ("r", "h", "d"))
+    if kind == "qkv_split":
+        kh = p["kh"]
+        x = v["x"].reshape(r, (h + 2 * kh) * d)
+        for name, data in [
+            ("q", x[:, : h * d]),
+            ("k", x[:, h * d : (h + kh) * d]),
+            ("v", x[:, (h + kh) * d :]),
+        ]:
+            expected[name][:] = data.reshape(expected[name].shape)
+        return ValidationCase(v, expected, rtol=0, atol=0)
+    if kind == "rotary_partial":
+        rot = p["rotary"]
+        v["positions"][:] = np.resize(
+            np.array([0, 1, 511, 512, 130943, 1048575], dtype="int32"), r
+        )
+        expected["positions"] = v["positions"]
+        x = v["x"].reshape(r, h, d).astype("float64")
+        out = x.copy()
+        a = v["positions"][:, None, None] * p["theta"] ** (
+            -2 * np.arange(rot // 2)[None, None, :] / rot
+        )
+        left, right = x[:, :, : rot // 2], x[:, :, rot // 2 : rot]
+        out[:, :, : rot // 2] = left * np.cos(a) - right * np.sin(a)
+        out[:, :, rot // 2 : rot] = left * np.sin(a) + right * np.cos(a)
+        expected["out"][:] = out.reshape(expected["out"].shape)
+        return ValidationCase(v, expected, rtol=2e-4, atol=2e-5)
+    v["enabled"][:] = 1
+    if r > 1:
+        v["enabled"][-1] = 0
+    expected["enabled"] = v["enabled"]
+    if kind == "window_merge":
+        a = v["parts"].reshape(r, h, p["splits"], d + 2)
+        a[:, :, :, -1] = np.abs(a[:, :, :, -1]) + 1
+        expected["parts"] = v["parts"]
+        factors = np.exp(a[:, :, :, -2] - a[:, :, :, -2].max(axis=2, keepdims=True))
+        out = (a[:, :, :, :d] * factors[:, :, :, None]).sum(axis=2) / (
+            a[:, :, :, -1] * factors
+        ).sum(axis=2)[:, :, None]
+        out[v["enabled"] == 0] = 0
+        expected["out"][:] = out.reshape(-1)
+        return ValidationCase(v, expected)
+    cap, kh, chunk = (p[k] for k in ("capacity", "kh", "chunk"))
+    # Exercise physical wrap and distinct positions within a prefill chunk.
+    base = 2 * cap + 7 if p.get("window") else min(17, max(0, cap - chunk))
+    v["positions"][:] = base + np.arange(r) % chunk
+    expected["positions"] = v["positions"]
+    if kind == "window_cache":
+        for row in range(r):
+            if not v["enabled"][row]:
+                continue
+            for src, dst in [("keys", "kc"), ("values", "vc")]:
+                expected[dst][row // chunk, :, v["positions"][row] % cap, :] = (
+                    v[src][row].reshape(kh, d).astype("float16")
+                )
+        return ValidationCase(v, expected, rtol=0, atol=0)
+    window, splits = p["window"], p["splits"]
+    for slot in range(r // chunk):
+        active_count = int(v["enabled"][slot * chunk : (slot + 1) * chunk].sum())
+        first_live = max(0, base - window + 1) if window else 0
+        resident = np.zeros(cap, dtype=bool)
+        resident[np.arange(first_live, base + active_count) % cap] = True
+        for name in ("kc", "vc"):
+            v[name][slot, :, ~resident, :] = np.nan
+            expected[name] = v[name]
+    out = expected["out"].reshape(r, h, splits, d + 2)
+    out.fill(0)
+    out[:, :, :, -2] = -1e30
+    for slot in range(r // chunk):
+        for block in range((chunk + 15) // 16):
+            row0 = slot * chunk + block * 16
+            first = max(0, int(v["positions"][row0]) - window + 1) if window else 0
+            live_rows = [
+                row
+                for row in range(row0, min(slot * chunk + chunk, row0 + 16))
+                if v["enabled"][row]
+            ]
+            last = int(v["positions"][live_rows[-1]]) + 1 if live_rows else first
+            tiles = (last - first + 63) // 64
+            per_part = (tiles + splits - 1) // splits
+            for part in range(splits):
+                start, stop = (
+                    first + part * per_part * 64,
+                    min(last, first + min((part + 1) * per_part, tiles) * 64),
+                )
+                if start >= stop:
+                    continue
+                ids = np.arange(start, stop)
+                for head in range(h):
+                    keys = v["kc"][slot, head // (h // kh), ids % cap].astype("float32")
+                    vals = v["vc"][slot, head // (h // kh), ids % cap].astype("float32")
+                    for row in range(row0, min(slot * chunk + chunk, row0 + 16)):
+                        if not v["enabled"][row]:
+                            continue
+                        pos = int(v["positions"][row])
+                        live = (ids <= pos) & ((ids > pos - window) if window else True)
+                        if not live.any():
+                            continue
+                        q = (
+                            v["q"][row]
+                            .reshape(h, d)[head]
+                            .astype("float16")
+                            .astype("float32")
+                        )
+                        scores = keys[live] @ q * d**-0.5
+                        maximum = scores.max()
+                        probs = np.exp(scores - maximum)
+                        out[row, head, part, :d] = (
+                            probs.astype("float16").astype("float32") @ vals[live]
+                        )
+                        out[row, head, part, -2:] = [maximum, probs.sum()]
+    return ValidationCase(v, expected, rtol=0.015, atol=0.02)

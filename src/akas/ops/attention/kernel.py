@@ -1232,3 +1232,145 @@ def _normalization(p, query):
         return (kc, vc)
 
     return compute
+
+
+def rotary_partial(spec, schedule):
+    """Split-half rotary embedding of a leading subspace, leaving the tail intact."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    r, h, d, rot, theta = (p[k] for k in ("r", "h", "d", "rotary", "theta"))
+    import math
+
+    # CUDA double argument reduction preserves the phase at million-token positions.
+    @kernel
+    def compute(
+        x: Tensor((r * h * d,), "float32"), positions: Tensor((r,), "int32")
+    ) -> Tensor((r, h * d), "float32"):
+        out = output((r, h * d), "float32", position=1)
+        with T.Kernel(h, r, threads=d) as (head, row):
+            tx = T.get_thread_binding()
+            if tx < rot:
+                half = tx % (rot // 2)
+                frequency = T.exp(
+                    T.cast(half, "float64") * (-2 * math.log(theta) / rot)
+                )
+                angle = T.cast(positions[row], "float64") * frequency
+                cosine = T.cast(T.cos(angle), "float32")
+                sine = T.cast(T.sin(angle), "float32")
+                left = x[(row * h + head) * d + half]
+                right = x[(row * h + head) * d + half + rot // 2]
+                out[row, head * d + tx] = T.if_then_else(
+                    tx < rot // 2,
+                    left * cosine - right * sine,
+                    left * sine + right * cosine,
+                )
+            else:
+                out[row, head * d + tx] = x[(row * h + head) * d + tx]
+        return out
+
+    return compute
+
+
+def window_cache(spec, schedule):
+    """Write a chunk to a circular cache without dropping keys needed by its first query."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    r, kh, d, cap, chunk = (p[k] for k in ("r", "kh", "d", "capacity", "chunk"))
+    shape = (r // chunk, kh, cap, d)
+
+    @kernel
+    def compute(
+        keys: Tensor((r, kh * d), "float32"),
+        values: Tensor((r, kh * d), "float32"),
+        kc: Tensor(shape, "float16"),
+        vc: Tensor(shape, "float16"),
+        positions: Tensor((r,), "int32"),
+        enabled: Tensor((r,), "int32"),
+    ) -> tuple[Tensor(shape, "float16"), Tensor(shape, "float16")]:
+        with T.Kernel(kh, r, threads=d) as (head, row):
+            tx = T.get_thread_binding()
+            if enabled[row] != 0:
+                kc[row // chunk, head, positions[row] % cap, tx] = keys[
+                    row, head * d + tx
+                ]
+                vc[row // chunk, head, positions[row] % cap, tx] = values[
+                    row, head * d + tx
+                ]
+        return kc, vc
+
+    return compute
+
+
+def qkv_split(spec, schedule):
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    r, h, kh, d = (p[k] for k in ("r", "h", "kh", "d"))
+    width = (h + 2 * kh) * d
+
+    @kernel
+    def compute(
+        x: Tensor((r * width,), "float32"),
+    ) -> tuple[
+        Tensor((r * h * d,), "float32"),
+        Tensor((r * kh * d,), "float32"),
+        Tensor((r, kh * d), "float32"),
+    ]:
+        q = output((r * h * d,), "float32")
+        k = output((r * kh * d,), "float32")
+        v = output((r, kh * d), "float32")
+        with T.Kernel(r, T.ceildiv(width, 256), threads=256) as (row, tile):
+            for lane in T.Parallel(256):
+                col = tile * 256 + lane
+                if col < h * d:
+                    q[row * h * d + col] = x[row * width + col]
+                elif col < (h + kh) * d:
+                    k[row * kh * d + col - h * d] = x[row * width + col]
+                elif col < width:
+                    v[row, col - (h + kh) * d] = x[row * width + col]
+        return q, k, v
+
+    return compute
+
+
+def window_merge(spec, schedule):
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    r, h, d, splits = (p[k] for k in ("r", "h", "d", "splits"))
+
+    @kernel
+    def compute(
+        parts: Tensor((r * h * splits * (d + 2),), "float32"),
+        enabled: Tensor((r,), "int32"),
+    ) -> Tensor((r * h * d,), "float32"):
+        out = output((r * h * d,), "float32", position=1)
+        with T.Kernel(r * h, threads=128) as index:
+            maxima = T.alloc_fragment((splits,), "float32")
+            maximum = T.alloc_fragment((1,), "float32")
+            sums = T.alloc_fragment((splits,), "float32")
+            normalizer = T.alloc_fragment((1,), "float32")
+            products = T.alloc_fragment((splits, d), "float32")
+            result = T.alloc_fragment((d,), "float32")
+            for i in T.Parallel(splits):
+                maxima[i] = parts[(index * splits + i) * (d + 2) + d]
+            T.reduce_max(maxima, maximum, dim=0)
+            for i in T.Parallel(splits):
+                sums[i] = parts[(index * splits + i) * (d + 2) + d + 1] * T.exp(
+                    maxima[i] - maximum[0]
+                )
+            T.reduce_sum(sums, normalizer, dim=0)
+            for i, j in T.Parallel(splits, d):
+                products[i, j] = parts[(index * splits + i) * (d + 2) + j] * T.exp(
+                    maxima[i] - maximum[0]
+                )
+            T.reduce_sum(products, result, dim=0)
+            for j in T.Parallel(d):
+                out[index * d + j] = T.if_then_else(
+                    enabled[index // h] != 0, result[j] / T.max(normalizer[0], 1e-30), 0
+                )
+        return out
+
+    return compute

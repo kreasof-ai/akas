@@ -29,6 +29,7 @@ class Rules:
     add_bos: bool = False
     chat_template: str | None = None
     generation_prefix: str | None = None
+    split_patterns: tuple[str, ...] = ()
 
 
 def _merges(values):
@@ -57,6 +58,7 @@ def from_gguf(metadata, *, profile=None):
         vocab={token: i for i, token in enumerate(tokens)},
         merges=_merges(metadata["tokenizer.ggml.merges"]),
         pattern=pattern,
+        split_patterns=tuple(profile.get('split_patterns', ())),
         ignore_merges=ignore,
         normalization=profile.get("normalization"),
         added=added,
@@ -91,7 +93,6 @@ def from_file(path):
         model.get(key)
         for key in (
             "dropout",
-            "unk_token",
             "continuing_subword_prefix",
             "end_of_word_suffix",
             "byte_fallback",
@@ -101,11 +102,14 @@ def from_file(path):
             "requires deterministic byte-level BPE without fallback or affixes"
         )
     normalizer = data.get("normalizer")
+    if normalizer == {'type': 'Sequence', 'normalizers': []}:
+        normalizer = None
     normalization = normalizer.get("type") if isinstance(normalizer, dict) else None
     if normalizer is not None and normalization not in ("NFC", "NFD", "NFKC", "NFKD"):
         raise TokenizerError("unsupported tokenizer normalizer")
     pre = data.get("pre_tokenizer", {})
     stages = pre.get("pretokenizers", []) if pre.get("type") == "Sequence" else [pre]
+    split_patterns = ()
     if (
         len(stages) == 1
         and stages[0].get("type") == "ByteLevel"
@@ -114,22 +118,34 @@ def from_file(path):
         byte = stages[0]
         pattern = profiles()["byte_level"]["pattern"]
     elif (
-        len(stages) == 2
-        and stages[0].get("type") == "Split"
-        and stages[1].get("type") == "ByteLevel"
+        len(stages) >= 2
+        and all(s.get('type') in ('Split', 'Digits') for s in stages[:-1])
+        and stages[-1].get("type") == "ByteLevel"
     ):
-        split, byte = stages
-        pattern = split.get("pattern", {}).get("Regex")
-        if (
-            not isinstance(pattern, str)
-            or split.get("behavior") != "Isolated"
-            or split.get("invert")
-            or byte.get("use_regex", True)
+        byte = stages[-1]
+        patterns = []
+        for split in stages[:-1]:
+            if split['type'] == 'Digits' and split.get('individual_digits') is True:
+                patterns.append(r'\p{N}')
+            elif (split['type'] == 'Split' and split.get('behavior') == 'Isolated'
+                  and not split.get('invert') and isinstance(split.get('pattern', {}).get('Regex'), str)):
+                patterns.append(split['pattern']['Regex'])
+            else:
+                raise TokenizerError('unsupported byte-level split rules')
+        pattern = patterns[0]
+        split_patterns = tuple(patterns)
+        if (byte.get("use_regex", True)
             or byte.get("add_prefix_space", False)
         ):
             raise TokenizerError("unsupported byte-level split rules")
     else:
         raise TokenizerError("unsupported byte-level pre-tokenizer")
+    if model.get('unk_token') is not None:
+        from akas.text.tokenizer import ENCODE_BYTE
+        utf8_bytes = {char for byte, char in ENCODE_BYTE.items()
+                      if byte < 245 and byte not in (192, 193)}
+        if not utf8_bytes <= model['vocab'].keys():
+            raise TokenizerError('unknown-token fallback requires a complete byte alphabet')
     decoder = data.get("decoder") or {}
     if decoder.get("type") == "Sequence":
         decoders = decoder.get("decoders", [])
@@ -206,6 +222,7 @@ def from_file(path):
         vocab=vocab,
         merges=_merges(model["merges"]),
         pattern=pattern,
+        split_patterns=split_patterns,
         ignore_merges=model.get("ignore_merges", False),
         normalization=normalization,
         add_prefix_space=byte.get("add_prefix_space", False),

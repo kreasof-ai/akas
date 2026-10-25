@@ -1,0 +1,21 @@
+{
+  "schema": "akas.benchmark-model.v1",
+  "id": "spark-x2.6-4b",
+  "model": "XHToken/Spark-X2.6-4B",
+  "aliases": ["spark"],
+  "modes": ["ar"],
+  "weights": {
+    "bf16": {
+      "path": "build/checkpoints/spark-x2.6-4b/bf16",
+      "source": {"repo": "XHToken/Spark-X2.6-4B", "revision": "66e3ae7bee54e0a523d692cb8ef841f35409807b"}
+    },
+    "fp8": {
+      "path": "build/checkpoints/spark-x2.6-4b/fp8",
+      "source": {"repo": "XHToken/Spark-X2.6-4B-FP8", "revision": "0318d6f6ab070c7b5b43052db571489b2508006c"}
+    },
+    "q4_k_m": {
+      "path": "build/checkpoints/spark-x2.6-4b/gguf/Spark-X2.6-4B-Q4_K_M.gguf",
+      "source": {"repo": "XHToken/Spark-X2.6-4B-GGUF", "revision": "83b47fda018fd14f51aa63341f78266f628af5a5", "file": "Spark-X2.6-4B-Q4_K_M.gguf"}
+    }
+  }
+}

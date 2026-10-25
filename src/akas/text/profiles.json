@@ -19,6 +19,17 @@
       "pattern": "(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?[\\p{L}\\p{M}]+|\\p{N}| ?[^\\s\\p{L}\\p{M}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+",
       "normalization": "NFC",
       "add_bos": false
+    },
+    "spark2_5": {
+      "model": "gpt2",
+      "pattern": "\\p{N}{1,3}",
+      "split_patterns": [
+        "\\p{N}{1,3}",
+        "[一-龥぀-ゟ゠-ヿ]+",
+        "[!\"#$%&'()*+,\\-./:;<=>?@\\[\\\\\\]^_`{|}~][A-Za-z]+|[^\r\n\\p{L}\\p{P}\\p{S}]?[\\p{L}\\p{M}]+| ?[\\p{P}\\p{S}]+|[\r\n]|\\s+(?!\\S)|\\s+",
+        "\\p{N}"
+      ],
+      "add_bos": false
     }
   }
 }

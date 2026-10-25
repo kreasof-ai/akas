@@ -1389,3 +1389,25 @@ IMPLEMENTATIONS += (
         ),
     ),
 )
+
+
+from akas.ops.attention.validation import window_validation
+
+for _kind, _positions, _names, _module in (
+    ("rotary_partial", (1,), ("out",), "kernel"),
+    ("qkv_split", (-3, -2, -1), ("q", "k", "v"), "kernel"),
+    ("window_cache", (2, 3), ("kc", "vc"), "kernel"),
+    ("window_attention", (-1,), ("out",), "cuda"),
+    ("window_merge", (1,), ("out",), "kernel"),
+):
+    OUTPUT_ARGUMENTS["reference"][_kind] = OutputABI(_positions, _names)
+    VALIDATIONS[_kind] = window_validation
+    IMPLEMENTATIONS += (
+        Implementation(
+            _kind,
+            "akas.ops.attention." + _module,
+            "reference",
+            factory=_kind,
+            name="attention." + _kind,
+        ),
+    )

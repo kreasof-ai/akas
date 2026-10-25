@@ -3,6 +3,8 @@
 
 def weight_decoder(kind, depth, *, packed_words=False):
     """Inline the exact GGML scalar decoder into a caller's TIRx function."""
+    if kind == 30:
+        return bf16_decoder(depth, packed_words=packed_words)
     if kind == 3:
         return q4_1_decoder(depth, packed_words=packed_words)
     if kind == 13:
@@ -85,6 +87,24 @@ def weight_decoder(kind, depth, *, packed_words=False):
     return read_weight
 
 
+def bf16_decoder(depth, *, packed_words=False):
+    """Decode a BF16 word directly into its FP32 bit representation."""
+    import tilelang.language as T
+
+    @T.macro
+    def read_bf16(w, row, col):
+        index = row * depth + col
+        if packed_words:
+            bits = (w[index // 2] >> (index % 2 * 16)) & T.uint32(65535)
+        else:
+            bits = T.cast(w[index * 2], "uint32") | (
+                T.cast(w[index * 2 + 1], "uint32") << 8
+            )
+        return T.reinterpret("float32", bits << 16)
+
+    return read_bf16
+
+
 def q4_1_decoder(depth, *, packed_words=False):
     """Affine nibble blocks, additive to the retained GGML inline computations."""
     import tilelang.language as T
@@ -153,6 +173,8 @@ def decode_host(data, kind):
         raise ValueError("incomplete quantized block")
     if kind in (0, 1):
         return raw.view("<f4" if kind == 0 else "<f2").astype(np.float32)
+    if kind == 30:
+        return (raw.view("<u2").astype("uint32") << 16).view("float32")
     x = raw.reshape(-1, width)
     if kind == 3:
         d = x[:, :2].copy().view("<f2").astype(np.float32)
@@ -224,27 +246,32 @@ def dequantize(spec, schedule, *, provider):
     p = {**spec.parameters, **schedule}
     rows, depth = p["r"], p["k"]
     encoding = p["type"]
-    binding = FORMAT.bind((rows, depth), provider=provider, encoding=encoding,
-                          **(dict(layout=p["weight_layout"]) if "weight_layout" in p else {}))
+    binding = FORMAT.bind(
+        (rows, depth),
+        provider=provider,
+        encoding=encoding,
+        **(dict(layout=p["weight_layout"]) if "weight_layout" in p else {}),
+    )
     values = binding.storage.values
     read = binding.read
     dtype = p.get("output_dtype", "float32")
     if dtype not in ("float16", "float32"):
         raise ValueError("dequantization output must be F16 or F32")
     from akas.quantization._shared.rounding import round_half
+
     rounded = round_half()
 
     @kernel
-    def compute(w: Tensor(values.shape, values.dtype)) -> Tensor(
-        (rows, depth), dtype
-    ):
+    def compute(w: Tensor(values.shape, values.dtype)) -> Tensor((rows, depth), dtype):
         out = output((rows, depth), dtype)
         with T.Kernel(T.ceildiv(rows * depth, 128), threads=128) as block:
             for lane in T.Parallel(128):
                 index = block * 128 + lane
                 if index < rows * depth:
                     value = read((w,), index // depth, index % depth)
-                    out[index // depth, index % depth] = rounded(value) if dtype == "float16" else value
+                    out[index // depth, index % depth] = (
+                        rounded(value) if dtype == "float16" else value
+                    )
         return out
 
     return compute

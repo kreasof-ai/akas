@@ -152,3 +152,20 @@ IMPLEMENTATIONS += tuple(
     )
     for provider in ("cuda", "webgpu")
 )
+
+
+from akas.ops.activation.validation import gated_validation
+
+ROW_INDEPENDENT += ("geglu", "head_gate")
+for _kind in ("geglu", "head_gate"):
+    OUTPUT_ARGUMENTS["reference"][_kind] = OutputABI((-1,), ("out",))
+    VALIDATIONS[_kind] = gated_validation
+    IMPLEMENTATIONS += (
+        Implementation(
+            _kind,
+            "akas.ops.activation.kernel",
+            "reference",
+            factory=_kind,
+            name="activation." + _kind,
+        ),
+    )

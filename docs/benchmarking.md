@@ -544,3 +544,15 @@ record unfinished work as budget exhaustion. Spend additional tuning time on
 measured whole-model bottlenecks rather than allocating an hour to every matrix
 cell. Keep the campaign's limits in its configuration and results, not in
 another dated planning document.
+
+### Spark X2.6 Q4_K_M context comparison
+
+`python -m tools.spark_benchmark` compiles and measures Spark X2.6 on CUDA against
+llama.cpp using only Q4_K_M, FP16 KV, one active request, eight prefixes from 32
+through 130944, and 128 total output tokens. Its default protocol uses one warmup
+and three retained samples. See the [Spark guide](../src/akas/models/spark/README.md)
+for commands and precision limits. BF16 and FP8 safetensors support is checked
+separately; those formats are excluded from this full performance matrix.
+Generated run and report bundles use the same artifact-branch archival workflow
+as other campaigns. Keep their payloads and compiled programs off the source
+branch.

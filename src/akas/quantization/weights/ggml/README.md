@@ -116,3 +116,7 @@ without interpreting encoding IDs or allocating a full decoded expert bank.
 
 See the [quantization guide](../../README.md) for callable contracts, fused linear
 usage, adding a format and qualification commands.
+
+GGML encoding 30 (BF16) is supported as an embedded two-byte value. Its decoder
+restores the FP32 bit pattern directly. Spark Q4_K_M uses BF16 for embeddings
+and headwise attention gates alongside Q4_K, Q6_K and Q8_0 matrices.

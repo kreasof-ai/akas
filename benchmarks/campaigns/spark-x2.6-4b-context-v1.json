@@ -1,0 +1,10 @@
+{
+  "schema": "akas.matrix-campaign.v1",
+  "models": ["spark-x2.6-4b"],
+  "formats": ["q4_k_m"],
+  "backends": ["cuda"],
+  "caches": ["float16"],
+  "workload": "single-user-long-context-v1",
+  "baselines": [{"runtime": "llama", "provider": "cuda", "weight_format": "q4_k_m", "mode": "ar"}],
+  "configuration_budget": "48h"
+}

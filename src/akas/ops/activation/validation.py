@@ -60,3 +60,23 @@ def sigmoid_bias_validation(kind, p, signature):
         1 / (1 + np.exp(-(values["x"].astype("float64") + float(values["bias"][0]))))
     ).astype("float32")
     return ValidationCase(values, expected, rtol=2e-6, atol=1e-7)
+
+
+def gated_validation(kind, p, signature):
+    import math
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    values = sample_arguments(signature)
+    expected = dict(values)
+    x = values["x"].astype("float64")
+    if kind == "geglu":
+        erf = np.fromiter(
+            (math.erf(float(v)) for v in (x * 2**-0.5).flat), dtype="float64"
+        ).reshape(x.shape)
+        expected["out"] = (0.5 * x * (1 + erf) * values["y"]).astype("float32")
+    else:
+        expected["out"] = (
+            x / (1 + np.exp(-np.repeat(values["gate"].astype("float64"), p["d"])))
+        ).astype("float32")
+    return ValidationCase(values, expected, rtol=2e-5, atol=2e-6)

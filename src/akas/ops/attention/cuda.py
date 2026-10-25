@@ -3773,3 +3773,119 @@ def floating_ordered(spec: KernelSpec, schedule: Mapping[str, object]):
         return out
 
     return compute
+
+
+def window_attention(spec, schedule):
+    """Tensor-core causal GQA with absolute positions and optional circular sliding KV."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    r, h, kh, d, cap, chunk, window, splits = (
+        p[k] for k in ("r", "h", "kh", "d", "capacity", "chunk", "window", "splits")
+    )
+    qm, bk = 16, 64
+    shape = (r // chunk, kh, cap, d)
+
+    @kernel
+    def compute(
+        q: Tensor((r, h * d), "float32"),
+        kc: Tensor(shape, "float16"),
+        vc: Tensor(shape, "float16"),
+        positions: Tensor((r,), "int32"),
+        enabled: Tensor((r,), "int32"),
+    ) -> Tensor((r * h * splits * (d + 2),), "float32"):
+        out = output((r * h * splits * (d + 2),), "float32")
+        with T.Kernel(T.ceildiv(chunk, qm), h, (r // chunk) * splits, threads=128) as (
+            block,
+            head,
+            z,
+        ):
+            slot, part = z // splits, z % splits
+            row0 = slot * chunk + block * qm
+            query = T.alloc_shared((qm, d), "float16")
+            key = T.alloc_shared((bk, d), "float16")
+            value = T.alloc_shared((bk, d), "float16")
+            prob = T.alloc_shared((qm, bk), "float16")
+            scores = T.alloc_fragment((qm, bk), "float32")
+            result = T.alloc_fragment((qm, d), "float32")
+            maximum = T.alloc_fragment((qm,), "float32")
+            previous = T.alloc_fragment((qm,), "float32")
+            factor = T.alloc_fragment((qm,), "float32")
+            normalizer = T.alloc_fragment((qm,), "float32")
+            total = T.alloc_fragment((qm,), "float32")
+            first = T.max(0, positions[row0] - window + 1) if window else 0
+            last = T.alloc_var("int32")
+            last = first
+            for i in T.unroll(qm):
+                if block * qm + i < chunk:
+                    if enabled[row0 + i] != 0:
+                        last = positions[row0 + i] + 1
+            tiles = T.ceildiv(last - first, bk)
+            per_part = T.ceildiv(tiles, splits)
+            for i, j in T.Parallel(qm, d):
+                row = row0 + i
+                query[i, j] = T.if_then_else(
+                    i + block * qm < chunk and enabled[T.min(row, r - 1)] != 0,
+                    q[T.min(row, r - 1), head * d + j],
+                    0,
+                )
+            T.clear(result)
+            T.clear(normalizer)
+            T.fill(maximum, -1e30)
+            for tile in T.serial(part * per_part, T.min((part + 1) * per_part, tiles)):
+                start = first + tile * bk
+                for i, j in T.Parallel(bk, d):
+                    key[i, j] = T.if_then_else(
+                        start + i < last,
+                        kc[slot, head // (h // kh), (start + i) % cap, j],
+                        0,
+                    )
+                    value[i, j] = T.if_then_else(
+                        start + i < last,
+                        vc[slot, head // (h // kh), (start + i) % cap, j],
+                        0,
+                    )
+                T.gemm(query, key, scores, transpose_B=True, clear_accum=True)
+                T.copy(maximum, previous)
+                for i, j in T.Parallel(qm, bk):
+                    row = T.min(row0 + i, r - 1)
+                    valid = (
+                        block * qm + i < chunk
+                        and enabled[row] != 0
+                        and start + j <= positions[row]
+                        and (window == 0 or start + j > positions[row] - window)
+                    )
+                    scores[i, j] = T.if_then_else(valid, scores[i, j] * d**-0.5, -1e30)
+                T.reduce_max(scores, maximum, dim=1, clear=False)
+                for i in T.Parallel(qm):
+                    factor[i] = T.exp(previous[i] - maximum[i])
+                for i, j in T.Parallel(qm, bk):
+                    scores[i, j] = T.if_then_else(
+                        scores[i, j] > -1e29, T.exp(scores[i, j] - maximum[i]), 0
+                    )
+                T.reduce_sum(scores, total, dim=1)
+                for i in T.Parallel(qm):
+                    normalizer[i] = normalizer[i] * factor[i] + total[i]
+                for i, j in T.Parallel(qm, d):
+                    result[i, j] *= factor[i]
+                T.copy(scores, prob)
+                T.gemm(prob, value, result)
+            for i, j in T.Parallel(qm, d):
+                if block * qm + i < chunk:
+                    out[
+                        ((row0 + i) * h + head) * splits * (d + 2) + part * (d + 2) + j
+                    ] = result[i, j]
+            for i in T.Parallel(qm):
+                if block * qm + i < chunk:
+                    out[
+                        ((row0 + i) * h + head) * splits * (d + 2) + part * (d + 2) + d
+                    ] = maximum[i]
+                    out[
+                        ((row0 + i) * h + head) * splits * (d + 2)
+                        + part * (d + 2)
+                        + d
+                        + 1
+                    ] = normalizer[i]
+        return out
+
+    return compute

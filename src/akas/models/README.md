@@ -142,3 +142,11 @@ encodings are listed in the [codec guide](../quantization/weights/ggml/README.md
 Native Qwen text execution currently requires CUDA; reading GGUF does not add
 WebGPU model execution, vision or GGUF MTP support. Decode/prefill qualification
 still belongs to the common compiler and the actual operation implementations.
+
+## Spark X2.6
+
+`from akas.models.spark import Spark` selects the `spark2_5` architecture.
+[The Spark guide](spark/README.md) covers BF16 and channel-scaled FP8 safetensors,
+packed GGUF, CUDA execution precision, bounded sliding caches and the Q4_K_M
+context sweep against llama.cpp. Source FP8 is imported into FP16 execution;
+native dynamic W8A8 arithmetic is not implemented.

@@ -66,6 +66,7 @@ class Tokenizer:
             ):
                 raise TokenizerError("invalid BOS/EOS token ID")
         self.pattern = regex.compile(rules.pattern)
+        self.split_patterns = tuple(regex.compile(p) for p in rules.split_patterns)
         self.special_pattern = self._added_pattern(self.added)
         self.literal_pattern = self._added_pattern(
             {
@@ -127,15 +128,22 @@ class Tokenizer:
             text = unicodedata.normalize(self.rules.normalization, text)
         if self.rules.add_prefix_space and text and not text.startswith(" "):
             text = " " + text
-        # Split preserves unmatched spans as well as isolated matches.
-        offset = 0
-        for match in self.pattern.finditer(text):
-            if match.start() > offset:
-                yield from self._piece(text[offset : match.start()])
-            yield from self._piece(match.group())
-            offset = match.end()
-        if offset < len(text):
-            yield from self._piece(text[offset:])
+        # Each isolated split preserves boundaries made by preceding stages.
+        pieces = [text]
+        for pattern in self.split_patterns or (self.pattern,):
+            divided = []
+            for piece in pieces:
+                offset = 0
+                for match in pattern.finditer(piece):
+                    if match.start() > offset:
+                        divided.append(piece[offset:match.start()])
+                    divided.append(match.group())
+                    offset = match.end()
+                if offset < len(piece):
+                    divided.append(piece[offset:])
+            pieces = divided
+        for piece in pieces:
+            yield from self._piece(piece)
 
     def encode(self, text, *, add_bos=None, parse_special=False):
         """Return IDs; special control strings stay literal unless requested.

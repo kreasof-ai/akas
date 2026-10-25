@@ -160,3 +160,48 @@ def sigmoid_bias(spec, schedule):
         return out
 
     return compute
+
+
+def geglu(spec, schedule):
+    """Exact GELU(gate) times up, with FP32 intermediate arithmetic."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    n = p["r"] * p["c"]
+
+    @kernel
+    def compute(x: Tensor((n,), "float32"), y: Tensor((n,), "float32")) -> Tensor(
+        (n,), "float32"
+    ):
+        out = output((n,), "float32")
+        with T.Kernel(T.ceildiv(n, 256), threads=256) as block:
+            for lane in T.Parallel(256):
+                i = block * 256 + lane
+                if i < n:
+                    out[i] = 0.5 * x[i] * (1 + T.erf(x[i] * 0.7071067811865476)) * y[i]
+        return out
+
+    return compute
+
+
+def head_gate(spec, schedule):
+    """Broadcast one sigmoid gate per query head."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    r, h, d = (p[k] for k in ("r", "h", "d"))
+    n = r * h * d
+
+    @kernel
+    def compute(
+        x: Tensor((n,), "float32"), gate: Tensor((r * h,), "float32")
+    ) -> Tensor((n,), "float32"):
+        out = output((n,), "float32")
+        with T.Kernel(T.ceildiv(n, 256), threads=256) as block:
+            for lane in T.Parallel(256):
+                i = block * 256 + lane
+                if i < n:
+                    out[i] = x[i] / (1 + T.exp(-gate[i // d]))
+        return out
+
+    return compute
