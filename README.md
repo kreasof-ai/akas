@@ -1,4 +1,9 @@
-# AKAS
+<p align="center">
+  <img src="logo/logo-black.svg#gh-light-mode-only" alt="Tensor" width="420">
+  <img src="logo/logo-white.svg#gh-dark-mode-only" alt="Tensor" width="420">
+</p>
+
+---
 
 AKAS is an inference engine built on [Tensor](https://github.com/kreasof-ai/tensor).
 It owns model definitions, checkpoint loading, request scheduling, persistent state,
