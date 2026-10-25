@@ -1,0 +1,78 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "kernel",
+    "protocol": "bitwise-kernel-equivalence-v1",
+    "provider": "cuda",
+    "target": "sm_89",
+    "device": {
+      "name": "NVIDIA L4",
+      "provider": "cuda"
+    },
+    "qualification": "Original and updated native F16 attention must be bitwise identical where the previous last-query bound is valid. Covers short/long prefixes, partial/inactive requests, and fresh NaN output sentinels. Poisoned future FP8 cache, odd query tails, and slot reuse are independently tested by test_attention_cache_staging.py.",
+    "checks": [
+      {
+        "length": 32,
+        "active": "all",
+        "bitwise": true
+      },
+      {
+        "length": 32,
+        "active": "partial",
+        "bitwise": true
+      },
+      {
+        "length": 32,
+        "active": "inactive",
+        "bitwise": true
+      },
+      {
+        "length": 65,
+        "active": "all",
+        "bitwise": true
+      },
+      {
+        "length": 65,
+        "active": "partial",
+        "bitwise": true
+      },
+      {
+        "length": 65,
+        "active": "inactive",
+        "bitwise": true
+      },
+      {
+        "length": 511,
+        "active": "all",
+        "bitwise": true
+      },
+      {
+        "length": 511,
+        "active": "partial",
+        "bitwise": true
+      },
+      {
+        "length": 511,
+        "active": "inactive",
+        "bitwise": true
+      },
+      {
+        "length": 512,
+        "active": "all",
+        "bitwise": true
+      },
+      {
+        "length": 512,
+        "active": "partial",
+        "bitwise": true
+      },
+      {
+        "length": 512,
+        "active": "inactive",
+        "bitwise": true
+      }
+    ]
+  },
+  "results": []
+}

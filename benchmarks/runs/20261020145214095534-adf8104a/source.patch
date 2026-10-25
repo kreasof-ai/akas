@@ -1,0 +1,246 @@
+diff --git a/src/akas/ops/linear/README.md b/src/akas/ops/linear/README.md
+index 1d82d4c..4e0227b 100644
+--- a/src/akas/ops/linear/README.md
++++ b/src/akas/ops/linear/README.md
+@@ -73,6 +73,12 @@ row and reusable decoded FP16 tiles for GEMM, and accumulates in F32. Payloads
+ and required scale buffers are explicit inputs; Q8/Q16 correction sums are only
+ needed by packed integer consumers. No full decoded operand is allocated.
+ 
++CUDA's existing packed prefill path also requests weight `read_tile` and
++`read_pair` through this binding. Linear, paired FFN and residual projections
++therefore share format-specific load optimizations while retaining their
++tensor-core schedules and fused epilogues. Codec word views preserve each
++input's pointer identity, including the two separate FFN weight matrices.
++
+ Existing tuned packed/integer/native FP8 registrations remain separate and keep
+ their original algorithms. This common consumer supplies compatibility; it is
+ not a claim that every shape outperforms a specialized native kernel. FP16
+diff --git a/src/akas/ops/linear/cuda.py b/src/akas/ops/linear/cuda.py
+index fa67e2d..80bb585 100644
+--- a/src/akas/ops/linear/cuda.py
++++ b/src/akas/ops/linear/cuda.py
+@@ -450,15 +450,19 @@ def _packed(p, paired=False, add_residual=False):
+     """FP16 tensor-core operands, FP32 accumulation, and paired FFN tiles."""
+     import tilelang.language as T
+     from akas.ops.linear.kernel import cuda_abi as projection_abi
+-    from akas.quantization.weights.ggml.cuda import pair_decoder
+-    from akas.quantization.weights.ggml.kernel import weight_decoder
++    from akas.quantization.weights import bind
+ 
+-    r, k, o, q = (p[n] for n in ("r", "k", "o", "type"))
++    r, k, o = (p[n] for n in ("r", "k", "o"))
+     bm, bn, bk = (p.get("block_m", 32), p.get("block_n", 64), p.get("block_k", 32))
+     stages, threads = (p.get("stages", 2), p.get("threads", 128))
+     packed = p.get("packed_pairs", False)
+-    read_weight = weight_decoder(q, k)
+-    read_pair = pair_decoder(q, k) if packed else None
++    binding = bind(p, (o, k), provider="cuda")
++    read_tile = binding.require("read_tile")
++    pair = binding.require("read_pair") if packed else None
++
++    @T.macro
++    def read_pair(w, row, column):
++        return pair((w,), row, column)
+ 
+     @T.macro
+     def load_rhs(w, rhs, bx, tile, i, j):
+@@ -474,10 +478,6 @@ def _packed(p, paired=False, add_residual=False):
+             else:
+                 rhs[i, j * 2] = 0
+                 rhs[i, j * 2 + 1] = 0
+-        elif bx * bn + i < o:
+-            rhs[i, j] = read_weight(w, bx * bn + i, tile * bk + j)
+-        else:
+-            rhs[i, j] = 0
+ 
+     @T.macro
+     def matmul(x, w, out, w2=None, residual=None):
+@@ -495,10 +495,15 @@ def _packed(p, paired=False, add_residual=False):
+                     lhs[i, j] = T.if_then_else(
+                         by * bm + i < r, x[(by * bm + i) * k + tile * bk + j], 0
+                     )
+-                for i, j in T.Parallel(bn, bk // 2 if packed else bk):
+-                    load_rhs(w, rhs, bx, tile, i, j)
++                if packed:
++                    for i, j in T.Parallel(bn, bk // 2):
++                        load_rhs(w, rhs, bx, tile, i, j)
++                        if paired:
++                            load_rhs(w2, rhs2, bx, tile, i, j)
++                else:
++                    read_tile((w,), rhs, bx * bn, tile * bk)
+                     if paired:
+-                        load_rhs(w2, rhs2, bx, tile, i, j)
++                        read_tile((w2,), rhs2, bx * bn, tile * bk)
+                 T.gemm(lhs, rhs, accum, transpose_B=True)
+                 if paired:
+                     T.gemm(lhs, rhs2, accum2, transpose_B=True)
+diff --git a/src/akas/quantization/weights/ggml/README.md b/src/akas/quantization/weights/ggml/README.md
+index 1fcfc9c..b6b0ca4 100644
+--- a/src/akas/quantization/weights/ggml/README.md
++++ b/src/akas/quantization/weights/ggml/README.md
+@@ -42,6 +42,8 @@ the warp reduction. A word view and funnel
+ shift read the original alternating halfword-aligned blocks; they copy no
+ weights and preserve the GGUF storage size. This capability is distinct from
+ the F32-operand `dot`, and is checked by encoding and geometry before selection.
++Adjacent FP16 pairs decode coefficients before the continuous F32 lane sum;
++this changes neither the operands' rounded values nor their addition order.
+ 
+ For aligned FP16 matrix tiles, Q4_0 `read_tile` unpacks eight coefficients from
+ word loads and computes adjacent pairs with FP16 arithmetic. The resulting
+@@ -50,6 +52,8 @@ signed zero and subnormal scales. Other tile precisions and unaligned columns
+ keep scalar decoding. Single unpermuted weight pieces retain this tile reader;
+ segmented or permuted layouts keep the composed reader. Operations request tile
+ access without interpreting the encoding or allocating a decoded weight cache.
++Word views use `T.meta_var` so a macro-local alias cannot rename two distinct
++input pointers to the same name in a fused kernel.
+ 
+ Q4_1 and Q5_K supply host, scalar and tile decoding on both providers. They have no native
+ packed-pair or lane-dot specialization yet. Fused projection/expert consumers use
+diff --git a/src/akas/quantization/weights/ggml/cuda.py b/src/akas/quantization/weights/ggml/cuda.py
+index d0e5c79..0ac6cb4 100644
+--- a/src/akas/quantization/weights/ggml/cuda.py
++++ b/src/akas/quantization/weights/ggml/cuda.py
+@@ -282,7 +282,10 @@ def packed_tile_half(shape, read):
+         ):
+             if column % 32 == 0:
+                 T.import_source(_Q4_HALF2_SOURCE)
+-                words = T.view(encoded[0], (words_count,), dtype="uint32")
++                # Views are compile-time aliases. Naming the view as a device
++                # variable renames its input pointer and collides when a fused
++                # kernel binds two weight matrices through this same macro.
++                words = T.meta_var(T.view(encoded[0], (words_count,), dtype="uint32"))
+                 for i, j in T.Parallel(destination.shape[0], destination.shape[1] // 8):
+                     local = j // 4 * 32 + j % 4 * 4
+                     channel = column + local
+@@ -376,14 +379,10 @@ def packed_dot_half(shape):
+ 
+     @T.macro
+     def dot(encoded, x, offset, tile, lane, row, previous):
+-        words = T.view(encoded[0], (words_count,), dtype="uint32")
++        T.import_source(_Q4_HALF2_SOURCE)
++        words = T.meta_var(T.view(encoded[0], (words_count,), dtype="uint32"))
+         base = row * row_bytes + (tile * 8 + lane // 4) * 18
+-        scale = T.cast(
+-            T.reinterpret(
+-                "float16", T.cast(words[base // 4] >> (base % 4 * 8), "uint16")
+-            ),
+-            "float32",
+-        )
++        scale = T.cast(words[base // 4] >> (base % 4 * 8), "uint16")
+         address = base + 2 + lane % 4 * 4
+         packed = T.call_extern(
+             "uint32",
+@@ -392,6 +391,32 @@ def packed_dot_half(shape):
+             words[(address + 3) // 4],
+             T.cast(address % 4 * 8, "uint32"),
+         )
++        coefficients = T.alloc_local((8,), "float32")
++        for half in T.unroll(2):
++            lo_bits = T.call_extern(
++                "uint32",
++                "akas_q4_adjacent_pair",
++                packed >> (half * 16),
++                T.cast(scale, "uint32"),
++            )
++            hi_bits = T.call_extern(
++                "uint32",
++                "akas_q4_adjacent_pair",
++                packed >> (half * 16 + 4),
++                T.cast(scale, "uint32"),
++            )
++            coefficients[half * 2] = T.cast(
++                T.reinterpret("float16", T.cast(lo_bits, "uint16")), "float32"
++            )
++            coefficients[half * 2 + 1] = T.cast(
++                T.reinterpret("float16", T.cast(lo_bits >> 16, "uint16")), "float32"
++            )
++            coefficients[4 + half * 2] = T.cast(
++                T.reinterpret("float16", T.cast(hi_bits, "uint16")), "float32"
++            )
++            coefficients[5 + half * 2] = T.cast(
++                T.reinterpret("float16", T.cast(hi_bits >> 16, "uint16")), "float32"
++            )
+         j = offset + tile * 256 + lane // 4 * 32 + lane % 4 * 4
+         lo = T.alloc_local((4,), "float32")
+         hi = T.alloc_local((4,), "float32")
+@@ -401,23 +426,9 @@ def packed_dot_half(shape):
+         result = T.alloc_var("float32")
+         result = previous
+         for component in T.unroll(4):
+-            coefficient = T.cast(
+-                T.cast(
+-                    scale * (T.cast(packed >> (component * 8) & 15, "float32") - 8),
+-                    "float16",
+-                ),
+-                "float32",
+-            )
+-            result += lo[component] * coefficient
++            result += lo[component] * coefficients[component]
+         for component in T.unroll(4):
+-            coefficient = T.cast(
+-                T.cast(
+-                    scale * (T.cast(packed >> (component * 8 + 4) & 15, "float32") - 8),
+-                    "float16",
+-                ),
+-                "float32",
+-            )
+-            result += hi[component] * coefficient
++            result += hi[component] * coefficients[component + 4]
+         return result
+ 
+     return dot
+diff --git a/tests/test_quantization_codecs.py b/tests/test_quantization_codecs.py
+index 4ab541d..2c8e4f7 100644
+--- a/tests/test_quantization_codecs.py
++++ b/tests/test_quantization_codecs.py
+@@ -93,6 +93,50 @@ def test_cuda_q4_tile_preserves_precision_and_boundaries(
+         np.testing.assert_array_equal(actual.view(unsigned), expected.view(unsigned))
+ 
+ 
++@pytest.mark.parametrize("kind", ["linear", "ffn", "linear_add"])
++@pytest.mark.parametrize(
++    "encoding,packed_pairs", [(2, False), (2, True), (12, False), (14, False)]
++)
++def test_cuda_prefill_projection_uses_independent_codec_inputs(
++    tmp_path, kind, encoding, packed_pairs
++):
++    if os.environ.get("AKAS_LFM_MOE_CUDA") != "1":
++        pytest.skip("opt-in codec prefill and fused input qualification")
++    import tensor
++    from tensor.artifacts.format import read_artifact
++    from tensor.compiler.frontend.portable import export_spec
++    from akas.compilation.emit import build_artifact
++    from akas.kernels.registry import validation
++
++    p = dict(r=33, k=256, o=65, type=encoding, ggml=True, packed_pairs=packed_pairs)
++    entry, artifact = tmp_path / "projection.py", tmp_path / "projection.tbin"
++    entry.write_text(
++        "from akas.ops.linear.cuda import _packed\n"
++        "def tensor_export():\n"
++        f" return {{'kernel': _packed({p!r}, paired={kind == 'ffn'}, add_residual={kind == 'linear_add'})}}\n"
++    )
++    definition = export_spec(entry, None)["kernel"]
++    names = [str(buffer.data.name) for buffer in definition.buffer_map.values()]
++    assert len(names) == len(set(names)), "codec views renamed distinct input pointers"
++    build_artifact(entry, artifact, provider="cuda", target="sm_89")
++    metadata, _ = read_artifact(artifact)
++    case = validation(kind, p, metadata["arguments"])
++    with tensor.Device(provider="cuda") as device, ExitStack() as stack:
++        buffers = {
++            name: device.from_numpy(value) for name, value in case.arguments.items()
++        }
++        for buffer in buffers.values():
++            stack.callback(buffer.release)
++        module = stack.enter_context(device.load(artifact))
++        module.launch(*[buffers[arg["name"]] for arg in metadata["arguments"]])
++        np.testing.assert_allclose(
++            buffers["out"].to_numpy(),
++            case.expected["out"],
++            rtol=case.rtol,
++            atol=case.atol,
++        )
++
++
+ def cases():
+     for name in ("q8", "q16"):
+         yield f"quantize_{name}", dict(r=3, k=256), "reference"

@@ -1,0 +1,131 @@
+{
+  "entrypoint": "kernel_kernel",
+  "launch": {
+    "block": [
+      128,
+      1,
+      1
+    ],
+    "grid": [
+      48,
+      72,
+      1
+    ],
+    "shared_memory_bytes": 12288
+  },
+  "abi": [
+    {
+      "dtype": "int32",
+      "kind": "buffer",
+      "name": "counts"
+    },
+    {
+      "dtype": "float32",
+      "kind": "buffer",
+      "name": "out"
+    },
+    {
+      "dtype": "int32",
+      "kind": "buffer",
+      "name": "routes"
+    },
+    {
+      "dtype": "int32",
+      "kind": "buffer",
+      "name": "tile_experts"
+    },
+    {
+      "dtype": "int32",
+      "kind": "buffer",
+      "name": "tile_rows"
+    },
+    {
+      "dtype": "uint8",
+      "kind": "buffer",
+      "name": "w"
+    },
+    {
+      "dtype": "float32",
+      "kind": "buffer",
+      "name": "x"
+    }
+  ],
+  "arguments": [
+    "x",
+    "w",
+    "counts",
+    "routes",
+    "tile_experts",
+    "tile_rows",
+    "out"
+  ],
+  "sha256": "80d4f6189ddea140796981c54d01eb84001dafb14bc2ed3a48b2600815242e18",
+  "counts": [
+    1,
+    1,
+    2,
+    3,
+    3,
+    2,
+    1,
+    1,
+    2,
+    3,
+    1,
+    2,
+    2,
+    2,
+    1,
+    3,
+    0,
+    1,
+    4,
+    3,
+    1,
+    2,
+    2,
+    0,
+    3,
+    2,
+    2,
+    1,
+    1,
+    4,
+    1,
+    1,
+    1,
+    2,
+    4,
+    3,
+    2,
+    1,
+    1,
+    2,
+    2,
+    0,
+    2,
+    1,
+    2,
+    4,
+    0,
+    3,
+    3,
+    1,
+    1,
+    0,
+    0,
+    2,
+    2,
+    4,
+    3,
+    2,
+    2,
+    4,
+    4,
+    5,
+    1,
+    2
+  ],
+  "rows": 32,
+  "candidate": "baseline"
+}

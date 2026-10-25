@@ -1,0 +1,522 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "kernel",
+    "protocol": "kernel-latency-v1",
+    "provider": "cuda",
+    "target": "sm_89",
+    "device": {
+      "name": "NVIDIA L4",
+      "provider": "cuda"
+    },
+    "weight_cache_comparison_run_id": "20261020161104496453-53385f9e",
+    "weight_format": "q4_0",
+    "operand_dtype": "float16",
+    "accumulator_dtype": "float32",
+    "qualification": "Original Q4 coefficients independently decoded in bounded CPU row tiles and rounded to the existing F16 operand precision. Native-cache GEMM must match every current AOT packed GEMM output bitwise. Kernel timing excludes one-time weight decoding and activation packing; transient cache and preparation costs reported separately. Not a serving result.",
+    "checks": [
+      {
+        "depth": 2048,
+        "columns": 1536,
+        "geometry": "packed-baseline",
+        "bitwise": true,
+        "cpu_preparation_seconds": 1.0758050919976085,
+        "transient_cache_bytes": 402653184,
+        "packed_input_bytes": 67108864,
+        "cpu_packing_seconds": 0.11502615996869281,
+        "launch": {
+          "block": [
+            256,
+            1,
+            1
+          ],
+          "grid": [
+            12,
+            320,
+            1
+          ],
+          "shared_memory_bytes": 49152
+        },
+        "timing": {
+          "gpu_seconds": [
+            0.004053196716308593,
+            0.004024524688720703,
+            0.003980902481079102,
+            0.0039364608764648435,
+            0.003951206588745117,
+            0.003952844619750977,
+            0.003956121444702148
+          ],
+          "completed_seconds": [
+            0.0040603714063763615,
+            0.004028354398906231,
+            0.00398405019659549,
+            0.003939704596996307,
+            0.0039549150038510564,
+            0.003956388996448368,
+            0.003959795390255749
+          ],
+          "median_gpu_seconds": 0.003956121444702148,
+          "median_completed_seconds": 0.003959795390255749,
+          "warmup": 30,
+          "samples": 7,
+          "repeats": 5,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.003956121444702148
+        }
+      },
+      {
+        "depth": 2048,
+        "columns": 1536,
+        "geometry": "64-128-64-256-1",
+        "bitwise": true,
+        "cpu_preparation_seconds": 1.0758050919976085,
+        "transient_cache_bytes": 402653184,
+        "packed_input_bytes": 67108864,
+        "cpu_packing_seconds": 0.11502615996869281,
+        "launch": {
+          "block": [
+            256,
+            1,
+            1
+          ],
+          "grid": [
+            12,
+            320,
+            1
+          ],
+          "shared_memory_bytes": 24576
+        },
+        "timing": {
+          "gpu_seconds": [
+            0.003420979309082031,
+            0.003421388626098633,
+            0.003382067108154297,
+            0.003371212768554688,
+            0.0033261566162109376,
+            0.0033232894897460936,
+            0.0033611774444580076
+          ],
+          "completed_seconds": [
+            0.0034273647936061023,
+            0.003428908996284008,
+            0.003386050998233259,
+            0.0033754884032532574,
+            0.003330140793696046,
+            0.003327662602532655,
+            0.0033646059921011327
+          ],
+          "median_gpu_seconds": 0.003371212768554688,
+          "median_completed_seconds": 0.0033754884032532574,
+          "warmup": 30,
+          "samples": 7,
+          "repeats": 5,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.003371212768554688
+        }
+      },
+      {
+        "depth": 2048,
+        "columns": 1536,
+        "geometry": "64-128-64-256-2",
+        "bitwise": true,
+        "cpu_preparation_seconds": 1.0758050919976085,
+        "transient_cache_bytes": 402653184,
+        "packed_input_bytes": 67108864,
+        "cpu_packing_seconds": 0.11502615996869281,
+        "launch": {
+          "block": [
+            256,
+            1,
+            1
+          ],
+          "grid": [
+            12,
+            320,
+            1
+          ],
+          "shared_memory_bytes": 49152
+        },
+        "timing": {
+          "gpu_seconds": [
+            0.0035620864868164065,
+            0.0035588096618652345,
+            0.003484262466430664,
+            0.0034177024841308594,
+            0.003401728057861328,
+            0.0034002944946289063,
+            0.003390259170532227
+          ],
+          "completed_seconds": [
+            0.0035691607976332308,
+            0.0035625846008770167,
+            0.003487919003237039,
+            0.003421578602865338,
+            0.0034059960045851765,
+            0.0034036275930702685,
+            0.0033949295990169047
+          ],
+          "median_gpu_seconds": 0.0034177024841308594,
+          "median_completed_seconds": 0.003421578602865338,
+          "warmup": 30,
+          "samples": 7,
+          "repeats": 5,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.0034177024841308594
+        }
+      },
+      {
+        "depth": 2048,
+        "columns": 1536,
+        "geometry": "128-128-64-256-1",
+        "bitwise": true,
+        "cpu_preparation_seconds": 1.0758050919976085,
+        "transient_cache_bytes": 402653184,
+        "packed_input_bytes": 67108864,
+        "cpu_packing_seconds": 0.11502615996869281,
+        "launch": {
+          "block": [
+            256,
+            1,
+            1
+          ],
+          "grid": [
+            12,
+            320,
+            1
+          ],
+          "shared_memory_bytes": 32768
+        },
+        "timing": {
+          "gpu_seconds": [
+            0.0030468095779418946,
+            0.003072409629821777,
+            0.003073843193054199,
+            0.0030468223571777342,
+            0.0030437503814697265,
+            0.0030349311828613283,
+            0.0030189567565917967
+          ],
+          "completed_seconds": [
+            0.0030547449947334825,
+            0.003077057795599103,
+            0.00307746019680053,
+            0.0030505529954098164,
+            0.0030467045959085225,
+            0.003038108395412564,
+            0.003021585592068732
+          ],
+          "median_gpu_seconds": 0.0030468095779418946,
+          "median_completed_seconds": 0.0030505529954098164,
+          "warmup": 30,
+          "samples": 7,
+          "repeats": 5,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.0030468095779418946
+        }
+      },
+      {
+        "depth": 2048,
+        "columns": 1536,
+        "geometry": "128-128-64-256-2",
+        "bitwise": true,
+        "cpu_preparation_seconds": 1.0758050919976085,
+        "transient_cache_bytes": 402653184,
+        "packed_input_bytes": 67108864,
+        "cpu_packing_seconds": 0.11502615996869281,
+        "launch": {
+          "block": [
+            256,
+            1,
+            1
+          ],
+          "grid": [
+            12,
+            320,
+            1
+          ],
+          "shared_memory_bytes": 65536
+        },
+        "timing": {
+          "gpu_seconds": [
+            0.0028938240051269533,
+            0.0030613504409790038,
+            0.0030580736160278317,
+            0.0030302143096923827,
+            0.003001139259338379,
+            0.0030005247116088865,
+            0.00300134391784668
+          ],
+          "completed_seconds": [
+            0.0029003688017837704,
+            0.0030658792005851866,
+            0.003062449605204165,
+            0.003034432197455317,
+            0.003005276806652546,
+            0.003004362795036286,
+            0.0030051709967665375
+          ],
+          "median_gpu_seconds": 0.00300134391784668,
+          "median_completed_seconds": 0.003005276806652546,
+          "warmup": 30,
+          "samples": 7,
+          "repeats": 5,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.00300134391784668
+        }
+      },
+      {
+        "depth": 1536,
+        "columns": 2048,
+        "geometry": "packed-baseline",
+        "bitwise": true,
+        "cpu_preparation_seconds": 1.0710294590098783,
+        "transient_cache_bytes": 402653184,
+        "packed_input_bytes": 50331648,
+        "cpu_packing_seconds": 0.08612549799727276,
+        "launch": {
+          "block": [
+            256,
+            1,
+            1
+          ],
+          "grid": [
+            16,
+            320,
+            1
+          ],
+          "shared_memory_bytes": 49152
+        },
+        "timing": {
+          "gpu_seconds": [
+            0.004148223876953125,
+            0.004126720046997071,
+            0.0041269248962402345,
+            0.0041269248962402345,
+            0.004144742584228515,
+            0.004158668899536132,
+            0.004153753662109376
+          ],
+          "completed_seconds": [
+            0.004155063605867326,
+            0.00413048459449783,
+            0.0041321843978948895,
+            0.004130834399256855,
+            0.004148345196153968,
+            0.0041621117969043555,
+            0.004157479596324265
+          ],
+          "median_gpu_seconds": 0.004144742584228515,
+          "median_completed_seconds": 0.004148345196153968,
+          "warmup": 30,
+          "samples": 7,
+          "repeats": 5,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.004144742584228515
+        }
+      },
+      {
+        "depth": 1536,
+        "columns": 2048,
+        "geometry": "64-128-64-256-1",
+        "bitwise": true,
+        "cpu_preparation_seconds": 1.0710294590098783,
+        "transient_cache_bytes": 402653184,
+        "packed_input_bytes": 50331648,
+        "cpu_packing_seconds": 0.08612549799727276,
+        "launch": {
+          "block": [
+            256,
+            1,
+            1
+          ],
+          "grid": [
+            16,
+            320,
+            1
+          ],
+          "shared_memory_bytes": 24576
+        },
+        "timing": {
+          "gpu_seconds": [
+            0.003560243225097656,
+            0.003532799911499023,
+            0.003482828903198242,
+            0.0034328575134277345,
+            0.0033988609313964843,
+            0.0033972225189208985,
+            0.003399270248413086
+          ],
+          "completed_seconds": [
+            0.0035660346038639545,
+            0.003536637406796217,
+            0.003486391401384026,
+            0.0034366112085990608,
+            0.003401599603239447,
+            0.0034002316067926587,
+            0.003402071795426309
+          ],
+          "median_gpu_seconds": 0.0034328575134277345,
+          "median_completed_seconds": 0.0034366112085990608,
+          "warmup": 30,
+          "samples": 7,
+          "repeats": 5,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.0034328575134277345
+        }
+      },
+      {
+        "depth": 1536,
+        "columns": 2048,
+        "geometry": "64-128-64-256-2",
+        "bitwise": true,
+        "cpu_preparation_seconds": 1.0710294590098783,
+        "transient_cache_bytes": 402653184,
+        "packed_input_bytes": 50331648,
+        "cpu_packing_seconds": 0.08612549799727276,
+        "launch": {
+          "block": [
+            256,
+            1,
+            1
+          ],
+          "grid": [
+            16,
+            320,
+            1
+          ],
+          "shared_memory_bytes": 49152
+        },
+        "timing": {
+          "gpu_seconds": [
+            0.0035596286773681637,
+            0.003573350524902344,
+            0.003517440032958984,
+            0.0034502655029296876,
+            0.0034240512847900388,
+            0.0034260990142822266,
+            0.003420569610595703
+          ],
+          "completed_seconds": [
+            0.0035678767948411406,
+            0.0035777732031419874,
+            0.0035223727929405866,
+            0.0034558782004751264,
+            0.003429510595742613,
+            0.0034300250001251696,
+            0.0034240126027725638
+          ],
+          "median_gpu_seconds": 0.0034502655029296876,
+          "median_completed_seconds": 0.0034558782004751264,
+          "warmup": 30,
+          "samples": 7,
+          "repeats": 5,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.0034502655029296876
+        }
+      },
+      {
+        "depth": 1536,
+        "columns": 2048,
+        "geometry": "128-128-64-256-1",
+        "bitwise": true,
+        "cpu_preparation_seconds": 1.0710294590098783,
+        "transient_cache_bytes": 402653184,
+        "packed_input_bytes": 50331648,
+        "cpu_packing_seconds": 0.08612549799727276,
+        "launch": {
+          "block": [
+            256,
+            1,
+            1
+          ],
+          "grid": [
+            16,
+            320,
+            1
+          ],
+          "shared_memory_bytes": 32768
+        },
+        "timing": {
+          "gpu_seconds": [
+            0.0032804862976074218,
+            0.0032432128906250005,
+            0.003210444641113281,
+            0.003181363105773926,
+            0.003180544090270996,
+            0.0031795200347900393,
+            0.003179315185546875
+          ],
+          "completed_seconds": [
+            0.0032876770012080668,
+            0.0032463590032421052,
+            0.0032135997898876667,
+            0.0031854565953835846,
+            0.0031848103972151875,
+            0.0031832785927690564,
+            0.0031829706043936313
+          ],
+          "median_gpu_seconds": 0.003181363105773926,
+          "median_completed_seconds": 0.0031854565953835846,
+          "warmup": 30,
+          "samples": 7,
+          "repeats": 5,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.003181363105773926
+        }
+      },
+      {
+        "depth": 1536,
+        "columns": 2048,
+        "geometry": "128-128-64-256-2",
+        "bitwise": true,
+        "cpu_preparation_seconds": 1.0710294590098783,
+        "transient_cache_bytes": 402653184,
+        "packed_input_bytes": 50331648,
+        "cpu_packing_seconds": 0.08612549799727276,
+        "launch": {
+          "block": [
+            256,
+            1,
+            1
+          ],
+          "grid": [
+            16,
+            320,
+            1
+          ],
+          "shared_memory_bytes": 65536
+        },
+        "timing": {
+          "gpu_seconds": [
+            0.002972876739501953,
+            0.0030320640563964844,
+            0.003031449508666992,
+            0.0030306304931640624,
+            0.0030316543579101563,
+            0.0030101503372192383,
+            0.0029923328399658203
+          ],
+          "completed_seconds": [
+            0.0029796076007187365,
+            0.0030353303998708727,
+            0.003034074394963682,
+            0.0030330680077895523,
+            0.003033992403652519,
+            0.00301250540651381,
+            0.0029948043986223636
+          ],
+          "median_gpu_seconds": 0.0030306304931640624,
+          "median_completed_seconds": 0.0030330680077895523,
+          "warmup": 30,
+          "samples": 7,
+          "repeats": 5,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.0030306304931640624
+        }
+      }
+    ]
+  },
+  "results": []
+}
