@@ -1,0 +1,112 @@
+{
+  "schema": "akas.program.v1",
+  "provider": "cuda",
+  "target": "sm_89",
+  "config": {
+    "width": 2048,
+    "ff": 6144,
+    "heads": 32,
+    "kv_heads": 8,
+    "depth": 5,
+    "vocab": 128000,
+    "epsilon": 9.999999747378752e-06,
+    "theta": 10000000.0,
+    "max_context": 131072,
+    "block_size": 9,
+    "markov_rank": 256,
+    "mask_token": 125017,
+    "target_layers": [
+      2,
+      10,
+      18,
+      26,
+      34
+    ]
+  },
+  "max_requests": 1,
+  "max_context": 4096,
+  "phases": [
+    {
+      "phase": "context",
+      "rows": 1,
+      "chunk": 1,
+      "path": "programs/f0f54e2e7d324907841b36fac99bac47/phases/context-b1-t1.json",
+      "sha256": "4c1675e9d548d46acee6a41774a22801cccf5bab8722c53e14c48d38dfcb583b",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "tokens",
+      "feedback": false,
+      "features": {
+        "hidden_input": "target_hidden"
+      }
+    },
+    {
+      "phase": "context",
+      "rows": 1,
+      "chunk": 10,
+      "path": "programs/f0f54e2e7d324907841b36fac99bac47/phases/context-b1-t10.json",
+      "sha256": "16d31ad83826c9fca4ec2f4232f1bb13036b89d0db2d75edf4be01c4ff0fed32",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "tokens",
+      "feedback": false,
+      "features": {
+        "hidden_input": "target_hidden"
+      }
+    },
+    {
+      "phase": "context",
+      "rows": 1,
+      "chunk": 32,
+      "path": "programs/f0f54e2e7d324907841b36fac99bac47/phases/context-b1-t32.json",
+      "sha256": "5f8715f7f746313c99fe49f8861f5036e9306307d72e332c97cd4c37843acdcc",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "tokens",
+      "feedback": false,
+      "features": {
+        "hidden_input": "target_hidden"
+      }
+    },
+    {
+      "phase": "proposal",
+      "rows": 1,
+      "chunk": 9,
+      "path": "programs/f0f54e2e7d324907841b36fac99bac47/phases/proposal-b1-t9.json",
+      "sha256": "65f915a006144cbebb82a13331a508af1ac54551a2357871578de08f669a0528",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sample.8.predictions",
+      "feedback": false,
+      "features": {
+        "anchor_input": "anchor",
+        "tokens": "sample.8.predictions",
+        "confidence": "sample.8.confidences",
+        "logits": "base_logits"
+      }
+    }
+  ],
+  "reset": {
+    "path": "programs/f0f54e2e7d324907841b36fac99bac47/phases/reset.json",
+    "sha256": "8f6e18a7047fdb53fcc434404799941ed3f272b24202f37215ff03a8590d3db8",
+    "mapping": "mapping"
+  },
+  "rounds": [],
+  "upload_options": {},
+  "model_options": {
+    "kv_dtype": "float16"
+  },
+  "policy": {}
+}
