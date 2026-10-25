@@ -1,0 +1,25 @@
+Traceback (most recent call last):
+  File "D:\Workspace\kreasof-ai\github\akas\.venv\Lib\site-packages\tensor\compiler\webgpu\build.py", line 182, in build_webgpu
+    metadata = reflect(wgsl, entrypoint, abi, launch)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Workspace\kreasof-ai\github\akas\.venv\Lib\site-packages\tensor\artifacts\webgpu.py", line 59, in reflect
+    raise ValueError("unsupported WGSL workgroup allocation")
+ValueError: unsupported WGSL workgroup allocation
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "D:\Workspace\kreasof-ai\github\akas\build\vulkan-next-half-native-check.py", line 14, in <module>
+    build_artifact(entry, artifact, provider='webgpu',target='webgpu-portable-v1')
+  File "D:\Workspace\kreasof-ai\github\akas\src\akas\compilation\emit.py", line 36, in build_artifact
+    return tensor.build(
+           ^^^^^^^^^^^^^
+  File "D:\Workspace\kreasof-ai\github\akas\.venv\Lib\site-packages\tensor\__init__.py", line 41, in build
+    return _build_artifact(
+           ^^^^^^^^^^^^^^^^
+  File "D:\Workspace\kreasof-ai\github\akas\.venv\Lib\site-packages\tensor\compiler\build.py", line 26, in build_artifact
+    return build(
+           ^^^^^^
+  File "D:\Workspace\kreasof-ai\github\akas\.venv\Lib\site-packages\tensor\compiler\webgpu\build.py", line 236, in build_webgpu
+    raise BuildError(
+tensor.compiler.errors.BuildError: WebGPU TIRx lowering failed: ValueError: unsupported WGSL workgroup allocation

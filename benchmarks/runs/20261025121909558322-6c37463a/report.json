@@ -1,0 +1,30 @@
+{
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "tuning-evidence",
+    "model": "LiquidAI/LFM2.5-2.6B",
+    "provider": "webgpu",
+    "target": "webgpu-portable-v1",
+    "weight_format": "q4_0",
+    "checkpoint_sha256": "e1a61bf937bc60726e18626e97f7ee9bfd2574d95744c2ed909de98b78006fbe",
+    "scope": "Collection of qualified and rejected kernel trials, synthetic Gaussian-cache decoding screens, isolated hot-buffer timings, changed-arithmetic regression checks, and retained real-text pilots. This collection creates no new inference samples. Partial/interrupted searches and failures are included and are not claims of passing candidates. The selected program is separately independently qualified and benchmarked on retained C4 token IDs.",
+    "selected_program_sha256": "96765122afa4a031271fa7f27bd0f74ae6c812c00823901d56dfc834e84ce4ca",
+    "reference_full_run_id": "20261024215325218226-fd38f777",
+    "pilot_run_ids": [
+      "20261025100804512563-5b511685",
+      "20261025102646690468-5926d4a6",
+      "20261025102713303278-3fe0a083",
+      "20261025104117614877-c82e9c76",
+      "20261025115128345576-fd1a3267"
+    ],
+    "queue_control_run_ids": [
+      "20261025104200757861-c70bd924",
+      "20261025104227893571-17044c3e"
+    ],
+    "notes": [
+      "decode-grid-v3/results.json legacy granule field records the physical split count; the emitted kernel source fixes actual granule=128 and contains the true splits parameter. Corrected results are separate, preserving raw data.",
+      "Rejected streamed and native_f32 prototype helpers were removed from production; frozen helpers are under rejected-source. Other rejected prototypes retain compiled shader artifacts for replay; rebuilding every rejected historical variant from the final source is not claimed."
+    ]
+  },
+  "results": []
+}

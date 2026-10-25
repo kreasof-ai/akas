@@ -1,0 +1,50 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+_______ test_two_pass_partition_matches_independent_reference[131071-8] _______
+.venv\Lib\site-packages\tensor\compiler\webgpu\build.py:128: in build_webgpu
+    lowered = tilelang.lower(
+.venv\Lib\site-packages\tilelang\engine\lower.py:238: in lower
+    return lower_with_context(
+.venv\Lib\site-packages\tilelang\engine\lower.py:165: in lower_with_context
+    return _lower_with_context_impl(
+.venv\Lib\site-packages\tilelang\engine\lower.py:184: in _lower_with_context_impl
+    host_mod, device_mod, params, target, target_host = lower_to_host_device_ir(
+.venv\Lib\site-packages\tilelang\engine\lower.py:136: in lower_to_host_device_ir
+    mod = context.lower(mod)
+          ^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\tilelang\backend\module.py:214: in lower
+    return self.module.lower(mod, self.target)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\tilelang\backend\module.py:115: in lower
+    return self.get_pipeline(target).lower(mod, target)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\tilelang\backend\pass_pipeline\pipeline.py:31: in lower
+    return self._lower(mod, target)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\tilelang\webgpu\pipeline.py:68: in WebGPUPassPipelineBody
+    mod = tilelang.transform.StorageRewrite()(mod)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\tilelang\3rdparty\tvm\python\tvm\ir\transform.py:171: in __call__
+    return _ffi_transform_api.RunPass(self, mod)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+python/tvm_ffi/cython/function.pxi:968: in tvm_ffi.core.Function.__call__
+    ???
+../3rdparty/tvm/include\tvm/runtime/data_type.h:130: in int tvm::runtime::DataType::lanes() const
+    TVM_FFI_THROW(InternalError)
+E   tvm.error.InternalError: Can't fetch the lanes of a scalable vector at a compile time.
+
+The above exception was the direct cause of the following exception:
+tests\test_vulkan_two_pass.py:27: in test_two_pass_partition_matches_independent_reference
+    build_artifact(entry, artifact, provider="webgpu", target="webgpu-portable-v1")
+src\akas\compilation\emit.py:36: in build_artifact
+    return tensor.build(
+.venv\Lib\site-packages\tensor\__init__.py:41: in build
+    return _build_artifact(
+.venv\Lib\site-packages\tensor\compiler\build.py:26: in build_artifact
+    return build(
+.venv\Lib\site-packages\tensor\compiler\webgpu\build.py:236: in build_webgpu
+    raise BuildError(
+E   tensor.compiler.errors.BuildError: WebGPU TIRx lowering failed: InternalError: Can't fetch the lanes of a scalable vector at a compile time.
+=========================== short test summary info ===========================
+FAILED tests/test_vulkan_two_pass.py::test_two_pass_partition_matches_independent_reference[131071-8]
+1 failed, 3 deselected in 9.09s

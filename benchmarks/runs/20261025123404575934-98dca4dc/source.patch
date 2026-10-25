@@ -1,0 +1,2819 @@
+diff --git a/src/akas/artifacts/fingerprint.py b/src/akas/artifacts/fingerprint.py
+index d3a1627..49fc059 100644
+--- a/src/akas/artifacts/fingerprint.py
++++ b/src/akas/artifacts/fingerprint.py
+@@ -12,7 +12,7 @@ def _modules(*owners):
+         path = root / owner.replace(".", "/")
+         if path.is_dir():
+             names.update(
+-                "akas." + str(p.relative_to(root).with_suffix("")).replace("/", ".")
++                "akas." + p.relative_to(root).with_suffix("").as_posix().replace("/", ".")
+                 for p in path.rglob("*.py")
+                 if p.name != "__init__.py"
+             )
+diff --git a/src/akas/benchmarking/history.py b/src/akas/benchmarking/history.py
+index 8a74882..72c726b 100644
+--- a/src/akas/benchmarking/history.py
++++ b/src/akas/benchmarking/history.py
+@@ -34,7 +34,8 @@ def write(path, value):
+     path = Path(path)
+     path.parent.mkdir(parents=True, exist_ok=True)
+     temporary = path.with_name(path.name + "." + uuid.uuid4().hex + ".tmp")
+-    temporary.write_text(json.dumps(value, indent=2, allow_nan=False) + "\n")
++    temporary.write_text(json.dumps(value, indent=2, allow_nan=False) + "\n",
++                         encoding="utf-8", newline="\n")
+     temporary.replace(path)
+ 
+ 
+@@ -473,7 +474,7 @@ def rebuild_index(root):
+         lines.append(
+             f"| {entry['started_at']} | {clean(entry['hardware'])} | {clean(entry['runtime'])} / {clean(entry['model'])} | {clean(configuration)} | {geometry} | {entry['purpose']} | {entry['status']} | {revision} | [run]({entry['path']}) |"
+         )
+-    (root / "RESULTS.md").write_text("\n".join(lines) + "\n")
++    (root / "RESULTS.md").write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
+ 
+ 
+ def export_profile(root, run_id, *, phase, batch, chunk, provider, target, out):
+diff --git a/src/akas/benchmarking/runner.py b/src/akas/benchmarking/runner.py
+index ac74882..878ce26 100644
+--- a/src/akas/benchmarking/runner.py
++++ b/src/akas/benchmarking/runner.py
+@@ -29,7 +29,7 @@ def summarize(values):
+ 
+ 
+ def run(session, case, *, repeats=5, warmup=1, seed=None, prompts=None,
+-        cached_prefixes=None, clock=time.perf_counter):
++        cached_prefixes=None, clock=time.perf_counter, after_prefill=None):
+     if type(repeats) is not int or repeats < 1 or type(warmup) is not int or warmup < 0:
+         raise ValueError("positive repeats and nonnegative warmup required")
+     if session.batch != case.batch or case.capacity > session.capacity:
+@@ -85,6 +85,9 @@ def run(session, case, *, repeats=5, warmup=1, seed=None, prompts=None,
+             timed(lambda: session.prefill(context, read=False)) if case.depth else 0.0
+         )
+         pp = timed(lambda: session.prefill(prompts, read=False))
++        if after_prefill is not None and iteration == warmup + repeats - 1:
++            # Optional verification state capture is outside both phase timers.
++            after_prefill(session)
+         tg = timed(lambda: session.decode(decode_steps, read=False))
+         if iteration >= warmup:
+             samples.append(
+diff --git a/src/akas/compilation/quantization.py b/src/akas/compilation/quantization.py
+index 3875cf3..3ab4922 100644
+--- a/src/akas/compilation/quantization.py
++++ b/src/akas/compilation/quantization.py
+@@ -1,7 +1,8 @@
+ """Explicit activation-storage lowering before operation schedule search."""
+ 
+ 
+-def q16_activations(graph, *, subgroup=True, fixed_residual=False, schedules=None):
++def q16_activations(graph, *, subgroup=True, fixed_residual=False, schedules=None, mixed=False,
++                    half_only=False):
+     """Reuse two-plane activations for Q4_0 projections sharing one input.
+ 
+     This changes the declared arithmetic policy: half-rounded inputs become two
+@@ -25,6 +26,9 @@ def q16_activations(graph, *, subgroup=True, fixed_residual=False, schedules=Non
+         ):
+             result.append(call)
+             continue
++        if half_only or mixed and (call.kind == "ffn" or p["o"] == 3 * p["k"]):
++            result.append(replace(call, parameters={**p, "half_accum": True}))
++            continue
+         source = call.arguments[0]
+         key = source, p["r"], p["k"]
+         if key not in inputs:
+diff --git a/src/akas/models/lfm2/_composition.py b/src/akas/models/lfm2/_composition.py
+index 131bc53..ad7a119 100644
+--- a/src/akas/models/lfm2/_composition.py
++++ b/src/akas/models/lfm2/_composition.py
+@@ -8,12 +8,14 @@ def compose(
+     capacity=None,
+     provider="cuda",
+     kv_dtype="float16",
++    kv_padding=0,
+     output=False,
+     max_weight_bytes=64 * 1024 * 1024,
+     chunk=1,
+     optimized=False,
+     checkpoint=None,
+     expert_weight_layout="raw",
++    dense_weight_layout="raw",
+     verify=False,
+     auxiliary_layers=(),
+ ):
+@@ -39,6 +41,10 @@ def compose(
+         from akas.quantization.kv import get
+ 
+         get(kv_dtype)
++    if type(kv_padding) is not int or not 0 <= kv_padding <= 4096 or kv_padding % 32:
++        raise ValueError("KV padding must be a bounded multiple of 32")
++    if kv_padding and (provider != "webgpu" or kv_dtype not in ("float16", "float32")):
++        raise ValueError("KV padding currently requires native floating WebGPU storage")
+     if any(
+         type(i) is not int or not 0 <= i < len(config.layers) for i in auxiliary_layers
+     ) or len(set(auxiliary_layers)) != len(auxiliary_layers):
+@@ -49,6 +55,12 @@ def compose(
+ 
+     if expert_weight_layout not in ("raw", "planar"):
+         raise ValueError("expert weight layout must be raw or planar")
++    if dense_weight_layout not in ("raw", "planar"):
++        raise ValueError("dense weight layout must be raw or planar")
++    if dense_weight_layout != "raw" and (
++        provider != "webgpu" or not optimized or not hasattr(checkpoint, "gguf")
++    ):
++        raise ValueError("dense planar weights require an optimized WebGPU GGUF graph")
+     if expert_weight_layout != "raw" and (
+         not isinstance(config, LFM2MoEConfig) or checkpoint is None
+     ):
+@@ -63,6 +75,7 @@ def compose(
+                 if expert_weight_layout != "raw"
+                 else {}
+             ),
++            **(dict(dense_weight_layout=dense_weight_layout) if dense_weight_layout != "raw" else {}),
+         )
+         if checkpoint is not None and hasattr(checkpoint, "graph_weights")
+         else Weights(
+@@ -251,6 +264,7 @@ def compose(
+                 kv_dtype=kv_dtype,
+                 unit_scales=kv_dtype in ("float16", "float32"),
+                 provider=provider,
++                **({"cache_padding": kv_padding} if kv_padding else {}),
+                 **{"chunk": chunk} if chunk > 1 else {},
+                 **{"optimized": True} if optimized else {},
+             )
+@@ -380,10 +394,12 @@ def program(
+     max_context,
+     provider="cuda",
+     kv_dtype="float16",
++    kv_padding=0,
+     max_weight_bytes=64 * 1024 * 1024,
+     optimized=True,
+     activation_quantization=None,
+     expert_weight_layout="raw",
++    dense_weight_layout="raw",
+     auxiliary_layers=(),
+     phase=None,
+ ):
+@@ -397,20 +413,25 @@ def program(
+         capacity=max_context,
+         provider=provider,
+         kv_dtype=kv_dtype,
++        kv_padding=kv_padding,
+         max_weight_bytes=max_weight_bytes,
+         optimized=optimized,
+         checkpoint=checkpoint,
+         expert_weight_layout=expert_weight_layout,
++        dense_weight_layout=dense_weight_layout,
+         auxiliary_layers=auxiliary_layers,
+         verify=phase == "verify",
+         **checkpoint.definition_options,
+     )
+     if activation_quantization is not None:
+-        if activation_quantization != "q16" or provider != "webgpu":
+-            raise ValueError("q16 activation storage requires WebGPU")
++        if dense_weight_layout != "raw":
++            raise ValueError("q16 activation storage currently requires raw dense weights")
++        if activation_quantization not in ("q16", "mixed", "half") or provider != "webgpu":
++            raise ValueError("q16/mixed/half activation arithmetic requires WebGPU")
+         from akas.compilation.quantization import q16_activations
+ 
+-        graph = q16_activations(graph)
++        graph = q16_activations(graph, mixed=activation_quantization == "mixed",
++                                half_only=activation_quantization == "half")
+     for name, spec in tuple(graph.buffers.items()):
+         if spec.role == "state":
+             if spec.shape[0] != rows:
+diff --git a/src/akas/models/lfm2/model.py b/src/akas/models/lfm2/model.py
+index 5e2667b..95b8759 100644
+--- a/src/akas/models/lfm2/model.py
++++ b/src/akas/models/lfm2/model.py
+@@ -18,10 +18,12 @@ def compose(
+     provider="cuda",
+     phase=None,
+     kv_dtype="float16",
++    kv_padding=0,
+     max_weight_bytes=64 * 1024 * 1024,
+     optimized=True,
+     activation_quantization=None,
+     expert_weight_layout="raw",
++    dense_weight_layout="raw",
+     auxiliary_layers=(),
+ ):
+     from akas.models.lfm2._composition import program
+@@ -36,10 +38,12 @@ def compose(
+         max_context=max_context,
+         provider=provider,
+         kv_dtype=kv_dtype,
++        kv_padding=kv_padding,
+         max_weight_bytes=max_weight_bytes,
+         optimized=optimized,
+         activation_quantization=activation_quantization,
+         expert_weight_layout=expert_weight_layout,
++        dense_weight_layout=dense_weight_layout,
+         auxiliary_layers=auxiliary_layers,
+         phase=phase,
+     )
+diff --git a/src/akas/models/lfm2/weights.py b/src/akas/models/lfm2/weights.py
+index 8bc62b2..597dda1 100644
+--- a/src/akas/models/lfm2/weights.py
++++ b/src/akas/models/lfm2/weights.py
+@@ -26,9 +26,10 @@ class LFM2Checkpoint:
+     def definition_options(self):
+         return {"output": "output.weight" in self.gguf.tensors}
+ 
+-    def graph_weights(self, graph, *, provider, expert_weight_layout="raw"):
++    def graph_weights(self, graph, *, provider, expert_weight_layout="raw", dense_weight_layout="raw"):
+         return PackedWeights(
+-            graph, self, provider=provider, expert_weight_layout=expert_weight_layout
++            graph, self, provider=provider, expert_weight_layout=expert_weight_layout,
++            dense_weight_layout=dense_weight_layout,
+         )
+ 
+     def inventory(self):
+@@ -43,17 +44,24 @@ class LFM2Checkpoint:
+         layout = model_options.get("expert_weight_layout", "raw")
+         if layout not in ("raw", "planar"):
+             raise ValueError("expert weight layout must be raw or planar")
+-        return {} if layout == "raw" else dict(expert_weight_layout=layout)
++        dense = model_options.get("dense_weight_layout", "raw")
++        if dense not in ("raw", "planar"):
++            raise ValueError("dense weight layout must be raw or planar")
++        return {**(dict(expert_weight_layout=layout) if layout != "raw" else {}),
++                **(dict(dense_weight_layout=dense) if dense != "raw" else {})}
+ 
+-    def upload(self, device, *, expert_weight_layout="raw"):
++    def upload(self, device, *, expert_weight_layout="raw", dense_weight_layout="raw"):
+         if expert_weight_layout not in ("raw", "planar"):
+             raise ValueError("expert weight layout must be raw or planar")
++        if dense_weight_layout not in ("raw", "planar"):
++            raise ValueError("dense weight layout must be raw or planar")
++        if dense_weight_layout != "raw" and device.info["provider"] != "webgpu":
++            raise ValueError("dense planar weights currently require WebGPU")
+         layouts = {
+             name: "planar"
+             for name, info in self.gguf.tensors.items()
+-            if expert_weight_layout == "planar"
+-            and len(info.shape) == 3
+-            and info.type == 2
++            if (expert_weight_layout == "planar" and len(info.shape) == 3 and info.type == 2)
++            or dense_planar(name, info, dense_weight_layout)
+         }
+         return upload_packed(device, self.gguf, layouts=layouts)
+ 
+@@ -279,20 +287,34 @@ def huggingface_names(config, *, output=False):
+     return names
+ 
+ 
++def dense_planar(name, info, layout):
++    """Embedding gathers keep their existing layout; only dense Q4 dots move."""
++    return (layout == "planar" and len(info.shape) == 2 and info.type == 2
++            and name != "token_embd.weight")
++
++
+ class PackedWeights:
+     """Declare original GGML bytes; mathematical shapes stay with the checkpoint."""
+ 
+-    def __init__(self, graph, checkpoint, *, provider, expert_weight_layout="raw"):
++    def __init__(self, graph, checkpoint, *, provider, expert_weight_layout="raw", dense_weight_layout="raw"):
+         from math import prod
+ 
+         from akas.quantization.weights.ggml.definition import weight_storage
+ 
+         if expert_weight_layout not in ("raw", "planar"):
+             raise ValueError("expert weight layout must be raw or planar")
++        if dense_weight_layout not in ("raw", "planar"):
++            raise ValueError("dense weight layout must be raw or planar")
++        if dense_weight_layout != "raw" and provider != "webgpu":
++            raise ValueError("dense planar weights currently require WebGPU")
+         self.checkpoint = checkpoint
+         self.expert_weight_layout = expert_weight_layout
++        self.dense_weight_layout = dense_weight_layout
+         self.buffers = {}
+         for name, info in checkpoint.gguf.tensors.items():
++            if dense_planar(name, info, dense_weight_layout):
++                from akas.quantization.weights.ggml.definition import validate_layout
++                validate_layout(info.shape, encoding=2, layout="planar")
+             count, dtype = weight_storage(
+                 info.type, prod(info.shape), packed_words=provider == "webgpu"
+             )
+@@ -305,7 +327,9 @@ class PackedWeights:
+         return [(self.buffers[name], 0, self.checkpoint.gguf.tensors[name].shape[0])]
+ 
+     def parameters(self, name):
+-        return {"ggml": True, "type": self.checkpoint.gguf.tensors[name].type}
++        info = self.checkpoint.gguf.tensors[name]
++        return {"ggml": True, "type": info.type,
++                **(dict(weight_layout="planar") if dense_planar(name, info, self.dense_weight_layout) else {})}
+ 
+     def parts(self, name):
+         from math import prod
+@@ -316,7 +340,7 @@ class PackedWeights:
+             self.expert_weight_layout == "planar"
+             and len(info.shape) == 3
+             and info.type == 2
+-        ):
++        ) or dense_planar(name, info, self.dense_weight_layout):
+             from akas.quantization.weights.ggml.definition import validate_layout
+ 
+             validate_layout(info.shape, encoding=2, layout="planar")
+diff --git a/src/akas/ops/attention/definition.py b/src/akas/ops/attention/definition.py
+index 49e869a..494d3aa 100644
+--- a/src/akas/ops/attention/definition.py
++++ b/src/akas/ops/attention/definition.py
+@@ -14,7 +14,12 @@ def cache_storage(p):
+     from akas.quantization.kv import get
+     from akas.quantization.kv.codec import Storage
+ 
+-    shape = (p["r"] // p.get("chunk", 1), p["kh"], p["capacity"], p["d"])
++    padding = p.get("cache_padding", 0)
++    if type(padding) is not int or not 0 <= padding <= 4096 or padding % 32:
++        raise ValueError("cache padding must be a bounded multiple of 32 tokens")
++    if padding and p["kv_dtype"] not in ("float16", "float32"):
++        raise ValueError("physical cache padding requires native floating storage")
++    shape = (p["r"] // p.get("chunk", 1), p["kh"], p["capacity"] + padding, p["d"])
+     if p["kv_dtype"] not in ("float16", "float32"):
+         return get(p["kv_dtype"]).storage(shape, provider=p["provider"])
+     return Storage(
+@@ -337,17 +342,20 @@ def lower(graph, commit, settings, *, provider, target):
+         "value_splits",
+         "packed_loads",
+         "native_tail",
++        "adaptive_splits",
+     }
+     if set(settings) - allowed:
+         raise ValueError("unknown attention pipeline policy")
++    if "adaptive_splits" in settings and graph.contract != "reference":
++        raise ValueError("adaptive splits require the floating attention contract")
+     if graph.contract == "reference":
+         from dataclasses import replace
+ 
+-        if not settings or set(settings) - {"splits", "decoded_kv", "native_tail"}:
++        if not settings or set(settings) - {"splits", "decoded_kv", "native_tail", "adaptive_splits"}:
+             raise ValueError("unknown floating attention policy")
+         if "splits" in settings and (
+             type(settings["splits"]) is not int
+-            or settings["splits"] not in (1, 2, 4, 8, 16, 32, 64, 128)
++            or settings["splits"] not in (1, 2, 4, 8, 16, 32, 64, 128, 256, 512)
+         ):
+             raise ValueError(
+                 "floating attention policy requires a supported split count"
+@@ -360,6 +368,10 @@ def lower(graph, commit, settings, *, provider, target):
+             raise ValueError("native tail preparation must be a boolean")
+         if settings.get("native_tail") and (provider != "cuda" or target != "sm_89"):
+             raise ValueError("native tail attention currently requires CUDA sm_89")
++        if "adaptive_splits" in settings and type(settings["adaptive_splits"]) is not bool:
++            raise ValueError("adaptive attention splits must be a boolean")
++        if settings.get("adaptive_splits") and provider != "webgpu":
++            raise ValueError("adaptive floating attention currently requires WebGPU")
+         calls, workspaces, tails = [], {}, {}
+         for call in graph.calls:
+             if (
+@@ -367,12 +379,13 @@ def lower(graph, commit, settings, *, provider, target):
+                 and call.kind
+                 in (
+                     "attention_partial",
++                    "attention_adaptive_partial",
+                     "attention_merge",
+                 )
+                 and call.parameters.get("optimized")
+             ):
+                 p = {**call.parameters, "splits": settings["splits"]}
+-                if call.kind == "attention_partial":
++                if call.kind in ("attention_partial", "attention_adaptive_partial"):
+                     name = (
+                         call.bindings.get("out") if call.bindings else call.arguments[5]
+                     )
+@@ -387,6 +400,10 @@ def lower(graph, commit, settings, *, provider, target):
+                     object.__setattr__(buffer, "_graph", graph)
+                     graph.buffers[name] = buffer
+                 call = replace(call, parameters=p)
++            if settings.get("adaptive_splits") and call.kind == "attention_partial":
++                if not (call.parameters.get("unit_scales") and call.parameters["kv_dtype"] == "float16"):
++                    raise ValueError("adaptive floating attention requires unit-scale F16 KV")
++                call = replace(call, kind="attention_adaptive_partial")
+             if settings.get("decoded_kv") and _can_stage_prefill(call):
+                 calls.extend(_stage_prefill(graph, call, workspaces))
+                 continue
+@@ -621,6 +638,7 @@ OUTPUT_ARGUMENTS = {
+         "cache_write": (2, 3, 4, 5),
+         "attention": (5,),
+         "attention_partial": (5,),
++        "attention_adaptive_partial": (5,),
+         "attention_merge": (1,),
+         "attention_cache_extent": OutputABI((-1,), ("lengths",)),
+         "attention_cache_pad": OutputABI((0, 1), ("kc", "vc")),
+@@ -673,6 +691,7 @@ VALIDATIONS = {
+         "cache_write",
+         "attention",
+         "attention_partial",
++        "attention_adaptive_partial",
+         "attention_merge",
+         "attention_qkv",
+         "attention_q",
+@@ -1150,6 +1169,7 @@ IMPLEMENTATIONS += (
+             ("key_pad", (0, 1)),
+             ("shared_dtype", ("float16", "float32")),
+             ("dot_width", (4, 1)),
++            ("packed_shared", (False, True)),
+         ),
+     ),
+ )
+@@ -1169,6 +1189,8 @@ IMPLEMENTATIONS += tuple(
+         ),
+         factory="tiled_partial_floating",
+         name="attention.grouped_decode",
++        space=(("shared_dtype", ("float32", "float16")), ("dot_width", (1, 4)))
++        if provider == "webgpu" else (),
+     )
+     for provider in ("cuda", "webgpu")
+ )
+@@ -1187,6 +1209,93 @@ def _mma_cache_supported(p):
+         return False
+ 
+ 
++IMPLEMENTATIONS += (
++    Implementation(
++        "attention_partial", "akas.ops.attention.webgpu", "reference",
++        provider="webgpu", priority=34, factory="blocked_partial",
++        defaults=(("key_unroll", 4),), space=(("key_unroll", (4, 8, 2)),),
++        semantic_keys=("r", "h", "kh", "d", "capacity", "splits", "kv_dtype"),
++        accepts=lambda p: p.get("optimized", False) and p["d"] == 64
++        and p["kv_dtype"] in ("float16", "float32"),
++        name="attention.webgpu.blocked_decode",
++    ),
++    Implementation(
++        "attention_partial", "akas.ops.attention.webgpu", "reference",
++        provider="webgpu", priority=33, factory="channel_partial",
++        defaults=(("key_rows", 16),), space=(("key_rows", (16, 32)),),
++        semantic_keys=("r", "h", "kh", "d", "capacity", "splits", "kv_dtype"),
++        accepts=lambda p: p.get("optimized", False) and p["d"] == 64
++        and p["h"] % p["kh"] == 0 and p["h"] // p["kh"] in (1, 2, 4, 8)
++        and p["kv_dtype"] == "float16" and p.get("unit_scales", False),
++        name="attention.webgpu.channel_decode",
++    ),
++    Implementation(
++        "attention_adaptive_partial", "akas.ops.attention.webgpu", "reference",
++        provider="webgpu", priority=40, factory="channel_partial",
++        defaults=(("key_rows", 32), ("granule", 512)),
++        space=(("key_rows", (32, 16)), ("granule", (512, 128, 64))),
++        reference_keys=("granule",),
++        semantic_keys=("r", "h", "kh", "d", "capacity", "splits", "kv_dtype"),
++        accepts=lambda p: p.get("optimized", False) and p["d"] == 64
++        and p["h"] % p["kh"] == 0 and p["h"] // p["kh"] in (1, 2, 4, 8)
++        and p["kv_dtype"] == "float16" and p.get("unit_scales", False),
++        name="attention.webgpu.adaptive_decode",
++    ),
++    Implementation(
++        "attention_adaptive_partial", "akas.ops.attention.webgpu", "reference",
++        provider="webgpu", priority=39, factory="packed_channel_partial",
++        defaults=(("key_rows", 32), ("granule", 128), ("dot_chains", 1)),
++        space=(("key_rows", (32, 64, 128, 16)), ("granule", (128, 512, 64)),
++               ("dot_chains", (1, 4))),
++        reference_keys=("granule",),
++        semantic_keys=("r", "h", "kh", "d", "capacity", "splits", "kv_dtype"),
++        accepts=lambda p: p.get("optimized", False) and p["d"] == 64
++        and p["h"] % p["kh"] == 0 and p["h"] // p["kh"] in (1, 2, 4, 8)
++        and p["kv_dtype"] == "float16" and p.get("unit_scales", False),
++        name="attention.webgpu.packed_decode",
++    ),
++    Implementation(
++        "attention_adaptive_partial", "akas.ops.attention.webgpu", "reference",
++        provider="webgpu", priority=39, factory="two_pass_partial",
++        defaults=(("granule", 128), ("key_lanes", 8), ("value_unroll", 8), ("value_chains", 4)),
++        space=(("key_lanes", (8, 16, 4)), ("value_unroll", (8, 16, 4)),
++               ("value_chains", (4, 1))), reference_keys=("granule",),
++        semantic_keys=("r", "h", "kh", "d", "capacity", "splits", "kv_dtype"),
++        accepts=lambda p: p.get("optimized", False) and p["d"] == 64
++        and p["h"] % p["kh"] == 0 and p["h"] // p["kh"] in (1, 2, 4, 8)
++        and p["kv_dtype"] == "float16" and p.get("unit_scales", False)
++        and (p["capacity"] <= 16384 or p["capacity"] % 128 == 0)
++        and ((p["capacity"] + p.get("splits", 16) * 128 - 1)
++             // (p.get("splits", 16) * 128) * 128 * (p["h"] // p["kh"])
++             + (p["h"] // p["kh"])
++             + 2 * (p["h"] // p["kh"])) * 4 <= 32768,
++        name="attention.webgpu.two_pass_decode",
++    ),
++    Implementation(
++        "attention_adaptive_partial", "akas.ops.attention.webgpu", "reference",
++        provider="webgpu", priority=38, factory="buffered_partial",
++        defaults=(("granule", 128), ("key_lanes", 8), ("value_unroll", 8),
++                  ("value_chains", 4), ("cache_rows", 64), ("cache_dtype", "float16")),
++        space=(("key_lanes", (8, 16, 4)), ("cache_dtype", ("float16", "float32")),
++               ("cache_rows", (64, 32)), ("value_unroll", (8, 16))),
++        reference_keys=("granule",),
++        semantic_keys=("r", "h", "kh", "d", "capacity", "splits", "kv_dtype"),
++        accepts=lambda p: p.get("optimized", False) and p["d"] == 64
++        and p["h"] % p["kh"] == 0 and p["h"] // p["kh"] in (1, 2, 4)
++        and p.get("splits", 16) >= 256 and p["kv_dtype"] == "float16"
++        and p.get("unit_scales", False)
++        and (p["capacity"] <= 16384 or p["capacity"] % 128 == 0),
++        name="attention.webgpu.buffered_decode",
++    ),
++    Implementation(
++        "attention_merge", "akas.ops.attention.webgpu", "reference",
++        provider="webgpu", priority=31, factory="stream_merge",
++        accepts=lambda p: p.get("optimized", False) and p["d"] == 64 and p["splits"] <= 512,
++        name="attention.webgpu.stream_merge",
++    ),
++)
++
++
+ IMPLEMENTATIONS += (
+     Implementation(
+         "attention_partial",
+diff --git a/src/akas/ops/attention/kernel.py b/src/akas/ops/attention/kernel.py
+index fb7beb1..ec1e933 100644
+--- a/src/akas/ops/attention/kernel.py
++++ b/src/akas/ops/attention/kernel.py
+@@ -176,6 +176,19 @@ def tiled_partial_floating(spec: KernelSpec, schedule: Mapping[str, object]):
+         raise ValueError("unsupported grouped floating decode geometry")
+     storage, read = cache_reader(p)
+     webgpu = p["provider"] == "webgpu"
++    shared_dtype = p.get("shared_dtype", "float32")
++    dot_width = p.get("dot_width", 1)
++    if shared_dtype not in ("float16", "float32") or dot_width not in (1, 4):
++        raise ValueError("unsupported grouped decode staging")
++    if shared_dtype == "float16" and p["kv_dtype"] != "float16":
++        raise ValueError("half staging requires native half KV")
++
++    def dot_terms(queries, keys, head, channel, lane):
++        from tensor.compiler.webgpu.schedules.registers import vector
++
++        left = vector([queries[head, channel * 4 + j] for j in range(4)])
++        right = vector([T.cast(keys[channel * 4 + j, lane], "float32") for j in range(4)])
++        return T.call_extern("float32", "dot", left, right)
+ 
+     @T.macro
+     def exchange(value, offset):
+@@ -206,8 +219,8 @@ def tiled_partial_floating(spec: KernelSpec, schedule: Mapping[str, object]):
+             span = T.truncdiv(length + splits - 1, splits)
+             begin, end = split * span, T.min((split + 1) * span, length)
+             queries = T.alloc_shared((group, d), "float32")
+-            keys = T.alloc_shared((d, 33), "float32")
+-            values = T.alloc_shared((32, d), "float32")
++            keys = T.alloc_shared((d, 33), shared_dtype)
++            values = T.alloc_shared((32, d), shared_dtype)
+             probabilities = T.alloc_shared((group, 32), "float32")
+             maximum, normalizer = T.alloc_var("float32"), T.alloc_var("float32")
+             acc0, acc1 = T.alloc_var("float32"), T.alloc_var("float32")
+@@ -232,10 +245,14 @@ def tiled_partial_floating(spec: KernelSpec, schedule: Mapping[str, object]):
+                 score = T.alloc_var("float32")
+                 score = 0
+                 for channel in T.serial(d // 4):
+-                    for j in T.unroll(4):
+-                        score += (
+-                            queries[head, channel * 4 + j] * keys[channel * 4 + j, lane]
+-                        )
++                    if dot_width == 4:
++                        score += dot_terms(queries, keys, head, channel, lane)
++                    else:
++                        for j in T.unroll(4):
++                            score += (
++                                queries[head, channel * 4 + j]
++                                * T.cast(keys[channel * 4 + j, lane], "float32")
++                            )
+                 score = T.if_then_else(
+                     base + lane < end, score * 0.125, -T.infinity("float32")
+                 )
+@@ -258,8 +275,8 @@ def tiled_partial_floating(spec: KernelSpec, schedule: Mapping[str, object]):
+                 acc0, acc1 = acc0 * correction, acc1 * correction
+                 T.sync_threads()
+                 for key in T.serial(32):
+-                    acc0 += probabilities[head, key] * values[key, lane]
+-                    acc1 += probabilities[head, key] * values[key, lane + 32]
++                    acc0 += probabilities[head, key] * T.cast(values[key, lane], "float32")
++                    acc1 += probabilities[head, key] * T.cast(values[key, lane + 32], "float32")
+                 T.sync_threads()
+             offset = ((slot * heads + kv_head * group + head) * splits + split) * 66
+             out[offset + lane] = acc0
+@@ -753,7 +770,7 @@ def rope(spec: KernelSpec, schedule: Mapping[str, object]):
+     import math
+ 
+     p = {**spec.parameters, **schedule}
+-    if p.get("position_limit", 0) > 8192:
++    if p.get("position_limit", 0) > 8192 or p.get("provider") == "webgpu":
+         return precise_rope(spec, schedule)
+     import tilelang.language as T
+ 
+@@ -796,7 +813,7 @@ def precise_rope(spec: KernelSpec, schedule: Mapping[str, object]):
+     if d != 64:
+         raise ValueError("portable reference attention requires 64-channel heads")
+     h, theta = (p["h"], p["theta"])
+-    precise = p.get("position_limit", 0) > 8192
++    precise = p.get("position_limit", 0) > 8192 or p.get("provider") == "webgpu"
+     fma = "fma" if p.get("provider") == "webgpu" else "fmaf"
+ 
+     def single(value):
+@@ -807,6 +824,11 @@ def precise_rope(spec: KernelSpec, schedule: Mapping[str, object]):
+     low = tuple(single(value - rounded) for value, rounded in zip(frequencies, high))
+     tau_high = single(2 * math.pi)
+     tau_low = single(2 * math.pi - tau_high)
++    digits = max(1, ((max(1, p.get("position_limit", 131072)) - 1).bit_length() + 3) // 4)
++    phases = tuple(
++        single(math.remainder(frequency * (16 ** digit), 2 * math.pi))
++        for digit in range(digits) for frequency in frequencies
++    )
+ 
+     def exact(value):
+         if p.get("provider") == "webgpu":
+@@ -816,10 +838,13 @@ def precise_rope(spec: KernelSpec, schedule: Mapping[str, object]):
+         return T.float32(value)
+ 
+     def constant(index, values):
+-        value = exact(values[-1])
+-        for i in range(len(values) - 2, -1, -1):
+-            value = T.if_then_else(index == i, exact(values[i]), value)
+-        return value
++        def select(begin, end):
++            if end - begin == 1:
++                return exact(values[begin])
++            middle = (begin + end) // 2
++            return T.if_then_else(index < middle, select(begin, middle), select(middle, end))
++
++        return select(0, len(values))
+ 
+     @T.macro
+     def product_error(integer, coefficient, rounded):
+@@ -849,21 +874,19 @@ def precise_rope(spec: KernelSpec, schedule: Mapping[str, object]):
+                 leading = T.alloc_var("float32")
+                 trailing = T.alloc_var("float32")
+                 turns = T.alloc_var("int32")
+-                frequency = constant(half, high)
+-                leading = position * frequency
+                 if p.get("provider") == "webgpu":
+-                    trailing = product_error(
+-                        positions[row], frequency, leading
+-                    ) + position * constant(half, low)
+-                    turns = T.cast(T.floor(leading / (2 * math.pi) + 0.5), "int32")
+-                    removed = T.alloc_var("float32")
+-                    remainder = T.alloc_var("float32")
+-                    removed = T.cast(turns, "float32") * exact(tau_high)
+-                    remainder = product_error(turns, exact(tau_high), removed)
+-                    angle = (leading - removed) + (
+-                        trailing - remainder - T.cast(turns, "float32") * exact(tau_low)
+-                    )
++                    # Form bounded angles from base-16 position digits. Large
++                    # float products lose their low bits, and Vulkan drivers may
++                    # contract the compensated product's cancellation sequence.
++                    angle = 0
++                    for digit in T.unroll(digits):
++                        coefficient = constant(half + digit * (d // 2), phases)
++                        angle = angle + T.cast((positions[row] >> (digit * 4)) & 15,
++                                               "float32") * coefficient
++                        angle = angle - T.floor(angle / (2 * math.pi) + 0.5) * exact(tau_high)
+                 else:
++                    frequency = constant(half, high)
++                    leading = position * frequency
+                     trailing = T.call_extern(
+                         "float32", fma, position, frequency, -leading
+                     ) + position * constant(half, low)
+@@ -881,10 +904,30 @@ def precise_rope(spec: KernelSpec, schedule: Mapping[str, object]):
+                 )
+             left = x[(row * h + head) * d + half]
+             right = x[(row * h + head) * d + half + d // 2]
++            cosine = T.alloc_var("float32")
++            sine = T.alloc_var("float32")
++            if p.get("provider") == "webgpu":
++                # Vulkan sin/cos accuracy varies by driver. After compensated
++                # reduction to [-pi, pi], reflect into [-pi/2, pi/2] and use
++                # bounded polynomials rather than the approximate intrinsics.
++                reduced = T.alloc_var("float32")
++                square = T.alloc_var("float32")
++                reduced = T.min(T.abs(angle), T.float32(math.pi) - T.abs(angle))
++                square = reduced * reduced
++                sine = reduced * (1 + square * (-1 / 6 + square * (1 / 120 + square *
++                       (-1 / 5040 + square * (1 / 362880 - square / 39916800)))))
++                cosine = 1 + square * (-1 / 2 + square * (1 / 24 + square *
++                         (-1 / 720 + square * (1 / 40320 + square *
++                         (-1 / 3628800 + square / 479001600)))))
++                sine = T.if_then_else(angle < 0, -sine, sine)
++                cosine = T.if_then_else(T.abs(angle) > math.pi / 2, -cosine, cosine)
++            else:
++                cosine = T.cos(angle)
++                sine = T.sin(angle)
+             out[row, head * d + tx] = T.if_then_else(
+                 tx < d // 2,
+-                left * T.cos(angle) - right * T.sin(angle),
+-                left * T.sin(angle) + right * T.cos(angle),
++                left * cosine - right * sine,
++                left * sine + right * cosine,
+             )
+         return out
+ 
+diff --git a/src/akas/ops/attention/validation.py b/src/akas/ops/attention/validation.py
+index 3298d37..430fbd1 100644
+--- a/src/akas/ops/attention/validation.py
++++ b/src/akas/ops/attention/validation.py
+@@ -521,13 +521,18 @@ def canonical_validation(kind, p, signature):
+                 span = (length + splits - 1) // splits
+                 for part in range(splits):
+                     begin, end = (part * span, min(length, (part + 1) * span))
+-                    if begin >= end:
++                    if p.get("adaptive_splits"):
++                        indices = np.flatnonzero(np.arange(length) // p.get("granule", 512) % splits == part)
++                        block_scores, block_values = scores[indices], vals[indices]
++                    else:
++                        block_scores, block_values = scores[begin:end], vals[begin:end]
++                    if not len(block_scores):
+                         out[row, head, part, :d] = 0
+                         out[row, head, part, d:] = [-np.inf, 0]
+                         continue
+-                    maximum = scores[begin:end].max()
+-                    probabilities = np.exp(scores[begin:end] - maximum)
+-                    out[row, head, part, :d] = probabilities @ vals[begin:end]
++                    maximum = block_scores.max()
++                    probabilities = np.exp(block_scores - maximum)
++                    out[row, head, part, :d] = probabilities @ block_values
+                     out[row, head, part, d:] = [maximum, probabilities.sum()]
+     return ValidationCase(values, expected, rtol=0.02, atol=0.002)
+ 
+@@ -927,6 +932,9 @@ def split_validation(kind, p, signature):
+ 
+ 
+ def validation(kind, parameters, signature):
++    if kind == "attention_adaptive_partial":
++        kind = "attention_partial"
++        parameters = {**parameters, "adaptive_splits": True}
+     if "heads" in parameters and any((row["name"] == "mapping" for row in signature)):
+         return mapped_validation(kind, parameters, signature)
+     if kind in ("attention_q", "attention_kv") or any(
+diff --git a/src/akas/ops/attention/webgpu.py b/src/akas/ops/attention/webgpu.py
+index 45761e7..75c3a7a 100644
+--- a/src/akas/ops/attention/webgpu.py
++++ b/src/akas/ops/attention/webgpu.py
+@@ -20,6 +20,9 @@ def tiled_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
+     dtype = p.get(
+         "shared_dtype", "float16" if p["kv_dtype"] == "float16" else "float32"
+     )
++    packed = p.get("packed_shared", False)
++    if packed and not (dtype == "float16" and p["kv_dtype"] == "float16" and p.get("unit_scales")):
++        raise ValueError("packed prefill staging requires unit-scale native F16 KV")
+     bm = p.get("block_q", min(8, chunk))
+     if dtype not in ("float16", "float32") or (
+         dtype == "float16" and p["kv_dtype"] != "float16"
+@@ -87,6 +90,10 @@ def tiled_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
+         )
+ 
+     def key_vector(keys, channel, lane):
++        if packed:
++            return vector([T.call_extern("float32", "tensor_unpack_f16",
++                keys[(channel * dot_width + j) // 2, lane] >> (((channel * dot_width + j) % 2) * 16))
++                for j in range(dot_width)])
+         return vector(
+             [
+                 T.cast(keys[channel * dot_width + j, lane], "float32")
+@@ -98,6 +105,10 @@ def tiled_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
+         return vector([scores[i, warp, key * dot_width + j] for j in range(dot_width)])
+ 
+     def value_vector(values, key, lane):
++        if packed:
++            return vector([T.call_extern("float32", "tensor_unpack_f16",
++                values[key * dot_width + j, lane // 2] >> ((lane % 2) * 16))
++                for j in range(dot_width)])
+         return vector(
+             [
+                 T.cast(values[key * dot_width + j, lane], "float32")
+@@ -288,8 +299,8 @@ def tiled_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
+             slot = base // chunk
+             length = span(positions, enabled, base)
+             queries = T.alloc_shared((bm, group, d), "float32")
+-            keys = T.alloc_shared((d, bk + pad), dtype)
+-            values = T.alloc_shared((bk, d), dtype)
++            keys = T.alloc_shared((d // 2 if packed else d, bk + pad), "uint32" if packed else dtype)
++            values = T.alloc_shared((bk, d // 2 if packed else d), "uint32" if packed else dtype)
+             scores = T.alloc_shared((bm, group, 32), "float32")
+             maxima, norms, factors = (
+                 registers((bm,)),
+@@ -298,24 +309,45 @@ def tiled_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
+             )
+             accum = registers((bm, 2))
+             initialize_maxima(maxima)
+-            for i, channel in T.Parallel(bm * group, d):
+-                queries[i // group, i % group, channel] = q[
+-                    (base + i // group), (kv_head * group + i % group) * d + channel
+-                ]
++            if packed:
++                for load in T.serial(T.ceildiv(bm * group * d, group * 32)):
++                    flat = load * (group * 32) + tx
++                    i, channel = flat // d, flat % d
++                    if i < bm * group:
++                        queries[i // group, i % group, channel] = q[
++                            (base + i // group), (kv_head * group + i % group) * d + channel
++                        ]
++            else:
++                for i, channel in T.Parallel(bm * group, d):
++                    queries[i // group, i % group, channel] = q[
++                        (base + i // group), (kv_head * group + i % group) * d + channel
++                    ]
+             T.sync_threads()
+             for tile in T.serial(T.truncdiv(length + bk - 1, bk)):
+-                for key, channel in T.Parallel(bk, d):
+-                    position = tile * bk + key
+-                    keys[channel, key] = T.if_then_else(
+-                        position < length,
+-                        read(kc, ks, slot, kv_head, position, channel),
+-                        0,
+-                    )
+-                    values[key, channel] = T.if_then_else(
+-                        position < length,
+-                        read(vc, vs, slot, kv_head, position, channel),
+-                        0,
+-                    )
++                if packed:
++                    for load in T.serial(T.ceildiv(bk * (d // 2), group * 32)):
++                        flat = load * (group * 32) + tx
++                        key, pair = flat // (d // 2), flat % (d // 2)
++                        position = tile * bk + key
++                        a = T.if_then_else(position < length, read(kc, ks, slot, kv_head, position, pair * 2), 0)
++                        b = T.if_then_else(position < length, read(kc, ks, slot, kv_head, position, pair * 2 + 1), 0)
++                        c = T.if_then_else(position < length, read(vc, vs, slot, kv_head, position, pair * 2), 0)
++                        e = T.if_then_else(position < length, read(vc, vs, slot, kv_head, position, pair * 2 + 1), 0)
++                        keys[pair, key] = T.call_extern("uint32", "pack2x16float", T.call_extern("float32x2", "vec2<f32>", a, b))
++                        values[key, pair] = T.call_extern("uint32", "pack2x16float", T.call_extern("float32x2", "vec2<f32>", c, e))
++                else:
++                    for key, channel in T.Parallel(bk, d):
++                        position = tile * bk + key
++                        keys[channel, key] = T.if_then_else(
++                            position < length,
++                            read(kc, ks, slot, kv_head, position, channel),
++                            0,
++                        )
++                        values[key, channel] = T.if_then_else(
++                            position < length,
++                            read(vc, vs, slot, kv_head, position, channel),
++                            0,
++                        )
+                 T.sync_threads()
+                 make_probabilities(
+                     queries,
+@@ -1001,3 +1033,651 @@ from .kernel import (
+ from .definition import IMPLEMENTATIONS as _CHOICES
+ 
+ IMPLEMENTATIONS = tuple((choice for choice in _CHOICES if choice.provider == "webgpu"))
++
++
++def blocked_partial(spec, schedule):
++    """Batch independent key dots before updating online softmax state."""
++    import tilelang.language as T
++    from tensor.compiler.webgpu.schedules.registers import registers
++    from akas.ops.attention.kernel import cache_reader
++
++    p = {**spec.parameters, **schedule}
++    r, h, kh, d, cap = (p[n] for n in ("r", "h", "kh", "d", "capacity"))
++    splits, unroll = p.get("splits", 16), p.get("key_unroll", 4)
++    if d != 64 or h % kh or unroll not in (2, 4, 8):
++        raise ValueError("unsupported register-tiled attention")
++    storage, read = cache_reader(p)
++
++    @T.macro
++    def exchange(value, offset):
++        return T.call_extern("float32", "subgroupShuffleXor", value, T.uint32(offset))
++
++    @T.macro
++    def score_key(score: T.Ref, q0, q1, kc, ks, slot, head, token, lane, end):
++        score = T.if_then_else(
++            token < end,
++            q0 * read(kc, ks, slot, head, token, lane)
++            + q1 * read(kc, ks, slot, head, token, lane + 32), 0)
++        for step in T.unroll(5):
++            score += exchange(score, 16 >> step)
++        score = T.if_then_else(token < end, score * 0.125, -T.infinity("float32"))
++
++    def score_keys(scores, q0, q1, kc, ks, slot, head, base, lane, end):
++        for j in range(unroll):
++            score_key(scores[j,][0], q0, q1, kc, ks, slot, head,
++                      base + j * 4, lane, end)
++
++    @T.macro
++    def max_key(peak: T.Ref, score):
++        peak = T.max(peak, score)
++
++    def maximum_key(peak, scores):
++        for j in range(unroll):
++            max_key(peak, scores[j,][0])
++
++    @T.macro
++    def accumulate(a0: T.Ref, a1: T.Ref, norm: T.Ref, score, peak,
++                   vc, vs, slot, head, token, lane, end):
++        probability = T.if_then_else(token < end, T.exp(score - peak), 0)
++        a0 += probability * T.if_then_else(
++            token < end, read(vc, vs, slot, head, token, lane), 0)
++        a1 += probability * T.if_then_else(
++            token < end, read(vc, vs, slot, head, token, lane + 32), 0)
++        norm += probability
++
++    def accumulate_keys(a0, a1, norm, scores, peak, vc, vs, slot, head, base, lane, end):
++        for j in range(unroll):
++            accumulate(a0, a1, norm, scores[j,][0], peak, vc, vs, slot,
++                       head, base + j * 4, lane, end)
++
++    @kernel
++    def compute(
++        q: Tensor((r, h * d), "float32"),
++        kc: Tensor(storage.values.shape, storage.values.dtype),
++        vc: Tensor(storage.values.shape, storage.values.dtype),
++        ks: Tensor(storage.metadata[0].shape, "float32"),
++        vs: Tensor(storage.metadata[0].shape, "float32"),
++        positions: Tensor(r, "int32"), enabled: Tensor(r, "int32"),
++    ) -> Tensor(r * h * splits * 66, "float32"):
++        out = output(r * h * splits * 66, "float32", position=5)
++        with T.Kernel(h * r, splits, threads=128) as (index, split):
++            head, slot = index % h, index // h
++            tx = T.get_thread_binding()
++            lane, warp = tx % 32, tx // 32
++            length = T.if_then_else(enabled[slot] != 0, T.min(positions[slot] + 1, cap), 0)
++            span = T.ceildiv(length, splits)
++            begin, end = split * span, T.min((split + 1) * span, length)
++            maxima = T.alloc_shared((4,), "float32")
++            sums = T.alloc_shared((4,), "float32")
++            values = T.alloc_shared((4, 64), "float32")
++            maximum, normalizer = T.alloc_var("float32"), T.alloc_var("float32")
++            a0, a1 = T.alloc_var("float32"), T.alloc_var("float32")
++            maximum, normalizer, a0, a1 = -T.infinity("float32"), 0, 0, 0
++            q0, q1 = q[slot, head * d + lane], q[slot, head * d + lane + 32]
++            scores = registers((unroll,))
++            for tile in T.serial(T.ceildiv(T.max(end - begin, 0), 4 * unroll)):
++                base = begin + tile * 4 * unroll + warp
++                score_keys(scores, q0, q1, kc, ks, slot, head // (h // kh), base, lane, end)
++                peak = T.alloc_var("float32")
++                peak = maximum
++                maximum_key(peak, scores)
++                correction = T.if_then_else(maximum == -T.infinity("float32"),
++                                             0, T.exp(maximum - peak))
++                normalizer, a0, a1 = normalizer * correction, a0 * correction, a1 * correction
++                accumulate_keys(a0, a1, normalizer, scores, peak, vc, vs, slot,
++                                head // (h // kh), base, lane, end)
++                maximum = peak
++            values[warp, lane], values[warp, lane + 32] = a0, a1
++            if lane == 0:
++                maxima[warp], sums[warp] = maximum, normalizer
++            T.sync_threads()
++            if warp == 0:
++                merged = T.max(T.max(maxima[0], maxima[1]), T.max(maxima[2], maxima[3]))
++                norm, result0, result1 = T.alloc_var("float32"), T.alloc_var("float32"), T.alloc_var("float32")
++                norm, result0, result1 = 0, 0, 0
++                for other in T.unroll(4):
++                    factor = T.if_then_else(end > begin, T.exp(maxima[other] - merged), 0)
++                    norm += sums[other] * factor
++                    result0 += values[other, lane] * factor
++                    result1 += values[other, lane + 32] * factor
++                offset = (index * splits + split) * 66
++                out[offset + lane], out[offset + lane + 32] = result0, result1
++                if lane == 0:
++                    out[offset + 64], out[offset + 65] = merged, norm
++        return out
++
++    return compute
++
++
++def channel_partial(spec, schedule):
++    import tilelang.language as T
++    from tensor.compiler.webgpu.schedules.registers import registers, vector
++    from akas.ops.attention.kernel import cache_reader
++
++    p = {**spec.parameters, **schedule}
++    r, h, kh, d, cap = (p[n] for n in ("r", "h", "kh", "d", "capacity"))
++    group, splits, bk = h // kh, p.get("splits", 16), p.get("key_rows", 16)
++    adaptive = spec.kind == "attention_adaptive_partial"
++    granule = p.get("granule", 512)
++    packed_shared = p.get("packed_shared", False)
++    chains = p.get("dot_chains", 1)
++    if chains not in (1, 4):
++        raise ValueError("attention dot chains must be one or four")
++    if adaptive and (granule not in (64, 128, 512) or granule % bk):
++        raise ValueError("unsupported adaptive cache block size")
++    if d != 64 or h % kh or group not in (1, 2, 4, 8) or bk not in (16, 32, 64, 128):
++        raise ValueError("unsupported channel-cooperative attention")
++    if p["kv_dtype"] != "float16" or not p.get("unit_scales", False):
++        raise ValueError("channel-cooperative attention requires unit-scale half KV")
++    if bk == 128 and not packed_shared:
++        raise ValueError("128-token tiles require packed shared KV")
++    lanes = 2 if bk >= 64 else 64 // bk
++    terms = d // lanes
++    storage, read = cache_reader(p)
++
++    @T.macro
++    def exchange(value, stride):
++        return T.call_extern("float32", "subgroupShuffleXor", value, T.uint32(stride))
++
++    @T.macro
++    def load_query(value: T.Ref, q, slot, head, channel):
++        value = q[slot, head * d + channel]
++
++    def load_queries(queries, q, slot, head, channel_group):
++        for j in range(terms):
++            load_query(queries[j,][0], q, slot, head, channel_group * terms + j)
++
++    def tile_range(length, split):
++        if adaptive:
++            begin = split * granule
++            return begin, length, T.ceildiv(T.max(length - begin, 0), splits * granule) * (granule // bk)
++        span = T.ceildiv(length, splits)
++        begin, end = split * span, T.min((split + 1) * span, length)
++        return begin, end, T.ceildiv(T.max(end - begin, 0), bk)
++
++    def tile_start(begin, tile):
++        if adaptive:
++            return begin + tile // (granule // bk) * (splits * granule) + tile % (granule // bk) * bk
++        return begin + tile * bk
++
++    @T.macro
++    def dot_term(score: T.Ref, left, right):
++        score += T.call_extern("float32", "dot", left, right)
++
++    def dot_keys(score, queries, keys, key, channel_group):
++        if chains == 4:
++            partial = registers((4,))
++            for j in range(terms // 4):
++                for component in range(4):
++                    channel = channel_group * terms + j * 4 + component
++                    right = (T.call_extern("float32", "tensor_unpack_f16",
++                             keys[(channel // 2) * (bk + 1) + key] >> (16 * (channel % 2)))
++                             if packed_shared else T.cast(keys[channel * (bk + 1) + key], "float32"))
++                    fma_term(partial[component,][0], queries[j * 4 + component,][0], right)
++            combine_chains(score, *(partial[j,][0] for j in range(4)))
++            return
++        for j in range(terms // 4):
++            left = vector([queries[j * 4 + k,][0] for k in range(4)])
++            if packed_shared:
++                right = vector([T.call_extern("float32", "tensor_unpack_f16",
++                    keys[(channel_group * (terms // 2) + j * 2 + k // 2) * (bk + 1) + key] >> (16 * (k % 2)))
++                    for k in range(4)])
++            else:
++                right = vector([T.cast(keys[(channel_group * terms + j * 4 + k) * (bk + 1) + key], "float32")
++                                for k in range(4)])
++            dot_term(score, left, right)
++
++    def dot_values(acc, probabilities, values, keys, head, channel):
++        if chains == 4:
++            partial = registers((4,))
++            for j in range(bk // 4):
++                for component in range(4):
++                    token = j * 4 + component
++                    word = (keys[token * (d // 2) + channel // 2] if bk == 128 else
++                            values[token, channel // 2]) if packed_shared else None
++                    right = (T.call_extern("float32", "tensor_unpack_f16", word >> ((channel % 2) * 16))
++                             if packed_shared else T.cast(values[token, channel], "float32"))
++                    fma_term(partial[component,][0], probabilities[head, token], right)
++            combine_chains(acc, *(partial[j,][0] for j in range(4)))
++            return
++        for j in range(bk // 4):
++            left = vector([probabilities[head, j * 4 + k] for k in range(4)])
++            if packed_shared:
++                right = vector([T.call_extern("float32", "tensor_unpack_f16",
++                    (keys[(j * 4 + k) * (d // 2) + channel // 2] if bk == 128 else
++                     values[j * 4 + k, channel // 2]) >> ((channel % 2) * 16)) for k in range(4)])
++            else:
++                right = vector([T.cast(values[j * 4 + k, channel], "float32") for k in range(4)])
++            dot_term(acc, left, right)
++
++    @T.macro
++    def fma_term(acc: T.Ref, left, right):
++        acc = T.call_extern("float32", "fma", left, right, acc)
++
++    @T.macro
++    def combine_chains(acc: T.Ref, a, b, c, e):
++        acc += (a + b) + (c + e)
++
++    @T.macro
++    def raw_score(scores, probabilities, head, token):
++        if bk >= 64:
++            return scores[head, token]
++        else:
++            return probabilities[head, token]
++
++    @kernel
++    def compute(
++        q: Tensor((r, h * d), "float32"),
++        kc: Tensor(storage.values.shape, storage.values.dtype),
++        vc: Tensor(storage.values.shape, storage.values.dtype),
++        ks: Tensor(storage.metadata[0].shape, "float32"),
++        vs: Tensor(storage.metadata[0].shape, "float32"),
++        positions: Tensor(r, "int32"), enabled: Tensor(r, "int32"),
++    ) -> Tensor(r * h * splits * 66, "float32"):
++        out = output(r * h * splits * 66, "float32", position=5)
++        with T.Kernel(kh, r, splits, threads=group * 64) as (kv_head, slot, split):
++            tx = T.get_thread_binding()
++            head, local = tx // 64, tx % 64
++            key, channel_group = local // lanes, local % lanes
++            length = T.if_then_else(enabled[slot] != 0, T.min(positions[slot] + 1, cap), 0)
++            begin, end, tile_count = tile_range(length, split)
++            keys = T.alloc_shared(((d // 2 if packed_shared else d) * (bk + 1),),
++                                  "uint32" if packed_shared else "float16")
++            values = T.alloc_shared((1 if bk == 128 else bk, 1 if bk == 128 else d // 2 if packed_shared else d),
++                                    "uint32" if packed_shared else "float16")
++            probabilities = T.alloc_shared((group, bk), "float32")
++            scores = T.alloc_shared((group if bk >= 64 else 1, bk if bk >= 64 else 1), "float32")
++            queries = registers((terms,))
++            if not adaptive:
++                load_queries(queries, q, slot, kv_head * group + head, channel_group)
++            elif begin < length:
++                load_queries(queries, q, slot, kv_head * group + head, channel_group)
++            maximum, normalizer, acc = T.alloc_var("float32"), T.alloc_var("float32"), T.alloc_var("float32")
++            maximum, normalizer, acc = -T.infinity("float32"), 0, 0
++            for tile in T.serial(tile_count):
++                base = tile_start(begin, tile)
++                if base < end:
++                    if packed_shared:
++                        for load in T.serial(T.ceildiv(bk * (d // 2), group * 64)):
++                            flat = load * (group * 64) + tx
++                            token, pair = flat // (d // 2), flat % (d // 2)
++                            a = T.if_then_else(base + token < end,
++                                read(kc, ks, slot, kv_head, base + token, pair * 2), 0)
++                            b = T.if_then_else(base + token < end,
++                                read(kc, ks, slot, kv_head, base + token, pair * 2 + 1), 0)
++                            if bk != 128:
++                                c = T.if_then_else(base + token < end,
++                                    read(vc, vs, slot, kv_head, base + token, pair * 2), 0)
++                                e = T.if_then_else(base + token < end,
++                                    read(vc, vs, slot, kv_head, base + token, pair * 2 + 1), 0)
++                            keys[pair * (bk + 1) + token] = T.call_extern("uint32", "pack2x16float",
++                                T.call_extern("float32x2", "vec2<f32>", a, b))
++                            if bk != 128:
++                                values[token, pair] = T.call_extern("uint32", "pack2x16float",
++                                    T.call_extern("float32x2", "vec2<f32>", c, e))
++                    else:
++                        for load in T.serial(T.ceildiv(bk * d, group * 64)):
++                            flat = load * (group * 64) + tx
++                            token, channel = flat // d, flat % d
++                            keys[channel * (bk + 1) + token] = T.if_then_else(base + token < end,
++                                read(kc, ks, slot, kv_head, base + token, channel), 0)
++                            values[token, channel] = T.if_then_else(base + token < end,
++                                read(vc, vs, slot, kv_head, base + token, channel), 0)
++                    T.sync_threads()
++                    for score_tile in T.unroll(bk // 32 if bk >= 64 else 1):
++                        key_index = key + score_tile * 32
++                        score = T.alloc_var("float32")
++                        score = 0
++                        dot_keys(score, queries, keys, key_index, channel_group)
++                        for step in T.unroll(lanes.bit_length() - 1):
++                            score += exchange(score, lanes >> (step + 1))
++                        if channel_group == 0:
++                            if bk >= 64:
++                                scores[head, key_index] = T.if_then_else(base + key_index < end,
++                                    score * 0.125, -T.infinity("float32"))
++                            else:
++                                probabilities[head, key_index] = T.if_then_else(base + key_index < end,
++                                    score * 0.125, -T.infinity("float32"))
++                    T.sync_threads()
++                    if bk == 128:
++                        for load in T.serial(T.ceildiv(bk * (d // 2), group * 64)):
++                            flat = load * (group * 64) + tx
++                            token, pair = flat // (d // 2), flat % (d // 2)
++                            a = T.if_then_else(base + token < end,
++                                read(vc, vs, slot, kv_head, base + token, pair * 2), 0)
++                            b = T.if_then_else(base + token < end,
++                                read(vc, vs, slot, kv_head, base + token, pair * 2 + 1), 0)
++                            keys[flat] = T.call_extern("uint32", "pack2x16float",
++                                T.call_extern("float32x2", "vec2<f32>", a, b))
++                    probability = T.alloc_var("float32")
++                    probability = raw_score(scores, probabilities, head, local % bk)
++                    peak = T.alloc_var("float32")
++                    peak = probability
++                    if bk == 128:
++                        peak = T.max(peak, scores[head, local + 64])
++                    if bk >= 64:
++                        if T.call_extern("uint32", "tensor_subgroup_size") >= 64:
++                            peak = T.max(peak, exchange(peak, 32))
++                        else:
++                            peak = T.max(peak, scores[head, local ^ 32])
++                            if bk == 128:
++                                peak = T.max(peak, scores[head, (local ^ 32) + 64])
++                    for step in T.unroll(min(bk, 32).bit_length() - 1):
++                        peak = T.max(peak, exchange(peak, min(bk, 32) >> (step + 1)))
++                    next_max = T.max(maximum, peak)
++                    correction = T.if_then_else(maximum == -T.infinity("float32"),
++                                                 0, T.exp(maximum - next_max))
++                    probability = T.if_then_else(base + local % bk < end,
++                                                  T.exp(probability - next_max), 0)
++                    norm = T.alloc_var("float32")
++                    norm = probability
++                    second = T.alloc_var("float32")
++                    if bk == 128:
++                        second = T.if_then_else(base + local + 64 < end,
++                            T.exp(scores[head, local + 64] - next_max), 0)
++                        norm += second
++                    if bk >= 64:
++                        if T.call_extern("uint32", "tensor_subgroup_size") >= 64:
++                            norm += exchange(probability, 32)
++                            if bk == 128:
++                                norm += exchange(second, 32)
++                        else:
++                            norm += T.if_then_else(base + (local ^ 32) < end,
++                                T.exp(scores[head, local ^ 32] - next_max), 0)
++                            if bk == 128:
++                                norm += T.if_then_else(base + (local ^ 32) + 64 < end,
++                                    T.exp(scores[head, (local ^ 32) + 64] - next_max), 0)
++                    for step in T.unroll(min(bk, 32).bit_length() - 1):
++                        norm += exchange(norm, min(bk, 32) >> (step + 1))
++                    normalizer = normalizer * correction + norm
++                    maximum = next_max
++                    if local < bk:
++                        probabilities[head, local] = probability
++                    if bk == 128:
++                        probabilities[head, local + 64] = second
++                    acc *= correction
++                    T.sync_threads()
++                    dot_values(acc, probabilities, values, keys, head, local)
++                    T.sync_threads()
++            offset = ((slot * h + kv_head * group + head) * splits + split) * 66
++            out[offset + local] = acc
++            if local == 0:
++                out[offset + 64], out[offset + 65] = maximum, normalizer
++        return out
++
++    return compute
++
++
++def packed_channel_partial(spec, schedule):
++    return channel_partial(spec, {**schedule, "packed_shared": True})
++
++
++def two_pass_partial(spec, schedule):
++    """Bounded shared scores: one K pass, one softmax, one coalesced V pass."""
++    import tilelang.language as T
++    from tensor.compiler.webgpu.schedules.registers import registers, vector
++    from akas.ops.attention.kernel import cache_reader
++
++    p = {**spec.parameters, **schedule}
++    r, h, kh, d, cap = (p[n] for n in ("r", "h", "kh", "d", "capacity"))
++    group, splits = h // kh, p.get("splits", 128)
++    granule, lanes = p.get("granule", 128), p.get("key_lanes", 8)
++    unroll = p.get("value_unroll", 8)
++    chains = p.get("value_chains", 4)
++    cached = p.get("stage_cache", False)
++    bk = p.get("cache_rows", 64)
++    cache_dtype = p.get("cache_dtype", "float16")
++    cache_bytes = bk * 65 * (2 if cache_dtype == "float16" else 4) if cached else 0
++    extent = (cap + splits * granule - 1) // (splits * granule) * granule
++    if (d != 64 or h % kh or group not in (1, 2, 4, 8)
++            or lanes not in (4, 8, 16) or unroll not in (4, 8, 16)
++            or chains not in (1, 4) or unroll % chains
++            or granule not in (64, 128, 512)
++            or (cap > 16384 and cap % 128)
++            or (cached and (bk not in (32, 64) or cache_dtype not in ("float16", "float32")))
++            or ((extent + 1) * group + group * 2) * 4 + cache_bytes > 32768):
++        raise ValueError("unsupported two-pass decode geometry, capacity alignment or shared storage")
++    if p["kv_dtype"] != "float16" or not p.get("unit_scales", False):
++        raise ValueError("two-pass decode requires unit-scale half KV")
++    keys_per_step, terms = 64 // lanes, d // lanes
++    storage, read = cache_reader(p)
++
++    @T.macro
++    def read(cache, metadata, slot, head, token, channel):
++        return T.cast(cache[slot, head, token, channel], "float32")
++
++    @T.macro
++    def exchange(value, stride):
++        return T.call_extern("float32", "subgroupShuffleXor", value, T.uint32(stride))
++
++    @T.macro
++    def query(value: T.Ref, q, slot, head, channel):
++        value = q[slot, head * d + channel]
++
++    def load_query(values, q, slot, head, lane):
++        for j in range(terms):
++            query(values[j,][0], q, slot, head, lane * terms + j)
++
++    @T.macro
++    def add_dot(score: T.Ref, left, right):
++        score += T.call_extern("float32", "dot", left, right)
++
++    def score_dot(score, values, kc, ks, slot, kv_head, token, lane, cache=None, key=0):
++        for j in range(terms // 4):
++            left = vector([values[j * 4 + k,][0] for k in range(4)])
++            if cached:
++                right = vector([T.cast(cache[key, lane * terms + j * 4 + k], "float32")
++                                for k in range(4)])
++            else:
++                right = vector([read(kc, ks, slot, kv_head, T.min(token, cap - 1), lane * terms + j * 4 + k)
++                                for k in range(4)])
++            add_dot(score, left, right)
++
++    @T.macro
++    def add_value(acc: T.Ref, weight, value):
++        acc += weight * T.cast(value, "float32")
++
++    def value_step(accum, scores, vc, vs, slot, kv_head, head, channel, tile, length, count, begin,
++                   cache=None, base=0):
++        for u in range(unroll):
++            index = base + tile * unroll + u
++            token = begin + index // granule * (splits * granule) + index % granule
++            if cached:
++                add_value(accum[u % chains,][0], scores[head, index],
++                          cache[tile * unroll + u, channel])
++            else:
++                with T.If((index < count) & (token < length)):
++                    with T.Then():
++                        add_value(accum[u % chains,][0], scores[head, index],
++                                  read(vc, vs, slot, kv_head, T.min(token, cap - 1), channel))
++
++    @T.macro
++    def load_cache(cache, staged, slot, kv_head, base, length):
++        tx = T.get_thread_binding()
++        for load in T.serial(T.ceildiv(bk * d, group * 64)):
++            flat = load * (group * 64) + tx
++            token, channel = flat // d, flat % d
++            staged[token, channel] = T.if_then_else(base + token < length,
++                T.cast(cache[slot, kv_head, T.min(base + token, cap - 1), channel], cache_dtype), 0)
++
++    @T.macro
++    def sum_values(value: T.Ref, other):
++        value += other
++
++    def finish_values(accum, value):
++        for chain in range(chains):
++            sum_values(value, accum[chain,][0])
++
++    @kernel
++    def compute(
++        q: Tensor((r, h * d), "float32"),
++        kc: Tensor(storage.values.shape, storage.values.dtype),
++        vc: Tensor(storage.values.shape, storage.values.dtype),
++        ks: Tensor(storage.metadata[0].shape, "float32"),
++        vs: Tensor(storage.metadata[0].shape, "float32"),
++        positions: Tensor(r, "int32"), enabled: Tensor(r, "int32"),
++    ) -> Tensor(r * h * splits * 66, "float32"):
++        out = output(r * h * splits * 66, "float32", position=5)
++        with T.Kernel(kh, r, splits, threads=group * 64) as (kv_head, slot, split):
++            tx = T.get_thread_binding()
++            head, local = tx // 64, tx % 64
++            lane = local % lanes
++            length = T.if_then_else(enabled[slot] != 0, T.min(positions[slot] + 1, cap), 0)
++            begin = split * granule
++            count = T.ceildiv(T.max(length - begin, 0), splits * granule) * granule
++            scores = T.alloc_shared((group, extent + 1), "float32")
++            reductions = T.alloc_shared((group, 2), "float32")
++            if cached:
++                cache_tile = T.alloc_shared((bk, d + 1), cache_dtype)
++            queries = registers((terms,))
++            accum = registers((chains,))
++            maximum = T.alloc_var("float32")
++            normalizer = T.alloc_var("float32")
++            result = T.alloc_var("float32")
++            maximum, normalizer, result = -T.infinity("float32"), 0, 0
++            if begin < length:
++                load_query(queries, q, slot, kv_head * group + head, lane)
++                if cached:
++                    for tile in T.serial(T.ceildiv(count, bk)):
++                        base_index = tile * bk
++                        base = begin + base_index // granule * (splits * granule) + base_index % granule
++                        load_cache(kc, cache_tile, slot, kv_head, base, length)
++                        T.sync_threads()
++                        for item in T.serial(bk // keys_per_step):
++                            key = item * keys_per_step + local // lanes
++                            index, token = base_index + key, base + key
++                            score = T.alloc_var("float32")
++                            score = 0
++                            score_dot(score, queries, kc, ks, slot, kv_head, token, lane, cache_tile, key)
++                            for step in T.unroll(lanes.bit_length() - 1):
++                                score += exchange(score, lanes >> (step + 1))
++                            score = T.if_then_else(token < length,
++                                score * 0.125 * ks[slot, kv_head, 0, 0], -T.infinity("float32"))
++                            maximum = T.max(maximum, score)
++                            if lane == 0:
++                                scores[head, index] = score
++                        T.sync_threads()
++                else:
++                    for tile in T.serial(T.ceildiv(count, keys_per_step)):
++                        index = tile * keys_per_step + local // lanes
++                        token = begin + index // granule * (splits * granule) + index % granule
++                        score = T.alloc_var("float32")
++                        score = 0
++                        if token < length:
++                            score_dot(score, queries, kc, ks, slot, kv_head, token, lane)
++                        for step in T.unroll(lanes.bit_length() - 1):
++                            score += exchange(score, lanes >> (step + 1))
++                        score = T.if_then_else(token < length,
++                            score * 0.125 * ks[slot, kv_head, 0, 0], -T.infinity("float32"))
++                        maximum = T.max(maximum, score)
++                        if lane == 0:
++                            scores[head, index] = score
++                for step in T.unroll(5):
++                    maximum = T.max(maximum, exchange(maximum, 16 >> step))
++                if local % 32 == 0:
++                    reductions[head, local // 32] = maximum
++                T.sync_threads()
++                maximum = T.max(reductions[head, 0], reductions[head, 1])
++                for tile in T.serial(T.ceildiv(count, 64)):
++                    index = tile * 64 + local
++                    if index < count:
++                        probability = T.exp(scores[head, index] - maximum)
++                        scores[head, index] = probability
++                        normalizer += probability
++                for step in T.unroll(5):
++                    normalizer += exchange(normalizer, 16 >> step)
++                if local % 32 == 0:
++                    reductions[head, local // 32] = normalizer
++                T.sync_threads()
++                normalizer = reductions[head, 0] + reductions[head, 1]
++                if cached:
++                    for tile in T.serial(T.ceildiv(count, bk)):
++                        base_index = tile * bk
++                        base = begin + base_index // granule * (splits * granule) + base_index % granule
++                        load_cache(vc, cache_tile, slot, kv_head, base, length)
++                        T.sync_threads()
++                        for item in T.serial(bk // unroll):
++                            value_step(accum, scores, vc, vs, slot, kv_head, head, local,
++                                       item, length, count, begin, cache_tile, base_index)
++                        T.sync_threads()
++                else:
++                    for tile in T.serial(T.ceildiv(count, unroll)):
++                        value_step(accum, scores, vc, vs, slot, kv_head, head, local,
++                                   tile, length, count, begin)
++                finish_values(accum, result)
++                result *= vs[slot, kv_head, 0, 0]
++            offset = ((slot * h + kv_head * group + head) * splits + split) * 66
++            out[offset + local] = result
++            if local == 0:
++                out[offset + 64], out[offset + 65] = maximum, normalizer
++        return out
++
++    return compute
++
++
++def buffered_partial(spec, schedule):
++    return two_pass_partial(spec, {**schedule, "stage_cache": True})
++
++
++def stream_merge(spec, schedule):
++    """Reduce split statistics without a splits-by-depth shared product array."""
++    import tilelang.language as T
++
++    p = {**spec.parameters, **schedule}
++    r, h, d, splits = (p[n] for n in ("r", "h", "d", "splits"))
++    if d != 64 or splits > 512:
++        raise ValueError("streaming merge requires D64 and at most 512 splits")
++
++    @T.macro
++    def exchange(value, stride):
++        return T.call_extern("float32", "subgroupShuffleXor", value, T.uint32(stride))
++
++    @kernel
++    def compute(parts: Tensor(r * h * splits * 66, "float32"),
++                enabled: Tensor(r, "int32")) -> Tensor(r * h * d, "float32"):
++        out = output(r * h * d, "float32", position=1)
++        with T.Kernel(r * h, threads=64) as head:
++            tx = T.get_thread_binding()
++            weights = T.alloc_shared((splits,), "float32")
++            reductions = T.alloc_shared((2,), "float32")
++            limits = T.alloc_shared((2,), "float32")
++            active_end = T.alloc_var("float32")
++            maximum, normalizer, result = T.alloc_var("float32"), T.alloc_var("float32"), T.alloc_var("float32")
++            maximum, normalizer, result = -T.infinity("float32"), 0, 0
++            active_end = 0
++            for tile in T.serial(T.ceildiv(splits, 64)):
++                part = tile * 64 + tx
++                if part < splits:
++                    if parts[(head * splits + part) * 66 + 65] > 0:
++                        maximum = T.max(maximum, parts[(head * splits + part) * 66 + 64])
++                        active_end = T.max(active_end, T.cast(part + 1, "float32"))
++            for step in T.unroll(5):
++                maximum = T.max(maximum, exchange(maximum, 16 >> step))
++                active_end = T.max(active_end, exchange(active_end, 16 >> step))
++            if tx % 32 == 0:
++                reductions[tx // 32] = maximum
++                limits[tx // 32] = active_end
++            T.sync_threads()
++            maximum = T.max(reductions[0], reductions[1])
++            last = T.cast(T.max(limits[0], limits[1]), "int32")
++            for tile in T.serial(T.ceildiv(last, 64)):
++                part = tile * 64 + tx
++                if part < last:
++                    norm = parts[(head * splits + part) * 66 + 65]
++                    factor = T.if_then_else(norm > 0,
++                        T.exp(parts[(head * splits + part) * 66 + 64] - maximum), 0)
++                    weights[part] = factor
++                    normalizer += norm * factor
++            for step in T.unroll(5):
++                normalizer += exchange(normalizer, 16 >> step)
++            if tx % 32 == 0:
++                reductions[tx // 32] = normalizer
++            T.sync_threads()
++            normalizer = reductions[0] + reductions[1]
++            for part in T.serial(last):
++                result += parts[(head * splits + part) * 66 + tx] * weights[part]
++            out[head * d + tx] = T.if_then_else(
++                (enabled[head // h] != 0) & (normalizer > 0), result / normalizer, 0)
++        return out
++
++    return compute
+diff --git a/src/akas/ops/linear/definition.py b/src/akas/ops/linear/definition.py
+index 6f28ad5..d425a3f 100644
+--- a/src/akas/ops/linear/definition.py
++++ b/src/akas/ops/linear/definition.py
+@@ -38,9 +38,92 @@ def lower(graph, commit, settings, *, provider, target):
+         "mma_reorder",
+         "async_mma",
+         "packed_widen",
++        "split_ffn",
++        "split_ffn_min_rows",
++        "stage_weights",
++        "stage_inputs",
+     }
+     if set(settings) - allowed:
+         raise ValueError("unknown projection pipeline policy")
++    if graph.contract == "reference":
++        if set(settings) - {"split_ffn", "split_ffn_min_rows", "stage_weights", "stage_inputs"}:
++            raise ValueError("unknown floating projection policy")
++        if type(settings.get("split_ffn", False)) is not bool:
++            raise ValueError("split FFN policy must be a boolean")
++        minimum_rows = settings.get("split_ffn_min_rows", 2)
++        if type(minimum_rows) is not int or minimum_rows < 2:
++            raise ValueError("split FFN minimum rows must be an integer >= 2")
++        if type(settings.get("stage_weights", False)) is not bool:
++            raise ValueError("weight staging policy must be a boolean")
++        if settings.get("stage_weights") and provider != "webgpu":
++            raise ValueError("floating weight staging currently requires WebGPU")
++        if type(settings.get("stage_inputs", False)) is not bool:
++            raise ValueError("input staging policy must be a boolean")
++        if settings.get("stage_inputs") and provider != "webgpu":
++            raise ValueError("floating input staging currently requires WebGPU")
++        if settings.get("split_ffn"):
++            from akas.graph import Call
++            calls = []
++            for index, call in enumerate(graph.calls):
++                p = call.parameters
++                if call.kind != "ffn" or p["r"] < minimum_rows or not p.get("ggml"):
++                    calls.append(call)
++                    continue
++                if call.bindings:
++                    x, w, w2, out = (call.bindings[n] for n in ("x", "w", "w2", "out"))
++                else:
++                    x, w, w2, out = call.arguments
++                gate = graph.buffer(f"pipeline.gate.{index}", (p["r"] * p["o"],), "float32")
++                up = graph.buffer(f"pipeline.up.{index}", (p["r"] * p["o"],), "float32")
++                calls += [Call("linear", dict(p), (x, w, gate.name)),
++                          Call("linear", dict(p), (x, w2, up.name)),
++                          Call("swiglu", dict(r=p["r"], c=p["o"]),
++                               (gate.name, up.name, out), label=call.label)]
++            graph.calls = calls
++        if settings.get("stage_weights"):
++            from akas.graph import Call
++            calls = []
++            for index, call in enumerate(graph.calls):
++                p = call.parameters
++                if (call.kind not in ("linear", "linear_add", "ffn") or p["r"] < 128
++                        or not p.get("ggml") or p.get("q16") or p.get("type") not in (2, 14)):
++                    calls.append(call)
++                    continue
++                if call.bindings:
++                    raise ValueError("staged packed projections require positional bindings")
++                arguments = list(call.arguments)
++                for argument in (1, 2) if call.kind == "ffn" else (1,):
++                    staged = graph.buffer(f"pipeline.weight.{index}.{argument}",
++                                          (p["o"], p["k"]), "float16")
++                    flat = graph.view(staged.name + ".flat", staged, (p["o"] * p["k"],))
++                    calls.append(Call("dequantize_ggml", dict(r=p["o"], k=p["k"], type=p["type"],
++                        output_dtype="float16", **(dict(weight_layout=p["weight_layout"])
++                                                   if "weight_layout" in p else {})),
++                        (arguments[argument], staged.name)))
++                    arguments[argument] = flat.name
++                parameters = {k:v for k,v in p.items() if k != "weight_layout"}
++                calls.append(replace(call, parameters={**parameters, "type": 1}, arguments=tuple(arguments)))
++            graph.calls = calls
++        if settings.get("stage_inputs"):
++            from akas.graph import Call
++            calls = []
++            for index, call in enumerate(graph.calls):
++                p = call.parameters
++                if (call.kind not in ("linear", "linear_add", "ffn")
++                        or not p.get("half_accum") or p["r"] == 1):
++                    calls.append(call)
++                    continue
++                if call.bindings or p.get("input_dtype", "float32") != "float32":
++                    raise ValueError("input staging requires positional F32 projections")
++                staged = graph.buffer(f"pipeline.input.{index}", (p["r"] * p["k"],), "float16")
++                calls.append(Call("linear_half_input", dict(r=p["r"], k=p["k"]),
++                                  (call.arguments[0], staged.name)))
++                calls.append(replace(call, parameters={**p, "input_dtype": "float16"},
++                                     arguments=(staged.name, *call.arguments[1:])))
++            graph.calls = calls
++        return graph, commit
++    if set(settings) & {"split_ffn", "split_ffn_min_rows", "stage_weights", "stage_inputs"}:
++        raise ValueError("prefill projection policies require the floating contract")
+     if graph.contract != "block-fp8":
+         return (graph, commit)
+     if provider != "cuda":
+@@ -369,6 +452,10 @@ def schedule(rows, k, o, width):
+ REWRITES = (fuse_projections, fuse_residual_projection)
+ ROW_INDEPENDENT = ("linear",)
+ OUTPUT_ARGUMENTS = {"reference": {"linear": (-1,), "ffn": (-1,), "linear_add": (-1,)}}
++OUTPUT_ARGUMENTS["reference"]["linear_half_input"] = OutputABI((-1,), ("out",))
++from .validation import half_input_validation
++
++VALIDATIONS["linear_half_input"] = half_input_validation
+ for _contract in ("reference", "packed", "packed-baseline", "bf16", "block-fp8"):
+     OUTPUT_ARGUMENTS.setdefault(_contract, {}).update(
+         {
+@@ -388,6 +475,10 @@ VALIDATIONS.update(
+     {name: pipeline_validation for name in ("projection_partial", "projection_merge")}
+ )
+ IMPLEMENTATIONS = (
++    Implementation(
++        "linear_half_input", "akas.ops.linear.webgpu", "reference", provider="webgpu",
++        factory="half_input", name="linear.webgpu.half_input",
++    ),
+     Implementation(
+         "fp8_linear",
+         "akas.ops.linear.cuda",
+@@ -1019,11 +1110,115 @@ IMPLEMENTATIONS += tuple(
+     for provider in ("cuda", "webgpu")
+     for tiled in (False, True)
+ )
++# Packed prefill previously exposed only the register schedule to automatic
++# search. Keep that incumbent and independently qualify staged weight reuse.
++IMPLEMENTATIONS += tuple(
++    Implementation(
++        kind, "akas.ops.linear.webgpu", "reference", provider="webgpu",
++        priority=39, factory="outer_prefill",
++        defaults=(("outer_rows", 32),),
++        space=(("outer_rows", (32, 64, 16)),),
++        semantic_keys=("r", "k", "o", "type", "ggml"),
++        accepts=lambda p: p.get("ggml", False) and p["r"] > 1 and p["type"] in (1, 2, 14),
++        variant="outer-prefill", name="linear.webgpu.packed:outer-prefill",
++    )
++    for kind in ("linear", "ffn")
++)
++
+ OUTPUT_ARGUMENTS["*"] = {"quantized_projection": OutputABI((-1,), ("out",))}
+ from .validation import projection_validation
+ 
+ VALIDATIONS["quantized_projection"] = projection_validation
+ 
++IMPLEMENTATIONS += tuple(
++    Implementation(
++        kind, "akas.ops.linear.webgpu", "reference", provider="webgpu",
++        priority=43, factory="integer_prefill",
++        defaults=(("integer_layout", 0), ("integer_k", 32)),
++        space=(("integer_layout", tuple(range(5))), ("integer_k", (32, 64, 128))),
++        semantic_keys=("r", "k", "o", "type", "ggml", "q16"),
++        accepts=lambda p: p.get("ggml", False) and p.get("q16", False)
++        and p["r"] > 1 and p["type"] == 2,
++        name="linear.webgpu.two_component",
++    )
++    for kind in ("linear", "ffn", "linear_add")
++)
++
++IMPLEMENTATIONS += tuple(
++    Implementation(
++        kind, "akas.ops.linear.webgpu", "reference", provider="webgpu",
++        priority=43, factory="half_prefill",
++        defaults=(("half_layout", 0), ("half_pad", 1), ("half_native", True), ("half_k", 16)),
++        space=(("half_layout", (0, 1, 2, 3, 4, 5)), ("half_pad", (1, 0)),
++               ("half_native", (True, False)), ("half_k", (16, 32, 64))),
++        semantic_keys=("r", "k", "o", "type", "ggml", "half_accum"),
++        accepts=lambda p: p.get("ggml", False) and p.get("half_accum", False)
++        and p["r"] > 1 and p["type"] in (1, 2, 14),
++        name="linear.webgpu.short_half",
++    )
++    for kind in ("linear", "ffn", "linear_add")
++)
++
++IMPLEMENTATIONS += tuple(
++    Implementation(
++        kind, "akas.ops.linear.webgpu", "reference", provider="webgpu",
++        priority=38, factory="blocked_prefill",
++        defaults=(("outer_layout", 0),),
++        space=(("outer_layout", tuple(range(9))),),
++        semantic_keys=("r", "k", "o", "type", "ggml"),
++        accepts=lambda p: p.get("ggml", False) and p["r"] > 1 and p["type"] in (1, 2, 14),
++        variant="blocked-prefill", name="linear.webgpu.packed:blocked-prefill",
++    )
++    for kind in ("linear", "ffn", "linear_add")
++)
++
++IMPLEMENTATIONS += tuple(
++    Implementation(
++        kind, "akas.ops.linear.webgpu", "reference", provider="webgpu",
++        priority=39, factory="vector_decode",
++        defaults=(("decode_layout", 0),), space=(("decode_layout", tuple(range(8))),),
++        semantic_keys=("r", "k", "o", "type", "ggml"),
++        accepts=lambda p: p.get("ggml", False) and p["r"] == 1 and p["type"] in (2, 14),
++        variant="vector-decode", name="linear.webgpu.packed:vector-decode",
++    )
++    for kind in ("linear", "ffn", "linear_add")
++)
++
++IMPLEMENTATIONS += tuple(
++    Implementation(
++        kind, "akas.ops.linear.webgpu", "reference", provider="webgpu",
++        priority=37, factory="branched_prefill",
++        defaults=(("outer_layout", 0),), space=(("outer_layout", tuple(range(9))),),
++        semantic_keys=("r", "k", "o", "type", "ggml"),
++        accepts=lambda p: p.get("ggml", False) and p["r"] > 1 and p["type"] in (1, 2, 14),
++        variant="branch-prefill", name="linear.webgpu.packed:branch-prefill",
++    )
++    for kind in ("linear", "ffn", "linear_add")
++)
++
++IMPLEMENTATIONS += tuple(
++    Implementation(
++        kind, "akas.ops.linear.webgpu", "reference", provider="webgpu",
++        priority=37, factory="archived_decode",
++        semantic_keys=("r", "k", "o", "type", "ggml"),
++        accepts=lambda p: p.get("ggml", False) and p["r"] == 1 and p["type"] in (2, 14),
++        variant="archived-decode", name="linear.webgpu.packed:archived-decode",
++    )
++    for kind in ("linear", "ffn", "linear_add")
++)
++
++IMPLEMENTATIONS += tuple(
++    Implementation(
++        kind, "akas.ops.linear.webgpu", "reference", provider="webgpu",
++        priority=36, factory="padded_prefill",
++        defaults=(("shared_layout", 0),), space=(("shared_layout", (0, 1, 2, 3)),),
++        semantic_keys=("r", "k", "o", "type", "ggml"),
++        accepts=lambda p: p.get("ggml", False) and p["r"] >= 128 and p["type"] in (1, 2, 14),
++        variant="padded-prefill", name="linear.webgpu.packed:padded-prefill",
++    )
++    for kind in ("linear", "ffn", "linear_add")
++)
++
+ IMPLEMENTATIONS += (
+     Implementation(
+         "linear",
+diff --git a/src/akas/ops/linear/kernel.py b/src/akas/ops/linear/kernel.py
+index 924dcdf..6a48535 100644
+--- a/src/akas/ops/linear/kernel.py
++++ b/src/akas/ops/linear/kernel.py
+@@ -346,11 +346,12 @@ def webgpu_abi(p, algorithm, paired=False, add_residual=False):
+ 
+     r, k, o, q = (p.get("r", 1), p["k"], p["o"], p["type"])
+     count, dtype = weight_storage(q, k * o, packed_words=True)
++    input_dtype = p.get("input_dtype", "float32")
+     if paired:
+ 
+         @kernel
+         def compute(
+-            x: Tensor(r * k, "float32"),
++            x: Tensor(r * k, input_dtype),
+             w: Tensor(count, dtype),
+             w2: Tensor(count, dtype),
+         ) -> Tensor(r * o, "float32"):
+@@ -363,7 +364,7 @@ def webgpu_abi(p, algorithm, paired=False, add_residual=False):
+ 
+         @kernel
+         def compute(
+-            x: Tensor(r * k, "float32"),
++            x: Tensor(r * k, input_dtype),
+             w: Tensor(count, dtype),
+             residual: Tensor(r * o, "float32"),
+         ) -> Tensor(r * o, "float32"):
+@@ -374,7 +375,7 @@ def webgpu_abi(p, algorithm, paired=False, add_residual=False):
+         return compute
+ 
+     @kernel
+-    def compute(x: Tensor(r * k, "float32"), w: Tensor(count, dtype)) -> Tensor(
++    def compute(x: Tensor(r * k, input_dtype), w: Tensor(count, dtype)) -> Tensor(
+         r * o, "float32"
+     ):
+         out = output(r * o, "float32")
+diff --git a/src/akas/ops/linear/validation.py b/src/akas/ops/linear/validation.py
+index 7201dc1..680dca9 100644
+--- a/src/akas/ops/linear/validation.py
++++ b/src/akas/ops/linear/validation.py
+@@ -102,22 +102,62 @@ def validation(kind, p, signature):
+             sample_weight(values["w2"], p["type"], seed=32, decode=False)
+         x = x.astype("float64")
+         out = np.empty((r, o), dtype="float64")
++        half = p.get("half_accum", False)
++        if half:
++            # Eight F16 FMAs per even/odd lane, then a F32 complete-K sum.
++            # Cover both permitted F16 rounding directions, plus subnormal
++            # absolute error. Ordinary F32 projections keep their old gate.
++            half_gamma = 8 * 2**-10 / (1 - 8 * 2**-10)
++            total_gamma = ((k + 15) // 16) * 2**-23
++            bounds = np.empty((r, o), dtype="float64")
++            absolute_x = np.abs(x)
+         for start in range(0, o, 128):
+             stop = min(o, start + 128)
+             weight = decode_rows(values["w"], p["type"], k, start, stop)
+             if r > 1:
+                 weight = weight.astype("float16")
+             section = x @ weight.astype("float64").T
++            if half:
++                error = ((half_gamma + total_gamma)
++                         * (absolute_x @ np.abs(weight.astype("float64")).T)
++                         + k * 2**-24)
+             if kind == "ffn":
+                 other = decode_rows(values["w2"], p["type"], k, start, stop)
+                 if r > 1:
+                     other = other.astype("float16")
+                 up = x @ other.astype("float64").T
++                if half:
++                    up_error = ((half_gamma + total_gamma)
++                                * (absolute_x @ np.abs(other.astype("float64")).T)
++                                + k * 2**-24)
++                    error = (1.1 * np.abs(up) * error
++                             + np.abs(section / (1 + np.exp(-section))) * up_error
++                             + 1.1 * error * up_error)
+                 section = section / (1 + np.exp(-section)) * up
+             elif kind == "linear_add":
+                 section += values["residual"].reshape(r, o)[:, start:stop]
++                if half:
++                    error += np.abs(section) * 2**-23
+             out[:, start:stop] = section
++            if half:
++                bounds[:, start:stop] = error + np.abs(section) * 2**-21
+         expected["out"][:] = out.reshape(values["out"].shape)
++        if p.get("weight_layout", "raw") == "planar":
++            if p["type"] != 2:
++                raise ValueError("planar dense validation requires Q4_0")
++            from akas.quantization.weights.ggml.kernel import repack_host
++            for name in ("w", "w2") if kind == "ffn" else ("w",):
++                raw = values[name].view("uint8").reshape(-1)
++                raw[:] = repack_host(raw)
++        if half:
++            def check_short_half(actual, wanted):
++                a, w = actual.astype("float64"), wanted.astype("float64")
++                assert np.isfinite(a).all()
++                assert np.all(np.abs(a - w) <= bounds.reshape(w.shape))
++                # The worst-case per-element cancellation bound alone is too
++                # permissive for a broken shader. Retain a separate RMS gate.
++                assert np.linalg.norm(a - w) / max(float(np.linalg.norm(w)), 1e-30) < .005
++            return ValidationCase(values, expected, comparators={"out": check_short_half})
+         return ValidationCase(values, expected)
+     if "scales" in values:
+         from akas.quantization._shared.e4m3 import decode_storage, encode_storage
+@@ -290,3 +330,21 @@ def q16_projection_validation(kind, parameters, signature):
+     expected = {name: value.copy() for name, value in values.items()}
+     expected["out"][:] = out.reshape(expected["out"].shape)
+     return ValidationCase(values, expected)
++
++
++def half_input_validation(kind, parameters, signature):
++    import numpy as np
++    from akas.kernels.contracts import ValidationCase, sample_arguments
++
++    values = sample_arguments(signature)
++    edges = np.array([0., -0., 2**-25, -2**-25, 3*2**-25, 2**-24,
++                      2**-14 - 2**-25, 1 + 2**-11, 1 + 3*2**-11, 65504.], "float32")
++    flat = values["x"].reshape(-1)
++    flat[:min(flat.size, edges.size)] = edges[:min(flat.size, edges.size)]
++    expected = {name: value.copy() for name, value in values.items()}
++    expected["out"][:] = values["x"].astype("float16")
++
++    def exact(actual, reference):
++        np.testing.assert_array_equal(actual.view("uint16"), reference.view("uint16"))
++
++    return ValidationCase(values, expected, comparators={"out": exact})
+diff --git a/src/akas/ops/linear/webgpu.py b/src/akas/ops/linear/webgpu.py
+index 523cb35..ee76e6e 100644
+--- a/src/akas/ops/linear/webgpu.py
++++ b/src/akas/ops/linear/webgpu.py
+@@ -46,13 +46,24 @@ def _packed(p, paired=False, add_residual=False):
+     from tensor.compiler.webgpu.schedules.register_matmul import register_matmul
+     from akas.ops.linear.kernel import _epilogue as projection_epilogue
+     from akas.ops.linear.kernel import webgpu_abi as projection_abi
+-    from akas.quantization._shared.rounding import round_half
++    from akas.quantization._shared.rounding import round_half, round_half_branch
+     from akas.quantization.weights.ggml.kernel import weight_decoder
+ 
+     r, k, o, q = (p[n] for n in ("r", "k", "o", "type"))
+     parts = 2 if paired else 1
+     tm, tn, bk = p.get("tile", (16, 32, 64))
+-    rounded, decoder = (round_half(), weight_decoder(q, k, packed_words=True))
++    rounded = round_half_branch() if p.get("branch_staging", False) else round_half()
++    if p.get("weight_layout", "raw") == "planar":
++        if q != 2:
++            raise ValueError("planar dense projection requires Q4_0")
++        from akas.quantization.weights.ggml.kernel import planar_reader
++        planar = planar_reader((o, k))
++
++        @T.macro
++        def decoder(w, row, column):
++            return planar((w,), row, column)
++    else:
++        decoder = weight_decoder(q, k, packed_words=True)
+     epilogue = projection_epilogue(paired=paired, add_residual=add_residual)
+ 
+     @T.macro
+@@ -63,6 +74,8 @@ def _packed(p, paired=False, add_residual=False):
+             return rounded(decoder(w, col, channel))
+ 
+     if p.get("schedule") == "outer":
++        if p.get("half_accum") and not p["outer"].get("half_accum"):
++            raise ValueError("short-half contract requires a half-accumulating outer schedule")
+         if q not in (1, 2, 14):
+             raise ValueError("outer-product prefill requires F16, Q4_0 or Q6_K weights")
+         dtype = p.get("outer_shared_dtype", "float16")
+@@ -97,6 +110,8 @@ def _packed(p, paired=False, add_residual=False):
+             **config,
+         )
+     else:
++        if p.get("half_accum"):
++            raise ValueError("short-half contract requires an outer schedule")
+         algorithm = register_matmul(
+             r,
+             k,
+@@ -372,6 +387,52 @@ def gemv_packed(p, paired=False, add_residual=False):
+     return projection_abi(p, gemv, paired=paired, add_residual=add_residual)
+ 
+ 
++def vector_decode(spec: KernelSpec, schedule: Mapping[str, object]):
++    """Coupled vector and independent-accumulator decode candidates."""
++    p = {**spec.parameters, **schedule}
++    layouts = (
++        (128, 32, 2, 2, True),
++        (256, 32, 2, 2, True),
++        (128, 16, 4, 4, True),
++        (256, 16, 4, 4, True),
++        (128, 32, 1, 1, False),
++        (128, 16, 1, 1, False),
++        (512, 32, 2, 2, True),
++        (128, 32, 4, 4, True),
++    )
++    threads, lanes, unroll, chains, dot = layouts[p.get("decode_layout", 0)]
++    tiles = p["k"] // (lanes * 8) if p["type"] == 2 else p["k"] // 256
++    while tiles % unroll:
++        unroll //= 2
++    chains = min(chains, unroll)
++    return gemv_packed(
++        {**p, "sg": True, "gemv_threads": threads, "gemv_lanes": lanes,
++         "gemv_unroll": unroll, "gemv_chains": chains,
++         "gemv_dot": dot, "gemv_q6_dot": True,
++         "gemv_accumulators": 1 if dot or p["type"] != 2 else 4},
++        paired=spec.kind == "ffn", add_residual=spec.kind == "linear_add",
++    )
++
++
++def archived_decode(spec: KernelSpec, schedule: Mapping[str, object]):
++    """Replay the RX 6700 XT packed F32 schedules retained at Tensor d5ee508."""
++    p = {**spec.parameters, **schedule}
++    selected = {
++        (2048, 128000, 14): dict(gemv_q6_dot=True, gemv_threads=256,
++                               gemv_unroll=4, gemv_chains=1),
++        (2048, 6144, 2): dict(gemv_unroll=8, gemv_chains=8),
++        (10752, 2048, 2): dict(gemv_lanes=16, gemv_threads=64,
++                             gemv_dot=True, gemv_unroll=4),
++        (2048, 2048, 2): dict(gemv_unroll=8, gemv_chains=8),
++        (2048, 512, 2): dict(gemv_lanes=32, gemv_threads=64,
++                            gemv_dot=True, gemv_unroll=4),
++    }
++    # Paired gate/up retained the subgroup control in the archive.
++    config = {} if spec.kind == "ffn" else selected.get((p["k"], p["o"], p["type"]), {})
++    return gemv_packed({**p, "sg": True, **config}, paired=spec.kind == "ffn",
++                       add_residual=spec.kind == "linear_add")
++
++
+ def q8(spec: KernelSpec, schedule: Mapping[str, object]):
+     from akas.quantization.weights.ggml.webgpu import q8_dot
+ 
+@@ -394,6 +455,275 @@ def q8(spec: KernelSpec, schedule: Mapping[str, object]):
+     return compute
+ 
+ 
++def outer_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
++    """Staged packed projections with a scalar, resumable search axis."""
++    p = {**spec.parameters, **schedule}
++    rows = p.get("outer_rows", 32)
++    return _packed(
++        {**p, "schedule": "outer", "outer": dict(
++            tile_m=rows, tile_n=64, tile_k=16, micro_m=rows // 16,
++            micro_n=4, threads=256, lhs_layout="km", unroll=4,
++            dot_width=2, packed_pairs=True)},
++        paired=spec.kind == "ffn",
++    )
++
++
++def blocked_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
++    """Explore larger reuse tiles while retaining FP32 accumulation."""
++    p = {**spec.parameters, **schedule}
++    # M, N, K, private M, private N, threads. Scalar selectors keep
++    # resumable search keys hashable while the ownership moves together.
++    layouts = (
++        (64, 64, 16, 4, 4, 256),
++        (64, 64, 32, 4, 4, 256),
++        (64, 128, 32, 4, 8, 256),
++        (64, 128, 32, 8, 4, 256),
++        (64, 64, 32, 4, 8, 128),
++        (128, 64, 32, 8, 4, 256),
++        (128, 128, 32, 8, 8, 256),
++        (32, 128, 32, 4, 4, 256),
++        (32, 64, 32, 4, 4, 128),
++    )
++    m, n, k, mm, mn, threads = layouts[p.get("outer_layout", 0)]
++    return _packed(
++        {**p, "schedule": "outer", "outer": dict(
++            tile_m=m, tile_n=n, tile_k=k, micro_m=mm, micro_n=mn,
++            threads=threads, lhs_layout="km", unroll=4,
++            dot_width=2, packed_pairs=True)},
++        paired=spec.kind == "ffn", add_residual=spec.kind == "linear_add",
++    )
++
++
++def branched_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
++    """Bypass subnormal rounding work for normal operands, retaining exact RNE."""
++    return blocked_prefill(spec, {**schedule, "branch_staging": True})
++
++
++def padded_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
++    """Replay archived shared padding and grid order with F32 totals."""
++    p = {**spec.parameters, **schedule}
++    # A packed word of padding was the archived FFN layout winner. Keep a
++    # matched unpadded control and separate padding from grid placement.
++    pad, order = ((0, "column"), (1, "column"), (1, "row"), (2, "row"))[
++        p.get("shared_layout", 0)
++    ]
++    wide = p["o"] == 6144
++    return _packed(
++        {**p, "schedule": "outer", "outer": dict(
++            tile_m=64, tile_n=128 if wide else 64, tile_k=16,
++            micro_m=4, micro_n=8 if wide else 4, threads=256,
++            lhs_layout="km", unroll=8, explicit_unroll=True,
++            dot_width=2, packed_pairs=True, lhs_pad=pad, rhs_pad=pad,
++            group_order=order)},
++        paired=spec.kind == "ffn", add_residual=spec.kind == "linear_add",
++    )
++
++
++def half_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
++    """Eight adjacent even/odd F16 FMAs followed by a complete-K F32 total."""
++    p = {**spec.parameters, **schedule}
++    layouts = (
++        (32, 64, 4, 4, 128),
++        (64, 64, 4, 4, 256),
++        (64, 128, 4, 8, 256),
++        (32, 128, 4, 8, 128),
++        (64, 128, 8, 8, 128),
++        (128, 128, 8, 8, 256),
++    )
++    m, n, mm, mn, threads = layouts[p.get("half_layout", 0)]
++    if p["r"] <= 8:
++        m, n, mm, mn, threads = 8, 64, 1, 4, 128
++    pad = p.get("half_pad", 1)
++    if p.get("input_dtype") == "float16" and not p.get("half_native", True):
++        raise ValueError("staged F16 input requires the native half-pair kernel")
++    if not p.get("half_native", True) and p.get("half_k", 16) != 16:
++        raise ValueError("generic short-half staging uses a fixed depth of 16")
++    if p.get("half_native", True):
++        return native_half_pairs({**p, "half_tile": (m, n, mm, mn, threads), "half_pad": pad},
++                                 paired=spec.kind == "ffn", add_residual=spec.kind == "linear_add")
++    primitive = _packed(
++        {**p, "schedule": "outer", "outer": dict(
++            tile_m=m, tile_n=n, tile_k=16, micro_m=mm, micro_n=mn,
++            threads=threads, lhs_layout="km", unroll=8, explicit_unroll=True,
++            dot_width=2, packed_pairs=True, half_accum=True,
++            lhs_pad=pad, rhs_pad=pad, group_order="row")},
++        paired=spec.kind == "ffn", add_residual=spec.kind == "linear_add",
++    )
++    return primitive
++
++
++def half_input(spec: KernelSpec, schedule: Mapping[str, object]):
++    """Round once before tiled reuse, including ties and half subnormals."""
++    import tilelang.language as T
++    from akas.quantization._shared.rounding import round_half
++
++    count = spec.parameters["r"] * spec.parameters["k"]
++    rounded = round_half()
++
++    @kernel
++    def compute(x: Tensor(count, "float32")) -> Tensor(count, "float16"):
++        out = output(count, "float16")
++        with T.Kernel(T.ceildiv(count, 256), threads=256) as block:
++            index = block * 256 + T.get_thread_binding()
++            if index < count:
++                out[index] = T.cast(rounded(x[index]), "float16")
++        return out
++
++    return compute
++
++
++def native_half_pairs(p, paired=False, add_residual=False):
++    """Typed half-pair shared tiles avoid unpack/narrow conversions per FMA."""
++    import tilelang.language as T
++    from itertools import product
++    from tensor.compiler.webgpu.schedules.registers import registers, shared_buffers
++    from akas.ops.linear.kernel import _epilogue, webgpu_abi
++    from akas.quantization._shared.rounding import round_half
++    from akas.quantization.weights.ggml.kernel import weight_decoder
++
++    r, k, o, q = (p[n] for n in ("r", "k", "o", "type"))
++    m, n, mm, mn, threads = p["half_tile"]
++    pad, parts = p["half_pad"], 2 if paired else 1
++    bk = p.get("half_k", 16)
++    if bk not in (16, 32, 64) or k % bk:
++        raise ValueError("short-half staging depth must divide K and be 16/32/64")
++    pairs = bk // 2
++    if pairs * 4 * (m + pad + parts * (n + pad)) > 32768:
++        raise ValueError("short-half staging exceeds 32 KiB")
++    rm, rn = m // mm, n // mn
++    rounded, decode = round_half(), weight_decoder(q, k, packed_words=True)
++    epilogue = _epilogue(paired=paired, add_residual=add_residual)
++
++    @T.macro
++    def input_value(x, index):
++        if p.get("input_dtype") == "float16":
++            return T.cast(x[index], "float32")
++        else:
++            return rounded(x[index])
++
++    @T.macro
++    def weight(w, row, channel):
++        if q == 1:
++            return decode(w, row, channel)
++        else:
++            return rounded(decode(w, row, channel))
++
++    @T.macro
++    def stage_a(x, lhs, by, tile, tx):
++        for load in T.serial(T.ceildiv(m * pairs, threads)):
++            flat = load * threads + tx
++            row, pair = flat // pairs, flat % pairs
++            if row < m:
++                a, b = T.alloc_var("float32"), T.alloc_var("float32")
++                a, b = 0, 0
++                if (by * m + row < r) & (tile * bk + pair * 2 < k):
++                    a = input_value(x, (by * m + row) * k + tile * bk + pair * 2)
++                if (by * m + row < r) & (tile * bk + pair * 2 + 1 < k):
++                    b = input_value(x, (by * m + row) * k + tile * bk + pair * 2 + 1)
++                lhs[pair, row, 0] = T.cast(a, "float16")
++                lhs[pair, row, 1] = T.cast(b, "float16")
++
++    @T.macro
++    def stage_b(w, rhs, bx, tile, tx):
++        for load in T.serial(T.ceildiv(n * pairs, threads)):
++            flat = load * threads + tx
++            row, pair = flat // pairs, flat % pairs
++            if row < n:
++                a, b = T.alloc_var("float32"), T.alloc_var("float32")
++                a, b = 0, 0
++                if (bx * n + row < o) & (tile * bk + pair * 2 < k):
++                    a = weight(w, bx * n + row, tile * bk + pair * 2)
++                if (bx * n + row < o) & (tile * bk + pair * 2 + 1 < k):
++                    b = weight(w, bx * n + row, tile * bk + pair * 2 + 1)
++                rhs[pair, row, 0] = T.cast(a, "float16")
++                rhs[pair, row, 1] = T.cast(b, "float16")
++
++    def stage_rhs(w, rhs, w2, bx, tile, tx):
++        stage_b(w, rhs[0], bx, tile, tx)
++        if paired:
++            stage_b(w2, rhs[1], bx, tile, tx)
++
++    @T.macro
++    def clear(value: T.Ref):
++        value = T.call_extern("float16x2", "vec2<f16>", T.cast(0, "float16"))
++
++    @T.macro
++    def fma(value: T.Ref, left0, left1, right0, right1):
++        value = T.call_extern("float16x2", "fma",
++            T.call_extern("float16x2", "vec2<f16>", left0, left1),
++            T.call_extern("float16x2", "vec2<f16>", right0, right1), value)
++
++    def multiply(partial, lhs, rhs, kk, mr, nr):
++        for part, i, j in product(range(parts), range(mm), range(mn)):
++            fma(partial[part, i, j][0], lhs[kk, mr + i * rm, 0], lhs[kk, mr + i * rm, 1],
++                rhs[part][kk, nr + j * rn, 0], rhs[part][kk, nr + j * rn, 1])
++
++    @T.macro
++    def accumulate(total: T.Ref, value):
++        total += T.call_extern("float32", "tensor_sum2_f16_vec", value)
++
++    def add_partials(total, partial):
++        for key in total:
++            accumulate(total[key][0], partial[key][0])
++
++    def clear_partials(partial):
++        for value in partial.values():
++            clear(value[0])
++
++    @T.macro
++    def store(out, residual, gate, up, row, col):
++        if (row < r) & (col < o):
++            epilogue(out, residual, row * o + col, gate, up)
++
++    def store_all(out, residual, total, by, bx, mr, nr):
++        for i, j in product(range(mm), range(mn)):
++            store(out, residual, total[0, i, j][0], total[1, i, j][0] if paired else 0,
++                  by * m + mr + i * rm, bx * n + nr + j * rn)
++
++    @T.macro
++    def matmul(x, w, out, w2=None, residual=None):
++        T.func_attr({"tensor.webgpu.loop_unroll": "explicit"})
++        with T.Kernel(T.ceildiv(r, m), T.ceildiv(o, n), threads=threads) as (by, bx):
++            tx = T.get_thread_binding()
++            mr, nr = tx // rn, tx % rn
++            lhs = T.alloc_shared((pairs, m + pad, 2), "float16")
++            rhs = shared_buffers((pairs, n + pad, 2), "float16", parts)
++            total = registers((parts, mm, mn))
++            partial = registers((parts, mm, mn), "float16x2", initialize=False)
++            for tile in T.serial(T.ceildiv(k, bk)):
++                stage_a(x, lhs, by, tile, tx)
++                stage_rhs(w, rhs, w2, bx, tile, tx)
++                T.sync_threads()
++                for segment in T.unroll(bk // 16):
++                    clear_partials(partial)
++                    for kk in T.unroll(8):
++                        multiply(partial, lhs, rhs, segment * 8 + kk, mr, nr)
++                    add_partials(total, partial)
++                T.sync_threads()
++            store_all(out, residual, total, by, bx, mr, nr)
++
++    return webgpu_abi(p, matmul, paired=paired, add_residual=add_residual)
++
++
++def integer_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
++    """Coupled reuse/ownership search for the declared two-component ABI."""
++    p = {**spec.parameters, **schedule}
++    layouts = (
++        (16, 32, 2, 2, 128),
++        (32, 64, 2, 4, 256),
++        (64, 128, 4, 8, 256),
++        (32, 128, 4, 8, 128),
++        (64, 64, 4, 4, 256),
++    )
++    m, n, mm, mn, threads = layouts[p.get("integer_layout", 0)]
++    return _integer(
++        {**p, "integer": {**p.get("integer", {}), "tile_m": m, "tile_n": n,
++            "micro_m": mm, "micro_n": mn, "threads": threads,
++            "owner_axis": "column", "group_order": "row", "tile_k": p.get("integer_k", 32)}},
++        paired=spec.kind == "ffn", add_residual=spec.kind == "linear_add",
++    )
++
++
+ def ffn(spec: KernelSpec, schedule: Mapping[str, object]):
+     from akas.ops.linear.webgpu import _integer as integer_prefill_kernel
+     from akas.ops.linear.webgpu import _packed as prefill_kernel
+diff --git a/src/akas/ops/normalization/definition.py b/src/akas/ops/normalization/definition.py
+index e6cb18c..a1ec268 100644
+--- a/src/akas/ops/normalization/definition.py
++++ b/src/akas/ops/normalization/definition.py
+@@ -330,3 +330,17 @@ IMPLEMENTATIONS = (
+         name="normalization.kernel",
+     ),
+ )
++
++# The archived RX 6700 XT producer used parallel subgroup RMS for model-width
++# rows. Keep it opt-in and independently qualify reduction reassociation.
++IMPLEMENTATIONS += tuple(
++    Implementation(
++        kind, "akas.ops.normalization.kernel", "reference", provider="webgpu",
++        priority=-1, defaults=(("algorithm", "parallel-tree"), ("sg", True)),
++        space=(("sg", (True, False)),), factory=kind,
++        semantic_keys=("r", "c", "eps"),
++        accepts=lambda p: p["c"] >= 256 and p["c"] % 256 == 0,
++        variant="parallel-subgroup", name="normalization.webgpu.parallel-subgroup",
++    )
++    for kind in ("rms", "add_rms")
++)
+diff --git a/src/akas/quantization/_shared/rounding.py b/src/akas/quantization/_shared/rounding.py
+index bb388d8..3934674 100644
+--- a/src/akas/quantization/_shared/rounding.py
++++ b/src/akas/quantization/_shared/rounding.py
+@@ -52,3 +52,31 @@ def round_bfloat():
+         )
+ 
+     return rounded
++
++
++def round_half_branch():
++    """Keep exact half rounding while bypassing subnormal work for normal data.
++
++    In particular, do not replace this with pack2x16float: some Vulkan drivers
++    truncate that conversion. Both branches return an exactly representable
++    half value before the packed store, including ties and subnormals.
++    """
++    import tilelang.language as T
++
++    fallback = round_half()
++
++    @T.macro
++    def rounded(value):
++        bits = T.reinterpret("uint32", value)
++        exponent = T.cast(bits >> 23 & 255, "int32")
++        result = T.alloc_var("float32")
++        if exponent >= 113:
++            result = T.reinterpret("float32", bits + 4095 + (bits >> 13 & 1)
++                                   & T.uint32(4294959104))
++        elif exponent < 102:
++            result = T.if_then_else(bits >> 31 != 0, -T.float32(0), T.float32(0))
++        else:
++            result = fallback(value)
++        return result
++
++    return rounded
+diff --git a/src/akas/quantization/activations/_shared/packing.py b/src/akas/quantization/activations/_shared/packing.py
+index 9684376..2bb7c1b 100644
+--- a/src/akas/quantization/activations/_shared/packing.py
++++ b/src/akas/quantization/activations/_shared/packing.py
+@@ -18,6 +18,12 @@ def packing(p, *, components, provider="webgpu"):
+         round_half(),
+     )
+ 
++    @T.macro
++    def divide(value, divisor):
++        estimate = value / divisor
++        residual = T.call_extern("float32", "fma", -estimate, divisor, value)
++        return estimate + residual / divisor
++
+     def shared_components(
+         packed, scales, sums, quants, values, scratch, factor, block, tx
+     ):
+@@ -58,10 +64,10 @@ def packing(p, *, components, provider="webgpu"):
+         T.sync_threads()
+         maximum(scratch, tx)
+         if component == 1 and p.get("fixed_residual"):
+-            factor = scales[block] / 254
++            factor = divide(scales[block], T.float32(254))
+         else:
+-            factor = T.max(scratch[0] / 127, 1e-20)
+-        quants[component, tx] = T.cast(T.round(values[tx] / factor), "int32")
++            factor = T.max(divide(scratch[0], T.float32(127)), 1e-20)
++        quants[component, tx] = T.cast(T.round(divide(values[tx], factor)), "int32")
+         T.sync_threads()
+         if tx < 8:
+             packed[block * 8 + tx + component * words] = (
+@@ -71,7 +77,8 @@ def packing(p, *, components, provider="webgpu"):
+                 | (T.reinterpret("uint32", quants[component, tx * 4 + 3]) & 255) << 24
+             )
+         if components == 2:
+-            values[tx] = values[tx] - T.cast(quants[component, tx], "float32") * factor
++            values[tx] = T.call_extern("float32", "fma",
++                -T.cast(quants[component, tx], "float32"), factor, values[tx])
+         scratch[tx] = T.cast(quants[component, tx], "float32")
+         T.sync_threads()
+         total_reduce(scratch, tx)
+@@ -86,12 +93,12 @@ def packing(p, *, components, provider="webgpu"):
+         packed, scales, sums, value: T.Ref, factor: T.Ref, block, tx, component
+     ):
+         if component == 1 and p.get("fixed_residual"):
+-            factor = factor / 254
++            factor = divide(factor, T.float32(254))
+         else:
+             factor = T.max(
+-                T.call_extern("float32", "subgroupMax", T.abs(value)) / 127, 1e-20
++                divide(T.call_extern("float32", "subgroupMax", T.abs(value)), T.float32(127)), 1e-20
+             )
+-        quant = T.cast(T.round(value / factor), "int32")
++        quant = T.cast(T.round(divide(value, factor)), "int32")
+         bits = (
+             T.reinterpret(
+                 "uint32",
+@@ -135,7 +142,7 @@ def packing(p, *, components, provider="webgpu"):
+         if tx == 0:
+             scales[block + component * blocks] = factor
+             sums[block + component * blocks] = total
+-        value = value - T.cast(quant, "float32") * factor
++        value = T.call_extern("float32", "fma", -T.cast(quant, "float32"), factor, value)
+ 
+     @T.macro
+     def quantize(x, packed, scales, sums):
+diff --git a/src/akas/quantization/activations/q16/validation.py b/src/akas/quantization/activations/q16/validation.py
+index 5962370..ce3ca69 100644
+--- a/src/akas/quantization/activations/q16/validation.py
++++ b/src/akas/quantization/activations/q16/validation.py
+@@ -19,7 +19,10 @@ def encode(values, *, fixed_residual=False):
+         planes.append(quant)
+         scales.append(factor)
+         sums.append(quant.astype("int32").sum(axis=1, dtype="int32"))
+-        residual -= quant.astype("float32") * factor[:, None]
++        # GPU uses one explicitly fused F32 residual update. F16 inputs and
++        # signed-byte quants make the product/subtraction exact in F64 first.
++        residual = (residual.astype("float64")
++                    - quant.astype("float64") * factor[:, None].astype("float64")).astype("float32")
+         first = factor
+     return (
+         np.concatenate(planes).reshape(-1).view("uint32"),
+diff --git a/src/akas/quantization/weights/ggml/kernel.py b/src/akas/quantization/weights/ggml/kernel.py
+index a2c6fb9..f3a513a 100644
+--- a/src/akas/quantization/weights/ggml/kernel.py
++++ b/src/akas/quantization/weights/ggml/kernel.py
+@@ -224,22 +224,27 @@ def dequantize(spec, schedule, *, provider):
+     p = {**spec.parameters, **schedule}
+     rows, depth = p["r"], p["k"]
+     encoding = p["type"]
+-    binding = FORMAT.bind((rows, depth), provider=provider, encoding=encoding)
++    binding = FORMAT.bind((rows, depth), provider=provider, encoding=encoding,
++                          **(dict(layout=p["weight_layout"]) if "weight_layout" in p else {}))
+     values = binding.storage.values
+     read = binding.read
++    dtype = p.get("output_dtype", "float32")
++    if dtype not in ("float16", "float32"):
++        raise ValueError("dequantization output must be F16 or F32")
++    from akas.quantization._shared.rounding import round_half
++    rounded = round_half()
+ 
+     @kernel
+     def compute(w: Tensor(values.shape, values.dtype)) -> Tensor(
+-        (rows, depth), "float32"
++        (rows, depth), dtype
+     ):
+-        out = output((rows, depth), "float32")
++        out = output((rows, depth), dtype)
+         with T.Kernel(T.ceildiv(rows * depth, 128), threads=128) as block:
+             for lane in T.Parallel(128):
+                 index = block * 128 + lane
+                 if index < rows * depth:
+-                    out[index // depth, index % depth] = read(
+-                        (w,), index // depth, index % depth
+-                    )
++                    value = read((w,), index // depth, index % depth)
++                    out[index // depth, index % depth] = rounded(value) if dtype == "float16" else value
+         return out
+ 
+     return compute
+diff --git a/src/akas/quantization/weights/ggml/validation.py b/src/akas/quantization/weights/ggml/validation.py
+index 8557651..1c02b41 100644
+--- a/src/akas/quantization/weights/ggml/validation.py
++++ b/src/akas/quantization/weights/ggml/validation.py
+@@ -103,4 +103,9 @@ def validation(kind, parameters, signature):
+     decoded = sample_weight(values["w"], parameters["type"])
+     expected = {name: value.copy() for name, value in values.items()}
+     expected["out"][:] = decoded.reshape(expected["out"].shape)
++    if parameters.get("weight_layout", "raw") == "planar":
++        from .kernel import repack_host
++        raw = values["w"].view("uint8").reshape(-1)
++        raw[:] = repack_host(raw)
++        expected["w"] = values["w"].copy()
+     return ValidationCase(values, expected, rtol=1e-6, atol=1e-6)
+diff --git a/src/akas/quantization/weights/ggml/webgpu.py b/src/akas/quantization/weights/ggml/webgpu.py
+index 60d86e9..4fa4436 100644
+--- a/src/akas/quantization/weights/ggml/webgpu.py
++++ b/src/akas/quantization/weights/ggml/webgpu.py
+@@ -36,6 +36,10 @@ def gemv_terms(p, *, fast_q4, lanes, row_count, dot_q4, dot_q6):
+     from .kernel import weight_decoder
+ 
+     k, q = p["k"], p["type"]
++    planar = p.get("weight_layout", "raw") == "planar"
++    if planar and (q != 2 or not fast_q4):
++        raise ValueError("planar dense GEMV requires whole packed Q4_0 blocks")
++    blocks = p["o"] * k // 32
+     byte, half_value, word_value = packed_loads()
+     decoder = weight_decoder(q, k, packed_words=True)
+ 
+@@ -173,11 +177,15 @@ def gemv_terms(p, *, fast_q4, lanes, row_count, dot_q4, dot_q6):
+     @T.macro
+     def compute(acc, x, w, tile, lane, row, bx, slot):
+         if fast_q4:
+-            base = (
+-                (bx * row_count + row) * (k // 32) + tile * (lanes // 4) + lane // 4
+-            ) * 18
+-            scale = half_value(w, base)
+-            packed = word_value(w, base + 2 + lane % 4 * 4)
++            block = (bx * row_count + row) * (k // 32) + tile * (lanes // 4) + lane // 4
++            if planar:
++                scale = T.call_extern("float32", "tensor_unpack_f16",
++                    w[blocks * 4 + block // 2] >> (block % 2 * 16) & T.uint32(65535))
++                packed = w[block * 4 + lane % 4]
++            else:
++                base = block * 18
++                scale = half_value(w, base)
++                packed = word_value(w, base + 2 + lane % 4 * 4)
+             index = tile * (lanes * 8) + lane // 4 * 32 + lane % 4 * 4
+             q4_terms(acc, x, index, scale, packed, slot)
+         elif q == 14:
+diff --git a/tests/test_activation_q16.py b/tests/test_activation_q16.py
+index 8a412be..720d589 100644
+--- a/tests/test_activation_q16.py
++++ b/tests/test_activation_q16.py
+@@ -36,6 +36,71 @@ def test_q16_lowering_reuses_source_quantization():
+     assert graph.calls[1].parameters["q16"]
+ 
+ 
++@pytest.mark.parametrize("half_only", [False, True])
++def test_mixed_prefill_declares_arithmetic_and_keeps_decode_abi(half_only):
++    from akas.graph import Graph
++    from akas.compilation.quantization import q16_activations
++
++    graph = Graph(contract="reference")
++    for rows in (1, 32):
++        x = graph.buffer(f"x{rows}", (rows * 256,), "float32", role="input")
++        for kind, columns in (("linear", 768), ("linear", 128), ("ffn", 512)):
++            label = f"r{rows}_{kind}_{columns}"
++            w = graph.buffer(label + ".w", (columns * 256 // 32 * 18 // 4,), "uint32", role="weight")
++            out = graph.buffer(label + ".out", (rows * columns,), "float32", role="output")
++            args = [x, w]
++            if kind == "ffn":
++                args.append(graph.buffer(label + ".up", w.shape, "uint32", role="weight"))
++            graph(kind, dict(r=rows, k=256, o=columns, ggml=True, type=2), *args, out, label=label)
++    q16_activations(graph, mixed=True, half_only=half_only)
++    projections = [c for c in graph.calls if c.kind in ("linear", "ffn")]
++    assert all(not c.parameters.get("half_accum") and not c.parameters.get("q16")
++               for c in projections if c.parameters["r"] == 1)
++    assert all(c.parameters.get("half_accum") and not c.parameters.get("q16")
++               for c in projections if c.parameters["r"] == 32 and c.parameters["o"] in (768, 512))
++    quantized = next(c for c in projections if c.parameters["r"] == 32 and c.parameters["o"] == 128)
++    if half_only:
++        assert quantized.parameters["half_accum"] and len(quantized.arguments) == 3
++        assert not any(c.kind == "quantize_q16" for c in graph.calls)
++        return
++    assert quantized.parameters["q16"] and len(quantized.arguments) == 5
++    assert len([c for c in graph.calls if c.kind == "quantize_q16"]) == 1
++
++
++@pytest.mark.skipif(os.environ.get("AKAS_FORWARD_WEBGPU") != "1", reason="native WebGPU")
++@pytest.mark.parametrize("subgroup", [True, False])
++def test_q16_bytes_match_fused_reference_at_real_prefill_geometry(tmp_path, subgroup):
++    from contextlib import ExitStack
++    from akas.compilation.selection import source
++    from akas.compilation.emit import build_artifact
++    from akas.kernels.registry import validation
++    from tensor.artifacts.format import read_artifact
++    from tools.context_sweep import vulkan_device
++
++    p = dict(r=32, k=2048, sg=subgroup)
++    entry, artifact = tmp_path / "quantize.py", tmp_path / "quantize.tbin"
++    entry.write_text(source("quantize_q16", p, contract="reference", provider="webgpu",
++        target="webgpu-portable-v1").render())
++    build_artifact(entry, artifact, provider="webgpu", target="webgpu-portable-v1")
++    metadata, _ = read_artifact(artifact)
++    case = validation("quantize_q16", p, metadata["arguments"])
++    with vulkan_device() as device, ExitStack() as stack:
++        buffers = []
++        for arg in metadata["arguments"]:
++            buffer = device.from_numpy(case.arguments[arg["name"]])
++            stack.callback(buffer.release)
++            buffers.append(buffer)
++        executable = stack.enter_context(device.load(artifact))
++        executable.launch(*buffers)
++        for arg, buffer in zip(metadata["arguments"], buffers):
++            actual = buffer.to_numpy()
++            expected = case.expected[arg["name"]]
++            if arg["name"] in case.comparators:
++                case.comparators[arg["name"]](actual, expected)
++            else:
++                np.testing.assert_array_equal(actual, expected)
++
++
+ @pytest.mark.skipif(os.environ.get("AKAS_FORWARD_WEBGPU") != "1", reason="native WebGPU")
+ def test_q16_common_default_search_qualifies_quantizer_and_projection(tmp_path):
+     from akas.graph import Graph
+diff --git a/tests/test_benchmarking.py b/tests/test_benchmarking.py
+index d0c9775..741a5ed 100644
+--- a/tests/test_benchmarking.py
++++ b/tests/test_benchmarking.py
+@@ -102,6 +102,30 @@ def test_synchronized_measurements_count_only_executed_tokens():
+     assert prompts[1] == prompts[3] == prompts[5]
+ 
+ 
++def test_verification_capture_is_outside_phase_timers_and_only_on_final_sample():
++    now = [0.0]
++
++    class Timed(Session):
++        def prefill(self, prompts, *, read):
++            now[0] += 4
++
++        def decode(self, n, *, read):
++            now[0] += 2
++
++    captures = []
++
++    def capture(session):
++        captures.append(session)
++        now[0] += 100
++
++    session = Timed()
++    result = run(session, Case(4, 5, generated=2), repeats=2, warmup=1,
++                 clock=lambda: now[0], after_prefill=capture)
++    assert captures == [session]
++    assert [s["prefill_seconds"] for s in result["samples"]] == [4, 4]
++    assert [s["decode_seconds"] for s in result["samples"]] == [2, 2]
++
++
+ def test_explicit_text_tokens_and_cached_prefix_are_reused_without_sampling():
+     session = Session()
+     tokens = [[i, i + 1] for i in range(4)]
+diff --git a/tests/test_kernel_definition.py b/tests/test_kernel_definition.py
+index b562496..19fac4b 100644
+--- a/tests/test_kernel_definition.py
++++ b/tests/test_kernel_definition.py
+@@ -13,6 +13,21 @@ from akas.kernels.definition import definition
+ from akas.kernels.registry import candidates
+ 
+ 
++@pytest.mark.parametrize("kind", ["linear", "ffn"])
++@pytest.mark.parametrize("encoding", [1, 2, 14])
++def test_packed_prefill_search_can_explore_weight_reuse_without_changing_default(kind, encoding):
++    from akas.kernels.registry import select
++
++    parameters = dict(r=32, k=2048, o=512, ggml=True, type=encoding)
++    options = dict(contract="reference", provider="webgpu", target="webgpu-portable-v1")
++    choices = candidates(kind, parameters, **options)
++    outer = next(choice for choice in choices if choice.variant == "outer-prefill")
++    assert dict(outer.defaults)["outer_rows"] == 32
++    assert select(kind, parameters, **options).variant != "outer-prefill"
++    assert not any(choice.variant == "outer-prefill" for choice in
++                   candidates(kind, dict(parameters, r=1), **options))
++
++
+ @pytest.mark.parametrize("provider", ["cuda", "webgpu"])
+ def test_saved_profile_selects_nested_packed_weight_parameters(tmp_path, provider):
+     from tensor.compiler.search import ScheduleProfile
+@@ -204,6 +219,8 @@ def test_serialized_source_hashes_selected_dynamic_leaf(monkeypatch):
+ @pytest.mark.parametrize("provider", ["cuda", "webgpu"])
+ @pytest.mark.parametrize("kind", ["linear", "ffn", "embedding"])
+ def test_packed_weights_route_under_common_graph_contract(provider, kind):
++    from akas.kernels.registry import select
++
+     parameters = dict(r=4, k=256, o=32, type=2, ggml=True)
+     eligible = candidates(
+         kind,
+@@ -213,14 +230,16 @@ def test_packed_weights_route_under_common_graph_contract(provider, kind):
+         phase="prefill",
+         target=None,
+     )
+-    assert len(eligible) == 1
+-    assert eligible[0].factory in (
++    assert eligible
++    chosen = select(kind, parameters, contract="reference", provider=provider,
++                    phase="prefill", target=None)
++    assert chosen.factory in (
+         kind,
+         "kernel_" + kind,
+         "embedding_packed",
+         "packed_word_embedding",
+     )
+-    assert eligible[0].name is not None
++    assert chosen.name is not None
+ 
+ 
+ def test_existing_hardware_algorithm_uses_common_boundary_without_dispatch_wrapper(
+diff --git a/tests/test_lfm_moe.py b/tests/test_lfm_moe.py
+index 776e1d1..3a04ff6 100644
+--- a/tests/test_lfm_moe.py
++++ b/tests/test_lfm_moe.py
+@@ -121,7 +121,8 @@ CASES = [
+             r=8, h=4, kh=1, d=64, capacity=64, chunk=4, kv_dtype="fp8", optimized=True
+         ),
+     ),
+-    ("rope", dict(r=4, h=32, d=64, theta=10000000.0, position_limit=131072)),
++    *(("rope", dict(r=4, h=32, d=64, theta=10000000.0, position_limit=limit))
++      for limit in (2048, 8192, 130945, 131072)),
+ ] + [
+     (
+         "quantized_experts",
+@@ -170,7 +171,8 @@ def test_moe_kernel_device_qualification(tmp_path, provider, kind, parameters):
+     meta, _ = read_artifact(artifact)
+     case = validation(kind, parameters, meta["arguments"])
+     if kind == "rope":
+-        case.arguments["positions"][:] = [0, 8191, 65535, 131071]
++        limit = parameters["position_limit"]
++        case.arguments["positions"][:] = [0, min(8191, limit - 1), min(65535, limit - 1), limit - 1]
+         x = case.arguments["x"].reshape(4, 32, 64).astype("float64")
+         angles = case.arguments["positions"][:, None, None] * 10000000.0 ** (
+             -2 * np.arange(32)[None, None, :] / 64
+@@ -532,8 +534,10 @@ def test_floating_attention_split_policy_resizes_producer_and_consumer(provider)
+ 
+ @pytest.mark.parametrize("provider", ["cuda", "webgpu"])
+ @pytest.mark.parametrize("cap,enabled", [(19, True), (257, True), (31, False)])
++@pytest.mark.parametrize("staging", ["full", "half-vector", "blocked2", "blocked4", "blocked8",
++                                     "channel16", "channel32", "adaptive16", "adaptive32", "adaptive32g128"])
+ def test_grouped_decode_partial_tail_scales_and_inactive(
+-    tmp_path, provider, cap, enabled
++    tmp_path, provider, cap, enabled, staging
+ ):
+     if os.environ.get("AKAS_LFM_MOE_" + provider.upper()) != "1":
+         pytest.skip("opt-in grouped decode qualification")
+@@ -555,24 +559,43 @@ def test_grouped_decode_partial_tail_scales_and_inactive(
+         provider=provider,
+         optimized=True,
+     )
++    preferred = "attention.grouped_decode"
++    kind = "attention_partial"
++    if staging != "full":
++        if provider != "webgpu":
++            pytest.skip("WebGPU staging candidate")
++        if staging == "half-vector":
++            p.update(shared_dtype="float16", dot_width=4)
++        elif staging.startswith("channel"):
++            p.update(key_rows=int(staging[len("channel"):]), unit_scales=True)
++            preferred = "attention.webgpu.channel_decode"
++        elif staging.startswith("adaptive"):
++            shape = staging[len("adaptive"):].split("g")
++            p.update(key_rows=int(shape[0]), unit_scales=True, splits=64,
++                     granule=int(shape[1]) if len(shape) > 1 else 512)
++            preferred = "attention.webgpu.adaptive_decode"
++            kind = "attention_adaptive_partial"
++        else:
++            p.update(key_unroll=int(staging[-1]))
++            preferred = "attention.webgpu.blocked_decode"
+     target = "sm_89" if provider == "cuda" else "webgpu-portable-v1"
+     entry, artifact = tmp_path / "kernel.py", tmp_path / "kernel.tbin"
+     entry.write_text(
+         source(
+-            "attention_partial",
++            kind,
+             p,
+             contract="reference",
+             provider=provider,
+             target=target,
+-            preferred="attention.grouped_decode",
++            preferred=preferred,
+         ).render()
+     )
+     build_artifact(entry, artifact, provider=provider, target=target)
+     meta, _ = read_artifact(artifact)
+-    case = validation("attention_partial", p, meta["arguments"])
++    case = validation(kind, p, meta["arguments"])
+     if not enabled:
+         case.arguments["enabled"][:] = 0
+-        parts = case.expected["out"].reshape(2, 4, 16, 66)
++        parts = case.expected["out"].reshape(2, 4, p["splits"], 66)
+         parts[:] = 0
+         parts[..., 64] = -np.inf
+     with tensor.Device(provider=provider) as device, ExitStack() as stack:
+diff --git a/tests/test_shared_backbone.py b/tests/test_shared_backbone.py
+index 55f008b..06f2f55 100644
+--- a/tests/test_shared_backbone.py
++++ b/tests/test_shared_backbone.py
+@@ -12,6 +12,15 @@ from akas.memory.layouts import allocate_hybrid_states
+ from akas.models.qwen35.weights import Qwen35DenseCheckpoint
+ 
+ 
++def test_source_fingerprints_use_importable_names_on_every_platform():
++    from importlib.util import find_spec
++    from akas.artifacts.fingerprint import _modules
++
++    names = _modules("execution", "ops")
++    assert "akas.execution.executor" in names
++    assert all("\\" not in name and find_spec(name) is not None for name in names)
++
++
+ class Resource:
+     def __init__(self):
+         self.released = False
+diff --git a/tools/campaign_report.py b/tools/campaign_report.py
+index 77864a4..7a33f52 100644
+--- a/tools/campaign_report.py
++++ b/tools/campaign_report.py
+@@ -45,7 +45,7 @@ METRICS = (
+ 
+ 
+ def read(path):
+-    return json.loads(Path(path).read_text())
++    return json.loads(Path(path).read_text(encoding="utf-8"))
+ 
+ 
+ def report_directory(state, history):
+@@ -735,7 +735,8 @@ def text(path, content):
+     path = Path(path)
+     path.parent.mkdir(parents=True, exist_ok=True)
+     temporary = path.with_suffix(path.suffix + ".tmp")
+-    temporary.write_text(content.rstrip() + "\n" if path.suffix == ".md" else content)
++    temporary.write_text(content.rstrip() + "\n" if path.suffix == ".md" else content,
++                         encoding="utf-8", newline="\n")
+     temporary.replace(path)
+ 
+ 
+@@ -750,7 +751,7 @@ def clean(value):
+ def evidence_link(run_id, out, history):
+     if not run_id:
+         return "—"
+-    path = os.path.relpath(Path(history) / "runs" / run_id / "run.json", out)
++    path = Path(os.path.relpath(Path(history) / "runs" / run_id / "run.json", out)).as_posix()
+     return f"[{run_id}]({path})"
+ 
+ 
+@@ -1250,6 +1251,51 @@ def comparisons(data, out, history, notes):
+                             cells.append(cell)
+                         lines.append(f"| {b} | {prefix} | " + " | ".join(cells) + " |")
+                     lines.append("")
++    if data.get("calibration"):
++        pilot = data["calibration"]
++        lines += ["## Native prefill tuning pilots", "",
++                  f"Reference: {evidence_link(pilot['reference_run_id'], out, history)}; "
++                  f"selected pilot: {evidence_link(pilot['selected_run_id'], out, history)}. "
++                  f"Chunks: {pilot['before_chunk']} → {pilot['after_chunk']}. "
++                  f"Each uses {pilot['warmup']} warmup and {pilot['repeats']} retained repetitions. "
++                  "These calibration prefixes use identical weights, inputs, cache precision and native timing protocol. "
++                  "The speedup below compares native prefill within AKAS; it does not compare runtimes.", "",
++                  "| Prefix | Before prefill | After prefill | Prefill speedup | Before decode | After decode | Exact output IDs |",
++                  "| ---: | ---: | ---: | ---: | ---: | ---: | --- |"]
++        for row in pilot["cases"]:
++            lines.append(f"| {row['prefix']} | {fmt(row['before_prefill'])} | {fmt(row['after_prefill'])} | "
++                         f"{row['prefill_speedup']:.3f}x | {fmt(row['before_decode'])} | {fmt(row['after_decode'])} | "
++                         f"{'yes' if row['exact_output'] else 'no'} |")
++        lines.append("")
++    if data.get("tuning_evidence"):
++        tuning = data["tuning_evidence"]
++        lines += ["## Tuning evidence", "",
++                  f"{evidence_link(tuning['run_id'], out, history)}: {clean(tuning['scope'])}", ""]
++    if data.get("retuning"):
++        tuned = data["retuning"]
++        lines += ["## Previous AKAS sweep", "",
++                  f"Previous: {evidence_link(tuned['reference_run_id'], out, history)}; "
++                  f"selected: {evidence_link(tuned['selected_run_id'], out, history)}. "
++                  "Weights, input IDs, cache precision, shape, repetition counts and native timing protocol match. "
++                  "These ratios compare AKAS with its own previous sweep, not with another runtime.", "",
++                  "| Prefix | Before prefill | After prefill | Prefill ratio | Before decode | After decode | Decode ratio | Exact output IDs |",
++                  "| ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |"]
++        for row in tuned["cases"]:
++            lines.append(f"| {row['prefix']} | {fmt(row['before_prefill'])} | {fmt(row['after_prefill'])} | "
++                         f"{row['after_prefill'] / row['before_prefill']:.3f}x | {fmt(row['before_decode'])} | "
++                         f"{fmt(row['after_decode'])} | {row['after_decode'] / row['before_decode']:.3f}x | "
++                         f"{'yes' if row['exact_output'] else 'no'} |")
++        lines.append("")
++    if data.get("output_comparisons"):
++        lines += ["## Greedy output agreement", "",
++                  "The untimed AKAS greedy pass is compared with the first retained llama.cpp response. "
++                  "Both use the same input IDs, checkpoint and cache precision. Different arithmetic can "
++                  "change the trajectory; agreement is not a corpus accuracy score.", "",
++                  "| Prefix | Output tokens | Exact IDs | Common prefix tokens |",
++                  "| ---: | ---: | --- | ---: |"]
++        for row in data["output_comparisons"]:
++            lines.append(f"| {row['prefix']} | {row['output']} | {'yes' if row['exact'] else 'no'} | {row['common_prefix_tokens']} |")
++        lines.append("")
+     text(out / "COMPARISON.md", "\n".join(lines) + "\n")
+ 
+ 

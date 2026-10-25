@@ -1,0 +1,5 @@
+# DSL implementation SHA256: d06f797dcea274f058690e5072d9c65df04e03b6183953b5254f834b3f124e4b
+from akas.compilation.transforms.state import make_kernel
+
+def tensor_export():
+    return {"kernel": make_kernel('akas.kernels.definition', 'define', [{'contract': 'reference', 'kind': 'attention_adaptive_partial', 'parameters': {'capacity': 131072, 'd': 64, 'h': 32, 'kh': 8, 'kv_dtype': 'float16', 'optimized': True, 'provider': 'webgpu', 'r': 1, 'splits': 128, 'unit_scales': True}, 'phase': 'decode'}, {}, {'provider': 'webgpu', 'target': 'webgpu-portable-v1'}, {'axes': ['key_lanes', 'value_unroll', 'value_chains'], 'contract': 'reference', 'defaults': {'granule': 128, 'key_lanes': 8, 'value_chains': 4, 'value_unroll': 8}, 'factory': 'two_pass_partial', 'identifier': 'attention.webgpu.two_pass_decode', 'kind': 'attention_adaptive_partial', 'module': 'akas.ops.attention.webgpu', 'phase': 'forward', 'provider': 'webgpu', 'semantic_keys': ['r', 'h', 'kh', 'd', 'capacity', 'splits', 'kv_dtype'], 'targets': []}], [1, 2, 3, 4, 6], 1, 1)}

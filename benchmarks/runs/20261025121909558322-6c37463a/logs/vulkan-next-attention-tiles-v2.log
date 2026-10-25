@@ -1,0 +1,15 @@
+Traceback (most recent call last):
+  File "D:\Workspace\kreasof-ai\github\akas\build\vulkan-next-attention-tiles.py", line 29, in <module>
+    build_artifact(src,artifact,provider='webgpu',target='webgpu-portable-v1')
+  File "D:\Workspace\kreasof-ai\github\akas\src\akas\compilation\emit.py", line 36, in build_artifact
+    return tensor.build(
+           ^^^^^^^^^^^^^
+  File "D:\Workspace\kreasof-ai\github\akas\.venv\Lib\site-packages\tensor\__init__.py", line 41, in build
+    return _build_artifact(
+           ^^^^^^^^^^^^^^^^
+  File "D:\Workspace\kreasof-ai\github\akas\.venv\Lib\site-packages\tensor\compiler\build.py", line 26, in build_artifact
+    return build(
+           ^^^^^^
+  File "D:\Workspace\kreasof-ai\github\akas\.venv\Lib\site-packages\tensor\compiler\webgpu\build.py", line 51, in build_webgpu
+    raise BuildError(
+tensor.compiler.errors.BuildError: source needs an existing .py or portable .tbin file and output must not exist

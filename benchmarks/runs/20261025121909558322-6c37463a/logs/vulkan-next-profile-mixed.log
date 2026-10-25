@@ -1,0 +1,44 @@
+ffn {'r': 512, 'k': 2048, 'o': 10752, 'optimized': True, 'ggml': True, 'type': 1, 'half_accum': True} 27 267.776
+linear {'r': 512, 'k': 10752, 'o': 2048, 'optimized': True, 'ggml': True, 'type': 2, 'q16': True, 'integer': {'fixed_residual': False}} 27 155.586
+linear {'r': 512, 'k': 2048, 'o': 6144, 'optimized': True, 'ggml': True, 'type': 1, 'half_accum': True} 20 60.046
+linear {'r': 512, 'k': 2048, 'o': 2048, 'optimized': True, 'ggml': True, 'type': 2, 'q16': True, 'integer': {'fixed_residual': False}} 34 34.459
+attention {'r': 512, 'h': 32, 'kh': 8, 'd': 64, 'capacity': 131072, 'kv_dtype': 'float16', 'unit_scales': True, 'provider': 'webgpu', 'chunk': 512, 'optimized': True} 7 22.021
+dequantize_ggml {'r': 10752, 'k': 2048, 'type': 2, 'output_dtype': 'float16'} 54 10.893
+conv {'r': 1, 'c': 2048, 'length': 3, 'chunk': 512} 20 8.446
+linear {'r': 512, 'k': 2048, 'o': 512, 'optimized': True, 'ggml': True, 'type': 2, 'q16': True, 'integer': {'fixed_residual': False}} 16 5.281
+dequantize_ggml {'r': 6144, 'k': 2048, 'type': 2, 'output_dtype': 'float16'} 20 5.237
+quantize_q16 {'r': 512, 'k': 10752, 'sg': True, 'fixed_residual': False} 27 4.078
+add {'r': 512, 'c': 2048} 54 1.925
+rms {'r': 512, 'c': 2048, 'eps': 9.999999747378752e-06} 55 1.84
+ffn {'r': 8, 'k': 2048, 'o': 10752, 'optimized': True, 'ggml': True, 'type': 2, 'half_accum': True} 2 1.362
+quantize_q16 {'r': 512, 'k': 2048, 'sg': True, 'fixed_residual': False} 35 1.325
+linear {'r': 8, 'k': 10752, 'o': 2048, 'optimized': True, 'ggml': True, 'type': 2, 'q16': True, 'integer': {'fixed_residual': False}} 2 0.898
+rope {'r': 512, 'h': 32, 'd': 64, 'theta': 10000000.0, 'provider': 'webgpu', 'position_limit': 131072} 7 0.759
+linear {'r': 1, 'k': 2048, 'o': 128000, 'optimized': True, 'ggml': True, 'type': 14} 1 0.609
+linear {'r': 8, 'k': 2048, 'o': 6144, 'optimized': True, 'ggml': True, 'type': 2, 'half_accum': True} 2 0.607
+attention {'r': 8, 'h': 32, 'kh': 8, 'd': 64, 'capacity': 131072, 'kv_dtype': 'float16', 'unit_scales': True, 'provider': 'webgpu', 'chunk': 8, 'optimized': True} 1 0.458
+linear {'r': 8, 'k': 2048, 'o': 2048, 'optimized': True, 'ggml': True, 'type': 2, 'q16': True, 'integer': {'fixed_residual': False}} 3 0.44
+rope {'r': 512, 'h': 8, 'd': 64, 'theta': 10000000.0, 'provider': 'webgpu', 'position_limit': 131072} 8 0.328
+rms {'r': 16384, 'c': 64, 'eps': 9.999999747378752e-06} 7 0.301
+argmax {'r': 1, 'c': 128000} 1 0.3
+cache_write {'r': 512, 'h': 32, 'kh': 8, 'd': 64, 'capacity': 131072, 'kv_dtype': 'float16', 'unit_scales': True, 'provider': 'webgpu', 'chunk': 512, 'optimized': True} 8 0.201
+rms {'r': 4096, 'c': 64, 'eps': 9.999999747378752e-06} 8 0.129
+ffn {'r': 1, 'k': 2048, 'o': 10752, 'optimized': True, 'ggml': True, 'type': 2} 1 0.111
+linear_add {'r': 1, 'k': 10752, 'o': 2048, 'optimized': True, 'ggml': True, 'type': 2} 1 0.093
+rms {'r': 8, 'c': 2048, 'eps': 9.999999747378752e-06} 4 0.077
+add {'r': 8, 'c': 2048} 4 0.051
+quantize_q16 {'r': 8, 'k': 2048, 'sg': True, 'fixed_residual': False} 3 0.045
+embedding {'r': 512, 'c': 2048, 'v': 128000, 'start': 0, 'ggml': True, 'type': 14} 1 0.038
+conv {'r': 1, 'c': 2048, 'length': 3, 'chunk': 8} 2 0.035
+rms {'r': 1, 'c': 2048, 'eps': 9.999999747378752e-06} 2 0.034
+quantize_q16 {'r': 8, 'k': 10752, 'sg': True, 'fixed_residual': False} 2 0.031
+chunk_last {'r': 1, 'c': 2048, 'chunk': 8} 2 0.029
+chunk_tail {'r': 1, 'c': 2048, 'chunk': 512, 'tail': 8} 2 0.026
+masked_copy {'r': 1, 'c': 128000} 1 0.022
+linear_add {'r': 1, 'k': 2048, 'o': 2048, 'optimized': True, 'ggml': True, 'type': 2} 1 0.022
+advance {'r': 1, 'chunk': 512} 1 0.022
+next_tokens {'r': 1} 1 0.02
+chunk_controls {'r': 1, 'chunk': 512} 1 0.019
+rope {'r': 8, 'h': 32, 'd': 64, 'theta': 10000000.0, 'provider': 'webgpu', 'position_limit': 131072} 1 0.019
+tail_controls {'r': 1, 'chunk': 512, 'tail': 8} 1 0.016
+rms {'r': 256, 'c': 64, 'eps': 9.999999747378752e-06} 1 0.015

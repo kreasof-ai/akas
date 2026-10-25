@@ -1,0 +1,633 @@
+{
+  "program_sha256": "8f1aa45ed7606e809ca2a81e8cc8816ee7ad922be9180581fd78a9ca06a4dfd9",
+  "chunk": 1,
+  "context_position": 130944,
+  "scope": "isolated hot-buffer prepared kernels; diagnostic only",
+  "kernels": [
+    {
+      "kind": "attention_adaptive_partial",
+      "parameters": {
+        "r": 1,
+        "h": 32,
+        "kh": 8,
+        "d": 64,
+        "capacity": 131072,
+        "kv_dtype": "float16",
+        "unit_scales": true,
+        "provider": "webgpu",
+        "optimized": true,
+        "splits": 256
+      },
+      "count": 8,
+      "timing": {
+        "metric": "completed_seconds",
+        "completed_seconds": [
+          0.0210355999879539,
+          0.0209266000892967,
+          0.02096909994725138,
+          0.02092020004056394,
+          0.020901299896650016
+        ],
+        "median_completed_seconds": 0.0209266000892967,
+        "median_seconds": 0.0209266000892967,
+        "warmup": 2,
+        "samples": 5,
+        "repeats": 1
+      },
+      "dispatches_per_plan": 16,
+      "weighted_seconds": 0.01046330004464835
+    },
+    {
+      "kind": "ffn",
+      "parameters": {
+        "r": 1,
+        "k": 2048,
+        "o": 10752,
+        "optimized": true,
+        "ggml": true,
+        "type": 2
+      },
+      "count": 30,
+      "timing": {
+        "metric": "completed_seconds",
+        "completed_seconds": [
+          0.003742799977771938,
+          0.004407200030982494,
+          0.004057099926285446,
+          0.0038090000161901116,
+          0.0035198000259697437
+        ],
+        "median_completed_seconds": 0.0038090000161901116,
+        "median_seconds": 0.0038090000161901116,
+        "warmup": 2,
+        "samples": 5,
+        "repeats": 1
+      },
+      "dispatches_per_plan": 16,
+      "weighted_seconds": 0.007141875030356459
+    },
+    {
+      "kind": "linear_add",
+      "parameters": {
+        "r": 1,
+        "k": 10752,
+        "o": 2048,
+        "optimized": true,
+        "ggml": true,
+        "type": 2
+      },
+      "count": 30,
+      "timing": {
+        "metric": "completed_seconds",
+        "completed_seconds": [
+          0.0018065000185742974,
+          0.0017909000162035227,
+          0.0016518000047653913,
+          0.0016605000710114837,
+          0.0016889999387785792
+        ],
+        "median_completed_seconds": 0.0016889999387785792,
+        "median_seconds": 0.0016889999387785792,
+        "warmup": 2,
+        "samples": 5,
+        "repeats": 1
+      },
+      "dispatches_per_plan": 16,
+      "weighted_seconds": 0.003166874885209836
+    },
+    {
+      "kind": "rms",
+      "parameters": {
+        "r": 1,
+        "c": 2048,
+        "eps": 9.999999747378752e-06
+      },
+      "count": 61,
+      "timing": {
+        "metric": "completed_seconds",
+        "completed_seconds": [
+          0.0006762000266462564,
+          0.0003684000112116337,
+          0.0003624999662861228,
+          0.0002543000737205148,
+          0.0002525999443605542
+        ],
+        "median_completed_seconds": 0.0003624999662861228,
+        "median_seconds": 0.0003624999662861228,
+        "warmup": 2,
+        "samples": 5,
+        "repeats": 1
+      },
+      "dispatches_per_plan": 16,
+      "weighted_seconds": 0.0013820311214658432
+    },
+    {
+      "kind": "linear_add",
+      "parameters": {
+        "r": 1,
+        "k": 2048,
+        "o": 2048,
+        "optimized": true,
+        "ggml": true,
+        "type": 2
+      },
+      "count": 30,
+      "timing": {
+        "metric": "completed_seconds",
+        "completed_seconds": [
+          0.00046909996308386326,
+          0.0004545000847429037,
+          0.0004903998924419284,
+          0.0005732000572606921,
+          0.0008919000392779708
+        ],
+        "median_completed_seconds": 0.0004903998924419284,
+        "median_seconds": 0.0004903998924419284,
+        "warmup": 2,
+        "samples": 5,
+        "repeats": 1
+      },
+      "dispatches_per_plan": 16,
+      "weighted_seconds": 0.0009194997983286157
+    },
+    {
+      "kind": "linear",
+      "parameters": {
+        "r": 1,
+        "k": 2048,
+        "o": 6144,
+        "optimized": true,
+        "ggml": true,
+        "type": 2
+      },
+      "count": 22,
+      "timing": {
+        "metric": "completed_seconds",
+        "completed_seconds": [
+          0.0006085999775677919,
+          0.0006201999494805932,
+          0.0005908999592065811,
+          0.0005140000721439719,
+          0.0005119999404996634
+        ],
+        "median_completed_seconds": 0.0005908999592065811,
+        "median_seconds": 0.0005908999592065811,
+        "warmup": 2,
+        "samples": 5,
+        "repeats": 1
+      },
+      "dispatches_per_plan": 16,
+      "weighted_seconds": 0.000812487443909049
+    },
+    {
+      "kind": "linear",
+      "parameters": {
+        "r": 1,
+        "k": 2048,
+        "o": 128000,
+        "optimized": true,
+        "ggml": true,
+        "type": 14
+      },
+      "count": 1,
+      "timing": {
+        "metric": "completed_seconds",
+        "completed_seconds": [
+          0.009468400035984814,
+          0.009414399974048138,
+          0.009470900055021048,
+          0.00949679990299046,
+          0.009595200070179999
+        ],
+        "median_completed_seconds": 0.009470900055021048,
+        "median_seconds": 0.009470900055021048,
+        "warmup": 2,
+        "samples": 5,
+        "repeats": 1
+      },
+      "dispatches_per_plan": 16,
+      "weighted_seconds": 0.0005919312534388155
+    },
+    {
+      "kind": "attention_merge",
+      "parameters": {
+        "r": 1,
+        "h": 32,
+        "kh": 8,
+        "d": 64,
+        "capacity": 131072,
+        "kv_dtype": "float16",
+        "unit_scales": true,
+        "provider": "webgpu",
+        "optimized": true,
+        "splits": 256
+      },
+      "count": 8,
+      "timing": {
+        "metric": "completed_seconds",
+        "completed_seconds": [
+          0.0009791000047698617,
+          0.0009855000535026193,
+          0.0009387999307364225,
+          0.000978900003246963,
+          0.0008789000567048788
+        ],
+        "median_completed_seconds": 0.000978900003246963,
+        "median_seconds": 0.000978900003246963,
+        "warmup": 2,
+        "samples": 5,
+        "repeats": 1
+      },
+      "dispatches_per_plan": 16,
+      "weighted_seconds": 0.0004894500016234815
+    },
+    {
+      "kind": "linear",
+      "parameters": {
+        "r": 1,
+        "k": 2048,
+        "o": 512,
+        "optimized": true,
+        "ggml": true,
+        "type": 2
+      },
+      "count": 16,
+      "timing": {
+        "metric": "completed_seconds",
+        "completed_seconds": [
+          0.0004980999510735273,
+          0.00045060005504637957,
+          0.0004611000185832381,
+          0.0004631999181583524,
+          0.00047500000800937414
+        ],
+        "median_completed_seconds": 0.0004631999181583524,
+        "median_seconds": 0.0004631999181583524,
+        "warmup": 2,
+        "samples": 5,
+        "repeats": 1
+      },
+      "dispatches_per_plan": 16,
+      "weighted_seconds": 0.0004631999181583524
+    },
+    {
+      "kind": "linear",
+      "parameters": {
+        "r": 1,
+        "k": 2048,
+        "o": 2048,
+        "optimized": true,
+        "ggml": true,
+        "type": 2
+      },
+      "count": 8,
+      "timing": {
+        "metric": "completed_seconds",
+        "completed_seconds": [
+          0.0006658000638708472,
+          0.0006807999452576041,
+          0.0006765000289306045,
+          0.0006953999400138855,
+          0.0006940000457689166
+        ],
+        "median_completed_seconds": 0.0006807999452576041,
+        "median_seconds": 0.0006807999452576041,
+        "warmup": 2,
+        "samples": 5,
+        "repeats": 1
+      },
+      "dispatches_per_plan": 16,
+      "weighted_seconds": 0.00034039997262880206
+    },
+    {
+      "kind": "conv",
+      "parameters": {
+        "r": 1,
+        "c": 2048,
+        "length": 3
+      },
+      "count": 22,
+      "timing": {
+        "metric": "completed_seconds",
+        "completed_seconds": [
+          0.00032760004978626966,
+          0.0002389999572187662,
+          0.00024780002422630787,
+          0.0002327000256627798,
+          0.00022769998759031296
+        ],
+        "median_completed_seconds": 0.0002389999572187662,
+        "median_seconds": 0.0002389999572187662,
+        "warmup": 2,
+        "samples": 5,
+        "repeats": 1
+      },
+      "dispatches_per_plan": 16,
+      "weighted_seconds": 0.00032862494117580354
+    },
+    {
+      "kind": "argmax",
+      "parameters": {
+        "r": 1,
+        "c": 128000
+      },
+      "count": 1,
+      "timing": {
+        "metric": "completed_seconds",
+        "completed_seconds": [
+          0.00451450003311038,
+          0.004474999965168536,
+          0.004607200040481985,
+          0.004628099966794252,
+          0.00500319991260767
+        ],
+        "median_completed_seconds": 0.004607200040481985,
+        "median_seconds": 0.004607200040481985,
+        "warmup": 2,
+        "samples": 5,
+        "repeats": 1
+      },
+      "dispatches_per_plan": 16,
+      "weighted_seconds": 0.00028795000253012404
+    },
+    {
+      "kind": "rope",
+      "parameters": {
+        "r": 1,
+        "h": 32,
+        "d": 64,
+        "theta": 10000000.0,
+        "provider": "webgpu",
+        "position_limit": 131072
+      },
+      "count": 8,
+      "timing": {
+        "metric": "completed_seconds",
+        "completed_seconds": [
+          0.0005444000707939267,
+          0.00047800003085285425,
+          0.000440100091509521,
+          0.00046669994480907917,
+          0.00041470001451671124
+        ],
+        "median_completed_seconds": 0.00046669994480907917,
+        "median_seconds": 0.00046669994480907917,
+        "warmup": 2,
+        "samples": 5,
+        "repeats": 1
+      },
+      "dispatches_per_plan": 16,
+      "weighted_seconds": 0.00023334997240453959
+    },
+    {
+      "kind": "rope",
+      "parameters": {
+        "r": 1,
+        "h": 8,
+        "d": 64,
+        "theta": 10000000.0,
+        "provider": "webgpu",
+        "position_limit": 131072
+      },
+      "count": 8,
+      "timing": {
+        "metric": "completed_seconds",
+        "completed_seconds": [
+          0.00047770002856850624,
+          0.0004290000069886446,
+          0.0004243000876158476,
+          0.00043869996443390846,
+          0.0004878999898210168
+        ],
+        "median_completed_seconds": 0.00043869996443390846,
+        "median_seconds": 0.00043869996443390846,
+        "warmup": 2,
+        "samples": 5,
+        "repeats": 1
+      },
+      "dispatches_per_plan": 16,
+      "weighted_seconds": 0.00021934998221695423
+    },
+    {
+      "kind": "cache_write",
+      "parameters": {
+        "r": 1,
+        "h": 32,
+        "kh": 8,
+        "d": 64,
+        "capacity": 131072,
+        "kv_dtype": "float16",
+        "unit_scales": true,
+        "provider": "webgpu",
+        "optimized": true
+      },
+      "count": 8,
+      "timing": {
+        "metric": "completed_seconds",
+        "completed_seconds": [
+          0.0004292000085115433,
+          0.0005454999627545476,
+          0.00040010001976042986,
+          0.00034410005901008844,
+          0.0003412999212741852
+        ],
+        "median_completed_seconds": 0.00040010001976042986,
+        "median_seconds": 0.00040010001976042986,
+        "warmup": 2,
+        "samples": 5,
+        "repeats": 1
+      },
+      "dispatches_per_plan": 16,
+      "weighted_seconds": 0.00020005000988021493
+    },
+    {
+      "kind": "rms",
+      "parameters": {
+        "r": 32,
+        "c": 64,
+        "eps": 9.999999747378752e-06
+      },
+      "count": 8,
+      "timing": {
+        "metric": "completed_seconds",
+        "completed_seconds": [
+          0.0003687000134959817,
+          0.0003328999737277627,
+          0.0003272000467404723,
+          0.00033119996078312397,
+          0.00032140000257641077
+        ],
+        "median_completed_seconds": 0.00033119996078312397,
+        "median_seconds": 0.00033119996078312397,
+        "warmup": 2,
+        "samples": 5,
+        "repeats": 1
+      },
+      "dispatches_per_plan": 16,
+      "weighted_seconds": 0.00016559998039156199
+    },
+    {
+      "kind": "rms",
+      "parameters": {
+        "r": 8,
+        "c": 64,
+        "eps": 9.999999747378752e-06
+      },
+      "count": 8,
+      "timing": {
+        "metric": "completed_seconds",
+        "completed_seconds": [
+          0.0003722000401467085,
+          0.00032759993337094784,
+          0.00031859998125582933,
+          0.00031260005198419094,
+          0.0004144000122323632
+        ],
+        "median_completed_seconds": 0.00032759993337094784,
+        "median_seconds": 0.00032759993337094784,
+        "warmup": 2,
+        "samples": 5,
+        "repeats": 1
+      },
+      "dispatches_per_plan": 16,
+      "weighted_seconds": 0.00016379996668547392
+    },
+    {
+      "kind": "embedding",
+      "parameters": {
+        "r": 1,
+        "c": 2048,
+        "v": 128000,
+        "start": 0,
+        "ggml": true,
+        "type": 14
+      },
+      "count": 1,
+      "timing": {
+        "metric": "completed_seconds",
+        "completed_seconds": [
+          0.0003274999326094985,
+          0.00021780002862215042,
+          0.0002136999974027276,
+          0.00021929992362856865,
+          0.0002280999906361103
+        ],
+        "median_completed_seconds": 0.00021929992362856865,
+        "median_seconds": 0.00021929992362856865,
+        "warmup": 2,
+        "samples": 5,
+        "repeats": 1
+      },
+      "dispatches_per_plan": 16,
+      "weighted_seconds": 1.370624522678554e-05
+    },
+    {
+      "kind": "next_tokens",
+      "parameters": {
+        "r": 1
+      },
+      "count": 1,
+      "timing": {
+        "metric": "completed_seconds",
+        "completed_seconds": [
+          0.0003282999387010932,
+          0.00021049997303634882,
+          0.00020610005594789982,
+          0.00019559997599571943,
+          0.00018720002844929695
+        ],
+        "median_completed_seconds": 0.00020610005594789982,
+        "median_seconds": 0.00020610005594789982,
+        "warmup": 2,
+        "samples": 5,
+        "repeats": 1
+      },
+      "dispatches_per_plan": 16,
+      "weighted_seconds": 1.2881253496743739e-05
+    },
+    {
+      "kind": "advance",
+      "parameters": {
+        "r": 1
+      },
+      "count": 1,
+      "timing": {
+        "metric": "completed_seconds",
+        "completed_seconds": [
+          0.0003442000597715378,
+          0.00020509993191808462,
+          0.0002031000331044197,
+          0.00019409996457397938,
+          0.00019339995924383402
+        ],
+        "median_completed_seconds": 0.0002031000331044197,
+        "median_seconds": 0.0002031000331044197,
+        "warmup": 2,
+        "samples": 5,
+        "repeats": 1
+      },
+      "dispatches_per_plan": 16,
+      "weighted_seconds": 1.2693752069026232e-05
+    }
+  ],
+  "device": {
+    "ordinal": 0,
+    "provider": "webgpu",
+    "arch": "webgpu-portable-v1",
+    "name": "AMD Radeon RX 6700 XT",
+    "adapter": {
+      "vendor": "AMD proprietary driver",
+      "architecture": "",
+      "device": "AMD Radeon RX 6700 XT",
+      "description": "26.6.2 (AMD proprietary shader compiler)",
+      "stackgroup_min_size": 4,
+      "stackgroup_max_size": 128,
+      "vendor_id": 4098,
+      "device_id": 29663,
+      "adapter_type": "DiscreteGPU",
+      "backend_type": "Vulkan"
+    },
+    "features": [
+      "shader-f16",
+      "subgroup"
+    ],
+    "limits": {
+      "max-bind-groups": 8,
+      "max-bind-groups-plus-vertex-buffers": 0,
+      "max-bindings-per-bind-group": 1000,
+      "max-buffer-size": 1073741824,
+      "max-color-attachment-bytes-per-sample": 0,
+      "max-color-attachments": 0,
+      "max-compute-invocations-per-workgroup": 1024,
+      "max-compute-workgroup-size-x": 1024,
+      "max-compute-workgroup-size-y": 1024,
+      "max-compute-workgroup-size-z": 1024,
+      "max-compute-workgroup-storage-size": 32768,
+      "max-compute-workgroups-per-dimension": 65535,
+      "max-dynamic-storage-buffers-per-pipeline-layout": 8,
+      "max-dynamic-uniform-buffers-per-pipeline-layout": 8,
+      "max-inter-stage-shader-variables": 0,
+      "max-non-sampler-bindings": 1000000,
+      "max-push-constant-size": 256,
+      "max-sampled-textures-per-shader-stage": 16,
+      "max-samplers-per-shader-stage": 16,
+      "max-storage-buffer-binding-size": 1073741824,
+      "max-storage-buffers-per-shader-stage": 32,
+      "max-storage-textures-per-shader-stage": 4,
+      "max-texture-array-layers": 8192,
+      "max-texture-dimension-1d": 16384,
+      "max-texture-dimension-2d": 16384,
+      "max-texture-dimension-3d": 8192,
+      "max-uniform-buffer-binding-size": 2147483647,
+      "max-uniform-buffers-per-shader-stage": 12,
+      "max-vertex-attributes": 64,
+      "max-vertex-buffer-array-stride": 16383,
+      "max-vertex-buffers": 16,
+      "min-storage-buffer-offset-alignment": 32,
+      "min-uniform-buffer-offset-alignment": 32
+    },
+    "adapter_storage_buffers_reported": 4294967295,
+    "prepared_encoding": "native",
+    "prepared_submission": "native"
+  }
+}

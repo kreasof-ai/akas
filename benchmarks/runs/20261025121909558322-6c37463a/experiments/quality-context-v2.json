@@ -1,0 +1,190 @@
+{
+  "status": "passed",
+  "scope": "Check changed prefill arithmetic against frozen, teacher-forced model logits.\n\nThis is a bounded regression gate against a qualified AKAS program, not an\nindependent model oracle or corpus quality evaluation. Every candidate still\nrequires independent operation qualification before this gate.\n",
+  "program_sha256": "8f1aa45ed7606e809ca2a81e8cc8816ee7ad922be9180581fd78a9ca06a4dfd9",
+  "reference_run_id": "20261024215325218226-fd38f777",
+  "reference_sha256": "51eba91041f7464056a906d632ac8aa648343c93a2694ff46ff0d19d224807e8",
+  "prompt_manifest_sha256": "cc6333c9ec0033fabd38abd2969c01a0d8578ad42d457104fe42a811cd9b3560",
+  "checkpoint_sha256": "e1a61bf937bc60726e18626e97f7ee9bfd2574d95744c2ed909de98b78006fbe",
+  "logits_sha256": "a493243b64563e58608ca5e0df88acbe40cc4e561e968d38f4ee8562fd438e64",
+  "relative_rms_limit": 0.01,
+  "cosine_limit": 0.9999,
+  "rows": [
+    {
+      "prefix": 32,
+      "output_count": 128,
+      "matching_argmax": 128,
+      "exact_teacher_forced_predictions": true,
+      "sampled_logits": [
+        {
+          "step": 0,
+          "relative_rms": 0.002642095519873445,
+          "cosine": 0.9999969258513688,
+          "passed": true
+        },
+        {
+          "step": 1,
+          "relative_rms": 0.0008085935533112904,
+          "cosine": 0.9999996732875477,
+          "passed": true
+        },
+        {
+          "step": 2,
+          "relative_rms": 0.0011630122530856201,
+          "cosine": 0.9999993762215181,
+          "passed": true
+        },
+        {
+          "step": 16,
+          "relative_rms": 0.0012395938697384507,
+          "cosine": 0.9999992346333708,
+          "passed": true
+        },
+        {
+          "step": 64,
+          "relative_rms": 0.000601262573909942,
+          "cosine": 0.999999860405194,
+          "passed": true
+        },
+        {
+          "step": 127,
+          "relative_rms": 0.0004989146057473851,
+          "cosine": 0.9999998841739266,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "prefix": 512,
+      "output_count": 128,
+      "matching_argmax": 128,
+      "exact_teacher_forced_predictions": true,
+      "sampled_logits": [
+        {
+          "step": 0,
+          "relative_rms": 0.002004505979687557,
+          "cosine": 0.9999980793361427,
+          "passed": true
+        },
+        {
+          "step": 1,
+          "relative_rms": 0.0009856802456828628,
+          "cosine": 0.9999995149431828,
+          "passed": true
+        },
+        {
+          "step": 2,
+          "relative_rms": 0.0014115154542958292,
+          "cosine": 0.9999990666968485,
+          "passed": true
+        },
+        {
+          "step": 16,
+          "relative_rms": 0.0005358838308047861,
+          "cosine": 0.9999998578392816,
+          "passed": true
+        },
+        {
+          "step": 64,
+          "relative_rms": 0.0007261445154461721,
+          "cosine": 0.9999997600722885,
+          "passed": true
+        },
+        {
+          "step": 127,
+          "relative_rms": 0.00043749926560807665,
+          "cosine": 0.9999999072161151,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "prefix": 2048,
+      "output_count": 128,
+      "matching_argmax": 128,
+      "exact_teacher_forced_predictions": true,
+      "sampled_logits": [
+        {
+          "step": 0,
+          "relative_rms": 0.0014938164121712544,
+          "cosine": 0.9999988863979132,
+          "passed": true
+        },
+        {
+          "step": 1,
+          "relative_rms": 0.00045062276443528213,
+          "cosine": 0.9999999188780502,
+          "passed": true
+        },
+        {
+          "step": 2,
+          "relative_rms": 0.0005391151455217271,
+          "cosine": 0.9999998571732616,
+          "passed": true
+        },
+        {
+          "step": 16,
+          "relative_rms": 0.00032595493308761134,
+          "cosine": 0.9999999479631307,
+          "passed": true
+        },
+        {
+          "step": 64,
+          "relative_rms": 0.000257075567853149,
+          "cosine": 0.9999999783493995,
+          "passed": true
+        },
+        {
+          "step": 127,
+          "relative_rms": 0.000392592942424054,
+          "cosine": 0.9999999569984427,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "prefix": 8192,
+      "output_count": 128,
+      "matching_argmax": 128,
+      "exact_teacher_forced_predictions": true,
+      "sampled_logits": [
+        {
+          "step": 0,
+          "relative_rms": 0.0007486646686203167,
+          "cosine": 0.999999723578261,
+          "passed": true
+        },
+        {
+          "step": 1,
+          "relative_rms": 0.00041042568051823146,
+          "cosine": 0.9999999159003342,
+          "passed": true
+        },
+        {
+          "step": 2,
+          "relative_rms": 0.0009539845216169715,
+          "cosine": 0.9999995776020468,
+          "passed": true
+        },
+        {
+          "step": 16,
+          "relative_rms": 0.0004894405343954769,
+          "cosine": 0.9999999125791297,
+          "passed": true
+        },
+        {
+          "step": 64,
+          "relative_rms": 0.000285077937271549,
+          "cosine": 0.9999999595801857,
+          "passed": true
+        },
+        {
+          "step": 127,
+          "relative_rms": 0.00024278726021321014,
+          "cosine": 0.9999999727445129,
+          "passed": true
+        }
+      ]
+    }
+  ]
+}
