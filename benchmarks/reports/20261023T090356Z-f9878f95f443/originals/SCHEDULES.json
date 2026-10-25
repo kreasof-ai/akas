@@ -1,0 +1,5544 @@
+{
+  "schema": "akas.campaign-schedules.v1",
+  "configurations": {
+    "lfm2.5-24b-a2b-q4_0-cuda-float16-ar": {
+      "run_id": "20261023072001816909-fb5b388f",
+      "recipe": {
+        "provider": "cuda",
+        "target": "sm_89",
+        "chunk": 4096,
+        "prefill_requests": 1,
+        "graphs": true,
+        "trials": 1,
+        "policy": {
+          "attention": {
+            "splits": 64,
+            "decoded_kv": false
+          },
+          "moe": {
+            "fused_swiglu": true
+          }
+        },
+        "model_options": {
+          "kv_dtype": "float16",
+          "optimized": true
+        },
+        "window": null,
+        "deferred": false,
+        "head": null,
+        "id": "8b123f530c46906c"
+      },
+      "phases": [
+        {
+          "program_sha256": "12e926f42c2761cb20f4203104cd05198e1754d47dcf48717b7cf303f5ca050b",
+          "phase": "decode",
+          "batch": 1,
+          "chunk": 1,
+          "provider": "cuda",
+          "target": "sm_89",
+          "contract": "reference",
+          "qualification": "programs/12e926f42c2761cb20f4203104cd05198e1754d47dcf48717b7cf303f5ca050b/decode-b1-t1.json",
+          "profile": {
+            "schema": "tensor.schedule-profile.v1",
+            "provider": "cuda",
+            "target": "sm_89",
+            "entries": [
+              {
+                "operation": "embedding",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "v": 128000,
+                  "start": 0,
+                  "ggml": true,
+                  "type": 14
+                },
+                "schedule": {
+                  "implementation": "vocabulary.cuda.packed_baseline"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 6144,
+                  "optimized": true,
+                  "ggml": true,
+                  "type": 2
+                },
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 1,
+                  "f16_values": 4,
+                  "implementation": "linear.cuda.packed"
+                }
+              },
+              {
+                "operation": "conv",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "length": 3
+                },
+                "schedule": {
+                  "implementation": "convolution.reference"
+                }
+              },
+              {
+                "operation": "linear_add",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 2048,
+                  "optimized": true,
+                  "ggml": true,
+                  "type": 2
+                },
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 1,
+                  "f16_values": 4,
+                  "implementation": "linear.cuda.packed"
+                }
+              },
+              {
+                "operation": "ffn",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 11776,
+                  "optimized": true,
+                  "ggml": true,
+                  "type": 2
+                },
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 1,
+                  "f16_values": 4,
+                  "implementation": "linear.cuda.packed"
+                }
+              },
+              {
+                "operation": "linear_add",
+                "parameters": {
+                  "r": 1,
+                  "k": 11776,
+                  "o": 2048,
+                  "optimized": true,
+                  "ggml": true,
+                  "type": 2
+                },
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 1,
+                  "f16_values": 4,
+                  "implementation": "linear.cuda.packed"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 2048,
+                  "optimized": true,
+                  "ggml": true,
+                  "type": 2
+                },
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 1,
+                  "f16_values": 4,
+                  "implementation": "linear.cuda.packed"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 512,
+                  "optimized": true,
+                  "ggml": true,
+                  "type": 2
+                },
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 1,
+                  "f16_values": 4,
+                  "implementation": "linear.cuda.packed"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 32,
+                  "c": 64,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 8,
+                  "c": 64,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "rope",
+                "parameters": {
+                  "r": 1,
+                  "h": 32,
+                  "d": 64,
+                  "theta": 10000000.0,
+                  "provider": "cuda",
+                  "position_limit": 131072
+                },
+                "schedule": {
+                  "implementation": "attention.reference"
+                }
+              },
+              {
+                "operation": "rope",
+                "parameters": {
+                  "r": 1,
+                  "h": 8,
+                  "d": 64,
+                  "theta": 10000000.0,
+                  "provider": "cuda",
+                  "position_limit": 131072
+                },
+                "schedule": {
+                  "implementation": "attention.reference"
+                }
+              },
+              {
+                "operation": "cache_write",
+                "parameters": {
+                  "r": 1,
+                  "h": 32,
+                  "kh": 8,
+                  "d": 64,
+                  "capacity": 131072,
+                  "kv_dtype": "float16",
+                  "unit_scales": true,
+                  "provider": "cuda",
+                  "optimized": true
+                },
+                "schedule": {
+                  "implementation": "attention.reference"
+                }
+              },
+              {
+                "operation": "attention_partial",
+                "parameters": {
+                  "r": 1,
+                  "h": 32,
+                  "kh": 8,
+                  "d": 64,
+                  "capacity": 131072,
+                  "kv_dtype": "float16",
+                  "unit_scales": true,
+                  "provider": "cuda",
+                  "optimized": true,
+                  "splits": 64
+                },
+                "schedule": {
+                  "key_rows": 64,
+                  "stages": 1,
+                  "implementation": "attention.cuda.mma_decode"
+                }
+              },
+              {
+                "operation": "attention_merge",
+                "parameters": {
+                  "r": 1,
+                  "h": 32,
+                  "kh": 8,
+                  "d": 64,
+                  "capacity": 131072,
+                  "kv_dtype": "float16",
+                  "unit_scales": true,
+                  "provider": "cuda",
+                  "optimized": true,
+                  "splits": 64
+                },
+                "schedule": {
+                  "implementation": "attention.cuda.floating"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 64
+                },
+                "schedule": {
+                  "threads": 128,
+                  "implementation": "linear.cuda.floating_warp"
+                }
+              },
+              {
+                "operation": "biased_router",
+                "parameters": {
+                  "r": 1,
+                  "experts": 64,
+                  "top": 4,
+                  "scale": 1.0,
+                  "normalize": true
+                },
+                "schedule": {
+                  "implementation": "akas.ops.moe.kernel:biased_router"
+                }
+              },
+              {
+                "operation": "quantized_routes",
+                "parameters": {
+                  "r": 1,
+                  "experts": 64,
+                  "top": 4
+                },
+                "schedule": {
+                  "implementation": "akas.ops.moe.kernel:quantized_routes"
+                }
+              },
+              {
+                "operation": "expert_swiglu",
+                "parameters": {
+                  "r": 1,
+                  "top": 4,
+                  "experts": 64,
+                  "o": 1536,
+                  "k": 2048,
+                  "input_dtype": "float32",
+                  "round_inputs": true,
+                  "weight_parts": [
+                    {
+                      "rows": 98304,
+                      "format": "ggml",
+                      "options": {
+                        "encoding": 2
+                      }
+                    }
+                  ],
+                  "up_weight_parts": [
+                    {
+                      "rows": 98304,
+                      "format": "ggml",
+                      "options": {
+                        "encoding": 2
+                      }
+                    }
+                  ]
+                },
+                "schedule": {
+                  "threads": 128,
+                  "columns_per_warp": 1,
+                  "unroll": 2,
+                  "implementation": "moe.cuda.packed_swiglu"
+                }
+              },
+              {
+                "operation": "quantized_experts",
+                "parameters": {
+                  "r": 1,
+                  "top": 4,
+                  "experts": 64,
+                  "o": 2048,
+                  "k": 1536,
+                  "input_dtype": "float32",
+                  "round_inputs": true,
+                  "tile_map": false,
+                  "routed_input": true,
+                  "weight_parts": [
+                    {
+                      "rows": 131072,
+                      "format": "ggml",
+                      "options": {
+                        "encoding": 2
+                      }
+                    }
+                  ]
+                },
+                "schedule": {
+                  "threads": 128,
+                  "implementation": "moe.cuda.packed_decode"
+                }
+              },
+              {
+                "operation": "routed_combine",
+                "parameters": {
+                  "r": 1,
+                  "top": 4,
+                  "c": 2048
+                },
+                "schedule": {
+                  "implementation": "akas.ops.moe.kernel:routed_combine"
+                }
+              },
+              {
+                "operation": "add_rms",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 128000,
+                  "optimized": true,
+                  "ggml": true,
+                  "type": 14
+                },
+                "schedule": {
+                  "implementation": "linear.cuda.packed"
+                }
+              },
+              {
+                "operation": "argmax",
+                "parameters": {
+                  "r": 1,
+                  "c": 128000
+                },
+                "schedule": {
+                  "implementation": "vocabulary.reference"
+                }
+              },
+              {
+                "operation": "next_tokens",
+                "parameters": {
+                  "r": 1
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              },
+              {
+                "operation": "advance",
+                "parameters": {
+                  "r": 1
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              }
+            ]
+          },
+          "winners": [
+            {
+              "kind": "embedding",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "v": 128000,
+                "start": 0,
+                "ggml": true,
+                "type": 14
+              },
+              "selected": {
+                "implementation": "vocabulary.cuda.packed_baseline",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  2.969600073993206e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.7247999086976052e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 6144,
+                "optimized": true,
+                "ggml": true,
+                "type": 2
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed",
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 1,
+                  "f16_values": 4
+                },
+                "score": 0.7715269774131553,
+                "measurements": [
+                  2.1503999829292296e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "conv",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "length": 3
+              },
+              "selected": {
+                "implementation": "convolution.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.551999989897013e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "linear_add",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 2048,
+                "optimized": true,
+                "ggml": true,
+                "type": 2
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed",
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 1,
+                  "f16_values": 4
+                },
+                "score": 0.842105298429159,
+                "measurements": [
+                  1.6383999958634378e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "ffn",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 11776,
+                "optimized": true,
+                "ggml": true,
+                "type": 2
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed",
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 1,
+                  "f16_values": 4
+                },
+                "score": 0.83673470751429,
+                "measurements": [
+                  4.198399931192398e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear_add",
+              "parameters": {
+                "r": 1,
+                "k": 11776,
+                "o": 2048,
+                "optimized": true,
+                "ggml": true,
+                "type": 2
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed",
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 1,
+                  "f16_values": 4
+                },
+                "score": 0.8684210979803472,
+                "measurements": [
+                  3.3792000263929365e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 2048,
+                "optimized": true,
+                "ggml": true,
+                "type": 2
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed",
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 1,
+                  "f16_values": 4
+                },
+                "score": 0.780327861813102,
+                "measurements": [
+                  1.5231999568641186e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 512,
+                "optimized": true,
+                "ggml": true,
+                "type": 2
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed",
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 1,
+                  "f16_values": 4
+                },
+                "score": 0.6875000071054274,
+                "measurements": [
+                  1.1264000087976456e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 32,
+                "c": 64,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.6383999958634378e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 8,
+                "c": 64,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.535999961197376e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rope",
+              "parameters": {
+                "r": 1,
+                "h": 32,
+                "d": 64,
+                "theta": 10000000.0,
+                "provider": "cuda",
+                "position_limit": 131072
+              },
+              "selected": {
+                "implementation": "attention.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.6416000202298163e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rope",
+              "parameters": {
+                "r": 1,
+                "h": 8,
+                "d": 64,
+                "theta": 10000000.0,
+                "provider": "cuda",
+                "position_limit": 131072
+              },
+              "selected": {
+                "implementation": "attention.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.535999961197376e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "cache_write",
+              "parameters": {
+                "r": 1,
+                "h": 32,
+                "kh": 8,
+                "d": 64,
+                "capacity": 131072,
+                "kv_dtype": "float16",
+                "unit_scales": true,
+                "provider": "cuda",
+                "optimized": true
+              },
+              "selected": {
+                "implementation": "attention.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  2.9823999851942064e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "attention_partial",
+              "parameters": {
+                "r": 1,
+                "h": 32,
+                "kh": 8,
+                "d": 64,
+                "capacity": 131072,
+                "kv_dtype": "float16",
+                "unit_scales": true,
+                "provider": "cuda",
+                "optimized": true,
+                "splits": 64
+              },
+              "selected": {
+                "implementation": "attention.cuda.mma_decode",
+                "schedule": {
+                  "key_rows": 64,
+                  "stages": 1
+                },
+                "score": 0.9960937202460228,
+                "measurements": [
+                  0.0010444799661636353
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "attention_merge",
+              "parameters": {
+                "r": 1,
+                "h": 32,
+                "kh": 8,
+                "d": 64,
+                "capacity": 131072,
+                "kv_dtype": "float16",
+                "unit_scales": true,
+                "provider": "cuda",
+                "optimized": true,
+                "splits": 64
+              },
+              "selected": {
+                "implementation": "attention.cuda.floating",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.6287999227643013e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 64
+              },
+              "selected": {
+                "implementation": "linear.cuda.floating_warp",
+                "schedule": {
+                  "threads": 128
+                },
+                "score": 0.7689464058059615,
+                "measurements": [
+                  1.3311999849975109e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "biased_router",
+              "parameters": {
+                "r": 1,
+                "experts": 64,
+                "top": 4,
+                "scale": 1.0,
+                "normalize": true
+              },
+              "selected": {
+                "implementation": "akas.ops.moe.kernel:biased_router",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.651199907064438e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "quantized_routes",
+              "parameters": {
+                "r": 1,
+                "experts": 64,
+                "top": 4
+              },
+              "selected": {
+                "implementation": "akas.ops.moe.kernel:quantized_routes",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.535999961197376e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "expert_swiglu",
+              "parameters": {
+                "r": 1,
+                "top": 4,
+                "experts": 64,
+                "o": 1536,
+                "k": 2048,
+                "input_dtype": "float32",
+                "round_inputs": true,
+                "weight_parts": [
+                  {
+                    "rows": 98304,
+                    "format": "ggml",
+                    "options": {
+                      "encoding": 2
+                    }
+                  }
+                ],
+                "up_weight_parts": [
+                  {
+                    "rows": 98304,
+                    "format": "ggml",
+                    "options": {
+                      "encoding": 2
+                    }
+                  }
+                ]
+              },
+              "selected": {
+                "implementation": "moe.cuda.packed_swiglu",
+                "schedule": {
+                  "threads": 128,
+                  "columns_per_warp": 1,
+                  "unroll": 2
+                },
+                "score": 0.8841354248386087,
+                "measurements": [
+                  3.174399957060814e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "quantized_experts",
+              "parameters": {
+                "r": 1,
+                "top": 4,
+                "experts": 64,
+                "o": 2048,
+                "k": 1536,
+                "input_dtype": "float32",
+                "round_inputs": true,
+                "tile_map": false,
+                "routed_input": true,
+                "weight_parts": [
+                  {
+                    "rows": 131072,
+                    "format": "ggml",
+                    "options": {
+                      "encoding": 2
+                    }
+                  }
+                ]
+              },
+              "selected": {
+                "implementation": "moe.cuda.packed_decode",
+                "schedule": {
+                  "threads": 128
+                },
+                "score": 0.8581005845284818,
+                "measurements": [
+                  2.457600086927414e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "routed_combine",
+              "parameters": {
+                "r": 1,
+                "top": 4,
+                "c": 2048
+              },
+              "selected": {
+                "implementation": "akas.ops.moe.kernel:routed_combine",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.644800044596195e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "add_rms",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.535999961197376e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 128000,
+                "optimized": true,
+                "ggml": true,
+                "type": 14
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0008805760145187378
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "argmax",
+              "parameters": {
+                "r": 1,
+                "c": 128000
+              },
+              "selected": {
+                "implementation": "vocabulary.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  5.222399905323982e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "next_tokens",
+              "parameters": {
+                "r": 1
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.740800030529499e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "advance",
+              "parameters": {
+                "r": 1
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.740800030529499e-05
+                ],
+                "trials": 0
+              }
+            }
+          ]
+        },
+        {
+          "program_sha256": "12e926f42c2761cb20f4203104cd05198e1754d47dcf48717b7cf303f5ca050b",
+          "phase": "prefill",
+          "batch": 1,
+          "chunk": 32,
+          "provider": "cuda",
+          "target": "sm_89",
+          "contract": "reference",
+          "qualification": "programs/12e926f42c2761cb20f4203104cd05198e1754d47dcf48717b7cf303f5ca050b/prefill-b1-t32.json",
+          "profile": {
+            "schema": "tensor.schedule-profile.v1",
+            "provider": "cuda",
+            "target": "sm_89",
+            "entries": [
+              {
+                "operation": "chunk_controls",
+                "parameters": {
+                  "r": 1,
+                  "chunk": 32
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              },
+              {
+                "operation": "embedding",
+                "parameters": {
+                  "r": 32,
+                  "c": 2048,
+                  "v": 128000,
+                  "start": 0,
+                  "ggml": true,
+                  "type": 14
+                },
+                "schedule": {
+                  "implementation": "vocabulary.cuda.packed_baseline"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 32,
+                  "c": 2048,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 32,
+                  "k": 2048,
+                  "o": 6144,
+                  "optimized": true,
+                  "ggml": true,
+                  "type": 2
+                },
+                "schedule": {
+                  "block_m": 32,
+                  "block_n": 64,
+                  "block_k": 32,
+                  "stages": 2,
+                  "threads": 128,
+                  "implementation": "linear.cuda.packed:prefill"
+                }
+              },
+              {
+                "operation": "conv",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "length": 3,
+                  "chunk": 32
+                },
+                "schedule": {
+                  "implementation": "convolution.reference"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 32,
+                  "k": 2048,
+                  "o": 2048,
+                  "optimized": true,
+                  "ggml": true,
+                  "type": 2
+                },
+                "schedule": {
+                  "block_m": 32,
+                  "block_n": 64,
+                  "block_k": 32,
+                  "stages": 2,
+                  "threads": 128,
+                  "implementation": "linear.cuda.packed:prefill"
+                }
+              },
+              {
+                "operation": "add",
+                "parameters": {
+                  "r": 32,
+                  "c": 2048
+                },
+                "schedule": {
+                  "implementation": "residual.kernel"
+                }
+              },
+              {
+                "operation": "ffn",
+                "parameters": {
+                  "r": 32,
+                  "k": 2048,
+                  "o": 11776,
+                  "optimized": true,
+                  "ggml": true,
+                  "type": 2
+                },
+                "schedule": {
+                  "block_m": 32,
+                  "block_n": 64,
+                  "block_k": 32,
+                  "stages": 2,
+                  "threads": 128,
+                  "implementation": "linear.cuda.packed:prefill"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 32,
+                  "k": 11776,
+                  "o": 2048,
+                  "optimized": true,
+                  "ggml": true,
+                  "type": 2
+                },
+                "schedule": {
+                  "block_m": 32,
+                  "block_n": 64,
+                  "block_k": 32,
+                  "stages": 2,
+                  "threads": 128,
+                  "implementation": "linear.cuda.packed:prefill"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 32,
+                  "k": 2048,
+                  "o": 512,
+                  "optimized": true,
+                  "ggml": true,
+                  "type": 2
+                },
+                "schedule": {
+                  "block_m": 32,
+                  "block_n": 64,
+                  "block_k": 32,
+                  "stages": 2,
+                  "threads": 128,
+                  "implementation": "linear.cuda.packed:prefill"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 1024,
+                  "c": 64,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 256,
+                  "c": 64,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "rope",
+                "parameters": {
+                  "r": 32,
+                  "h": 32,
+                  "d": 64,
+                  "theta": 10000000.0,
+                  "provider": "cuda",
+                  "position_limit": 131072
+                },
+                "schedule": {
+                  "implementation": "attention.reference"
+                }
+              },
+              {
+                "operation": "rope",
+                "parameters": {
+                  "r": 32,
+                  "h": 8,
+                  "d": 64,
+                  "theta": 10000000.0,
+                  "provider": "cuda",
+                  "position_limit": 131072
+                },
+                "schedule": {
+                  "implementation": "attention.reference"
+                }
+              },
+              {
+                "operation": "cache_write",
+                "parameters": {
+                  "r": 32,
+                  "h": 32,
+                  "kh": 8,
+                  "d": 64,
+                  "capacity": 131072,
+                  "kv_dtype": "float16",
+                  "unit_scales": true,
+                  "provider": "cuda",
+                  "chunk": 32,
+                  "optimized": true
+                },
+                "schedule": {
+                  "implementation": "attention.reference"
+                }
+              },
+              {
+                "operation": "attention",
+                "parameters": {
+                  "r": 32,
+                  "h": 32,
+                  "kh": 8,
+                  "d": 64,
+                  "capacity": 131072,
+                  "kv_dtype": "float16",
+                  "unit_scales": true,
+                  "provider": "cuda",
+                  "chunk": 32,
+                  "optimized": true
+                },
+                "schedule": {
+                  "async_loads": true,
+                  "query_rows": 32,
+                  "key_rows": 64,
+                  "stages": 2,
+                  "threads": 128,
+                  "implementation": "attention.cuda.pipelined"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 32,
+                  "k": 2048,
+                  "o": 64
+                },
+                "schedule": {
+                  "threads": 128,
+                  "implementation": "linear.cuda.floating_warp"
+                }
+              },
+              {
+                "operation": "biased_router",
+                "parameters": {
+                  "r": 32,
+                  "experts": 64,
+                  "top": 4,
+                  "scale": 1.0,
+                  "normalize": true
+                },
+                "schedule": {
+                  "implementation": "akas.ops.moe.kernel:biased_router"
+                }
+              },
+              {
+                "operation": "quantized_routes",
+                "parameters": {
+                  "r": 32,
+                  "experts": 64,
+                  "top": 4
+                },
+                "schedule": {
+                  "implementation": "moe.cuda.parallel_routes"
+                }
+              },
+              {
+                "operation": "expert_tile_map",
+                "parameters": {
+                  "r": 32,
+                  "experts": 64,
+                  "top": 4
+                },
+                "schedule": {
+                  "implementation": "akas.ops.moe.kernel:expert_tile_map"
+                }
+              },
+              {
+                "operation": "quantized_experts",
+                "parameters": {
+                  "r": 32,
+                  "top": 4,
+                  "experts": 64,
+                  "o": 1536,
+                  "k": 2048,
+                  "input_dtype": "float32",
+                  "round_inputs": true,
+                  "tile_map": true,
+                  "routed_input": false,
+                  "weight_parts": [
+                    {
+                      "rows": 98304,
+                      "format": "ggml",
+                      "options": {
+                        "encoding": 2
+                      }
+                    }
+                  ]
+                },
+                "schedule": {
+                  "block_m": 16,
+                  "columns": 32,
+                  "block_k": 128,
+                  "threads": 128,
+                  "implementation": "akas.ops.moe.cuda:compact_experts"
+                }
+              },
+              {
+                "operation": "swiglu_experts",
+                "parameters": {
+                  "r": 32,
+                  "c": 1536,
+                  "top": 4,
+                  "expert_rows": true,
+                  "input_dtype": "float32",
+                  "output_dtype": "float32"
+                },
+                "schedule": {
+                  "implementation": "akas.ops.activation.kernel:swiglu_experts"
+                }
+              },
+              {
+                "operation": "quantized_experts",
+                "parameters": {
+                  "r": 32,
+                  "top": 4,
+                  "experts": 64,
+                  "o": 2048,
+                  "k": 1536,
+                  "input_dtype": "float32",
+                  "round_inputs": true,
+                  "tile_map": true,
+                  "routed_input": true,
+                  "weight_parts": [
+                    {
+                      "rows": 131072,
+                      "format": "ggml",
+                      "options": {
+                        "encoding": 2
+                      }
+                    }
+                  ]
+                },
+                "schedule": {
+                  "block_m": 16,
+                  "columns": 32,
+                  "block_k": 64,
+                  "threads": 128,
+                  "implementation": "akas.ops.moe.cuda:compact_experts"
+                }
+              },
+              {
+                "operation": "routed_combine",
+                "parameters": {
+                  "r": 32,
+                  "top": 4,
+                  "c": 2048
+                },
+                "schedule": {
+                  "implementation": "akas.ops.moe.kernel:routed_combine"
+                }
+              },
+              {
+                "operation": "chunk_last",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "chunk": 32
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 128000,
+                  "optimized": true,
+                  "ggml": true,
+                  "type": 14
+                },
+                "schedule": {
+                  "implementation": "linear.cuda.packed"
+                }
+              },
+              {
+                "operation": "masked_copy",
+                "parameters": {
+                  "r": 1,
+                  "c": 128000
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              },
+              {
+                "operation": "argmax",
+                "parameters": {
+                  "r": 1,
+                  "c": 128000
+                },
+                "schedule": {
+                  "implementation": "vocabulary.reference"
+                }
+              },
+              {
+                "operation": "next_tokens",
+                "parameters": {
+                  "r": 1
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              },
+              {
+                "operation": "advance",
+                "parameters": {
+                  "r": 1,
+                  "chunk": 32
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              }
+            ]
+          },
+          "winners": [
+            {
+              "kind": "chunk_controls",
+              "parameters": {
+                "r": 1,
+                "chunk": 32
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.740800030529499e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "embedding",
+              "parameters": {
+                "r": 32,
+                "c": 2048,
+                "v": 128000,
+                "start": 0,
+                "ggml": true,
+                "type": 14
+              },
+              "selected": {
+                "implementation": "vocabulary.cuda.packed_baseline",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.740800030529499e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 32,
+                "c": 2048,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.740800030529499e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 32,
+                "k": 2048,
+                "o": 6144,
+                "optimized": true,
+                "ggml": true,
+                "type": 2
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed:prefill",
+                "schedule": {
+                  "block_m": 32,
+                  "block_n": 64,
+                  "block_k": 32,
+                  "stages": 2,
+                  "threads": 128
+                },
+                "score": 0.8876664943018846,
+                "measurements": [
+                  4.905600100755692e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "conv",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "length": 3,
+                "chunk": 32
+              },
+              "selected": {
+                "implementation": "convolution.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  2.457600086927414e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 32,
+                "k": 2048,
+                "o": 2048,
+                "optimized": true,
+                "ggml": true,
+                "type": 2
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed:prefill",
+                "schedule": {
+                  "block_m": 32,
+                  "block_n": 64,
+                  "block_k": 32,
+                  "stages": 2,
+                  "threads": 128
+                },
+                "score": 0.8666666235498814,
+                "measurements": [
+                  3.993599861860275e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "add",
+              "parameters": {
+                "r": 32,
+                "c": 2048
+              },
+              "selected": {
+                "implementation": "residual.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.6383999958634378e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "ffn",
+              "parameters": {
+                "r": 32,
+                "k": 2048,
+                "o": 11776,
+                "optimized": true,
+                "ggml": true,
+                "type": 2
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed:prefill",
+                "schedule": {
+                  "block_m": 32,
+                  "block_n": 64,
+                  "block_k": 32,
+                  "stages": 2,
+                  "threads": 128
+                },
+                "score": 0.9322596285562647,
+                "measurements": [
+                  0.00012595200538635253
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 32,
+                "k": 11776,
+                "o": 2048,
+                "optimized": true,
+                "ggml": true,
+                "type": 2
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed:prefill",
+                "schedule": {
+                  "block_m": 32,
+                  "block_n": 64,
+                  "block_k": 32,
+                  "stages": 2,
+                  "threads": 128
+                },
+                "score": 0.9537572920449219,
+                "measurements": [
+                  0.00016896000504493713
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 32,
+                "k": 2048,
+                "o": 512,
+                "optimized": true,
+                "ggml": true,
+                "type": 2
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed:prefill",
+                "schedule": {
+                  "block_m": 32,
+                  "block_n": 64,
+                  "block_k": 32,
+                  "stages": 2,
+                  "threads": 128
+                },
+                "score": 0.8260869015050477,
+                "measurements": [
+                  3.891199827194214e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 1024,
+                "c": 64,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.6383999958634378e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 256,
+                "c": 64,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  2.1503999829292296e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rope",
+              "parameters": {
+                "r": 32,
+                "h": 32,
+                "d": 64,
+                "theta": 10000000.0,
+                "provider": "cuda",
+                "position_limit": 131072
+              },
+              "selected": {
+                "implementation": "attention.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.740800030529499e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rope",
+              "parameters": {
+                "r": 32,
+                "h": 8,
+                "d": 64,
+                "theta": 10000000.0,
+                "provider": "cuda",
+                "position_limit": 131072
+              },
+              "selected": {
+                "implementation": "attention.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.8239999189972877e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "cache_write",
+              "parameters": {
+                "r": 32,
+                "h": 32,
+                "kh": 8,
+                "d": 64,
+                "capacity": 131072,
+                "kv_dtype": "float16",
+                "unit_scales": true,
+                "provider": "cuda",
+                "chunk": 32,
+                "optimized": true
+              },
+              "selected": {
+                "implementation": "attention.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  2.764800004661083e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "attention",
+              "parameters": {
+                "r": 32,
+                "h": 32,
+                "kh": 8,
+                "d": 64,
+                "capacity": 131072,
+                "kv_dtype": "float16",
+                "unit_scales": true,
+                "provider": "cuda",
+                "chunk": 32,
+                "optimized": true
+              },
+              "selected": {
+                "implementation": "attention.cuda.pipelined",
+                "schedule": {
+                  "async_loads": true,
+                  "query_rows": 32,
+                  "key_rows": 64,
+                  "stages": 2,
+                  "threads": 128
+                },
+                "score": 0.998971714548677,
+                "measurements": [
+                  0.0019896320104598997
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 32,
+                "k": 2048,
+                "o": 64
+              },
+              "selected": {
+                "implementation": "linear.cuda.floating_warp",
+                "schedule": {
+                  "threads": 128
+                },
+                "score": 0.8076923103831204,
+                "measurements": [
+                  2.1503999829292296e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "biased_router",
+              "parameters": {
+                "r": 32,
+                "experts": 64,
+                "top": 4,
+                "scale": 1.0,
+                "normalize": true
+              },
+              "selected": {
+                "implementation": "akas.ops.moe.kernel:biased_router",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.6383999958634378e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "quantized_routes",
+              "parameters": {
+                "r": 32,
+                "experts": 64,
+                "top": 4
+              },
+              "selected": {
+                "implementation": "moe.cuda.parallel_routes",
+                "schedule": {},
+                "score": 0.7597656141198142,
+                "measurements": [
+                  1.244799979031086e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "expert_tile_map",
+              "parameters": {
+                "r": 32,
+                "experts": 64,
+                "top": 4
+              },
+              "selected": {
+                "implementation": "akas.ops.moe.kernel:expert_tile_map",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  2.457600086927414e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "quantized_experts",
+              "parameters": {
+                "r": 32,
+                "top": 4,
+                "experts": 64,
+                "o": 1536,
+                "k": 2048,
+                "input_dtype": "float32",
+                "round_inputs": true,
+                "tile_map": true,
+                "routed_input": false,
+                "weight_parts": [
+                  {
+                    "rows": 98304,
+                    "format": "ggml",
+                    "options": {
+                      "encoding": 2
+                    }
+                  }
+                ]
+              },
+              "selected": {
+                "implementation": "akas.ops.moe.cuda:compact_experts",
+                "schedule": {
+                  "block_m": 16,
+                  "columns": 32,
+                  "block_k": 128,
+                  "threads": 128
+                },
+                "score": 0.9887965298390508,
+                "measurements": [
+                  0.00035020801424980166
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "swiglu_experts",
+              "parameters": {
+                "r": 32,
+                "c": 1536,
+                "top": 4,
+                "expert_rows": true,
+                "input_dtype": "float32",
+                "output_dtype": "float32"
+              },
+              "selected": {
+                "implementation": "akas.ops.activation.kernel:swiglu_experts",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.6383999958634378e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "quantized_experts",
+              "parameters": {
+                "r": 32,
+                "top": 4,
+                "experts": 64,
+                "o": 2048,
+                "k": 1536,
+                "input_dtype": "float32",
+                "round_inputs": true,
+                "tile_map": true,
+                "routed_input": true,
+                "weight_parts": [
+                  {
+                    "rows": 131072,
+                    "format": "ggml",
+                    "options": {
+                      "encoding": 2
+                    }
+                  }
+                ]
+              },
+              "selected": {
+                "implementation": "akas.ops.moe.cuda:compact_experts",
+                "schedule": {
+                  "block_m": 16,
+                  "columns": 32,
+                  "block_k": 64,
+                  "threads": 128
+                },
+                "score": 0.9917695446142855,
+                "measurements": [
+                  0.0004935680031776428
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "routed_combine",
+              "parameters": {
+                "r": 32,
+                "top": 4,
+                "c": 2048
+              },
+              "selected": {
+                "implementation": "akas.ops.moe.kernel:routed_combine",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.6192000359296797e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "chunk_last",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "chunk": 32
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.63199994713068e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.7247999086976052e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 128000,
+                "optimized": true,
+                "ggml": true,
+                "type": 14
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0008805760145187378
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "masked_copy",
+              "parameters": {
+                "r": 1,
+                "c": 128000
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.548799965530634e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "argmax",
+              "parameters": {
+                "r": 1,
+                "c": 128000
+              },
+              "selected": {
+                "implementation": "vocabulary.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  5.222399905323982e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "next_tokens",
+              "parameters": {
+                "r": 1
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.740800030529499e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "advance",
+              "parameters": {
+                "r": 1,
+                "chunk": 32
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.535999961197376e-05
+                ],
+                "trials": 0
+              }
+            }
+          ]
+        },
+        {
+          "program_sha256": "12e926f42c2761cb20f4203104cd05198e1754d47dcf48717b7cf303f5ca050b",
+          "phase": "prefill",
+          "batch": 1,
+          "chunk": 512,
+          "provider": "cuda",
+          "target": "sm_89",
+          "contract": "reference",
+          "qualification": "programs/12e926f42c2761cb20f4203104cd05198e1754d47dcf48717b7cf303f5ca050b/prefill-b1-t512.json",
+          "profile": {
+            "schema": "tensor.schedule-profile.v1",
+            "provider": "cuda",
+            "target": "sm_89",
+            "entries": [
+              {
+                "operation": "chunk_controls",
+                "parameters": {
+                  "r": 1,
+                  "chunk": 512
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              },
+              {
+                "operation": "embedding",
+                "parameters": {
+                  "r": 512,
+                  "c": 2048,
+                  "v": 128000,
+                  "start": 0,
+                  "ggml": true,
+                  "type": 14
+                },
+                "schedule": {
+                  "implementation": "vocabulary.cuda.packed_baseline"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 512,
+                  "c": 2048,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 512,
+                  "k": 2048,
+                  "o": 6144,
+                  "optimized": true,
+                  "ggml": true,
+                  "type": 2
+                },
+                "schedule": {
+                  "block_m": 128,
+                  "block_n": 128,
+                  "block_k": 32,
+                  "stages": 2,
+                  "threads": 256,
+                  "implementation": "linear.cuda.packed:prefill"
+                }
+              },
+              {
+                "operation": "conv",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "length": 3,
+                  "chunk": 512
+                },
+                "schedule": {
+                  "implementation": "convolution.reference"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 512,
+                  "k": 2048,
+                  "o": 2048,
+                  "optimized": true,
+                  "ggml": true,
+                  "type": 2
+                },
+                "schedule": {
+                  "block_m": 64,
+                  "block_n": 64,
+                  "block_k": 64,
+                  "stages": 2,
+                  "threads": 128,
+                  "implementation": "linear.cuda.packed:prefill"
+                }
+              },
+              {
+                "operation": "add",
+                "parameters": {
+                  "r": 512,
+                  "c": 2048
+                },
+                "schedule": {
+                  "implementation": "residual.kernel"
+                }
+              },
+              {
+                "operation": "ffn",
+                "parameters": {
+                  "r": 512,
+                  "k": 2048,
+                  "o": 11776,
+                  "optimized": true,
+                  "ggml": true,
+                  "type": 2
+                },
+                "schedule": {
+                  "block_m": 64,
+                  "block_n": 128,
+                  "block_k": 128,
+                  "stages": 2,
+                  "threads": 256,
+                  "implementation": "linear.cuda.packed:prefill"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 512,
+                  "k": 11776,
+                  "o": 2048,
+                  "optimized": true,
+                  "ggml": true,
+                  "type": 2
+                },
+                "schedule": {
+                  "block_m": 64,
+                  "block_n": 64,
+                  "block_k": 64,
+                  "stages": 2,
+                  "threads": 128,
+                  "implementation": "linear.cuda.packed:prefill"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 512,
+                  "k": 2048,
+                  "o": 512,
+                  "optimized": true,
+                  "ggml": true,
+                  "type": 2
+                },
+                "schedule": {
+                  "block_m": 64,
+                  "block_n": 64,
+                  "block_k": 64,
+                  "stages": 2,
+                  "threads": 128,
+                  "implementation": "linear.cuda.packed:prefill"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 16384,
+                  "c": 64,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 4096,
+                  "c": 64,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "rope",
+                "parameters": {
+                  "r": 512,
+                  "h": 32,
+                  "d": 64,
+                  "theta": 10000000.0,
+                  "provider": "cuda",
+                  "position_limit": 131072
+                },
+                "schedule": {
+                  "implementation": "attention.reference"
+                }
+              },
+              {
+                "operation": "rope",
+                "parameters": {
+                  "r": 512,
+                  "h": 8,
+                  "d": 64,
+                  "theta": 10000000.0,
+                  "provider": "cuda",
+                  "position_limit": 131072
+                },
+                "schedule": {
+                  "implementation": "attention.reference"
+                }
+              },
+              {
+                "operation": "cache_write",
+                "parameters": {
+                  "r": 512,
+                  "h": 32,
+                  "kh": 8,
+                  "d": 64,
+                  "capacity": 131072,
+                  "kv_dtype": "float16",
+                  "unit_scales": true,
+                  "provider": "cuda",
+                  "chunk": 512,
+                  "optimized": true
+                },
+                "schedule": {
+                  "implementation": "attention.reference"
+                }
+              },
+              {
+                "operation": "attention",
+                "parameters": {
+                  "r": 512,
+                  "h": 32,
+                  "kh": 8,
+                  "d": 64,
+                  "capacity": 131072,
+                  "kv_dtype": "float16",
+                  "unit_scales": true,
+                  "provider": "cuda",
+                  "chunk": 512,
+                  "optimized": true
+                },
+                "schedule": {
+                  "implementation": "attention.cuda.pipelined"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 512,
+                  "k": 2048,
+                  "o": 64
+                },
+                "schedule": {
+                  "threads": 128,
+                  "implementation": "linear.cuda.floating_warp"
+                }
+              },
+              {
+                "operation": "biased_router",
+                "parameters": {
+                  "r": 512,
+                  "experts": 64,
+                  "top": 4,
+                  "scale": 1.0,
+                  "normalize": true
+                },
+                "schedule": {
+                  "implementation": "akas.ops.moe.kernel:biased_router"
+                }
+              },
+              {
+                "operation": "quantized_routes",
+                "parameters": {
+                  "r": 512,
+                  "experts": 64,
+                  "top": 4
+                },
+                "schedule": {
+                  "implementation": "moe.cuda.parallel_routes"
+                }
+              },
+              {
+                "operation": "expert_tile_map",
+                "parameters": {
+                  "r": 512,
+                  "experts": 64,
+                  "top": 4
+                },
+                "schedule": {
+                  "implementation": "akas.ops.moe.kernel:expert_tile_map"
+                }
+              },
+              {
+                "operation": "quantized_experts",
+                "parameters": {
+                  "r": 512,
+                  "top": 4,
+                  "experts": 64,
+                  "o": 1536,
+                  "k": 2048,
+                  "input_dtype": "float32",
+                  "round_inputs": true,
+                  "tile_map": true,
+                  "routed_input": false,
+                  "weight_parts": [
+                    {
+                      "rows": 98304,
+                      "format": "ggml",
+                      "options": {
+                        "encoding": 2
+                      }
+                    }
+                  ]
+                },
+                "schedule": {
+                  "block_m": 64,
+                  "columns": 128,
+                  "block_k": 128,
+                  "threads": 256,
+                  "implementation": "akas.ops.moe.cuda:compact_experts"
+                }
+              },
+              {
+                "operation": "swiglu_experts",
+                "parameters": {
+                  "r": 512,
+                  "c": 1536,
+                  "top": 4,
+                  "expert_rows": true,
+                  "input_dtype": "float32",
+                  "output_dtype": "float32"
+                },
+                "schedule": {
+                  "implementation": "akas.ops.activation.kernel:swiglu_experts"
+                }
+              },
+              {
+                "operation": "quantized_experts",
+                "parameters": {
+                  "r": 512,
+                  "top": 4,
+                  "experts": 64,
+                  "o": 2048,
+                  "k": 1536,
+                  "input_dtype": "float32",
+                  "round_inputs": true,
+                  "tile_map": true,
+                  "routed_input": true,
+                  "weight_parts": [
+                    {
+                      "rows": 131072,
+                      "format": "ggml",
+                      "options": {
+                        "encoding": 2
+                      }
+                    }
+                  ]
+                },
+                "schedule": {
+                  "block_m": 64,
+                  "columns": 128,
+                  "block_k": 128,
+                  "threads": 256,
+                  "implementation": "akas.ops.moe.cuda:compact_experts"
+                }
+              },
+              {
+                "operation": "routed_combine",
+                "parameters": {
+                  "r": 512,
+                  "top": 4,
+                  "c": 2048
+                },
+                "schedule": {
+                  "implementation": "akas.ops.moe.kernel:routed_combine"
+                }
+              },
+              {
+                "operation": "chunk_last",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "chunk": 512
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 128000,
+                  "optimized": true,
+                  "ggml": true,
+                  "type": 14
+                },
+                "schedule": {
+                  "implementation": "linear.cuda.packed"
+                }
+              },
+              {
+                "operation": "masked_copy",
+                "parameters": {
+                  "r": 1,
+                  "c": 128000
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              },
+              {
+                "operation": "argmax",
+                "parameters": {
+                  "r": 1,
+                  "c": 128000
+                },
+                "schedule": {
+                  "implementation": "vocabulary.reference"
+                }
+              },
+              {
+                "operation": "next_tokens",
+                "parameters": {
+                  "r": 1
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              },
+              {
+                "operation": "advance",
+                "parameters": {
+                  "r": 1,
+                  "chunk": 512
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              }
+            ]
+          },
+          "winners": [
+            {
+              "kind": "chunk_controls",
+              "parameters": {
+                "r": 1,
+                "chunk": 512
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.535999961197376e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "embedding",
+              "parameters": {
+                "r": 512,
+                "c": 2048,
+                "v": 128000,
+                "start": 0,
+                "ggml": true,
+                "type": 14
+              },
+              "selected": {
+                "implementation": "vocabulary.cuda.packed_baseline",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  2.6623999699950218e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 512,
+                "c": 2048,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  2.1407999098300934e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 512,
+                "k": 2048,
+                "o": 6144,
+                "optimized": true,
+                "ggml": true,
+                "type": 2
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed:prefill",
+                "schedule": {
+                  "block_m": 128,
+                  "block_n": 128,
+                  "block_k": 32,
+                  "stages": 2,
+                  "threads": 256
+                },
+                "score": 0.9765886456907545,
+                "measurements": [
+                  0.0002990080118179321
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "conv",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "length": 3,
+                "chunk": 512
+              },
+              "selected": {
+                "implementation": "convolution.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00011366400122642517
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 512,
+                "k": 2048,
+                "o": 2048,
+                "optimized": true,
+                "ggml": true,
+                "type": 2
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed:prefill",
+                "schedule": {
+                  "block_m": 64,
+                  "block_n": 64,
+                  "block_k": 64,
+                  "stages": 2,
+                  "threads": 128
+                },
+                "score": 1.0,
+                "measurements": [
+                  0.00014847999811172486
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "add",
+              "parameters": {
+                "r": 512,
+                "c": 2048
+              },
+              "selected": {
+                "implementation": "residual.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  2.457600086927414e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "ffn",
+              "parameters": {
+                "r": 512,
+                "k": 2048,
+                "o": 11776,
+                "optimized": true,
+                "ggml": true,
+                "type": 2
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed:prefill",
+                "schedule": {
+                  "block_m": 64,
+                  "block_n": 128,
+                  "block_k": 128,
+                  "stages": 2,
+                  "threads": 256
+                },
+                "score": 1.0,
+                "measurements": [
+                  0.0010689599514007568
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 512,
+                "k": 11776,
+                "o": 2048,
+                "optimized": true,
+                "ggml": true,
+                "type": 2
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed:prefill",
+                "schedule": {
+                  "block_m": 64,
+                  "block_n": 64,
+                  "block_k": 64,
+                  "stages": 2,
+                  "threads": 128
+                },
+                "score": 1.0,
+                "measurements": [
+                  0.0007516160011291504
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 512,
+                "k": 2048,
+                "o": 512,
+                "optimized": true,
+                "ggml": true,
+                "type": 2
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed:prefill",
+                "schedule": {
+                  "block_m": 64,
+                  "block_n": 64,
+                  "block_k": 64,
+                  "stages": 2,
+                  "threads": 128
+                },
+                "score": 0.9360577093136287,
+                "measurements": [
+                  6.230400130152702e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 16384,
+                "c": 64,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  3.2767999917268756e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 4096,
+                "c": 64,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  2.2528000175952913e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rope",
+              "parameters": {
+                "r": 512,
+                "h": 32,
+                "d": 64,
+                "theta": 10000000.0,
+                "provider": "cuda",
+                "position_limit": 131072
+              },
+              "selected": {
+                "implementation": "attention.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  6.246399879455566e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rope",
+              "parameters": {
+                "r": 512,
+                "h": 8,
+                "d": 64,
+                "theta": 10000000.0,
+                "provider": "cuda",
+                "position_limit": 131072
+              },
+              "selected": {
+                "implementation": "attention.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  2.6623999699950218e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "cache_write",
+              "parameters": {
+                "r": 512,
+                "h": 32,
+                "kh": 8,
+                "d": 64,
+                "capacity": 131072,
+                "kv_dtype": "float16",
+                "unit_scales": true,
+                "provider": "cuda",
+                "chunk": 512,
+                "optimized": true
+              },
+              "selected": {
+                "implementation": "attention.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  3.7888001650571824e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "attention",
+              "parameters": {
+                "r": 512,
+                "h": 32,
+                "kh": 8,
+                "d": 64,
+                "capacity": 131072,
+                "kv_dtype": "float16",
+                "unit_scales": true,
+                "provider": "cuda",
+                "chunk": 512,
+                "optimized": true
+              },
+              "selected": {
+                "implementation": "attention.cuda.pipelined",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.014415871620178223
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 512,
+                "k": 2048,
+                "o": 64
+              },
+              "selected": {
+                "implementation": "linear.cuda.floating_warp",
+                "schedule": {
+                  "threads": 128
+                },
+                "score": 0.9668997526174301,
+                "measurements": [
+                  0.0001504960060119629
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "biased_router",
+              "parameters": {
+                "r": 512,
+                "experts": 64,
+                "top": 4,
+                "scale": 1.0,
+                "normalize": true
+              },
+              "selected": {
+                "implementation": "akas.ops.moe.kernel:biased_router",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.8432000651955604e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "quantized_routes",
+              "parameters": {
+                "r": 512,
+                "experts": 64,
+                "top": 4
+              },
+              "selected": {
+                "implementation": "moe.cuda.parallel_routes",
+                "schedule": {},
+                "score": 0.7549909107312107,
+                "measurements": [
+                  1.3311999849975109e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "expert_tile_map",
+              "parameters": {
+                "r": 512,
+                "experts": 64,
+                "top": 4
+              },
+              "selected": {
+                "implementation": "akas.ops.moe.kernel:expert_tile_map",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  3.26399989426136e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "quantized_experts",
+              "parameters": {
+                "r": 512,
+                "top": 4,
+                "experts": 64,
+                "o": 1536,
+                "k": 2048,
+                "input_dtype": "float32",
+                "round_inputs": true,
+                "tile_map": true,
+                "routed_input": false,
+                "weight_parts": [
+                  {
+                    "rows": 98304,
+                    "format": "ggml",
+                    "options": {
+                      "encoding": 2
+                    }
+                  }
+                ]
+              },
+              "selected": {
+                "implementation": "akas.ops.moe.cuda:compact_experts",
+                "schedule": {
+                  "block_m": 64,
+                  "columns": 128,
+                  "block_k": 128,
+                  "threads": 256
+                },
+                "score": 0.9940986855572514,
+                "measurements": [
+                  0.000857088029384613
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "swiglu_experts",
+              "parameters": {
+                "r": 512,
+                "c": 1536,
+                "top": 4,
+                "expert_rows": true,
+                "input_dtype": "float32",
+                "output_dtype": "float32"
+              },
+              "selected": {
+                "implementation": "akas.ops.activation.kernel:swiglu_experts",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  3.58400009572506e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "quantized_experts",
+              "parameters": {
+                "r": 512,
+                "top": 4,
+                "experts": 64,
+                "o": 2048,
+                "k": 1536,
+                "input_dtype": "float32",
+                "round_inputs": true,
+                "tile_map": true,
+                "routed_input": true,
+                "weight_parts": [
+                  {
+                    "rows": 131072,
+                    "format": "ggml",
+                    "options": {
+                      "encoding": 2
+                    }
+                  }
+                ]
+              },
+              "selected": {
+                "implementation": "akas.ops.moe.cuda:compact_experts",
+                "schedule": {
+                  "block_m": 64,
+                  "columns": 128,
+                  "block_k": 128,
+                  "threads": 256
+                },
+                "score": 0.9966208854755064,
+                "measurements": [
+                  0.000868287980556488
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "routed_combine",
+              "parameters": {
+                "r": 512,
+                "top": 4,
+                "c": 2048
+              },
+              "selected": {
+                "implementation": "akas.ops.moe.kernel:routed_combine",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  2.5599999353289605e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "chunk_last",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "chunk": 512
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.7376000061631202e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.7247999086976052e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 128000,
+                "optimized": true,
+                "ggml": true,
+                "type": 14
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0008805760145187378
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "masked_copy",
+              "parameters": {
+                "r": 1,
+                "c": 128000
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.548799965530634e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "argmax",
+              "parameters": {
+                "r": 1,
+                "c": 128000
+              },
+              "selected": {
+                "implementation": "vocabulary.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  5.222399905323982e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "next_tokens",
+              "parameters": {
+                "r": 1
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.740800030529499e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "advance",
+              "parameters": {
+                "r": 1,
+                "chunk": 512
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.7216000705957414e-05
+                ],
+                "trials": 0
+              }
+            }
+          ]
+        },
+        {
+          "program_sha256": "12e926f42c2761cb20f4203104cd05198e1754d47dcf48717b7cf303f5ca050b",
+          "phase": "prefill",
+          "batch": 1,
+          "chunk": 2048,
+          "provider": "cuda",
+          "target": "sm_89",
+          "contract": "reference",
+          "qualification": "programs/12e926f42c2761cb20f4203104cd05198e1754d47dcf48717b7cf303f5ca050b/prefill-b1-t2048.json",
+          "profile": {
+            "schema": "tensor.schedule-profile.v1",
+            "provider": "cuda",
+            "target": "sm_89",
+            "entries": [
+              {
+                "operation": "chunk_controls",
+                "parameters": {
+                  "r": 1,
+                  "chunk": 2048
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              },
+              {
+                "operation": "embedding",
+                "parameters": {
+                  "r": 2048,
+                  "c": 2048,
+                  "v": 128000,
+                  "start": 0,
+                  "ggml": true,
+                  "type": 14
+                },
+                "schedule": {
+                  "implementation": "vocabulary.cuda.packed_baseline"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 2048,
+                  "c": 2048,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 2048,
+                  "k": 2048,
+                  "o": 6144,
+                  "optimized": true,
+                  "ggml": true,
+                  "type": 2
+                },
+                "schedule": {
+                  "block_m": 128,
+                  "block_n": 128,
+                  "block_k": 32,
+                  "stages": 2,
+                  "threads": 256,
+                  "implementation": "linear.cuda.packed:prefill"
+                }
+              },
+              {
+                "operation": "conv",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "length": 3,
+                  "chunk": 2048
+                },
+                "schedule": {
+                  "implementation": "convolution.reference"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 2048,
+                  "k": 2048,
+                  "o": 2048,
+                  "optimized": true,
+                  "ggml": true,
+                  "type": 2
+                },
+                "schedule": {
+                  "block_m": 128,
+                  "block_n": 128,
+                  "block_k": 32,
+                  "stages": 2,
+                  "threads": 256,
+                  "implementation": "linear.cuda.packed:prefill"
+                }
+              },
+              {
+                "operation": "add",
+                "parameters": {
+                  "r": 2048,
+                  "c": 2048
+                },
+                "schedule": {
+                  "implementation": "residual.kernel"
+                }
+              },
+              {
+                "operation": "ffn",
+                "parameters": {
+                  "r": 2048,
+                  "k": 2048,
+                  "o": 11776,
+                  "optimized": true,
+                  "ggml": true,
+                  "type": 2
+                },
+                "schedule": {
+                  "block_m": 64,
+                  "block_n": 128,
+                  "block_k": 128,
+                  "stages": 2,
+                  "threads": 256,
+                  "implementation": "linear.cuda.packed:prefill"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 2048,
+                  "k": 11776,
+                  "o": 2048,
+                  "optimized": true,
+                  "ggml": true,
+                  "type": 2
+                },
+                "schedule": {
+                  "block_m": 128,
+                  "block_n": 128,
+                  "block_k": 32,
+                  "stages": 2,
+                  "threads": 256,
+                  "implementation": "linear.cuda.packed:prefill"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 2048,
+                  "k": 2048,
+                  "o": 512,
+                  "optimized": true,
+                  "ggml": true,
+                  "type": 2
+                },
+                "schedule": {
+                  "block_m": 64,
+                  "block_n": 64,
+                  "block_k": 64,
+                  "stages": 2,
+                  "threads": 128,
+                  "implementation": "linear.cuda.packed:prefill"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 65536,
+                  "c": 64,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 16384,
+                  "c": 64,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "rope",
+                "parameters": {
+                  "r": 2048,
+                  "h": 32,
+                  "d": 64,
+                  "theta": 10000000.0,
+                  "provider": "cuda",
+                  "position_limit": 131072
+                },
+                "schedule": {
+                  "implementation": "attention.reference"
+                }
+              },
+              {
+                "operation": "rope",
+                "parameters": {
+                  "r": 2048,
+                  "h": 8,
+                  "d": 64,
+                  "theta": 10000000.0,
+                  "provider": "cuda",
+                  "position_limit": 131072
+                },
+                "schedule": {
+                  "implementation": "attention.reference"
+                }
+              },
+              {
+                "operation": "cache_write",
+                "parameters": {
+                  "r": 2048,
+                  "h": 32,
+                  "kh": 8,
+                  "d": 64,
+                  "capacity": 131072,
+                  "kv_dtype": "float16",
+                  "unit_scales": true,
+                  "provider": "cuda",
+                  "chunk": 2048,
+                  "optimized": true
+                },
+                "schedule": {
+                  "implementation": "attention.reference"
+                }
+              },
+              {
+                "operation": "attention",
+                "parameters": {
+                  "r": 2048,
+                  "h": 32,
+                  "kh": 8,
+                  "d": 64,
+                  "capacity": 131072,
+                  "kv_dtype": "float16",
+                  "unit_scales": true,
+                  "provider": "cuda",
+                  "chunk": 2048,
+                  "optimized": true
+                },
+                "schedule": {
+                  "implementation": "attention.cuda.pipelined"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 2048,
+                  "k": 2048,
+                  "o": 64
+                },
+                "schedule": {
+                  "threads": 128,
+                  "implementation": "linear.cuda.floating_warp"
+                }
+              },
+              {
+                "operation": "biased_router",
+                "parameters": {
+                  "r": 2048,
+                  "experts": 64,
+                  "top": 4,
+                  "scale": 1.0,
+                  "normalize": true
+                },
+                "schedule": {
+                  "implementation": "akas.ops.moe.kernel:biased_router"
+                }
+              },
+              {
+                "operation": "quantized_routes",
+                "parameters": {
+                  "r": 2048,
+                  "experts": 64,
+                  "top": 4
+                },
+                "schedule": {
+                  "implementation": "moe.cuda.parallel_routes"
+                }
+              },
+              {
+                "operation": "expert_tile_map",
+                "parameters": {
+                  "r": 2048,
+                  "experts": 64,
+                  "top": 4
+                },
+                "schedule": {
+                  "implementation": "akas.ops.moe.kernel:expert_tile_map"
+                }
+              },
+              {
+                "operation": "quantized_experts",
+                "parameters": {
+                  "r": 2048,
+                  "top": 4,
+                  "experts": 64,
+                  "o": 1536,
+                  "k": 2048,
+                  "input_dtype": "float32",
+                  "round_inputs": true,
+                  "tile_map": true,
+                  "routed_input": false,
+                  "weight_parts": [
+                    {
+                      "rows": 98304,
+                      "format": "ggml",
+                      "options": {
+                        "encoding": 2
+                      }
+                    }
+                  ]
+                },
+                "schedule": {
+                  "block_m": 64,
+                  "columns": 128,
+                  "block_k": 128,
+                  "threads": 256,
+                  "implementation": "akas.ops.moe.cuda:compact_experts"
+                }
+              },
+              {
+                "operation": "swiglu_experts",
+                "parameters": {
+                  "r": 2048,
+                  "c": 1536,
+                  "top": 4,
+                  "expert_rows": true,
+                  "input_dtype": "float32",
+                  "output_dtype": "float32"
+                },
+                "schedule": {
+                  "implementation": "akas.ops.activation.kernel:swiglu_experts"
+                }
+              },
+              {
+                "operation": "quantized_experts",
+                "parameters": {
+                  "r": 2048,
+                  "top": 4,
+                  "experts": 64,
+                  "o": 2048,
+                  "k": 1536,
+                  "input_dtype": "float32",
+                  "round_inputs": true,
+                  "tile_map": true,
+                  "routed_input": true,
+                  "weight_parts": [
+                    {
+                      "rows": 131072,
+                      "format": "ggml",
+                      "options": {
+                        "encoding": 2
+                      }
+                    }
+                  ]
+                },
+                "schedule": {
+                  "block_m": 64,
+                  "columns": 128,
+                  "block_k": 128,
+                  "threads": 256,
+                  "implementation": "akas.ops.moe.cuda:compact_experts"
+                }
+              },
+              {
+                "operation": "routed_combine",
+                "parameters": {
+                  "r": 2048,
+                  "top": 4,
+                  "c": 2048
+                },
+                "schedule": {
+                  "implementation": "akas.ops.moe.kernel:routed_combine"
+                }
+              },
+              {
+                "operation": "chunk_last",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "chunk": 2048
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 128000,
+                  "optimized": true,
+                  "ggml": true,
+                  "type": 14
+                },
+                "schedule": {
+                  "implementation": "linear.cuda.packed"
+                }
+              },
+              {
+                "operation": "masked_copy",
+                "parameters": {
+                  "r": 1,
+                  "c": 128000
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              },
+              {
+                "operation": "argmax",
+                "parameters": {
+                  "r": 1,
+                  "c": 128000
+                },
+                "schedule": {
+                  "implementation": "vocabulary.reference"
+                }
+              },
+              {
+                "operation": "next_tokens",
+                "parameters": {
+                  "r": 1
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              },
+              {
+                "operation": "advance",
+                "parameters": {
+                  "r": 1,
+                  "chunk": 2048
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              }
+            ]
+          },
+          "winners": [
+            {
+              "kind": "chunk_controls",
+              "parameters": {
+                "r": 1,
+                "chunk": 2048
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.6383999958634378e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "embedding",
+              "parameters": {
+                "r": 2048,
+                "c": 2048,
+                "v": 128000,
+                "start": 0,
+                "ggml": true,
+                "type": 14
+              },
+              "selected": {
+                "implementation": "vocabulary.cuda.packed_baseline",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  6.143999844789505e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 2048,
+                "c": 2048,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  3.481600061058998e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 2048,
+                "k": 2048,
+                "o": 6144,
+                "optimized": true,
+                "ggml": true,
+                "type": 2
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed:prefill",
+                "schedule": {
+                  "block_m": 128,
+                  "block_n": 128,
+                  "block_k": 32,
+                  "stages": 2,
+                  "threads": 256
+                },
+                "score": 0.9945342336587493,
+                "measurements": [
+                  0.0010946559906005859
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "conv",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "length": 3,
+                "chunk": 2048
+              },
+              "selected": {
+                "implementation": "convolution.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0008726400136947631
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 2048,
+                "k": 2048,
+                "o": 2048,
+                "optimized": true,
+                "ggml": true,
+                "type": 2
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed:prefill",
+                "schedule": {
+                  "block_m": 128,
+                  "block_n": 128,
+                  "block_k": 32,
+                  "stages": 2,
+                  "threads": 256
+                },
+                "score": 0.9913763599281914,
+                "measurements": [
+                  0.0003715519905090332
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "add",
+              "parameters": {
+                "r": 2048,
+                "c": 2048
+              },
+              "selected": {
+                "implementation": "residual.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  4.2943999171257016e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "ffn",
+              "parameters": {
+                "r": 2048,
+                "k": 2048,
+                "o": 11776,
+                "optimized": true,
+                "ggml": true,
+                "type": 2
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed:prefill",
+                "schedule": {
+                  "block_m": 64,
+                  "block_n": 128,
+                  "block_k": 128,
+                  "stages": 2,
+                  "threads": 256
+                },
+                "score": 0.9883876982279108,
+                "measurements": [
+                  0.004082816123962402
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 2048,
+                "k": 11776,
+                "o": 2048,
+                "optimized": true,
+                "ggml": true,
+                "type": 2
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed:prefill",
+                "schedule": {
+                  "block_m": 128,
+                  "block_n": 128,
+                  "block_k": 32,
+                  "stages": 2,
+                  "threads": 256
+                },
+                "score": 0.9985490465982321,
+                "measurements": [
+                  0.002907007932662964
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 2048,
+                "k": 2048,
+                "o": 512,
+                "optimized": true,
+                "ggml": true,
+                "type": 2
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed:prefill",
+                "schedule": {
+                  "block_m": 64,
+                  "block_n": 64,
+                  "block_k": 64,
+                  "stages": 2,
+                  "threads": 128
+                },
+                "score": 0.9678638950643426,
+                "measurements": [
+                  0.00014745600521564483
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 65536,
+                "c": 64,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  8.086399734020233e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 16384,
+                "c": 64,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  3.2767999917268756e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rope",
+              "parameters": {
+                "r": 2048,
+                "h": 32,
+                "d": 64,
+                "theta": 10000000.0,
+                "provider": "cuda",
+                "position_limit": 131072
+              },
+              "selected": {
+                "implementation": "attention.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0001966080069541931
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rope",
+              "parameters": {
+                "r": 2048,
+                "h": 8,
+                "d": 64,
+                "theta": 10000000.0,
+                "provider": "cuda",
+                "position_limit": 131072
+              },
+              "selected": {
+                "implementation": "attention.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  6.348799914121628e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "cache_write",
+              "parameters": {
+                "r": 2048,
+                "h": 32,
+                "kh": 8,
+                "d": 64,
+                "capacity": 131072,
+                "kv_dtype": "float16",
+                "unit_scales": true,
+                "provider": "cuda",
+                "chunk": 2048,
+                "optimized": true
+              },
+              "selected": {
+                "implementation": "attention.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  6.758400052785873e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "attention",
+              "parameters": {
+                "r": 2048,
+                "h": 32,
+                "kh": 8,
+                "d": 64,
+                "capacity": 131072,
+                "kv_dtype": "float16",
+                "unit_scales": true,
+                "provider": "cuda",
+                "chunk": 2048,
+                "optimized": true
+              },
+              "selected": {
+                "implementation": "attention.cuda.pipelined",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.055158782958984375
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 2048,
+                "k": 2048,
+                "o": 64
+              },
+              "selected": {
+                "implementation": "linear.cuda.floating_warp",
+                "schedule": {
+                  "threads": 128
+                },
+                "score": 0.9836660431087412,
+                "measurements": [
+                  0.0005550079941749573
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "biased_router",
+              "parameters": {
+                "r": 2048,
+                "experts": 64,
+                "top": 4,
+                "scale": 1.0,
+                "normalize": true
+              },
+              "selected": {
+                "implementation": "akas.ops.moe.kernel:biased_router",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  2.8672000393271447e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "quantized_routes",
+              "parameters": {
+                "r": 2048,
+                "experts": 64,
+                "top": 4
+              },
+              "selected": {
+                "implementation": "moe.cuda.parallel_routes",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  2.8672000393271447e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "expert_tile_map",
+              "parameters": {
+                "r": 2048,
+                "experts": 64,
+                "top": 4
+              },
+              "selected": {
+                "implementation": "akas.ops.moe.kernel:expert_tile_map",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  5.3247999399900436e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "quantized_experts",
+              "parameters": {
+                "r": 2048,
+                "top": 4,
+                "experts": 64,
+                "o": 1536,
+                "k": 2048,
+                "input_dtype": "float32",
+                "round_inputs": true,
+                "tile_map": true,
+                "routed_input": false,
+                "weight_parts": [
+                  {
+                    "rows": 98304,
+                    "format": "ggml",
+                    "options": {
+                      "encoding": 2
+                    }
+                  }
+                ]
+              },
+              "selected": {
+                "implementation": "akas.ops.moe.cuda:compact_experts",
+                "schedule": {
+                  "block_m": 64,
+                  "columns": 128,
+                  "block_k": 128,
+                  "threads": 256
+                },
+                "score": 0.9956621039280744,
+                "measurements": [
+                  0.001615872025489807
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "swiglu_experts",
+              "parameters": {
+                "r": 2048,
+                "c": 1536,
+                "top": 4,
+                "expert_rows": true,
+                "input_dtype": "float32",
+                "output_dtype": "float32"
+              },
+              "selected": {
+                "implementation": "akas.ops.activation.kernel:swiglu_experts",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.000592736005783081
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "quantized_experts",
+              "parameters": {
+                "r": 2048,
+                "top": 4,
+                "experts": 64,
+                "o": 2048,
+                "k": 1536,
+                "input_dtype": "float32",
+                "round_inputs": true,
+                "tile_map": true,
+                "routed_input": true,
+                "weight_parts": [
+                  {
+                    "rows": 131072,
+                    "format": "ggml",
+                    "options": {
+                      "encoding": 2
+                    }
+                  }
+                ]
+              },
+              "selected": {
+                "implementation": "akas.ops.moe.cuda:compact_experts",
+                "schedule": {
+                  "block_m": 64,
+                  "columns": 128,
+                  "block_k": 128,
+                  "threads": 256
+                },
+                "score": 0.9982047703706068,
+                "measurements": [
+                  0.0016547839641571046
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "routed_combine",
+              "parameters": {
+                "r": 2048,
+                "top": 4,
+                "c": 2048
+              },
+              "selected": {
+                "implementation": "akas.ops.moe.kernel:routed_combine",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00033689600229263304
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "chunk_last",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "chunk": 2048
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  2.2528000175952913e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.7247999086976052e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 128000,
+                "optimized": true,
+                "ggml": true,
+                "type": 14
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0008805760145187378
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "masked_copy",
+              "parameters": {
+                "r": 1,
+                "c": 128000
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.548799965530634e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "argmax",
+              "parameters": {
+                "r": 1,
+                "c": 128000
+              },
+              "selected": {
+                "implementation": "vocabulary.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  5.222399905323982e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "next_tokens",
+              "parameters": {
+                "r": 1
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.740800030529499e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "advance",
+              "parameters": {
+                "r": 1,
+                "chunk": 2048
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.635199971497059e-05
+                ],
+                "trials": 0
+              }
+            }
+          ]
+        },
+        {
+          "program_sha256": "12e926f42c2761cb20f4203104cd05198e1754d47dcf48717b7cf303f5ca050b",
+          "phase": "prefill",
+          "batch": 1,
+          "chunk": 4096,
+          "provider": "cuda",
+          "target": "sm_89",
+          "contract": "reference",
+          "qualification": "programs/12e926f42c2761cb20f4203104cd05198e1754d47dcf48717b7cf303f5ca050b/prefill-b1-t4096.json",
+          "profile": {
+            "schema": "tensor.schedule-profile.v1",
+            "provider": "cuda",
+            "target": "sm_89",
+            "entries": [
+              {
+                "operation": "chunk_controls",
+                "parameters": {
+                  "r": 1,
+                  "chunk": 4096
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              },
+              {
+                "operation": "embedding",
+                "parameters": {
+                  "r": 4096,
+                  "c": 2048,
+                  "v": 128000,
+                  "start": 0,
+                  "ggml": true,
+                  "type": 14
+                },
+                "schedule": {
+                  "implementation": "vocabulary.cuda.packed_baseline"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 4096,
+                  "c": 2048,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 4096,
+                  "k": 2048,
+                  "o": 6144,
+                  "optimized": true,
+                  "ggml": true,
+                  "type": 2
+                },
+                "schedule": {
+                  "block_m": 128,
+                  "block_n": 128,
+                  "block_k": 64,
+                  "stages": 1,
+                  "threads": 256,
+                  "implementation": "linear.cuda.packed:prefill"
+                }
+              },
+              {
+                "operation": "conv",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "length": 3,
+                  "chunk": 4096
+                },
+                "schedule": {
+                  "implementation": "convolution.reference"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 4096,
+                  "k": 2048,
+                  "o": 2048,
+                  "optimized": true,
+                  "ggml": true,
+                  "type": 2
+                },
+                "schedule": {
+                  "block_m": 128,
+                  "block_n": 128,
+                  "block_k": 32,
+                  "stages": 2,
+                  "threads": 256,
+                  "implementation": "linear.cuda.packed:prefill"
+                }
+              },
+              {
+                "operation": "add",
+                "parameters": {
+                  "r": 4096,
+                  "c": 2048
+                },
+                "schedule": {
+                  "implementation": "residual.kernel"
+                }
+              },
+              {
+                "operation": "ffn",
+                "parameters": {
+                  "r": 4096,
+                  "k": 2048,
+                  "o": 11776,
+                  "optimized": true,
+                  "ggml": true,
+                  "type": 2
+                },
+                "schedule": {
+                  "block_m": 64,
+                  "block_n": 128,
+                  "block_k": 128,
+                  "stages": 2,
+                  "threads": 256,
+                  "implementation": "linear.cuda.packed:prefill"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 4096,
+                  "k": 11776,
+                  "o": 2048,
+                  "optimized": true,
+                  "ggml": true,
+                  "type": 2
+                },
+                "schedule": {
+                  "block_m": 64,
+                  "block_n": 256,
+                  "block_k": 32,
+                  "threads": 256,
+                  "stages": 2,
+                  "implementation": "linear.cuda.packed:prefill"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 4096,
+                  "k": 2048,
+                  "o": 512,
+                  "optimized": true,
+                  "ggml": true,
+                  "type": 2
+                },
+                "schedule": {
+                  "block_m": 64,
+                  "block_n": 64,
+                  "block_k": 64,
+                  "stages": 2,
+                  "threads": 128,
+                  "implementation": "linear.cuda.packed:prefill"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 131072,
+                  "c": 64,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 32768,
+                  "c": 64,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "rope",
+                "parameters": {
+                  "r": 4096,
+                  "h": 32,
+                  "d": 64,
+                  "theta": 10000000.0,
+                  "provider": "cuda",
+                  "position_limit": 131072
+                },
+                "schedule": {
+                  "implementation": "attention.reference"
+                }
+              },
+              {
+                "operation": "rope",
+                "parameters": {
+                  "r": 4096,
+                  "h": 8,
+                  "d": 64,
+                  "theta": 10000000.0,
+                  "provider": "cuda",
+                  "position_limit": 131072
+                },
+                "schedule": {
+                  "implementation": "attention.reference"
+                }
+              },
+              {
+                "operation": "cache_write",
+                "parameters": {
+                  "r": 4096,
+                  "h": 32,
+                  "kh": 8,
+                  "d": 64,
+                  "capacity": 131072,
+                  "kv_dtype": "float16",
+                  "unit_scales": true,
+                  "provider": "cuda",
+                  "chunk": 4096,
+                  "optimized": true
+                },
+                "schedule": {
+                  "implementation": "attention.reference"
+                }
+              },
+              {
+                "operation": "attention",
+                "parameters": {
+                  "r": 4096,
+                  "h": 32,
+                  "kh": 8,
+                  "d": 64,
+                  "capacity": 131072,
+                  "kv_dtype": "float16",
+                  "unit_scales": true,
+                  "provider": "cuda",
+                  "chunk": 4096,
+                  "optimized": true
+                },
+                "schedule": {
+                  "implementation": "attention.cuda.pipelined"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 4096,
+                  "k": 2048,
+                  "o": 64
+                },
+                "schedule": {
+                  "threads": 128,
+                  "implementation": "linear.cuda.floating_warp"
+                }
+              },
+              {
+                "operation": "biased_router",
+                "parameters": {
+                  "r": 4096,
+                  "experts": 64,
+                  "top": 4,
+                  "scale": 1.0,
+                  "normalize": true
+                },
+                "schedule": {
+                  "implementation": "akas.ops.moe.kernel:biased_router"
+                }
+              },
+              {
+                "operation": "quantized_routes",
+                "parameters": {
+                  "r": 4096,
+                  "experts": 64,
+                  "top": 4
+                },
+                "schedule": {
+                  "implementation": "moe.cuda.parallel_routes"
+                }
+              },
+              {
+                "operation": "expert_tile_map",
+                "parameters": {
+                  "r": 4096,
+                  "experts": 64,
+                  "top": 4
+                },
+                "schedule": {
+                  "implementation": "akas.ops.moe.kernel:expert_tile_map"
+                }
+              },
+              {
+                "operation": "quantized_experts",
+                "parameters": {
+                  "r": 4096,
+                  "top": 4,
+                  "experts": 64,
+                  "o": 1536,
+                  "k": 2048,
+                  "input_dtype": "float32",
+                  "round_inputs": true,
+                  "tile_map": true,
+                  "routed_input": false,
+                  "weight_parts": [
+                    {
+                      "rows": 98304,
+                      "format": "ggml",
+                      "options": {
+                        "encoding": 2
+                      }
+                    }
+                  ]
+                },
+                "schedule": {
+                  "block_m": 64,
+                  "columns": 128,
+                  "block_k": 128,
+                  "threads": 256,
+                  "implementation": "akas.ops.moe.cuda:compact_experts"
+                }
+              },
+              {
+                "operation": "swiglu_experts",
+                "parameters": {
+                  "r": 4096,
+                  "c": 1536,
+                  "top": 4,
+                  "expert_rows": true,
+                  "input_dtype": "float32",
+                  "output_dtype": "float32"
+                },
+                "schedule": {
+                  "implementation": "akas.ops.activation.kernel:swiglu_experts"
+                }
+              },
+              {
+                "operation": "quantized_experts",
+                "parameters": {
+                  "r": 4096,
+                  "top": 4,
+                  "experts": 64,
+                  "o": 2048,
+                  "k": 1536,
+                  "input_dtype": "float32",
+                  "round_inputs": true,
+                  "tile_map": true,
+                  "routed_input": true,
+                  "weight_parts": [
+                    {
+                      "rows": 131072,
+                      "format": "ggml",
+                      "options": {
+                        "encoding": 2
+                      }
+                    }
+                  ]
+                },
+                "schedule": {
+                  "block_m": 64,
+                  "columns": 128,
+                  "block_k": 128,
+                  "threads": 256,
+                  "implementation": "akas.ops.moe.cuda:compact_experts"
+                }
+              },
+              {
+                "operation": "routed_combine",
+                "parameters": {
+                  "r": 4096,
+                  "top": 4,
+                  "c": 2048
+                },
+                "schedule": {
+                  "implementation": "akas.ops.moe.kernel:routed_combine"
+                }
+              },
+              {
+                "operation": "chunk_last",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "chunk": 4096
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 128000,
+                  "optimized": true,
+                  "ggml": true,
+                  "type": 14
+                },
+                "schedule": {
+                  "implementation": "linear.cuda.packed"
+                }
+              },
+              {
+                "operation": "masked_copy",
+                "parameters": {
+                  "r": 1,
+                  "c": 128000
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              },
+              {
+                "operation": "argmax",
+                "parameters": {
+                  "r": 1,
+                  "c": 128000
+                },
+                "schedule": {
+                  "implementation": "vocabulary.reference"
+                }
+              },
+              {
+                "operation": "next_tokens",
+                "parameters": {
+                  "r": 1
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              },
+              {
+                "operation": "advance",
+                "parameters": {
+                  "r": 1,
+                  "chunk": 4096
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              }
+            ]
+          },
+          "winners": [
+            {
+              "kind": "chunk_controls",
+              "parameters": {
+                "r": 1,
+                "chunk": 4096
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.6383999958634378e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "embedding",
+              "parameters": {
+                "r": 4096,
+                "c": 2048,
+                "v": 128000,
+                "start": 0,
+                "ggml": true,
+                "type": 14
+              },
+              "selected": {
+                "implementation": "vocabulary.cuda.packed_baseline",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0001085439994931221
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 4096,
+                "c": 2048,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00024166400730609895
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 4096,
+                "k": 2048,
+                "o": 6144,
+                "optimized": true,
+                "ggml": true,
+                "type": 2
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed:prefill",
+                "schedule": {
+                  "block_m": 128,
+                  "block_n": 128,
+                  "block_k": 64,
+                  "stages": 1,
+                  "threads": 256
+                },
+                "score": 0.9985935194923353,
+                "measurements": [
+                  0.0021811199188232423
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "conv",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "length": 3,
+                "chunk": 4096
+              },
+              "selected": {
+                "implementation": "convolution.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0017796159982681275
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 4096,
+                "k": 2048,
+                "o": 2048,
+                "optimized": true,
+                "ggml": true,
+                "type": 2
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed:prefill",
+                "schedule": {
+                  "block_m": 128,
+                  "block_n": 128,
+                  "block_k": 32,
+                  "stages": 2,
+                  "threads": 256
+                },
+                "score": 0.9914773080319758,
+                "measurements": [
+                  0.0007370880246162414
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "add",
+              "parameters": {
+                "r": 4096,
+                "c": 2048
+              },
+              "selected": {
+                "implementation": "residual.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00036976000666618346
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "ffn",
+              "parameters": {
+                "r": 4096,
+                "k": 2048,
+                "o": 11776,
+                "optimized": true,
+                "ggml": true,
+                "type": 2
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed:prefill",
+                "schedule": {
+                  "block_m": 64,
+                  "block_n": 128,
+                  "block_k": 128,
+                  "stages": 2,
+                  "threads": 256
+                },
+                "score": 0.9997483355348115,
+                "measurements": [
+                  0.008137727737426758
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 4096,
+                "k": 11776,
+                "o": 2048,
+                "optimized": true,
+                "ggml": true,
+                "type": 2
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed:prefill",
+                "schedule": {
+                  "block_m": 64,
+                  "block_n": 256,
+                  "block_k": 32,
+                  "threads": 256,
+                  "stages": 2
+                },
+                "score": 1.0,
+                "measurements": [
+                  0.007571455955505371
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 4096,
+                "k": 2048,
+                "o": 512,
+                "optimized": true,
+                "ggml": true,
+                "type": 2
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed:prefill",
+                "schedule": {
+                  "block_m": 64,
+                  "block_n": 64,
+                  "block_k": 64,
+                  "stages": 2,
+                  "threads": 128
+                },
+                "score": 0.9783550023531896,
+                "measurements": [
+                  0.0002314240038394928
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 131072,
+                "c": 64,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00024166400730609895
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 32768,
+                "c": 64,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  5.0175998359918594e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rope",
+              "parameters": {
+                "r": 4096,
+                "h": 32,
+                "d": 64,
+                "theta": 10000000.0,
+                "provider": "cuda",
+                "position_limit": 131072
+              },
+              "selected": {
+                "implementation": "attention.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0003819519877433777
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rope",
+              "parameters": {
+                "r": 4096,
+                "h": 8,
+                "d": 64,
+                "theta": 10000000.0,
+                "provider": "cuda",
+                "position_limit": 131072
+              },
+              "selected": {
+                "implementation": "attention.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00010649599879980087
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "cache_write",
+              "parameters": {
+                "r": 4096,
+                "h": 32,
+                "kh": 8,
+                "d": 64,
+                "capacity": 131072,
+                "kv_dtype": "float16",
+                "unit_scales": true,
+                "provider": "cuda",
+                "chunk": 4096,
+                "optimized": true
+              },
+              "selected": {
+                "implementation": "attention.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00010649599879980087
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "attention",
+              "parameters": {
+                "r": 4096,
+                "h": 32,
+                "kh": 8,
+                "d": 64,
+                "capacity": 131072,
+                "kv_dtype": "float16",
+                "unit_scales": true,
+                "provider": "cuda",
+                "chunk": 4096,
+                "optimized": true
+              },
+              "selected": {
+                "implementation": "attention.cuda.pipelined",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.12825173950195312
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 4096,
+                "k": 2048,
+                "o": 64
+              },
+              "selected": {
+                "implementation": "linear.cuda.floating_warp",
+                "schedule": {
+                  "threads": 128
+                },
+                "score": 0.9944342026073792,
+                "measurements": [
+                  0.0010977280139923096
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "biased_router",
+              "parameters": {
+                "r": 4096,
+                "experts": 64,
+                "top": 4,
+                "scale": 1.0,
+                "normalize": true
+              },
+              "selected": {
+                "implementation": "akas.ops.moe.kernel:biased_router",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  4.0063999593257904e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "quantized_routes",
+              "parameters": {
+                "r": 4096,
+                "experts": 64,
+                "top": 4
+              },
+              "selected": {
+                "implementation": "moe.cuda.parallel_routes",
+                "schedule": {},
+                "score": 0.9285714038232732,
+                "measurements": [
+                  3.993599861860275e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "expert_tile_map",
+              "parameters": {
+                "r": 4096,
+                "experts": 64,
+                "top": 4
+              },
+              "selected": {
+                "implementation": "akas.ops.moe.kernel:expert_tile_map",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  8.396799862384797e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "quantized_experts",
+              "parameters": {
+                "r": 4096,
+                "top": 4,
+                "experts": 64,
+                "o": 1536,
+                "k": 2048,
+                "input_dtype": "float32",
+                "round_inputs": true,
+                "tile_map": true,
+                "routed_input": false,
+                "weight_parts": [
+                  {
+                    "rows": 98304,
+                    "format": "ggml",
+                    "options": {
+                      "encoding": 2
+                    }
+                  }
+                ]
+              },
+              "selected": {
+                "implementation": "akas.ops.moe.cuda:compact_experts",
+                "schedule": {
+                  "block_m": 64,
+                  "columns": 128,
+                  "block_k": 128,
+                  "threads": 256
+                },
+                "score": 0.9971817391279579,
+                "measurements": [
+                  0.0029212799072265627
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "swiglu_experts",
+              "parameters": {
+                "r": 4096,
+                "c": 1536,
+                "top": 4,
+                "expert_rows": true,
+                "input_dtype": "float32",
+                "output_dtype": "float32"
+              },
+              "selected": {
+                "implementation": "akas.ops.activation.kernel:swiglu_experts",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0012462079524993897
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "quantized_experts",
+              "parameters": {
+                "r": 4096,
+                "top": 4,
+                "experts": 64,
+                "o": 2048,
+                "k": 1536,
+                "input_dtype": "float32",
+                "round_inputs": true,
+                "tile_map": true,
+                "routed_input": true,
+                "weight_parts": [
+                  {
+                    "rows": 131072,
+                    "format": "ggml",
+                    "options": {
+                      "encoding": 2
+                    }
+                  }
+                ]
+              },
+              "selected": {
+                "implementation": "akas.ops.moe.cuda:compact_experts",
+                "schedule": {
+                  "block_m": 64,
+                  "columns": 128,
+                  "block_k": 128,
+                  "threads": 256
+                },
+                "score": 0.9996353986188142,
+                "measurements": [
+                  0.0030709760189056396
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "routed_combine",
+              "parameters": {
+                "r": 4096,
+                "top": 4,
+                "c": 2048
+              },
+              "selected": {
+                "implementation": "akas.ops.moe.kernel:routed_combine",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0006790720224380493
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "chunk_last",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "chunk": 4096
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.535999961197376e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.7247999086976052e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 128000,
+                "optimized": true,
+                "ggml": true,
+                "type": 14
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0008805760145187378
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "masked_copy",
+              "parameters": {
+                "r": 1,
+                "c": 128000
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.548799965530634e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "argmax",
+              "parameters": {
+                "r": 1,
+                "c": 128000
+              },
+              "selected": {
+                "implementation": "vocabulary.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  5.222399905323982e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "next_tokens",
+              "parameters": {
+                "r": 1
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.740800030529499e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "advance",
+              "parameters": {
+                "r": 1,
+                "chunk": 4096
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.740800030529499e-05
+                ],
+                "trials": 0
+              }
+            }
+          ]
+        },
+        {
+          "program_sha256": "12e926f42c2761cb20f4203104cd05198e1754d47dcf48717b7cf303f5ca050b",
+          "phase": "reset",
+          "batch": 1,
+          "chunk": 1,
+          "provider": "cuda",
+          "target": "sm_89",
+          "contract": "state",
+          "qualification": "programs/12e926f42c2761cb20f4203104cd05198e1754d47dcf48717b7cf303f5ca050b/reset-b1-t1.json",
+          "profile": {
+            "schema": "tensor.schedule-profile.v1",
+            "provider": "cuda",
+            "target": "sm_89",
+            "entries": [
+              {
+                "operation": "clear_rows",
+                "parameters": {
+                  "rows": 1,
+                  "pool": 1,
+                  "width": 4096,
+                  "dtype": "float32"
+                },
+                "schedule": {
+                  "implementation": "indexing.rows"
+                }
+              },
+              {
+                "operation": "clear_rows",
+                "parameters": {
+                  "rows": 1,
+                  "pool": 1,
+                  "width": 1,
+                  "dtype": "int32"
+                },
+                "schedule": {
+                  "threads": 64,
+                  "implementation": "indexing.rows"
+                }
+              }
+            ]
+          },
+          "winners": [
+            {
+              "kind": "clear_rows",
+              "parameters": {
+                "rows": 1,
+                "pool": 1,
+                "width": 4096,
+                "dtype": "float32"
+              },
+              "selected": {
+                "implementation": "indexing.rows",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.4112000353634358e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "clear_rows",
+              "parameters": {
+                "rows": 1,
+                "pool": 1,
+                "width": 1,
+                "dtype": "int32"
+              },
+              "selected": {
+                "implementation": "indexing.rows",
+                "schedule": {
+                  "threads": 64
+                },
+                "score": 0.9374999786837177,
+                "measurements": [
+                  1.535999961197376e-05
+                ],
+                "trials": 1
+              }
+            }
+          ]
+        }
+      ],
+      "record": "../../runs/20261023072001816909-fb5b388f/run.json"
+    }
+  }
+}
