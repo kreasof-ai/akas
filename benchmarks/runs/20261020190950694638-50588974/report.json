@@ -1,0 +1,33 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "kernel",
+    "protocol": "ordered-webgpu-pass-profile-v1",
+    "definition": "akas.models.lfm2.model:LFM2MoE",
+    "model": "akas.models.lfm2.model:LFM2MoE",
+    "provider": "webgpu",
+    "target": "webgpu-portable-v1",
+    "mode": "ar",
+    "kv_dtype": "float16",
+    "weight_format": "q4_0",
+    "checkpoint": "/home/sagemaker-user/akas/build/checkpoints/lfm2.5-24b-a2b/q4_0.gguf",
+    "checkpoint_sha256": "d1c03f73ecaf61017d70419eec9e5dc0b05d50ae26c23d522829b934fbabf8a5",
+    "device": {
+      "name": "NVIDIA L4",
+      "provider": "webgpu"
+    },
+    "shape_timeout_seconds": 120,
+    "warmup": 1,
+    "repeats": 1,
+    "graphs": true,
+    "qualification": "Diagnostic per-dispatch standard WebGPU timestamps add pass boundaries and perturb execution. Prefill attribution describes the final chunk only; decode is successive real-token state. Native/HTTP throughput must be measured separately. Every 128-token sequence must match the retained F16 WebGPU reference.",
+    "baseline_run_id": "20261019235748301427-fdb5ef2b",
+    "baseline_profile_status": "failed",
+    "expert_seed_run_id": "20261019131816505070-605b9f45",
+    "cuda_run_id": "20261020182637613063-8a87f1a5",
+    "timestamp_query": true,
+    "traceback": "Traceback (most recent call last):\n  File \"/home/sagemaker-user/akas/build/lfm-moe/profile-webgpu-current.py\", line 33, in <module>\n    with LFM2MoE(meta['checkpoint'], program, device, graphs=True) as model:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sagemaker-user/akas/src/akas/models/definition.py\", line 107, in __new__\n    return Executor.from_program(loaded, bundle, device, graphs=graphs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sagemaker-user/akas/src/akas/execution/executor.py\", line 54, in from_program\n    weights = checkpoint.upload(device,**program[\"upload_options\"])\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sagemaker-user/akas/src/akas/models/lfm2/weights.py\", line 41, in upload\n    return upload_packed(device, self.gguf)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sagemaker-user/akas/src/akas/checkpoints/upload.py\", line 57, in upload_packed\n    weights[name] = device.from_numpy(np.ascontiguousarray(raw))\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sagemaker-user/akas/.venv/lib/python3.12/site-packages/tensor/providers/webgpu/device.py\", line 162, in from_numpy\n    buffer = self.empty(array.shape, array.dtype)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/sagemaker-user/akas/.venv/lib/python3.12/site-packages/tensor/providers/webgpu/device.py\", line 141, in empty\n    raise ValueError(\nValueError: WebGPU buffer exceeds adapter binding/allocation limit 134217728\n"
+  },
+  "results": []
+}

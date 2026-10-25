@@ -1,0 +1,53 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "benchmark",
+    "protocol": "native-token-step-v2",
+    "provider": "webgpu",
+    "target": "webgpu-portable-v1",
+    "device": {
+      "name": "NVIDIA L4",
+      "provider": "webgpu"
+    },
+    "model": "akas.models.lfm2.model:LFM2MoE",
+    "definition": "akas.models.lfm2.model:LFM2MoE",
+    "checkpoint": "/home/sagemaker-user/akas/build/checkpoints/lfm2.5-24b-a2b/q4_0.gguf",
+    "checkpoint_sha256": "d1c03f73ecaf61017d70419eec9e5dc0b05d50ae26c23d522829b934fbabf8a5",
+    "weight_format": "q4_0",
+    "weight_dtype": "gguf-q4_0-mixed",
+    "activation_dtype": "float32",
+    "kv_dtype": "float16",
+    "mode": "ar",
+    "graphs": true,
+    "chunk": 512,
+    "warmup": 1,
+    "repeats": 3,
+    "output_tokens": 128,
+    "ignore_eos": true,
+    "requested_prefixes": [
+      32,
+      8192
+    ],
+    "policy": {
+      "vocabulary": {
+        "parallel_argmax": true,
+        "block": 1024
+      }
+    },
+    "max_buffer_size": 215040000,
+    "shape_timeout_seconds": 120,
+    "prompt_generation": "17 + batch * 4099 + prefix_tokens",
+    "same_precision_reference_run_id": "20261020191047151817-8e1d5140",
+    "kernel_evidence_runs": [
+      "20261020191837105510-7798741d",
+      "20261020193348533055-bc9b08e1",
+      "20261020195031655272-927c4e8a",
+      "20261020195237721793-a4187a4a"
+    ],
+    "qualification": "Compiler-owned packed F32 expert products, column-parallel F32 router projections and two-stage vocabulary selection. F16 KV; no operand or accumulator precision reduction. Exact 128-token equality against retained F16 WebGPU output and between native, Engine and HTTP on both requested shapes. Short and 8K qualification only; no full-context WebGPU claim.",
+    "traceback": "Traceback (most recent call last):\n  File \"/home/sagemaker-user/akas/build/lfm-moe/public-webgpu-decode.py\", line 86, in <module>\n    compile_program(loaded, program, definition=LFM2MoE.compose, geometries=[(1,1),(1,32),(1,512)], max_requests=1, max_context=131072,\n  File \"/home/sagemaker-user/akas/src/akas/compilation/compile.py\", line 335, in compile_program\n    bundle = plan(\n             ^^^^^\n  File \"/home/sagemaker-user/akas/src/akas/compilation/compile.py\", line 105, in plan\n    kernels = assemble(\n              ^^^^^^^^^\n  File \"/home/sagemaker-user/akas/src/akas/compilation/selection.py\", line 83, in kernels\n    variant, schedule = definition(\n                        ^^^^^^^^^^^\n  File \"/home/sagemaker-user/akas/src/akas/kernels/definition.py\", line 56, in definition\n    _check_schedule(\n  File \"/home/sagemaker-user/akas/src/akas/kernels/definition.py\", line 73, in _check_schedule\n    raise ValueError(\nValueError: schedule contains undeclared kernel axes: ['threads']\n",
+    "cpu_peak_rss_bytes": 402173952
+  },
+  "results": []
+}

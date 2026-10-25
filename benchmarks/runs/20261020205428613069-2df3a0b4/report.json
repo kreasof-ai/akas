@@ -1,0 +1,896 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "kernel",
+    "protocol": "kernel-latency-v1",
+    "provider": "cuda",
+    "target": "sm_89",
+    "device": {
+      "name": "NVIDIA L4",
+      "provider": "cuda"
+    },
+    "checkpoint": "build/checkpoints/lfm2.5-24b-a2b/q4_0.gguf",
+    "checkpoint_sha256": "d1c03f73ecaf61017d70419eec9e5dc0b05d50ae26c23d522829b934fbabf8a5",
+    "weight_format": "q4_0",
+    "operand_dtype": "float16",
+    "accumulator_dtype": "float32",
+    "qualification": "Original midpoint expert weight banks, synthetic activations with balanced and deliberately skewed valid routing. Independent F64 products check the first active route in every expert across all output columns; complete output tensors must match the qualified CUDA AOT bitwise. Includes routed scatter and inactive output sentinels; no model/serving performance claim.",
+    "reference_run_id": "20261020182637613063-8a87f1a5",
+    "weight_banks": {
+      "gate": "blk.28.ffn_gate_exps.weight",
+      "down": "blk.28.ffn_down_exps.weight"
+    },
+    "checks": [
+      {
+        "kind": "gate",
+        "layout": "balanced",
+        "geometry": "original",
+        "bitwise": true,
+        "independent_reference_rows": 64,
+        "inactive_unchanged": true,
+        "timing": {
+          "gpu_seconds": [
+            0.0029772799015045166,
+            0.002979327917098999,
+            0.0029818880558013915,
+            0.002982399940490723,
+            0.0035327999591827394
+          ],
+          "completed_seconds": [
+            0.0029887470009271055,
+            0.0029863319941796362,
+            0.0029879320063628256,
+            0.0029878814821131527,
+            0.003538105491315946
+          ],
+          "median_gpu_seconds": 0.0029818880558013915,
+          "median_completed_seconds": 0.0029879320063628256,
+          "warmup": 3,
+          "samples": 5,
+          "repeats": 2,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.0029818880558013915
+        }
+      },
+      {
+        "kind": "gate",
+        "layout": "balanced",
+        "geometry": "gate-64-128-128-128-1-column",
+        "bitwise": true,
+        "independent_reference_rows": 64,
+        "inactive_unchanged": true,
+        "timing": {
+          "gpu_seconds": [
+            0.0036423680782318116,
+            0.0037349278926849367,
+            0.003932159900665283,
+            0.003929088115692139,
+            0.004353536128997803
+          ],
+          "completed_seconds": [
+            0.0036528210039250553,
+            0.0037409744982142,
+            0.003938537498470396,
+            0.003934957494493574,
+            0.004359910497441888
+          ],
+          "median_gpu_seconds": 0.003929088115692139,
+          "median_completed_seconds": 0.003934957494493574,
+          "warmup": 3,
+          "samples": 5,
+          "repeats": 2,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.003929088115692139
+        }
+      },
+      {
+        "kind": "gate",
+        "layout": "balanced",
+        "geometry": "gate-64-128-128-128-1-row",
+        "bitwise": true,
+        "independent_reference_rows": 64,
+        "inactive_unchanged": true,
+        "timing": {
+          "gpu_seconds": [
+            0.003695103883743286,
+            0.0037227520942687987,
+            0.0037284319400787353,
+            0.003917311906814575,
+            0.00435920000076294
+          ],
+          "completed_seconds": [
+            0.003704922506585717,
+            0.0037278890085872263,
+            0.003733204008312896,
+            0.003922666510334238,
+            0.004364791006082669
+          ],
+          "median_gpu_seconds": 0.0037284319400787353,
+          "median_completed_seconds": 0.003733204008312896,
+          "warmup": 3,
+          "samples": 5,
+          "repeats": 2,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.0037284319400787353
+        }
+      },
+      {
+        "kind": "gate",
+        "layout": "balanced",
+        "geometry": "gate-64-128-128-256-2-column",
+        "bitwise": true,
+        "independent_reference_rows": 64,
+        "inactive_unchanged": true,
+        "timing": {
+          "gpu_seconds": [
+            0.003948544025421143,
+            0.003952543973922729,
+            0.004480400085449219,
+            0.004582399845123291,
+            0.004863999843597412
+          ],
+          "completed_seconds": [
+            0.003957483975682408,
+            0.003957607987103984,
+            0.004484914999920875,
+            0.004586754977935925,
+            0.004868655989412218
+          ],
+          "median_gpu_seconds": 0.004480400085449219,
+          "median_completed_seconds": 0.004484914999920875,
+          "warmup": 3,
+          "samples": 5,
+          "repeats": 2,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.004480400085449219
+        }
+      },
+      {
+        "kind": "gate",
+        "layout": "balanced",
+        "geometry": "gate-64-128-128-256-2-row",
+        "bitwise": true,
+        "independent_reference_rows": 64,
+        "inactive_unchanged": true,
+        "timing": {
+          "gpu_seconds": [
+            0.0029608640670776365,
+            0.0029634079933166502,
+            0.0029655039310455323,
+            0.002964479923248291,
+            0.003664383888244629
+          ],
+          "completed_seconds": [
+            0.002968012500787154,
+            0.0029679675062652677,
+            0.00296981749124825,
+            0.002969582477817312,
+            0.003669101482955739
+          ],
+          "median_gpu_seconds": 0.002964479923248291,
+          "median_completed_seconds": 0.002969582477817312,
+          "warmup": 3,
+          "samples": 5,
+          "repeats": 2,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.002964479923248291
+        }
+      },
+      {
+        "kind": "gate",
+        "layout": "balanced",
+        "geometry": "gate-64-128-64-128-2-column",
+        "bitwise": true,
+        "independent_reference_rows": 64,
+        "inactive_unchanged": true,
+        "timing": {
+          "gpu_seconds": [
+            0.0033059840202331542,
+            0.0033111040592193604,
+            0.0033080320358276367,
+            0.0036080639362335203,
+            0.003856384038925171
+          ],
+          "completed_seconds": [
+            0.0033159920130856335,
+            0.0033166169887408614,
+            0.0033129919902421534,
+            0.0036127690109424293,
+            0.003861959499772638
+          ],
+          "median_gpu_seconds": 0.0033111040592193604,
+          "median_completed_seconds": 0.0033166169887408614,
+          "warmup": 3,
+          "samples": 5,
+          "repeats": 2,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.0033111040592193604
+        }
+      },
+      {
+        "kind": "gate",
+        "layout": "balanced",
+        "geometry": "gate-64-128-64-128-2-row",
+        "bitwise": true,
+        "independent_reference_rows": 64,
+        "inactive_unchanged": true,
+        "timing": {
+          "gpu_seconds": [
+            0.0038655359745025635,
+            0.00387174391746521,
+            0.00388918399810791,
+            0.004506112098693848,
+            0.0045015039443969725
+          ],
+          "completed_seconds": [
+            0.003877220500726253,
+            0.0038782750198151916,
+            0.0038950410089455545,
+            0.004511206992901862,
+            0.004508675978286192
+          ],
+          "median_gpu_seconds": 0.00388918399810791,
+          "median_completed_seconds": 0.0038950410089455545,
+          "warmup": 3,
+          "samples": 5,
+          "repeats": 2,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.00388918399810791
+        }
+      },
+      {
+        "kind": "gate",
+        "layout": "skewed",
+        "geometry": "original",
+        "bitwise": true,
+        "independent_reference_rows": 64,
+        "inactive_unchanged": true,
+        "timing": {
+          "gpu_seconds": [
+            0.003477583885192871,
+            0.003476991891860962,
+            0.0034775040149688722,
+            0.00405299186706543,
+            0.004283391952514649
+          ],
+          "completed_seconds": [
+            0.0034860839950852096,
+            0.0034815440012607723,
+            0.0034827440103981644,
+            0.00405907302047126,
+            0.0042892069905065
+          ],
+          "median_gpu_seconds": 0.003477583885192871,
+          "median_completed_seconds": 0.0034860839950852096,
+          "warmup": 3,
+          "samples": 5,
+          "repeats": 2,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.003477583885192871
+        }
+      },
+      {
+        "kind": "gate",
+        "layout": "skewed",
+        "geometry": "gate-64-128-128-128-1-column",
+        "bitwise": true,
+        "independent_reference_rows": 64,
+        "inactive_unchanged": true,
+        "timing": {
+          "gpu_seconds": [
+            0.004311488151550293,
+            0.004317183971405029,
+            0.004583424091339112,
+            0.0049909758567810054,
+            0.0051036162376403805
+          ],
+          "completed_seconds": [
+            0.004319213010603562,
+            0.004322363500250503,
+            0.004589219519402832,
+            0.004996576491976157,
+            0.005109735997393727
+          ],
+          "median_gpu_seconds": 0.004583424091339112,
+          "median_completed_seconds": 0.004589219519402832,
+          "warmup": 3,
+          "samples": 5,
+          "repeats": 2,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.004583424091339112
+        }
+      },
+      {
+        "kind": "gate",
+        "layout": "skewed",
+        "geometry": "gate-64-128-128-128-1-row",
+        "bitwise": true,
+        "independent_reference_rows": 64,
+        "inactive_unchanged": true,
+        "timing": {
+          "gpu_seconds": [
+            0.004379648208618164,
+            0.004383743762969971,
+            0.004652031898498535,
+            0.005047808170318604,
+            0.005230559825897217
+          ],
+          "completed_seconds": [
+            0.004389175999676809,
+            0.004389885987620801,
+            0.004657032492104918,
+            0.00505352349136956,
+            0.005236400989815593
+          ],
+          "median_gpu_seconds": 0.004652031898498535,
+          "median_completed_seconds": 0.004657032492104918,
+          "warmup": 3,
+          "samples": 5,
+          "repeats": 2,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.004652031898498535
+        }
+      },
+      {
+        "kind": "gate",
+        "layout": "skewed",
+        "geometry": "gate-64-128-128-256-2-column",
+        "bitwise": true,
+        "independent_reference_rows": 64,
+        "inactive_unchanged": true,
+        "timing": {
+          "gpu_seconds": [
+            0.004758495807647705,
+            0.004847616195678711,
+            0.005479423999786377,
+            0.005587456226348877,
+            0.005859839916229248
+          ],
+          "completed_seconds": [
+            0.004768657498061657,
+            0.004852840502280742,
+            0.005485786008648574,
+            0.005593165988102555,
+            0.005865156505024061
+          ],
+          "median_gpu_seconds": 0.005479423999786377,
+          "median_completed_seconds": 0.005485786008648574,
+          "warmup": 3,
+          "samples": 5,
+          "repeats": 2,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.005479423999786377
+        }
+      },
+      {
+        "kind": "gate",
+        "layout": "skewed",
+        "geometry": "gate-64-128-128-256-2-row",
+        "bitwise": true,
+        "independent_reference_rows": 64,
+        "inactive_unchanged": true,
+        "timing": {
+          "gpu_seconds": [
+            0.003457535982131958,
+            0.0034585599899291993,
+            0.0038287360668182373,
+            0.00395468807220459,
+            0.00409446382522583
+          ],
+          "completed_seconds": [
+            0.0034649679728318006,
+            0.003463157976511866,
+            0.0038341684849001467,
+            0.003961198992328718,
+            0.004101084516150877
+          ],
+          "median_gpu_seconds": 0.0038287360668182373,
+          "median_completed_seconds": 0.0038341684849001467,
+          "warmup": 3,
+          "samples": 5,
+          "repeats": 2,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.0038287360668182373
+        }
+      },
+      {
+        "kind": "gate",
+        "layout": "skewed",
+        "geometry": "gate-64-128-64-128-2-column",
+        "bitwise": true,
+        "independent_reference_rows": 64,
+        "inactive_unchanged": true,
+        "timing": {
+          "gpu_seconds": [
+            0.003802623987197876,
+            0.003819519996643066,
+            0.004267007827758789,
+            0.004271615982055664,
+            0.004564032077789306
+          ],
+          "completed_seconds": [
+            0.0038114575145300478,
+            0.003826968517387286,
+            0.004272806516382843,
+            0.004277011001249775,
+            0.004569173499476165
+          ],
+          "median_gpu_seconds": 0.004267007827758789,
+          "median_completed_seconds": 0.004272806516382843,
+          "warmup": 3,
+          "samples": 5,
+          "repeats": 2,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.004267007827758789
+        }
+      },
+      {
+        "kind": "gate",
+        "layout": "skewed",
+        "geometry": "gate-64-128-64-128-2-row",
+        "bitwise": true,
+        "independent_reference_rows": 64,
+        "inactive_unchanged": true,
+        "timing": {
+          "gpu_seconds": [
+            0.00455679988861084,
+            0.004873663902282715,
+            0.0048938078880310055,
+            0.005411839962005615,
+            0.005505536079406738
+          ],
+          "completed_seconds": [
+            0.004563958500511944,
+            0.004879807005636394,
+            0.004900472500594333,
+            0.005417498497990891,
+            0.005511348019354045
+          ],
+          "median_gpu_seconds": 0.0048938078880310055,
+          "median_completed_seconds": 0.004900472500594333,
+          "warmup": 3,
+          "samples": 5,
+          "repeats": 2,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.0048938078880310055
+        }
+      },
+      {
+        "kind": "down",
+        "layout": "balanced",
+        "geometry": "original",
+        "bitwise": true,
+        "independent_reference_rows": 64,
+        "inactive_unchanged": true,
+        "timing": {
+          "gpu_seconds": [
+            0.003110912084579468,
+            0.0031160318851470945,
+            0.003295232057571411,
+            0.0033156800270080565,
+            0.0033218560218811035
+          ],
+          "completed_seconds": [
+            0.0031205880222842097,
+            0.0031203819962684065,
+            0.0033004954748321325,
+            0.0033205760119017214,
+            0.0033273464941885322
+          ],
+          "median_gpu_seconds": 0.003295232057571411,
+          "median_completed_seconds": 0.0033004954748321325,
+          "warmup": 3,
+          "samples": 5,
+          "repeats": 2,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.003295232057571411
+        }
+      },
+      {
+        "kind": "down",
+        "layout": "balanced",
+        "geometry": "down-64-128-128-128-1-column",
+        "bitwise": true,
+        "independent_reference_rows": 64,
+        "inactive_unchanged": true,
+        "timing": {
+          "gpu_seconds": [
+            0.004102128028869629,
+            0.00410316801071167,
+            0.004104703903198242,
+            0.004684207916259765,
+            0.004694015979766846
+          ],
+          "completed_seconds": [
+            0.004110459994990379,
+            0.004109294997761026,
+            0.004110564477741718,
+            0.0046899294829927385,
+            0.004699429497122765
+          ],
+          "median_gpu_seconds": 0.004104703903198242,
+          "median_completed_seconds": 0.004110564477741718,
+          "warmup": 3,
+          "samples": 5,
+          "repeats": 2,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.004104703903198242
+        }
+      },
+      {
+        "kind": "down",
+        "layout": "balanced",
+        "geometry": "down-64-128-128-128-1-row",
+        "bitwise": true,
+        "independent_reference_rows": 64,
+        "inactive_unchanged": true,
+        "timing": {
+          "gpu_seconds": [
+            0.004123680114746094,
+            0.004161024093627929,
+            0.004579840183258056,
+            0.004578815937042236,
+            0.004896768093109131
+          ],
+          "completed_seconds": [
+            0.004131385998334736,
+            0.0041659419948700815,
+            0.004585354501614347,
+            0.004584675014484674,
+            0.0049029134970624
+          ],
+          "median_gpu_seconds": 0.004578815937042236,
+          "median_completed_seconds": 0.004584675014484674,
+          "warmup": 3,
+          "samples": 5,
+          "repeats": 2,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.004578815937042236
+        }
+      },
+      {
+        "kind": "down",
+        "layout": "balanced",
+        "geometry": "down-64-128-128-256-2-column",
+        "bitwise": true,
+        "independent_reference_rows": 64,
+        "inactive_unchanged": true,
+        "timing": {
+          "gpu_seconds": [
+            0.0046638078689575195,
+            0.004694015979766846,
+            0.004927487850189209,
+            0.005248000144958496,
+            0.005371903896331787
+          ],
+          "completed_seconds": [
+            0.004676328971982002,
+            0.004700140008935705,
+            0.004934210010105744,
+            0.005253758514299989,
+            0.005377518507884815
+          ],
+          "median_gpu_seconds": 0.004927487850189209,
+          "median_completed_seconds": 0.004934210010105744,
+          "warmup": 3,
+          "samples": 5,
+          "repeats": 2,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.004927487850189209
+        }
+      },
+      {
+        "kind": "down",
+        "layout": "balanced",
+        "geometry": "down-64-128-128-256-2-row",
+        "bitwise": true,
+        "independent_reference_rows": 64,
+        "inactive_unchanged": true,
+        "timing": {
+          "gpu_seconds": [
+            0.003125231981277466,
+            0.0031252479553222656,
+            0.0033582079410552977,
+            0.003468287944793701,
+            0.0034703359603881836
+          ],
+          "completed_seconds": [
+            0.0031322430004365742,
+            0.003129892982542515,
+            0.003364487987710163,
+            0.003474186989478767,
+            0.003475677513051778
+          ],
+          "median_gpu_seconds": 0.0033582079410552977,
+          "median_completed_seconds": 0.003364487987710163,
+          "warmup": 3,
+          "samples": 5,
+          "repeats": 2,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.0033582079410552977
+        }
+      },
+      {
+        "kind": "down",
+        "layout": "balanced",
+        "geometry": "down-64-128-64-128-2-column",
+        "bitwise": true,
+        "independent_reference_rows": 64,
+        "inactive_unchanged": true,
+        "timing": {
+          "gpu_seconds": [
+            0.0034283359050750733,
+            0.003427839994430542,
+            0.0037150719165802,
+            0.0037770240306854246,
+            0.0038794078826904295
+          ],
+          "completed_seconds": [
+            0.0034377810079604387,
+            0.003435416001593694,
+            0.0037226529966574162,
+            0.003783935506362468,
+            0.0038847255054861307
+          ],
+          "median_gpu_seconds": 0.0037150719165802,
+          "median_completed_seconds": 0.0037226529966574162,
+          "warmup": 3,
+          "samples": 5,
+          "repeats": 2,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.0037150719165802
+        }
+      },
+      {
+        "kind": "down",
+        "layout": "balanced",
+        "geometry": "down-64-128-64-128-2-row",
+        "bitwise": true,
+        "independent_reference_rows": 64,
+        "inactive_unchanged": true,
+        "timing": {
+          "gpu_seconds": [
+            0.004268032073974609,
+            0.004401663780212403,
+            0.004695487976074219,
+            0.004768767833709717,
+            0.00506982421875
+          ],
+          "completed_seconds": [
+            0.004277836997061968,
+            0.004406807012856007,
+            0.00470120451063849,
+            0.004775162989972159,
+            0.0050771649985108525
+          ],
+          "median_gpu_seconds": 0.004695487976074219,
+          "median_completed_seconds": 0.00470120451063849,
+          "warmup": 3,
+          "samples": 5,
+          "repeats": 2,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.004695487976074219
+        }
+      },
+      {
+        "kind": "down",
+        "layout": "skewed",
+        "geometry": "original",
+        "bitwise": true,
+        "independent_reference_rows": 64,
+        "inactive_unchanged": true,
+        "timing": {
+          "gpu_seconds": [
+            0.0034406399726867676,
+            0.003446784019470215,
+            0.00345088005065918,
+            0.004279295921325684,
+            0.004297215938568116
+          ],
+          "completed_seconds": [
+            0.003450856514973566,
+            0.003453466488281265,
+            0.0034562219807412475,
+            0.004284856986487284,
+            0.004302633024053648
+          ],
+          "median_gpu_seconds": 0.00345088005065918,
+          "median_completed_seconds": 0.0034562219807412475,
+          "warmup": 3,
+          "samples": 5,
+          "repeats": 2,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.00345088005065918
+        }
+      },
+      {
+        "kind": "down",
+        "layout": "skewed",
+        "geometry": "down-64-128-128-128-1-column",
+        "bitwise": true,
+        "independent_reference_rows": 64,
+        "inactive_unchanged": true,
+        "timing": {
+          "gpu_seconds": [
+            0.004229631900787354,
+            0.004250624179840088,
+            0.00471398401260376,
+            0.004916240215301513,
+            0.005204480171203613
+          ],
+          "completed_seconds": [
+            0.004240050009684637,
+            0.0042580954905133694,
+            0.004720885510323569,
+            0.004929624497890472,
+            0.0052127864910289645
+          ],
+          "median_gpu_seconds": 0.00471398401260376,
+          "median_completed_seconds": 0.004720885510323569,
+          "warmup": 3,
+          "samples": 5,
+          "repeats": 2,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.00471398401260376
+        }
+      },
+      {
+        "kind": "down",
+        "layout": "skewed",
+        "geometry": "down-64-128-128-128-1-row",
+        "bitwise": true,
+        "independent_reference_rows": 64,
+        "inactive_unchanged": true,
+        "timing": {
+          "gpu_seconds": [
+            0.004352000236511231,
+            0.004398079872131347,
+            0.004428287982940674,
+            0.005142528057098389,
+            0.005173759937286377
+          ],
+          "completed_seconds": [
+            0.004366283508716151,
+            0.004404950013849884,
+            0.004433915979461744,
+            0.005151840508915484,
+            0.005181392014492303
+          ],
+          "median_gpu_seconds": 0.004428287982940674,
+          "median_completed_seconds": 0.004433915979461744,
+          "warmup": 3,
+          "samples": 5,
+          "repeats": 2,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.004428287982940674
+        }
+      },
+      {
+        "kind": "down",
+        "layout": "skewed",
+        "geometry": "down-64-128-128-256-2-column",
+        "bitwise": true,
+        "independent_reference_rows": 64,
+        "inactive_unchanged": true,
+        "timing": {
+          "gpu_seconds": [
+            0.004708864212036133,
+            0.005163008213043213,
+            0.005266384124755859,
+            0.005709311962127686,
+            0.005791744232177734
+          ],
+          "completed_seconds": [
+            0.004722293495433405,
+            0.005171091499505565,
+            0.0052724255074281245,
+            0.0057191840023733675,
+            0.005800206999992952
+          ],
+          "median_gpu_seconds": 0.005266384124755859,
+          "median_completed_seconds": 0.0052724255074281245,
+          "warmup": 3,
+          "samples": 5,
+          "repeats": 2,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.005266384124755859
+        }
+      },
+      {
+        "kind": "down",
+        "layout": "skewed",
+        "geometry": "down-64-128-128-256-2-row",
+        "bitwise": true,
+        "independent_reference_rows": 64,
+        "inactive_unchanged": true,
+        "timing": {
+          "gpu_seconds": [
+            0.0034411520957946776,
+            0.0034411520957946776,
+            0.0034488320350646974,
+            0.00421017599105835,
+            0.00420966386795044
+          ],
+          "completed_seconds": [
+            0.0034499754838179797,
+            0.0034482360060792416,
+            0.003456766513409093,
+            0.004216302506392822,
+            0.0042149670189246535
+          ],
+          "median_gpu_seconds": 0.0034488320350646974,
+          "median_completed_seconds": 0.003456766513409093,
+          "warmup": 3,
+          "samples": 5,
+          "repeats": 2,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.0034488320350646974
+        }
+      },
+      {
+        "kind": "down",
+        "layout": "skewed",
+        "geometry": "down-64-128-64-128-2-column",
+        "bitwise": true,
+        "independent_reference_rows": 64,
+        "inactive_unchanged": true,
+        "timing": {
+          "gpu_seconds": [
+            0.003819519996643066,
+            0.0038143360614776613,
+            0.004224512100219726,
+            0.004262911796569824,
+            0.004631040096282959
+          ],
+          "completed_seconds": [
+            0.0038287719944491982,
+            0.003820676472969353,
+            0.004232548002619296,
+            0.004270169010851532,
+            0.004636699508409947
+          ],
+          "median_gpu_seconds": 0.004224512100219726,
+          "median_completed_seconds": 0.004232548002619296,
+          "warmup": 3,
+          "samples": 5,
+          "repeats": 2,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.004224512100219726
+        }
+      },
+      {
+        "kind": "down",
+        "layout": "skewed",
+        "geometry": "down-64-128-64-128-2-row",
+        "bitwise": true,
+        "independent_reference_rows": 64,
+        "inactive_unchanged": true,
+        "timing": {
+          "gpu_seconds": [
+            0.004426239967346191,
+            0.0044271678924560545,
+            0.004927999973297119,
+            0.005150288105010986,
+            0.0054568958282470706
+          ],
+          "completed_seconds": [
+            0.00443731650011614,
+            0.004432871501194313,
+            0.004934106982545927,
+            0.0051569954957813025,
+            0.005462773522594944
+          ],
+          "median_gpu_seconds": 0.004927999973297119,
+          "median_completed_seconds": 0.004934106982545927,
+          "warmup": 3,
+          "samples": 5,
+          "repeats": 2,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.004927999973297119
+        }
+      }
+    ]
+  },
+  "results": []
+}

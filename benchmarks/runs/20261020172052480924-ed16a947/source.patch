@@ -1,0 +1,749 @@
+diff --git a/src/akas/ops/attention/README.md b/src/akas/ops/attention/README.md
+index 62844af..d6de432 100644
+--- a/src/akas/ops/attention/README.md
++++ b/src/akas/ops/attention/README.md
+@@ -74,6 +74,22 @@ improve occupancy. Native F16 prefill keeps its direct-load implementation.
+ The maximum **live** query position determines the cache extent, so inactive
+ query tails cannot expose future cache entries to the value product.
+ 
++The compiler can also materialize decoded KV once per prefill operation.
++`attention_cache_extent(positions, enabled) -> lengths` establishes the live
++prefix, then the quantization codec's `kv_stage` produces temporary FP16 keys,
++values and unit metadata. Native pipelined attention reads these coefficients
++directly. FP8 payloads and F32 cache scales remain persistent; the FP16 values
++have the same rounding as the fused FP8-to-MMA path. One temporary pair is
++shared across compatible attention calls, rather than allocated per layer.
++
++The CUDA `decoded_kv` graph-policy candidate applies to chunks of at least 256
++tokens and capacities divisible by 512, so native load groups stay in bounds.
++Smaller chunks keep their fused path. Search measures the complete conversion
++and attention plan, including its extra temporary memory. Both providers expose
++extent and conversion operations; selecting this full attention policy is
++currently qualified on CUDA. A conversion capability alone establishes no
++WebGPU model speedup.
++
+ Complete groups of four key tiles use `T.Pipelined`. At most four final tiles
+ use guarded loads, keeping unused or nonfinite future cache entries out of PV.
+ Separating the tail also avoids asking the compiler to pipeline a dynamically
+diff --git a/src/akas/ops/attention/cuda.py b/src/akas/ops/attention/cuda.py
+index d93ee69..2363f6e 100644
+--- a/src/akas/ops/attention/cuda.py
++++ b/src/akas/ops/attention/cuda.py
+@@ -2093,9 +2093,17 @@ def floating(spec: KernelSpec, schedule: Mapping[str, object]):
+             T.clear(result)
+             T.clear(normalizer)
+             T.fill(maximum, -T.infinity("float32"))
+-            tile_count = T.ceildiv(
+-                positions[slot * chunk + T.min(chunk - 1, (bx + 1) * bq - 1)] + 1, bk
+-            )
++            limits = T.alloc_fragment((bq,), "int32")
++            live = T.alloc_fragment((1,), "int32")
++            for i in T.Parallel(bq):
++                row = slot * chunk + T.min(bx * bq + i, chunk - 1)
++                limits[i] = T.if_then_else(
++                    bx * bq + i < chunk and enabled[row] != 0,
++                    positions[row] + 1,
++                    0,
++                )
++            T.reduce_max(limits, live, dim=0)
++            tile_count = T.ceildiv(live[0], bk)
+             pipeline_tiles = 4 if async_loads else 1
+             for block in T.serial(T.ceildiv(tile_count, pipeline_tiles)):
+                 for local in T.Pipelined(pipeline_tiles, num_stages=stages):
+@@ -3575,6 +3583,7 @@ def decode(spec: KernelSpec, schedule: Mapping[str, object]):
+ from .kernel import (
+     attention as shared_attention,
+     attention_flat,
++    cache_extent,
+     cache_write,
+     chunk_active,
+     merge_floating,
+diff --git a/src/akas/ops/attention/definition.py b/src/akas/ops/attention/definition.py
+index 2116c1c..5d57c56 100644
+--- a/src/akas/ops/attention/definition.py
++++ b/src/akas/ops/attention/definition.py
+@@ -2,6 +2,7 @@
+ 
+ from akas.kernels.contracts import OutputABI
+ from akas.ops.attention.validation import validation
++from akas.ops.attention.validation import extent_validation
+ from akas.kernels.contracts import Implementation
+ from akas.quantization.kv import is_quantized
+ from akas.ops.attention.validation import pipeline_validation as pipeline_validation
+@@ -168,7 +169,12 @@ def search_policies(graph, commit, *, provider, target):
+             and call.parameters.get("optimized")
+             for call in graph.calls
+         ):
+-            return [{"splits": count} for count in (32, 64, 128)]
++            choices = [{"splits": count} for count in (32, 64, 128)]
++            if provider == "cuda" and any(
++                _can_stage_prefill(call) for call in graph.calls
++            ):
++                choices += [dict(choice, decoded_kv=True) for choice in choices]
++            return choices
+         return []
+     if (
+         graph.contract != "block-fp8"
+@@ -185,6 +191,100 @@ def search_policies(graph, commit, *, provider, target):
+     return choices
+ 
+ 
++def _can_stage_prefill(call):
++    """Limit full-cache materialization to compatible, amortized MMA chunks."""
++    p = call.parameters
++    eligible = (
++        call.kind == "attention"
++        and p.get("optimized", False)
++        and p.get("kv_dtype") not in (None, "float16", "float32", "bfloat16")
++        and p.get("chunk", 1) >= 256
++        and p.get("d") == 64
++        and p.get("capacity", 0) >= 4096
++        and p["capacity"] % 512 == 0
++    )
++    if not eligible:
++        return False
++    from akas.quantization.kv import get
++
++    try:
++        return get(p["kv_dtype"]).supports(
++            "stage",
++            (p["r"] // p["chunk"], p["kh"], p["capacity"], p["d"]),
++            provider="cuda",
++        )
++    except ValueError:
++        return False
++
++
++def _stage_prefill(graph, call, workspaces):
++    """Expose conversion to qualification/search and share temporary allocations."""
++    from akas.graph import Call
++
++    p = call.parameters
++    slots, heads, capacity, depth = (
++        p["r"] // p["chunk"],
++        p["kh"],
++        p["capacity"],
++        p["d"],
++    )
++    names = (
++        dict(call.bindings)
++        if call.bindings
++        else dict(
++            zip(
++                ("q", "kc", "vc", "ks", "vs", "out", "positions", "enabled"),
++                call.arguments,
++            )
++        )
++    )
++    if set(names) != {"q", "kc", "vc", "ks", "vs", "out", "positions", "enabled"}:
++        raise ValueError("cache staging requires the floating attention ABI")
++    shape = (slots, heads, capacity, depth)
++    if shape not in workspaces:
++        prefix = f"pipeline.attention.stage.{len(workspaces)}."
++        workspaces[shape] = (
++            graph.buffer(prefix + "lengths", (slots,), "int32"),
++            graph.buffer(prefix + "keys", shape, "float16"),
++            graph.buffer(prefix + "values", shape, "float16"),
++            graph.buffer(prefix + "scales", (*shape[:-1], 1), "float32"),
++        )
++    lengths, keys, values, scales = workspaces[shape]
++    extent = Call(
++        "attention_cache_extent",
++        dict(slots=slots, chunk=p["chunk"], capacity=capacity),
++        (names["positions"], names["enabled"], lengths.name),
++    )
++    stage = Call(
++        "kv_stage",
++        dict(
++            slots=slots,
++            kv_heads=heads,
++            capacity=capacity,
++            d=depth,
++            kv_dtype=p["kv_dtype"],
++        ),
++        tuple(names[name] for name in ("kc", "vc", "ks", "vs"))
++        + (lengths.name, keys.name, values.name, scales.name),
++    )
++    attention = Call(
++        "attention",
++        {**p, "kv_dtype": "float16", "unit_scales": True, "staged_kv": True},
++        (
++            names["q"],
++            keys.name,
++            values.name,
++            scales.name,
++            scales.name,
++            names["out"],
++            names["positions"],
++            names["enabled"],
++        ),
++        label=call.label,
++    )
++    return extent, stage, attention
++
++
+ def lower(graph, commit, settings, *, provider, target):
+     from akas.graph import Call
+ 
+@@ -205,20 +305,30 @@ def lower(graph, commit, settings, *, provider, target):
+     if graph.contract == "reference":
+         from dataclasses import replace
+ 
+-        if (
+-            set(settings) != {"splits"}
+-            or type(settings["splits"]) is not int
++        if not settings or set(settings) - {"splits", "decoded_kv"}:
++            raise ValueError("unknown floating attention policy")
++        if "splits" in settings and (
++            type(settings["splits"]) is not int
+             or settings["splits"] not in (1, 2, 4, 8, 16, 32, 64, 128)
+         ):
+             raise ValueError(
+                 "floating attention policy requires a supported split count"
+             )
+-        calls = []
++        if "decoded_kv" in settings and type(settings["decoded_kv"]) is not bool:
++            raise ValueError("decoded KV policy must be a boolean")
++        if settings.get("decoded_kv") and provider != "cuda":
++            raise ValueError("staged floating attention is currently qualified on CUDA")
++        calls, workspaces = [], {}
+         for call in graph.calls:
+-            if call.kind in (
+-                "attention_partial",
+-                "attention_merge",
+-            ) and call.parameters.get("optimized"):
++            if (
++                "splits" in settings
++                and call.kind
++                in (
++                    "attention_partial",
++                    "attention_merge",
++                )
++                and call.parameters.get("optimized")
++            ):
+                 p = {**call.parameters, "splits": settings["splits"]}
+                 if call.kind == "attention_partial":
+                     name = (
+@@ -235,6 +345,9 @@ def lower(graph, commit, settings, *, provider, target):
+                     object.__setattr__(buffer, "_graph", graph)
+                     graph.buffers[name] = buffer
+                 call = replace(call, parameters=p)
++            if settings.get("decoded_kv") and _can_stage_prefill(call):
++                calls.extend(_stage_prefill(graph, call, workspaces))
++                continue
+             calls.append(call)
+         graph.calls = calls
+         return graph, commit
+@@ -464,6 +577,7 @@ OUTPUT_ARGUMENTS = {
+         "attention": (5,),
+         "attention_partial": (5,),
+         "attention_merge": (1,),
++        "attention_cache_extent": OutputABI((-1,), ("lengths",)),
+     }
+ }
+ OUTPUT_ARGUMENTS["block-fp8"] = {
+@@ -519,6 +633,7 @@ VALIDATIONS = {
+         "attention_kv",
+     )
+ }
++VALIDATIONS["attention_cache_extent"] = extent_validation
+ VALIDATIONS.update(
+     {
+         name: pipeline_validation
+@@ -908,6 +1023,18 @@ IMPLEMENTATIONS = (
+     ),
+ )
+ 
++IMPLEMENTATIONS += tuple(
++    Implementation(
++        "attention_cache_extent",
++        f"akas.ops.attention.{provider}",
++        "reference",
++        provider=provider,
++        factory="cache_extent",
++        name="attention.cache_extent",
++    )
++    for provider in ("cuda", "webgpu")
++)
++
+ IMPLEMENTATIONS += (
+     Implementation(
+         "attention",
+diff --git a/src/akas/ops/attention/kernel.py b/src/akas/ops/attention/kernel.py
+index a63e657..a6e9395 100644
+--- a/src/akas/ops/attention/kernel.py
++++ b/src/akas/ops/attention/kernel.py
+@@ -1,5 +1,43 @@
+ """Shared TileLang computations for attention."""
+ 
++
++def cache_extent(spec, schedule):
++    """Return each request's live cache prefix from its enabled query rows."""
++    import tilelang.language as T
++    from akas.kernels.kernel import Tensor, kernel, output
++    from akas.kernels.reductions import tree_reduce
++
++    p = {**spec.parameters, **schedule}
++    slots, chunk, capacity = (p[name] for name in ("slots", "chunk", "capacity"))
++    rows = slots * chunk
++    maximum = tree_reduce(128, "max")
++
++    @kernel
++    def compute(
++        positions: Tensor((rows,), "int32"),
++        enabled: Tensor((rows,), "int32"),
++    ) -> Tensor((slots,), "int32"):
++        lengths = output((slots,), "int32")
++        with T.Kernel(slots, threads=128) as slot:
++            tx = T.get_thread_binding()
++            scratch = T.alloc_shared((128,), "int32")
++            value = T.alloc_var("int32")
++            value = 0
++            for tile in T.serial(T.ceildiv(chunk, 128)):
++                index = tile * 128 + tx
++                row = slot * chunk + T.min(index, chunk - 1)
++                if index < chunk and enabled[row] != 0:
++                    value = T.max(value, positions[row] + 1)
++            scratch[tx] = value
++            T.sync_threads()
++            maximum(scratch, tx)
++            if tx == 0:
++                lengths[slot] = T.min(T.max(scratch[0], 0), capacity)
++        return lengths
++
++    return compute
++
++
+ from collections.abc import Mapping
+ from akas.kernels.definition import KernelSpec
+ from akas.kernels.kernel import Tensor, kernel, output
+diff --git a/src/akas/ops/attention/validation.py b/src/akas/ops/attention/validation.py
+index 7409759..9662483 100644
+--- a/src/akas/ops/attention/validation.py
++++ b/src/akas/ops/attention/validation.py
+@@ -1,6 +1,28 @@
+ """Independent numerical and state qualification for attention."""
+ 
+ 
++def extent_validation(kind, p, signature):
++    import numpy as np
++    from akas.kernels.contracts import ValidationCase, sample_arguments
++
++    values = sample_arguments(signature)
++    slots, chunk, capacity = (p[name] for name in ("slots", "chunk", "capacity"))
++    positions = values["positions"].reshape(slots, chunk)
++    active = values["enabled"].reshape(slots, chunk)
++    positions[:] = np.arange(chunk) + max(0, capacity - chunk)
++    active[:] = 1
++    active[:, -1] = 0
++    if slots > 1:
++        active[-1] = 0
++    expected = dict(values)
++    expected["lengths"] = (
++        np.maximum(np.where(active != 0, positions + 1, 0).max(axis=1), 0)
++        .clip(max=capacity)
++        .astype("int32")
++    )
++    return ValidationCase(values, expected, rtol=0, atol=0)
++
++
+ def pipeline_validation(kind, p, signature):
+     import numpy as np
+     from tensor.runtime.dtypes import decode_bfloat16, encode_bfloat16
+diff --git a/src/akas/ops/attention/webgpu.py b/src/akas/ops/attention/webgpu.py
+index 2f19e81..ef55bac 100644
+--- a/src/akas/ops/attention/webgpu.py
++++ b/src/akas/ops/attention/webgpu.py
+@@ -989,6 +989,7 @@ def mapped_webgpu(spec: KernelSpec, schedule: Mapping[str, object]):
+ from .kernel import (
+     attention as shared_attention,
+     attention_flat,
++    cache_extent,
+     cache_write,
+     chunk_active,
+     merge_floating,
+diff --git a/src/akas/optimization/planning.py b/src/akas/optimization/planning.py
+index 7c67e14..82d41be 100644
+--- a/src/akas/optimization/planning.py
++++ b/src/akas/optimization/planning.py
+@@ -139,8 +139,9 @@ def probe(context, provider):
+             )
+             graph = composed.graph if isinstance(composed, Composition) else composed
+             chunks.append(chunk)
+-            if len(chunks) == 1:
+-                policies = candidates(graph, provider=provider, target=device["arch"])
++            for policy in candidates(graph, provider=provider, target=device["arch"]):
++                if policy not in policies:
++                    policies.append(policy)
+         except (ValueError, TypeError, NotImplementedError) as error:
+             failures.append(dict(chunk=chunk, error=str(error)))
+     if not chunks:
+@@ -297,7 +298,8 @@ def recipes(context, probes):
+         for group in dict.fromkeys(min(capacity, n) for n in (1, 8, 64)):
+             add(p, group=group)
+         for policy in p["policies"]:
+-            add(p, policy=policy)
++            for chunk in p["chunks"]:
++                add(p, chunk=chunk, policy=policy)
+         for options in p.get("option_variants", ()):
+             add(p, model_options=options)
+         for window in p["windows"]:
+diff --git a/src/akas/quantization/kv/fp8/README.md b/src/akas/quantization/kv/fp8/README.md
+index f427fe4..392b75d 100644
+--- a/src/akas/quantization/kv/fp8/README.md
++++ b/src/akas/quantization/kv/fp8/README.md
+@@ -12,6 +12,14 @@ rounds source projections to BF16 before encoding; decoding returns BF16 precisi
+ (CUDA BF16 buffers, WebGPU F32 buffers containing BF16-rounded values). Inactive
+ rows retain their existing cache payloads and scales.
+ 
++`kv_stage(kc, vc, ks, vs, lengths) -> (keys, values, scales)` materializes a
++temporary native FP16 cache. Values before each request's length decode with
++the original F32 scales and round once to FP16; later positions are zero.
++The returned native-cache metadata is one, so K and V may share it. Persistent
++FP8 data and its metadata are read only. Attention supplies the valid prefix;
++the codec owns decoding and rounding. CUDA uses native FP8 conversions, while
++WebGPU uses the shared packed-word reader behind the same callable contract.
++
+ ## Why share and specialize
+ 
+ Share the portable cache writer, decoder and exact scaling arithmetic. The
+diff --git a/src/akas/quantization/kv/fp8/cuda.py b/src/akas/quantization/kv/fp8/cuda.py
+index 612c26b..e9e3854 100644
+--- a/src/akas/quantization/kv/fp8/cuda.py
++++ b/src/akas/quantization/kv/fp8/cuda.py
+@@ -232,6 +232,64 @@ def dequantize(spec, schedule):
+     return kv_decode(spec, schedule)
+ 
+ 
++def stage(spec, schedule):
++    """Decode each FP8 coefficient once for a native F16 cache consumer."""
++    import tilelang.language as T
++
++    p = {**spec.parameters, **schedule}
++    slots, heads, capacity, depth = (
++        p[name] for name in ("slots", "kv_heads", "capacity", "d")
++    )
++    shape = (slots, heads, capacity, depth)
++    metadata = (slots, heads, capacity, (depth + BLOCK - 1) // BLOCK)
++    units = (slots, heads, capacity, 1)
++    block = 128
++
++    @kernel
++    def compute(
++        kc: Tensor(shape, "uint8"),
++        vc: Tensor(shape, "uint8"),
++        ks: Tensor(metadata, "float32"),
++        vs: Tensor(metadata, "float32"),
++        lengths: Tensor((slots,), "int32"),
++    ) -> tuple[
++        Tensor(shape, "float16"),
++        Tensor(shape, "float16"),
++        Tensor(units, "float32"),
++    ]:
++        keys = output(shape, "float16")
++        values = output(shape, "float16")
++        scales = output(units, "float32")
++        encoded_k = T.meta_var(T.view(kc, dtype=PACKED_DTYPE))
++        encoded_v = T.meta_var(T.view(vc, dtype=PACKED_DTYPE))
++        with T.Kernel(T.ceildiv(capacity, block), heads, slots, threads=256) as (
++            tile,
++            head,
++            slot,
++        ):
++            for i, j in T.Parallel(block, depth):
++                position = tile * block + i
++                if position < capacity:
++                    keys[slot, head, position, j] = T.if_then_else(
++                        position < lengths[slot],
++                        T.cast(encoded_k[slot, head, position, j], "float32")
++                        * ks[slot, head, position, j // BLOCK],
++                        0,
++                    )
++                    values[slot, head, position, j] = T.if_then_else(
++                        position < lengths[slot],
++                        T.cast(encoded_v[slot, head, position, j], "float32")
++                        * vs[slot, head, position, j // BLOCK],
++                        0,
++                    )
++            for i in T.Parallel(block):
++                if tile * block + i < capacity:
++                    scales[slot, head, tile * block + i, 0] = 1
++        return keys, values, scales
++
++    return compute
++
++
+ AVAILABLE = "cuda" in dict(FORMAT.providers)
+ CAPABILITIES = (
+     "read",
+@@ -241,5 +299,6 @@ CAPABILITIES = (
+     "read_packed",
+     "quantize",
+     "dequantize",
++    "stage",
+ )
+ IMPLEMENTATIONS = tuple(choice for choice in _CHOICES if choice.provider == "cuda")
+diff --git a/src/akas/quantization/kv/fp8/definition.py b/src/akas/quantization/kv/fp8/definition.py
+index f81e636..abfd829 100644
+--- a/src/akas/quantization/kv/fp8/definition.py
++++ b/src/akas/quantization/kv/fp8/definition.py
+@@ -42,10 +42,11 @@ OUTPUT_ARGUMENTS = {
+     "*": {
+         "kv_encode": OutputABI((4, 5, 6, 7), ("kc", "vc", "ks", "vs")),
+         "kv_decode": OutputABI((-2, -1), ("keys", "values")),
++        "kv_stage": OutputABI((-3, -2, -1), ("keys", "values", "scales")),
+     },
+ }
+ 
+-VALIDATIONS = {kind: validation for kind in ("kv_encode", "kv_decode")}
++VALIDATIONS = {kind: validation for kind in ("kv_encode", "kv_decode", "kv_stage")}
+ IMPLEMENTATIONS = (
+     Implementation(
+         "kv_encode",
+@@ -71,3 +72,16 @@ IMPLEMENTATIONS = (
+     )
+     for kind, factory in (("kv_encode", "quantize"), ("kv_decode", "dequantize"))
+ )
++
++IMPLEMENTATIONS += tuple(
++    Implementation(
++        "kv_stage",
++        f"akas.quantization.kv.fp8.{provider}",
++        "*",
++        factory="stage",
++        provider=provider,
++        name="akas.quantization.kv.fp8.stage",
++        accepts=lambda p: p.get("kv_dtype", "fp8") == "fp8",
++    )
++    for provider in ("cuda", "webgpu")
++)
+diff --git a/src/akas/quantization/kv/fp8/kernel.py b/src/akas/quantization/kv/fp8/kernel.py
+index 57f485c..b70fc3e 100644
+--- a/src/akas/quantization/kv/fp8/kernel.py
++++ b/src/akas/quantization/kv/fp8/kernel.py
+@@ -278,3 +278,66 @@ def dequantize(spec, schedule):
+         return keys, values
+ 
+     return compute
++
++
++def stage(spec, schedule, *, provider="webgpu"):
++    """Decode a live cache prefix to F16, zero padding, and return unit scales.
++
++    The consumer supplies valid prefix lengths. Persistent payloads and their
++    F32 scales are read only; this temporary representation does not requantize
++    either cache or change its declared precision.
++    """
++    import tilelang.language as T
++    from akas.kernels.kernel import Tensor, kernel, output
++    from .definition import FORMAT
++
++    p = {**spec.parameters, **schedule}
++    slots, heads, capacity, depth = (
++        p[name] for name in ("slots", "kv_heads", "capacity", "d")
++    )
++    shape = (slots, heads, capacity, depth)
++    binding = FORMAT.bind(shape, provider=provider)
++    payload, metadata = binding.storage.buffers
++    read = binding.read
++    block = 128
++    units = (slots, heads, capacity, 1)
++
++    @kernel
++    def compute(
++        kc: Tensor(payload.shape, payload.dtype),
++        vc: Tensor(payload.shape, payload.dtype),
++        ks: Tensor(metadata.shape, metadata.dtype),
++        vs: Tensor(metadata.shape, metadata.dtype),
++        lengths: Tensor((slots,), "int32"),
++    ) -> tuple[
++        Tensor(shape, "float16"),
++        Tensor(shape, "float16"),
++        Tensor(units, "float32"),
++    ]:
++        keys = output(shape, "float16")
++        values = output(shape, "float16")
++        scales = output(units, "float32")
++        with T.Kernel(T.ceildiv(capacity, block), heads, slots, threads=128) as (
++            tile,
++            head,
++            slot,
++        ):
++            for i, j in T.Parallel(block, depth):
++                position = tile * block + i
++                if position < capacity:
++                    keys[slot, head, position, j] = T.if_then_else(
++                        position < lengths[slot],
++                        read((kc, ks), slot, head, position, j),
++                        0,
++                    )
++                    values[slot, head, position, j] = T.if_then_else(
++                        position < lengths[slot],
++                        read((vc, vs), slot, head, position, j),
++                        0,
++                    )
++            for i in T.Parallel(block):
++                if tile * block + i < capacity:
++                    scales[slot, head, tile * block + i, 0] = 1
++        return keys, values, scales
++
++    return compute
+diff --git a/src/akas/quantization/kv/fp8/validation.py b/src/akas/quantization/kv/fp8/validation.py
+index 499ec54..667d476 100644
+--- a/src/akas/quantization/kv/fp8/validation.py
++++ b/src/akas/quantization/kv/fp8/validation.py
+@@ -7,6 +7,8 @@ def validation(kind, parameters, signature):
+     from akas.quantization._shared.e4m3 import encode_storage, decode_storage
+     from tensor.runtime.dtypes import encode_bfloat16, decode_bfloat16
+ 
++    if kind == "kv_stage":
++        return stage_validation(parameters, signature)
+     p = parameters
+     slots, heads, depth, capacity = (
+         p[n] for n in ("slots", "kv_heads", "d", "capacity")
+@@ -60,3 +62,38 @@ def validation(kind, parameters, signature):
+                     )
+                     target[slot, :, position, start:end] = bits
+     return ValidationCase(values, expected, rtol=0, atol=1e-9)
++
++
++def stage_validation(p, signature):
++    """Independent bounded conversion, including poisoned unused cache rows."""
++    import numpy as np
++    from akas.kernels.contracts import ValidationCase, sample_arguments
++    from akas.quantization._shared.e4m3 import decode_storage
++
++    values = sample_arguments(signature)
++    slots, heads, capacity, depth = (
++        p[name] for name in ("slots", "kv_heads", "capacity", "d")
++    )
++    values["lengths"][:] = np.linspace(0, capacity, slots + 1, dtype="int32")[1:]
++    if slots > 1:
++        values["lengths"][0] = 0
++    expected = dict(values)
++    for name in ("keys", "values"):
++        expected[name] = np.zeros_like(values[name])
++    expected["scales"] = np.ones_like(values["scales"])
++    for slot in range(slots):
++        end = int(values["lengths"][slot])
++        for source, metadata, target in (("kc", "ks", "keys"), ("vc", "vs", "values")):
++            bits = values[source].view("uint8").reshape(slots, heads, capacity, -1)
++            bits[slot, :, end:] = 127
++            values[metadata][slot, :, end:] = np.nan
++            for start in range(0, end, 128):
++                stop = min(start + 128, end)
++                block = decode_storage(bits[slot, :, start:stop, :depth])
++                scales = np.repeat(values[metadata][slot, :, start:stop], 128, axis=-1)[
++                    ..., :depth
++                ]
++                expected[target][slot, :, start:stop] = (block * scales).astype(
++                    "float16"
++                )
++    return ValidationCase(values, expected, rtol=0, atol=0)
+diff --git a/src/akas/quantization/kv/fp8/webgpu.py b/src/akas/quantization/kv/fp8/webgpu.py
+index 3c319a0..4a0d519 100644
+--- a/src/akas/quantization/kv/fp8/webgpu.py
++++ b/src/akas/quantization/kv/fp8/webgpu.py
+@@ -28,6 +28,12 @@ def dequantize(spec, schedule):
+     return dequantize(spec, schedule)
+ 
+ 
++def stage(spec, schedule):
++    from .kernel import stage
++
++    return stage(spec, schedule, provider="webgpu")
++
++
+ AVAILABLE = "webgpu" in dict(FORMAT.providers)
+-CAPABILITIES = ("read", "read_tile", "write", "quantize", "dequantize")
++CAPABILITIES = ("read", "read_tile", "write", "quantize", "dequantize", "stage")
+ IMPLEMENTATIONS = tuple(choice for choice in _CHOICES if choice.provider == "webgpu")
+diff --git a/tests/fixtures/kernel-computations.json b/tests/fixtures/kernel-computations.json
+index bef481e..0988b41 100644
+--- a/tests/fixtures/kernel-computations.json
++++ b/tests/fixtures/kernel-computations.json
+@@ -66,6 +66,21 @@
+             "tests/test_lfm_moe.py::test_moe_model_prefill_decode_and_slot_reuse"
+           ]
+         }
++      ],
++      "qualified_replacements": [
++        {
++          "original": [
++            "launch:37d4f8b55331bb496617e57c7997bc701cfc6761345e39f456ca8f0680bb8fbc"
++          ],
++          "replacement": [
++            "launch:416008a945e89aef0f67a3a431d401e03d2cf8f70bea33ed067b984f5d1d4ae0"
++          ],
++          "reason": "Use the maximum enabled query position for each native attention tile so inactive tails cannot truncate a live prefix; arithmetic remains bitwise equivalent on the original valid-query domain.",
++          "qualification_tests": [
++            "tests/test_attention_cache_staging.py::test_staged_attention_matches_fp8_oracle_with_poisoned_padding"
++          ],
++          "qualification_run": "20261020170127736154-28a52ca6"
++        }
+       ]
+     },
+     {
+diff --git a/tests/test_optimization.py b/tests/test_optimization.py
+index 10e6ae8..39cc6e6 100644
+--- a/tests/test_optimization.py
++++ b/tests/test_optimization.py
+@@ -112,6 +112,9 @@ def test_automatic_recipes_preserve_model_precision_and_use_operation_policies()
+     assert not choices[0]["graphs"] and choices[0]["trials"] == 1
+     assert len({c["id"] for c in choices}) == len(choices)
+     assert any(c["policy"] for c in choices)
++    assert {
++        c["chunk"] for c in choices if c["policy"] == dict(linear=dict(partitions=2))
++    } == {32, 128, 1}
+     assert {c["window"] for c in choices} == {None, 2, 4}
+     assert all(c["model_options"] == p["model_options"] for c in choices)
+     assert all(c["trials"] == 1 for c in choices)
+@@ -125,6 +128,48 @@ def test_automatic_recipes_preserve_model_precision_and_use_operation_policies()
+     assert refine(deeper, 8) is None
+ 
+ 
++def test_probe_discovers_policies_from_later_chunk_geometries(monkeypatch):
++    from dataclasses import dataclass
++    from types import SimpleNamespace
++    import akas.optimization.planning as planning
++    import akas.compilation.policy as policy
++    from akas.graph import Graph
++
++    @dataclass
++    class Config:
++        width: int = 64
++
++    def compose(checkpoint, **options):
++        graph = Graph(contract="reference")
++        graph.chunk = options["chunk"]
++        return graph
++
++    model = SimpleNamespace(
++        checkpoint_type=lambda path: SimpleNamespace(config=Config()),
++        compose=compose,
++        optimization_chunks=(32, 4096),
++        optimization_space=(),
++    )
++    monkeypatch.setattr(planning, "symbol", lambda name: model)
++    monkeypatch.setattr(planning, "hardware", lambda *args: dict(arch="sm_89"))
++    monkeypatch.setattr(planning, "software", lambda: {})
++    monkeypatch.setattr(
++        policy,
++        "candidates",
++        lambda graph, **kwargs: (
++            [{}, dict(attention=dict(decoded_kv=True))] if graph.chunk == 4096 else [{}]
++        ),
++    )
++    settings = {
++        **context(),
++        "mode": "ar",
++        "workload": {**context()["workload"], "prefix_tokens": [32, 8192]},
++    }
++    result = planning.probe(settings, "cuda")
++    assert result["status"] == "ok"
++    assert dict(attention=dict(decoded_kv=True)) in result["policies"]
++
++
+ def test_partial_beam_progress_resumes_and_requalifies_winner(tmp_path):
+     variant = Implementation(
+         "add",

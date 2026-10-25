@@ -1,0 +1,31 @@
+sssss..s.s....sssssss.sssssss....s...........................................................ss..........................................ssss.... [  9%]
+ssssssssssssssssssss..............ssssss................................................................sssss.............ss..................... [ 18%]
+............ssssssssssssssssssssssssssssssssssssssssssssssss.......................................................ssssss........................ [ 28%]
+...............ssssssssssssssssssssssssssssssssssssssssssssssssssss.............sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss [ 37%]
+ssss..ssss............ssssssssssssssssssssssssssssssss..................................ssssssssssssssssssss....ssssss......sssssssssssssssssssss [ 47%]
+ssssssssssssssssssssssssssssssss..sssssssssssssss.ssssss.ss.s........ssssss..s..ss..ssssssssssss...............................................ss [ 56%]
+................ss..................ssssssssssssssssss........................................................................................... [ 65%]
+..........ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss........................ssssssssssssssssssssss......... [ 75%]
+ssssssssssssssssssssssssssssssssss.s.ss.ss.ssss..ss.sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss [ 84%]
+sssssssssssssssssss......ssssssssssssssss....ssssssssss.........ss...................................sssssss..ssss.s............................. [ 94%]
+.......ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss                                                       [100%]
+=================================================================== warnings summary ====================================================================
+tests/test_cuda.py:9
+  /home/sagemaker-user/akas/tests/test_cuda.py:9: DeprecationWarning: Import LFM2 from its akas.models family package instead of akas
+    from akas import LFM2
+
+tests/test_compilation_policy.py: 6 warnings
+tests/test_cuda_frontend.py: 12 warnings
+tests/test_dsl.py: 282 warnings
+tests/test_forward.py: 6 warnings
+tests/test_functional_kernels.py: 11 warnings
+tests/test_lfm2_floating.py: 312 warnings
+tests/test_lfm2_reference.py: 28 warnings
+tests/test_native_pipeline_policy.py: 7 warnings
+tests/test_quantization_codecs.py: 167 warnings
+tests/test_qwen_graph.py: 20 warnings
+  /home/sagemaker-user/akas/.venv/lib/python3.12/site-packages/tilelang/language/tir/op.py:404: DeprecationWarning: T.reinterpret(dtype, value) is deprecated, use reinterpret(value, dtype) instead
+    deprecated_warning("T.reinterpret(dtype, value)", "reinterpret(value, dtype)")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+740 passed, 801 skipped, 852 warnings in 148.54s (0:02:28)

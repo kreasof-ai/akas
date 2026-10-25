@@ -1,0 +1,80 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "kernel",
+    "protocol": "ordered-webgpu-pass-profile-v1",
+    "provider": "webgpu",
+    "target": "webgpu-portable-v1",
+    "device": {
+      "name": "NVIDIA L4",
+      "provider": "webgpu"
+    },
+    "qualification": "Independent NumPy first-maximum oracle; cross-tile ties, non-multiple tails, infinities, ignored NaNs, all-invalid sentinel and inactive output preservation. Diagnostic GPU pass times include both new dispatches; no serving claim.",
+    "checks": [
+      {
+        "rows": 1,
+        "columns": 128000,
+        "block": 1024,
+        "cases": [
+          "normal",
+          "tie",
+          "nan",
+          "negative-infinity",
+          "positive-infinity",
+          "all-nan",
+          "signed-zero",
+          "inactive"
+        ],
+        "exact": true,
+        "baseline_gpu_ms": 0.326048,
+        "candidate_gpu_ms": 0.006688,
+        "baseline_samples_ms": [
+          0.32576,
+          0.326272,
+          0.32624,
+          0.326016,
+          0.326208,
+          0.326368,
+          0.325568,
+          0.326048,
+          0.326048,
+          0.325888,
+          0.326048,
+          0.325824
+        ],
+        "candidate_samples_ms": [
+          0.007296,
+          0.005632,
+          0.006464,
+          0.007392,
+          0.006784,
+          0.00592,
+          0.0072,
+          0.00672,
+          0.005824,
+          0.0066560000000000005,
+          0.007168,
+          0.006496
+        ]
+      },
+      {
+        "rows": 2,
+        "columns": 2051,
+        "block": 512,
+        "cases": [
+          "normal",
+          "tie",
+          "nan",
+          "negative-infinity",
+          "positive-infinity",
+          "all-nan",
+          "signed-zero",
+          "inactive"
+        ],
+        "exact": true
+      }
+    ]
+  },
+  "results": []
+}

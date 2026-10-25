@@ -1,0 +1,610 @@
+[
+  {
+    "name": "conv-in-64-64-64-128-2",
+    "case": "conv-in",
+    "parameters": {
+      "r": 4096,
+      "k": 2048,
+      "o": 6144,
+      "optimized": true,
+      "ggml": true,
+      "type": 2
+    },
+    "schedule": {
+      "block_m": 64,
+      "block_n": 64,
+      "block_k": 64,
+      "threads": 128,
+      "stages": 2
+    }
+  },
+  {
+    "name": "conv-in-128-128-64-256-1",
+    "case": "conv-in",
+    "parameters": {
+      "r": 4096,
+      "k": 2048,
+      "o": 6144,
+      "optimized": true,
+      "ggml": true,
+      "type": 2
+    },
+    "schedule": {
+      "block_m": 128,
+      "block_n": 128,
+      "block_k": 64,
+      "threads": 256,
+      "stages": 1
+    }
+  },
+  {
+    "name": "conv-in-128-128-64-256-2",
+    "case": "conv-in",
+    "parameters": {
+      "r": 4096,
+      "k": 2048,
+      "o": 6144,
+      "optimized": true,
+      "ggml": true,
+      "type": 2
+    },
+    "schedule": {
+      "block_m": 128,
+      "block_n": 128,
+      "block_k": 64,
+      "threads": 256,
+      "stages": 2
+    }
+  },
+  {
+    "name": "conv-in-64-128-128-256-1",
+    "case": "conv-in",
+    "parameters": {
+      "r": 4096,
+      "k": 2048,
+      "o": 6144,
+      "optimized": true,
+      "ggml": true,
+      "type": 2
+    },
+    "schedule": {
+      "block_m": 64,
+      "block_n": 128,
+      "block_k": 128,
+      "threads": 256,
+      "stages": 1
+    }
+  },
+  {
+    "name": "conv-in-64-128-128-256-2",
+    "case": "conv-in",
+    "parameters": {
+      "r": 4096,
+      "k": 2048,
+      "o": 6144,
+      "optimized": true,
+      "ggml": true,
+      "type": 2
+    },
+    "schedule": {
+      "block_m": 64,
+      "block_n": 128,
+      "block_k": 128,
+      "threads": 256,
+      "stages": 2
+    }
+  },
+  {
+    "name": "conv-in-128-64-64-128-2",
+    "case": "conv-in",
+    "parameters": {
+      "r": 4096,
+      "k": 2048,
+      "o": 6144,
+      "optimized": true,
+      "ggml": true,
+      "type": 2
+    },
+    "schedule": {
+      "block_m": 128,
+      "block_n": 64,
+      "block_k": 64,
+      "threads": 128,
+      "stages": 2
+    }
+  },
+  {
+    "name": "conv-in-64-256-32-256-2",
+    "case": "conv-in",
+    "parameters": {
+      "r": 4096,
+      "k": 2048,
+      "o": 6144,
+      "optimized": true,
+      "ggml": true,
+      "type": 2
+    },
+    "schedule": {
+      "block_m": 64,
+      "block_n": 256,
+      "block_k": 32,
+      "threads": 256,
+      "stages": 2
+    }
+  },
+  {
+    "name": "conv-in-128-128-32-256-2",
+    "case": "conv-in",
+    "parameters": {
+      "r": 4096,
+      "k": 2048,
+      "o": 6144,
+      "optimized": true,
+      "ggml": true,
+      "type": 2
+    },
+    "schedule": {
+      "block_m": 128,
+      "block_n": 128,
+      "block_k": 32,
+      "threads": 256,
+      "stages": 2
+    }
+  },
+  {
+    "name": "projection-64-64-64-128-2",
+    "case": "projection",
+    "parameters": {
+      "r": 4096,
+      "k": 2048,
+      "o": 2048,
+      "optimized": true,
+      "ggml": true,
+      "type": 2
+    },
+    "schedule": {
+      "block_m": 64,
+      "block_n": 64,
+      "block_k": 64,
+      "threads": 128,
+      "stages": 2
+    }
+  },
+  {
+    "name": "projection-128-128-64-256-1",
+    "case": "projection",
+    "parameters": {
+      "r": 4096,
+      "k": 2048,
+      "o": 2048,
+      "optimized": true,
+      "ggml": true,
+      "type": 2
+    },
+    "schedule": {
+      "block_m": 128,
+      "block_n": 128,
+      "block_k": 64,
+      "threads": 256,
+      "stages": 1
+    }
+  },
+  {
+    "name": "projection-128-128-64-256-2",
+    "case": "projection",
+    "parameters": {
+      "r": 4096,
+      "k": 2048,
+      "o": 2048,
+      "optimized": true,
+      "ggml": true,
+      "type": 2
+    },
+    "schedule": {
+      "block_m": 128,
+      "block_n": 128,
+      "block_k": 64,
+      "threads": 256,
+      "stages": 2
+    }
+  },
+  {
+    "name": "projection-64-128-128-256-1",
+    "case": "projection",
+    "parameters": {
+      "r": 4096,
+      "k": 2048,
+      "o": 2048,
+      "optimized": true,
+      "ggml": true,
+      "type": 2
+    },
+    "schedule": {
+      "block_m": 64,
+      "block_n": 128,
+      "block_k": 128,
+      "threads": 256,
+      "stages": 1
+    }
+  },
+  {
+    "name": "projection-64-128-128-256-2",
+    "case": "projection",
+    "parameters": {
+      "r": 4096,
+      "k": 2048,
+      "o": 2048,
+      "optimized": true,
+      "ggml": true,
+      "type": 2
+    },
+    "schedule": {
+      "block_m": 64,
+      "block_n": 128,
+      "block_k": 128,
+      "threads": 256,
+      "stages": 2
+    }
+  },
+  {
+    "name": "projection-128-64-64-128-2",
+    "case": "projection",
+    "parameters": {
+      "r": 4096,
+      "k": 2048,
+      "o": 2048,
+      "optimized": true,
+      "ggml": true,
+      "type": 2
+    },
+    "schedule": {
+      "block_m": 128,
+      "block_n": 64,
+      "block_k": 64,
+      "threads": 128,
+      "stages": 2
+    }
+  },
+  {
+    "name": "projection-64-256-32-256-2",
+    "case": "projection",
+    "parameters": {
+      "r": 4096,
+      "k": 2048,
+      "o": 2048,
+      "optimized": true,
+      "ggml": true,
+      "type": 2
+    },
+    "schedule": {
+      "block_m": 64,
+      "block_n": 256,
+      "block_k": 32,
+      "threads": 256,
+      "stages": 2
+    }
+  },
+  {
+    "name": "projection-128-128-32-256-2",
+    "case": "projection",
+    "parameters": {
+      "r": 4096,
+      "k": 2048,
+      "o": 2048,
+      "optimized": true,
+      "ggml": true,
+      "type": 2
+    },
+    "schedule": {
+      "block_m": 128,
+      "block_n": 128,
+      "block_k": 32,
+      "threads": 256,
+      "stages": 2
+    }
+  },
+  {
+    "name": "dense-down-64-64-64-128-2",
+    "case": "dense-down",
+    "parameters": {
+      "r": 4096,
+      "k": 11776,
+      "o": 2048,
+      "optimized": true,
+      "ggml": true,
+      "type": 2
+    },
+    "schedule": {
+      "block_m": 64,
+      "block_n": 64,
+      "block_k": 64,
+      "threads": 128,
+      "stages": 2
+    }
+  },
+  {
+    "name": "dense-down-128-128-64-256-1",
+    "case": "dense-down",
+    "parameters": {
+      "r": 4096,
+      "k": 11776,
+      "o": 2048,
+      "optimized": true,
+      "ggml": true,
+      "type": 2
+    },
+    "schedule": {
+      "block_m": 128,
+      "block_n": 128,
+      "block_k": 64,
+      "threads": 256,
+      "stages": 1
+    }
+  },
+  {
+    "name": "dense-down-128-128-64-256-2",
+    "case": "dense-down",
+    "parameters": {
+      "r": 4096,
+      "k": 11776,
+      "o": 2048,
+      "optimized": true,
+      "ggml": true,
+      "type": 2
+    },
+    "schedule": {
+      "block_m": 128,
+      "block_n": 128,
+      "block_k": 64,
+      "threads": 256,
+      "stages": 2
+    }
+  },
+  {
+    "name": "dense-down-64-128-128-256-1",
+    "case": "dense-down",
+    "parameters": {
+      "r": 4096,
+      "k": 11776,
+      "o": 2048,
+      "optimized": true,
+      "ggml": true,
+      "type": 2
+    },
+    "schedule": {
+      "block_m": 64,
+      "block_n": 128,
+      "block_k": 128,
+      "threads": 256,
+      "stages": 1
+    }
+  },
+  {
+    "name": "dense-down-64-128-128-256-2",
+    "case": "dense-down",
+    "parameters": {
+      "r": 4096,
+      "k": 11776,
+      "o": 2048,
+      "optimized": true,
+      "ggml": true,
+      "type": 2
+    },
+    "schedule": {
+      "block_m": 64,
+      "block_n": 128,
+      "block_k": 128,
+      "threads": 256,
+      "stages": 2
+    }
+  },
+  {
+    "name": "dense-down-128-64-64-128-2",
+    "case": "dense-down",
+    "parameters": {
+      "r": 4096,
+      "k": 11776,
+      "o": 2048,
+      "optimized": true,
+      "ggml": true,
+      "type": 2
+    },
+    "schedule": {
+      "block_m": 128,
+      "block_n": 64,
+      "block_k": 64,
+      "threads": 128,
+      "stages": 2
+    }
+  },
+  {
+    "name": "dense-down-64-256-32-256-2",
+    "case": "dense-down",
+    "parameters": {
+      "r": 4096,
+      "k": 11776,
+      "o": 2048,
+      "optimized": true,
+      "ggml": true,
+      "type": 2
+    },
+    "schedule": {
+      "block_m": 64,
+      "block_n": 256,
+      "block_k": 32,
+      "threads": 256,
+      "stages": 2
+    }
+  },
+  {
+    "name": "dense-down-128-128-32-256-2",
+    "case": "dense-down",
+    "parameters": {
+      "r": 4096,
+      "k": 11776,
+      "o": 2048,
+      "optimized": true,
+      "ggml": true,
+      "type": 2
+    },
+    "schedule": {
+      "block_m": 128,
+      "block_n": 128,
+      "block_k": 32,
+      "threads": 256,
+      "stages": 2
+    }
+  },
+  {
+    "name": "tails-64-64-64-128-2",
+    "case": "tails",
+    "parameters": {
+      "r": 129,
+      "k": 256,
+      "o": 137,
+      "optimized": true,
+      "ggml": true,
+      "type": 2
+    },
+    "schedule": {
+      "block_m": 64,
+      "block_n": 64,
+      "block_k": 64,
+      "threads": 128,
+      "stages": 2
+    }
+  },
+  {
+    "name": "tails-128-128-64-256-1",
+    "case": "tails",
+    "parameters": {
+      "r": 129,
+      "k": 256,
+      "o": 137,
+      "optimized": true,
+      "ggml": true,
+      "type": 2
+    },
+    "schedule": {
+      "block_m": 128,
+      "block_n": 128,
+      "block_k": 64,
+      "threads": 256,
+      "stages": 1
+    }
+  },
+  {
+    "name": "tails-128-128-64-256-2",
+    "case": "tails",
+    "parameters": {
+      "r": 129,
+      "k": 256,
+      "o": 137,
+      "optimized": true,
+      "ggml": true,
+      "type": 2
+    },
+    "schedule": {
+      "block_m": 128,
+      "block_n": 128,
+      "block_k": 64,
+      "threads": 256,
+      "stages": 2
+    }
+  },
+  {
+    "name": "tails-64-128-128-256-1",
+    "case": "tails",
+    "parameters": {
+      "r": 129,
+      "k": 256,
+      "o": 137,
+      "optimized": true,
+      "ggml": true,
+      "type": 2
+    },
+    "schedule": {
+      "block_m": 64,
+      "block_n": 128,
+      "block_k": 128,
+      "threads": 256,
+      "stages": 1
+    }
+  },
+  {
+    "name": "tails-64-128-128-256-2",
+    "case": "tails",
+    "parameters": {
+      "r": 129,
+      "k": 256,
+      "o": 137,
+      "optimized": true,
+      "ggml": true,
+      "type": 2
+    },
+    "schedule": {
+      "block_m": 64,
+      "block_n": 128,
+      "block_k": 128,
+      "threads": 256,
+      "stages": 2
+    }
+  },
+  {
+    "name": "tails-128-64-64-128-2",
+    "case": "tails",
+    "parameters": {
+      "r": 129,
+      "k": 256,
+      "o": 137,
+      "optimized": true,
+      "ggml": true,
+      "type": 2
+    },
+    "schedule": {
+      "block_m": 128,
+      "block_n": 64,
+      "block_k": 64,
+      "threads": 128,
+      "stages": 2
+    }
+  },
+  {
+    "name": "tails-64-256-32-256-2",
+    "case": "tails",
+    "parameters": {
+      "r": 129,
+      "k": 256,
+      "o": 137,
+      "optimized": true,
+      "ggml": true,
+      "type": 2
+    },
+    "schedule": {
+      "block_m": 64,
+      "block_n": 256,
+      "block_k": 32,
+      "threads": 256,
+      "stages": 2
+    }
+  },
+  {
+    "name": "tails-128-128-32-256-2",
+    "case": "tails",
+    "parameters": {
+      "r": 129,
+      "k": 256,
+      "o": 137,
+      "optimized": true,
+      "ggml": true,
+      "type": 2
+    },
+    "schedule": {
+      "block_m": 128,
+      "block_n": 128,
+      "block_k": 32,
+      "threads": 256,
+      "stages": 2
+    }
+  }
+]
