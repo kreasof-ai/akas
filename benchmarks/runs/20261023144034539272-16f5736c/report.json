@@ -1,0 +1,185 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "kernel",
+    "protocol": "streamed-verifier-lab-v1",
+    "provider": "cuda",
+    "target": "sm_89",
+    "model": "akas.models.lfm2.model:LFM2MoE",
+    "device": {
+      "name": "NVIDIA L4"
+    },
+    "mode": "dspark",
+    "weight_format": "q4_0",
+    "draft_weight_dtype": "q8_0",
+    "kv_dtype": "float16",
+    "draft_kv_dtype": "float16",
+    "shape_timeout_seconds": 120,
+    "checkpoint_sha256": "d1c03f73ecaf61017d70419eec9e5dc0b05d50ae26c23d522829b934fbabf8a5",
+    "command": {
+      "action": "fused-micro",
+      "directory": "/home/sagemaker-user/akas/build/lfm-moe/dspark-fused-short-geometry",
+      "geometries": [
+        "fused-r10-16-32-128-128",
+        "fused-r10-16-64-128-128",
+        "fused-r10-16-64-128-256"
+      ]
+    },
+    "checks": [
+      {
+        "geometry": "baseline-before",
+        "timing": {
+          "gpu_seconds": [
+            0.027054079055786134,
+            0.027825151443481445,
+            0.02773811149597168,
+            0.02775449562072754,
+            0.02775444793701172,
+            0.02772632026672363,
+            0.027741695404052736
+          ],
+          "completed_seconds": [
+            0.027063761499448447,
+            0.027832290001242654,
+            0.027744798000640003,
+            0.02776152749902394,
+            0.027761064000515034,
+            0.02773272249942238,
+            0.027748862499720417
+          ],
+          "median_gpu_seconds": 0.027741695404052736,
+          "median_completed_seconds": 0.027748862499720417,
+          "warmup": 2,
+          "samples": 7,
+          "repeats": 2
+        },
+        "down_outputs_correct": true,
+        "down_outputs_bitwise": true
+      },
+      {
+        "geometry": "fused-r10-16-32-128-128",
+        "timing": {
+          "gpu_seconds": [
+            0.027899391174316408,
+            0.028395519256591797,
+            0.028195327758789062,
+            0.02815078353881836,
+            0.028974592208862306,
+            0.029620223999023438,
+            0.02956800079345703
+          ],
+          "completed_seconds": [
+            0.02790772700063826,
+            0.028402643500157865,
+            0.028201873999933014,
+            0.028157332999398932,
+            0.02898095800082956,
+            0.02962682749966916,
+            0.029575396998552606
+          ],
+          "median_gpu_seconds": 0.028395519256591797,
+          "median_completed_seconds": 0.028402643500157865,
+          "warmup": 2,
+          "samples": 7,
+          "repeats": 2
+        },
+        "down_outputs_correct": true,
+        "down_outputs_bitwise": true
+      },
+      {
+        "geometry": "fused-r10-16-64-128-128",
+        "timing": {
+          "gpu_seconds": [
+            0.0337367057800293,
+            0.033853950500488283,
+            0.03375769424438477,
+            0.03384473419189453,
+            0.03419852828979492,
+            0.03396860885620117,
+            0.03396659088134766
+          ],
+          "completed_seconds": [
+            0.03374549699947238,
+            0.03386086550017353,
+            0.03376380749978125,
+            0.033850939998956164,
+            0.03420489299969631,
+            0.033975008000197704,
+            0.033972887500567595
+          ],
+          "median_gpu_seconds": 0.033853950500488283,
+          "median_completed_seconds": 0.03386086550017353,
+          "warmup": 2,
+          "samples": 7,
+          "repeats": 2
+        },
+        "down_outputs_correct": true,
+        "down_outputs_bitwise": true
+      },
+      {
+        "geometry": "fused-r10-16-64-128-256",
+        "timing": {
+          "gpu_seconds": [
+            0.028087760925292967,
+            0.028280319213867186,
+            0.02831155204772949,
+            0.02964531135559082,
+            0.029810176849365235,
+            0.029476863861083984,
+            0.029122560501098634
+          ],
+          "completed_seconds": [
+            0.02809592099947622,
+            0.028286370999921928,
+            0.02831792250071885,
+            0.02965185399989423,
+            0.029817258000548463,
+            0.02948436550104816,
+            0.02912931599894364
+          ],
+          "median_gpu_seconds": 0.029122560501098634,
+          "median_completed_seconds": 0.02912931599894364,
+          "warmup": 2,
+          "samples": 7,
+          "repeats": 2
+        },
+        "down_outputs_correct": true,
+        "down_outputs_bitwise": true
+      },
+      {
+        "geometry": "baseline-after",
+        "timing": {
+          "gpu_seconds": [
+            0.027509248733520508,
+            0.027944927215576173,
+            0.027915264129638673,
+            0.027964927673339843,
+            0.02815897560119629,
+            0.02910361671447754,
+            0.028793344497680663
+          ],
+          "completed_seconds": [
+            0.027517872498719953,
+            0.02795124849944841,
+            0.02792212199892674,
+            0.027971518500635284,
+            0.028165658499347046,
+            0.029110070499882568,
+            0.028799893500035978
+          ],
+          "median_gpu_seconds": 0.027964927673339843,
+          "median_completed_seconds": 0.027971518500635284,
+          "warmup": 2,
+          "samples": 7,
+          "repeats": 2
+        },
+        "down_outputs_correct": true,
+        "down_outputs_bitwise": true
+      }
+    ],
+    "snapshot_run": "20261023144018430696-851cd392",
+    "qualification": "Full streamed expert gate/up/SwiGLU/down sequences on live routed snapshots. Fused candidate binds its activation directly into the unchanged down projection. All final expert outputs checked against the original verifier. Kernel diagnostic, not decode throughput."
+  },
+  "results": []
+}

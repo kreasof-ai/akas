@@ -1,0 +1,119 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "kernel",
+    "protocol": "streamed-verifier-lab-v1",
+    "provider": "cuda",
+    "target": "sm_89",
+    "model": "akas.models.lfm2.model:LFM2MoE",
+    "device": {
+      "name": "NVIDIA L4"
+    },
+    "mode": "dspark",
+    "weight_format": "q4_0",
+    "draft_weight_dtype": "q8_0",
+    "kv_dtype": "float16",
+    "draft_kv_dtype": "float16",
+    "shape_timeout_seconds": 120,
+    "checkpoint_sha256": "d1c03f73ecaf61017d70419eec9e5dc0b05d50ae26c23d522829b934fbabf8a5",
+    "checks": [
+      {
+        "geometry": "baseline-before",
+        "timing": {
+          "gpu_seconds": [
+            0.027108800888061522,
+            0.027734527587890623,
+            0.027633663177490234,
+            0.027639295578002928,
+            0.027711488723754882,
+            0.027889663696289063,
+            0.02785843276977539
+          ],
+          "completed_seconds": [
+            0.027118888499899185,
+            0.02774199499981478,
+            0.02764074150036322,
+            0.027646032000120613,
+            0.027718793500753236,
+            0.027895938001165632,
+            0.027872782999111223
+          ],
+          "median_gpu_seconds": 0.027711488723754882,
+          "median_completed_seconds": 0.027718793500753236,
+          "warmup": 2,
+          "samples": 7,
+          "repeats": 2
+        },
+        "bitwise": true,
+        "max_absolute_error": 0.0,
+        "full_outputs_correct": true
+      },
+      {
+        "geometry": "10-16-32-128-128-s2",
+        "timing": {
+          "gpu_seconds": [
+            0.030842880249023437,
+            0.03121049690246582,
+            0.031024127960205077,
+            0.030459903717041017,
+            0.032619007110595705,
+            0.03227084732055664,
+            0.03094118309020996
+          ],
+          "completed_seconds": [
+            0.030851834000714007,
+            0.031217682999340468,
+            0.031031508500745986,
+            0.030466884998531896,
+            0.032625671999994665,
+            0.03227847800008021,
+            0.030947997000112082
+          ],
+          "median_gpu_seconds": 0.031024127960205077,
+          "median_completed_seconds": 0.031031508500745986,
+          "warmup": 2,
+          "samples": 7,
+          "repeats": 2
+        },
+        "bitwise": false,
+        "max_absolute_error": 5.435943603515625e-05,
+        "full_outputs_correct": true
+      },
+      {
+        "geometry": "baseline-after",
+        "timing": {
+          "gpu_seconds": [
+            0.027219968795776366,
+            0.027798528671264647,
+            0.02776371192932129,
+            0.02763827133178711,
+            0.028808191299438478,
+            0.02803660774230957,
+            0.027809791564941407
+          ],
+          "completed_seconds": [
+            0.027228912000282435,
+            0.027805220499431016,
+            0.027770680000685388,
+            0.027645366499200463,
+            0.028814830498959054,
+            0.028043446500305436,
+            0.027816446001452277
+          ],
+          "median_gpu_seconds": 0.027798528671264647,
+          "median_completed_seconds": 0.027805220499431016,
+          "warmup": 2,
+          "samples": 7,
+          "repeats": 2
+        },
+        "bitwise": true,
+        "max_absolute_error": 0.0,
+        "full_outputs_correct": true
+      }
+    ],
+    "snapshot_run": "20261023142449327180-56203be0",
+    "qualification": "All expert projections replay in one captured stream over actual routed inputs and distinct resident model weight banks. Each full output is checked against the original snapshot. Diagnostic kernel timing, not complete decode throughput."
+  },
+  "results": []
+}

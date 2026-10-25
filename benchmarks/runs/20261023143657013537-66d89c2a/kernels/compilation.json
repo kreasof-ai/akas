@@ -1,0 +1,142 @@
+[
+  {
+    "name": "fused-r10-16-32-128-128",
+    "parameters": {
+      "r": 10,
+      "top": 4,
+      "experts": 64,
+      "o": 1536,
+      "k": 2048,
+      "input_dtype": "float32",
+      "round_inputs": true,
+      "tile_map": true,
+      "routed_input": false,
+      "weight_parts": [
+        {
+          "rows": 98304,
+          "format": "ggml",
+          "options": {
+            "encoding": 2
+          }
+        }
+      ],
+      "block_m": 16,
+      "columns": 32,
+      "block_k": 128,
+      "threads": 128,
+      "output_dtype": "float32"
+    }
+  },
+  {
+    "name": "fused-r10-16-64-128-128",
+    "parameters": {
+      "r": 10,
+      "top": 4,
+      "experts": 64,
+      "o": 1536,
+      "k": 2048,
+      "input_dtype": "float32",
+      "round_inputs": true,
+      "tile_map": true,
+      "routed_input": false,
+      "weight_parts": [
+        {
+          "rows": 98304,
+          "format": "ggml",
+          "options": {
+            "encoding": 2
+          }
+        }
+      ],
+      "block_m": 16,
+      "columns": 64,
+      "block_k": 128,
+      "threads": 128,
+      "output_dtype": "float32"
+    }
+  },
+  {
+    "name": "fused-r10-16-64-64-128",
+    "parameters": {
+      "r": 10,
+      "top": 4,
+      "experts": 64,
+      "o": 1536,
+      "k": 2048,
+      "input_dtype": "float32",
+      "round_inputs": true,
+      "tile_map": true,
+      "routed_input": false,
+      "weight_parts": [
+        {
+          "rows": 98304,
+          "format": "ggml",
+          "options": {
+            "encoding": 2
+          }
+        }
+      ],
+      "block_m": 16,
+      "columns": 64,
+      "block_k": 64,
+      "threads": 128,
+      "output_dtype": "float32"
+    }
+  },
+  {
+    "name": "fused-r10-16-128-64-128",
+    "parameters": {
+      "r": 10,
+      "top": 4,
+      "experts": 64,
+      "o": 1536,
+      "k": 2048,
+      "input_dtype": "float32",
+      "round_inputs": true,
+      "tile_map": true,
+      "routed_input": false,
+      "weight_parts": [
+        {
+          "rows": 98304,
+          "format": "ggml",
+          "options": {
+            "encoding": 2
+          }
+        }
+      ],
+      "block_m": 16,
+      "columns": 128,
+      "block_k": 64,
+      "threads": 128,
+      "output_dtype": "float32"
+    }
+  },
+  {
+    "name": "fused-r10-16-64-128-256",
+    "parameters": {
+      "r": 10,
+      "top": 4,
+      "experts": 64,
+      "o": 1536,
+      "k": 2048,
+      "input_dtype": "float32",
+      "round_inputs": true,
+      "tile_map": true,
+      "routed_input": false,
+      "weight_parts": [
+        {
+          "rows": 98304,
+          "format": "ggml",
+          "options": {
+            "encoding": 2
+          }
+        }
+      ],
+      "block_m": 16,
+      "columns": 64,
+      "block_k": 128,
+      "threads": 256,
+      "output_dtype": "float32"
+    }
+  }
+]
