@@ -110,7 +110,7 @@ with one request generating 128 total output tokens. Both runtimes use the same
 official Q4_K_M checkpoint, synthetic prompt IDs and FP16 KV. Rates are medians of
 three retained repetitions after one warmup per prefix.
 
-![Spark X2.6 Q4_K_M throughput, observed sample ranges and 2× llama.cpp prefill target.](https://raw.githubusercontent.com/kreasof-ai/akas/566e756f90540e01b03628558e33444c94c18a40/benchmarks/runs/20261026103015172978-b083ceb8/figures/throughput.svg)
+![Spark X2.6 Q4_K_M prefill and decode throughput with observed sample ranges.](https://raw.githubusercontent.com/kreasof-ai/akas/2dc8cef265ae84929bb4e997b3ff8b3ddea97411/benchmarks/runs/20261026104029360039-8c2615b5/figures/throughput.svg)
 
 <details>
 <summary>Measurements (tokens per second) and estimated prefill MFU</summary>
