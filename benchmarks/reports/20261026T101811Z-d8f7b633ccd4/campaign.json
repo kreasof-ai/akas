@@ -1,9 +1,57 @@
 {
-  "schema": "akas.benchmark-run.v1",
-  "id": "20261026113343275318-cb66f95b",
-  "started_at": "2026-10-26T11:33:43.275318Z",
-  "completed_at": "2026-10-26T11:33:43.880354Z",
-  "status": "passed",
+  "schema": "akas.matrix-campaign.v1",
+  "identity": "d8f7b633ccd449937fd2e5fb413956340afe23cf3abcc725cf59e3f587c8cbf4",
+  "specification": {
+    "schema": "akas.matrix-campaign.v1",
+    "models": [
+      "spark-x2.6-4b"
+    ],
+    "formats": [
+      "q4_k_m"
+    ],
+    "backends": [
+      "cuda"
+    ],
+    "caches": [
+      "float16"
+    ],
+    "workload": {
+      "batches": [
+        1
+      ],
+      "prefix_tokens": [
+        32,
+        512,
+        2048,
+        8192,
+        16384,
+        32768,
+        65536,
+        130944
+      ],
+      "output_tokens": 128
+    },
+    "baselines": [
+      {
+        "runtime": "llama",
+        "provider": "cuda",
+        "weight_format": "q4_k_m",
+        "mode": "ar"
+      }
+    ]
+  },
+  "models": {
+    "spark-x2.6-4b": {
+      "id": "spark-x2.6-4b",
+      "model": "XHToken/Spark-X2.6-4B",
+      "modes": [
+        "ar"
+      ]
+    }
+  },
+  "created_at": "2026-10-26T10:18:11.969664Z",
+  "updated_at": "2026-10-26T11:33:41.508605Z",
+  "status": "completed",
   "source": {
     "revision": "1d66b718581b893b57f72552b4d17b3f50e3879c",
     "dirty": true,
@@ -482,212 +530,32 @@
       "tools/vulkan_tune.py": "1cb88f27de4078b5c84da62e9d5089f00d0e1cabeae1c1208477772037f04c19",
       "uv.lock": "76299f37c065f69bf8a280cf080dd9fef038773a215404a8822c2d3d7ddf6c60"
     },
-    "captured_at": "2026-10-26T11:33:43.275318Z",
+    "captured_at": "2026-10-26T11:16:37.611638Z",
     "changed_during_run": false
   },
-  "metadata": {
-    "runtime": "akas",
-    "purpose": "benchmark-figure",
-    "model": "XHToken/Spark-X2.6-4B",
-    "mode": "ar",
-    "weight_format": "q4_k_m",
-    "provider": "cuda",
-    "target": "sm_89",
-    "kv_dtype": "float16",
-    "source_runs": [
-      "20261026111637611638-9ff71082",
-      "20261026101811969664-715fa9e0"
-    ],
-    "report_id": "20261026T101811Z-d8f7b633ccd4",
-    "report_sha256": "430d05fb96143df5ace02b10302fd4cc032ed22cc7241414ebffee093ad1bb50",
-    "persistent_dequantized_weight_bytes": 0,
-    "baseline_reused": true,
-    "scope": "Packed-only quantized weights: throughput, useful MFU and GPU memory telemetry"
-  },
-  "change": {
-    "kind": "verification",
-    "description": "Retain Spark packed-weight throughput and memory assessment",
-    "parent_run": null
-  },
-  "dependencies": {
-    "fsspec": "2026.9.0",
-    "frozenlist": "1.8.0",
-    "MarkupSafe": "3.0.4",
-    "propcache": "0.5.4",
-    "pytest": "9.1.1",
-    "apache-tvm-ffi": "0.1.12",
-    "contourpy": "1.4.0",
-    "pluggy": "1.6.0",
-    "ml_dtypes": "0.6.0",
-    "multidict": "7.1.0",
-    "cloudpickle": "3.1.2",
-    "mpmath": "1.3.0",
-    "cycler": "0.12.1",
-    "regex": "2026.9.29",
-    "six": "1.17.0",
-    "fonttools": "4.66.1",
-    "iniconfig": "2.3.1",
-    "setuptools": "84.0.0",
-    "aiohappyeyeballs": "2.7.1",
-    "torch_c_dlpack_ext": "0.1.5",
-    "cuda-pathfinder": "1.8.3",
-    "nvidia-cufile": "1.15.1.6",
-    "cuda-toolkit": "13.0.3.0",
-    "kiwisolver": "1.5.1",
-    "sympy": "1.14.0",
-    "aiosignal": "1.4.0",
-    "aiohttp": "3.14.5",
-    "tqdm": "4.70.1",
-    "pillow": "12.3.0",
-    "pyparsing": "3.3.3",
-    "Jinja2": "3.1.6",
-    "cuda-bindings": "13.4.3",
-    "networkx": "3.7",
-    "filelock": "4.1.0",
-    "yarl": "1.25.1",
-    "psutil": "7.2.2",
-    "nvidia-cuda-runtime": "13.0.96",
-    "nvidia-nvtx": "13.0.85",
-    "matplotlib": "3.11.2",
-    "python-dateutil": "2.9.0.post0",
-    "nvidia-cuda-cupti": "13.0.85",
-    "Pygments": "2.21.0",
-    "idna": "3.20",
-    "numpy": "2.5.3",
-    "z3-solver": "4.15.4.0",
-    "nvidia-nvjitlink": "13.4.92",
-    "tilelang": "0.1.14",
-    "nvidia-curand": "10.4.0.35",
-    "nvidia-nvshmem-cu13": "3.4.5",
-    "nvidia-cusparselt-cu13": "0.8.1",
-    "nvidia-cuda-nvrtc": "13.0.88",
-    "nvidia-cusparse": "12.6.3.3",
-    "nvidia-cusolver": "12.0.4.66",
-    "nvidia-nccl-cu13": "2.30.7",
-    "typing_extensions": "4.16.0",
-    "packaging": "26.3",
-    "attrs": "26.1.0",
-    "nvidia-cufft": "12.0.0.61",
-    "nvidia-cublas": "13.1.1.3",
-    "nvidia-cudnn-cu13": "9.24.0.43",
-    "triton": "3.8.0",
-    "torch": "2.14.1",
-    "ruff": "0.17.0",
-    "akas": "0.1.0",
-    "pycparser": "3.11",
-    "cffi": "2.1.1",
-    "wgpu": "0.29.0",
-    "rendercanvas": "2.7.2",
-    "truststore": "0.10.5",
-    "tokenizers": "0.23.3",
-    "httpcore2": "2.13.1",
-    "click": "8.5.0",
-    "h11": "0.16.0",
-    "PyYAML": "6.0.3",
-    "anyio": "4.15.1",
-    "httpx2": "2.13.1",
-    "hf-xet": "1.7.0",
-    "huggingface_hub": "2.2.0",
-    "tensor-workspace": "0.1.0"
-  },
-  "environment": {
-    "platform": "Linux-6.12.110-135.202.amzn2023.x86_64-x86_64-with-glibc2.39",
-    "python": "3.12.15",
-    "cpu_count": 4,
-    "packages": {
-      "tensor-workspace": {
-        "version": "0.1.0",
-        "record_sha256": "111abcaad4c3c10193169caa8345a28a884f47cea9293b4d24f326125a1e679a",
-        "vcs": {
-          "vcs": "git",
-          "commit_id": "541d11ac9d93de92915082d09b68d7503f1c9741",
-          "requested_revision": "541d11ac9d93de92915082d09b68d7503f1c9741"
+  "entries": [
+    {
+      "id": "spark-x2.6-4b-q4_k_m-cuda-float16-ar",
+      "status": "passed",
+      "context": {
+        "workload": {
+          "batches": [
+            1
+          ],
+          "prefix_tokens": [
+            32,
+            512,
+            2048,
+            8192,
+            16384,
+            32768,
+            65536,
+            130944
+          ],
+          "output_tokens": 128
         }
-      },
-      "wgpu": {
-        "version": "0.29.0",
-        "record_sha256": "9cca5f87cf1bfd7fa7f63038f73d445c59a6d8647763a3ad0ab24d69078ca8df",
-        "vcs": null
-      },
-      "tilelang": {
-        "version": "0.1.14",
-        "record_sha256": "696f0e32bc84cfc534f617251546014cdcfd75fbb6e39277a9cf6ac276a581b2",
-        "vcs": null
-      },
-      "apache-tvm-ffi": {
-        "version": "0.1.12",
-        "record_sha256": "5ef068a499ffc5d9c6ba469b25fbc46ed98bae64c95be12af608a9718e318008",
-        "vcs": null
-      },
-      "numpy": {
-        "version": "2.5.3",
-        "record_sha256": "ee3b4a8e07a3ba77b1414699e9afa99fd9c5ea8aafd827841055cc2f6c165e40",
-        "vcs": null
       }
-    },
-    "nvidia_smi": "index, uuid, name, driver_version, memory.total [MiB], power.limit [W], clocks.max.sm [MHz], clocks.max.memory [MHz]\n0, GPU-099ae6bf-5418-1167-069c-1891feaeb255, NVIDIA L4, 595.91.07, 23034 MiB, 72.00 W, 2040 MHz, 6251 MHz"
-  },
-  "workload": {
-    "id": "custom",
-    "shapes": []
-  },
-  "results": [],
-  "search": [],
-  "artifacts": [
-    {
-      "path": "source.tar.gz",
-      "sha256": "4ff95450f54d88df288bf9df0c054b41f5577d0a1fa41687ce994487cba4b40e",
-      "bytes": 830950
-    },
-    {
-      "path": "figures/throughput.svg",
-      "sha256": "fb1f8c19e746f3f720670fcfecaf354d833c742551d66f63618ffb4ca41c163c",
-      "bytes": 92794
-    },
-    {
-      "path": "figures/throughput.png",
-      "sha256": "35e54404a8f2189108f43a0878aa8983456b9eea32331ca7a601ab3cd6a3fef8",
-      "bytes": 126882
-    },
-    {
-      "path": "figures/plot.py",
-      "sha256": "e4f8bfe73e69894c3bb8c63386834f269157b6a00f107168340c09b0dcfe1a43",
-      "bytes": 1937
-    },
-    {
-      "path": "analysis/mfu.json",
-      "sha256": "2e3330b95bbcd1c24b85a7b6de9c4afd19cf6623322f537208ef6f9b006ab68b",
-      "bytes": 4202
-    },
-    {
-      "path": "analysis/assessment.json",
-      "sha256": "41f71e34f7059dcbc77534cc68e8574c2fc494d99468c9377dfaaad3b4a9fdb4",
-      "bytes": 3284
-    },
-    {
-      "path": "analysis/README.md",
-      "sha256": "e46cc2b3cd09db063df3f29b7ba58646e85dba37a966cfec29fb42cddc62bff8",
-      "bytes": 4084
-    },
-    {
-      "path": "analysis/finalize.py",
-      "sha256": "756db0da46b6b5aa533bb15c7146d1e910d28d2fcbb162782d96a32a9bfe1881",
-      "bytes": 12240
-    },
-    {
-      "path": "environment/gpu-timeseries.csv",
-      "sha256": "fbc818d2cad26925c255e947633234a016451d6ae4d2a457cc4fb16eff32dde7",
-      "bytes": 17120
-    },
-    {
-      "path": "analysis/spark_mfu.py",
-      "sha256": "c86e731171178669eb710dde02f236ce78a60bfae276f04a29ac589bf036f5ac",
-      "bytes": 3194
-    },
-    {
-      "path": "report.json",
-      "sha256": "8edc0de821cb24f071a402355f8b37605800ae07d65d25f6350c33351ce8bd83",
-      "bytes": 706
     }
-  ]
+  ],
+  "spent_seconds": 1665.682536
 }
