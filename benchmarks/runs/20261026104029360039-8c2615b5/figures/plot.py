@@ -1,4 +1,4 @@
-"""Render matched throughput with observed sample ranges and the requested prefill target."""
+"""Render matched throughput with observed sample ranges."""
 import argparse,json
 from pathlib import Path
 import matplotlib
@@ -11,7 +11,6 @@ for ax,metric,sample_key,title in zip(axes,['prefill_tok_s','decode_tok_s'],['pr
   rows=sorted(profile['measurements'],key=lambda x:x['prefix']);x=[r['prefix'] for r in rows];y=[r[metric] for r in rows]
   low=[r[metric]-min(s[sample_key] for s in r['samples']) for r in rows];high=[max(s[sample_key] for s in r['samples'])-r[metric] for r in rows]
   ax.errorbar(x,y,yerr=[low,high],label='AKAS' if profile['kind']=='akas' else 'llama.cpp',color=color,marker=marker,linewidth=2,capsize=3)
-  if metric=='prefill_tok_s' and profile['kind']=='baseline':ax.plot(x,[2*v for v in y],label='2× llama.cpp target',color='#64748b',linestyle='--',linewidth=1.3)
  ax.set_title(title,loc='left',fontweight='bold');ax.set_xscale('log',base=2);ax.set_ylim(bottom=0)
  ax.set_xticks([32,512,2048,8192,32768,130944],['32','512','2k','8k','32k','130,944']);ax.set_xlabel('Prefix tokens');ax.set_ylabel('Tokens / second');ax.grid(axis='y',alpha=.2);ax.spines[['top','right']].set_visible(False)
 axes[0].legend(frameon=False,fontsize=8)

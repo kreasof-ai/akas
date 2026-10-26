@@ -1,12 +1,12 @@
 {
   "schema": "akas.benchmark-run.v1",
-  "id": "20261026103015172978-b083ceb8",
-  "started_at": "2026-10-26T10:30:15.172978Z",
-  "completed_at": "2026-10-26T10:30:15.782896Z",
+  "id": "20261026104029360039-8c2615b5",
+  "started_at": "2026-10-26T10:40:29.360039Z",
+  "completed_at": "2026-10-26T10:40:29.969139Z",
   "status": "passed",
   "source": {
-    "revision": "4833136a2ccc74c50f1dd1d999dfbcc00c78ca28",
-    "dirty": true,
+    "revision": "8b3ce6d3e54b35752fe03e46fa153b63a2e6528c",
+    "dirty": false,
     "tree_sha256": "0166705d4a9abc6f0b402c76aa1112da5ead5dcdca2683007ddf8821ffb6e675",
     "files": {
       "MANIFEST.in": "8afdb8a7eb227704fa0b2cb64afa1ca9866eff4ba997350d7f9512760c47198d",
@@ -481,7 +481,7 @@
       "tools/vulkan_tune.py": "1cb88f27de4078b5c84da62e9d5089f00d0e1cabeae1c1208477772037f04c19",
       "uv.lock": "76299f37c065f69bf8a280cf080dd9fef038773a215404a8822c2d3d7ddf6c60"
     },
-    "captured_at": "2026-10-26T10:30:15.172978Z",
+    "captured_at": "2026-10-26T10:40:29.360039Z",
     "changed_during_run": false
   },
   "metadata": {
@@ -499,11 +499,12 @@
     ],
     "report_id": "20261026T100758Z-6d809fbde297",
     "report_sha256": "9ea7edfa8276b24b7de502fe45b9f0dd0783350b448dc5bcae16df987c2a460e",
-    "scope": "Matched optimized Spark throughput, observed sample ranges, requested targets and useful prefill MFU estimate"
+    "supersedes_figure_run_id": "20261026103015172978-b083ceb8",
+    "scope": "Render existing sealed throughput samples without the 2\u00d7 target series"
   },
   "change": {
     "kind": "verification",
-    "description": "Retain optimized Spark throughput plot, target assessment and MFU calculation",
+    "description": "Remove target line from Spark README throughput plot",
     "parent_run": null
   },
   "dependencies": {
@@ -633,73 +634,28 @@
   "artifacts": [
     {
       "path": "source.tar.gz",
-      "sha256": "ac3599b3d5053deaa497492659d7910520b5327a0f1c6c727c9d9455ab29dc7c",
-      "bytes": 829947
+      "sha256": "ef00394157477fa8f01ce3ee67c81c36eac332098ef6c7b53d4ef9febc36a6c4",
+      "bytes": 829589
     },
     {
       "path": "figures/throughput.svg",
-      "sha256": "e2fd7b0e5db2ddaa5570a8d0a559d36387a28ca0e571d49f61ea5872ed548a02",
-      "bytes": 94992
+      "sha256": "303d1d8d9d7e9ba90dcc10099b906470b8e59777f8fe269032ded854be7cf0be",
+      "bytes": 92774
     },
     {
       "path": "figures/throughput.png",
-      "sha256": "243bca0cdbc720fd1d221f9a2a16da12cbf078de6b607158b9a124edd47664d0",
-      "bytes": 142462
+      "sha256": "93a11110da017212ad0779ea8d3b932f5678b1c3289992caedd53e1c78ccb5e6",
+      "bytes": 132302
     },
     {
       "path": "figures/plot.py",
-      "sha256": "e1878ed969882b420ca6b22a1caf92cf2296a824584d8c5f1d6b18647a51b69d",
-      "bytes": 2133
-    },
-    {
-      "path": "analysis/mfu.json",
-      "sha256": "a5fae07f435bc29157776127234f2a09dfa7db89967f1931a05a9ebb8bfdc1c2",
-      "bytes": 4191
-    },
-    {
-      "path": "analysis/assessment.json",
-      "sha256": "7191176e18b6747745dd82e5aefcf6a764c4bb6d57add516255693984364d9b9",
-      "bytes": 4744
-    },
-    {
-      "path": "analysis/README.md",
-      "sha256": "4effc7b4be60411edf27e06c4181e3fbb0d79e8c5939f59f9f42ef5c2f8d86ac",
-      "bytes": 4982
-    },
-    {
-      "path": "analysis/assessment.py",
-      "sha256": "181daa79d6a0e7ef7cb0bafc495ba4862f31192f7449c464adca2293b8e50671",
-      "bytes": 7956
-    },
-    {
-      "path": "analysis/prior-output-comparison.json",
-      "sha256": "03c7aae75952e98a6bb5fd6b1209f474246fa6cf9e5a7c544578f00a8ce8eb38",
-      "bytes": 1161
-    },
-    {
-      "path": "environment/gpu-timeseries.csv",
-      "sha256": "64b73aebea795d549b3d7985026519d6cd00ed5a0d9c6b00aa766b2846e9ddf2",
-      "bytes": 22384
-    },
-    {
-      "path": "validation/regression.log",
-      "sha256": "94df977be8223255d531465920a64056c10ea8510dd165fd708c54430436e8de",
-      "bytes": 1014
-    },
-    {
-      "path": "analysis/spark_mfu.py",
-      "sha256": "c86e731171178669eb710dde02f236ce78a60bfae276f04a29ac589bf036f5ac",
-      "bytes": 3194
-    },
-    {
-      "path": "analysis/test_spark_mfu.py",
-      "sha256": "985e216ebe1367315ba69f8119f367fc8bd17d0808f55655ec0e4e9282d63c36",
-      "bytes": 1042
+      "sha256": "e4f8bfe73e69894c3bb8c63386834f269157b6a00f107168340c09b0dcfe1a43",
+      "bytes": 1937
     },
     {
       "path": "report.json",
-      "sha256": "081bc0f1e5762dd1d641cd5253c65edce374d41e32f50d4226ebb959fcd6771f",
-      "bytes": 662
+      "sha256": "8f6e2d2df3fd89b616bc08e9a66d7b26ab35eb40ca7eb3c41203aa9f1a9eecbf",
+      "bytes": 693
     }
   ]
 }
