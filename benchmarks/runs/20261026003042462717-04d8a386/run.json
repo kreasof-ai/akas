@@ -1,12 +1,12 @@
 {
   "schema": "akas.benchmark-run.v1",
-  "id": "20261025235504075275-38ecb34b",
-  "started_at": "2026-10-25T23:55:04.075275Z",
-  "completed_at": "2026-10-25T23:55:04.685325Z",
+  "id": "20261026003042462717-04d8a386",
+  "started_at": "2026-10-26T00:30:42.462717Z",
+  "completed_at": "2026-10-26T00:30:43.063131Z",
   "status": "passed",
   "source": {
     "revision": "fcd86f5638297d427ea34a77fb55b10f0a44b40b",
-    "dirty": false,
+    "dirty": true,
     "tree_sha256": "d9683ef225aa0b0cae4cb32f4f962c4c707a9e1661644737c40a88127e7af60f",
     "files": {
       "MANIFEST.in": "8afdb8a7eb227704fa0b2cb64afa1ca9866eff4ba997350d7f9512760c47198d",
@@ -478,42 +478,30 @@
       "tools/vulkan_tune.py": "1cb88f27de4078b5c84da62e9d5089f00d0e1cabeae1c1208477772037f04c19",
       "uv.lock": "76299f37c065f69bf8a280cf080dd9fef038773a215404a8822c2d3d7ddf6c60"
     },
-    "captured_at": "2026-10-25T23:55:04.075275Z",
+    "captured_at": "2026-10-26T00:30:42.462717Z",
     "changed_during_run": false
   },
   "metadata": {
     "runtime": "akas",
-    "purpose": "model-qualification",
+    "purpose": "benchmark-figure",
     "model": "XHToken/Spark-X2.6-4B",
     "mode": "ar",
+    "weight_format": "q4_k_m",
     "provider": "cuda",
     "target": "sm_89",
-    "formats": [
-      "bf16",
-      "fp8",
-      "gguf"
-    ],
     "kv_dtype": "float16",
-    "checks": [
-      {
-        "name": "independent Torch equations, partial rotary, poisoned future cache, wrap, ragged prompts, reordered requests and reuse",
-        "passed": true
-      },
-      {
-        "name": "pretrained tokenizer IDs and default chat match Hugging Face reference",
-        "passed": true
-      },
-      {
-        "name": "real BF16, FP8 and Q4_K_M eight-token generation has finite logits",
-        "passed": true
-      }
+    "source_runs": [
+      "20261025235635419062-730dd488",
+      "20261026001833088587-df5cc49f"
     ],
-    "limits": "BF16/FP8 checkpoints import into FP16 execution; no native dynamic W8A8. The pretrained smoke predates the additional unused-KV masking, separately covered by the poisoned-cache GPU test.",
-    "baseline_regressions": "12 existing failures reproduced on untouched c31ea59; details retained in baseline-tests.log"
+    "report_id": "20261025T235635Z-d80177ee179d",
+    "report_sha256": "7251c03a38d7eb191a91c6e4510bd47027ef26fe0ce7a9f1d1acadf5adbe535a",
+    "cross_format_chat_ids_equal": true,
+    "scope": "Reproducible plot and supplementary environment evidence for the complete matched context sweep"
   },
   "change": {
     "kind": "verification",
-    "description": "Qualify Spark X2.6 source formats and independent CUDA equations",
+    "description": "Retain Spark X2.6 comparison plot and its generator",
     "parent_run": null
   },
   "dependencies": {
@@ -643,48 +631,43 @@
   "artifacts": [
     {
       "path": "source.tar.gz",
-      "sha256": "c65541a1fef97b81bd52449916b3a6600df03e30e472bb25196a1ba0bdbaf00e",
+      "sha256": "af674ee607d5733cacaaa1e2bd972cd495a4660abfd1c99d06307747920f2c4d",
       "bytes": 822653
     },
     {
-      "path": "validation/smoke.json",
-      "sha256": "2cc1ee14452b21cb76aca18d29c84142711b2f05d6892bd680de2e1d9c3c9528",
-      "bytes": 1896
+      "path": "figures/throughput.svg",
+      "sha256": "5e60b2385b9488d9b8f7a0b7d41e7972dee9cd117e3731366116dc8d766299db",
+      "bytes": 77856
     },
     {
-      "path": "validation/test-spark-final.log",
-      "sha256": "b876b5975b9143619c7b7365d095c0c0db19d873e7d20ec1feb690fc08babdd3",
-      "bytes": 153
+      "path": "figures/throughput.png",
+      "sha256": "605f36c180003201608e9a82fb15177c6002d92496d84f9199df9d7dcf3f21e1",
+      "bytes": 126995
     },
     {
-      "path": "validation/chat-tests.log",
-      "sha256": "d8a236131b2152d27c196867c6e5f4dd4aa736696752a748cf6f15b57f62618f",
-      "bytes": 153
+      "path": "figures/plot.py",
+      "sha256": "6e588e116f07c927c7cf2e62ae01c8ed3e4bbd72ffa6eeb2e51b58bdeafac545",
+      "bytes": 1743
     },
     {
-      "path": "validation/focused-tests-final.log",
-      "sha256": "ca2cdced526737665a520f416e453d85e1f45b4ee812f138ecb2940d2e46683f",
-      "bytes": 861
+      "path": "environment/gpu.csv",
+      "sha256": "149117da19d5118e3b39239a066238faa3c143388dc792f5ff52c30e4b2c8095",
+      "bytes": 73
     },
     {
-      "path": "validation/baseline-tests.log",
-      "sha256": "0b764ce00df4f69ae987e6cf7ff921fa81f04ed7f28277216462e3a38c44b097",
-      "bytes": 29753
+      "path": "environment/native-thermal-snapshot.txt",
+      "sha256": "4c3518fcd57f11d0c5d002cf9a6dff6c82303acd61ddf993df1ddcd6e4dfd17b",
+      "bytes": 1946
     },
     {
-      "path": "validation/package.log",
-      "sha256": "ebad16d1836eb1427311662c3ee1aac22cc1f4ea6e2779f27c9636ed3861ab9f",
-      "bytes": 68283
-    },
-    {
-      "path": "validation/inspect.json",
-      "sha256": "8eacbdfe01e712a22d33e5b933cbb3400777f9650196ec7d60e3679a3f7a093b",
-      "bytes": 2372
+      "path": "validation/chat-formats.json",
+      "sha256": "5c0da245e4704af9f4e609ebed270cfe9393cb536997b010e423939741a82e21",
+      "bytes": 843
     },
     {
       "path": "report.json",
-      "sha256": "83083674330e21a8716fbcd414210ffc5ea3a7db6b08239c078cdc5259898069",
-      "bytes": 1113
+      "sha256": "8ce90133d74e121ce8b28b5c02637aa649d82c8ffbe4993c8c3f7e238143f53d",
+      "bytes": 689
     }
   ]
 }
