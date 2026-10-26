@@ -105,26 +105,28 @@ Replace `REPORT_DIRECTORY` with the verified directory printed by the fetch comm
 
 ## Spark X2.6 on NVIDIA L4
 
-![Spark X2.6 Q4_K_M prefill and decode throughput across prefixes 32 through 130944 on NVIDIA L4.](https://raw.githubusercontent.com/kreasof-ai/akas/35b49a08c5469d79e54e1684983de49200ed0d69/benchmarks/runs/20261026003042462717-04d8a386/figures/throughput.svg)
+![Spark X2.6 Q4_K_M throughput, observed sample ranges and 2× llama.cpp prefill target.](https://raw.githubusercontent.com/kreasof-ai/akas/566e756f90540e01b03628558e33444c94c18a40/benchmarks/runs/20261026103015172978-b083ceb8/figures/throughput.svg)
 
-[Spark model support](src/akas/models/spark/README.md) accepts BF16 and FP8 safetensors and packed GGUF. BF16/FP8 imports execute with FP16 resident matrices. The full performance comparison uses only the official Q4_K_M GGUF and FP16 KV.
+[Spark model support](src/akas/models/spark/README.md) accepts BF16 and FP8 safetensors and packed GGUF. BF16/FP8 imports execute with FP16 matrices. This full comparison uses only the official Q4_K_M GGUF and FP16 KV. The optimized configuration enables the optional FP16 prefill weight cache, shared rotary tables and optimized attention, with a 1024-token maximum prefill chunk.
 
-| Prefix tokens | AKAS prefill tok/s | llama.cpp prefill tok/s | AKAS decode tok/s | llama.cpp decode tok/s |
-| ---: | ---: | ---: | ---: | ---: |
-| 32 | 677.6 | 843.6 | 65.3 | 63.8 |
-| 512 | 1,545.8 | 4,235.9 | 63.3 | 65.6 |
-| 2,048 | 1,523.5 | 4,521.5 | 61.6 | 50.7 |
-| 8,192 | 1,448.1 | 4,356.3 | 57.4 | 41.4 |
-| 16,384 | 1,350.6 | 4,035.8 | 51.2 | 55.4 |
-| 32,768 | 1,190.7 | 3,139.8 | 43.1 | 46.9 |
-| 65,536 | 964.8 | 2,139.3 | 32.9 | 37.4 |
-| 130,944 | 714.0 | 1,337.0 | 22.7 | 27.6 |
+Decode medians exceed llama.cpp at 8/8 prefixes; all retained decode samples exceed all corresponding llama.cpp samples at 8/8. The requested 2× llama.cpp prefill target is met at 0/8 prefixes. These observations describe this measured configuration.
 
-[Full report, raw samples, output comparisons and selected schedules](https://github.com/kreasof-ai/akas/blob/ac2323d0ea0527aae1bfaded42ee80947770aefd/benchmarks/reports/20261025T235635Z-d80177ee179d/README.md).
+| Prefix tokens | AKAS prefill tok/s | llama.cpp prefill tok/s | AKAS decode tok/s | llama.cpp decode tok/s | Estimated AKAS prefill MFU |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 32 | 1,075.4 | 844.1 | 71.2 | 63.7 | 6.74% |
+| 512 | 4,606.0 | 4,179.9 | 69.8 | 65.6 | 29.33% |
+| 2,048 | 4,734.2 | 4,542.6 | 68.5 | 50.6 | 30.92% |
+| 8,192 | 4,394.3 | 4,359.9 | 64.9 | 41.3 | 30.42% |
+| 16,384 | 3,990.7 | 4,038.9 | 60.3 | 55.4 | 29.63% |
+| 32,768 | 3,339.7 | 3,136.7 | 52.0 | 46.8 | 28.13% |
+| 65,536 | 2,500.2 | 2,138.9 | 41.7 | 37.2 | 26.06% |
+| 130,944 | 1,667.2 | 1,337.8 | 30.2 | 27.5 | 24.02% |
 
-One request produces 128 total output tokens. Values are medians of three retained repetitions after one warmup per prefix, using identical checkpoint bytes and synthetic prompt IDs. AKAS uses synchronized native phases; llama.cpp uses server eval phases. Loading is excluded and phase timing boundaries differ.
+[Full report, raw samples, output comparisons and selected schedules](https://github.com/kreasof-ai/akas/blob/9a0dcb83131433e0955515894c973c3897076e61/benchmarks/reports/20261026T100758Z-6d809fbde297/README.md). [Target assessment, MFU method and GPU telemetry](https://github.com/kreasof-ai/akas/blob/566e756f90540e01b03628558e33444c94c18a40/benchmarks/runs/20261026103015172978-b083ceb8/analysis/README.md).
 
-Payloads are sealed on the artifact branches listed in [the archive catalog](benchmarks/archive.json).
+One request produces 128 total output tokens. Values are medians of three retained repetitions after one warmup per prefix, using identical checkpoint bytes and synthetic prompt IDs. AKAS uses synchronized native phases; llama.cpp uses server eval phases. Loading is excluded and phase timing boundaries differ. MFU estimates useful model math relative to L4’s 121 TFLOP/s dense FP16 peak; it is not a hardware instruction counter.
+
+[The original Spark comparison](https://github.com/kreasof-ai/akas/blob/ac2323d0ea0527aae1bfaded42ee80947770aefd/benchmarks/reports/20261025T235635Z-d80177ee179d/README.md) remains archived. Payloads are sealed on the artifact branches listed in [the archive catalog](benchmarks/archive.json).
 
 ## Getting started
 
