@@ -103,13 +103,17 @@ uv run python -m tools.vulkan_plot REPORT_DIRECTORY/report.json build/throughput
 
 Replace `REPORT_DIRECTORY` with the verified directory printed by the fetch command.
 
-## Spark X2.6 on NVIDIA L4
+**Spark X2.6-4B · Q4_K_M weights · NVIDIA L4 (23,034 MiB) · CUDA**
+
+Results from the [October 26, 2026 comparison](https://github.com/kreasof-ai/akas/blob/9a0dcb83131433e0955515894c973c3897076e61/benchmarks/reports/20261026T100758Z-6d809fbde297/README.md),
+with one request generating 128 total output tokens. Both runtimes use the same
+official Q4_K_M checkpoint, synthetic prompt IDs and FP16 KV. Rates are medians of
+three retained repetitions after one warmup per prefix.
 
 ![Spark X2.6 Q4_K_M throughput, observed sample ranges and 2× llama.cpp prefill target.](https://raw.githubusercontent.com/kreasof-ai/akas/566e756f90540e01b03628558e33444c94c18a40/benchmarks/runs/20261026103015172978-b083ceb8/figures/throughput.svg)
 
-[Spark model support](src/akas/models/spark/README.md) accepts BF16 and FP8 safetensors and packed GGUF. BF16/FP8 imports execute with FP16 matrices. This full comparison uses only the official Q4_K_M GGUF and FP16 KV. The optimized configuration enables the optional FP16 prefill weight cache, shared rotary tables and optimized attention, with a 1024-token maximum prefill chunk.
-
-Decode medians exceed llama.cpp at 8/8 prefixes; all retained decode samples exceed all corresponding llama.cpp samples at 8/8. The requested 2× llama.cpp prefill target is met at 0/8 prefixes. These observations describe this measured configuration.
+<details>
+<summary>Measurements (tokens per second) and estimated prefill MFU</summary>
 
 | Prefix tokens | AKAS prefill tok/s | llama.cpp prefill tok/s | AKAS decode tok/s | llama.cpp decode tok/s | Estimated AKAS prefill MFU |
 | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -122,11 +126,27 @@ Decode medians exceed llama.cpp at 8/8 prefixes; all retained decode samples exc
 | 65,536 | 2,500.2 | 2,138.9 | 41.7 | 37.2 | 26.06% |
 | 130,944 | 1,667.2 | 1,337.8 | 30.2 | 27.5 | 24.02% |
 
-[Full report, raw samples, output comparisons and selected schedules](https://github.com/kreasof-ai/akas/blob/9a0dcb83131433e0955515894c973c3897076e61/benchmarks/reports/20261026T100758Z-6d809fbde297/README.md). [Target assessment, MFU method and GPU telemetry](https://github.com/kreasof-ai/akas/blob/566e756f90540e01b03628558e33444c94c18a40/benchmarks/runs/20261026103015172978-b083ceb8/analysis/README.md).
+</details>
 
-One request produces 128 total output tokens. Values are medians of three retained repetitions after one warmup per prefix, using identical checkpoint bytes and synthetic prompt IDs. AKAS uses synchronized native phases; llama.cpp uses server eval phases. Loading is excluded and phase timing boundaries differ. MFU estimates useful model math relative to L4’s 121 TFLOP/s dense FP16 peak; it is not a hardware instruction counter.
+Decode medians and every retained AKAS decode sample exceed the corresponding
+llama.cpp samples at all eight tested prefixes. Prefill reaches 0.99–1.27×
+llama.cpp; the 2× prefill target was not met. These observations describe this
+measured configuration. AKAS uses synchronized native phases; llama.cpp uses
+server eval phases. Loading is excluded and phase timing boundaries differ.
 
-[The original Spark comparison](https://github.com/kreasof-ai/akas/blob/ac2323d0ea0527aae1bfaded42ee80947770aefd/benchmarks/reports/20261025T235635Z-d80177ee179d/README.md) remains archived. Payloads are sealed on the artifact branches listed in [the archive catalog](benchmarks/archive.json).
+The optimized configuration enables an optional FP16 prefill weight cache
+(about 7.55 GB extra), shared rotary tables and optimized attention, with a
+1024-token maximum prefill chunk. [Spark model support and usage](src/akas/models/spark/README.md)
+also cover BF16 and FP8 safetensors imports, which execute with FP16 matrices.
+Estimated MFU counts useful model math relative to L4’s 121 TFLOP/s dense FP16
+peak; it is not a hardware instruction counter. See the
+[target assessment, MFU method and GPU telemetry](https://github.com/kreasof-ai/akas/blob/566e756f90540e01b03628558e33444c94c18a40/benchmarks/runs/20261026103015172978-b083ceb8/analysis/README.md)
+and the [full report](https://github.com/kreasof-ai/akas/blob/9a0dcb83131433e0955515894c973c3897076e61/benchmarks/reports/20261026T100758Z-6d809fbde297/README.md)
+for raw samples, output comparisons and selected schedules.
+
+[The original Spark comparison](https://github.com/kreasof-ai/akas/blob/ac2323d0ea0527aae1bfaded42ee80947770aefd/benchmarks/reports/20261025T235635Z-d80177ee179d/README.md)
+remains archived. Payloads are sealed on the artifact branches listed in
+[the archive catalog](benchmarks/archive.json).
 
 ## Getting started
 
