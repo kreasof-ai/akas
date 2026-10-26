@@ -1,12 +1,60 @@
 {
-  "schema": "akas.benchmark-run.v1",
-  "id": "20261026100708714235-2c269fd4",
-  "started_at": "2026-10-26T10:07:08.714235Z",
-  "completed_at": "2026-10-26T10:07:09.580348Z",
-  "status": "passed",
+  "schema": "akas.matrix-campaign.v1",
+  "identity": "6d809fbde297abe91098c0132d0b5ed73788e4eafb607d97f2dae0bed9ee2e48",
+  "specification": {
+    "schema": "akas.matrix-campaign.v1",
+    "models": [
+      "spark-x2.6-4b"
+    ],
+    "formats": [
+      "q4_k_m"
+    ],
+    "backends": [
+      "cuda"
+    ],
+    "caches": [
+      "float16"
+    ],
+    "workload": {
+      "batches": [
+        1
+      ],
+      "prefix_tokens": [
+        32,
+        512,
+        2048,
+        8192,
+        16384,
+        32768,
+        65536,
+        130944
+      ],
+      "output_tokens": 128
+    },
+    "baselines": [
+      {
+        "runtime": "llama",
+        "provider": "cuda",
+        "weight_format": "q4_k_m",
+        "mode": "ar"
+      }
+    ]
+  },
+  "models": {
+    "spark-x2.6-4b": {
+      "id": "spark-x2.6-4b",
+      "model": "XHToken/Spark-X2.6-4B",
+      "modes": [
+        "ar"
+      ]
+    }
+  },
+  "created_at": "2026-10-26T10:07:58.409087Z",
+  "updated_at": "2026-10-26T10:30:12.841696Z",
+  "status": "completed",
   "source": {
     "revision": "4833136a2ccc74c50f1dd1d999dfbcc00c78ca28",
-    "dirty": false,
+    "dirty": true,
     "tree_sha256": "0166705d4a9abc6f0b402c76aa1112da5ead5dcdca2683007ddf8821ffb6e675",
     "files": {
       "MANIFEST.in": "8afdb8a7eb227704fa0b2cb64afa1ca9866eff4ba997350d7f9512760c47198d",
@@ -481,186 +529,32 @@
       "tools/vulkan_tune.py": "1cb88f27de4078b5c84da62e9d5089f00d0e1cabeae1c1208477772037f04c19",
       "uv.lock": "76299f37c065f69bf8a280cf080dd9fef038773a215404a8822c2d3d7ddf6c60"
     },
-    "captured_at": "2026-10-26T10:07:08.714235Z",
+    "captured_at": "2026-10-26T10:07:58.409087Z",
     "changed_during_run": false
   },
-  "metadata": {
-    "runtime": "akas",
-    "purpose": "model-qualification",
-    "model": "XHToken/Spark-X2.6-4B",
-    "mode": "ar",
-    "weight_format": "q4_k_m",
-    "provider": "cuda",
-    "target": "sm_89",
-    "kv_dtype": "float16",
-    "independent_small_model_reference": true,
-    "command": "AKAS_SPARK_CUDA=1 TENSOR_NVRTC_HOME=build/nvrtc-12.9 OPENBLAS_NUM_THREADS=2 .venv/bin/python -m pytest -q tests/test_spark_performance.py tests/test_spark.py tests/test_spark_mfu.py",
-    "scope": "Independent CUDA operators, high-position partial RoPE with padding, inactive/ring-window GQA, FP16 resident GEMM tails, Q8 decode tail, full small-model equations across wrap/reorder/reuse; pretrained trajectories compared in timing report"
-  },
-  "change": {
-    "kind": "verification",
-    "description": "Qualify Spark resident prefill, table rotary and grouped decode against independent references",
-    "parent_run": null
-  },
-  "dependencies": {
-    "fsspec": "2026.9.0",
-    "frozenlist": "1.8.0",
-    "MarkupSafe": "3.0.4",
-    "propcache": "0.5.4",
-    "pytest": "9.1.1",
-    "apache-tvm-ffi": "0.1.12",
-    "contourpy": "1.4.0",
-    "pluggy": "1.6.0",
-    "ml_dtypes": "0.6.0",
-    "multidict": "7.1.0",
-    "cloudpickle": "3.1.2",
-    "mpmath": "1.3.0",
-    "cycler": "0.12.1",
-    "regex": "2026.9.29",
-    "six": "1.17.0",
-    "fonttools": "4.66.1",
-    "iniconfig": "2.3.1",
-    "setuptools": "84.0.0",
-    "aiohappyeyeballs": "2.7.1",
-    "torch_c_dlpack_ext": "0.1.5",
-    "cuda-pathfinder": "1.8.3",
-    "nvidia-cufile": "1.15.1.6",
-    "cuda-toolkit": "13.0.3.0",
-    "kiwisolver": "1.5.1",
-    "sympy": "1.14.0",
-    "aiosignal": "1.4.0",
-    "aiohttp": "3.14.5",
-    "tqdm": "4.70.1",
-    "pillow": "12.3.0",
-    "pyparsing": "3.3.3",
-    "Jinja2": "3.1.6",
-    "cuda-bindings": "13.4.3",
-    "networkx": "3.7",
-    "filelock": "4.1.0",
-    "yarl": "1.25.1",
-    "psutil": "7.2.2",
-    "nvidia-cuda-runtime": "13.0.96",
-    "nvidia-nvtx": "13.0.85",
-    "matplotlib": "3.11.2",
-    "python-dateutil": "2.9.0.post0",
-    "nvidia-cuda-cupti": "13.0.85",
-    "Pygments": "2.21.0",
-    "idna": "3.20",
-    "numpy": "2.5.3",
-    "z3-solver": "4.15.4.0",
-    "nvidia-nvjitlink": "13.4.92",
-    "tilelang": "0.1.14",
-    "nvidia-curand": "10.4.0.35",
-    "nvidia-nvshmem-cu13": "3.4.5",
-    "nvidia-cusparselt-cu13": "0.8.1",
-    "nvidia-cuda-nvrtc": "13.0.88",
-    "nvidia-cusparse": "12.6.3.3",
-    "nvidia-cusolver": "12.0.4.66",
-    "nvidia-nccl-cu13": "2.30.7",
-    "typing_extensions": "4.16.0",
-    "packaging": "26.3",
-    "attrs": "26.1.0",
-    "nvidia-cufft": "12.0.0.61",
-    "nvidia-cublas": "13.1.1.3",
-    "nvidia-cudnn-cu13": "9.24.0.43",
-    "triton": "3.8.0",
-    "torch": "2.14.1",
-    "ruff": "0.17.0",
-    "akas": "0.1.0",
-    "pycparser": "3.11",
-    "cffi": "2.1.1",
-    "wgpu": "0.29.0",
-    "rendercanvas": "2.7.2",
-    "truststore": "0.10.5",
-    "tokenizers": "0.23.3",
-    "httpcore2": "2.13.1",
-    "click": "8.5.0",
-    "h11": "0.16.0",
-    "PyYAML": "6.0.3",
-    "anyio": "4.15.1",
-    "httpx2": "2.13.1",
-    "hf-xet": "1.7.0",
-    "huggingface_hub": "2.2.0",
-    "tensor-workspace": "0.1.0"
-  },
-  "environment": {
-    "platform": "Linux-6.12.110-135.202.amzn2023.x86_64-x86_64-with-glibc2.39",
-    "python": "3.12.15",
-    "cpu_count": 4,
-    "packages": {
-      "tensor-workspace": {
-        "version": "0.1.0",
-        "record_sha256": "111abcaad4c3c10193169caa8345a28a884f47cea9293b4d24f326125a1e679a",
-        "vcs": {
-          "vcs": "git",
-          "commit_id": "541d11ac9d93de92915082d09b68d7503f1c9741",
-          "requested_revision": "541d11ac9d93de92915082d09b68d7503f1c9741"
+  "entries": [
+    {
+      "id": "spark-x2.6-4b-q4_k_m-cuda-float16-ar",
+      "status": "passed",
+      "context": {
+        "workload": {
+          "batches": [
+            1
+          ],
+          "prefix_tokens": [
+            32,
+            512,
+            2048,
+            8192,
+            16384,
+            32768,
+            65536,
+            130944
+          ],
+          "output_tokens": 128
         }
-      },
-      "wgpu": {
-        "version": "0.29.0",
-        "record_sha256": "9cca5f87cf1bfd7fa7f63038f73d445c59a6d8647763a3ad0ab24d69078ca8df",
-        "vcs": null
-      },
-      "tilelang": {
-        "version": "0.1.14",
-        "record_sha256": "696f0e32bc84cfc534f617251546014cdcfd75fbb6e39277a9cf6ac276a581b2",
-        "vcs": null
-      },
-      "apache-tvm-ffi": {
-        "version": "0.1.12",
-        "record_sha256": "5ef068a499ffc5d9c6ba469b25fbc46ed98bae64c95be12af608a9718e318008",
-        "vcs": null
-      },
-      "numpy": {
-        "version": "2.5.3",
-        "record_sha256": "ee3b4a8e07a3ba77b1414699e9afa99fd9c5ea8aafd827841055cc2f6c165e40",
-        "vcs": null
       }
-    },
-    "nvidia_smi": "index, uuid, name, driver_version, memory.total [MiB], power.limit [W], clocks.max.sm [MHz], clocks.max.memory [MHz]\n0, GPU-099ae6bf-5418-1167-069c-1891feaeb255, NVIDIA L4, 595.91.07, 23034 MiB, 72.00 W, 2040 MHz, 6251 MHz"
-  },
-  "workload": {
-    "id": "custom",
-    "shapes": []
-  },
-  "results": [],
-  "search": [],
-  "artifacts": [
-    {
-      "path": "source.tar.gz",
-      "sha256": "4c988ae56916701a7d4a79c1dc422c7db1bd917dfcd0ecbbad7495c1ce9e4d98",
-      "bytes": 829947
-    },
-    {
-      "path": "validation/pytest.log",
-      "sha256": "26724953e10c9be12d7a7ffd56d726ffa6b6087d930b2797c0bdc68a8d9cddef",
-      "bytes": 705
-    },
-    {
-      "path": "validation/test_spark.py",
-      "sha256": "940235ab0c26e0d6b513b906a7a9e636ac601e651381f236d2faf44bc4e12801",
-      "bytes": 7608
-    },
-    {
-      "path": "validation/test_spark_performance.py",
-      "sha256": "68b28cf966de4f81a2c49700e57bfdb23a3acf0750dbfefdf1c2dabcb3a43833",
-      "bytes": 3138
-    },
-    {
-      "path": "validation/spark_reference.py",
-      "sha256": "c24fcf76fb5f6bdf69b93295f0db72d6a8b9344e965709c8523dbc394dfef65a",
-      "bytes": 6867
-    },
-    {
-      "path": "validation/test_spark_mfu.py",
-      "sha256": "985e216ebe1367315ba69f8119f367fc8bd17d0808f55655ec0e4e9282d63c36",
-      "bytes": 1042
-    },
-    {
-      "path": "report.json",
-      "sha256": "bebb0a50b7a4802ea3bf513594596c5dbc4c78aa616c0be7ae7993043bfb2b33",
-      "bytes": 799
     }
-  ]
+  ],
+  "spent_seconds": 1287.5096819999999
 }
