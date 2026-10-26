@@ -100,7 +100,8 @@ class Batch:
 class BatchBank:
     """Select compiled phase geometries while sharing weights and request state."""
 
-    def __init__(self, directory, device, records, weights, *, graphs=True, reset=None):
+    def __init__(self, directory, device, records, weights, *, graphs=True, reset=None,
+                 state_arena=False):
         self.directory, self.device = directory, device
         self.owner = None
         self.records, self.weights = tuple(records), dict(weights)
@@ -108,11 +109,38 @@ class BatchBank:
         self.reset_record, self.reset_forward = reset, None
         self.owned_controls = []
         self.owned_states = []
+        self.kernel_cache = {} if getattr(device, "info", {}).get("provider") == "cuda" else None
+        self.scratch_pool = None
+        self.state_arena_enabled, self.state_arena = state_arena, None
+        self.state_sizes = {}
         if not self.records:
             raise ValueError("program needs at least one phase geometry")
         identities = [(row["phase"],row["rows"],row["chunk"]) for row in self.records]
         if len(set(identities)) != len(identities):
             raise ValueError("duplicate compiled phase geometry")
+        if self.kernel_cache is not None:
+            import json
+            from math import prod
+            from akas.artifacts.read import artifact_path
+            from akas.execution.workspace import ScratchPool
+            from tensor.runtime.dtypes import dtype
+
+            capacities = []
+            for row in self.records:
+                manifest = json.loads(artifact_path(directory, row).read_text())
+                buffers = {b["name"]: b for b in manifest["forward"]["buffers"]}
+                for name, spec in buffers.items():
+                    if spec["role"] == "state" and spec.get("alias_of") is None:
+                        size = prod(spec["shape"]) * dtype(spec["dtype"]).itemsize
+                        self.state_sizes[name] = max(size, self.state_sizes.get(name, 0))
+                groups = manifest.get("allocations", [[n] for n,b in buffers.items()
+                                    if b["role"] == "scratch" and b.get("alias_of") is None])
+                sizes = sorted((max(prod(buffers[n]["shape"]) * dtype(buffers[n]["dtype"]).itemsize
+                                    for n in group) for group in groups), reverse=True)
+                capacities.extend([0] * max(0, len(sizes) - len(capacities)))
+                for slot, size in enumerate(sizes):
+                    capacities[slot] = max(capacities[slot], size)
+            self.scratch_pool = ScratchPool(device, capacities)
 
     def select(self, count, chunk, *, phase=None):
         phase = ("decode" if chunk == 1 else "prefill") if phase is None else phase
@@ -155,13 +183,23 @@ class BatchBank:
         supplied.update((name,value) for name,value in self.states.items() if name in graph.buffers)
         controls, forward = [], None
         try:
+            if self.state_arena_enabled:
+                from akas.memory.arena import UploadArena
+                if self.state_arena is None:
+                    self.state_arena = UploadArena(self.device, self.state_sizes.values())
+                for name, spec in graph.buffers.items():
+                    if spec.role == "state" and spec.alias_of is None and name not in supplied:
+                        value = self.state_arena.empty(spec.shape, spec.dtype, zero=True)
+                        self.owned_states.append(value)
+                        self.states[name] = supplied[name] = value
             for name,spec in graph.buffers.items():
                 if spec.role in ("input","output") and spec.alias_of is None:
                     host = np.zeros(spec.shape,dtype="float32" if spec.dtype=="bfloat16" else spec.dtype)
                     value = (self.device.from_numpy(host,dtype=spec.dtype) if spec.dtype=="bfloat16" else self.device.from_numpy(host))
                     controls.append(value)
                     supplied[name] = value
-            forward = Forward(root,self.device,supplied,filename=record["path"],graphs=self.graphs)
+            forward = Forward(root,self.device,supplied,filename=record["path"],graphs=self.graphs,
+                              scratch_pool=self.scratch_pool, kernel_cache=self.kernel_cache)
             frame = Batch(forward,rows=record["rows"],chunk=record["chunk"],
                           inputs=record["inputs"],prediction=record["prediction"],
                           owner=self.owner, phase=record["phase"], features=record.get("features"))
@@ -227,8 +265,16 @@ class BatchBank:
         if self.reset_forward is not None:
             self.reset_forward.close()
             self.reset_forward = None
+        if self.kernel_cache is not None:
+            from akas.execution.workspace import release
+            release(kernels=self.kernel_cache.values())
+            self.kernel_cache.clear()
+        if self.scratch_pool is not None:
+            self.scratch_pool.close()
         for value in reversed((*self.owned_controls,*self.owned_states)):
             value.release()
+        if self.state_arena is not None:
+            self.state_arena.close()
         self.frames.clear()
         self.owned_controls.clear()
         self.owned_states.clear()

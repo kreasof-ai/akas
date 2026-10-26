@@ -1124,3 +1124,107 @@ def rotary_table_validation(kind, p, signature):
     out[:, :, rot // 2 : rot] = left * np.sin(angle) + right * np.cos(angle)
     expected["out"] = out.reshape(r, h * d).astype("float32")
     return ValidationCase(v, expected, rtol=2e-4, atol=2e-5)
+
+
+def rotary_compact_validation(kind, p, signature):
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    v = sample_arguments(signature)
+    r, h, d, rot, cap, stride, blocks = (
+        p[n] for n in ("r", "h", "d", "rotary", "capacity", "stride", "blocks")
+    )
+    v["positions"][:] = np.resize(
+        np.array(
+            [0, 1, stride - 1, stride, stride + 1, cap - 1, cap + 17, -1], dtype="int32"
+        ),
+        r,
+    )
+    frequencies = p["theta"] ** (-2 * np.arange(rot // 2, dtype="float64") / rot)
+    for name, positions in (
+        ("fine", np.arange(stride, dtype="float64")),
+        ("coarse", np.arange(blocks, dtype="float64") * stride),
+    ):
+        angles = positions[:, None] * frequencies[None, :]
+        v[name][:] = np.concatenate((np.cos(angles), np.sin(angles)), axis=1)
+    pos = v["positions"].clip(0, cap - 1)
+    angle = pos[:, None, None] * frequencies[None, None, :]
+    x = v["x"].reshape(r, h, d).astype("float64")
+    out = x.copy()
+    left, right = x[:, :, : rot // 2], x[:, :, rot // 2 : rot]
+    out[:, :, : rot // 2] = left * np.cos(angle) - right * np.sin(angle)
+    out[:, :, rot // 2 : rot] = left * np.sin(angle) + right * np.cos(angle)
+    return ValidationCase(
+        v, {**v, "out": out.reshape(r, h * d).astype("float32")}, rtol=2e-4, atol=2e-5
+    )
+
+
+def qkv_rotary_cache_validation(kind, p, signature):
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    v = sample_arguments(signature)
+    r, h, kh, d, cap, chunk, rot, context, stride, blocks = (
+        p[n]
+        for n in (
+            "r",
+            "h",
+            "kh",
+            "d",
+            "capacity",
+            "chunk",
+            "rotary",
+            "context",
+            "stride",
+            "blocks",
+        )
+    )
+    base = 2 * cap + 7 if p.get("window") else max(0, context - chunk)
+    v["positions"][:] = base + np.arange(r) % chunk
+    v["enabled"][:] = 1
+    v["enabled"][-1] = 0
+    v["x"].reshape(r, -1)[-1] = np.nan
+    frequencies = p["theta"] ** (-2 * np.arange(rot // 2, dtype="float64") / rot)
+    for name, positions in [
+        ("fine", np.arange(stride, dtype="float64")),
+        ("coarse", np.arange(blocks, dtype="float64") * stride),
+    ]:
+        angles = positions[:, None] * frequencies[None, :]
+        v[name][:] = np.concatenate((np.cos(angles), np.sin(angles)), axis=1)
+    for name in ("kc", "vc"):
+        v[name][:] = np.nan
+    expected = {
+        **v,
+        "q": np.zeros_like(v["q"]),
+        "kc": v["kc"].copy(),
+        "vc": v["vc"].copy(),
+    }
+    x = v["x"].reshape(r, h + 2 * kh, d).astype("float64")
+    for row in range(r):
+        if not v["enabled"][row]:
+            continue
+        pos = int(v["positions"][row])
+        angle = np.clip(pos, 0, context - 1) * frequencies
+        rotated = x[row].copy()
+        for head in range(h + kh):
+            left, right = x[row, head, : rot // 2], x[row, head, rot // 2 : rot]
+            rotated[head, : rot // 2] = left * np.cos(angle) - right * np.sin(angle)
+            rotated[head, rot // 2 : rot] = left * np.sin(angle) + right * np.cos(angle)
+        expected["q"][row] = rotated[:h].reshape(-1)
+        expected["kc"][row // chunk, :, pos % cap, :] = rotated[h : h + kh]
+        expected["vc"][row // chunk, :, pos % cap, :] = rotated[h + kh :]
+
+    def cache_equal(actual, reference):
+        untouched = np.isnan(reference)
+        np.testing.assert_array_equal(np.isnan(actual), untouched)
+        np.testing.assert_allclose(
+            actual[~untouched], reference[~untouched], rtol=0.002, atol=0.0002
+        )
+
+    return ValidationCase(
+        v,
+        expected,
+        rtol=0.002,
+        atol=0.0002,
+        comparators={"kc": cache_equal, "vc": cache_equal},
+    )

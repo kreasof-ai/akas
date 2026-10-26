@@ -39,10 +39,11 @@ def test_program_session_continues_device_feedback_and_releases_owned_requests()
     available = iter([3, 1])
     base = SimpleNamespace(nbytes=64)
     view = SimpleNamespace(_base=base, nbytes=64)
+    host = SimpleNamespace(nbytes=80, memory_kind="mapped_host")
     executor = SimpleNamespace(
         capacity=4, context=32, device=object(), config=SimpleNamespace(vocab=73),
         program=dict(model_options=dict(kv_dtype="fp8")),
-        weights={"weight": base},
+        weights={"weight": base, "embedding": host},
         batches=SimpleNamespace(states={}, frames={"decode": SimpleNamespace(buffers={"view": view})}),
         admit=lambda: next(available), release=lambda slot: calls.append(("release", slot)),
         prefill=lambda slots, prompts, **options: [11, 12],

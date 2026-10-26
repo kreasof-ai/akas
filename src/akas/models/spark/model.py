@@ -17,12 +17,20 @@ def compose(
     prefill_chunk=256,
     rotary_cache=False,
     optimized_attention=False,
+    embedding_location="device",
+    fused_ffn=False,
+    weight_arena=False,
+    half_activations=False,
 ):
     from akas.graph import Graph
 
     c = checkpoint.config
     if provider != "cuda" or kv_dtype != "float16":
         raise ValueError("Spark currently requires CUDA with float16 KV")
+    if embedding_location not in ("device", "host") or (
+        embedding_location == "host" and (checkpoint.gguf is None or c.tied)
+    ):
+        raise ValueError("host embeddings require a GGUF with a separate output head")
     if (
         phase not in (None, "decode", "prefill")
         or not 1 <= rows <= max_requests
@@ -34,12 +42,22 @@ def compose(
     b, w = rows * chunk, c.width
     weights = checkpoint.graph_weights(g, provider=provider)
     rotary_tables = {}
+    rotary_stride = min(1024, max_context)
+    rotary_blocks = (max_context + rotary_stride - 1) // rotary_stride
     if rotary_cache:
         from akas.models.spark.weights import rotary_parameters
 
         for i, (theta, rotary) in enumerate(rotary_parameters(c)):
-            rotary_tables[theta, rotary] = g.buffer(
-                f"rope.{i}.table", (max_context, rotary), "float32", role="weight"
+            rotary_tables[theta, rotary] = (
+                g.buffer(
+                    f"rope.{i}.fine", (rotary_stride, rotary), "float32", role="weight"
+                ),
+                g.buffer(
+                    f"rope.{i}.coarse",
+                    (rotary_blocks, rotary),
+                    "float32",
+                    role="weight",
+                ),
             )
     tokens = g.buffer("tokens", (rows,), "int32", role="input")
     pos = g.buffer("positions", (max_requests,), "int32", role="state")
@@ -52,8 +70,10 @@ def compose(
         row_active = g.buffer("row_active", (b,), "int32")
         g("chunk_controls", dict(r=rows, chunk=chunk), pos, active, row_pos, row_active)
 
-    def scratch(name, width, count=b):
-        return g.buffer(name, (count * width,), "float32")
+    narrow = half_activations and checkpoint.gguf is not None and b >= 128
+
+    def scratch(name, width, count=b, dtype="float32"):
+        return g.buffer(name, (count * width,), dtype)
 
     def params(name):
         return (
@@ -90,8 +110,9 @@ def compose(
                     k=k,
                     o=n,
                     optimized=True,
+                    **({"input_dtype": x.dtype} if x.dtype == "float16" else {}),
                     **(
-                        dict(vector_q8=True, short_packed=True)
+                        dict(vector_q8=True, short_packed=True, tiled_packed=True)
                         if optimized_attention
                         else {}
                     ),
@@ -109,8 +130,28 @@ def compose(
         return out
 
     def norm(name, x, weight, count=b):
-        out = scratch(name, w, count)
-        g("rms", dict(r=count, c=w, eps=c.epsilon), x, weights[weight], out)
+        half = narrow and count >= 128
+        out = scratch(name, w, count, dtype="float16" if half else "float32")
+        parameters = dict(
+            r=count,
+            c=w,
+            eps=c.epsilon,
+            **(
+                {"output_dtype": "float16", "algorithm": "fragment", "flat": True}
+                if half
+                else {}
+            ),
+        )
+        if (
+            half
+            and g.calls
+            and g.calls[-1].kind == "add"
+            and g.calls[-1].arguments[-1] == x.name
+        ):
+            addition = g.calls.pop()
+            g("add_rms", parameters, *addition.arguments, weights[weight], out)
+        else:
+            g("rms", parameters, x, weights[weight], out)
         return out
 
     def add(name, x, y):
@@ -137,29 +178,6 @@ def compose(
             w,
             (c.heads + 2 * c.kv_heads) * c.head_dim,
         )
-        q, k, v = (
-            scratch(p + "q", c.heads * c.head_dim),
-            scratch(p + "k", c.kv_heads * c.head_dim),
-            g.buffer(p + "v", (b, c.kv_heads * c.head_dim), "float32"),
-        )
-        g("qkv_split", dict(r=b, h=c.heads, kh=c.kv_heads, d=c.head_dim), qkv, q, k, v)
-        qr, kr = (
-            g.buffer(p + "qr", (b, c.heads * c.head_dim), "float32"),
-            g.buffer(p + "kr", (b, c.kv_heads * c.head_dim), "float32"),
-        )
-        for x, out, h in ((q, qr, c.heads), (k, kr, c.kv_heads)):
-            rp = dict(r=b, h=h, d=c.head_dim, theta=c.theta[i], rotary=c.rotary[i])
-            if rotary_cache:
-                g(
-                    "rotary_table",
-                    dict(rp, capacity=max_context),
-                    x,
-                    out,
-                    row_pos,
-                    rotary_tables[c.theta[i], c.rotary[i]],
-                )
-            else:
-                g("rotary_partial", rp, x, out, row_pos)
         window = c.window if kind == "sliding_attention" else 0
         # The whole chunk writes before attention reads. Retain its earliest query's window.
         capacity = min(max_context, window + prefill_chunk) if window else max_context
@@ -176,7 +194,64 @@ def compose(
             chunk=chunk,
             window=window,
         )
-        g("window_cache", ap, kr, v, kc, vc, row_pos, row_active)
+        if narrow and rotary_cache:
+            qr = g.buffer(p + "qr", (b, c.heads * c.head_dim), "float16")
+            g(
+                "qkv_rotary_cache",
+                dict(
+                    ap,
+                    theta=c.theta[i],
+                    rotary=c.rotary[i],
+                    context=max_context,
+                    stride=rotary_stride,
+                    blocks=rotary_blocks,
+                ),
+                qkv,
+                qr,
+                kc,
+                vc,
+                row_pos,
+                row_active,
+                *rotary_tables[c.theta[i], c.rotary[i]],
+            )
+            ap["query_dtype"] = "float16"
+        else:
+            q, k, v = (
+                scratch(p + "q", c.heads * c.head_dim),
+                scratch(p + "k", c.kv_heads * c.head_dim),
+                g.buffer(p + "v", (b, c.kv_heads * c.head_dim), "float32"),
+            )
+            g(
+                "qkv_split",
+                dict(r=b, h=c.heads, kh=c.kv_heads, d=c.head_dim),
+                qkv,
+                q,
+                k,
+                v,
+            )
+            qr, kr = (
+                g.buffer(p + "qr", (b, c.heads * c.head_dim), "float32"),
+                g.buffer(p + "kr", (b, c.kv_heads * c.head_dim), "float32"),
+            )
+            for x, out, h in ((q, qr, c.heads), (k, kr, c.kv_heads)):
+                rp = dict(r=b, h=h, d=c.head_dim, theta=c.theta[i], rotary=c.rotary[i])
+                if rotary_cache:
+                    g(
+                        "rotary_compact",
+                        dict(
+                            rp,
+                            capacity=max_context,
+                            stride=rotary_stride,
+                            blocks=rotary_blocks,
+                        ),
+                        x,
+                        out,
+                        row_pos,
+                        *rotary_tables[c.theta[i], c.rotary[i]],
+                    )
+                else:
+                    g("rotary_partial", rp, x, out, row_pos)
+            g("window_cache", ap, kr, v, kc, vc, row_pos, row_active)
         splits = (
             (4 if window else 32)
             if optimized_attention and chunk == 1
@@ -201,8 +276,16 @@ def compose(
         )
         g("window_merge", ap, parts, attended, row_active)
         gate = project(p + "attention_gate", normal, p + "attn_gate.weight", w, c.heads)
-        gated = scratch(p + "gated", c.heads * c.head_dim)
-        g("head_gate", dict(r=b, h=c.heads, d=c.head_dim), attended, gate, gated)
+        gated = scratch(
+            p + "gated", c.heads * c.head_dim, dtype="float16" if narrow else "float32"
+        )
+        g(
+            "head_gate_half" if narrow else "head_gate",
+            dict(r=b, h=c.heads, d=c.head_dim),
+            attended,
+            gate,
+            gated,
+        )
         mixed = project(
             p + "attention_output",
             gated,
@@ -212,10 +295,37 @@ def compose(
         )
         hidden = add(p + "residual", hidden, mixed)
         normal = norm(p + "ffn_normalized", hidden, p + "ffn_norm.weight")
-        gate = project(p + "gate", normal, p + "ffn_gate.weight", w, c.ff)
-        up = project(p + "up", normal, p + "ffn_up.weight", w, c.ff)
-        activated = scratch(p + "activated", c.ff)
-        g("geglu", dict(r=b, c=c.ff), gate, up, activated)
+        if (
+            fused_ffn
+            and b >= 128
+            and checkpoint.gguf is not None
+            and w % 128 == 0
+            and params(p + "ffn_gate.weight") == params(p + "ffn_up.weight")
+            and params(p + "ffn_gate.weight").get("type") in (8, 12, 14, 30)
+        ):
+            activated = scratch(
+                p + "activated", c.ff, dtype="float16" if narrow else "float32"
+            )
+            g(
+                "geglu_linear",
+                dict(
+                    r=b,
+                    k=w,
+                    o=c.ff,
+                    input_dtype=normal.dtype,
+                    output_dtype=activated.dtype,
+                    **params(p + "ffn_gate.weight"),
+                ),
+                normal,
+                weights[p + "ffn_gate.weight"],
+                weights[p + "ffn_up.weight"],
+                activated,
+            )
+        else:
+            gate = project(p + "gate", normal, p + "ffn_gate.weight", w, c.ff)
+            up = project(p + "up", normal, p + "ffn_up.weight", w, c.ff)
+            activated = scratch(p + "activated", c.ff)
+            g("geglu", dict(r=b, c=c.ff), gate, up, activated)
         mixed = project(p + "ffn_output", activated, p + "ffn_down.weight", c.ff, w)
         hidden = add(p + "output", hidden, mixed)
     if chunk > 1:

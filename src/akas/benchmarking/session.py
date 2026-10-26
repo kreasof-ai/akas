@@ -33,7 +33,8 @@ class Session:
             while hasattr(buffer, "_base"):
                 buffer = buffer._base
             storage[id(buffer)] = buffer
-        return sum(buffer.nbytes for buffer in storage.values())
+        return sum(buffer.nbytes for buffer in storage.values()
+                   if getattr(buffer, "memory_kind", "device") != "mapped_host")
 
     def _check_timeout(self):
         self.device.synchronize()

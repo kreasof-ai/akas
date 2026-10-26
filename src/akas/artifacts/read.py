@@ -19,21 +19,30 @@ def artifact_path(directory, record):
     return path
 
 
-def load_kernels(device, directory, records, *, requirements=None):
+def load_kernels(device, directory, records, *, requirements=None, cache=None):
     """Share integrity checks and cleanup across all executor/model adapters."""
     if requirements is not None and records.keys() != requirements.keys():
         raise ValueError("incomplete/incompatible kernel coverage")
-    kernels = {}
+    kernels, owned = {}, []
     try:
         for key, row in records.items():
             if requirements is not None:
                 kind, parameters = requirements[key]
                 if row["kind"] != kind or row["parameters"] != parameters:
                     raise ValueError("artifact identity mismatch")
-            kernels[key] = device.load(artifact_path(directory, row))
+            path = artifact_path(directory, row)
+            checksum = row.get("logical", row)["sha256"]
+            if cache is not None and checksum in cache:
+                kernels[key] = cache[checksum]
+            else:
+                kernels[key] = device.load(path)
+                if cache is None:
+                    owned.append(kernels[key])
+                else:
+                    cache[checksum] = kernels[key]
         return kernels
     except BaseException:
-        for kernel in kernels.values():
+        for kernel in owned:
             kernel.release()
         raise
 

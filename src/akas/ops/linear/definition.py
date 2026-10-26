@@ -1309,4 +1309,34 @@ IMPLEMENTATIONS += (
             and p.get("type") in (8, 12, 14, 30)
         ),
     ),
+    Implementation(
+        "linear", "akas.ops.linear.cuda", "reference", factory="tiled_packed_linear",
+        name="linear.cuda.tiled_packed", priority=47, targets=("sm_89",),
+        accepts=lambda p: p.get("tiled_packed",False) and p.get("ggml",False)
+        and p["r"] >= 128 and p["k"] % 512 == 0 and p.get("type") in (8,12,14,30),
+        space=(("tile_m",(256,128)),("tile_n",(128,256)),("tile_k",(128,))),
+    ),
+)
+
+from akas.ops.linear.validation import geglu_projection_validation
+
+OUTPUT_ARGUMENTS["reference"]["geglu_linear"] = OutputABI((-1,), ("out",))
+VALIDATIONS["geglu_linear"] = geglu_projection_validation
+ROW_INDEPENDENT += ("geglu_linear",)
+IMPLEMENTATIONS += (
+    Implementation(
+        "geglu_linear",
+        "akas.ops.linear.cuda",
+        "reference",
+        factory="packed_geglu",
+        name="linear.cuda.packed_geglu",
+        targets=("sm_89",),
+        accepts=lambda p: (
+            p.get("ggml")
+            and p["r"] >= 128
+            and p["k"] % 128 == 0
+            and p.get("type") in (8, 12, 14, 30)
+        ),
+        space=(("tile_m", (256, 128)), ("tile_n", (64, 128))),
+    ),
 )

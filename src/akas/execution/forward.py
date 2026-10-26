@@ -11,9 +11,11 @@ from akas.execution.workspace import Workspace
 
 class Forward:
     def __init__(
-        self, directory, device, buffers, *, filename="forward.json", graphs=False
+        self, directory, device, buffers, *, filename="forward.json", graphs=False,
+        scratch_pool=None, kernel_cache=None,
     ):
         self.device, self.closed = device, False
+        self.owns_kernels = kernel_cache is None
         self.owned, self.kernels, self.graph = [], {}, None
         self.workspace = None
         manifest = json.loads((Path(directory) / filename).read_text())
@@ -22,7 +24,8 @@ class Forward:
         self.definition = Graph.from_metadata(manifest["forward"])
         self.buffers = dict(buffers)
         try:
-            self.workspace = Workspace(self.definition, device, buffers, manifest.get("allocations"))
+            self.workspace = Workspace(self.definition, device, buffers, manifest.get("allocations"),
+                                       scratch_pool=scratch_pool)
             self.buffers = self.workspace.buffers
             self.owned = self.workspace.owned
             self.kernels = load_kernels(
@@ -30,6 +33,7 @@ class Forward:
                 directory,
                 manifest["kernels"],
                 requirements=self.definition.requirements(),
+                cache=kernel_cache,
             )
             self.plan = bind_graph(self.definition, device, self.kernels, self.buffers)
             if graphs or getattr(device, "info", {}).get("provider") == "webgpu":
@@ -55,7 +59,7 @@ class Forward:
         self.closed = True
         release(
             graphs=(self.graph,),
-            kernels=self.kernels.values(),
+            kernels=self.kernels.values() if self.owns_kernels else (),
         )
         if self.workspace is not None:
             self.workspace.close()

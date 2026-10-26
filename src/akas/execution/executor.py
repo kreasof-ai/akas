@@ -54,7 +54,8 @@ class Executor(DeviceOwner):
         weights = checkpoint.upload(device,**program["upload_options"])
         bank = None
         try:
-            bank = BatchBank(directory,device,program["phases"],weights,graphs=graphs,reset=program.get("reset"))
+            bank = BatchBank(directory,device,program["phases"],weights,graphs=graphs,reset=program.get("reset"),
+                             state_arena=program.get("model_options", {}).get("weight_arena", False))
             executor = cls(capacity=program["max_requests"],context=program["max_context"],
                            device=device,batches=bank,reset=bank.reset)
             executor.checkpoint, executor.config = checkpoint, checkpoint.config

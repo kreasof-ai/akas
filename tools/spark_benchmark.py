@@ -53,6 +53,10 @@ def compile_program(args):
                 dict(
                     rotary_cache=True,
                     optimized_attention=True,
+                    embedding_location="host",
+                    weight_arena=True,
+                    fused_ffn=True,
+                    half_activations=True,
                 )
                 if args.optimized
                 else {}
@@ -212,7 +216,14 @@ def akas(args):
                 "checkpoint-native; no persistent dequantized weight copy"
             )
             meta["allocated_weight_bytes"] = sum(
-                v.nbytes for v in model.batches.weights.values()
+                v.nbytes
+                for v in model.batches.weights.values()
+                if getattr(v, "memory_kind", "device") != "mapped_host"
+            )
+            meta["mapped_host_weight_bytes"] = sum(
+                v.nbytes
+                for v in model.batches.weights.values()
+                if getattr(v, "memory_kind", "device") == "mapped_host"
             )
             recorder.program(args.program)
             if not recorder.record["search"]:
@@ -624,7 +635,7 @@ def main():
     parser.add_argument(
         "--optimized",
         action="store_true",
-        help="compile with packed weights, shared RoPE tables and optimized attention",
+        help="compile with tiled packed weights, compact RoPE, host input embedding and optimized attention",
     )
     parser.add_argument("--warmup", type=int, default=1)
     parser.add_argument("--repeats", type=int, default=3)

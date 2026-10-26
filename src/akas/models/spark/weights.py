@@ -224,17 +224,56 @@ class SparkCheckpoint:
         options = {}
         if contexts:
             options["rope_context"] = contexts.pop()
+        fine = {
+            b.shape[0]
+            for n, b in weights.items()
+            if n.startswith("rope.") and n.endswith(".fine")
+        }
+        coarse = {
+            b.shape[0]
+            for n, b in weights.items()
+            if n.startswith("rope.") and n.endswith(".coarse")
+        }
+        if fine or coarse:
+            if len(fine) != 1 or len(coarse) != 1:
+                raise ValueError("compact rotary tables disagree on geometry")
+            options["rope_layout"] = dict(stride=fine.pop(), blocks=coarse.pop())
+        if model_options.get("embedding_location", "device") == "host":
+            options["embedding_location"] = "host"
+        if model_options.get("weight_arena", False):
+            options["weight_arena"] = True
         return options
 
-    def upload(self, device, *, rope_context=0):
+    def upload(
+        self,
+        device,
+        *,
+        rope_context=0,
+        rope_layout=None,
+        embedding_location="device",
+        weight_arena=False,
+    ):
         import numpy as np
 
         if device.info["provider"] != "cuda":
             raise ValueError("Spark currently requires CUDA")
+        if embedding_location not in ("device", "host"):
+            raise ValueError("embedding location must be device or host")
+        if embedding_location == "host" and (self.gguf is None or self.config.tied):
+            raise ValueError(
+                "host embeddings require a GGUF with a separate output head"
+            )
         if self.gguf is not None:
             from akas.checkpoints.upload import upload_packed
 
-            result = upload_packed(device, self.gguf)
+            result = upload_packed(
+                device,
+                self.gguf,
+                placements={"token_embd.weight": "host"}
+                if embedding_location == "host"
+                else None,
+                arena=weight_arena,
+            )
         else:
             result = {}
         try:
@@ -272,6 +311,30 @@ class SparkCheckpoint:
                         (np.cos(angle), np.sin(angle)), axis=1
                     ).astype("float32")
                     result[f"rope.{i}.table"] = device.from_numpy(table)
+            if rope_layout is not None:
+                stride, blocks = rope_layout["stride"], rope_layout["blocks"]
+                if (
+                    type(stride) is not int
+                    or type(blocks) is not int
+                    or stride < 1
+                    or blocks < 1
+                    or stride > self.config.max_context
+                    or (blocks - 1) * stride >= self.config.max_context
+                ):
+                    raise ValueError("invalid compact rotary geometry")
+                for i, (theta, rotary) in enumerate(rotary_parameters(self.config)):
+                    frequencies = theta ** (
+                        -2 * np.arange(rotary // 2, dtype="float64") / rotary
+                    )
+                    for label, positions in (
+                        ("fine", np.arange(stride, dtype="float64")),
+                        ("coarse", np.arange(blocks, dtype="float64") * stride),
+                    ):
+                        angle = positions[:, None] * frequencies[None, :]
+                        table = np.concatenate(
+                            (np.cos(angle), np.sin(angle)), axis=1
+                        ).astype("float32")
+                        result[f"rope.{i}.{label}"] = device.from_numpy(table)
             return result
         except BaseException:
             for value in result.values():

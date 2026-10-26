@@ -498,7 +498,7 @@ def supports(capability, shape, *, encoding, layout="raw"):
     return capability in CAPABILITIES
 
 
-def bind(shape, *, encoding, layout="raw"):
+def bind(shape, *, encoding, layout="raw", vector_tiles=False):
     if layout == "planar":
         return planar_binding(shape, encoding=encoding)
     import tilelang.language as T
@@ -524,10 +524,13 @@ def bind(shape, *, encoding, layout="raw"):
     def dot(encoded, x, tile, lane, row):
         return product(x, encoded[0], tile, lane, row)
 
+    tile = packed_tile_half(shape, read) if encoding == 2 else matrix_tile(read, shape)
+    if vector_tiles and encoding in (8, 12, 14):
+        tile = vector_tile(shape, encoding, tile)
     return Codec(
         storage,
         read,
-        packed_tile_half(shape, read) if encoding == 2 else matrix_tile(read, shape),
+        tile,
         read_pair=read_pair if pair is not None else None,
         dot=dot if product is not None else None,
         dot_half=packed_dot_half(shape)
@@ -841,3 +844,162 @@ def q8_packed_dot(depth, row_bytes):
         return result
 
     return product
+
+
+def vector_tile(shape, encoding, fallback):
+    """Decode several coefficients per lane, sharing embedded block metadata.
+
+    Original bytes remain the only global weight representation. F32 scale
+    arithmetic and one final F16 rounding match the scalar tile reader.
+    """
+    import tilelang.language as T
+    from math import prod
+    from .definition import ENCODINGS
+
+    rows, depth = prod(shape[:-1]), shape[-1]
+    _, block, size = ENCODINGS[encoding]
+    row_bytes = depth // block * size
+
+    @T.macro
+    def word(w, offset):
+        halves = T.meta_var(T.view(w, (rows * row_bytes // 2,), dtype="uint16"))
+        return (
+            T.cast(halves[offset // 2], "uint32")
+            | T.cast(halves[offset // 2 + 1], "uint32") << 16
+        )
+
+    @T.macro
+    def half(w, offset):
+        halves = T.meta_var(T.view(w, (rows * row_bytes // 2,), dtype="uint16"))
+        return T.cast(T.reinterpret("float16", halves[offset // 2]), "float32")
+
+    @T.macro
+    def load(encoded, destination, row, column):
+        if (
+            encoding == 12
+            and destination.dtype == "float16"
+            and destination.shape[1] % 64 == 0
+        ):
+            for i, j in T.Parallel(destination.shape[0], destination.shape[1] // 8):
+                local = j // 8 * 64 + j % 8 * 4
+                channel = column + local
+                if row + i < rows and channel + 35 < depth:
+                    base = (row + i) * row_bytes + channel // 256 * 144
+                    group = channel % 256 // 64 * 2
+                    words = T.meta_var(
+                        T.view(encoded[0], (rows * row_bytes // 4,), dtype="uint32")
+                    )
+                    packed = words[
+                        (base + 16 + channel % 256 // 64 * 32 + channel % 32) // 4
+                    ]
+                    scales = words[base // 4]
+                    ds = T.cast(
+                        T.reinterpret("float16", T.cast(scales & 65535, "uint16")),
+                        "float32",
+                    )
+                    dm = T.cast(
+                        T.reinterpret("float16", T.cast(scales >> 16, "uint16")),
+                        "float32",
+                    )
+                    sa, sb, sc = (
+                        words[base // 4 + 1],
+                        words[base // 4 + 2],
+                        words[base // 4 + 3],
+                    )
+                    for part in T.unroll(2):
+                        g = group + part
+                        a = sa >> (8 * (g % 4)) & 255
+                        b = sb >> (8 * (g % 4)) & 255
+                        cmeta = sc >> (8 * (g % 4)) & 255
+                        scale = T.if_then_else(
+                            g < 4,
+                            a & 63,
+                            cmeta & 15 | a >> 6 << 4,
+                        )
+                        minimum = T.if_then_else(
+                            g < 4,
+                            b & 63,
+                            cmeta >> 4 | b >> 6 << 4,
+                        )
+                        factor = ds * T.cast(scale, "float32")
+                        offset = dm * T.cast(minimum, "float32")
+                        for c in T.unroll(4):
+                            quant = T.cast(packed >> (8 * c + 4 * part) & 15, "float32")
+                            destination[i, local + part * 32 + c] = (
+                                factor * quant - offset
+                            )
+                else:
+                    for part in T.unroll(2):
+                        for c in T.unroll(4):
+                            destination[i, local + part * 32 + c] = 0
+        elif (
+            encoding == 14
+            and destination.dtype == "float16"
+            and destination.shape[1] % 128 == 0
+        ):
+            for i, j in T.Parallel(destination.shape[0], destination.shape[1] // 16):
+                local = j // 8 * 128 + j % 8 * 4
+                channel = column + local
+                if row + i < rows and channel + 99 < depth:
+                    base = (row + i) * row_bytes + channel // 256 * 210
+                    half_block = channel % 256 // 128
+                    lo0 = word(encoded[0], base + half_block * 64 + channel % 32)
+                    lo1 = word(encoded[0], base + half_block * 64 + 32 + channel % 32)
+                    high = word(encoded[0], base + 128 + half_block * 32 + channel % 32)
+                    ds = half(encoded[0], base + 208)
+                    for group in T.unroll(4):
+                        low = T.if_then_else(group % 2 == 0, lo0, lo1)
+                        signed_scale = T.cast(
+                            T.reinterpret(
+                                "int8",
+                                encoded[0][
+                                    base
+                                    + 192
+                                    + half_block * 8
+                                    + group * 2
+                                    + channel % 32 // 16
+                                ],
+                            ),
+                            "float32",
+                        )
+                        factor = ds * signed_scale
+                        for c in T.unroll(4):
+                            quant = T.cast(
+                                low >> (8 * c + group // 2 * 4) & 15, "int32"
+                            ) | T.cast((high >> (8 * c + group * 2) & 3) << 4, "int32")
+                            destination[i, local + group * 32 + c] = factor * T.cast(
+                                quant - 32, "float32"
+                            )
+                else:
+                    for group in T.unroll(4):
+                        for c in T.unroll(4):
+                            destination[i, local + group * 32 + c] = 0
+        elif (
+            encoding == 8
+            and destination.dtype == "float16"
+            and destination.shape[1] % 32 == 0
+        ):
+            for i, j in T.Parallel(destination.shape[0], destination.shape[1] // 8):
+                local, channel = j * 8, column + j * 8
+                if row + i < rows and channel + 7 < depth:
+                    base = (row + i) * row_bytes + channel // 32 * 34
+                    scale = half(encoded[0], base)
+                    low = word(encoded[0], base + 2 + channel % 32)
+                    high = word(encoded[0], base + 6 + channel % 32)
+                    for part in T.unroll(2):
+                        packed = T.if_then_else(part == 0, low, high)
+                        for c in T.unroll(4):
+                            quant = T.cast(
+                                T.reinterpret(
+                                    "int8", T.cast(packed >> (8 * c) & 255, "uint8")
+                                ),
+                                "float32",
+                            )
+                            destination[i, local + part * 4 + c] = scale * quant
+                else:
+                    for c in T.unroll(8):
+                        destination[i, local + c] = 0
+        else:
+            fallback(encoded, destination, row, column)
+
+    return load

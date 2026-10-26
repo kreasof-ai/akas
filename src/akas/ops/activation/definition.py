@@ -169,3 +169,16 @@ for _kind in ("geglu", "head_gate"):
             name="activation." + _kind,
         ),
     )
+
+OUTPUT_ARGUMENTS["reference"]["head_gate_half"] = OutputABI((-1,), ("out",))
+VALIDATIONS["head_gate_half"] = gated_validation
+ROW_INDEPENDENT += ("head_gate_half",)
+IMPLEMENTATIONS += (
+    Implementation(
+        "head_gate_half",
+        "akas.ops.activation.kernel",
+        "reference",
+        factory="head_gate_half",
+        name="activation.head_gate_half",
+    ),
+)

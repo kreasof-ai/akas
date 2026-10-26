@@ -57,6 +57,129 @@ import pytest
         ],
         *[
             (
+                "linear",
+                dict(
+                    r=133,
+                    k=512,
+                    o=137,
+                    ggml=True,
+                    type=q,
+                    optimized=True,
+                    tiled_packed=True,
+                ),
+            )
+            for q in (8, 12, 14, 30)
+        ],
+        *[
+            (
+                "geglu_linear",
+                dict(r=133, k=512, o=137, ggml=True, type=q),
+            )
+            for q in (8, 12, 14, 30)
+        ],
+        *[
+            (
+                kind,
+                dict(
+                    r=133,
+                    k=512,
+                    o=137,
+                    ggml=True,
+                    type=q,
+                    input_dtype="float16",
+                    **extra,
+                ),
+            )
+            for q in (8, 12, 14, 30)
+            for kind, extra in (
+                ("linear", dict(optimized=True, tiled_packed=True)),
+                ("geglu_linear", dict(output_dtype="float16")),
+            )
+        ],
+        (
+            "rms",
+            dict(
+                r=133,
+                c=2560,
+                eps=1e-6,
+                output_dtype="float16",
+                algorithm="fragment",
+                flat=True,
+            ),
+        ),
+        ("head_gate_half", dict(r=133, h=16, d=256)),
+        (
+            "add_rms",
+            dict(
+                r=133,
+                c=2560,
+                eps=1e-6,
+                output_dtype="float16",
+                residual_dtype="float32",
+                algorithm="fragment",
+                flat=True,
+            ),
+        ),
+        *[
+            (
+                "qkv_rotary_cache",
+                dict(
+                    r=256,
+                    h=16,
+                    kh=4,
+                    d=256,
+                    chunk=128,
+                    capacity=1536 if window else 131072,
+                    window=window,
+                    context=131072,
+                    stride=1024,
+                    blocks=128,
+                    rotary=rot,
+                    theta=theta,
+                ),
+            )
+            for window in (0, 512)
+            for rot, theta in ((64, 5000000.0), (256, 10000.0))
+        ],
+        *[
+            (
+                "window_attention",
+                dict(
+                    r=256,
+                    h=16,
+                    kh=4,
+                    d=256,
+                    chunk=128,
+                    splits=1,
+                    capacity=1536 if window else 8192,
+                    window=window,
+                    query_rows=64,
+                    key_rows=32,
+                    contiguous=not window,
+                    query_dtype="float16",
+                ),
+            )
+            for window in (0, 512)
+        ],
+        *[
+            (
+                "rotary_compact",
+                dict(
+                    r=8,
+                    h=4,
+                    d=256,
+                    rotary=rot,
+                    theta=theta,
+                    capacity=cap,
+                    stride=1024,
+                    blocks=(cap + 1023) // 1024,
+                ),
+            )
+            for rot, theta in ((64, 5000000.0), (256, 10000.0))
+            for cap in (131072, 1048576)
+        ],
+        *[
+            (
                 "window_attention",
                 dict(
                     r=256,
@@ -116,9 +239,14 @@ def test_cuda_numerical_reference(tmp_path, kind, parameters):
             stack.callback(buffer.release)
         module = stack.enter_context(device.load(artifact))
         module.launch(*(buffers[a["name"]] for a in meta["arguments"]))
-        np.testing.assert_allclose(
-            buffers["out"].to_numpy(),
-            case.expected["out"],
-            rtol=case.rtol,
-            atol=case.atol,
-        )
+        for name, expected in case.expected.items():
+            if expected is not case.arguments[name]:
+                if name in case.comparators:
+                    case.comparators[name](buffers[name].to_numpy(), expected)
+                else:
+                    np.testing.assert_allclose(
+                        buffers[name].to_numpy(),
+                        expected,
+                        rtol=case.rtol,
+                        atol=case.atol,
+                    )

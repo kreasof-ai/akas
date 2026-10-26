@@ -17,6 +17,7 @@ def validation(kind, p, signature):
     out_dtype = next((row["dtype"] for row in signature if row["name"] == "out"))
     bf16 = out_dtype == "bfloat16"
     f16 = out_dtype == "float16"
+    residual_dtype = next((row["dtype"] for row in signature if row["name"] == "residual"), None)
 
     def rounded(x):
         if f16:
@@ -39,8 +40,10 @@ def validation(kind, p, signature):
             if p.get("round_inputs"):
                 x = rounded(x)
             x = x + other[begin:end]
-            if bf16 or f16:
-                x = rounded(x)
+            if residual_dtype == "float16":
+                x = np.asarray(x, dtype="float16").astype("float64")
+            elif residual_dtype == "bfloat16":
+                x = decode_bfloat16(encode_bfloat16(x))
             res_out[begin:end] = x
         out = x / np.sqrt(np.mean(x * x, axis=1, keepdims=True) + p["eps"])
         out *= w_row

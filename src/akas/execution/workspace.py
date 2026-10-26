@@ -36,8 +36,51 @@ def release(*, graphs=(), kernels=(), buffers=()):
 
 
 
+class ScratchPool:
+    """Stable scratch addresses shared by phases on one ordered device stream.
+
+    Each phase numbers its allocation groups by decreasing byte size. A slot
+    reserves the largest requirement at that rank across the compiled phases.
+    Outputs and persistent state never borrow these allocations.
+    """
+
+    def __init__(self, device, capacities):
+        self.device, self.capacities = device, tuple(capacities)
+        self.buffers = {}
+
+    def borrow(self, slot, spec):
+        from math import prod
+        from tensor.runtime.buffer import Buffer
+        from tensor.runtime.dtypes import dtype
+
+        dt = dtype(spec.dtype)
+        nbytes = prod(spec.shape) * dt.itemsize
+        if slot >= len(self.capacities) or nbytes > self.capacities[slot]:
+            raise ValueError("phase exceeds its compiled scratch pool")
+        if slot not in self.buffers:
+            self.buffers[slot] = self.device.empty((self.capacities[slot],), "uint8")
+        root = self.buffers[slot]
+
+        class Lease:
+            # Buffer disposal releases this descriptor; the bank owns root.
+            def __init__(self, base):
+                self.base = base
+
+            def release(self):
+                self.base = None
+
+        value = Buffer(self.device, root.pointer, spec.shape, dt, owner=Lease(root))
+        value._base = root
+        self.device._buffers.add(value)
+        return value
+
+    def close(self):
+        release(buffers=reversed(tuple(self.buffers.values())))
+        self.buffers.clear()
+
+
 class Workspace:
-    def __init__(self, graph, device, supplied, allocations):
+    def __init__(self, graph, device, supplied, allocations, *, scratch_pool=None):
         self.device, self.buffers = device, dict(supplied)
         self.owned, self.views, self.closed = [], [], False
         if set(supplied) - set(graph.buffers):
@@ -49,7 +92,14 @@ class Workspace:
         try:
             seen = set()
             lifetimes = graph.lifetimes()
-            for group in groups:
+            if scratch_pool is not None:
+                from math import prod
+                from tensor.runtime.dtypes import dtype
+
+                groups = sorted(groups, key=lambda group: prod(graph.buffers[group[0]].shape)
+                                * dtype(graph.buffers[group[0]].dtype).itemsize if group else 0,
+                                reverse=True)
+            for slot, group in enumerate(groups):
                 if not group:
                     raise ValueError("empty scratch allocation group")
                 for name in group:
@@ -66,7 +116,8 @@ class Workspace:
                 spec = graph.buffers[names[0]]
                 if any((graph.buffers[name].shape,graph.buffers[name].dtype) != (spec.shape,spec.dtype) for name in names):
                     raise ValueError("scratch allocation shape/dtype mismatch")
-                value = device.empty(spec.shape,spec.dtype)
+                value = (scratch_pool.borrow(slot, spec) if scratch_pool is not None
+                         else device.empty(spec.shape,spec.dtype))
                 self.owned.append(value)
                 self.buffers.update((name,value) for name in names)
             for name,spec in graph.buffers.items():

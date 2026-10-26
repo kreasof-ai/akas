@@ -520,6 +520,9 @@ def _packed(p, paired=False, add_residual=False):
                     else:
                         out[(by * bm + i) * o + bx * bn + j] = accum[i, j]
 
+    if p.get("input_dtype") == "float16":
+        from akas.ops.linear.kernel import cuda_typed_abi
+        return cuda_typed_abi(p, matmul, paired=paired, add_residual=add_residual)
     return projection_abi(p, matmul, paired=paired, add_residual=add_residual)
 
 
@@ -1363,6 +1366,79 @@ def short_packed_linear(spec, schedule):
             "threads": 128,
         }
     )
+
+
+def tiled_packed_linear(spec, schedule):
+    """Reuse each vector-decoded weight tile across a larger prefill block."""
+    p = {**spec.parameters, **schedule}
+    if p["o"] <= 32:
+        return _packed(
+            {
+                **p,
+                "block_m": 32,
+                "block_n": 32,
+                "block_k": 512,
+                "stages": 1,
+                "threads": 128,
+            }
+        )
+    return _packed(
+        {
+            **p,
+            "block_m": p.get("tile_m", 256),
+            "block_n": p.get("tile_n", 128),
+            "block_k": p.get("tile_k", 128),
+            "stages": 1,
+            "threads": 256,
+            "weight_access": {"vector_tiles": True},
+        }
+    )
+
+
+def packed_geglu(spec, schedule):
+    """Two packed projections and exact GELU without global gate/up buffers."""
+    import tilelang.language as T
+    from akas.quantization.weights import bind
+    from akas.ops.linear.kernel import cuda_typed_abi
+
+    p = {**spec.parameters, **schedule}
+    r, k, o = (p[n] for n in ("r", "k", "o"))
+    bm, bn, bk = (p.get("tile_m", 256), p.get("tile_n", 64), 128)
+    reader = bind(
+        {**p, "weight_access": {"vector_tiles": True}}, (o, k), provider="cuda"
+    ).require("read_tile")
+
+    @T.macro
+    def algorithm(x, w, out, w2):
+        with T.Kernel(T.ceildiv(r, bm), T.ceildiv(o, bn), threads=256) as (by, bx):
+            lhs = T.alloc_shared((bm, bk), "float16")
+            rhs = T.alloc_shared((bn, bk), "float16")
+            rhs2 = T.alloc_shared((bn, bk), "float16")
+            gate = T.alloc_fragment((bm, bn), "float32")
+            up = T.alloc_fragment((bm, bn), "float32")
+            T.clear(gate)
+            T.clear(up)
+            for tile in T.Pipelined(k // bk, num_stages=1):
+                for i, j in T.Parallel(bm, bk):
+                    lhs[i, j] = T.if_then_else(
+                        by * bm + i < r,
+                        x[T.min(by * bm + i, r - 1) * k + tile * bk + j],
+                        0,
+                    )
+                reader((w,), rhs, bx * bn, tile * bk)
+                reader((w2,), rhs2, bx * bn, tile * bk)
+                T.gemm(lhs, rhs, gate, transpose_B=True)
+                T.gemm(lhs, rhs2, up, transpose_B=True)
+            for i, j in T.Parallel(bm, bn):
+                if (by * bm + i < r) & (bx * bn + j < o):
+                    out[(by * bm + i) * o + bx * bn + j] = (
+                        0.5
+                        * gate[i, j]
+                        * (1 + T.erf(gate[i, j] * 0.7071067811865476))
+                        * up[i, j]
+                    )
+
+    return cuda_typed_abi(p, algorithm, paired=True)
 
 
 def q8_linear(spec, schedule):

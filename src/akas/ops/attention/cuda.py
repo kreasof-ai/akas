@@ -3785,10 +3785,11 @@ def window_attention(spec, schedule):
     )
     qm, bk = p.get("query_rows", 16), p.get("key_rows", 64)
     shape = (r // chunk, kh, cap, d)
+    query_dtype = p.get("query_dtype", "float32")
 
     @kernel
     def compute(
-        q: Tensor((r, h * d), "float32"),
+        q: Tensor((r, h * d), query_dtype),
         kc: Tensor(shape, "float16"),
         vc: Tensor(shape, "float16"),
         positions: Tensor((r,), "int32"),

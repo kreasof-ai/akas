@@ -1407,3 +1407,138 @@ def rotary_table(spec, schedule):
         return out
 
     return compute
+
+
+def rotary_compact(spec, schedule):
+    """Reconstruct absolute phases from fine and coarse F32 rotations."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    r, h, d, rot, cap, stride, blocks = (
+        p[n] for n in ("r", "h", "d", "rotary", "capacity", "stride", "blocks")
+    )
+    half = rot // 2
+
+    @kernel
+    def compute(
+        x: Tensor((r * h * d,), "float32"),
+        positions: Tensor((r,), "int32"),
+        fine: Tensor((stride, rot), "float32"),
+        coarse: Tensor((blocks, rot), "float32"),
+    ) -> Tensor((r, h * d), "float32"):
+        out = output((r, h * d), "float32", position=1)
+        with T.Kernel(T.ceildiv(r * h * d, 256), threads=256) as block:
+            for thread in T.Parallel(256):
+                index = block * 256 + thread
+                if index < r * h * d:
+                    row, dim = index // (h * d), index % d
+                    if dim < rot:
+                        pos = T.min(T.max(positions[row], 0), cap - 1)
+                        column = dim % half
+                        c0, s0 = (
+                            fine[pos % stride, column],
+                            fine[pos % stride, column + half],
+                        )
+                        c1, s1 = (
+                            coarse[pos // stride, column],
+                            coarse[pos // stride, column + half],
+                        )
+                        cosine, sine = c0 * c1 - s0 * s1, s0 * c1 + c0 * s1
+                        base = index - dim
+                        left, right = x[base + column], x[base + column + half]
+                        out[row, index % (h * d)] = T.if_then_else(
+                            dim < half,
+                            left * cosine - right * sine,
+                            left * sine + right * cosine,
+                        )
+                    else:
+                        out[row, index % (h * d)] = x[index]
+        return out
+
+    return compute
+
+
+def qkv_rotary_cache(spec, schedule):
+    """Split projected QKV, apply compact RoPE and write final F16 storage."""
+    import tilelang.language as T
+    from akas.kernels.kernel import Tensor, kernel, output
+
+    p = {**spec.parameters, **schedule}
+    r, h, kh, d, cap, chunk, rot, context, stride, blocks = (
+        p[n]
+        for n in (
+            "r",
+            "h",
+            "kh",
+            "d",
+            "capacity",
+            "chunk",
+            "rotary",
+            "context",
+            "stride",
+            "blocks",
+        )
+    )
+    width = (h + 2 * kh) * d
+    shape = (r // chunk, kh, cap, d)
+
+    @kernel
+    def compute(
+        x: Tensor((r * width,), "float32"),
+        kc: Tensor(shape, "float16"),
+        vc: Tensor(shape, "float16"),
+        positions: Tensor((r,), "int32"),
+        enabled: Tensor((r,), "int32"),
+        fine: Tensor((stride, rot), "float32"),
+        coarse: Tensor((blocks, rot), "float32"),
+    ) -> tuple[
+        Tensor((r, h * d), "float16"),
+        Tensor(shape, "float16"),
+        Tensor(shape, "float16"),
+    ]:
+        q = output((r, h * d), "float16", position=1)
+        with T.Kernel(T.ceildiv(r * width, 256), threads=256) as block:
+            for lane in T.Parallel(256):
+                index = block * 256 + lane
+                if index < r * width:
+                    row, column = index // width, index % width
+                    head, channel = column // d, column % d
+                    if enabled[row] != 0:
+                        value = T.alloc_var("float32")
+                        value = x[index]
+                        if (head < h + kh) & (channel < rot):
+                            pos = T.min(T.max(positions[row], 0), context - 1)
+                            frequency = channel % (rot // 2)
+                            c0, s0 = (
+                                fine[pos % stride, frequency],
+                                fine[pos % stride, frequency + rot // 2],
+                            )
+                            c1, s1 = (
+                                coarse[pos // stride, frequency],
+                                coarse[pos // stride, frequency + rot // 2],
+                            )
+                            cosine, sine = c0 * c1 - s0 * s1, s0 * c1 + c0 * s1
+                            pair = row * width + head * d + frequency
+                            value = T.if_then_else(
+                                channel < rot // 2,
+                                x[pair] * cosine - x[pair + rot // 2] * sine,
+                                x[pair] * sine + x[pair + rot // 2] * cosine,
+                            )
+                        if head < h:
+                            q[row, column] = value
+                        elif head < h + kh:
+                            kc[
+                                row // chunk, head - h, positions[row] % cap, channel
+                            ] = value
+                        else:
+                            vc[
+                                row // chunk,
+                                head - h - kh,
+                                positions[row] % cap,
+                                channel,
+                            ] = value
+                    elif head < h:
+                        q[row, column] = 0
+        return q, kc, vc
+
+    return compute

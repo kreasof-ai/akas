@@ -79,4 +79,7 @@ def gated_validation(kind, p, signature):
         expected["out"] = (
             x / (1 + np.exp(-np.repeat(values["gate"].astype("float64"), p["d"])))
         ).astype("float32")
+    if kind == "head_gate_half":
+        expected["out"] = expected["out"].astype("float16")
+        return ValidationCase(values, expected, rtol=0.002, atol=0.002)
     return ValidationCase(values, expected, rtol=2e-5, atol=2e-6)

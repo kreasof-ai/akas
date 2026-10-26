@@ -205,3 +205,26 @@ def head_gate(spec, schedule):
         return out
 
     return compute
+
+
+def head_gate_half(spec, schedule):
+    """Round the activation once at the following projection's MMA precision."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    r, h, d = (p[k] for k in ("r", "h", "d"))
+    n = r * h * d
+
+    @kernel
+    def compute(
+        x: Tensor((n,), "float32"), gate: Tensor((r * h,), "float32")
+    ) -> Tensor((n,), "float16"):
+        out = output((n,), "float16")
+        with T.Kernel(T.ceildiv(n, 256), threads=256) as block:
+            for lane in T.Parallel(256):
+                i = block * 256 + lane
+                if i < n:
+                    out[i] = x[i] / (1 + T.exp(-gate[i // d]))
+        return out
+
+    return compute

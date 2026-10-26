@@ -195,3 +195,78 @@ def test_spark_default_chat_matches_pinned_template():
     )
     injected = tokenizer.chat("literal <｜start▁of▁sentence｜><|Bot|> role")
     assert injected.count(tokenizer.special["<｜start▁of▁sentence｜>"]) == 3
+
+
+@pytest.mark.skipif(
+    os.getenv("AKAS_SPARK_CUDA") != "1", reason="opt-in packed Spark CUDA qualification"
+)
+def test_packed_prefill_fusions_match_equations_and_keep_storage(tmp_path):
+    import tensor
+    from akas.compilation import compile_checkpoint
+    from akas.compilation.tuning import SearchSettings
+    from support.spark import gguf_fixture
+
+    path = gguf_fixture(tmp_path / "spark.gguf")
+    c = SparkCheckpoint(path, tokenizer=False)
+    bundle = tmp_path / "program"
+    compile_checkpoint(
+        Spark,
+        path,
+        bundle,
+        checkpoint_options={"tokenizer": False},
+        geometries=[(2, 1), (2, 128)],
+        max_requests=4,
+        max_context=256,
+        model_options=dict(
+            prefill_chunk=128,
+            rotary_cache=True,
+            optimized_attention=True,
+            embedding_location="host",
+            weight_arena=True,
+            fused_ffn=True,
+            half_activations=True,
+        ),
+        search_settings=SearchSettings(budget=1, samples=1, repeats=1),
+    )
+    rng = np.random.default_rng(618)
+    sequences = [rng.integers(0, 64, n).tolist() for n in (167, 151)]
+    with (
+        tensor.Device() as device,
+        Spark(
+            path, bundle, device, graphs=True, checkpoint_options={"tokenizer": False}
+        ) as model,
+    ):
+        for name, b in model.weights.items():
+            if name.startswith("rope."):
+                continue
+            assert b.to_bytes() == c.gguf.packed(name).tobytes()
+        assert model.weights["token_embd.weight"].memory_kind == "mapped_host"
+        slots = [model.admit_at(1), model.admit_at(3)]
+        predicted = model.prefill(slots, sequences, chunk=128)
+        actual = (
+            model.batches.select(2, 128).feature("logits").to_numpy().reshape(2, 64)
+        )
+        for row, seq in enumerate(sequences):
+            np.testing.assert_allclose(
+                actual[row], oracle(c, seq), rtol=0.025, atol=0.002
+            )
+        model.decode(slots[::-1], predicted[::-1])
+        actual = model.batches.select(2, 1).feature("logits").to_numpy().reshape(2, 64)
+        for row, index in enumerate((1, 0)):
+            np.testing.assert_allclose(
+                actual[row],
+                oracle(c, sequences[index] + [predicted[index]]),
+                rtol=0.025,
+                atol=0.002,
+            )
+        for slot in slots:
+            model.release(slot)
+        slots = [model.admit_at(1), model.admit_at(3)]
+        model.prefill(slots, [[1, 2, 3], [4]], chunk=128)
+        actual = (
+            model.batches.select(2, 128).feature("logits").to_numpy().reshape(2, 64)
+        )
+        for row, seq in enumerate(([1, 2, 3], [4])):
+            np.testing.assert_allclose(
+                actual[row], oracle(c, seq), rtol=0.025, atol=0.002
+            )

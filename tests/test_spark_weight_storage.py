@@ -104,3 +104,40 @@ def test_fp8_upload_retains_bytes_and_channel_scales(tmp_path, monkeypatch):
         assert buffers[name + ".scale"].dtype == "bfloat16"
         assert graph[name].dtype == "uint8"
         np.testing.assert_array_equal(buffers[name].values, read_tensor(c.tensors[hf]))
+
+
+def test_fused_prefill_narrows_activations_and_keeps_weights_packed(tmp_path):
+    from dataclasses import replace
+
+    c = SparkCheckpoint(fixture(tmp_path), tokenizer=False)
+    c.config = replace(c.config, width=512, ff=1024)
+    c.gguf = SimpleNamespace(
+        tensors={
+            name: SimpleNamespace(shape=shape, type=12 if len(shape) == 2 else 0)
+            for name, shape in tensor_shapes(c.config).items()
+        }
+    )
+    g = Spark.compose(
+        c,
+        rows=1,
+        chunk=128,
+        max_requests=1,
+        max_context=128,
+        prefill_chunk=128,
+        optimized_attention=True,
+        fused_ffn=True,
+        half_activations=True,
+        weight_arena=True,
+    ).graph
+    fused = [call for call in g.calls if call.kind == "geglu_linear"]
+    assert len(fused) == len(c.config.layers)
+    for call in fused:
+        assert (
+            call.parameters["input_dtype"]
+            == call.parameters["output_dtype"]
+            == "float16"
+        )
+        assert call.parameters["type"] == 12
+        for name in call.arguments[1:3]:
+            assert g.buffers[name].dtype == "uint8" and g.buffers[name].role == "weight"
+    assert all(not name.endswith((".gate", ".up")) for name in g.buffers)

@@ -182,3 +182,90 @@ def fp8_fixture(directory):
     )
     (path / "config.json").write_text(json.dumps(data))
     return path
+
+
+def gguf_fixture(path):
+    """Mixed packed weights with an untied head for the full optimized path."""
+    from akas.models.spark.config import SparkConfig
+    from akas.models.spark.weights import tensor_shapes
+    from akas.quantization.weights.ggml.definition import ENCODINGS
+    from support.qwen_gguf import write
+
+    c = SparkConfig(
+        512,
+        1024,
+        8,
+        2,
+        64,
+        ("sliding_attention", "full_attention"),
+        64,
+        1e-6,
+        256,
+        32,
+        (10000.0, 5000000.0),
+        (64, 16),
+        False,
+    )
+    settings = dict(
+        block_count=2,
+        embedding_length=c.width,
+        feed_forward_length=c.ff,
+        context_length=c.max_context,
+        **{
+            "attention.head_count": c.heads,
+            "attention.head_count_kv": c.kv_heads,
+            "attention.key_length": c.head_dim,
+            "attention.value_length": c.head_dim,
+            "attention.sliding_window_pattern": [True, False],
+            "attention.sliding_window": c.window,
+            "attention.layer_norm_rms_epsilon": c.epsilon,
+            "rope.freq_base": c.theta[1],
+            "rope.freq_base_swa": c.theta[0],
+            "rope.dimension_count": c.rotary[1],
+            "rope.dimension_count_swa": c.rotary[0],
+        },
+    )
+    metadata = {
+        "general.architecture": "spark2_5",
+        **{"spark2_5." + k: v for k, v in settings.items()},
+    }
+    rng = np.random.default_rng(615)
+    tensors = {}
+    for name, shape in tensor_shapes(c, output=True).items():
+        if len(shape) == 1:
+            raw = np.ones(shape, dtype="float32")
+            kind = 0
+        elif name in ("token_embd.weight", "output.weight") or name.endswith(
+            "attn_gate.weight"
+        ):
+            x = rng.normal(0, 0.03, shape).astype("float32")
+            raw = (x.view("uint32") >> 16).astype("uint16")
+            kind = 30
+        else:
+            kind = (
+                14
+                if name.endswith(("attn_qkv.weight", "ffn_down.weight"))
+                else 8
+                if name.endswith("attn_output.weight")
+                else 12
+            )
+            _, block, size = ENCODINGS[kind]
+            raw = rng.integers(
+                0, 256, (int(np.prod(shape)) // block, size), dtype="uint8"
+            )
+            offset = 208 if kind == 14 else 0
+            raw[:, offset : offset + 2] = np.full(
+                (len(raw), 1), 3e-5 if kind == 12 else 2e-4, dtype="float16"
+            ).view("uint8")
+            if kind == 12:
+                raw[:, 2:4] = np.full((len(raw), 1), 4e-5, dtype="float16").view(
+                    "uint8"
+                )
+            if kind == 14:
+                raw[:, 192:208] = rng.integers(
+                    -8, 9, (len(raw), 16), dtype="int8"
+                ).view("uint8")
+        tensors[name] = (shape, kind, raw)
+    # Separate storage, identical head values; the independent tied-head oracle applies.
+    tensors["output.weight"] = tensors["token_embd.weight"]
+    return write(path, metadata, tensors)

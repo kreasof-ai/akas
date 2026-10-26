@@ -1436,3 +1436,34 @@ IMPLEMENTATIONS += (
         space=(("key_rows", (64, 32, 128)),),
     ),
 )
+
+
+from akas.ops.attention.validation import rotary_compact_validation
+
+OUTPUT_ARGUMENTS["reference"]["rotary_compact"] = OutputABI((1,), ("out",))
+VALIDATIONS["rotary_compact"] = rotary_compact_validation
+IMPLEMENTATIONS += (
+    Implementation(
+        "rotary_compact",
+        "akas.ops.attention.kernel",
+        "reference",
+        factory="rotary_compact",
+        name="attention.cuda.rotary_compact",
+    ),
+)
+
+from akas.ops.attention.validation import qkv_rotary_cache_validation
+
+OUTPUT_ARGUMENTS["reference"]["qkv_rotary_cache"] = OutputABI(
+    (1, 2, 3), ("q", "kc", "vc")
+)
+VALIDATIONS["qkv_rotary_cache"] = qkv_rotary_cache_validation
+IMPLEMENTATIONS += (
+    Implementation(
+        "qkv_rotary_cache",
+        "akas.ops.attention.kernel",
+        "reference",
+        factory="qkv_rotary_cache",
+        name="attention.cuda.qkv_rotary_cache",
+    ),
+)

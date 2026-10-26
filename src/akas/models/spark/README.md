@@ -82,12 +82,27 @@ python -m tools.spark_benchmark compile --optimized --chunk 1024 --program build
 python -m tools.spark_benchmark akas --chunk 1024 --program build/spark/fast --out build/spark/akas-fast.json
 ```
 
-The equivalent model options are `rotary_cache=True` and
-`optimized_attention=True`, with `prefill_chunk=1024`. Quantized weights stay
-packed for both prefill and decoding. Shared FP32 sine/cosine tables
-replace repeated rotary trigonometry, and optimized attention shares K/V loads
-across grouped decode heads and larger prefill tiles. These options are disabled
-by default. Compilation and uploads remain outside benchmark timers.
+The equivalent model options are `rotary_cache=True`,
+`optimized_attention=True`, `embedding_location="host"`, `weight_arena=True`,
+`fused_ffn=True` and `half_activations=True`, with `prefill_chunk=1024`.
+Quantized weights retain their original bytes in one aligned GPU allocation;
+another allocation holds persistent state without per-layer allocation padding.
+The separate input embedding uses pinned CPU storage, matching llama.cpp's
+placement; the output head and all transformer weights remain on the GPU.
+Host embedding placement requires an untied GGUF head.
+
+Compact FP32 sine/cosine tables reconstruct absolute rotary phases from fine
+and coarse positions. Packed matmul decodes temporary tiles in shared memory;
+fused feed-forward projections avoid global gate/up intermediates. Prefill
+activations are stored at the following tensor-core operation's FP16 precision,
+with FP32 reductions and residuals. Residual addition and normalization share a
+kernel, and QKV splitting, rotary rotation and cache writes share another.
+No persistent FP16 weight expansion is used.
+Optimized attention shares K/V loads across grouped decode heads and prefill
+tiles. CUDA phases share scratch buffers and identical loaded kernels on the
+device's ordered stream. Phase outputs and persistent state remain distinct.
+These model options are disabled by default. Compilation and uploads remain
+outside benchmark timers.
 
 The former `prefill_weight_cache` option has been removed. Recompile older
 programs that enabled it, and FP8 programs built for the former FP16 import
@@ -97,6 +112,9 @@ Run the expanded independent checks with
 `AKAS_SPARK_CUDA=1 python -m pytest tests/test_spark.py tests/test_spark_performance.py`.
 The high-context operator checks include inactive requests, circular cache wrap,
 nonfinite padding, odd projection dimensions and partial rotary positions.
+The mixed GGUF model reference also checks fused prefill, mapped input embeddings,
+byte-preserving weight slices, request reorder and slot reuse. Shared resource
+ownership tests are in `tests/test_phase_memory.py`.
 
 Estimate useful prefill MFU from a generated report with:
 

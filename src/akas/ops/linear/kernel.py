@@ -564,3 +564,49 @@ def column_projection(spec, schedule):
         return out
 
     return compute
+
+
+def cuda_typed_abi(p, algorithm, paired=False, add_residual=False):
+    """Stage activations at their existing MMA precision; weights stay packed."""
+    from akas.quantization.weights.ggml.definition import weight_storage
+
+    r, k, o, q = (p[n] for n in ("r", "k", "o", "type"))
+    count, dtype = weight_storage(q, k * o)
+    lhs_dtype = p.get("input_dtype", "float32")
+    out_dtype = p.get("output_dtype", "float32")
+    if paired:
+
+        @kernel
+        def compute(
+            x: Tensor(r * k, lhs_dtype),
+            w: Tensor(count, dtype),
+            w2: Tensor(count, dtype),
+        ) -> Tensor(r * o, out_dtype):
+            out = output(r * o, out_dtype)
+            algorithm(x, w, out, w2)
+            return out
+
+        return compute
+    if add_residual:
+
+        @kernel
+        def compute(
+            x: Tensor(r * k, lhs_dtype),
+            w: Tensor(count, dtype),
+            residual: Tensor(r * o, "float32"),
+        ) -> Tensor(r * o, out_dtype):
+            out = output(r * o, out_dtype)
+            algorithm(x, w, out, None, residual)
+            return out
+
+        return compute
+
+    @kernel
+    def compute(x: Tensor(r * k, lhs_dtype), w: Tensor(count, dtype)) -> Tensor(
+        r * o, out_dtype
+    ):
+        out = output(r * o, out_dtype)
+        algorithm(x, w, out)
+        return out
+
+    return compute

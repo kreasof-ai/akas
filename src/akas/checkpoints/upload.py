@@ -42,10 +42,18 @@ class UploadBatch:
                 self.plan.close()
 
 
-def upload_packed(device, checkpoint, *, layouts=None):
+def upload_packed(device, checkpoint, *, layouts=None, placements=None, arena=False):
     layouts = dict(layouts or {})
+    placements = dict(placements or {})
+    if placements.keys() - checkpoint.tensors.keys() or set(placements.values()) - {"device", "host"}:
+        raise ValueError("invalid packed weight placement")
     if layouts.keys() - checkpoint.tensors.keys():
         raise ValueError("upload layout references an unknown tensor")
+    allocation = None
+    if arena:
+        from akas.memory.arena import UploadArena
+        allocation = UploadArena(device, [info.nbytes for name, info in checkpoint.tensors.items()
+                                         if placements.get(name) != "host"])
     weights = {}
     try:
         with UploadBatch(device) as transfers:
@@ -68,13 +76,22 @@ def upload_packed(device, checkpoint, *, layouts=None):
                     from akas.quantization._shared.packing import pack_words
 
                     raw = pack_words(raw)
-                weights[name] = device.from_numpy(np.ascontiguousarray(raw))
+                if placements.get(name) == "host":
+                    from akas.memory.mapped import from_numpy
+                    weights[name] = from_numpy(device, raw)
+                elif allocation is not None:
+                    weights[name] = allocation.upload(raw)
+                else:
+                    weights[name] = device.from_numpy(np.ascontiguousarray(raw))
                 transfers.add(raw.nbytes)
                 checkpoint.discard(name)
     except BaseException:
         for buffer in weights.values():
             buffer.release()
         raise
+    finally:
+        if allocation is not None:
+            allocation.close()
     return weights
 
 

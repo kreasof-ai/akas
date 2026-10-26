@@ -355,3 +355,33 @@ def half_input_validation(kind, parameters, signature):
         np.testing.assert_array_equal(actual.view("uint16"), reference.view("uint16"))
 
     return ValidationCase(values, expected, comparators={"out": exact})
+
+
+def geglu_projection_validation(kind, p, signature):
+    import math
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.quantization.weights.ggml.validation import sample_weight, decode_rows
+
+    values = sample_arguments(signature)
+    r, k, o = (p[n] for n in ("r", "k", "o"))
+    for i, name in enumerate(("w", "w2")):
+        sample_weight(values[name], p["type"], seed=31 + i, decode=False)
+    x = values["x"].reshape(r, k).astype("float16").astype("float64")
+    expected = dict(values)
+    result = np.empty((r, o), dtype="float32")
+    for start in range(0, o, 512):
+        stop = min(o, start + 512)
+        gate, up = [
+            x
+            @ decode_rows(values[n], p["type"], k, start, stop)
+            .astype("float16")
+            .astype("float64")
+            .T
+            for n in ("w", "w2")
+        ]
+        result[:, start:stop] = (
+            0.5 * gate * (1 + np.vectorize(math.erf)(gate / 2**0.5)) * up
+        )
+    expected["out"] = result.reshape(values["out"].shape).astype(values["out"].dtype)
+    return ValidationCase(values, expected, rtol=0.002, atol=0.002)
