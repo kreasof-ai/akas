@@ -21,6 +21,23 @@ def test_hybrid_geometry_and_bounded_persistent_cache(tmp_path):
     assert "head_gate" in {c.kind for c in graph.calls}
 
 
+@pytest.mark.parametrize("chunk", [32, 128])
+def test_compact_sliding_state_does_not_grow_with_prefill_chunk(tmp_path, chunk):
+    checkpoint = SparkCheckpoint(fixture(tmp_path), tokenizer=False)
+    graph = Spark.compose(
+        checkpoint,
+        rows=2,
+        chunk=chunk,
+        max_requests=4,
+        max_context=128,
+        prefill_chunk=128,
+        rotary_cache=True,
+        compact_swa=True,
+    ).graph
+    assert graph.buffers["blk.0.kc"].shape == (4, 1, 16, 64)
+    assert graph.buffers["blk.1.kc"].shape == (4, 1, 128, 64)
+
+
 @pytest.mark.parametrize(
     "field,value",
     [
@@ -225,6 +242,7 @@ def test_packed_prefill_fusions_match_equations_and_keep_storage(tmp_path):
             weight_arena=True,
             fused_ffn=True,
             half_activations=True,
+            compact_swa=True,
         ),
         search_settings=SearchSettings(budget=1, samples=1, repeats=1),
     )

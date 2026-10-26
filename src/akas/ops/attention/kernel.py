@@ -1528,17 +1528,65 @@ def qkv_rotary_cache(spec, schedule):
                             q[row, column] = value
                         elif head < h + kh:
                             kc[
-                                row // chunk, head - h, positions[row] % cap, channel
+                                row // chunk,
+                                head - h,
+                                (
+                                    row % chunk
+                                    if p.get("current_chunk", False)
+                                    else positions[row] % cap
+                                ),
+                                channel,
                             ] = value
                         else:
                             vc[
                                 row // chunk,
                                 head - h - kh,
-                                positions[row] % cap,
+                                (
+                                    row % chunk
+                                    if p.get("current_chunk", False)
+                                    else positions[row] % cap
+                                ),
                                 channel,
                             ] = value
                     elif head < h:
                         q[row, column] = 0
         return q, kc, vc
+
+    return compute
+
+
+def window_cache_tail(spec, schedule):
+    """Commit only the live chunk suffix after attention consumes the old ring."""
+    import tilelang.language as T
+    from akas.kernels.kernel import Tensor, kernel
+
+    p = {**spec.parameters, **schedule}
+    r, kh, d, cap, chunk = (p[n] for n in ("r", "kh", "d", "capacity", "chunk"))
+    shape = (r // chunk, kh, cap, d)
+    current_shape = (r // chunk, kh, chunk, d)
+
+    @kernel
+    def compute(
+        current_k: Tensor(current_shape, "float16"),
+        current_v: Tensor(current_shape, "float16"),
+        kc: Tensor(shape, "float16"),
+        vc: Tensor(shape, "float16"),
+        positions: Tensor((r,), "int32"),
+        enabled: Tensor((r,), "int32"),
+    ) -> tuple[Tensor(shape, "float16"), Tensor(shape, "float16")]:
+        with T.Kernel(kh, r, threads=d) as (head, row):
+            channel = T.get_thread_binding()
+            latest = T.alloc_var("bool")
+            latest = True
+            if row % chunk + cap < chunk:
+                latest = enabled[row + cap] == 0
+            if (enabled[row] != 0) & latest:
+                kc[row // chunk, head, positions[row] % cap, channel] = current_k[
+                    row // chunk, head, row % chunk, channel
+                ]
+                vc[row // chunk, head, positions[row] % cap, channel] = current_v[
+                    row // chunk, head, row % chunk, channel
+                ]
+        return kc, vc
 
     return compute

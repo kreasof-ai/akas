@@ -3787,15 +3787,8 @@ def window_attention(spec, schedule):
     shape = (r // chunk, kh, cap, d)
     query_dtype = p.get("query_dtype", "float32")
 
-    @kernel
-    def compute(
-        q: Tensor((r, h * d), query_dtype),
-        kc: Tensor(shape, "float16"),
-        vc: Tensor(shape, "float16"),
-        positions: Tensor((r,), "int32"),
-        enabled: Tensor((r,), "int32"),
-    ) -> Tensor((r * h * splits * (d + 2),), "float32"):
-        out = output((r * h * splits * (d + 2),), "float32")
+    @T.macro
+    def algorithm(q, kc, vc, positions, enabled, out, current_k=None, current_v=None):
         with T.Kernel(T.ceildiv(chunk, qm), h, (r // chunk) * splits, threads=128) as (
             block,
             head,
@@ -3835,7 +3828,24 @@ def window_attention(spec, schedule):
             T.fill(maximum, -1e30)
             for tile in T.serial(part * per_part, T.min((part + 1) * per_part, tiles)):
                 start = first + tile * bk
-                if p.get("contiguous", False) and start + bk <= last:
+                if p.get("current_chunk", False):
+                    for i, j in T.Parallel(bk, d):
+                        position = start + i
+                        base = positions[slot * chunk]
+                        current = T.min(T.max(position - base, 0), chunk - 1)
+                        kvalue = T.if_then_else(
+                            position >= base,
+                            current_k[slot, head // (h // kh), current, j],
+                            kc[slot, head // (h // kh), position % cap, j],
+                        )
+                        vvalue = T.if_then_else(
+                            position >= base,
+                            current_v[slot, head // (h // kh), current, j],
+                            vc[slot, head // (h // kh), position % cap, j],
+                        )
+                        key[i, j] = T.if_then_else(position < last, kvalue, 0)
+                        value[i, j] = T.if_then_else(position < last, vvalue, 0)
+                elif p.get("contiguous", False) and start + bk <= last:
                     T.copy(kc[slot, head // (h // kh), start : start + bk, :], key)
                     T.copy(vc[slot, head // (h // kh), start : start + bk, :], value)
                 else:
@@ -3891,10 +3901,38 @@ def window_attention(spec, schedule):
                         + d
                         + 1
                     ] = normalizer[i]
+
+    if p.get("current_chunk", False):
+
+        @kernel
+        def compute(
+            q: Tensor((r, h * d), query_dtype),
+            kc: Tensor(shape, "float16"),
+            vc: Tensor(shape, "float16"),
+            current_k: Tensor((r // chunk, kh, chunk, d), "float16"),
+            current_v: Tensor((r // chunk, kh, chunk, d), "float16"),
+            positions: Tensor((r,), "int32"),
+            enabled: Tensor((r,), "int32"),
+        ) -> Tensor((r * h * splits * (d + 2),), "float32"):
+            out = output((r * h * splits * (d + 2),), "float32")
+            algorithm(q, kc, vc, positions, enabled, out, current_k, current_v)
+            return out
+
+        return compute
+
+    @kernel
+    def compute(
+        q: Tensor((r, h * d), query_dtype),
+        kc: Tensor(shape, "float16"),
+        vc: Tensor(shape, "float16"),
+        positions: Tensor((r,), "int32"),
+        enabled: Tensor((r,), "int32"),
+    ) -> Tensor((r * h * splits * (d + 2),), "float32"):
+        out = output((r * h * splits * (d + 2),), "float32")
+        algorithm(q, kc, vc, positions, enabled, out)
         return out
 
     return compute
-
 
 def window_grouped(spec, schedule):
     """Share each K/V tile across all GQA heads during split decode."""

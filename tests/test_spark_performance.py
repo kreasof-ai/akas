@@ -250,3 +250,102 @@ def test_cuda_numerical_reference(tmp_path, kind, parameters):
                         rtol=case.rtol,
                         atol=case.atol,
                     )
+
+
+@pytest.mark.skipif(
+    os.getenv("AKAS_SPARK_CUDA") != "1", reason="opt-in compact sliding cache"
+)
+@pytest.mark.parametrize(
+    "kind,parameters",
+    [
+        (
+            "qkv_rotary_cache",
+            dict(
+                r=256,
+                h=8,
+                kh=2,
+                d=64,
+                capacity=128,
+                chunk=128,
+                window=32,
+                rotary=16,
+                theta=5000000.0,
+                context=131072,
+                stride=1024,
+                blocks=128,
+                current_chunk=True,
+            ),
+        ),
+        (
+            "window_attention_current",
+            dict(
+                r=256,
+                h=8,
+                kh=2,
+                d=64,
+                capacity=32,
+                chunk=128,
+                window=32,
+                splits=1,
+                query_rows=64,
+                key_rows=32,
+                query_dtype="float16",
+            ),
+        ),
+        (
+            "window_attention_current",
+            dict(
+                r=256,
+                h=16,
+                kh=4,
+                d=256,
+                capacity=512,
+                chunk=128,
+                window=512,
+                splits=1,
+                query_rows=64,
+                key_rows=32,
+                query_dtype="float16",
+            ),
+        ),
+        (
+            "window_cache_tail",
+            dict(r=256, h=8, kh=2, d=64, capacity=32, chunk=128, window=32),
+        ),
+        (
+            "window_attention",
+            dict(
+                r=256,
+                h=8,
+                kh=2,
+                d=64,
+                capacity=160,
+                chunk=128,
+                window=32,
+                splits=1,
+                query_rows=64,
+                key_rows=32,
+                query_dtype="float16",
+            ),
+        ),
+        (
+            "window_attention",
+            dict(
+                r=256,
+                h=16,
+                kh=4,
+                d=256,
+                capacity=8192,
+                chunk=128,
+                window=0,
+                splits=1,
+                query_rows=64,
+                key_rows=32,
+                query_dtype="float16",
+                contiguous=True,
+            ),
+        ),
+    ],
+)
+def test_compact_sliding_operators(tmp_path, kind, parameters):
+    test_cuda_numerical_reference(tmp_path, kind, parameters)

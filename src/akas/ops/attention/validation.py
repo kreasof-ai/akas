@@ -1211,8 +1211,18 @@ def qkv_rotary_cache_validation(kind, p, signature):
             rotated[head, : rot // 2] = left * np.cos(angle) - right * np.sin(angle)
             rotated[head, rot // 2 : rot] = left * np.sin(angle) + right * np.cos(angle)
         expected["q"][row] = rotated[:h].reshape(-1)
-        expected["kc"][row // chunk, :, pos % cap, :] = rotated[h : h + kh]
-        expected["vc"][row // chunk, :, pos % cap, :] = rotated[h + kh :]
+        expected["kc"][
+            row // chunk,
+            :,
+            (row % chunk if p.get("current_chunk", False) else pos % cap),
+            :,
+        ] = rotated[h : h + kh]
+        expected["vc"][
+            row // chunk,
+            :,
+            (row % chunk if p.get("current_chunk", False) else pos % cap),
+            :,
+        ] = rotated[h + kh :]
 
     def cache_equal(actual, reference):
         untouched = np.isnan(reference)
@@ -1227,4 +1237,71 @@ def qkv_rotary_cache_validation(kind, p, signature):
         rtol=0.002,
         atol=0.0002,
         comparators={"kc": cache_equal, "vc": cache_equal},
+    )
+
+
+def window_current_validation(kind, p, signature):
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    cap, chunk = p["capacity"], p["chunk"]
+    combined = cap + chunk
+    local_signature = [
+        dict(a, shape=[p["r"] // chunk, p["kh"], combined, p["d"]])
+        if a["name"] in ("kc", "vc")
+        else a
+        for a in signature
+        if a["name"] not in ("current_k", "current_v")
+    ]
+    local = window_validation(
+        "window_attention", {**p, "capacity": combined}, local_signature
+    )
+    v = sample_arguments(signature)
+    for name in ("q", "positions", "enabled"):
+        v[name][:] = local.arguments[name]
+    for name, current in [("kc", "current_k"), ("vc", "current_v")]:
+        v[name][:] = np.nan
+        v[current][:] = np.nan
+        for slot in range(p["r"] // chunk):
+            base = int(v["positions"][slot * chunk])
+            active = int(v["enabled"][slot * chunk : (slot + 1) * chunk].sum())
+            for pos in range(max(0, base - p["window"] + 1), base):
+                v[name][slot, :, pos % cap, :] = local.arguments[name][
+                    slot, :, pos % combined, :
+                ]
+            for pos in range(base, base + active):
+                v[current][slot, :, pos - base, :] = local.arguments[name][
+                    slot, :, pos % combined, :
+                ]
+    return ValidationCase(
+        v, {**v, "out": local.expected["out"]}, rtol=local.rtol, atol=local.atol
+    )
+
+
+def window_tail_validation(kind, p, signature):
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    v = sample_arguments(signature)
+    r, cap, chunk = p["r"], p["capacity"], p["chunk"]
+    v["positions"][:] = 2 * cap + 7 + np.arange(r) % chunk
+    v["enabled"][:] = 1
+    v["enabled"][chunk + max(1, cap // 2) :] = 0
+    expected = {**v, "kc": v["kc"].copy(), "vc": v["vc"].copy()}
+    for row in range(r):
+        if not v["enabled"][row]:
+            continue
+        if row % chunk + cap < chunk and v["enabled"][row + cap]:
+            continue
+        for name, current in [("kc", "current_k"), ("vc", "current_v")]:
+            expected[name][row // chunk, :, v["positions"][row] % cap, :] = v[current][
+                row // chunk, :, row % chunk, :
+            ]
+    return ValidationCase(
+        v,
+        expected,
+        comparators={
+            "kc": np.testing.assert_array_equal,
+            "vc": np.testing.assert_array_equal,
+        },
     )

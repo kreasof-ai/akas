@@ -19,8 +19,9 @@ the embedding; quantization can give those two matrices different values.
 
 The graph implements headwise sigmoid attention gates, exact GELU feed-forward
 gating, grouped query attention, and per-layer rotary widths and frequencies.
-Sliding attention uses a circular cache with a full prefill chunk of extra
-capacity. All token positions and rotary phases remain absolute. Full attention
+Sliding attention uses a circular cache. Compact mode retains one window and
+stages the current K/V chunk in a workspace reused across layers. Other programs
+reserve a full prefill chunk of extra cache capacity. All token positions and rotary phases remain absolute. Full attention
 retains the complete requested context. The shared compiler, request mapping,
 executor and device feedback own all execution.
 
@@ -78,13 +79,14 @@ compiled programs to the source branch.
 For the faster L4 configuration, compile and run with a larger chunk:
 
 ```sh
-python -m tools.spark_benchmark compile --optimized --chunk 1024 --program build/spark/fast --out build/spark/compile-fast.json
-python -m tools.spark_benchmark akas --chunk 1024 --program build/spark/fast --out build/spark/akas-fast.json
+python -m tools.spark_benchmark compile --optimized --chunk 2048 --program build/spark/fast --out build/spark/compile-fast.json
+python -m tools.spark_benchmark akas --chunk 2048 --program build/spark/fast --out build/spark/akas-fast.json
 ```
 
 The equivalent model options are `rotary_cache=True`,
 `optimized_attention=True`, `embedding_location="host"`, `weight_arena=True`,
-`fused_ffn=True` and `half_activations=True`, with `prefill_chunk=1024`.
+`fused_ffn=True`, `half_activations=True` and `compact_swa=True`, with
+`prefill_chunk=2048`.
 Quantized weights retain their original bytes in one aligned GPU allocation;
 another allocation holds persistent state without per-layer allocation padding.
 The separate input embedding uses pinned CPU storage, matching llama.cpp's

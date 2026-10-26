@@ -57,6 +57,7 @@ def compile_program(args):
                     weight_arena=True,
                     fused_ffn=True,
                     half_activations=True,
+                    compact_swa=True,
                 )
                 if args.optimized
                 else {}

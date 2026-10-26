@@ -1467,3 +1467,30 @@ IMPLEMENTATIONS += (
         name="attention.cuda.qkv_rotary_cache",
     ),
 )
+
+from akas.ops.attention.validation import (
+    window_current_validation,
+    window_tail_validation,
+)
+
+OUTPUT_ARGUMENTS["reference"]["window_attention_current"] = OutputABI((-1,), ("out",))
+OUTPUT_ARGUMENTS["reference"]["window_cache_tail"] = OutputABI((2, 3), ("kc", "vc"))
+VALIDATIONS["window_attention_current"] = window_current_validation
+VALIDATIONS["window_cache_tail"] = window_tail_validation
+IMPLEMENTATIONS += (
+    Implementation(
+        "window_attention_current",
+        "akas.ops.attention.cuda",
+        "reference",
+        factory="window_attention",
+        defaults=(("current_chunk", True),),
+        name="attention.cuda.window_current",
+    ),
+    Implementation(
+        "window_cache_tail",
+        "akas.ops.attention.kernel",
+        "reference",
+        factory="window_cache_tail",
+        name="attention.cuda.window_tail",
+    ),
+)

@@ -21,6 +21,7 @@ def compose(
     fused_ffn=False,
     weight_arena=False,
     half_activations=False,
+    compact_swa=False,
 ):
     from akas.graph import Graph
 
@@ -38,6 +39,8 @@ def compose(
         or chunk > prefill_chunk
     ):
         raise ValueError("invalid Spark request geometry or phase")
+    if compact_swa and not rotary_cache:
+        raise ValueError("compact sliding cache requires compact rotary tables")
     g = Graph(contract="reference", phase="forward")
     b, w = rows * chunk, c.width
     weights = checkpoint.graph_weights(g, provider=provider)
@@ -180,7 +183,11 @@ def compose(
         )
         window = c.window if kind == "sliding_attention" else 0
         # The whole chunk writes before attention reads. Retain its earliest query's window.
-        capacity = min(max_context, window + prefill_chunk) if window else max_context
+        capacity = (
+            min(max_context, window if compact_swa else window + prefill_chunk)
+            if window
+            else max_context
+        )
         state_shape = (max_requests, c.kv_heads, capacity, c.head_dim)
         kc, vc = [
             g.buffer(p + n, state_shape, "float16", role="state") for n in ("kc", "vc")
@@ -194,12 +201,29 @@ def compose(
             chunk=chunk,
             window=window,
         )
-        if narrow and rotary_cache:
-            qr = g.buffer(p + "qr", (b, c.heads * c.head_dim), "float16")
+        current_window = bool(compact_swa and window and chunk > 1)
+        if (narrow and rotary_cache) or current_window:
+            query_storage = scratch(
+                p + "query_storage", c.heads * c.head_dim, dtype="float16"
+            )
+            qr = g.view(p + "qr", query_storage, (b, c.heads * c.head_dim))
+            if current_window:
+                current_shape = (rows, c.kv_heads, chunk, c.head_dim)
+                current_k, current_v = [
+                    g.buffer(p + n, current_shape, "float16")
+                    for n in ("current_k", "current_v")
+                ]
+            else:
+                current_k, current_v = kc, vc
             g(
                 "qkv_rotary_cache",
                 dict(
                     ap,
+                    **(
+                        {"capacity": chunk, "current_chunk": True}
+                        if current_window
+                        else {}
+                    ),
                     theta=c.theta[i],
                     rotary=c.rotary[i],
                     context=max_context,
@@ -208,8 +232,8 @@ def compose(
                 ),
                 qkv,
                 qr,
-                kc,
-                vc,
+                current_k,
+                current_v,
                 row_pos,
                 row_active,
                 *rotary_tables[c.theta[i], c.rotary[i]],
@@ -265,15 +289,29 @@ def compose(
         g(
             "window_grouped"
             if optimized_attention and chunk == 1
+            else "window_attention_current"
+            if current_window
             else "window_attention",
             ap,
             qr,
             kc,
             vc,
+            *((current_k, current_v) if current_window else ()),
             row_pos,
             row_active,
             parts,
         )
+        if current_window:
+            g(
+                "window_cache_tail",
+                ap,
+                current_k,
+                current_v,
+                kc,
+                vc,
+                row_pos,
+                row_active,
+            )
         g("window_merge", ap, parts, attended, row_active)
         gate = project(p + "attention_gate", normal, p + "attn_gate.weight", w, c.heads)
         gated = scratch(
