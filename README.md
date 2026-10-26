@@ -103,6 +103,29 @@ uv run python -m tools.vulkan_plot REPORT_DIRECTORY/report.json build/throughput
 
 Replace `REPORT_DIRECTORY` with the verified directory printed by the fetch command.
 
+## Spark X2.6 on NVIDIA L4
+
+![Spark X2.6 Q4_K_M prefill and decode throughput across prefixes 32 through 130944 on NVIDIA L4.](https://raw.githubusercontent.com/kreasof-ai/akas/35b49a08c5469d79e54e1684983de49200ed0d69/benchmarks/runs/20261026003042462717-04d8a386/figures/throughput.svg)
+
+[Spark model support](src/akas/models/spark/README.md) accepts BF16 and FP8 safetensors and packed GGUF. BF16/FP8 imports execute with FP16 resident matrices. The full performance comparison uses only the official Q4_K_M GGUF and FP16 KV.
+
+| Prefix tokens | AKAS prefill tok/s | llama.cpp prefill tok/s | AKAS decode tok/s | llama.cpp decode tok/s |
+| ---: | ---: | ---: | ---: | ---: |
+| 32 | 677.6 | 843.6 | 65.3 | 63.8 |
+| 512 | 1,545.8 | 4,235.9 | 63.3 | 65.6 |
+| 2,048 | 1,523.5 | 4,521.5 | 61.6 | 50.7 |
+| 8,192 | 1,448.1 | 4,356.3 | 57.4 | 41.4 |
+| 16,384 | 1,350.6 | 4,035.8 | 51.2 | 55.4 |
+| 32,768 | 1,190.7 | 3,139.8 | 43.1 | 46.9 |
+| 65,536 | 964.8 | 2,139.3 | 32.9 | 37.4 |
+| 130,944 | 714.0 | 1,337.0 | 22.7 | 27.6 |
+
+[Full report, raw samples, output comparisons and selected schedules](https://github.com/kreasof-ai/akas/blob/ac2323d0ea0527aae1bfaded42ee80947770aefd/benchmarks/reports/20261025T235635Z-d80177ee179d/README.md).
+
+One request produces 128 total output tokens. Values are medians of three retained repetitions after one warmup per prefix, using identical checkpoint bytes and synthetic prompt IDs. AKAS uses synchronized native phases; llama.cpp uses server eval phases. Loading is excluded and phase timing boundaries differ.
+
+Payloads are sealed on the artifact branches listed in [the archive catalog](benchmarks/archive.json).
+
 ## Getting started
 
 Use Python 3.12. `uv.lock` pins Tensor to a published Git revision.
