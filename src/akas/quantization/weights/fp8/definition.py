@@ -9,8 +9,16 @@ from akas.kernels.contracts import OutputABI
 BLOCK = 128
 
 
-def layout(shape):
+def layout(shape, *, scale_layout="block"):
     rows, depth = shape[-2:]
+    if scale_layout == "channel":
+        return Storage(
+            BufferSpec(shape, "uint8"),
+            (BufferSpec((*shape[:-2], rows, 1), "bfloat16"),),
+            ("scales",),
+        )
+    if scale_layout != "block":
+        raise ValueError("FP8 weight scale layout must be block or channel")
     if depth % BLOCK:
         raise ValueError("FP8 weight channels must be divisible by 128")
     scales = (*shape[:-2], (rows + BLOCK - 1) // BLOCK, depth // BLOCK)

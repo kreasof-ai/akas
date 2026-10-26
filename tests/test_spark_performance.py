@@ -13,9 +13,29 @@ import pytest
 @pytest.mark.parametrize(
     "kind,parameters",
     [
-        ("projection_cast", dict(r=133, k=64)),
-        ("resident_linear", dict(r=133, k=256, o=143)),
-        ("resident_linear", dict(r=133, k=256, o=16)),
+        (
+            "quantized_linear",
+            dict(
+                r=32,
+                k=10240,
+                o=2560,
+                weight_format="fp8",
+                weight_options={"scale_layout": "channel"},
+            ),
+        ),
+        *[
+            (
+                "quantized_linear",
+                dict(
+                    r=r,
+                    k=64,
+                    o=143,
+                    weight_format="fp8",
+                    weight_options={"scale_layout": "channel"},
+                ),
+            )
+            for r in (1, 133)
+        ],
         (
             "linear",
             dict(r=1, k=768, o=137, ggml=True, type=8, optimized=True, vector_q8=True),
@@ -85,7 +105,13 @@ def test_cuda_numerical_reference(tmp_path, kind, parameters):
     meta, _ = read_artifact(artifact)
     case = validation(kind, parameters, meta["arguments"])
     with tensor.Device() as device, ExitStack() as stack:
-        buffers = {name: device.from_numpy(a) for name, a in case.arguments.items()}
+        dtypes = {a["name"]: a["dtype"] for a in meta["arguments"]}
+        buffers = {
+            name: device.from_numpy(
+                a, **({"dtype": "bfloat16"} if dtypes[name] == "bfloat16" else {})
+            )
+            for name, a in case.arguments.items()
+        }
         for buffer in buffers.values():
             stack.callback(buffer.release)
         module = stack.enter_context(device.load(artifact))

@@ -1079,6 +1079,21 @@ OUTPUT_ARGUMENTS["quantized"] = {"quantized_linear": OutputABI((-1,), ("out",))}
 from akas.ops.linear.validation import quantized_validation
 
 VALIDATIONS["quantized_linear"] = quantized_validation
+OUTPUT_ARGUMENTS["reference"]["quantized_linear"] = OutputABI((-1,), ("out",))
+IMPLEMENTATIONS += (
+    Implementation(
+        "quantized_linear",
+        "akas.ops.linear.cuda",
+        "reference",
+        factory="quantized",
+        name="linear.cuda.channel_fp8",
+        required=("r", "k", "o"),
+        accepts=lambda p: (
+            p.get("weight_format") == "fp8"
+            and p.get("weight_options", {}).get("scale_layout") == "channel"
+        ),
+    ),
+)
 
 IMPLEMENTATIONS += tuple(
     Implementation(
@@ -1260,31 +1275,6 @@ IMPLEMENTATIONS += tuple(
     )
     for provider in ("cuda", "webgpu")
 )
-
-
-from akas.ops.linear.validation import resident_validation
-
-for _kind in ("projection_cast", "resident_linear"):
-    OUTPUT_ARGUMENTS["reference"][_kind] = OutputABI((-1,), ("out",))
-    VALIDATIONS[_kind] = resident_validation
-IMPLEMENTATIONS += (
-    Implementation(
-        "projection_cast",
-        "akas.ops.linear.kernel",
-        "reference",
-        factory="projection_cast",
-        name="linear.cuda.cast",
-    ),
-    Implementation(
-        "resident_linear",
-        "akas.ops.linear.cuda",
-        "reference",
-        factory="resident_linear",
-        name="linear.cuda.resident",
-        space=(("threads", (256, 128)),),
-    ),
-)
-ROW_INDEPENDENT += ("projection_cast", "resident_linear")
 
 IMPLEMENTATIONS += (
     Implementation(

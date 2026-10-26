@@ -5,6 +5,11 @@ must be divisible by 128; the final row block may be partial. Matrix and expert
 (rank-three) payloads keep logical shape on CUDA using bytes. WebGPU packs four
 bytes into each U32 and holds the same BF16-rounded scales in F32 buffers.
 
+CUDA matrices also accept `scale_layout="channel"`: values stay U8 E4M3 and
+scales have shape `[output_channels, 1]` in BF16. This supports Spark's channel
+quantization without creating a persistent FP16 matrix. Compute tiles may decode
+coefficients locally. The default block layout is unchanged.
+
 Both providers implement `dequantize`, `read`, and `read_tile`. The standalone
 kind `dequantize_weight_fp8` applies scales and returns F32 values. CUDA's retained
 `e4m3_decode` factory is a raw-byte qualification probe; it is not the full weight

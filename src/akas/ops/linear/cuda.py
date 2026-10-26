@@ -1349,48 +1349,6 @@ def projection(spec, schedule):
 
 from .kernel import column_projection as column_projection
 
-
-def resident_linear(spec, schedule):
-    """Asynchronous F16 operand copies with F32 tensor-core accumulation."""
-    import tilelang.language as T
-
-    p = {**spec.parameters, **schedule}
-    r, k, o = (p[n] for n in ("r", "k", "o"))
-    bm, bn, bk = (
-        p.get(n, v) for n, v in (("block_m", 128), ("block_n", 128), ("block_k", 64))
-    )
-    stages, threads = p.get("stages", 3), p.get("threads", 256)
-    if o >= 6144 and "block_n" not in p:
-        bn, stages = 256, 2
-    if o < 32:
-        bm, bn, stages, threads = 16, 32, 2, 128
-    if k % bk:
-        raise ValueError("resident projection requires complete reduction tiles")
-
-    @kernel
-    def compute(
-        x: Tensor((r * k,), "float16"), w: Tensor((o * k,), "float16")
-    ) -> Tensor((r * o,), "float32"):
-        out = output((r * o,), "float32")
-        with T.Kernel(T.ceildiv(o, bn), T.ceildiv(r, bm), threads=threads) as (bx, by):
-            T.use_swizzle(10)
-            xm = T.meta_var(T.view(x, (r, k)))
-            wm = T.meta_var(T.view(w, (o, k)))
-            ym = T.meta_var(T.view(out, (r, o)))
-            lhs = T.alloc_shared((bm, bk), "float16")
-            rhs = T.alloc_shared((bn, bk), "float16")
-            accum = T.alloc_fragment((bm, bn), "float32")
-            T.clear(accum)
-            for tile in T.Pipelined(k // bk, num_stages=stages):
-                T.copy(xm[by * bm : by * bm + bm, tile * bk : tile * bk + bk], lhs)
-                T.copy(wm[bx * bn : bx * bn + bn, tile * bk : tile * bk + bk], rhs)
-                T.gemm(lhs, rhs, accum, transpose_B=True)
-            T.copy(accum, ym[by * bm : by * bm + bm, bx * bn : bx * bn + bn])
-        return out
-
-    return compute
-
-
 def short_packed_linear(spec, schedule):
     """Larger K tiles amortize GGML coefficient decoding for short prefill."""
     p = {**spec.parameters, **schedule}

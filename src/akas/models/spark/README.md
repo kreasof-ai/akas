@@ -5,10 +5,12 @@ Spark X2.5 and X2.6. The initial qualified checkpoint is XHToken/Spark-X2.6-4B.
 Sources are pinned in `benchmarks/models/spark-x2.6-4b.json`.
 
 The reader accepts BF16 safetensors, compressed-tensors FP8 safetensors with
-per-output-channel weight scales, and GGUF. BF16 and FP8 safetensors are converted
-one matrix at a time into FP16 resident weights. FP8 weight scales are applied
-before conversion; execution uses floating activations, without dynamic FP8
-activation quantization. This is FP8 checkpoint import, not native W8A8 execution.
+per-output-channel weight scales, and GGUF. BF16 safetensors use FP16 resident
+weights. FP8 matrices retain their original E4M3 bytes and BF16 channel scales
+on the GPU, and GGUF matrices retain their original packed encodings. Quantized
+coefficients are decoded only in temporary compute tiles; no full FP16 weight
+copy or persistent dequantized prefill cache is allocated. FP8 execution uses
+floating activations, without dynamic FP8 activation quantization.
 Normalization and residual arithmetic use FP32, projections use FP16 operands
 with FP32 accumulation, and KV is FP16. GGUF matrices retain their actual source
 encodings, including mixed BF16, Q4_K, Q6_K, and Q8_0 in the official Q4_K_M file.
@@ -80,16 +82,16 @@ python -m tools.spark_benchmark compile --optimized --chunk 1024 --program build
 python -m tools.spark_benchmark akas --chunk 1024 --program build/spark/fast --out build/spark/akas-fast.json
 ```
 
-The equivalent model options are `prefill_weight_cache=True`, `rotary_cache=True`
-and `optimized_attention=True`, with `prefill_chunk=1024`. The first keeps a
-derived FP16 copy of GGUF layer matrices for prefill batches of at least 128
-tokens; short prompts and decoding still use the original packed weights. It
-adds about 7.55 GB for this checkpoint. The FP16 coefficients match those used
-by the packed prefill path; there is no extra quantization step. Floating
-checkpoints reuse their existing FP16 matrices. Shared FP32 sine/cosine tables
+The equivalent model options are `rotary_cache=True` and
+`optimized_attention=True`, with `prefill_chunk=1024`. Quantized weights stay
+packed for both prefill and decoding. Shared FP32 sine/cosine tables
 replace repeated rotary trigonometry, and optimized attention shares K/V loads
 across grouped decode heads and larger prefill tiles. These options are disabled
 by default. Compilation and uploads remain outside benchmark timers.
+
+The former `prefill_weight_cache` option has been removed. Recompile older
+programs that enabled it, and FP8 programs built for the former FP16 import
+layout. Historical benchmark records remain archived.
 
 Run the expanded independent checks with
 `AKAS_SPARK_CUDA=1 python -m pytest tests/test_spark.py tests/test_spark_performance.py`.

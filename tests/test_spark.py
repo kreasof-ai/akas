@@ -52,15 +52,19 @@ def test_corrupt_inventory_fails_before_upload(tmp_path):
 @pytest.mark.skipif(
     os.getenv("AKAS_SPARK_CUDA") != "1", reason="opt-in Spark CUDA model qualification"
 )
-@pytest.mark.parametrize("optimized", [False, True])
+@pytest.mark.parametrize(
+    "optimized,weight_format", [(False, "bf16"), (True, "bf16"), (True, "fp8")]
+)
 def test_cuda_matches_independent_equations_across_wrap_reorder_and_reuse(
-    tmp_path, optimized
+    tmp_path, optimized, weight_format
 ):
     import tensor
     from akas.compilation import compile_checkpoint
     from akas.compilation.tuning import SearchSettings
 
-    path = fixture(tmp_path / "checkpoint")
+    from support.spark import fp8_fixture
+
+    path = (fp8_fixture if weight_format == "fp8" else fixture)(tmp_path / "checkpoint")
     c = SparkCheckpoint(path, tokenizer=False)
     bundle = tmp_path / "program"
     chunk = 64 if optimized else 32
@@ -74,7 +78,6 @@ def test_cuda_matches_independent_equations_across_wrap_reorder_and_reuse(
         max_context=128,
         model_options=dict(
             prefill_chunk=chunk,
-            prefill_weight_cache=optimized,
             rotary_cache=optimized,
             optimized_attention=optimized,
         ),

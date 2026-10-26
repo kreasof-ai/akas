@@ -15,7 +15,6 @@ def compose(
     phase=None,
     kv_dtype="float16",
     prefill_chunk=256,
-    prefill_weight_cache=False,
     rotary_cache=False,
     optimized_attention=False,
 ):
@@ -33,10 +32,7 @@ def compose(
         raise ValueError("invalid Spark request geometry or phase")
     g = Graph(contract="reference", phase="forward")
     b, w = rows * chunk, c.width
-    cached_prefill = prefill_weight_cache and b >= 128 and chunk > 1
-    weights = checkpoint.graph_weights(
-        g, provider=provider, prefill_cache=cached_prefill
-    )
+    weights = checkpoint.graph_weights(g, provider=provider)
     rotary_tables = {}
     if rotary_cache:
         from akas.models.spark.weights import rotary_parameters
@@ -66,25 +62,27 @@ def compose(
             else {"weight_dtype": "float16"}
         )
 
-    half_inputs = {}
-
     def project(name, x, weight, k, o, count=b):
         out = scratch(name, o, count)
+        if weight in getattr(weights, "scales", {}):
+            lhs = g.view(name + ".input_matrix", x, (count, k))
+            matrix = g.view(name + ".output_matrix", out, (count, o))
+            g(
+                "quantized_linear",
+                dict(
+                    r=count,
+                    k=k,
+                    o=o,
+                    weight_format="fp8",
+                    weight_options={"scale_layout": "channel"},
+                ),
+                lhs,
+                weights[weight],
+                weights.scales[weight],
+                matrix,
+            )
+            return out
         for weight_buffer, start, n in weights.matrix(weight):
-            if cached_prefill and count > 1:
-                key = x.name, count, k
-                if key not in half_inputs:
-                    packed = g.buffer(x.name + ".half", (count * k,), "float16")
-                    g("projection_cast", dict(r=count, k=k), x, packed)
-                    half_inputs[key] = packed
-                g(
-                    "resident_linear",
-                    dict(r=count, k=k, o=n),
-                    half_inputs[key],
-                    weight_buffer,
-                    out,
-                )
-                continue
             g(
                 "linear",
                 dict(
@@ -94,7 +92,7 @@ def compose(
                     optimized=True,
                     **(
                         dict(vector_q8=True, short_packed=True)
-                        if prefill_weight_cache or optimized_attention
+                        if optimized_attention
                         else {}
                     ),
                     **params(weight),

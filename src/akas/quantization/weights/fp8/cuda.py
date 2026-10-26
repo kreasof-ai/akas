@@ -66,13 +66,13 @@ def dequantize(spec, schedule):
     return dequantize(spec, schedule, provider="cuda")
 
 
-def bind(shape):
+def bind(shape, *, scale_layout="block"):
     from akas.quantization.formats import Codec
     from akas.quantization._shared.access import matrix_tile
     from .kernel import reader
 
-    storage = FORMAT.storage(shape, provider="cuda")
-    read = reader(shape, provider="cuda")
+    storage = FORMAT.storage(shape, provider="cuda", scale_layout=scale_layout)
+    read = reader(shape, provider="cuda", scale_layout=scale_layout)
     return Codec(storage, read, matrix_tile(read, shape))
 
 

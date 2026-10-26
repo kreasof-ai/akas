@@ -105,6 +105,10 @@ Replace `REPORT_DIRECTORY` with the verified directory printed by the fetch comm
 
 **Spark X2.6-4B · Q4_K_M weights · NVIDIA L4 (23,034 MiB) · CUDA**
 
+The following historical comparison used a persistent FP16 prefill weight copy.
+That implementation has been removed; these figures do not describe the current
+packed-weight prefill path.
+
 Results from the [October 26, 2026 comparison](https://github.com/kreasof-ai/akas/blob/9a0dcb83131433e0955515894c973c3897076e61/benchmarks/reports/20261026T100758Z-6d809fbde297/README.md),
 with one request generating 128 total output tokens. Both runtimes use the same
 official Q4_K_M checkpoint, synthetic prompt IDs and FP16 KV. Rates are medians of
@@ -134,7 +138,7 @@ llama.cpp; the 2× prefill target was not met. These observations describe this
 measured configuration. AKAS uses synchronized native phases; llama.cpp uses
 server eval phases. Loading is excluded and phase timing boundaries differ.
 
-The optimized configuration enables an optional FP16 prefill weight cache
+The historical optimized configuration enabled an optional FP16 prefill weight cache
 (about 7.55 GB extra), shared rotary tables and optimized attention, with a
 1024-token maximum prefill chunk. [Spark model support and usage](src/akas/models/spark/README.md)
 also cover BF16 and FP8 safetensors imports, which execute with FP16 matrices.

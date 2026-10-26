@@ -51,7 +51,6 @@ def compile_program(args):
             prefill_chunk=args.chunk,
             **(
                 dict(
-                    prefill_weight_cache=True,
                     rotary_cache=True,
                     optimized_attention=True,
                 )
@@ -189,6 +188,13 @@ def akas(args):
         from akas.benchmarking.runner import run
         from akas.memory.transfer import write as transfer
 
+        program = json.loads((args.program / "program.json").read_text())
+        if program.get("model_options", {}).get("prefill_weight_cache") or program.get(
+            "upload_options", {}
+        ).get("prefill_cache"):
+            raise ValueError(
+                "FP16 weight-cache programs are unsupported; recompile with the current packed-weight model"
+            )
         with (
             tensor.Device() as device,
             Spark(
@@ -202,12 +208,21 @@ def akas(args):
             meta["device"] = dict(device.info)
             meta["model_options"] = model.program["model_options"]
             meta["graphs"] = True
+            meta["quantized_weight_storage"] = (
+                "checkpoint-native; no persistent dequantized weight copy"
+            )
+            meta["allocated_weight_bytes"] = sum(
+                v.nbytes for v in model.batches.weights.values()
+            )
             recorder.program(args.program)
             if not recorder.record["search"]:
                 raise ValueError("missing operation qualification")
             for phase in model.program["phases"]:
                 model.batches.select(1, phase["chunk"], phase=phase["phase"])
             device.synchronize()
+            meta["allocated_state_bytes"] = sum(
+                v.nbytes for v in model.batches.states.values()
+            )
             meta["phase_loading"] = "all phases preloaded before timing"
             with Session(model, batch=1, chunk=args.chunk) as session:
                 run(session, Case(1, 32, 4), prompts=prompts(32), warmup=0, repeats=1)
@@ -609,7 +624,7 @@ def main():
     parser.add_argument(
         "--optimized",
         action="store_true",
-        help="compile with resident prefill weights, shared RoPE tables and grouped decode",
+        help="compile with packed weights, shared RoPE tables and optimized attention",
     )
     parser.add_argument("--warmup", type=int, default=1)
     parser.add_argument("--repeats", type=int, default=3)

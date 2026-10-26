@@ -1,10 +1,28 @@
 """Shared FP8 weights access and standalone dequantization."""
 
 
-def reader(shape, *, provider):
+def reader(shape, *, provider, scale_layout="block"):
     from akas.quantization._shared.fp8 import reader
 
+    if scale_layout == "channel":
+        return channel_reader(shape, provider=provider)
     return reader(shape, role="weights", provider=provider)
+
+
+def channel_reader(shape, *, provider):
+    """Read E4M3 bytes with one BF16 scale per output channel."""
+    import tilelang.language as T
+
+    if provider != "cuda" or len(shape) != 2:
+        raise ValueError("channel-scaled FP8 currently requires a CUDA matrix")
+
+    @T.macro
+    def read(encoded, row, column):
+        return T.call_extern(
+            "float32", "tensor_decode_e4m3", T.cast(encoded[0][row, column], "uint32")
+        ) * T.cast(encoded[1][row, 0], "float32")
+
+    return read
 
 
 def dequantize(spec, schedule, *, provider):

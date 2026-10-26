@@ -197,11 +197,13 @@ class SparkCheckpoint:
             raise ValueError(f"nonfinite Spark FP8 weight: {name}")
         return decode_storage(bits) * read_float_tensor(self.tensors[self.scales[name]])
 
-    def graph_weights(self, graph, *, provider, prefill_cache=False):
+    def graph_weights(self, graph, *, provider):
         if provider != "cuda":
             raise ValueError("Spark currently requires CUDA")
         if self.gguf is not None:
-            return PackedWeights(graph, self.gguf, prefill_cache=prefill_cache)
+            return PackedWeights(graph, self.gguf)
+        if self.fp8:
+            return ChannelWeights(graph, self)
         from akas.checkpoints.partition import Weights
 
         return Weights(
@@ -222,11 +224,11 @@ class SparkCheckpoint:
         options = {}
         if contexts:
             options["rope_context"] = contexts.pop()
-        if any(name.endswith(".prefill") for name in weights):
-            options["prefill_cache"] = True
         return options
 
-    def upload(self, device, *, prefill_cache=False, rope_context=0):
+    def upload(self, device, *, rope_context=0):
+        import numpy as np
+
         if device.info["provider"] != "cuda":
             raise ValueError("Spark currently requires CUDA")
         if self.gguf is not None:
@@ -238,25 +240,28 @@ class SparkCheckpoint:
         try:
             if self.gguf is None:
                 for name in self.names:
-                    values = self.read(name)
-                    values = values.astype("float16" if values.ndim == 2 else "float32")
-                    result[name] = device.from_numpy(values.reshape(-1))
-            elif prefill_cache:
-                for name, info in self.gguf.tensors.items():
-                    if cacheable(name, info):
-                        values = self.gguf.array(name).astype("float16")
-                        result[name + ".prefill"] = device.from_numpy(
-                            values.reshape(-1)
+                    hf = self.names[name]
+                    if hf in self.scales:
+                        values = read_tensor(self.tensors[hf])
+                        if np.any((values & 127) == 127):
+                            raise ValueError(f"nonfinite Spark FP8 weight: {hf}")
+                        result[name] = device.from_numpy(values)
+                        scale = read_float_tensor(self.tensors[self.scales[hf]])
+                        result[name + ".scale"] = device.from_numpy(
+                            scale, dtype="bfloat16"
                         )
-                        self.gguf.discard(name)
+                    else:
+                        values = self.read(name)
+                        values = values.astype(
+                            "float16" if values.ndim == 2 else "float32"
+                        )
+                        result[name] = device.from_numpy(values.reshape(-1))
             if rope_context:
                 if (
                     type(rope_context) is not int
                     or not 1 <= rope_context <= self.config.max_context
                 ):
                     raise ValueError("invalid rotary table context")
-                import numpy as np
-
                 for i, (theta, rotary) in enumerate(rotary_parameters(self.config)):
                     angle = np.arange(rope_context, dtype="float64")[
                         :, None
@@ -284,7 +289,7 @@ class SparkCheckpoint:
             format="fp8" if self.fp8 else "bf16",
             tensors=len(self.tensors),
             encodings=dict(Counter(t.dtype for t in self.tensors.values())),
-            execution_weights="float16",
+            execution_weights="fp8-channel" if self.fp8 else "float16",
             fp8_scales="per-output-channel" if self.fp8 else None,
         )
 
@@ -294,27 +299,18 @@ def rotary_parameters(config):
     return tuple(dict.fromkeys(zip(config.theta, config.rotary)))
 
 
-def cacheable(name, info):
-    return len(info.shape) == 2 and name not in ("token_embd.weight", "output.weight")
-
-
 class PackedWeights:
     """Preserve each matrix's GGML encoding and share embedding/output storage."""
 
-    def __init__(self, graph, gguf, *, prefill_cache=False):
+    def __init__(self, graph, gguf):
         from math import prod
         from akas.quantization.weights.ggml.definition import weight_storage
 
         self.gguf = gguf
         self.buffers = {}
-        self.cached = {}
         for name, info in gguf.tensors.items():
             count, dtype = weight_storage(info.type, prod(info.shape))
             self.buffers[name] = graph.buffer(name, (count,), dtype, role="weight")
-            if prefill_cache and cacheable(name, info):
-                self.cached[name] = graph.buffer(
-                    name + ".prefill", (prod(info.shape),), "float16", role="weight"
-                )
 
     def __getitem__(self, name):
         return self.buffers[name]
@@ -322,7 +318,7 @@ class PackedWeights:
     def matrix(self, name):
         return [
             (
-                self.cached.get(name, self.buffers[name]),
+                self.buffers[name],
                 0,
                 self.gguf.tensors[name].shape[0],
             )
@@ -331,5 +327,39 @@ class PackedWeights:
     def parameters(self, name):
         return {
             "ggml": True,
-            "type": 1 if name in self.cached else self.gguf.tensors[name].type,
+            "type": self.gguf.tensors[name].type,
         }
+
+
+class ChannelWeights:
+    """Keep channel-quantized FP8 matrices and scales in checkpoint precision."""
+
+    def __init__(self, graph, checkpoint):
+        self.buffers, self.scales = {}, {}
+        from math import prod
+
+        self.shapes = tensor_shapes(
+            checkpoint.config, output=not checkpoint.config.tied
+        )
+        for name, shape in self.shapes.items():
+            if checkpoint.names[name] in checkpoint.scales:
+                self.buffers[name] = graph.buffer(name, shape, "uint8", role="weight")
+                self.scales[name] = graph.buffer(
+                    name + ".scale", (shape[0], 1), "bfloat16", role="weight"
+                )
+            else:
+                self.buffers[name] = graph.buffer(
+                    name,
+                    (prod(shape),),
+                    "float16" if len(shape) == 2 else "float32",
+                    role="weight",
+                )
+
+    def __getitem__(self, name):
+        return self.buffers[name]
+
+    def matrix(self, name):
+        return [(self.buffers[name], 0, self.shapes[name][0])]
+
+    def parameters(self, name):
+        return {"weight_dtype": "float16"}

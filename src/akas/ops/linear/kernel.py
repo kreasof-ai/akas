@@ -564,23 +564,3 @@ def column_projection(spec, schedule):
         return out
 
     return compute
-
-
-def projection_cast(spec, schedule):
-    """Round projection operands once before asynchronous tensor-core tiles."""
-    import tilelang.language as T
-
-    p = {**spec.parameters, **schedule}
-    size = p["r"] * p["k"]
-
-    @kernel
-    def compute(x: Tensor((size,), "float32")) -> Tensor((size,), "float16"):
-        out = output((size,), "float16")
-        with T.Kernel(T.ceildiv(size, 256), threads=256) as block:
-            for lane in T.Parallel(256):
-                i = block * 256 + lane
-                if i < size:
-                    out[i] = x[i]
-        return out
-
-    return compute
