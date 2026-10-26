@@ -6,7 +6,7 @@
 <h1 align="center">Compiler-first model inference.</h1>
 
 <p align="center">
-  Compose models in pure Python, fuse quantization codecs at compile time. <br> 
+  Compose models in pure Python, fuse a whole model at compile time. <br> 
   Serve AOT-compiled .tbin programs without PyTorch or TileLang at runtime.
 </p>
 
