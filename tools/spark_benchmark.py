@@ -194,6 +194,19 @@ def akas(args):
         from akas.memory.transfer import write as transfer
 
         program = json.loads((args.program / "program.json").read_text())
+        from akas.graph import Graph
+        from akas.kernels.registry import graph_outputs
+
+        for phase in program["phases"]:
+            manifest = json.loads((args.program / phase["path"]).read_text())
+            graph = Graph.from_metadata(manifest["forward"])
+            if any(
+                "mapping" in (graph_outputs(call, contract=graph.contract) or ())
+                for call in graph.calls
+            ):
+                raise ValueError(
+                    "program has an invalid output ABI for request mapping; recompile"
+                )
         if program.get("model_options", {}).get("prefill_weight_cache") or program.get(
             "upload_options", {}
         ).get("prefill_cache"):

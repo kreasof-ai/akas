@@ -87,3 +87,59 @@ def test_requested_intermediate_features_survive_without_the_terminal_head():
             features={"mixer": "mixed"},
             prefill_features=("missing",),
         )
+
+
+def test_lifted_state_reader_keeps_output_abi_when_mapping_is_appended(monkeypatch):
+    from types import SimpleNamespace
+    from akas.artifacts.schema import Kernel, Source
+    from akas.compilation import state
+    from akas.kernels.registry import graph_outputs
+
+    g = Graph(contract="reference", phase="prefill")
+    for name, shape, dtype, role in [
+        ("tokens", (2,), "int32", "input"),
+        ("enabled", (2,), "int32", "input"),
+        ("mapping", (2,), "int32", "input"),
+        ("positions", (4,), "int32", "state"),
+        ("row_positions", (2,), "int32", "input"),
+        ("q", (2, 64), "float32", "input"),
+        ("kc", (4, 1, 4, 64), "float16", "state"),
+        ("vc", (4, 1, 4, 64), "float16", "state"),
+        ("parts", (132,), "float32", "scratch"),
+        ("persistent", (4,), "float32", "state"),
+        ("head", (2, 132), "float32", "weight"),
+        ("logits", (4,), "float32", "output"),
+        ("sampled", (2,), "int32", "output"),
+    ]:
+        g.buffer(name, shape, dtype, role=role)
+    p = dict(r=2, h=1, kh=1, d=64, capacity=4, chunk=1, window=0, splits=1)
+    call = g(
+        "window_attention", p, "q", "kc", "vc", "row_positions", "enabled", "parts"
+    )
+    g("foreign", {}, "parts", "persistent")
+    g("linear", dict(r=2, k=132, o=2), "parts", "head", "logits")
+    g("argmax", dict(r=2, c=2), "logits", "sampled", "enabled")
+    g("advance", dict(r=2), "positions", "enabled")
+    g.bind_requests(
+        inputs=dict(tokens="tokens", active="enabled"), prediction="sampled"
+    )
+    names = ("q", "kc", "vc", "positions", "enabled", "out")
+    shapes = ((2, 64), (2, 1, 4, 64), (2, 1, 4, 64), (2,), (2,), (132,))
+    params = list(range(6))
+    fake = SimpleNamespace(
+        params=params,
+        buffer_map={
+            i: SimpleNamespace(name=n, shape=s)
+            for i, n, s in zip(params, names, shapes)
+        },
+    )
+    monkeypatch.setattr(
+        state, "import_module", lambda _: SimpleNamespace(make=lambda: fake)
+    )
+    adapted, _ = state.map_requests(
+        g, [Kernel(call.key, "window_attention", p, Source("stub", "make"))]
+    )
+    assert graph_outputs(adapted.calls[0], contract="reference") == ("parts",)
+    assert adapted.calls[0].bindings["mapping"] == "mapping"
+    derived = state_prefill(Graph.from_metadata(adapted.metadata()))
+    assert [c.kind for c in derived.calls] == ["window_attention", "foreign", "advance"]

@@ -246,6 +246,18 @@ def test_packed_prefill_fusions_match_equations_and_keep_storage(tmp_path):
         ),
         search_settings=SearchSettings(budget=1, samples=1, repeats=1),
     )
+    # Earlier full attention feeds later layers' cached K/V even when the head is pruned.
+    program = json.loads((bundle / "program.json").read_text())
+    state = next(p for p in program["phases"] if p["phase"] == "prefill_state")
+    from akas.graph import Graph
+    from akas.kernels.registry import graph_outputs
+
+    derived = Graph.from_metadata(
+        json.loads((bundle / state["path"]).read_text())["forward"]
+    )
+    full = [c for c in derived.calls if c.kind == "window_attention"]
+    assert len(full) == 1
+    assert graph_outputs(full[0], contract="reference") == ("blk.1.attention_parts",)
     rng = np.random.default_rng(618)
     sequences = [rng.integers(0, 64, n).tolist() for n in (167, 151)]
     with (

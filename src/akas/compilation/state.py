@@ -30,6 +30,7 @@ def map_requests(graph, kernels):
     rows = graph.buffers["mapping"].shape[0]
     calls = {call.key: call for call in graph.calls}
     mappings = {}
+    argument_names = {}
     result = []
     for declaration in kernels:
         source = declaration.source
@@ -63,11 +64,21 @@ def map_requests(graph, kernels):
             raise ValueError("operation state pools disagree")
         mapping = (states, rows, capacities.pop())
         mappings[declaration.key] = mapping
+        argument_names[declaration.key] = tuple(buffer.name for buffer in signature)
         result.append(
             replace(declaration, source=mapped_source(source, mapping), mapping=mapping)
         )
     graph.calls = [
-        replace(call, arguments=(*call.arguments, "mapping"))
+        # Resolve the original ABI by name before adding the adapter input.
+        # Trailing output indexes must not accidentally identify "mapping".
+        replace(
+            call,
+            arguments=(),
+            bindings={
+                **dict(zip(argument_names[call.key], call.arguments)),
+                "mapping": "mapping",
+            },
+        )
         if call.arguments and call.key in mappings
         else replace(call, bindings={**call.bindings, "mapping": "mapping"})
         if call.key in mappings
