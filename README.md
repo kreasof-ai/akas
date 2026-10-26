@@ -105,52 +105,50 @@ Replace `REPORT_DIRECTORY` with the verified directory printed by the fetch comm
 
 **Spark X2.6-4B · Q4_K_M weights · NVIDIA L4 (23,034 MiB) · CUDA**
 
-The following historical comparison used a persistent FP16 prefill weight copy.
-That implementation has been removed; these figures do not describe the current
-packed-weight prefill path.
+Results from the [October 26, 2026 packed-weight comparison](https://github.com/kreasof-ai/akas/blob/f9500085abb4ae7361a9f869dc895c8690595698/benchmarks/reports/20261026T101811Z-d8f7b633ccd4/README.md),
+with one request generating 128 total output tokens. Quantized weights remain
+packed on the GPU for both prefill and decode, with no persistent FP16 weight
+copy. Both runtimes use the same official checkpoint, synthetic prompt IDs and
+FP16 KV. Rates are medians of three retained repetitions after one warmup.
 
-Results from the [October 26, 2026 comparison](https://github.com/kreasof-ai/akas/blob/9a0dcb83131433e0955515894c973c3897076e61/benchmarks/reports/20261026T100758Z-6d809fbde297/README.md),
-with one request generating 128 total output tokens. Both runtimes use the same
-official Q4_K_M checkpoint, synthetic prompt IDs and FP16 KV. Rates are medians of
-three retained repetitions after one warmup per prefix.
-
-![Spark X2.6 Q4_K_M prefill and decode throughput with observed sample ranges.](https://raw.githubusercontent.com/kreasof-ai/akas/2dc8cef265ae84929bb4e997b3ff8b3ddea97411/benchmarks/runs/20261026104029360039-8c2615b5/figures/throughput.svg)
+![Spark X2.6 Q4_K_M prefill and decode throughput with packed weights and observed sample ranges.](https://raw.githubusercontent.com/kreasof-ai/akas/c20246b485e2943b1afb42a3bb79c02a30595627/benchmarks/runs/20261026113343275318-cb66f95b/figures/throughput.svg)
 
 <details>
 <summary>Measurements (tokens per second) and estimated prefill MFU</summary>
 
 | Prefix tokens | AKAS prefill tok/s | llama.cpp prefill tok/s | AKAS decode tok/s | llama.cpp decode tok/s | Estimated AKAS prefill MFU |
 | ---: | ---: | ---: | ---: | ---: | ---: |
-| 32 | 1,075.4 | 844.1 | 71.2 | 63.7 | 6.74% |
-| 512 | 4,606.0 | 4,179.9 | 69.8 | 65.6 | 29.33% |
-| 2,048 | 4,734.2 | 4,542.6 | 68.5 | 50.6 | 30.92% |
-| 8,192 | 4,394.3 | 4,359.9 | 64.9 | 41.3 | 30.42% |
-| 16,384 | 3,990.7 | 4,038.9 | 60.3 | 55.4 | 29.63% |
-| 32,768 | 3,339.7 | 3,136.7 | 52.0 | 46.8 | 28.13% |
-| 65,536 | 2,500.2 | 2,138.9 | 41.7 | 37.2 | 26.06% |
-| 130,944 | 1,667.2 | 1,337.8 | 30.2 | 27.5 | 24.02% |
+| 32 | 1,088.3 | 844.1 | 71.3 | 63.7 | 6.82% |
+| 512 | 1,711.8 | 4,179.9 | 69.8 | 65.6 | 10.90% |
+| 2,048 | 1,739.4 | 4,542.6 | 68.5 | 50.6 | 11.36% |
+| 8,192 | 1,692.3 | 4,359.9 | 64.8 | 41.3 | 11.72% |
+| 16,384 | 1,615.3 | 4,038.9 | 60.3 | 55.4 | 11.99% |
+| 32,768 | 1,475.5 | 3,136.7 | 51.7 | 46.8 | 12.43% |
+| 65,536 | 1,260.3 | 2,138.9 | 41.5 | 37.2 | 13.13% |
+| 130,944 | 1,000.8 | 1,337.8 | 30.2 | 27.5 | 14.42% |
 
 </details>
 
-Decode medians and every retained AKAS decode sample exceed the corresponding
-llama.cpp samples at all eight tested prefixes. Prefill reaches 0.99–1.27×
-llama.cpp; the 2× prefill target was not met. These observations describe this
-measured configuration. AKAS uses synchronized native phases; llama.cpp uses
-server eval phases. Loading is excluded and phase timing boundaries differ.
+Peak GPU memory was **9.50 GiB**, including the full 131072-token KV
+reservation for one request. The former FP16 prefill weight copy has been removed.
+Decode medians exceed llama.cpp at 8/8 prefixes; all retained
+decode samples exceed corresponding llama.cpp samples at 8/8. These
+observations describe this measured configuration. The chart reuses the sealed
+llama.cpp baseline from earlier on October 26, with identical checkpoint bytes,
+prompts, GPU, KV precision and sampling protocol; llama.cpp was not rerun.
 
-The historical optimized configuration enabled an optional FP16 prefill weight cache
-(about 7.55 GB extra), shared rotary tables and optimized attention, with a
-1024-token maximum prefill chunk. [Spark model support and usage](src/akas/models/spark/README.md)
-also cover BF16 and FP8 safetensors imports, which execute with FP16 matrices.
-Estimated MFU counts useful model math relative to L4’s 121 TFLOP/s dense FP16
-peak; it is not a hardware instruction counter. See the
-[target assessment, MFU method and GPU telemetry](https://github.com/kreasof-ai/akas/blob/566e756f90540e01b03628558e33444c94c18a40/benchmarks/runs/20261026103015172978-b083ceb8/analysis/README.md)
-and the [full report](https://github.com/kreasof-ai/akas/blob/9a0dcb83131433e0955515894c973c3897076e61/benchmarks/reports/20261026T100758Z-6d809fbde297/README.md)
-for raw samples, output comparisons and selected schedules.
+AKAS uses synchronized native phases; llama.cpp uses server eval phases.
+Loading is excluded and phase timing boundaries differ. Estimated MFU counts
+useful model math relative to L4’s 121 TFLOP/s dense FP16 peak; it is not a
+hardware instruction counter. The optimized configuration uses shared rotary
+tables, optimized attention and a 1024-token maximum prefill chunk.
 
-[The original Spark comparison](https://github.com/kreasof-ai/akas/blob/ac2323d0ea0527aae1bfaded42ee80947770aefd/benchmarks/reports/20261025T235635Z-d80177ee179d/README.md)
-remains archived. Payloads are sealed on the artifact branches listed in
-[the archive catalog](benchmarks/archive.json).
+[Spark model support and usage](src/akas/models/spark/README.md) also cover BF16
+safetensors and native FP8 weight storage with channel scales. See the
+[memory assessment, MFU method and GPU telemetry](https://github.com/kreasof-ai/akas/blob/c20246b485e2943b1afb42a3bb79c02a30595627/benchmarks/runs/20261026113343275318-cb66f95b/analysis/README.md)
+and the [full report](https://github.com/kreasof-ai/akas/blob/f9500085abb4ae7361a9f869dc895c8690595698/benchmarks/reports/20261026T101811Z-d8f7b633ccd4/README.md) for raw samples, output comparisons and
+selected schedules. Earlier results using the removed FP16 weight copy remain
+historical records in [the archive catalog](benchmarks/archive.json).
 
 ## Getting started
 
