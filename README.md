@@ -105,50 +105,52 @@ Replace `REPORT_DIRECTORY` with the verified directory printed by the fetch comm
 
 **Spark X2.6-4B · Q4_K_M weights · NVIDIA L4 (23,034 MiB) · CUDA**
 
-Results from the [October 26, 2026 packed-weight comparison](https://github.com/kreasof-ai/akas/blob/f9500085abb4ae7361a9f869dc895c8690595698/benchmarks/reports/20261026T101811Z-d8f7b633ccd4/README.md),
-with one request generating 128 total output tokens. Quantized weights remain
-packed on the GPU for both prefill and decode, with no persistent FP16 weight
-copy. Both runtimes use the same official checkpoint, synthetic prompt IDs and
-FP16 KV. Rates are medians of three retained repetitions after one warmup.
+Results from the [October 26, 2026 compact packed-weight comparison](https://github.com/kreasof-ai/akas/blob/409fb009fc0429da6e6a67576c446cfe55487724/benchmarks/reports/20261026T141034Z-d68a20ede35c/README.md).
+Both runtimes were measured with one request generating 128 total output tokens,
+identical official checkpoint bytes, synthetic prompt IDs and FP16 KV. Rates
+are medians of three retained repetitions after one warmup. Quantized weights
+stay packed; no persistent FP16 weight copy is allocated.
 
-![Spark X2.6 Q4_K_M prefill and decode throughput with packed weights and observed sample ranges.](https://raw.githubusercontent.com/kreasof-ai/akas/c20246b485e2943b1afb42a3bb79c02a30595627/benchmarks/runs/20261026113343275318-cb66f95b/figures/throughput.svg)
+![Spark X2.6 Q4_K_M prefill and decode throughput with observed sample ranges.](https://raw.githubusercontent.com/kreasof-ai/akas/6243760e7784bcf2e62fe4819696ed64c3d0f62d/benchmarks/runs/20261026155042227779-0a568a08/figures/throughput.svg)
 
 <details>
 <summary>Measurements (tokens per second) and estimated prefill MFU</summary>
 
 | Prefix tokens | AKAS prefill tok/s | llama.cpp prefill tok/s | AKAS decode tok/s | llama.cpp decode tok/s | Estimated AKAS prefill MFU |
 | ---: | ---: | ---: | ---: | ---: | ---: |
-| 32 | 1,088.3 | 844.1 | 71.3 | 63.7 | 6.82% |
-| 512 | 1,711.8 | 4,179.9 | 69.8 | 65.6 | 10.90% |
-| 2,048 | 1,739.4 | 4,542.6 | 68.5 | 50.6 | 11.36% |
-| 8,192 | 1,692.3 | 4,359.9 | 64.8 | 41.3 | 11.72% |
-| 16,384 | 1,615.3 | 4,038.9 | 60.3 | 55.4 | 11.99% |
-| 32,768 | 1,475.5 | 3,136.7 | 51.7 | 46.8 | 12.43% |
-| 65,536 | 1,260.3 | 2,138.9 | 41.5 | 37.2 | 13.13% |
-| 130,944 | 1,000.8 | 1,337.8 | 30.2 | 27.5 | 14.42% |
+| 32 | 1,085.6 | 839.9 | 71.2 | 63.8 | 6.80% |
+| 512 | 4,238.4 | 4,195.7 | 69.8 | 65.7 | 26.99% |
+| 2,048 | 4,632.6 | 4,536.1 | 68.5 | 50.7 | 30.25% |
+| 8,192 | 4,406.6 | 4,351.3 | 64.9 | 41.0 | 30.50% |
+| 16,384 | 4,061.0 | 4,041.3 | 60.3 | 55.4 | 30.15% |
+| 32,768 | 3,507.1 | 3,135.5 | 51.9 | 46.9 | 29.55% |
+| 65,536 | 2,724.4 | 2,139.1 | 41.6 | 37.3 | 28.39% |
+| 130,944 | 1,879.4 | 1,336.2 | 30.1 | 27.6 | 27.08% |
 
 </details>
 
-Peak GPU memory was **9.50 GiB**, including the full 131072-token KV
-reservation for one request. The former FP16 prefill weight copy has been removed.
-Decode medians exceed llama.cpp at 8/8 prefixes; all retained
-decode samples exceed corresponding llama.cpp samples at 8/8. These
-observations describe this measured configuration. The chart reuses the sealed
-llama.cpp baseline from earlier on October 26, with identical checkpoint bytes,
-prompts, GPU, KV precision and sampling protocol; llama.cpp was not rerun.
+Peak GPU memory was **7.71 GiB for AKAS and 7.73 GiB for llama.cpp**
+with the full 131072-token context reservation. Both keep the input embedding
+on the CPU; AKAS maps 640 MiB of pinned host memory. All transformer weights
+and the output head remain on the GPU. The earlier packed-weight AKAS run
+peaked at 9.50 GiB. Shared allocations and scratch, compact rotary tables,
+fused prefill, compact sliding rings and FP16 activation staging reduce memory and prefill traffic.
 
-AKAS uses synchronized native phases; llama.cpp uses server eval phases.
-Loading is excluded and phase timing boundaries differ. Estimated MFU counts
-useful model math relative to L4’s 121 TFLOP/s dense FP16 peak; it is not a
-hardware instruction counter. The optimized configuration uses shared rotary
-tables, optimized attention and a 1024-token maximum prefill chunk.
+Prefill medians meet or exceed llama.cpp at 8/8 prefixes. Decode medians
+exceed it at 8/8, with all retained decode samples ahead at 8/8.
+These observations describe this measured configuration. AKAS uses a maximum
+2048-token prefill chunk and llama.cpp uses 512. Native synchronized AKAS
+phases and llama-server eval phases have different timing boundaries; loading
+is excluded. The sealed llama.cpp run from earlier in this session is reused
+with its pinned binary and matching workload unchanged. Estimated MFU counts
+useful model math against L4’s 121 TFLOP/s
+dense FP16 peak and is not a hardware instruction counter.
 
 [Spark model support and usage](src/akas/models/spark/README.md) also cover BF16
-safetensors and native FP8 weight storage with channel scales. See the
-[memory assessment, MFU method and GPU telemetry](https://github.com/kreasof-ai/akas/blob/c20246b485e2943b1afb42a3bb79c02a30595627/benchmarks/runs/20261026113343275318-cb66f95b/analysis/README.md)
-and the [full report](https://github.com/kreasof-ai/akas/blob/f9500085abb4ae7361a9f869dc895c8690595698/benchmarks/reports/20261026T101811Z-d8f7b633ccd4/README.md) for raw samples, output comparisons and
-selected schedules. Earlier results using the removed FP16 weight copy remain
-historical records in [the archive catalog](benchmarks/archive.json).
+safetensors and native FP8 weights with channel scales. See the
+[memory assessment, MFU method and GPU telemetry](https://github.com/kreasof-ai/akas/blob/6243760e7784bcf2e62fe4819696ed64c3d0f62d/benchmarks/runs/20261026155042227779-0a568a08/analysis/README.md)
+and [full report](https://github.com/kreasof-ai/akas/blob/409fb009fc0429da6e6a67576c446cfe55487724/benchmarks/reports/20261026T141034Z-d68a20ede35c/README.md) for raw samples, output comparisons and selected
+schedules. Earlier results remain immutable in [the archive catalog](benchmarks/archive.json).
 
 ## Getting started
 

@@ -64,3 +64,5 @@ payloads until a separately coordinated history rewrite.
 Keep model files, executables and disposable compiler logs in `build/`. Retain
 small evidence files beside their run with checksums. Records describe measured
 hardware only; an L4 result does not establish L40S performance.
+
+A development run (`20261026145843633286-516a8e7e`) was rejected after a compiler pruning error was found. [Correction and rejected-run evidence](https://github.com/kreasof-ai/akas/blob/6243760e7784bcf2e62fe4819696ed64c3d0f62d/benchmarks/runs/20261026152348394023-aff4a4f3/analysis/README.md). Its original record is retained for audit and must not seed performance comparisons. The showcase uses the corrected, four-layer-validated program.
