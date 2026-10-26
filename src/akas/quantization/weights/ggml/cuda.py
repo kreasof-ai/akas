@@ -25,6 +25,8 @@ def hardware_loads():
 
 def packed_dot(q, k, row_bytes, width=4):
     """One lane's packed weight dot product, inlined at each GEMV use."""
+    if q == 8:
+        return q8_packed_dot(k, row_bytes)
     import tilelang.language as T
 
     u16, word, half_value = hardware_loads()
@@ -487,7 +489,7 @@ def supports(capability, shape, *, encoding, layout="raw"):
     if capability == "read_pair":
         return encoding in (1, 2, 12, 14)
     if capability == "dot":
-        return encoding in (0, 1, 2, 12, 14) and shape[-1] % 256 == 0
+        return encoding in (0, 1, 2, 8, 12, 14) and shape[-1] % 256 == 0
     if capability == "stage_tile":
         from .definition import ENCODINGS
 
@@ -510,7 +512,7 @@ def bind(shape, *, encoding, layout="raw"):
     _, block, size = ENCODINGS[encoding]
     product = (
         packed_dot(encoding, shape[-1], shape[-1] // block * size)
-        if encoding in (0, 1, 2, 12, 14)
+        if encoding in (0, 1, 2, 8, 12, 14)
         else None
     )
 
@@ -804,3 +806,38 @@ def planar_binding(shape, *, encoding):
         dot_half=planar_dot_half(shape),
         dot_float=planar_dot_float(shape),
     )
+
+
+def q8_packed_dot(depth, row_bytes):
+    """Coalesced eight-value Q8_0 lane reads with the original F16 block scale."""
+    import tilelang.language as T
+
+    u16, word, half = hardware_loads()
+
+    @T.macro
+    def product(x, w, tile, lane, row):
+        base = row * row_bytes + (tile * 8 + lane // 4) * 34
+        scale = half(w, base)
+        low = word(w, base + 2 + (lane % 4) * 8)
+        high = word(w, base + 6 + (lane % 4) * 8)
+        channel = tile * 256 + lane // 4 * 32 + lane % 4 * 8
+        activation = T.alloc_local((8,), "float32")
+        for j in T.vectorized(8):
+            activation[j] = x[channel + j]
+        result = T.alloc_var("float32")
+        result = 0
+        for j in T.unroll(4):
+            quant = T.cast(
+                T.reinterpret("int8", T.cast((low >> (j * 8)) & 255, "uint8")),
+                "float32",
+            )
+            result = T.ieee_fmaf(activation[j], scale * quant, result)
+        for j in T.unroll(4):
+            quant = T.cast(
+                T.reinterpret("int8", T.cast((high >> (j * 8)) & 255, "uint8")),
+                "float32",
+            )
+            result = T.ieee_fmaf(activation[j + 4], scale * quant, result)
+        return result
+
+    return product

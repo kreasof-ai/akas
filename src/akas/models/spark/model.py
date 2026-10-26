@@ -15,6 +15,9 @@ def compose(
     phase=None,
     kv_dtype="float16",
     prefill_chunk=256,
+    prefill_weight_cache=False,
+    rotary_cache=False,
+    optimized_attention=False,
 ):
     from akas.graph import Graph
 
@@ -30,7 +33,18 @@ def compose(
         raise ValueError("invalid Spark request geometry or phase")
     g = Graph(contract="reference", phase="forward")
     b, w = rows * chunk, c.width
-    weights = checkpoint.graph_weights(g, provider=provider)
+    cached_prefill = prefill_weight_cache and b >= 128 and chunk > 1
+    weights = checkpoint.graph_weights(
+        g, provider=provider, prefill_cache=cached_prefill
+    )
+    rotary_tables = {}
+    if rotary_cache:
+        from akas.models.spark.weights import rotary_parameters
+
+        for i, (theta, rotary) in enumerate(rotary_parameters(c)):
+            rotary_tables[theta, rotary] = g.buffer(
+                f"rope.{i}.table", (max_context, rotary), "float32", role="weight"
+            )
     tokens = g.buffer("tokens", (rows,), "int32", role="input")
     pos = g.buffer("positions", (max_requests,), "int32", role="state")
     active = g.buffer("active", (rows,), "int32", role="input")
@@ -52,9 +66,25 @@ def compose(
             else {"weight_dtype": "float16"}
         )
 
+    half_inputs = {}
+
     def project(name, x, weight, k, o, count=b):
         out = scratch(name, o, count)
         for weight_buffer, start, n in weights.matrix(weight):
+            if cached_prefill and count > 1:
+                key = x.name, count, k
+                if key not in half_inputs:
+                    packed = g.buffer(x.name + ".half", (count * k,), "float16")
+                    g("projection_cast", dict(r=count, k=k), x, packed)
+                    half_inputs[key] = packed
+                g(
+                    "resident_linear",
+                    dict(r=count, k=k, o=n),
+                    half_inputs[key],
+                    weight_buffer,
+                    out,
+                )
+                continue
             g(
                 "linear",
                 dict(
@@ -62,6 +92,11 @@ def compose(
                     k=k,
                     o=n,
                     optimized=True,
+                    **(
+                        dict(vector_q8=True, short_packed=True)
+                        if prefill_weight_cache or optimized_attention
+                        else {}
+                    ),
                     **params(weight),
                     **(
                         {}
@@ -115,13 +150,18 @@ def compose(
             g.buffer(p + "kr", (b, c.kv_heads * c.head_dim), "float32"),
         )
         for x, out, h in ((q, qr, c.heads), (k, kr, c.kv_heads)):
-            g(
-                "rotary_partial",
-                dict(r=b, h=h, d=c.head_dim, theta=c.theta[i], rotary=c.rotary[i]),
-                x,
-                out,
-                row_pos,
-            )
+            rp = dict(r=b, h=h, d=c.head_dim, theta=c.theta[i], rotary=c.rotary[i])
+            if rotary_cache:
+                g(
+                    "rotary_table",
+                    dict(rp, capacity=max_context),
+                    x,
+                    out,
+                    row_pos,
+                    rotary_tables[c.theta[i], c.rotary[i]],
+                )
+            else:
+                g("rotary_partial", rp, x, out, row_pos)
         window = c.window if kind == "sliding_attention" else 0
         # The whole chunk writes before attention reads. Retain its earliest query's window.
         capacity = min(max_context, window + prefill_chunk) if window else max_context
@@ -139,11 +179,28 @@ def compose(
             window=window,
         )
         g("window_cache", ap, kr, v, kc, vc, row_pos, row_active)
-        splits = 16 if chunk == 1 else 1
+        splits = (
+            (4 if window else 32)
+            if optimized_attention and chunk == 1
+            else (16 if chunk == 1 else 1)
+        )
         ap["splits"] = splits
+        if optimized_attention and chunk > 1:
+            ap.update(query_rows=64, key_rows=32, contiguous=not window)
         parts = scratch(p + "attention_parts", c.heads * splits * (c.head_dim + 2))
         attended = scratch(p + "attended", c.heads * c.head_dim)
-        g("window_attention", ap, qr, kc, vc, row_pos, row_active, parts)
+        g(
+            "window_grouped"
+            if optimized_attention and chunk == 1
+            else "window_attention",
+            ap,
+            qr,
+            kc,
+            vc,
+            row_pos,
+            row_active,
+            parts,
+        )
         g("window_merge", ap, parts, attended, row_active)
         gate = project(p + "attention_gate", normal, p + "attn_gate.weight", w, c.heads)
         gated = scratch(p + "gated", c.heads * c.head_dim)

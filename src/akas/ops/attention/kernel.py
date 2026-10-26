@@ -1374,3 +1374,36 @@ def window_merge(spec, schedule):
         return out
 
     return compute
+
+
+def rotary_table(spec, schedule):
+    """Apply a shared high-precision rotary table using F32 reads and products."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    r, h, d, rot, cap = (p[n] for n in ("r", "h", "d", "rotary", "capacity"))
+
+    @kernel
+    def compute(
+        x: Tensor((r * h * d,), "float32"),
+        positions: Tensor((r,), "int32"),
+        table: Tensor((cap, rot), "float32"),
+    ) -> Tensor((r, h * d), "float32"):
+        out = output((r, h * d), "float32", position=1)
+        with T.Kernel(h, r, threads=d) as (head, row):
+            tx = T.get_thread_binding()
+            position = T.min(T.max(positions[row], 0), cap - 1)
+            if tx < rot:
+                half = tx % (rot // 2)
+                left = x[(row * h + head) * d + half]
+                right = x[(row * h + head) * d + half + rot // 2]
+                co = table[position, half]
+                si = table[position, half + rot // 2]
+                out[row, head * d + tx] = T.if_then_else(
+                    tx < rot // 2, left * co - right * si, left * si + right * co
+                )
+            else:
+                out[row, head * d + tx] = x[(row * h + head) * d + tx]
+        return out
+
+    return compute

@@ -1411,3 +1411,28 @@ for _kind, _positions, _names, _module in (
             name="attention." + _kind,
         ),
     )
+
+
+from akas.ops.attention.validation import rotary_table_validation
+
+OUTPUT_ARGUMENTS["reference"]["rotary_table"] = OutputABI((1,), ("out",))
+OUTPUT_ARGUMENTS["reference"]["window_grouped"] = OutputABI((-1,), ("out",))
+VALIDATIONS["rotary_table"] = rotary_table_validation
+VALIDATIONS["window_grouped"] = window_validation
+IMPLEMENTATIONS += (
+    Implementation(
+        "rotary_table",
+        "akas.ops.attention.kernel",
+        "reference",
+        factory="rotary_table",
+        name="attention.cuda.rotary_table",
+    ),
+    Implementation(
+        "window_grouped",
+        "akas.ops.attention.cuda",
+        "reference",
+        factory="window_grouped",
+        name="attention.cuda.window_grouped",
+        space=(("key_rows", (64, 32, 128)),),
+    ),
+)

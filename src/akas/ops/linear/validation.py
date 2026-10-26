@@ -348,3 +348,23 @@ def half_input_validation(kind, parameters, signature):
         np.testing.assert_array_equal(actual.view("uint16"), reference.view("uint16"))
 
     return ValidationCase(values, expected, comparators={"out": exact})
+
+
+def resident_validation(kind, p, signature):
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    v = sample_arguments(signature)
+    expected = dict(v)
+    if kind == "projection_cast":
+        expected["out"] = v["x"].astype("float16")
+        return ValidationCase(v, expected, rtol=0, atol=0)
+    r, k, o = (p[n] for n in ("r", "k", "o"))
+    x = v["x"].reshape(r, k).astype("float64")
+    weights = v["w"].reshape(o, k)
+    out = np.empty((r, o), dtype="float32")
+    for start in range(0, o, 256):
+        stop = min(o, start + 256)
+        out[:, start:stop] = x @ weights[start:stop].astype("float64").T
+    expected["out"] = out.reshape(-1)
+    return ValidationCase(v, expected, rtol=0.002, atol=0.002)

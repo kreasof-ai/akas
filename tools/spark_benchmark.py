@@ -44,10 +44,21 @@ def compile_program(args):
         args.checkpoint,
         args.program,
         checkpoint_options={"tokenizer": False},
-        geometries=[(1, 1), (1, 32), (1, args.chunk)],
+        geometries=[(1, n) for n in sorted({1, 32, min(512, args.chunk), args.chunk})],
         max_requests=1,
         max_context=131072,
-        model_options={"prefill_chunk": args.chunk},
+        model_options=dict(
+            prefill_chunk=args.chunk,
+            **(
+                dict(
+                    prefill_weight_cache=True,
+                    rotary_cache=True,
+                    optimized_attention=True,
+                )
+                if args.optimized
+                else {}
+            ),
+        ),
         search_settings=SearchSettings(budget=args.trials, samples=3, repeats=3),
     )
     write(
@@ -595,6 +606,11 @@ def main():
     parser.add_argument("--prefixes", type=int, nargs="+", default=PREFIXES)
     parser.add_argument("--chunk", type=int, default=256)
     parser.add_argument("--trials", type=int, default=1)
+    parser.add_argument(
+        "--optimized",
+        action="store_true",
+        help="compile with resident prefill weights, shared RoPE tables and grouped decode",
+    )
     parser.add_argument("--warmup", type=int, default=1)
     parser.add_argument("--repeats", type=int, default=3)
     parser.add_argument("--port", type=int, default=8826)

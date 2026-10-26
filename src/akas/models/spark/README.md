@@ -72,3 +72,41 @@ output comparisons show cross-runtime trajectory agreement separately.
 Follow `benchmarks/README.md` to publish artifact branches before the source
 catalog, then prune verified local bundles. Never add run/report payloads or
 compiled programs to the source branch.
+
+For the faster L4 configuration, compile and run with a larger chunk:
+
+```sh
+python -m tools.spark_benchmark compile --optimized --chunk 1024 --program build/spark/fast --out build/spark/compile-fast.json
+python -m tools.spark_benchmark akas --chunk 1024 --program build/spark/fast --out build/spark/akas-fast.json
+```
+
+The equivalent model options are `prefill_weight_cache=True`, `rotary_cache=True`
+and `optimized_attention=True`, with `prefill_chunk=1024`. The first keeps a
+derived FP16 copy of GGUF layer matrices for prefill batches of at least 128
+tokens; short prompts and decoding still use the original packed weights. It
+adds about 7.55 GB for this checkpoint. The FP16 coefficients match those used
+by the packed prefill path; there is no extra quantization step. Floating
+checkpoints reuse their existing FP16 matrices. Shared FP32 sine/cosine tables
+replace repeated rotary trigonometry, and optimized attention shares K/V loads
+across grouped decode heads and larger prefill tiles. These options are disabled
+by default. Compilation and uploads remain outside benchmark timers.
+
+Run the expanded independent checks with
+`AKAS_SPARK_CUDA=1 python -m pytest tests/test_spark.py tests/test_spark_performance.py`.
+The high-context operator checks include inactive requests, circular cache wrap,
+nonfinite padding, odd projection dimensions and partial rotary positions.
+
+Estimate useful prefill MFU from a generated report with:
+
+```sh
+python -m tools.spark_mfu PATH/TO/report.json --checkpoint PATH/TO/MODEL.gguf --peak-tflops 121 --out build/spark/mfu.json
+```
+
+The default 121 TFLOP/s is NVIDIA L4's dense FP16 peak, without sparse doubling
+([NVIDIA Ada architecture whitepaper, Appendix D](https://images.nvidia.com/aem-dam/Solutions/geforce/ada/nvidia-ada-gpu-architecture.pdf)).
+The estimate counts dense projections, one final-row vocabulary projection,
+and useful causal QK/PV pairs, including the bounded sliding windows. It excludes
+embedding lookups, padding, dequantization, elementwise operations and cache/control
+traffic. It counts all model layers even where intermediate prefill chunks prune
+final-layer outputs. This is a useful-work estimate, not measured instruction
+utilization; matmul-only microbenchmark throughput is not whole-model MFU.

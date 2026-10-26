@@ -1028,7 +1028,7 @@ def window_validation(kind, p, signature):
         return ValidationCase(v, expected)
     cap, kh, chunk = (p[k] for k in ("capacity", "kh", "chunk"))
     # Exercise physical wrap and distinct positions within a prefill chunk.
-    base = 2 * cap + 7 if p.get("window") else min(17, max(0, cap - chunk))
+    base = 2 * cap + 7 if p.get("window") else min(4095, max(0, cap - chunk))
     v["positions"][:] = base + np.arange(r) % chunk
     expected["positions"] = v["positions"]
     if kind == "window_cache":
@@ -1052,22 +1052,23 @@ def window_validation(kind, p, signature):
     out = expected["out"].reshape(r, h, splits, d + 2)
     out.fill(0)
     out[:, :, :, -2] = -1e30
+    qm, bk = p.get("query_rows", 16), p.get("key_rows", 64)
     for slot in range(r // chunk):
-        for block in range((chunk + 15) // 16):
-            row0 = slot * chunk + block * 16
+        for block in range((chunk + qm - 1) // qm):
+            row0 = slot * chunk + block * qm
             first = max(0, int(v["positions"][row0]) - window + 1) if window else 0
             live_rows = [
                 row
-                for row in range(row0, min(slot * chunk + chunk, row0 + 16))
+                for row in range(row0, min(slot * chunk + chunk, row0 + qm))
                 if v["enabled"][row]
             ]
             last = int(v["positions"][live_rows[-1]]) + 1 if live_rows else first
-            tiles = (last - first + 63) // 64
+            tiles = (last - first + bk - 1) // bk
             per_part = (tiles + splits - 1) // splits
             for part in range(splits):
                 start, stop = (
-                    first + part * per_part * 64,
-                    min(last, first + min((part + 1) * per_part, tiles) * 64),
+                    first + part * per_part * bk,
+                    min(last, first + min((part + 1) * per_part, tiles) * bk),
                 )
                 if start >= stop:
                     continue
@@ -1075,7 +1076,7 @@ def window_validation(kind, p, signature):
                 for head in range(h):
                     keys = v["kc"][slot, head // (h // kh), ids % cap].astype("float32")
                     vals = v["vc"][slot, head // (h // kh), ids % cap].astype("float32")
-                    for row in range(row0, min(slot * chunk + chunk, row0 + 16)):
+                    for row in range(row0, min(slot * chunk + chunk, row0 + qm)):
                         if not v["enabled"][row]:
                             continue
                         pos = int(v["positions"][row])
@@ -1096,3 +1097,30 @@ def window_validation(kind, p, signature):
                         )
                         out[row, head, part, -2:] = [maximum, probs.sum()]
     return ValidationCase(v, expected, rtol=0.015, atol=0.02)
+
+
+def rotary_table_validation(kind, p, signature):
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    v = sample_arguments(signature)
+    r, h, d, rot, cap = (p[n] for n in ("r", "h", "d", "rotary", "capacity"))
+    v["positions"][:] = np.resize(
+        np.array([0, 1, 511, 512, cap - 1, cap + 17, -1], dtype="int32"), r
+    )
+    positions = v["positions"].clip(0, cap - 1)
+    frequencies = p["theta"] ** (-2 * np.arange(rot // 2, dtype="float64") / rot)
+    selected = np.unique(positions)
+    angle = selected[:, None] * frequencies[None, :]
+    v["table"][selected] = np.concatenate(
+        (np.cos(angle), np.sin(angle)), axis=1
+    ).astype("float32")
+    expected = dict(v)
+    x = v["x"].reshape(r, h, d).astype("float64")
+    angle = positions[:, None, None] * frequencies[None, None, :]
+    left, right = x[:, :, : rot // 2], x[:, :, rot // 2 : rot]
+    out = x.copy()
+    out[:, :, : rot // 2] = left * np.cos(angle) - right * np.sin(angle)
+    out[:, :, rot // 2 : rot] = left * np.sin(angle) + right * np.cos(angle)
+    expected["out"] = out.reshape(r, h * d).astype("float32")
+    return ValidationCase(v, expected, rtol=2e-4, atol=2e-5)

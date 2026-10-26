@@ -52,7 +52,10 @@ def test_corrupt_inventory_fails_before_upload(tmp_path):
 @pytest.mark.skipif(
     os.getenv("AKAS_SPARK_CUDA") != "1", reason="opt-in Spark CUDA model qualification"
 )
-def test_cuda_matches_independent_equations_across_wrap_reorder_and_reuse(tmp_path):
+@pytest.mark.parametrize("optimized", [False, True])
+def test_cuda_matches_independent_equations_across_wrap_reorder_and_reuse(
+    tmp_path, optimized
+):
     import tensor
     from akas.compilation import compile_checkpoint
     from akas.compilation.tuning import SearchSettings
@@ -60,15 +63,21 @@ def test_cuda_matches_independent_equations_across_wrap_reorder_and_reuse(tmp_pa
     path = fixture(tmp_path / "checkpoint")
     c = SparkCheckpoint(path, tokenizer=False)
     bundle = tmp_path / "program"
+    chunk = 64 if optimized else 32
     compile_checkpoint(
         Spark,
         path,
         bundle,
         checkpoint_options={"tokenizer": False},
-        geometries=[(2, 1), (2, 32)],
+        geometries=[(2, 1), (2, chunk)],
         max_requests=4,
         max_context=128,
-        model_options={"prefill_chunk": 32},
+        model_options=dict(
+            prefill_chunk=chunk,
+            prefill_weight_cache=optimized,
+            rotary_cache=optimized,
+            optimized_attention=optimized,
+        ),
         search_settings=SearchSettings(budget=1, samples=1, repeats=1),
     )
     rng = np.random.default_rng(18)
@@ -84,8 +93,8 @@ def test_cuda_matches_independent_equations_across_wrap_reorder_and_reuse(tmp_pa
             if name.endswith((".kc", ".vc")):
                 transfer(device, buffer, np.full(buffer.shape, np.nan, dtype="float16"))
         slots = [model.admit_at(3), model.admit_at(1)]
-        predicted = model.prefill(slots, sequences, chunk=32)
-        frame = model.batches.select(2, 32)
+        predicted = model.prefill(slots, sequences, chunk=chunk)
+        frame = model.batches.select(2, chunk)
         actual = frame.feature("logits").to_numpy().reshape(2, 64)
         for row, seq in enumerate(sequences):
             expected = oracle(c, seq)
@@ -99,8 +108,10 @@ def test_cuda_matches_independent_equations_across_wrap_reorder_and_reuse(tmp_pa
         for slot in slots:
             model.release(slot)
         slots = [model.admit_at(1), model.admit_at(3)]
-        model.prefill(slots, [[1, 2, 3], [4]], chunk=32)
-        actual = model.batches.select(2, 32).feature("logits").to_numpy().reshape(2, 64)
+        model.prefill(slots, [[1, 2, 3], [4]], chunk=chunk)
+        actual = (
+            model.batches.select(2, chunk).feature("logits").to_numpy().reshape(2, 64)
+        )
         np.testing.assert_allclose(
             actual[0], oracle(c, [1, 2, 3]), rtol=0.025, atol=0.002
         )

@@ -197,11 +197,11 @@ class SparkCheckpoint:
             raise ValueError(f"nonfinite Spark FP8 weight: {name}")
         return decode_storage(bits) * read_float_tensor(self.tensors[self.scales[name]])
 
-    def graph_weights(self, graph, *, provider):
+    def graph_weights(self, graph, *, provider, prefill_cache=False):
         if provider != "cuda":
             raise ValueError("Spark currently requires CUDA")
         if self.gguf is not None:
-            return PackedWeights(graph, self.gguf)
+            return PackedWeights(graph, self.gguf, prefill_cache=prefill_cache)
         from akas.checkpoints.partition import Weights
 
         return Weights(
@@ -212,21 +212,61 @@ class SparkCheckpoint:
         )
 
     def program_upload_options(self, weights, *, model_options):
-        return {}
+        contexts = {
+            spec.shape[0]
+            for name, spec in weights.items()
+            if name.startswith("rope.") and name.endswith(".table")
+        }
+        if len(contexts) > 1:
+            raise ValueError("rotary tables disagree on context capacity")
+        options = {}
+        if contexts:
+            options["rope_context"] = contexts.pop()
+        if any(name.endswith(".prefill") for name in weights):
+            options["prefill_cache"] = True
+        return options
 
-    def upload(self, device):
+    def upload(self, device, *, prefill_cache=False, rope_context=0):
         if device.info["provider"] != "cuda":
             raise ValueError("Spark currently requires CUDA")
         if self.gguf is not None:
             from akas.checkpoints.upload import upload_packed
 
-            return upload_packed(device, self.gguf)
-        result = {}
+            result = upload_packed(device, self.gguf)
+        else:
+            result = {}
         try:
-            for name in self.names:
-                values = self.read(name)
-                values = values.astype("float16" if values.ndim == 2 else "float32")
-                result[name] = device.from_numpy(values.reshape(-1))
+            if self.gguf is None:
+                for name in self.names:
+                    values = self.read(name)
+                    values = values.astype("float16" if values.ndim == 2 else "float32")
+                    result[name] = device.from_numpy(values.reshape(-1))
+            elif prefill_cache:
+                for name, info in self.gguf.tensors.items():
+                    if cacheable(name, info):
+                        values = self.gguf.array(name).astype("float16")
+                        result[name + ".prefill"] = device.from_numpy(
+                            values.reshape(-1)
+                        )
+                        self.gguf.discard(name)
+            if rope_context:
+                if (
+                    type(rope_context) is not int
+                    or not 1 <= rope_context <= self.config.max_context
+                ):
+                    raise ValueError("invalid rotary table context")
+                import numpy as np
+
+                for i, (theta, rotary) in enumerate(rotary_parameters(self.config)):
+                    angle = np.arange(rope_context, dtype="float64")[
+                        :, None
+                    ] * theta ** (
+                        -2 * np.arange(rotary // 2, dtype="float64")[None, :] / rotary
+                    )
+                    table = np.concatenate(
+                        (np.cos(angle), np.sin(angle)), axis=1
+                    ).astype("float32")
+                    result[f"rope.{i}.table"] = device.from_numpy(table)
             return result
         except BaseException:
             for value in result.values():
@@ -249,24 +289,47 @@ class SparkCheckpoint:
         )
 
 
+def rotary_parameters(config):
+    """Stable shared tables for the architecture's distinct rotary subspaces."""
+    return tuple(dict.fromkeys(zip(config.theta, config.rotary)))
+
+
+def cacheable(name, info):
+    return len(info.shape) == 2 and name not in ("token_embd.weight", "output.weight")
+
+
 class PackedWeights:
     """Preserve each matrix's GGML encoding and share embedding/output storage."""
 
-    def __init__(self, graph, gguf):
+    def __init__(self, graph, gguf, *, prefill_cache=False):
         from math import prod
         from akas.quantization.weights.ggml.definition import weight_storage
 
         self.gguf = gguf
         self.buffers = {}
+        self.cached = {}
         for name, info in gguf.tensors.items():
             count, dtype = weight_storage(info.type, prod(info.shape))
             self.buffers[name] = graph.buffer(name, (count,), dtype, role="weight")
+            if prefill_cache and cacheable(name, info):
+                self.cached[name] = graph.buffer(
+                    name + ".prefill", (prod(info.shape),), "float16", role="weight"
+                )
 
     def __getitem__(self, name):
         return self.buffers[name]
 
     def matrix(self, name):
-        return [(self.buffers[name], 0, self.gguf.tensors[name].shape[0])]
+        return [
+            (
+                self.cached.get(name, self.buffers[name]),
+                0,
+                self.gguf.tensors[name].shape[0],
+            )
+        ]
 
     def parameters(self, name):
-        return {"ggml": True, "type": self.gguf.tensors[name].type}
+        return {
+            "ggml": True,
+            "type": 1 if name in self.cached else self.gguf.tensors[name].type,
+        }

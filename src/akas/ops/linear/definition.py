@@ -1260,3 +1260,63 @@ IMPLEMENTATIONS += tuple(
     )
     for provider in ("cuda", "webgpu")
 )
+
+
+from akas.ops.linear.validation import resident_validation
+
+for _kind in ("projection_cast", "resident_linear"):
+    OUTPUT_ARGUMENTS["reference"][_kind] = OutputABI((-1,), ("out",))
+    VALIDATIONS[_kind] = resident_validation
+IMPLEMENTATIONS += (
+    Implementation(
+        "projection_cast",
+        "akas.ops.linear.kernel",
+        "reference",
+        factory="projection_cast",
+        name="linear.cuda.cast",
+    ),
+    Implementation(
+        "resident_linear",
+        "akas.ops.linear.cuda",
+        "reference",
+        factory="resident_linear",
+        name="linear.cuda.resident",
+        space=(("threads", (256, 128)),),
+    ),
+)
+ROW_INDEPENDENT += ("projection_cast", "resident_linear")
+
+IMPLEMENTATIONS += (
+    Implementation(
+        "linear",
+        "akas.ops.linear.cuda",
+        "reference",
+        factory="q8_linear",
+        name="linear.cuda.q8",
+        priority=45,
+        accepts=lambda p: (
+            p.get("vector_q8", False)
+            and p.get("ggml", False)
+            and p.get("type") == 8
+            and p["r"] == 1
+            and p["k"] % 256 == 0
+        ),
+        space=(("threads", (128, 256)), ("unroll", (4, 2, 8))),
+    ),
+    Implementation(
+        "linear",
+        "akas.ops.linear.cuda",
+        "reference",
+        factory="short_packed_linear",
+        name="linear.cuda.short_packed",
+        priority=46,
+        targets=("sm_89",),
+        accepts=lambda p: (
+            p.get("short_packed", False)
+            and p.get("ggml", False)
+            and 1 < p["r"] <= 64
+            and p["k"] % 512 == 0
+            and p.get("type") in (8, 12, 14, 30)
+        ),
+    ),
+)
