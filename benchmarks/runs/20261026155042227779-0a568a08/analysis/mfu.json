@@ -1,0 +1,136 @@
+{
+  "schema": "akas.spark-prefill-mfu.v1",
+  "dense_peak_tflops": 121,
+  "peak_source": "https://images.nvidia.com/aem-dam/Solutions/geforce/ada/nvidia-ada-gpu-architecture.pdf",
+  "method": "Estimate useful forward FLOPs and prefill MFU from a Spark campaign report.\n\nCounts dense projections, one final-row vocabulary projection, and useful causal\nQK/PV pairs. Excludes embedding lookups, elementwise work, padding, dequantization,\nand cache/control traffic. Counts every layer even when intermediate prefill\nchunks prune the final layer's output. This is an algorithmic estimate, not a\nhardware instruction counter. The default peak is L4 dense FP16 (121 TFLOP/s),\nwithout the 2:4 sparsity multiplier.\n",
+  "rows": [
+    {
+      "runtime": "akas",
+      "prefix": 32,
+      "prefill_tok_s": 1085.6366842306104,
+      "useful_flops": 242668797952,
+      "tflops": 8.232817161713664,
+      "mfu_percent": 6.803981125383193
+    },
+    {
+      "runtime": "akas",
+      "prefix": 512,
+      "prefill_tok_s": 4238.388211281561,
+      "useful_flops": 3945112010752,
+      "tflops": 32.658039528430805,
+      "mfu_percent": 26.99011531275273
+    },
+    {
+      "runtime": "akas",
+      "prefix": 2048,
+      "prefill_tok_s": 4632.608379745054,
+      "useful_flops": 16183969447936,
+      "tflops": 36.60839476662414,
+      "mfu_percent": 30.254871707953832
+    },
+    {
+      "runtime": "akas",
+      "prefix": 8192,
+      "prefill_tok_s": 4406.606325041824,
+      "useful_flops": 68618322706432,
+      "tflops": 36.910880719229034,
+      "mfu_percent": 30.504860098536394
+    },
+    {
+      "runtime": "akas",
+      "prefix": 16384,
+      "prefill_tok_s": 4061.0220928481085,
+      "useful_flops": 147189447786496,
+      "tflops": 36.483129839787196,
+      "mfu_percent": 30.15134697503074
+    },
+    {
+      "runtime": "akas",
+      "prefix": 32768,
+      "prefill_tok_s": 3507.137660413884,
+      "useful_flops": 334018511896576,
+      "tflops": 35.749783396847064,
+      "mfu_percent": 29.545275534584352
+    },
+    {
+      "runtime": "akas",
+      "prefix": 65536,
+      "prefill_tok_s": 2724.408918582402,
+      "useful_flops": 826423895916544,
+      "tflops": 34.35541736701427,
+      "mfu_percent": 28.392906914887828
+    },
+    {
+      "runtime": "akas",
+      "prefix": 130944,
+      "prefill_tok_s": 1879.3617702285758,
+      "useful_flops": 2282755248357376,
+      "tflops": 32.76303568358604,
+      "mfu_percent": 27.076888994699207
+    },
+    {
+      "runtime": "llama",
+      "prefix": 32,
+      "prefill_tok_s": 839.93910441493,
+      "useful_flops": 242668797952,
+      "tflops": 6.369594150664077,
+      "mfu_percent": 5.264127397243039
+    },
+    {
+      "runtime": "llama",
+      "prefix": 512,
+      "prefill_tok_s": 4195.723967253685,
+      "useful_flops": 3945112010752,
+      "tflops": 32.329298861352626,
+      "mfu_percent": 26.718428811035228
+    },
+    {
+      "runtime": "llama",
+      "prefix": 2048,
+      "prefill_tok_s": 4536.081560872753,
+      "useful_flops": 16183969447936,
+      "tflops": 35.84560810278831,
+      "mfu_percent": 29.62446950643662
+    },
+    {
+      "runtime": "llama",
+      "prefix": 8192,
+      "prefill_tok_s": 4351.271705898226,
+      "useful_flops": 68618322706432,
+      "tflops": 36.44738355696916,
+      "mfu_percent": 30.121804592536492
+    },
+    {
+      "runtime": "llama",
+      "prefix": 16384,
+      "prefill_tok_s": 4041.2690926778632,
+      "useful_flops": 147189447786496,
+      "tflops": 36.30567420092092,
+      "mfu_percent": 30.004689422248696
+    },
+    {
+      "runtime": "llama",
+      "prefix": 32768,
+      "prefill_tok_s": 3135.4537451678343,
+      "useful_flops": 334018511896576,
+      "tflops": 31.961047182663147,
+      "mfu_percent": 26.414088580713344
+    },
+    {
+      "runtime": "llama",
+      "prefix": 65536,
+      "prefill_tok_s": 2139.1139545589735,
+      "useful_flops": 826423895916544,
+      "tflops": 26.974714479615354,
+      "mfu_percent": 22.293152462492028
+    },
+    {
+      "runtime": "llama",
+      "prefix": 130944,
+      "prefill_tok_s": 1336.2116688920876,
+      "useful_flops": 2282755248357376,
+      "tflops": 23.294264724460696,
+      "mfu_percent": 19.251458449967515
+    }
+  ]
+}

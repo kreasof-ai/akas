@@ -1,0 +1,36 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "model-qualification",
+    "model": "XHToken/Spark-X2.6-4B",
+    "mode": "ar",
+    "weight_format": "q4_k_m",
+    "provider": "cuda",
+    "target": "sm_89",
+    "kv_dtype": "float16",
+    "qualification_formats": [
+      "mixed-gguf",
+      "bf16",
+      "fp8-channel"
+    ],
+    "independent_small_model_reference": true,
+    "tests": {
+      "tests": 90,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 6
+    },
+    "known_baseline_failures": [
+      "test_mapped_restore_flattens_view_indices_using_view_shape[view]",
+      "test_native_state_algorithms_preserve_math_with_reordered_pool[attention]"
+    ],
+    "passed_checks": 82,
+    "persistent_dequantized_weight_bytes": 0,
+    "real_checkpoint_pruned_vs_full_bitwise_equal": true,
+    "command": "AKAS_SPARK_CUDA=1 AKAS_LFM_REFERENCE_CUDA=1 TENSOR_QWEN_CUDA=1 OPENBLAS_NUM_THREADS=2 OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 TENSOR_NVRTC_HOME=build/nvrtc-12.9 python -m pytest tests/test_spark_performance.py tests/test_phase_memory.py tests/test_spark.py tests/test_state_prefill.py tests/test_state_mapping.py",
+    "scope": "Two unchanged legacy state-mapping tests reference removed entry points and fail identically on the pre-fix checkout; retained as exclusions. Independent packed projections, fused exact GELU, FP16 activation staging, residual RMS, compact RoPE, fused QKV/cache, compact sliding rings with staged current K/V and post-attention suffix commits, NaN padding, byte-preserving host/device weight arenas, scratch ownership, and complete BF16/FP8/four-layer mixed-GGUF equations across cache wrap, physical slot reorder and reuse",
+    "prior_real_fp8_checkpoint_smoke_run": "20261026111621594068-f8c4e17b"
+  },
+  "results": []
+}

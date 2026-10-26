@@ -1,0 +1,270 @@
+{
+  "schema": "akas.program.v1",
+  "provider": "cuda",
+  "target": "sm_89",
+  "config": {
+    "width": 2560,
+    "ff": 10240,
+    "heads": 16,
+    "kv_heads": 4,
+    "head_dim": 256,
+    "layers": [
+      "sliding_attention",
+      "sliding_attention",
+      "sliding_attention",
+      "full_attention",
+      "sliding_attention",
+      "sliding_attention",
+      "sliding_attention",
+      "full_attention",
+      "sliding_attention",
+      "sliding_attention",
+      "sliding_attention",
+      "full_attention",
+      "sliding_attention",
+      "sliding_attention",
+      "sliding_attention",
+      "full_attention",
+      "sliding_attention",
+      "sliding_attention",
+      "sliding_attention",
+      "full_attention",
+      "sliding_attention",
+      "sliding_attention",
+      "sliding_attention",
+      "full_attention",
+      "sliding_attention",
+      "sliding_attention",
+      "sliding_attention",
+      "full_attention",
+      "sliding_attention",
+      "sliding_attention",
+      "sliding_attention",
+      "full_attention",
+      "sliding_attention",
+      "sliding_attention",
+      "sliding_attention",
+      "full_attention"
+    ],
+    "vocab": 131072,
+    "epsilon": 9.999999974752427e-07,
+    "max_context": 1048576,
+    "window": 512,
+    "theta": [
+      10000.0,
+      10000.0,
+      10000.0,
+      5000000.0,
+      10000.0,
+      10000.0,
+      10000.0,
+      5000000.0,
+      10000.0,
+      10000.0,
+      10000.0,
+      5000000.0,
+      10000.0,
+      10000.0,
+      10000.0,
+      5000000.0,
+      10000.0,
+      10000.0,
+      10000.0,
+      5000000.0,
+      10000.0,
+      10000.0,
+      10000.0,
+      5000000.0,
+      10000.0,
+      10000.0,
+      10000.0,
+      5000000.0,
+      10000.0,
+      10000.0,
+      10000.0,
+      5000000.0,
+      10000.0,
+      10000.0,
+      10000.0,
+      5000000.0
+    ],
+    "rotary": [
+      256,
+      256,
+      256,
+      64,
+      256,
+      256,
+      256,
+      64,
+      256,
+      256,
+      256,
+      64,
+      256,
+      256,
+      256,
+      64,
+      256,
+      256,
+      256,
+      64,
+      256,
+      256,
+      256,
+      64,
+      256,
+      256,
+      256,
+      64,
+      256,
+      256,
+      256,
+      64,
+      256,
+      256,
+      256,
+      64
+    ],
+    "tied": false
+  },
+  "max_requests": 1,
+  "max_context": 131072,
+  "phases": [
+    {
+      "phase": "decode",
+      "rows": 1,
+      "chunk": 1,
+      "path": "programs/77cfd10959f04d40a19e9841117b3c15/phases/decode-b1-t1.json",
+      "sha256": "1fad83cfbaae324702f9c8fe63f5982bd82837e36649c1c22535b8fc6759f5f3",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "feedback": true,
+      "features": {
+        "logits": "logits"
+      }
+    },
+    {
+      "phase": "prefill",
+      "rows": 1,
+      "chunk": 32,
+      "path": "programs/77cfd10959f04d40a19e9841117b3c15/phases/prefill-b1-t32.json",
+      "sha256": "fdf2f37cecd00f5ffa68f9a45441d0480a33a45f924e149a5f8f90ad1b0bf167",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "feedback": false,
+      "features": {
+        "logits": "logits"
+      }
+    },
+    {
+      "phase": "prefill_state",
+      "rows": 1,
+      "chunk": 32,
+      "path": "programs/77cfd10959f04d40a19e9841117b3c15/phases/prefill-state-b1-t32.json",
+      "sha256": "0adc9f636c01dd10b12a66c749626698ba2757def182a0a63ecaddd4884293e6",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "state_only": true
+    },
+    {
+      "phase": "prefill",
+      "rows": 1,
+      "chunk": 512,
+      "path": "programs/77cfd10959f04d40a19e9841117b3c15/phases/prefill-b1-t512.json",
+      "sha256": "5b1a24fff6b6c747b524954b58753407c2fa8c9d202a9ae136d46e8c7de125f9",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "feedback": false,
+      "features": {
+        "logits": "logits"
+      }
+    },
+    {
+      "phase": "prefill_state",
+      "rows": 1,
+      "chunk": 512,
+      "path": "programs/77cfd10959f04d40a19e9841117b3c15/phases/prefill-state-b1-t512.json",
+      "sha256": "9943760e8a7c8bfb154cf329c9b7fa546c80e8ac9bd2085c0ad8877f1a5ca445",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "state_only": true
+    },
+    {
+      "phase": "prefill",
+      "rows": 1,
+      "chunk": 1024,
+      "path": "programs/77cfd10959f04d40a19e9841117b3c15/phases/prefill-b1-t1024.json",
+      "sha256": "bc6ce2ac59de5ef134006afdca62cef30b16f91679231c026ed623c2abeea69a",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "feedback": false,
+      "features": {
+        "logits": "logits"
+      }
+    },
+    {
+      "phase": "prefill_state",
+      "rows": 1,
+      "chunk": 1024,
+      "path": "programs/77cfd10959f04d40a19e9841117b3c15/phases/prefill-state-b1-t1024.json",
+      "sha256": "e97eaee0736da9faf305e249d769e1c646d1f2d9ede71cc202202d0f454e588b",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "state_only": true
+    }
+  ],
+  "reset": {
+    "path": "programs/77cfd10959f04d40a19e9841117b3c15/phases/reset.json",
+    "sha256": "f37b34fc33e0b4394c109782a23008744d2a3ac9284d3f15fb257030e0055d19",
+    "mapping": "mapping"
+  },
+  "rounds": [],
+  "upload_options": {
+    "rope_layout": {
+      "stride": 1024,
+      "blocks": 128
+    },
+    "embedding_location": "host",
+    "weight_arena": true
+  },
+  "model_options": {
+    "kv_dtype": "float16",
+    "prefill_chunk": 1024,
+    "rotary_cache": true,
+    "optimized_attention": true,
+    "embedding_location": "host",
+    "weight_arena": true,
+    "fused_ffn": true,
+    "half_activations": true
+  },
+  "policy": {}
+}

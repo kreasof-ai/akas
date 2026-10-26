@@ -1,0 +1,258 @@
+..................................................................s.s.......s.FF.....s.s.s                                                        [100%]
+======================================================================= FAILURES ========================================================================
+_______________________________________ test_native_state_algorithms_preserve_math_with_reordered_pool[attention] _______________________________________
+
+source_path = PosixPath('/tmp/pytest-of-sagemaker-user/pytest-44/test_native_state_algorithms_p1/kernel-0.py')
+output_path = PosixPath('/tmp/pytest-of-sagemaker-user/pytest-44/test_native_state_algorithms_p1/kernel-0.tbin'), target = 'sm_89', nvcc = None
+cache_dir = None, compiler = 'nvrtc', nvrtc_home = '/home/sagemaker-user/akas/build/nvrtc-12.9', provider = 'cuda'
+
+    def build_cuda(
+        source_path: Path,
+        output_path: Path,
+        *,
+        target: str | None = None,
+        nvcc: str | None = None,
+        cache_dir: Path | None = None,
+        compiler: str | None = None,
+        nvrtc_home: str | Path | None = None,
+        provider: str = "cuda",
+    ) -> dict:
+        source_path, output_path = Path(source_path), Path(output_path)
+        if not source_path.is_file() or source_path.suffix not in (".py", ".tbin"):
+            raise BuildError("source must be an existing Python file or portable .tbin")
+        from tensor.compiler.frontend.portable import export_spec
+        from tensor.artifacts.portable import preflight
+    
+        checked = preflight(source_path) if source_path.suffix == ".tbin" else None
+        if output_path.exists():
+            raise BuildError(f"output already exists: {output_path}")
+        if target is not None and not TARGET.fullmatch(target):
+            raise BuildError("target must be an exact CUDA SM, e.g. sm_86")
+        if target is None:
+            device = check_device(0)
+            if device["status"] != "ok":
+                raise BuildError(
+                    "no CUDA device found; pass --target sm_XX for a GPU-free build host"
+                )
+            target = device["arch"]
+        packages = check_packages()
+        if packages["status"] != "ok":
+            raise BuildError(packages["detail"])
+        provider_check = check_provider()
+        if provider_check["status"] != "ok":
+            raise BuildError(provider_check["detail"])
+        try:
+            backend = select_compiler(compiler, nvcc=nvcc, nvrtc_home=nvrtc_home)
+        except ValueError as exc:
+            raise BuildError(str(exc)) from exc
+        started = time.perf_counter()
+        # A source file is executable Python by design, exactly like a Python build script.
+        try:
+>           spec = export_spec(source_path, checked)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.venv/lib/python3.12/site-packages/tensor/compiler/cuda/build.py:67: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv/lib/python3.12/site-packages/tensor/compiler/frontend/portable.py:35: in export_spec
+    namespace = runpy.run_path(str(path.resolve()))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    # DSL implementation SHA256: 9acd98ebe477a3dcb790973dba22c3dc2110d5631e2afc64256284a128d13cf2
+>   from akas.ops.attention.cuda import make_kernel
+E   ImportError: cannot import name 'make_kernel' from 'akas.ops.attention.cuda' (/home/sagemaker-user/akas/src/akas/ops/attention/cuda.py)
+
+/tmp/pytest-of-sagemaker-user/pytest-44/test_native_state_algorithms_p1/kernel-0.py:2: ImportError
+
+The above exception was the direct cause of the following exception:
+
+tmp_path = PosixPath('/tmp/pytest-of-sagemaker-user/pytest-44/test_native_state_algorithms_p1'), kind = 'attention'
+
+    @pytest.mark.parametrize("kind", ["gdn_recurrent", "attention"])
+    def test_native_state_algorithms_preserve_math_with_reordered_pool(tmp_path, kind):
+        if os.environ.get("TENSOR_QWEN_CUDA") != "1":
+            pytest.skip("enable native request mapping qualification")
+        import tensor
+        from support.migration import source as export_source
+        from tensor.runtime.dtypes import decode_bfloat16
+        from tensor.runtime.dtypes import encode_bfloat16
+    
+        rows, pool = 2, 4
+        if kind == "gdn_recurrent":
+            module = "akas.ops.gdn.cuda.decode"
+            p = dict(slots=rows, heads=2, key=32, value=32, value_tile=16)
+            states = (6,)
+        else:
+            module = "akas.ops.attention.cuda"
+            p = dict(slots=rows, chunk=2, capacity=64)
+            states = (1, 2)
+        paths = []
+        for index in range(2):
+            path = tmp_path / f"kernel-{index}.py"
+            text = (
+                export_source(module, "make_kernel", kind, p, dependencies=())
+                if index == 0
+                else export_kernel(
+                    "akas.compilation.transforms.state",
+                    "make_kernel",
+                    module,
+                    "make_kernel",
+                    (kind, p),
+                    states,
+                    rows,
+                    pool,
+                )
+            )
+            path.write_text(text)
+            image = path.with_suffix(".tbin")
+>           build_artifact(path, image, target="sm_89")
+
+tests/test_state_mapping.py:116: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/akas/compilation/emit.py:36: in build_artifact
+    return tensor.build(
+.venv/lib/python3.12/site-packages/tensor/__init__.py:41: in build
+    return _build_artifact(
+.venv/lib/python3.12/site-packages/tensor/compiler/build.py:26: in build_artifact
+    return build(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+source_path = PosixPath('/tmp/pytest-of-sagemaker-user/pytest-44/test_native_state_algorithms_p1/kernel-0.py')
+output_path = PosixPath('/tmp/pytest-of-sagemaker-user/pytest-44/test_native_state_algorithms_p1/kernel-0.tbin'), target = 'sm_89', nvcc = None
+cache_dir = None, compiler = 'nvrtc', nvrtc_home = '/home/sagemaker-user/akas/build/nvrtc-12.9', provider = 'cuda'
+
+    def build_cuda(
+        source_path: Path,
+        output_path: Path,
+        *,
+        target: str | None = None,
+        nvcc: str | None = None,
+        cache_dir: Path | None = None,
+        compiler: str | None = None,
+        nvrtc_home: str | Path | None = None,
+        provider: str = "cuda",
+    ) -> dict:
+        source_path, output_path = Path(source_path), Path(output_path)
+        if not source_path.is_file() or source_path.suffix not in (".py", ".tbin"):
+            raise BuildError("source must be an existing Python file or portable .tbin")
+        from tensor.compiler.frontend.portable import export_spec
+        from tensor.artifacts.portable import preflight
+    
+        checked = preflight(source_path) if source_path.suffix == ".tbin" else None
+        if output_path.exists():
+            raise BuildError(f"output already exists: {output_path}")
+        if target is not None and not TARGET.fullmatch(target):
+            raise BuildError("target must be an exact CUDA SM, e.g. sm_86")
+        if target is None:
+            device = check_device(0)
+            if device["status"] != "ok":
+                raise BuildError(
+                    "no CUDA device found; pass --target sm_XX for a GPU-free build host"
+                )
+            target = device["arch"]
+        packages = check_packages()
+        if packages["status"] != "ok":
+            raise BuildError(packages["detail"])
+        provider_check = check_provider()
+        if provider_check["status"] != "ok":
+            raise BuildError(provider_check["detail"])
+        try:
+            backend = select_compiler(compiler, nvcc=nvcc, nvrtc_home=nvrtc_home)
+        except ValueError as exc:
+            raise BuildError(str(exc)) from exc
+        started = time.perf_counter()
+        # A source file is executable Python by design, exactly like a Python build script.
+        try:
+            spec = export_spec(source_path, checked)
+        except Exception as exc:
+>           raise BuildError(
+                f"source execution failed: {type(exc).__name__}: {exc}"
+            ) from exc
+E           tensor.compiler.errors.BuildError: source execution failed: ImportError: cannot import name 'make_kernel' from 'akas.ops.attention.cuda' (/home/sagemaker-user/akas/src/akas/ops/attention/cuda.py)
+
+.venv/lib/python3.12/site-packages/tensor/compiler/cuda/build.py:69: BuildError
+___________________________________________ test_mapped_restore_flattens_view_indices_using_view_shape[view] ____________________________________________
+
+tmp_path = PosixPath('/tmp/pytest-of-sagemaker-user/pytest-44/test_mapped_restore_flattens_v0'), implementation = 'view'
+
+    @pytest.mark.skipif(
+        os.environ.get("TENSOR_QWEN_CUDA") != "1",
+        reason="native mapped state alias regression",
+    )
+    @pytest.mark.parametrize("implementation", ["view", "nd"])
+    def test_mapped_restore_flattens_view_indices_using_view_shape(
+        tmp_path, implementation
+    ):
+        import numpy as np
+        import tensor
+        from akas.graph import Graph
+        from akas.compilation.compile import produce
+        from akas.execution.forward import Forward
+    
+        graph = Graph(contract="block-fp8", phase="commit")
+        saved = graph.buffer("saved", (2, 4, 3, 4), "float32", role="input")
+        state = graph.buffer("state", (4, 3, 4), "float32", role="state")
+        accepted = graph.buffer("accepted", (2,), "int32", role="input")
+        mapping = graph.buffer("mapping", (2,), "int32", role="input")
+        graph(
+            "restore",
+            dict(slots=2, chunk=4, shape=[3, 4], full_checkpoints=True),
+            checkpoints=saved,
+            state=state,
+            accepted=accepted,
+            lengths=accepted,
+        )
+        from akas.kernels.contracts import Implementation
+    
+        catalog = (
+            (
+                Implementation(
+                    "restore", "gdn.cuda.verification", "block-fp8", factory="kernel"
+                ),
+            )
+            if implementation == "view"
+            else None
+        )
+>       produce(graph, tmp_path, search=False, catalog=catalog)
+
+tests/test_state_mapping.py:204: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/akas/compilation/compile.py:135: in produce
+    plan(forward, **options),
+    ^^^^^^^^^^^^^^^^^^^^^^^^
+src/akas/compilation/compile.py:117: in plan
+    forward, kernels = map_requests(forward, kernels)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/akas/compilation/state.py:37: in map_requests
+    kernel = getattr(import_module(source.module), source.factory)(*source.args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/akas/kernels/definition.py:120: in define
+    import_module(implementation["module"]), implementation["factory"]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/conda/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+name = 'akas.ops.gdn.cuda.verification', import_ = <function _gcd_import at 0x7fbbc9fc00e0>
+
+>   ???
+E   ModuleNotFoundError: No module named 'akas.ops.gdn.cuda.verification'; 'akas.ops.gdn.cuda' is not a package
+
+<frozen importlib._bootstrap>:1319: ModuleNotFoundError
+=================================================================== warnings summary ====================================================================
+tests/test_spark_performance.py: 52 warnings
+tests/test_phase_memory.py: 1 warning
+tests/test_spark.py: 59 warnings
+tests/test_state_mapping.py: 2 warnings
+  /home/sagemaker-user/akas/.venv/lib/python3.12/site-packages/tilelang/language/tir/op.py:404: DeprecationWarning: T.reinterpret(dtype, value) is deprecated, use reinterpret(value, dtype) instead
+    deprecated_warning("T.reinterpret(dtype, value)", "reinterpret(value, dtype)")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================================================================ short test summary info ================================================================
+FAILED tests/test_state_mapping.py::test_native_state_algorithms_preserve_math_with_reordered_pool[attention] - tensor.compiler.errors.BuildError: sou...
+FAILED tests/test_state_mapping.py::test_mapped_restore_flattens_view_indices_using_view_shape[view] - ModuleNotFoundError: No module named 'akas.ops....
