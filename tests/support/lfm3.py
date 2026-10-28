@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 
 
-def fixture(directory, *, fp8=False, width=128):
+def fixture(directory, *, fp8=False, width=128, head_dim=64, max_context=128):
     from akas.models.lfm3.config import LFM3Config
     from akas.models.lfm3.weights import tensor_shapes, hf_names
     from akas.quantization._shared.e4m3 import encode_storage
@@ -17,14 +17,14 @@ def fixture(directory, *, fp8=False, width=128):
         model_type="lfm3",
         hidden_size=width,
         intermediate_size=width,
-        num_attention_heads=width // 64,
-        num_key_value_heads=max(1, width // 256),
-        head_dim=64,
+        num_attention_heads=width // head_dim,
+        num_key_value_heads=max(1, width // (4 * head_dim)),
+        head_dim=head_dim,
         num_hidden_layers=4,
         layer_types=["conv", "full_attention", "sliding_attention", "conv"],
         vocab_size=64,
         norm_eps=1e-5,
-        max_position_embeddings=128,
+        max_position_embeddings=max_context,
         sliding_window=16,
         conv_L_cache=7,
         conv_bias=False,
@@ -218,13 +218,14 @@ def oracle(checkpoint, tokens, *, q8_ffn=False, q8_projections=False, q8_tokens=
     return linear(norm(x[-1:], "output_norm.weight"), "token_embd.weight")[0]
 
 
-def gguf_fixture(path, *, width=128):
+def gguf_fixture(path, *, width=128, head_dim=64, max_context=128):
     from support.qwen_gguf import write
     from akas.models.lfm3 import LFM3Checkpoint
     from akas.models.lfm3.weights import tensor_shapes
 
     source = LFM3Checkpoint(
-        fixture(Path(path).parent / "source", width=width), tokenizer=False
+        fixture(Path(path).parent / "source", width=width, head_dim=head_dim,
+                max_context=max_context), tokenizer=False
     )
     c = source.config
     kv = [0 if k == "conv" else c.kv_heads for k in c.layers]

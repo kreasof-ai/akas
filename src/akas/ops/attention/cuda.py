@@ -3934,6 +3934,7 @@ def window_attention(spec, schedule):
 
     return compute
 
+
 def window_grouped(spec, schedule):
     """Share each K/V tile across all GQA heads during split decode."""
     import tilelang.language as T

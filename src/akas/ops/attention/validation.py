@@ -6,13 +6,16 @@ def pad_validation(kind, p, signature):
     from akas.kernels.contracts import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
-    lengths = np.resize(np.array([257, 0, 1, 255, 256, p["capacity"]], dtype="int32"),
-                        p["slots"])
+    lengths = np.resize(
+        np.array([257, 0, 1, 255, 256, p["capacity"]], dtype="int32"), p["slots"]
+    )
     values["lengths"][:] = np.minimum(lengths, p["capacity"])
     expected = {name: value.copy() for name, value in values.items()}
     for name in ("kc", "vc"):
         for slot, live in enumerate(values["lengths"]):
-            expected[name][slot, :, live:min((int(live) + 255) // 256 * 256, p["capacity"])] = 0
+            expected[name][
+                slot, :, live : min((int(live) + 255) // 256 * 256, p["capacity"])
+            ] = 0
     return ValidationCase(values, expected, rtol=0, atol=0)
 
 
@@ -522,7 +525,9 @@ def canonical_validation(kind, p, signature):
                 for part in range(splits):
                     begin, end = (part * span, min(length, (part + 1) * span))
                     if p.get("adaptive_splits"):
-                        indices = np.flatnonzero(np.arange(length) // p.get("granule", 512) % splits == part)
+                        indices = np.flatnonzero(
+                            np.arange(length) // p.get("granule", 512) % splits == part
+                        )
                         block_scores, block_values = scores[indices], vals[indices]
                     else:
                         block_scores, block_values = scores[begin:end], vals[begin:end]
@@ -1163,6 +1168,87 @@ def rotary_compact_validation(kind, p, signature):
     )
 
 
+def qk_norm_rotary_cache_validation(kind, p, signature):
+    """FP64 head normalization and absolute-angle rotations with masked KV writes."""
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    v = sample_arguments(signature)
+    r, h, kh, d, rot, cap, stride, blocks, cache_cap = (
+        p[n]
+        for n in (
+            "r",
+            "h",
+            "kh",
+            "d",
+            "rotary",
+            "capacity",
+            "stride",
+            "blocks",
+            "cache_capacity",
+        )
+    )
+    v["positions"][:] = 2 * cache_cap + 7 + np.arange(r) % p["chunk"]
+    v["enabled"][:] = 1
+    if r > 1:
+        v["enabled"][-1] = 0
+    pair = d // 2 if p.get("full_head_pairs", False) else rot // 2
+    denominator = d if p.get("full_head_pairs", False) else rot
+    frequencies = p["theta"] ** (
+        -2 * np.arange(rot // 2, dtype="float64") / denominator
+    )
+    for name, positions in (
+        ("fine", np.arange(stride)),
+        ("coarse", np.arange(blocks) * stride),
+    ):
+        angles = positions[:, None] * frequencies[None, :]
+        v[name][:] = np.concatenate((np.cos(angles), np.sin(angles)), axis=1)
+    angle = v["positions"].clip(0, cap - 1)[:, None, None] * frequencies[None, None, :]
+
+    def normalized_rotary(source, weight, heads):
+        x = source.reshape(r, heads, d).astype("float64")
+        x = x / np.sqrt(np.mean(x * x, axis=-1, keepdims=True) + p["eps"])
+        x *= weight.astype("float64")
+        result = x.copy()
+        left, right = x[:, :, : rot // 2], x[:, :, pair : pair + rot // 2]
+        result[:, :, : rot // 2] = left * np.cos(angle) - right * np.sin(angle)
+        result[:, :, pair : pair + rot // 2] = left * np.sin(angle) + right * np.cos(
+            angle
+        )
+        return result
+
+    query = normalized_rotary(v["q"], v["wq"], h)
+    keys = normalized_rotary(v["k"], v["wk"], kh)
+    expected = {
+        **v,
+        "out": query.reshape(r, h * d).astype("float32"),
+        "kc": v["kc"].copy(),
+        "vc": v["vc"].copy(),
+    }
+    mask = np.zeros(v["kc"].shape, dtype=bool)
+    for row in range(r):
+        if v["enabled"][row]:
+            position = int(v["positions"][row]) % cache_cap
+            expected["kc"][row, :, position, :] = keys[row].astype("float16")
+            expected["vc"][row, :, position, :] = (
+                v["v"].reshape(r, kh, d)[row].astype("float16")
+            )
+            mask[row, :, position, :] = True
+
+    def check_keys(actual, reference):
+        np.testing.assert_array_equal(actual[~mask], reference[~mask])
+        # F32 norm/rotation can straddle a half rounding boundary relative to FP64.
+        np.testing.assert_allclose(actual[mask], reference[mask], rtol=0.002, atol=2e-5)
+
+    return ValidationCase(
+        v,
+        expected,
+        rtol=2e-4,
+        atol=2e-5,
+        comparators={"kc": check_keys, "vc": np.testing.assert_array_equal},
+    )
+
+
 def qkv_rotary_cache_validation(kind, p, signature):
     import numpy as np
     from akas.kernels.contracts import ValidationCase, sample_arguments
@@ -1309,3 +1395,113 @@ def window_tail_validation(kind, p, signature):
             "vc": np.testing.assert_array_equal,
         },
     )
+
+
+def _controls(values, p):
+    values["positions"][:] = min(4095, p["capacity"] - 1)
+    values["enabled"][:] = 1
+    if p["r"] > 1:
+        values["enabled"][-1] = 0
+
+
+def merge_validation(kind, p, signature):
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    v = sample_arguments(signature)
+    r, h, d, splits, groups = (p[n] for n in ("r", "h", "d", "splits", "merge_splits"))
+    count = splits // groups
+    source = v["parts"].reshape(r, h, splits, d + 2)
+    source[:, :, :, -1] = np.abs(source[:, :, :, -1]) + 0.01
+    source[:, :, -count:, :d] = 0
+    source[:, :, -count:, -2] = -1e30
+    source[:, :, -count:, -1] = 0
+    chunks = source.reshape(r, h, groups, count, d + 2).astype("float64")
+    maximum = chunks[..., -2].max(axis=-1)
+    weight = np.exp(chunks[..., -2] - maximum[..., None])
+    expected = np.empty((r, h, groups, d + 2), dtype="float32")
+    expected[..., :d] = (chunks[..., :d] * weight[..., None]).sum(axis=-2)
+    expected[..., -2] = maximum
+    expected[..., -1] = (chunks[..., -1] * weight).sum(axis=-1)
+    return ValidationCase(v, {**v, "out": expected.reshape(-1)}, rtol=0.001, atol=2e-5)
+
+
+def scores_validation(kind, p, signature):
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    v = sample_arguments(signature)
+    _controls(v, p)
+    r, h, kh, d, cap = (p[n] for n in ("r", "h", "kh", "d", "capacity"))
+    group = h // kh
+    result = np.full((r, h, cap), -1e30, dtype="float32")
+    query = v["q"].reshape(r, h, d).astype("float64")
+    for row in range(r):
+        length = min(int(v["positions"][row]) + 1, cap) if v["enabled"][row] else 0
+        if length:
+            for head in range(kh):
+                keys = v["kc"][row, head, :length].astype("float64")
+                result[row, head * group : (head + 1) * group, :length] = (
+                    query[row, head * group : (head + 1) * group] @ keys.T * d**-0.5
+                ).astype("float32")
+        v["kc"][row, :, length:, :] = np.nan
+    return ValidationCase(v, {**v, "out": result.reshape(-1)}, rtol=0.001, atol=2e-5)
+
+
+def values_validation(kind, p, signature):
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    v = sample_arguments(signature)
+    _controls(v, p)
+    r, h, kh, d, cap, splits = (
+        p[n] for n in ("r", "h", "kh", "d", "capacity", "splits")
+    )
+    result = np.zeros((r, h, splits, d + 2), dtype="float32")
+    result[:, :, :, -2] = -1e30
+    scores = v["scores"].reshape(r, h, cap)
+    for row in range(r):
+        length = min(int(v["positions"][row]) + 1, cap) if v["enabled"][row] else 0
+        span = ((length + splits * 64 - 1) // (splits * 64)) * 64
+        for part in range(splits):
+            begin, end = part * span, min((part + 1) * span, length)
+            if end <= begin:
+                continue
+            for head in range(h):
+                raw = scores[row, head, begin:end].astype("float64")
+                peak = raw.max()
+                probability = np.exp(raw - peak)
+                values = v["vc"][row, head // (h // kh), begin:end].astype("float64")
+                result[row, head, part, :d] = probability @ values
+                result[row, head, part, d] = peak
+                result[row, head, part, d + 1] = probability.sum()
+        scores[row, :, length:] = np.nan
+        v["vc"][row, :, length:, :] = np.nan
+    return ValidationCase(v, {**v, "out": result.reshape(-1)}, rtol=0.001, atol=2e-5)
+
+
+def projected_gate_validation(kind, p, signature):
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase
+    from akas.ops.attention.validation import window_validation
+    from akas.quantization.weights.ggml.validation import sample_weight
+    from akas.quantization.weights.ggml.kernel import repack_host
+
+    case = window_validation("window_merge", p, signature)
+    v = case.arguments
+    matrix = sample_weight(v["w"], 2, seed=31).reshape(p["h"], p["k"])
+    score = (
+        v["x"].reshape(p["r"], p["k"]).astype("float64") @ matrix.astype("float64").T
+    )
+    merged = case.expected["out"].reshape(p["r"], p["h"], p["d"]).astype("float64")
+    expected = {
+        **case.expected,
+        "w": v["w"],
+        "out": (merged / (1 + np.exp(-score[:, :, None])))
+        .astype("float32")
+        .reshape(-1),
+    }
+    if p.get("weight_layout", "raw") == "planar":
+        raw = v["w"].view("uint8").reshape(-1)
+        raw[:] = repack_host(raw)
+    return ValidationCase(v, expected, rtol=0.002, atol=2e-5)

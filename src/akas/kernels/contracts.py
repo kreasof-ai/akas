@@ -189,6 +189,26 @@ def mapped_validation(kind, parameters, signature, mapping):
     }
     slots = np.linspace(0, capacity - 1, rows, dtype="int32")[::-1].copy()
     arguments["mapping"][:] = slots
+    comparators = dict(local.comparators)
+    for name in names:
+        if name not in comparators:
+            continue
+        compare = comparators[name]
+        shape = local.arguments[name].shape
+
+        def mapped_compare(actual, reference, compare=compare, shape=shape):
+            actual_pool = actual.reshape(capacity, -1)
+            reference_pool = reference.reshape(capacity, -1)
+            untouched = np.ones(capacity, dtype=bool)
+            untouched[slots] = False
+            np.testing.assert_array_equal(
+                actual_pool[untouched], reference_pool[untouched]
+            )
+            compare(
+                actual_pool[slots].reshape(shape), reference_pool[slots].reshape(shape)
+            )
+
+        comparators[name] = mapped_compare
     for name in list(local.arguments):
         if name in names:
             initial = arguments[name].reshape(capacity, -1)
@@ -201,6 +221,4 @@ def mapped_validation(kind, parameters, signature, mapping):
             expected[name] = local.expected[name]
         local.arguments.pop(name, None)
         local.expected.pop(name, None)
-    return ValidationCase(
-        arguments, expected, local.rtol, local.atol, local.comparators
-    )
+    return ValidationCase(arguments, expected, local.rtol, local.atol, comparators)

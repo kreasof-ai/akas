@@ -147,6 +147,44 @@ def test_prune_refuses_changed_or_unsealed_data(repo):
         publish(root)
 
 
+def test_fork_publication_keeps_historical_links(repo):
+    root = repo / "benchmarks"
+    run(root, "upstream")
+    publish(root, repository_url="https://github.com/example/upstream")
+    original = deepcopy(archive.catalog(root)["runs"]["upstream"])
+    run(root, "fork")
+    publish(root, repository_url="https://github.com/example/fork")
+    data = archive.catalog(root)
+    assert data["repository"] == "https://github.com/example/upstream"
+    assert data["runs"]["upstream"] == original
+    assert archive.url(data, original, "run.json").startswith(
+        "https://github.com/example/upstream/"
+    )
+    current = data["runs"]["fork"]
+    assert archive.url(data, current, "run.json").startswith(
+        "https://github.com/example/fork/"
+    )
+    assert archive.url(data, current, "plot.svg", raw=True).startswith(
+        "https://raw.githubusercontent.com/example/fork/"
+    )
+    check(root, objects=True)
+
+
+def test_new_shard_starts_without_source_or_previous_archive_parent(repo):
+    root = repo / "benchmarks"
+    run(root, "first")
+    publish(root, repository_url="https://github.com/example/archive")
+    original = deepcopy(archive.catalog(root)["runs"]["first"])
+    run(root, "fresh")
+    publish(root, first_shard=9)
+    data = archive.catalog(root)
+    assert data["runs"]["first"] == original
+    entry = data["runs"]["fresh"]
+    assert entry["branch"] == "codex/artifacts/2026-10-009"
+    assert archive.git(repo, "rev-list", "--count", entry["commit"]).strip() == b"1"
+    check(root, objects=True)
+
+
 @pytest.mark.parametrize(
     "name", ["../escape", "/absolute", "C:/escape", "a\\b", "a/../b"]
 )

@@ -57,6 +57,7 @@ def _packed(p, paired=False, add_residual=False):
         if q != 2:
             raise ValueError("planar dense projection requires Q4_0")
         from akas.quantization.weights.ggml.kernel import planar_reader
+
         planar = planar_reader((o, k))
 
         @T.macro
@@ -75,7 +76,9 @@ def _packed(p, paired=False, add_residual=False):
 
     if p.get("schedule") == "outer":
         if p.get("half_accum") and not p["outer"].get("half_accum"):
-            raise ValueError("short-half contract requires a half-accumulating outer schedule")
+            raise ValueError(
+                "short-half contract requires a half-accumulating outer schedule"
+            )
         if q not in (1, 2, 14):
             raise ValueError("outer-product prefill requires F16, Q4_0 or Q6_K weights")
         dtype = p.get("outer_shared_dtype", "float16")
@@ -143,7 +146,9 @@ def _integer(p, paired=False, add_residual=False):
     from akas.quantization.weights.ggml.webgpu import integer_rhs
 
     prepacked = p.get("q4_prepacked", False)
-    storage, read_word, read_scale = integer_rhs((o, k), prepacked=prepacked)
+    storage, read_word, read_scale = integer_rhs(
+        (o, k), prepacked=prepacked, layout=p.get("weight_layout", "raw")
+    )
     count = storage.values.shape[0]
 
     config = dict(p.get("integer", {}))
@@ -406,11 +411,19 @@ def vector_decode(spec: KernelSpec, schedule: Mapping[str, object]):
         unroll //= 2
     chains = min(chains, unroll)
     return gemv_packed(
-        {**p, "sg": True, "gemv_threads": threads, "gemv_lanes": lanes,
-         "gemv_unroll": unroll, "gemv_chains": chains,
-         "gemv_dot": dot, "gemv_q6_dot": True,
-         "gemv_accumulators": 1 if dot or p["type"] != 2 else 4},
-        paired=spec.kind == "ffn", add_residual=spec.kind == "linear_add",
+        {
+            **p,
+            "sg": True,
+            "gemv_threads": threads,
+            "gemv_lanes": lanes,
+            "gemv_unroll": unroll,
+            "gemv_chains": chains,
+            "gemv_dot": dot,
+            "gemv_q6_dot": True,
+            "gemv_accumulators": 1 if dot or p["type"] != 2 else 4,
+        },
+        paired=spec.kind == "ffn",
+        add_residual=spec.kind == "linear_add",
     )
 
 
@@ -418,19 +431,25 @@ def archived_decode(spec: KernelSpec, schedule: Mapping[str, object]):
     """Replay the RX 6700 XT packed F32 schedules retained at Tensor d5ee508."""
     p = {**spec.parameters, **schedule}
     selected = {
-        (2048, 128000, 14): dict(gemv_q6_dot=True, gemv_threads=256,
-                               gemv_unroll=4, gemv_chains=1),
+        (2048, 128000, 14): dict(
+            gemv_q6_dot=True, gemv_threads=256, gemv_unroll=4, gemv_chains=1
+        ),
         (2048, 6144, 2): dict(gemv_unroll=8, gemv_chains=8),
-        (10752, 2048, 2): dict(gemv_lanes=16, gemv_threads=64,
-                             gemv_dot=True, gemv_unroll=4),
+        (10752, 2048, 2): dict(
+            gemv_lanes=16, gemv_threads=64, gemv_dot=True, gemv_unroll=4
+        ),
         (2048, 2048, 2): dict(gemv_unroll=8, gemv_chains=8),
-        (2048, 512, 2): dict(gemv_lanes=32, gemv_threads=64,
-                            gemv_dot=True, gemv_unroll=4),
+        (2048, 512, 2): dict(
+            gemv_lanes=32, gemv_threads=64, gemv_dot=True, gemv_unroll=4
+        ),
     }
     # Paired gate/up retained the subgroup control in the archive.
     config = {} if spec.kind == "ffn" else selected.get((p["k"], p["o"], p["type"]), {})
-    return gemv_packed({**p, "sg": True, **config}, paired=spec.kind == "ffn",
-                       add_residual=spec.kind == "linear_add")
+    return gemv_packed(
+        {**p, "sg": True, **config},
+        paired=spec.kind == "ffn",
+        add_residual=spec.kind == "linear_add",
+    )
 
 
 def q8(spec: KernelSpec, schedule: Mapping[str, object]):
@@ -460,10 +479,22 @@ def outer_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
     p = {**spec.parameters, **schedule}
     rows = p.get("outer_rows", 32)
     return _packed(
-        {**p, "schedule": "outer", "outer": dict(
-            tile_m=rows, tile_n=64, tile_k=16, micro_m=rows // 16,
-            micro_n=4, threads=256, lhs_layout="km", unroll=4,
-            dot_width=2, packed_pairs=True)},
+        {
+            **p,
+            "schedule": "outer",
+            "outer": dict(
+                tile_m=rows,
+                tile_n=64,
+                tile_k=16,
+                micro_m=rows // 16,
+                micro_n=4,
+                threads=256,
+                lhs_layout="km",
+                unroll=4,
+                dot_width=2,
+                packed_pairs=True,
+            ),
+        },
         paired=spec.kind == "ffn",
     )
 
@@ -486,11 +517,24 @@ def blocked_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
     )
     m, n, k, mm, mn, threads = layouts[p.get("outer_layout", 0)]
     return _packed(
-        {**p, "schedule": "outer", "outer": dict(
-            tile_m=m, tile_n=n, tile_k=k, micro_m=mm, micro_n=mn,
-            threads=threads, lhs_layout="km", unroll=4,
-            dot_width=2, packed_pairs=True)},
-        paired=spec.kind == "ffn", add_residual=spec.kind == "linear_add",
+        {
+            **p,
+            "schedule": "outer",
+            "outer": dict(
+                tile_m=m,
+                tile_n=n,
+                tile_k=k,
+                micro_m=mm,
+                micro_n=mn,
+                threads=threads,
+                lhs_layout="km",
+                unroll=4,
+                dot_width=2,
+                packed_pairs=True,
+            ),
+        },
+        paired=spec.kind == "ffn",
+        add_residual=spec.kind == "linear_add",
     )
 
 
@@ -509,13 +553,28 @@ def padded_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
     ]
     wide = p["o"] == 6144
     return _packed(
-        {**p, "schedule": "outer", "outer": dict(
-            tile_m=64, tile_n=128 if wide else 64, tile_k=16,
-            micro_m=4, micro_n=8 if wide else 4, threads=256,
-            lhs_layout="km", unroll=8, explicit_unroll=True,
-            dot_width=2, packed_pairs=True, lhs_pad=pad, rhs_pad=pad,
-            group_order=order)},
-        paired=spec.kind == "ffn", add_residual=spec.kind == "linear_add",
+        {
+            **p,
+            "schedule": "outer",
+            "outer": dict(
+                tile_m=64,
+                tile_n=128 if wide else 64,
+                tile_k=16,
+                micro_m=4,
+                micro_n=8 if wide else 4,
+                threads=256,
+                lhs_layout="km",
+                unroll=8,
+                explicit_unroll=True,
+                dot_width=2,
+                packed_pairs=True,
+                lhs_pad=pad,
+                rhs_pad=pad,
+                group_order=order,
+            ),
+        },
+        paired=spec.kind == "ffn",
+        add_residual=spec.kind == "linear_add",
     )
 
 
@@ -539,15 +598,35 @@ def half_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
     if not p.get("half_native", True) and p.get("half_k", 16) != 16:
         raise ValueError("generic short-half staging uses a fixed depth of 16")
     if p.get("half_native", True):
-        return native_half_pairs({**p, "half_tile": (m, n, mm, mn, threads), "half_pad": pad},
-                                 paired=spec.kind == "ffn", add_residual=spec.kind == "linear_add")
+        return native_half_pairs(
+            {**p, "half_tile": (m, n, mm, mn, threads), "half_pad": pad},
+            paired=spec.kind == "ffn",
+            add_residual=spec.kind == "linear_add",
+        )
     primitive = _packed(
-        {**p, "schedule": "outer", "outer": dict(
-            tile_m=m, tile_n=n, tile_k=16, micro_m=mm, micro_n=mn,
-            threads=threads, lhs_layout="km", unroll=8, explicit_unroll=True,
-            dot_width=2, packed_pairs=True, half_accum=True,
-            lhs_pad=pad, rhs_pad=pad, group_order="row")},
-        paired=spec.kind == "ffn", add_residual=spec.kind == "linear_add",
+        {
+            **p,
+            "schedule": "outer",
+            "outer": dict(
+                tile_m=m,
+                tile_n=n,
+                tile_k=16,
+                micro_m=mm,
+                micro_n=mn,
+                threads=threads,
+                lhs_layout="km",
+                unroll=8,
+                explicit_unroll=True,
+                dot_width=2,
+                packed_pairs=True,
+                half_accum=True,
+                lhs_pad=pad,
+                rhs_pad=pad,
+                group_order="row",
+            ),
+        },
+        paired=spec.kind == "ffn",
+        add_residual=spec.kind == "linear_add",
     )
     return primitive
 
@@ -592,6 +671,15 @@ def native_half_pairs(p, paired=False, add_residual=False):
         raise ValueError("short-half staging exceeds 32 KiB")
     rm, rn = m // mm, n // mn
     rounded, decode = round_half(), weight_decoder(q, k, packed_words=True)
+    if p.get("weight_layout", "raw") == "planar":
+        from akas.quantization.weights.ggml.kernel import planar_reader
+
+        planar = planar_reader((o, k))
+
+        @T.macro
+        def decode(w, row, channel):
+            return planar((w,), row, channel)
+
     epilogue = _epilogue(paired=paired, add_residual=add_residual)
 
     @T.macro
@@ -649,14 +737,23 @@ def native_half_pairs(p, paired=False, add_residual=False):
 
     @T.macro
     def fma(value: T.Ref, left0, left1, right0, right1):
-        value = T.call_extern("float16x2", "fma",
+        value = T.call_extern(
+            "float16x2",
+            "fma",
             T.call_extern("float16x2", "vec2<f16>", left0, left1),
-            T.call_extern("float16x2", "vec2<f16>", right0, right1), value)
+            T.call_extern("float16x2", "vec2<f16>", right0, right1),
+            value,
+        )
 
     def multiply(partial, lhs, rhs, kk, mr, nr):
         for part, i, j in product(range(parts), range(mm), range(mn)):
-            fma(partial[part, i, j][0], lhs[kk, mr + i * rm, 0], lhs[kk, mr + i * rm, 1],
-                rhs[part][kk, nr + j * rn, 0], rhs[part][kk, nr + j * rn, 1])
+            fma(
+                partial[part, i, j][0],
+                lhs[kk, mr + i * rm, 0],
+                lhs[kk, mr + i * rm, 1],
+                rhs[part][kk, nr + j * rn, 0],
+                rhs[part][kk, nr + j * rn, 1],
+            )
 
     @T.macro
     def accumulate(total: T.Ref, value):
@@ -677,8 +774,14 @@ def native_half_pairs(p, paired=False, add_residual=False):
 
     def store_all(out, residual, total, by, bx, mr, nr):
         for i, j in product(range(mm), range(mn)):
-            store(out, residual, total[0, i, j][0], total[1, i, j][0] if paired else 0,
-                  by * m + mr + i * rm, bx * n + nr + j * rn)
+            store(
+                out,
+                residual,
+                total[0, i, j][0],
+                total[1, i, j][0] if paired else 0,
+                by * m + mr + i * rm,
+                bx * n + nr + j * rn,
+            )
 
     @T.macro
     def matmul(x, w, out, w2=None, residual=None):
@@ -717,10 +820,22 @@ def integer_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
     )
     m, n, mm, mn, threads = layouts[p.get("integer_layout", 0)]
     return _integer(
-        {**p, "integer": {**p.get("integer", {}), "tile_m": m, "tile_n": n,
-            "micro_m": mm, "micro_n": mn, "threads": threads,
-            "owner_axis": "column", "group_order": "row", "tile_k": p.get("integer_k", 32)}},
-        paired=spec.kind == "ffn", add_residual=spec.kind == "linear_add",
+        {
+            **p,
+            "integer": {
+                **p.get("integer", {}),
+                "tile_m": m,
+                "tile_n": n,
+                "micro_m": mm,
+                "micro_n": mn,
+                "threads": threads,
+                "owner_axis": "column",
+                "group_order": "row",
+                "tile_k": p.get("integer_k", 32),
+            },
+        },
+        paired=spec.kind == "ffn",
+        add_residual=spec.kind == "linear_add",
     )
 
 

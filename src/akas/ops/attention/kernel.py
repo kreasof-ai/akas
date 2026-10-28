@@ -187,7 +187,9 @@ def tiled_partial_floating(spec: KernelSpec, schedule: Mapping[str, object]):
         from tensor.compiler.webgpu.schedules.registers import vector
 
         left = vector([queries[head, channel * 4 + j] for j in range(4)])
-        right = vector([T.cast(keys[channel * 4 + j, lane], "float32") for j in range(4)])
+        right = vector(
+            [T.cast(keys[channel * 4 + j, lane], "float32") for j in range(4)]
+        )
         return T.call_extern("float32", "dot", left, right)
 
     @T.macro
@@ -249,9 +251,8 @@ def tiled_partial_floating(spec: KernelSpec, schedule: Mapping[str, object]):
                         score += dot_terms(queries, keys, head, channel, lane)
                     else:
                         for j in T.unroll(4):
-                            score += (
-                                queries[head, channel * 4 + j]
-                                * T.cast(keys[channel * 4 + j, lane], "float32")
+                            score += queries[head, channel * 4 + j] * T.cast(
+                                keys[channel * 4 + j, lane], "float32"
                             )
                 score = T.if_then_else(
                     base + lane < end, score * 0.125, -T.infinity("float32")
@@ -275,8 +276,12 @@ def tiled_partial_floating(spec: KernelSpec, schedule: Mapping[str, object]):
                 acc0, acc1 = acc0 * correction, acc1 * correction
                 T.sync_threads()
                 for key in T.serial(32):
-                    acc0 += probabilities[head, key] * T.cast(values[key, lane], "float32")
-                    acc1 += probabilities[head, key] * T.cast(values[key, lane + 32], "float32")
+                    acc0 += probabilities[head, key] * T.cast(
+                        values[key, lane], "float32"
+                    )
+                    acc1 += probabilities[head, key] * T.cast(
+                        values[key, lane + 32], "float32"
+                    )
                 T.sync_threads()
             offset = ((slot * heads + kv_head * group + head) * splits + split) * 66
             out[offset + lane] = acc0
@@ -824,10 +829,13 @@ def precise_rope(spec: KernelSpec, schedule: Mapping[str, object]):
     low = tuple(single(value - rounded) for value, rounded in zip(frequencies, high))
     tau_high = single(2 * math.pi)
     tau_low = single(2 * math.pi - tau_high)
-    digits = max(1, ((max(1, p.get("position_limit", 131072)) - 1).bit_length() + 3) // 4)
+    digits = max(
+        1, ((max(1, p.get("position_limit", 131072)) - 1).bit_length() + 3) // 4
+    )
     phases = tuple(
-        single(math.remainder(frequency * (16 ** digit), 2 * math.pi))
-        for digit in range(digits) for frequency in frequencies
+        single(math.remainder(frequency * (16**digit), 2 * math.pi))
+        for digit in range(digits)
+        for frequency in frequencies
     )
 
     def exact(value):
@@ -842,7 +850,9 @@ def precise_rope(spec: KernelSpec, schedule: Mapping[str, object]):
             if end - begin == 1:
                 return exact(values[begin])
             middle = (begin + end) // 2
-            return T.if_then_else(index < middle, select(begin, middle), select(middle, end))
+            return T.if_then_else(
+                index < middle, select(begin, middle), select(middle, end)
+            )
 
         return select(0, len(values))
 
@@ -881,9 +891,14 @@ def precise_rope(spec: KernelSpec, schedule: Mapping[str, object]):
                     angle = 0
                     for digit in T.unroll(digits):
                         coefficient = constant(half + digit * (d // 2), phases)
-                        angle = angle + T.cast((positions[row] >> (digit * 4)) & 15,
-                                               "float32") * coefficient
-                        angle = angle - T.floor(angle / (2 * math.pi) + 0.5) * exact(tau_high)
+                        angle = (
+                            angle
+                            + T.cast((positions[row] >> (digit * 4)) & 15, "float32")
+                            * coefficient
+                        )
+                        angle = angle - T.floor(angle / (2 * math.pi) + 0.5) * exact(
+                            tau_high
+                        )
                 else:
                     frequency = constant(half, high)
                     leading = position * frequency
@@ -914,11 +929,32 @@ def precise_rope(spec: KernelSpec, schedule: Mapping[str, object]):
                 square = T.alloc_var("float32")
                 reduced = T.min(T.abs(angle), T.float32(math.pi) - T.abs(angle))
                 square = reduced * reduced
-                sine = reduced * (1 + square * (-1 / 6 + square * (1 / 120 + square *
-                       (-1 / 5040 + square * (1 / 362880 - square / 39916800)))))
-                cosine = 1 + square * (-1 / 2 + square * (1 / 24 + square *
-                         (-1 / 720 + square * (1 / 40320 + square *
-                         (-1 / 3628800 + square / 479001600)))))
+                sine = reduced * (
+                    1
+                    + square
+                    * (
+                        -1 / 6
+                        + square
+                        * (
+                            1 / 120
+                            + square
+                            * (-1 / 5040 + square * (1 / 362880 - square / 39916800))
+                        )
+                    )
+                )
+                cosine = 1 + square * (
+                    -1 / 2
+                    + square
+                    * (
+                        1 / 24
+                        + square
+                        * (
+                            -1 / 720
+                            + square
+                            * (1 / 40320 + square * (-1 / 3628800 + square / 479001600))
+                        )
+                    )
+                )
                 sine = T.if_then_else(angle < 0, -sine, sine)
                 cosine = T.if_then_else(T.abs(angle) > math.pi / 2, -cosine, cosine)
             else:
@@ -1279,6 +1315,10 @@ def window_cache(spec, schedule):
     p = {**spec.parameters, **schedule}
     r, kh, d, cap, chunk = (p[k] for k in ("r", "kh", "d", "capacity", "chunk"))
     shape = (r // chunk, kh, cap, d)
+    if p.get("provider") == "webgpu":
+        from akas.quantization._shared.rounding import round_half
+
+        rounded = round_half()
 
     @kernel
     def compute(
@@ -1292,12 +1332,20 @@ def window_cache(spec, schedule):
         with T.Kernel(kh, r, threads=d) as (head, row):
             tx = T.get_thread_binding()
             if enabled[row] != 0:
-                kc[row // chunk, head, positions[row] % cap, tx] = keys[
-                    row, head * d + tx
-                ]
-                vc[row // chunk, head, positions[row] % cap, tx] = values[
-                    row, head * d + tx
-                ]
+                if p.get("provider") == "webgpu":
+                    kc[row // chunk, head, positions[row] % cap, tx] = rounded(
+                        keys[row, head * d + tx]
+                    )
+                    vc[row // chunk, head, positions[row] % cap, tx] = rounded(
+                        values[row, head * d + tx]
+                    )
+                else:
+                    kc[row // chunk, head, positions[row] % cap, tx] = keys[
+                        row, head * d + tx
+                    ]
+                    vc[row // chunk, head, positions[row] % cap, tx] = values[
+                        row, head * d + tx
+                    ]
         return kc, vc
 
     return compute

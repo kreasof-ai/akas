@@ -118,21 +118,23 @@ def validation(kind, p, signature):
                 weight = weight.astype("float16")
             section = x @ weight.astype("float64").T
             if half:
-                error = ((half_gamma + total_gamma)
-                         * (absolute_x @ np.abs(weight.astype("float64")).T)
-                         + k * 2**-24)
+                error = (half_gamma + total_gamma) * (
+                    absolute_x @ np.abs(weight.astype("float64")).T
+                ) + k * 2**-24
             if kind == "ffn":
                 other = decode_rows(values["w2"], p["type"], k, start, stop)
                 if r > 1:
                     other = other.astype("float16")
                 up = x @ other.astype("float64").T
                 if half:
-                    up_error = ((half_gamma + total_gamma)
-                                * (absolute_x @ np.abs(other.astype("float64")).T)
-                                + k * 2**-24)
-                    error = (1.1 * np.abs(up) * error
-                             + np.abs(section / (1 + np.exp(-section))) * up_error
-                             + 1.1 * error * up_error)
+                    up_error = (half_gamma + total_gamma) * (
+                        absolute_x @ np.abs(other.astype("float64")).T
+                    ) + k * 2**-24
+                    error = (
+                        1.1 * np.abs(up) * error
+                        + np.abs(section / (1 + np.exp(-section))) * up_error
+                        + 1.1 * error * up_error
+                    )
                 section = section / (1 + np.exp(-section)) * up
             elif kind == "linear_add":
                 section += values["residual"].reshape(r, o)[:, start:stop]
@@ -146,18 +148,25 @@ def validation(kind, p, signature):
             if p["type"] != 2:
                 raise ValueError("planar dense validation requires Q4_0")
             from akas.quantization.weights.ggml.kernel import repack_host
+
             for name in ("w", "w2") if kind == "ffn" else ("w",):
                 raw = values[name].view("uint8").reshape(-1)
                 raw[:] = repack_host(raw)
         if half:
+
             def check_short_half(actual, wanted):
                 a, w = actual.astype("float64"), wanted.astype("float64")
                 assert np.isfinite(a).all()
                 assert np.all(np.abs(a - w) <= bounds.reshape(w.shape))
                 # The worst-case per-element cancellation bound alone is too
                 # permissive for a broken shader. Retain a separate RMS gate.
-                assert np.linalg.norm(a - w) / max(float(np.linalg.norm(w)), 1e-30) < .005
-            return ValidationCase(values, expected, comparators={"out": check_short_half})
+                assert (
+                    np.linalg.norm(a - w) / max(float(np.linalg.norm(w)), 1e-30) < 0.005
+                )
+
+            return ValidationCase(
+                values, expected, comparators={"out": check_short_half}
+            )
         return ValidationCase(values, expected)
     if "scales" in values:
         from akas.quantization._shared.e4m3 import decode_storage, encode_storage
@@ -308,7 +317,9 @@ def quantized_validation(kind, parameters, signature):
     # packed projections. Match their absolute tolerance for long reductions
     # near cancellation; block-scaled references keep the existing threshold.
     channel = p.get("weight_options", {}).get("scale_layout") == "channel"
-    return ValidationCase(values, expected, rtol=0.002, atol=0.002 if channel else 0.0001)
+    return ValidationCase(
+        values, expected, rtol=0.002, atol=0.002 if channel else 0.0001
+    )
 
 
 def q16_projection_validation(kind, parameters, signature):
@@ -334,6 +345,12 @@ def q16_projection_validation(kind, parameters, signature):
         other = sample_weight(values["w2"], 2, seed=44).reshape(width, depth)
         up = x @ other.astype("float64").T
         out = out / (1 + np.exp(-out)) * up
+    if parameters.get("weight_layout", "raw") == "planar":
+        from akas.quantization.weights.ggml.kernel import repack_host
+
+        for name in ("w", "w2") if kind in ("ffn", "ffn_q16") else ("w",):
+            raw = values[name].view("uint8").reshape(-1)
+            raw[:] = repack_host(raw)
     expected = {name: value.copy() for name, value in values.items()}
     expected["out"][:] = out.reshape(expected["out"].shape)
     return ValidationCase(values, expected)
@@ -344,10 +361,23 @@ def half_input_validation(kind, parameters, signature):
     from akas.kernels.contracts import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
-    edges = np.array([0., -0., 2**-25, -2**-25, 3*2**-25, 2**-24,
-                      2**-14 - 2**-25, 1 + 2**-11, 1 + 3*2**-11, 65504.], "float32")
+    edges = np.array(
+        [
+            0.0,
+            -0.0,
+            2**-25,
+            -(2**-25),
+            3 * 2**-25,
+            2**-24,
+            2**-14 - 2**-25,
+            1 + 2**-11,
+            1 + 3 * 2**-11,
+            65504.0,
+        ],
+        "float32",
+    )
     flat = values["x"].reshape(-1)
-    flat[:min(flat.size, edges.size)] = edges[:min(flat.size, edges.size)]
+    flat[: min(flat.size, edges.size)] = edges[: min(flat.size, edges.size)]
     expected = {name: value.copy() for name, value in values.items()}
     expected["out"][:] = values["x"].astype("float16")
 

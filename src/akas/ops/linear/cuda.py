@@ -547,6 +547,7 @@ def _packed(p, paired=False, add_residual=False):
 
     if p.get("input_dtype") == "float16":
         from akas.ops.linear.kernel import cuda_typed_abi
+
         return cuda_typed_abi(p, matmul, paired=paired, add_residual=add_residual)
     return projection_abi(p, matmul, paired=paired, add_residual=add_residual)
 
@@ -1387,6 +1388,7 @@ def projection(spec, schedule):
 
 
 from .kernel import column_projection as column_projection
+
 
 def short_packed_linear(spec, schedule):
     """Larger K tiles amortize GGML coefficient decoding for short prefill."""

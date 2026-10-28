@@ -76,7 +76,7 @@ class Weights:
 class PackedWeights:
     """Preserve each matrix's GGML encoding and share embedding/output storage."""
 
-    def __init__(self, graph, gguf, *, layouts=None):
+    def __init__(self, graph, gguf, *, layouts=None, provider="cuda"):
         from math import prod
         from akas.quantization.weights.ggml.definition import weight_storage
 
@@ -84,7 +84,9 @@ class PackedWeights:
         self.layouts = dict(layouts or {})
         self.buffers = {}
         for name, info in gguf.tensors.items():
-            count, dtype = weight_storage(info.type, prod(info.shape))
+            count, dtype = weight_storage(
+                info.type, prod(info.shape), packed_words=provider == "webgpu"
+            )
             self.buffers[name] = graph.buffer(name, (count,), dtype, role="weight")
 
     def __getitem__(self, name):

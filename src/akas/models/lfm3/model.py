@@ -23,6 +23,13 @@ def compose(
     q8_projections=False,
     fused_sandwich=False,
     fused_q8_ffn=False,
+    activation_quantization=None,
+    decode_splits=32,
+    sliding_splits=4,
+    ring_power_of_two=False,
+    fused_rotary_norm=False,
+    fused_attention_gate=False,
+    cooperative_decode_attention=False,
     ffn_tile_m=128,
     ffn_tile_k=64,
 ):
@@ -36,8 +43,31 @@ def compose(
         raise ValueError("Q8 projections require Q8 FFN prefill")
     if fused_q8_ffn and not q8_ffn:
         raise ValueError("Fused Q8 FFN requires Q8 FFN prefill")
-    if provider != "cuda" or kv_dtype != "float16":
-        raise ValueError("LFM3 currently requires CUDA and float16 KV")
+    if provider not in ("cuda", "webgpu") or kv_dtype != "float16":
+        raise ValueError("LFM3 requires CUDA or WebGPU and float16 KV")
+    if provider == "webgpu" and (half_activations or q8_ffn):
+        raise ValueError(
+            "LFM3 WebGPU requires floating graph activations; use activation_quantization for prefill"
+        )
+    if activation_quantization is not None and (
+        provider != "webgpu" or activation_quantization not in ("mixed", "half", "q16")
+    ):
+        raise ValueError(
+            "LFM3 activation arithmetic requires WebGPU and mixed, half or q16"
+        )
+    if any(
+        type(n) is not int or n < 1 or n > 512 or n & (n - 1)
+        for n in (decode_splits, sliding_splits)
+    ):
+        raise ValueError("attention splits must be powers of two up to 512")
+    if type(ring_power_of_two) is not bool:
+        raise ValueError("ring_power_of_two must be a boolean")
+    if fused_rotary_norm and provider != "webgpu":
+        raise ValueError("fused rotary normalization requires WebGPU")
+    if fused_attention_gate and provider != "webgpu":
+        raise ValueError("fused attention gate requires WebGPU")
+    if cooperative_decode_attention and provider != "webgpu":
+        raise ValueError("cooperative decode attention requires WebGPU")
     if (
         phase not in (None, "decode", "prefill")
         or not 1 <= rows <= max_requests
@@ -300,11 +330,13 @@ def compose(
             k = project(p + "k", normal, p + "attn_k.weight", w, kh * d)
             v = project(p + "v_flat", normal, p + "attn_v.weight", w, kh * d)
             v = g.view(p + "v", v, (b, kh * d))
-            q = norm(p + "qn", q, p + "attn_q_norm.weight", b * h, d)
-            k = norm(p + "kn", k, p + "attn_k_norm.weight", b * kh, d)
+            fused_rotary = fused_rotary_norm and chunk == 1
+            if not fused_rotary:
+                q = norm(p + "qn", q, p + "attn_q_norm.weight", b * h, d)
+                k = norm(p + "kn", k, p + "attn_k_norm.weight", b * kh, d)
             qr = g.buffer(p + "qr", (b, h * d), "float32")
             kr = g.buffer(p + "kr", (b, kh * d), "float32")
-            for x, out, heads in ((q, qr, h), (k, kr, kh)):
+            for x, out, heads in () if fused_rotary else ((q, qr, h), (k, kr, kh)):
                 g(
                     "rotary_compact",
                     dict(
@@ -328,6 +360,8 @@ def compose(
             capacity = (
                 min(max_context, window + prefill_chunk) if window else max_context
             )
+            if window and ring_power_of_two:
+                capacity = min(max_context, 1 << (capacity - 1).bit_length())
             shape = (max_requests, kh, capacity, d)
             kc, vc = [
                 g.buffer(p + n, shape, "float16", role="state") for n in ("kc", "vc")
@@ -335,29 +369,91 @@ def compose(
             ap = dict(
                 r=b, h=h, kh=kh, d=d, capacity=capacity, chunk=chunk, window=window
             )
-            g("window_cache", ap, kr, v, kc, vc, row_pos, row_active)
-            splits = (4 if window else 32) if chunk == 1 else 1
+            if fused_rotary:
+                g(
+                    "qk_norm_rotary_cache",
+                    {
+                        **ap,
+                        "capacity": max_context,
+                        "cache_capacity": capacity,
+                        "theta": c.theta[i],
+                        "rotary": c.rotary[i],
+                        "full_head_pairs": True,
+                        "eps": c.epsilon,
+                        "stride": stride,
+                        "blocks": blocks,
+                    },
+                    q,
+                    k,
+                    v,
+                    weights[p + "attn_q_norm.weight"],
+                    weights[p + "attn_k_norm.weight"],
+                    qr,
+                    kc,
+                    vc,
+                    row_pos,
+                    row_active,
+                    *tables[c.theta[i], c.rotary[i]],
+                )
+            else:
+                g("window_cache", ap, kr, v, kc, vc, row_pos, row_active)
+            splits = (sliding_splits if window else decode_splits) if chunk == 1 else 1
             ap["splits"] = splits
-            if optimized_attention and chunk > 1:
+            if provider == "webgpu":
+                ap.update(query_rows=4 if chunk > 1 else 1, key_rows=32)
+            elif optimized_attention and chunk > 1:
                 ap.update(query_rows=64, key_rows=32, contiguous=not window)
             parts = scratch(p + "attention_parts", h * splits * (d + 2))
             attended = scratch(p + "attended", h * d)
-            g(
-                "window_grouped"
-                if optimized_attention and chunk == 1
-                else "window_attention",
-                ap,
-                qr,
-                kc,
-                vc,
-                row_pos,
-                row_active,
-                parts,
-            )
-            g("window_merge", ap, parts, attended, row_active)
-            gate = project(p + "attention_gate", normal, p + "attn_gate.weight", w, h)
+            if cooperative_decode_attention and chunk == 1 and not window:
+                ap["key_rows"] = 64
+                scores = scratch(p + "attention_scores", h * capacity)
+                g("cooperative_scores", ap, qr, kc, row_pos, row_active, scores)
+                g("cooperative_values", ap, scores, vc, row_pos, row_active, parts)
+                if splits > 64:
+                    merge_splits = splits // 32
+                    reduced = scratch(
+                        p + "attention_reduced", h * merge_splits * (d + 2)
+                    )
+                    g(
+                        "cooperative_merge",
+                        {**ap, "merge_splits": merge_splits},
+                        parts,
+                        reduced,
+                    )
+                    parts = reduced
+                    ap = {**ap, "splits": merge_splits}
+            else:
+                g(
+                    "window_grouped"
+                    if optimized_attention and chunk == 1
+                    else "window_attention",
+                    ap,
+                    qr,
+                    kc,
+                    vc,
+                    row_pos,
+                    row_active,
+                    parts,
+                )
             gated = scratch(p + "gated", h * d)
-            g("head_gate", dict(r=b, h=h, d=d), attended, gate, gated)
+            gate_parameters = weights.parameters(p + "attn_gate.weight")
+            if fused_attention_gate and chunk == 1 and gate_parameters.get("type") == 2:
+                g(
+                    "projected_gate_merge",
+                    {**ap, "k": w, **gate_parameters},
+                    parts,
+                    normal,
+                    weights[p + "attn_gate.weight"],
+                    gated,
+                    row_active,
+                )
+            else:
+                g("window_merge", ap, parts, attended, row_active)
+                gate = project(
+                    p + "attention_gate", normal, p + "attn_gate.weight", w, h
+                )
+                g("head_gate", dict(r=b, h=h, d=d), attended, gate, gated)
             mixed = project(
                 p + "operator_output", gated, p + "attn_output.weight", h * d, w
             )
@@ -436,6 +532,14 @@ def compose(
     from akas.compilation.rewrites import optimize
 
     g = optimize(g)
+    if activation_quantization is not None and chunk > 1:
+        from akas.compilation.quantization import q16_activations
+
+        g = q16_activations(
+            g,
+            mixed=activation_quantization == "mixed" and b >= 128,
+            half_only=activation_quantization == "half",
+        )
     if fused_q8_ffn:
         from akas.graph import Call
 

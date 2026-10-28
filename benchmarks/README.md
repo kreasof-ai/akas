@@ -34,7 +34,13 @@ legacy reports can use `publish --legacy-bootstrap` only while the archive is em
 CI also rejects payload files tracked on the source branch.
 
 Publish the archive branches named in `archive.json` to origin before committing
-the updated catalog and documentation on main. Then remove verified local copies:
+the updated catalog and documentation on main.
+
+When publishing from a fork, pass `publish --repository https://github.com/OWNER/REPO`.
+New entries pin that repository while older catalog entries keep their original
+repository and immutable links.
+
+Then remove verified local copies:
 
 ```sh
 python -m tools.benchmark_archive prune

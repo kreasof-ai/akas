@@ -260,13 +260,18 @@ class LFM3Checkpoint:
         )
 
     def graph_weights(self, graph, *, provider, q4_layout="raw"):
-        if provider != "cuda":
-            raise ValueError("LFM3 currently requires CUDA")
+        if provider not in ("cuda", "webgpu") or (
+            provider == "webgpu" and self.gguf is None
+        ):
+            raise ValueError("LFM3 requires CUDA, or WebGPU with GGUF weights")
         if self.gguf is not None:
             from akas.checkpoints.partition import PackedWeights
 
             return PackedWeights(
-                graph, self.gguf, layouts=self.packed_layouts(q4_layout)
+                graph,
+                self.gguf,
+                layouts=self.packed_layouts(q4_layout),
+                provider=provider,
             )
         return FloatingWeights(graph, self)
 
@@ -292,8 +297,11 @@ class LFM3Checkpoint:
     def upload(self, device, *, rope_layout=None, weight_arena=False, q4_layout="raw"):
         import numpy as np
 
-        if device.info["provider"] != "cuda":
-            raise ValueError("LFM3 currently requires CUDA")
+        provider = device.info["provider"]
+        if provider not in ("cuda", "webgpu") or (
+            provider == "webgpu" and self.gguf is None
+        ):
+            raise ValueError("LFM3 requires CUDA, or WebGPU with GGUF weights")
         from akas.checkpoints.upload import upload_packed
 
         result = (

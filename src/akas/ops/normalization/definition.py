@@ -335,12 +335,18 @@ IMPLEMENTATIONS = (
 # rows. Keep it opt-in and independently qualify reduction reassociation.
 IMPLEMENTATIONS += tuple(
     Implementation(
-        kind, "akas.ops.normalization.kernel", "reference", provider="webgpu",
-        priority=-1, defaults=(("algorithm", "parallel-tree"), ("sg", True)),
-        space=(("sg", (True, False)),), factory=kind,
+        kind,
+        "akas.ops.normalization.kernel",
+        "reference",
+        provider="webgpu",
+        priority=-1,
+        defaults=(("algorithm", "parallel-tree"), ("sg", True)),
+        space=(("sg", (True, False)),),
+        factory=kind,
         semantic_keys=("r", "c", "eps"),
-        accepts=lambda p: p["c"] >= 256 and p["c"] % 256 == 0,
-        variant="parallel-subgroup", name="normalization.webgpu.parallel-subgroup",
+        accepts=lambda p: p["c"] >= 64 and p["c"] % 64 == 0,
+        variant="parallel-subgroup",
+        name="normalization.webgpu.parallel-subgroup",
     )
     for kind in ("rms", "add_rms")
 )
@@ -353,5 +359,15 @@ IMPLEMENTATIONS += (
         "reference",
         factory="post_add_rms",
         accepts=lambda p: p["c"] % 32 == 0,
+    ),
+    Implementation(
+        "post_add_rms",
+        "akas.ops.normalization.webgpu",
+        "reference",
+        provider="webgpu",
+        factory="post_add_rms",
+        name="normalization.webgpu.post_add_rms",
+        space=(("threads", (256, 128, 64, 32, 512, 1024)),),
+        accepts=lambda p: p["c"] % min(256, p["c"]) == 0,
     ),
 )

@@ -58,6 +58,10 @@ def _catalog(path, modified, size):
     locations = set()
     for kind in ("runs", "reports"):
         for identity, entry in data[kind].items():
+            if "repository" in entry and not re.fullmatch(
+                r"https://github\.com/[\w.-]+/[\w.-]+", entry["repository"]
+            ):
+                raise ValueError("archive entry repository must be a GitHub HTTPS URL")
             if len(safe_path(identity).parts) != 1:
                 raise ValueError("archive ID must be one path component")
             safe_path(entry["branch"])
@@ -104,13 +108,14 @@ def url(data, entry, name="", *, raw=False):
     if name:
         safe_path(name)
     path = entry["path"] + ("/" + name if name else "")
+    repository_url = entry.get("repository", data["repository"])
     if raw:
-        repo = data["repository"].removeprefix("https://github.com/")
+        repo = repository_url.removeprefix("https://github.com/")
         return (
             f"https://raw.githubusercontent.com/{repo}/{entry['commit']}/{quote(path)}"
         )
     view = "blob" if name else "tree"
-    return f"{data['repository']}/{view}/{entry['commit']}/{quote(path)}"
+    return f"{repository_url}/{view}/{entry['commit']}/{quote(path)}"
 
 
 def link(root, kind, identity, name="", *, raw=False):

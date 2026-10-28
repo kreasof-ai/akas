@@ -11,7 +11,7 @@ class TokenizerError(ValueError):
 
 def profiles():
     """Serialized format presets; no model execution policy lives here."""
-    return json.loads(Path(__file__).with_name("profiles.json").read_text())
+    return json.loads(Path(__file__).with_name("profiles.json").read_text(encoding="utf-8"))
 
 
 @dataclass(frozen=True)

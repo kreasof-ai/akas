@@ -67,7 +67,13 @@ def overview(data):
         "| --- | --- | ---: | ---: | ---: |",
     ]
     for (branch, commit), row in sorted(rows.items()):
-        repo = data["repository"]
+        repositories = {
+            entry.get("repository", data["repository"])
+            for kind in ("runs", "reports")
+            for entry in data[kind].values()
+            if entry["branch"] == branch and entry["commit"] == commit
+        }
+        repo = next(iter(repositories))
         lines.append(
             f"| [{branch}]({repo}/tree/{quote(branch, safe='')}) | "
             f"[{commit}]({repo}/commit/{commit}) | {row['runs']} | {row['reports']} | "
@@ -118,6 +124,7 @@ def publish(
     max_commit_bytes=192 * 1024**2,
     max_branch_bytes=512 * 1024**2,
     legacy_bootstrap=False,
+    first_shard=1,
 ):
     """Use a temporary Git index: never switch HEAD or stage the user's work."""
     root = Path(root).resolve()
@@ -128,18 +135,21 @@ def publish(
     archive.git(repo, "check-ref-format", "refs/heads/" + branch_prefix + "/check")
     if max_commit_bytes <= 0 or max_branch_bytes < max_commit_bytes:
         raise ValueError("branch limit must be at least the positive commit limit")
+    if type(first_shard) is not int or first_shard < 1:
+        raise ValueError("first shard must be a positive integer")
     data = deepcopy(archive.catalog(root))
     if legacy_bootstrap and (data["runs"] or data["reports"]):
         raise ValueError("legacy bootstrap is only allowed for an empty archive")
-    if repository_url:
-        if data["repository"] and repository_url != data["repository"]:
-            raise ValueError("cannot change an existing archive repository")
-        data["repository"] = repository_url.rstrip("/")
+    publication_repository = (
+        repository_url.rstrip("/") if repository_url else data["repository"]
+    )
     if not data["repository"]:
-        remote = archive.git(repo, "remote", "get-url", "origin").decode().strip()
-        remote = re.sub(r"^git@github.com:", "https://github.com/", remote)
-        data["repository"] = remote.removesuffix(".git")
-    if not re.fullmatch(r"https://github\.com/[\w.-]+/[\w.-]+", data["repository"]):
+        if not publication_repository:
+            remote = archive.git(repo, "remote", "get-url", "origin").decode().strip()
+            remote = re.sub(r"^git@github.com:", "https://github.com/", remote)
+            publication_repository = remote.removesuffix(".git")
+        data["repository"] = publication_repository
+    if not re.fullmatch(r"https://github\.com/[\w.-]+/[\w.-]+", publication_repository):
         raise ValueError("specify --repository https://github.com/OWNER/REPO")
     rebuild_index(root)
     summaries = {
@@ -273,6 +283,8 @@ def publish(
                     files=files,
                     summary=summary,
                 )
+                if publication_repository != data["repository"]:
+                    data[kind][folder.name]["repository"] = publication_repository
                 if kind == "reports":
                     data[kind][folder.name]["source_files"] = source_files
             write(root / "archive.json", data, compact_entries=True)
@@ -291,7 +303,7 @@ def publish(
             # Reserve a little room for rewritten report pages and their originals.
             budget = size * 2 if kind == "reports" else size
             month = summary["started_at"][:7]
-            number = 1
+            number = first_shard
             while True:
                 candidate = f"{branch_prefix}/{month}-{number:03d}"
                 used = branches.get(candidate, {}).get("bytes", 0)
@@ -475,6 +487,12 @@ def main():
     publish_parser.add_argument("--repository", dest="repository_url")
     publish_parser.add_argument("--branch-prefix", default="codex/artifacts")
     publish_parser.add_argument(
+        "--first-shard",
+        type=int,
+        default=1,
+        help="start at this shard when publishing a fresh batch",
+    )
+    publish_parser.add_argument(
         "--legacy-bootstrap",
         action="store_true",
         help="initial import only: seal historical reports without regenerating them",
@@ -503,6 +521,7 @@ def main():
             args.root,
             repository_url=args.repository_url,
             branch_prefix=args.branch_prefix,
+            first_shard=args.first_shard,
             legacy_bootstrap=args.legacy_bootstrap,
         )
     elif args.action == "check":

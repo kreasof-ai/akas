@@ -71,8 +71,9 @@ def round_half_branch():
         exponent = T.cast(bits >> 23 & 255, "int32")
         result = T.alloc_var("float32")
         if exponent >= 113:
-            result = T.reinterpret("float32", bits + 4095 + (bits >> 13 & 1)
-                                   & T.uint32(4294959104))
+            result = T.reinterpret(
+                "float32", bits + 4095 + (bits >> 13 & 1) & T.uint32(4294959104)
+            )
         elif exponent < 102:
             result = T.if_then_else(bits >> 31 != 0, -T.float32(0), T.float32(0))
         else:

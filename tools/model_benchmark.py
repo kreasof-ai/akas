@@ -1,4 +1,4 @@
-"""Matched single-user CUDA context sweeps with checksummed runs and reports.
+"""Matched single-user GPU context sweeps with checksummed runs and reports.
 
 Use compile, akas, llama, then report. Archive through tools.benchmark_archive;
 model files and compiled programs stay under build/, payloads stay off main.
@@ -8,11 +8,13 @@ import argparse
 from datetime import datetime
 import hashlib
 import json
+import os
 from pathlib import Path
 import subprocess
 import time
 import traceback
 import urllib.request
+from contextlib import contextmanager
 
 from akas.benchmarking.history import Recorder, digest, utc, write
 from akas.benchmarking.workload import prompt_digest
@@ -38,6 +40,16 @@ class Profile:
     optimized_options: dict
     trials: int = 1
     chunk: int = 256
+    provider: str = "cuda"
+    script: str | None = None
+
+    @property
+    def baseline_provider(self):
+        return "vulkan" if self.provider == "webgpu" else "cuda"
+
+    @property
+    def target(self):
+        return "webgpu-portable-v1" if self.provider == "webgpu" else "sm_89"
 
     @property
     def model_class(self):
@@ -51,24 +63,50 @@ def prompts(prefix, vocab=131072):
     return synthetic_prompts(vocab, 1, prefix)
 
 
+@contextmanager
+def device_for(profile):
+    if profile.provider == "webgpu":
+        from tools.context_sweep import vulkan_device
+
+        with vulkan_device() as device:
+            yield device
+    else:
+        import tensor
+
+        with tensor.Device() as device:
+            yield device
+
+
 def compile_program(args):
     from akas.compilation import compile_checkpoint
     from akas.compilation.tuning import SearchSettings
 
-    compile_checkpoint(
-        args.profile.model_class,
-        args.checkpoint,
-        args.program,
-        checkpoint_options={"tokenizer": False},
-        geometries=[(1, n) for n in sorted({1, 32, min(512, args.chunk), args.chunk})],
-        max_requests=1,
-        max_context=131072,
-        model_options=dict(
-            prefill_chunk=args.chunk,
-            **(args.profile.optimized_options if args.optimized else {}),
-        ),
-        search_settings=SearchSettings(budget=args.trials, samples=3, repeats=3),
-    )
+    from tensor.compiler.search import ScheduleProfile
+
+    with device_for(args.profile) as device:
+        compile_checkpoint(
+            args.profile.model_class,
+            args.checkpoint,
+            args.program,
+            checkpoint_options={"tokenizer": False},
+            geometries=[
+                (1, n) for n in sorted({1, 32, min(512, args.chunk), args.chunk})
+            ],
+            max_requests=1,
+            max_context=args.context,
+            model_options={
+                "prefill_chunk": args.chunk,
+                **(args.profile.optimized_options if args.optimized else {}),
+                **json.loads(args.model_options),
+            },
+            search_settings=SearchSettings(budget=args.trials, samples=3, repeats=3),
+            provider=args.profile.provider,
+            device=device,
+            schedules=ScheduleProfile(json.loads(args.schedule_profile.read_text()))
+            if args.schedule_profile
+            else None,
+            policy=json.loads(args.policy.read_text()) if args.policy else None,
+        )
     write(
         args.out,
         dict(
@@ -107,8 +145,12 @@ def record_run(args, runtime, measure):
         model=args.profile.model,
         mode="ar",
         weight_format=args.profile.weight_format,
-        provider="cuda",
-        target="sm_89",
+        provider=args.profile.provider
+        if runtime == "akas"
+        else args.profile.baseline_provider,
+        target=args.profile.target
+        if runtime == "akas"
+        else args.profile.baseline_provider,
         protocol="native-token-step-v2"
         if runtime == "akas"
         else "llama-server-eval-v1",
@@ -122,7 +164,7 @@ def record_run(args, runtime, measure):
         ignore_eos=True,
         warmup=args.warmup,
         repeats=args.repeats,
-        max_context=131072,
+        max_context=args.context,
         prefill_chunk=args.chunk,
         initialization_requests=1,
         compilation_trials_allowance=args.trials,
@@ -141,7 +183,7 @@ def record_run(args, runtime, measure):
         args.history,
         meta,
         kind="baseline" if runtime == "llama" else "configuration",
-        change=f"{args.profile.model} {args.profile.weight_format} matched CUDA context sweep",
+        change=f"{args.profile.model} {args.profile.weight_format} matched {args.profile.baseline_provider} context sweep",
     )
     report = dict(schema="akas.benchmark.v1", metadata=meta, results=[])
     manifest = recorder.directory / "input-tokens.json"
@@ -183,7 +225,9 @@ def record_run(args, runtime, measure):
                 )
         recorder.artifact(__file__, "benchmark/model_benchmark.py")
         recorder.artifact(
-            Path("tools") / (args.profile.id.split("-")[0] + "_benchmark.py"),
+            Path(args.profile.script)
+            if args.profile.script
+            else Path("tools") / (args.profile.id.split("-")[0] + "_benchmark.py"),
             "benchmark/profile.py",
         )
         final = recorder.update(report, final=True)
@@ -221,8 +265,17 @@ def akas(args):
             raise ValueError(
                 "FP16 weight-cache programs are unsupported; recompile with the current packed-weight model"
             )
+        if args.profile.provider == "webgpu":
+            from tensor.providers import _webgpu_native
+            from wgpu.backends.wgpu_native import lib_path, lib_version_info
+
+            meta["native_submission_helper_sha256"] = digest(_webgpu_native.__file__)
+            meta["wgpu_native"] = dict(
+                path=str(lib_path), version=list(lib_version_info),
+                sha256=digest(Path(lib_path)),
+            )
         with (
-            tensor.Device() as device,
+            device_for(args.profile) as device,
             args.profile.model_class(
                 args.checkpoint,
                 args.program,
@@ -325,24 +378,40 @@ def llama(args):
             [str(args.binary), "--version"], stderr=subprocess.STDOUT, text=True
         ).strip()
         meta["binary_sha256"] = digest(args.binary)
-        revision = subprocess.check_output(
-            ["git", "-C", str(args.binary.parent.parent.parent), "rev-parse", "HEAD"],
-            text=True,
-        ).strip()
+        meta["runtime_environment"] = {
+            name: os.environ.get(name)
+            for name in ("GGML_VK_ALLOW_GRAPHICS_QUEUE", "GGML_VK_DISABLE_F16")
+        }
+        revision = (
+            args.runtime_revision
+            or subprocess.check_output(
+                [
+                    "git",
+                    "-C",
+                    str(args.binary.parent.parent.parent),
+                    "rev-parse",
+                    "HEAD",
+                ],
+                text=True,
+            ).strip()
+        )
         if revision[:7] not in meta["runtime_version"]:
             raise ValueError("baseline binary/revision mismatch")
         meta["runtime_revision"] = revision
         meta["runtime_files"] = {
-            p.name: digest(p) for p in args.binary.parent.glob("*.so*")
+            p.name: digest(p)
+            for p in args.binary.parent.iterdir()
+            if p.suffix == ".dll" or ".so" in p.name
         }
         listing = subprocess.check_output(
             [str(args.binary), "--list-devices"], stderr=subprocess.STDOUT, text=True
         )
-        if "CUDA0:" not in listing:
-            raise ValueError("CUDA0 absent from llama.cpp")
+        baseline_device = "Vulkan0" if args.profile.provider == "webgpu" else "CUDA0"
+        if baseline_device + ":" not in listing:
+            raise ValueError(baseline_device + " absent from llama.cpp")
         import tensor
 
-        with tensor.Device() as device:
+        with device_for(args.profile) as device:
             meta["device"] = dict(device.info, device_listing=listing)
         if meta["device"]["name"] not in listing:
             raise ValueError("baseline GPU mismatch")
@@ -353,9 +422,9 @@ def llama(args):
             "-ngl",
             "99",
             "--device",
-            "CUDA0",
+            baseline_device,
             "-c",
-            "131072",
+            str(args.context),
             "-np",
             "1",
             "-b",
@@ -481,9 +550,16 @@ def llama(args):
     record_run(args, "llama", measure)
 
 
-def phase_parity(native, baseline):
-    """Accept only a complete matched sweep with both phase medians at parity."""
+def phase_parity(native, baseline, phases=("prefill", "decode")):
+    """Accept a complete matched sweep for the explicitly requested phases."""
     import statistics
+
+    if (
+        not phases
+        or len(set(phases)) != len(phases)
+        or set(phases) - {"prefill", "decode"}
+    ):
+        raise ValueError("select prefill and/or decode parity phases")
 
     left = {r["case"]["prompt"]: r for r in native["results"]}
     right = {r["case"]["prompt"]: r for r in baseline["results"]}
@@ -502,10 +578,11 @@ def phase_parity(native, baseline):
             row[phase] = dict(akas=x, llama=y, ratio=x / y, parity_or_better=x >= y)
         rows.append(row)
     return dict(
-        criterion="AKAS median >= llama.cpp median for both phases at every matched prefix",
-        passed=all(
-            r[p]["parity_or_better"] for r in rows for p in ("prefill", "decode")
-        ),
+        criterion="AKAS median >= llama.cpp median for "
+        + " and ".join(phases)
+        + " at every matched prefix",
+        phases=list(phases),
+        passed=all(r[p]["parity_or_better"] for r in rows for p in phases),
         prefixes=len(rows),
         rows=rows,
     )
@@ -543,19 +620,26 @@ def report(args):
     )
     if workload["prefix_tokens"] != [r["case"]["prompt"] for r in b["results"]]:
         raise ValueError("shape mismatch")
-    aid = args.profile.id + f"-{args.profile.weight_format}-cuda-float16-ar"
-    bid = "baseline-" + args.profile.id + f"-llama-cuda-{args.profile.weight_format}-ar"
+    aid = (
+        args.profile.id
+        + f"-{args.profile.weight_format}-{args.profile.provider}-float16-ar"
+    )
+    bid = (
+        "baseline-"
+        + args.profile.id
+        + f"-llama-{args.profile.baseline_provider}-{args.profile.weight_format}-ar"
+    )
     spec = dict(
         schema="akas.matrix-campaign.v1",
         models=[args.profile.id],
         formats=[args.profile.weight_format],
-        backends=["cuda"],
+        backends=[args.profile.provider],
         caches=["float16"],
         workload=workload,
         baselines=[
             dict(
                 runtime="llama",
-                provider="cuda",
+                provider=args.profile.baseline_provider,
                 weight_format=args.profile.weight_format,
                 mode="ar",
             )
@@ -595,7 +679,7 @@ def report(args):
                 runtime=m["runtime"],
                 model_id=args.profile.id,
                 model=args.profile.model,
-                provider="cuda",
+                provider=m["provider"],
                 weight_format=args.profile.weight_format,
                 cache_request="float16",
                 mode="ar",
@@ -623,7 +707,7 @@ def report(args):
     args.out.mkdir(parents=True, exist_ok=True)
     campaign = args.out / "campaign.json"
     write(campaign, state)
-    acceptance = phase_parity(a, b)
+    acceptance = phase_parity(a, b, args.parity_phases)
     comparisons = []
     for left, right in zip(a["results"], b["results"]):
         if left["prompt_sha256"] != right["prompt_sha256"]:
@@ -691,6 +775,21 @@ def main(profile):
     parser.add_argument("--port", type=int, default=8826)
     parser.add_argument("--runs", nargs="+")
     parser.add_argument("--qualification-run")
+    parser.add_argument(
+        "--parity-phases",
+        nargs="+",
+        choices=("prefill", "decode"),
+        default=["prefill", "decode"],
+    )
+    parser.add_argument("--context", type=int, default=131072)
+    parser.add_argument("--runtime-revision")
+    parser.add_argument("--schedule-profile", type=Path)
+    parser.add_argument("--policy", type=Path)
+    parser.add_argument(
+        "--model-options",
+        default="{}",
+        help="JSON model options overriding the selected profile",
+    )
     args = parser.parse_args()
     args.profile = profile
     if (
@@ -700,7 +799,8 @@ def main(profile):
         or not args.prefixes
         or len(set(args.prefixes)) != len(args.prefixes)
         or min(args.prefixes) < 1
-        or max(args.prefixes) > 130944
+        or max(args.prefixes) + 128 > args.context
+        or args.context > 262144
     ):
         parser.error("invalid chunk, repetitions or context prefixes")
     args.out.parent.mkdir(parents=True, exist_ok=True)

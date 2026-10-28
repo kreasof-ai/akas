@@ -1,5 +1,52 @@
 # LFM3
 
+## AMD Vulkan / WebGPU
+
+The GGUF path also runs on WebGPU with hardware Vulkan. The RX 6700 XT recipe
+uses the official `LFM3-1.7B-QAD-Q4_0.gguf`, packed integer weight storage,
+FP16 KV, FP32 decode activations and accumulation, and fused sandwich norms.
+`activation_quantization="mixed"` uses two-component activation quantization for
+short prefill and short FP16 accumulation in selected large prefill projections.
+It leaves decode in FP32. CUDA-only Q8 options are separate.
+
+`cooperative_decode_attention=True` shares full-attention KV tiles across GQA
+query heads, computes FP32 scores and value sums, and hierarchically merges
+large partition counts. It leaves prefill arithmetic unchanged. The long-context
+workflow in `tools.lfm3_long_decode` measures completed wall decode from exact
+real-prefill state replays through prefix 130,944 with context limit 131,072.
+Its checked state import permits decode schedule changes while requiring the
+same checkpoint, prompt, prefill arithmetic, state shapes and producing run.
+The RX 6700 XT showcase links its reproduction recipe and selected schedule/policy
+files in the [artifact archive](../../../../benchmarks/archive.json). Pass those
+retrieved files as `--schedule-profile` and `--policy` to the long-context compiler.
+
+`tools.lfm3_vulkan_benchmark` provides compilation, warmed repeated measurement,
+and a pinned llama.cpp Vulkan comparison. Pass `--context 8192 --prefixes 32
+512 2048 8064` to all stages. Use `--parity-phases decode` when decode is the
+acceptance criterion; the report still includes prefill rates and complete
+output-token comparisons. These measurements cover one request and 128 output
+tokens, excluding model load. They do not establish performance at other
+contexts or concurrency levels.
+
+```powershell
+$env:PYTHONUTF8='1'
+python -m tools.lfm3_vulkan_benchmark compile --optimized --context 8192 --prefixes 32 512 2048 8064 --out build/lfm3-vulkan/compile.json
+python -m tools.lfm3_qualify --provider webgpu --out build/lfm3-vulkan/qualification.json
+python -m tools.lfm3_vulkan_demo --program build/lfm3-vulkan/program --out build/lfm3-vulkan/demo.json
+```
+
+Schedule profiles and lowering policies may be supplied to `compile` with
+`--schedule-profile` and `--policy`. Program manifests retain those choices.
+`decode_splits` and `sliding_splits` control split attention, while
+`ring_power_of_two=True` rounds up the physical sliding-cache capacity to avoid
+expensive address division without changing the logical attention window.
+`fused_rotary_norm=True` combines decode Q/K RMSNorm, compact RoPE and KV cache
+writes. Q remains FP32; KV retains explicit FP16 rounding and the same full-head
+partial rotary pairing.
+`fused_attention_gate=True` combines a packed Q4_0 head-gate projection, split
+merge and sigmoid gate during decode. It retains the original packed coefficients.
+Safetensors execution remains CUDA-only.
+
 `LFM3` loads the official LiquidAI/LFM3-1.7B BF16 safetensors,
 LFM3-1.7B-FP8 safetensors, or LFM3 GGUF through one declaration:
 

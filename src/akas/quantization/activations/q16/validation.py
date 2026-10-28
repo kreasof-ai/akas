@@ -21,8 +21,10 @@ def encode(values, *, fixed_residual=False):
         sums.append(quant.astype("int32").sum(axis=1, dtype="int32"))
         # GPU uses one explicitly fused F32 residual update. F16 inputs and
         # signed-byte quants make the product/subtraction exact in F64 first.
-        residual = (residual.astype("float64")
-                    - quant.astype("float64") * factor[:, None].astype("float64")).astype("float32")
+        residual = (
+            residual.astype("float64")
+            - quant.astype("float64") * factor[:, None].astype("float64")
+        ).astype("float32")
         first = factor
     return (
         np.concatenate(planes).reshape(-1).view("uint32"),

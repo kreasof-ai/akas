@@ -194,6 +194,64 @@ also cover BF16 and block-scaled FP8 safetensors.
 Regenerate the plot with `python -m tools.lfm3_plot REPORT_JSON OUTPUT_SVG`
 after retrieving the archived report.
 
+**LFM3-1.7B · QAD Q4_0 weights · AMD Radeon RX 6700 XT (12 GB) · Vulkan**
+
+Results from the [October 28, 2026 comparison](https://github.com/kreasof-ai/akas/blob/655e658aa7cb1adca295d54adde56076f59e6e71/benchmarks/reports/20261028T123406Z-5a82c9f7e263/README.md),
+with one request generating 128 total output tokens and a 131,072-token context
+reservation. Both runtimes use identical official checkpoint bytes, deterministic
+synthetic prompt IDs and FP16 KV. Decode rates are medians of five repetitions
+after two warmups; 127 decode steps are timed after the first prediction. Prefill
+rates are one completed-wall observation per prefix and can include first-use
+phase setup.
+
+![LFM3 QAD Q4_0 prefill observations and decode medians with sample ranges across prefixes 32 through 130,944, comparing AKAS and llama.cpp on AMD Radeon RX 6700 XT.](https://raw.githubusercontent.com/kreasof-ai/akas/0eb5d7bd19581ec85803285505cf521819170d38/benchmarks/runs/20261028151859229290-78dfc7e2/figures/throughput.svg)
+
+<details>
+<summary>Prefill observations and decode medians (tokens per second)</summary>
+
+| Prefix tokens | AKAS prefill tok/s | llama.cpp prefill tok/s | AKAS decode tok/s | llama.cpp decode tok/s |
+| ---: | ---: | ---: | ---: | ---: |
+| 32 | 899.0 | 1,182.3 | 247.5 | 208.2 |
+| 512 | 344.8 | 3,514.8 | 244.1 | 202.1 |
+| 2,048 | 859.0 | 2,176.9 | 225.4 | 187.5 |
+| 8,192 | 1,014.5 | 935.6 | 186.6 | 180.1 |
+| 16,384 | 767.5 | 529.2 | 179.6 | 164.4 |
+| 32,768 | 462.5 | 282.7 | 153.4 | 140.9 |
+| 65,536 | 226.5 | 146.3 | 117.3 | 109.6 |
+| 130,944 | 64.0 | 74.0 | 79.5 | 74.6 |
+
+</details>
+
+Decode medians exceed llama.cpp at **8/8 prefixes**, by **3.6–20.8%**. The
+full-context case reaches **79.55 tok/s versus 74.63 tok/s (+6.59%)**. Shared KV
+reads across GQA heads and a hierarchical attention merge improve long decode;
+weights remain packed and decode activations, scores and accumulation are FP32.
+The recorded programs use mixed prefill arithmetic and explicit FP16 KV rounding.
+
+Both timers cover completed wall decode including greedy sampling and control
+dispatch. AKAS uses GPU token feedback; llama.cpp b11946 Vulkan C API uses its
+stock greedy sampler. Each sample restores complete state produced by actual
+model prefill and its first prediction; load, prefill, state restoration and
+validation are excluded. Prefill observations are single samples in the raw
+records and do not establish prefill or end-to-end latency parity. Prefixes through
+8,192 use the 32-partition program; longer prefixes use the 512-partition program.
+
+Generated sequences differ at some prefixes. Independent GPU model qualification
+passes its existing numerical bounds and greedy-token checks; a separate natural
+language demonstration matches 88/88 tokens. See the [full report](https://github.com/kreasof-ai/akas/blob/655e658aa7cb1adca295d54adde56076f59e6e71/benchmarks/reports/20261028T123406Z-5a82c9f7e263/README.md)
+for samples, output comparisons and selected schedules, and the
+[reproduction and validation assets](https://github.com/kreasof-ai/akas/blob/0eb5d7bd19581ec85803285505cf521819170d38/benchmarks/runs/20261028151859229290-78dfc7e2/reproduction/README.md) for pinned runtime
+identities, compilation settings and the text demonstration.
+
+Regenerate the plot after retrieving the archived report:
+
+```sh
+python -m tools.benchmark_archive fetch reports 20261028T123406Z-5a82c9f7e263
+python -m tools.lfm3_vulkan_plot REPORT_DIRECTORY/report.json build/throughput.svg
+```
+
+Replace `REPORT_DIRECTORY` with the verified directory printed by the fetch command.
+
 ## Getting started
 
 Use Python 3.12. `uv.lock` pins Tensor to a published Git revision.

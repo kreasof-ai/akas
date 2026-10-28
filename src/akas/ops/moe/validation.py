@@ -26,10 +26,14 @@ def expert_swiglu_validation(kind, p, signature):
         for start in range(0, columns, 128):
             stop = min(start + 128, columns)
             begin, end = expert * columns + start, expert * columns + stop
-            g = (gate(begin, end).astype(dtype).astype("float64") @ source).astype("float32")
-            u = (up(begin, end).astype(dtype).astype("float64") @ source).astype("float32")
+            g = (gate(begin, end).astype(dtype).astype("float64") @ source).astype(
+                "float32"
+            )
+            u = (up(begin, end).astype(dtype).astype("float64") @ source).astype(
+                "float32"
+            )
             result[0, rank, start:stop] = g / (1 + np.exp(-g)) * u
-    return ValidationCase(values, {**values, "out": result}, rtol=.002, atol=.0002)
+    return ValidationCase(values, {**values, "out": result}, rtol=0.002, atol=0.0002)
 
 
 def tile_tables(counts, capacity):

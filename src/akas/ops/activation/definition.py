@@ -182,3 +182,14 @@ IMPLEMENTATIONS += (
         name="activation.head_gate_half",
     ),
 )
+
+IMPLEMENTATIONS += (
+    Implementation(
+        "head_gate",
+        "akas.ops.activation.kernel",
+        "reference",
+        provider="webgpu",
+        factory="head_gate",
+        name="activation.webgpu.head_gate",
+    ),
+)

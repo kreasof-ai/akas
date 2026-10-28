@@ -179,8 +179,11 @@ def gemv_terms(p, *, fast_q4, lanes, row_count, dot_q4, dot_q6):
         if fast_q4:
             block = (bx * row_count + row) * (k // 32) + tile * (lanes // 4) + lane // 4
             if planar:
-                scale = T.call_extern("float32", "tensor_unpack_f16",
-                    w[blocks * 4 + block // 2] >> (block % 2 * 16) & T.uint32(65535))
+                scale = T.call_extern(
+                    "float32",
+                    "tensor_unpack_f16",
+                    w[blocks * 4 + block // 2] >> (block % 2 * 16) & T.uint32(65535),
+                )
                 packed = w[block * 4 + lane % 4]
             else:
                 base = block * 18
@@ -206,11 +209,14 @@ def gemv_terms(p, *, fast_q4, lanes, row_count, dot_q4, dot_q6):
     return compute
 
 
-def integer_rhs(shape, *, prepacked=False):
+def integer_rhs(shape, *, prepacked=False, layout="raw"):
     """Q4_0 logical words/scales for an integer matrix consumer."""
     from .definition import integer_layout
 
     k = shape[-1]
+    blocks = shape[0] * k // 32
+    if layout not in ("raw", "planar") or prepacked and layout != "raw":
+        raise ValueError("invalid Q4_0 integer consumer layout")
     storage = integer_layout(shape, prepacked=prepacked)
     import tilelang.language as T
     from akas.quantization._shared.packing import packed_loads
@@ -221,6 +227,8 @@ def integer_rhs(shape, *, prepacked=False):
     def read_word(w, col, block, word):
         if prepacked:
             return w[(col * (k // 32) + block) * 9 + word]
+        elif layout == "planar":
+            return w[(col * (k // 32) + block) * 4 + word]
         else:
             return word_value(w, (col * (k // 32) + block) * 18 + 2 + word * 4)
 
@@ -228,6 +236,8 @@ def integer_rhs(shape, *, prepacked=False):
     def read_scale(w, col, block):
         if prepacked:
             return T.reinterpret("float32", w[(col * (k // 32) + block) * 9 + 8])
+        elif layout == "planar":
+            return half_value(w, blocks * 16 + (col * (k // 32) + block) * 2)
         else:
             return half_value(w, (col * (k // 32) + block) * 18)
 

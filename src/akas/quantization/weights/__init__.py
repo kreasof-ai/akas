@@ -133,5 +133,9 @@ def bind(parameters, shape, *, provider):
     options = dict(parameters.get("weight_options", {}))
     if name == "ggml" and "type" in parameters:
         options.setdefault("encoding", parameters["type"])
-    return get("weights", name).bind(tuple(shape), provider=provider,
-                                    access=parameters.get("weight_access"), **options)
+    return get("weights", name).bind(
+        tuple(shape),
+        provider=provider,
+        access=parameters.get("weight_access"),
+        **options,
+    )

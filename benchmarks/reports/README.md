@@ -4,6 +4,11 @@ Each report contains the full requested matrix, all available AKAS and baseline 
 
 | Started UTC | Workload | Source | Qualified AKAS | Qualified baselines | Report |
 | --- | --- | --- | ---: | ---: | --- |
+| 2026-10-28T12:34:06.615870Z | lfm3-rx6700xt-wall-decode-v1 | `c8e7ac8dc1c771c4a9918a76d8d022676e4d3bc1` | 1/1 | 1/1 | [full tables](https://github.com/akbar2habibullah/akas/blob/c76c262dfe6f9f429e82b07377812275c5b2bb22/benchmarks/reports/20261028T123406Z-a877560886fd/README.md) |
+| 2026-10-28T12:34:06.615870Z | lfm3-rx6700xt-wall-decode-v1 | `c8e7ac8dc1c771c4a9918a76d8d022676e4d3bc1` | 1/1 | 1/1 | [full tables](https://github.com/kreasof-ai/akas/blob/655e658aa7cb1adca295d54adde56076f59e6e71/benchmarks/reports/20261028T123406Z-5a82c9f7e263/README.md) |
+| 2026-10-28T11:41:01.094924Z | custom | `c8e7ac8dc1c771c4a9918a76d8d022676e4d3bc1` | 1/1 | 1/1 | [full tables](https://github.com/akbar2habibullah/akas/blob/c76c262dfe6f9f429e82b07377812275c5b2bb22/benchmarks/reports/20261028T114101Z-b6e0f1f857b9/README.md) |
+| 2026-10-28T11:19:10.988203Z | custom | `c8e7ac8dc1c771c4a9918a76d8d022676e4d3bc1` | 1/1 | 1/1 | [full tables](https://github.com/akbar2habibullah/akas/blob/c76c262dfe6f9f429e82b07377812275c5b2bb22/benchmarks/reports/20261028T111910Z-b1aa86e65c75/README.md) |
+| 2026-10-28T10:32:03.103736Z | custom | `c8e7ac8dc1c771c4a9918a76d8d022676e4d3bc1` | 1/1 | 1/1 | [full tables](https://github.com/akbar2habibullah/akas/blob/c76c262dfe6f9f429e82b07377812275c5b2bb22/benchmarks/reports/20261028T103203Z-8a578b5a24c2/README.md) |
 | 2026-10-27T18:59:32.613950Z | custom | `ceb52a49d83440274c773737ce6841b95de3d841` | 1/1 | 1/1 | [full tables](https://github.com/kreasof-ai/akas/blob/2f19a43426682bc9dbeff464b988b2544cec000c/benchmarks/reports/20261027T185932Z-b917d23ac845/README.md) |
 | 2026-10-27T18:59:32.613950Z | custom | `ceb52a49d83440274c773737ce6841b95de3d841` | 1/1 | 1/1 | [full tables](https://github.com/kreasof-ai/akas/blob/2f19a43426682bc9dbeff464b988b2544cec000c/benchmarks/reports/20261027T185932Z-49526c97d293/README.md) |
 | 2026-10-27T18:53:37.181202Z | custom | `ceb52a49d83440274c773737ce6841b95de3d841` | 1/1 | 1/1 | [full tables](https://github.com/kreasof-ai/akas/blob/2f19a43426682bc9dbeff464b988b2544cec000c/benchmarks/reports/20261027T185337Z-f8e160f80cc6/README.md) |

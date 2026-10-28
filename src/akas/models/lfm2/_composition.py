@@ -75,7 +75,11 @@ def compose(
                 if expert_weight_layout != "raw"
                 else {}
             ),
-            **(dict(dense_weight_layout=dense_weight_layout) if dense_weight_layout != "raw" else {}),
+            **(
+                dict(dense_weight_layout=dense_weight_layout)
+                if dense_weight_layout != "raw"
+                else {}
+            ),
         )
         if checkpoint is not None and hasattr(checkpoint, "graph_weights")
         else Weights(
@@ -425,13 +429,21 @@ def program(
     )
     if activation_quantization is not None:
         if dense_weight_layout != "raw":
-            raise ValueError("q16 activation storage currently requires raw dense weights")
-        if activation_quantization not in ("q16", "mixed", "half") or provider != "webgpu":
+            raise ValueError(
+                "q16 activation storage currently requires raw dense weights"
+            )
+        if (
+            activation_quantization not in ("q16", "mixed", "half")
+            or provider != "webgpu"
+        ):
             raise ValueError("q16/mixed/half activation arithmetic requires WebGPU")
         from akas.compilation.quantization import q16_activations
 
-        graph = q16_activations(graph, mixed=activation_quantization == "mixed",
-                                half_only=activation_quantization == "half")
+        graph = q16_activations(
+            graph,
+            mixed=activation_quantization == "mixed",
+            half_only=activation_quantization == "half",
+        )
     for name, spec in tuple(graph.buffers.items()):
         if spec.role == "state":
             if spec.shape[0] != rows:

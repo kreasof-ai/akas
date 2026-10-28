@@ -33,3 +33,12 @@ def test_phase_parity_requires_matching_shapes_and_accepts_exact_parity():
     assert phase_parity(a, a)["passed"]
     with pytest.raises(ValueError, match="identical"):
         phase_parity(a, report([100], [90], 512))
+
+
+def test_decode_priority_keeps_prefill_visible_but_gates_decode():
+    a, b = report([50], [110]), report([100], [100])
+    result = phase_parity(a, b, ("decode",))
+    assert result["passed"]
+    assert not result["rows"][0]["prefill"]["parity_or_better"]
+    with pytest.raises(ValueError):
+        phase_parity(a, b, ())

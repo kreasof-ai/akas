@@ -1156,10 +1156,20 @@ IMPLEMENTATIONS += (
             and p["k"] % 256 == 0
             and supports_parts(p["weight_parts"], p["k"], "stage_tile", provider="cuda")
         ),
-        defaults=(("block_m", 16), ("columns", 64), ("block_k", 256),
-                  ("threads", 128), ("stages", 1)),
-        space=(("block_m", (16, 32)), ("columns", (32, 64, 128)),
-               ("block_k", (128, 256)), ("threads", (128, 256)), ("stages", (1, 2))),
+        defaults=(
+            ("block_m", 16),
+            ("columns", 64),
+            ("block_k", 256),
+            ("threads", 128),
+            ("stages", 1),
+        ),
+        space=(
+            ("block_m", (16, 32)),
+            ("columns", (32, 64, 128)),
+            ("block_k", (128, 256)),
+            ("threads", (128, 256)),
+            ("stages", (1, 2)),
+        ),
     ),
 )
 

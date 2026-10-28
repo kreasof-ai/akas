@@ -1,8 +1,15 @@
 """Explicit activation-storage lowering before operation schedule search."""
 
 
-def q16_activations(graph, *, subgroup=True, fixed_residual=False, schedules=None, mixed=False,
-                    half_only=False):
+def q16_activations(
+    graph,
+    *,
+    subgroup=True,
+    fixed_residual=False,
+    schedules=None,
+    mixed=False,
+    half_only=False,
+):
     """Reuse two-plane activations for Q4_0 projections sharing one input.
 
     This changes the declared arithmetic policy: half-rounded inputs become two

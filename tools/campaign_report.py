@@ -803,6 +803,7 @@ def render(data, out, history):
     ceiling = state.get("configuration_budget_seconds")
     ceiling_text = "not set" if ceiling is None else f"{ceiling / 3600:.2f} hours"
     notes = "All throughput and displayed latency values are medians over the retained repetitions. AKAS native decode counts the outputs after the first token; burst throughput counts all outputs. AKAS burst timing includes loopback HTTP/SSE, vLLM and SGLang burst timing uses native engine calls, and llama.cpp burst timing uses concurrent HTTP requests. Phase rates have distinct protocols and cannot be compared as equivalent kernel timings. Weight labels describe source storage; execution precision is recorded per configuration and can differ between operations. Unqualified timing values remain visible with † and are excluded from qualified claims. — means no retained measurement, never zero throughput."
+    notes = data.get("measurement_notes", notes)
     lines = [
         "# Campaign benchmark report",
         "",
@@ -831,10 +832,21 @@ def render(data, out, history):
         write(out / "PARITY.json", acceptance)
         lines.insert(
             lines.index(notes),
-            "Both-phase median criterion: **"
+            ("Decode median criterion: **" if data.get("measurement_notes")
+             and acceptance.get("phases") == ["decode"] else "Both-phase median criterion: **")
             + ("passed" if acceptance["passed"] else "failed")
             + "**. [Per-prefix acceptance results](PARITY.json).\n",
         )
+    if data.get("prefill_observations"):
+        prefill = ["## Prefill observations", "",
+            "One completed-wall observation per prefix, including first-use phase setup where encountered. These are not warmed medians or repeated prefill benchmarks. The maximum-prefix AKAS observation comes from the original retained prefill producer; only decode gates acceptance.", "",
+            "| Prefix tokens | AKAS observed prefill tok/s | llama.cpp observed prefill tok/s | Samples per runtime |",
+            "| ---: | ---: | ---: | ---: |"]
+        for row in data["prefill_observations"]:
+            prefill.append(f"| {row['prefix']:,} | {row['akas']['tokens_per_second']:,.2f} | {row['baseline']['tokens_per_second']:,.2f} | 1 |")
+        prefill.append("")
+        position = lines.index("## Hardware and measurement provenance")
+        lines[position:position] = prefill
     for p in qualified + baselines:
         e = data["evidence"].get(p.get("selected_run_id"), {})
         m = e.get("metadata", {})

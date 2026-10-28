@@ -586,12 +586,24 @@ def staged_tile(shape, *, encoding):
 
     def tile(tile_shape, dtype):
         height, width = tile_shape
-        if (height < 1 or width < 1 or width % block or depth % width
-                or height > rows or dtype not in ("float16", "float32")):
+        if (
+            height < 1
+            or width < 1
+            or width % block
+            or depth % width
+            or height > rows
+            or dtype not in ("float16", "float32")
+        ):
             raise ValueError("staged GGML tiles need complete aligned encoding blocks")
         tile_bytes = width // block * size
-        unit = next((value for value in (8, 4, 2) if stride % value == 0
-                     and tile_bytes % value == 0), None)
+        unit = next(
+            (
+                value
+                for value in (8, 4, 2)
+                if stride % value == 0 and tile_bytes % value == 0
+            ),
+            None,
+        )
         if unit is None:
             raise ValueError("staged GGML tile has no aligned word representation")
         word_dtype = f"uint{unit * 8}"
@@ -601,15 +613,21 @@ def staged_tile(shape, *, encoding):
 
         @T.macro
         def load(encoded, staged, row, column):
-            words = T.meta_var(T.view(encoded[0], (rows, stride // unit),
-                                     dtype=word_dtype))
+            words = T.meta_var(
+                T.view(encoded[0], (rows, stride // unit), dtype=word_dtype)
+            )
             start = T.truncdiv(column * size, block * unit)
-            T.copy(words[row:row + height, start:start + tile_bytes // unit], staged)
+            T.copy(
+                words[row : row + height, start : start + tile_bytes // unit], staged
+            )
 
         @T.macro
         def decode(staged, destination):
-            encoded = T.meta_var(T.view(staged, local.storage.values.shape,
-                                       dtype=local.storage.values.dtype))
+            encoded = T.meta_var(
+                T.view(
+                    staged, local.storage.values.shape, dtype=local.storage.values.dtype
+                )
+            )
             read((encoded,), destination, 0, 0)
 
         return StagedTile(physical, load, decode)

@@ -69,7 +69,9 @@ class DSparkDraftCheckpoint:
                 try:
                     weight_storage(info.type, shape[-1])
                 except ValueError as error:
-                    raise GGUFError(f"{name}: invalid draft weight row encoding") from error
+                    raise GGUFError(
+                        f"{name}: invalid draft weight row encoding"
+                    ) from error
         names = self.target_checkpoint.gguf.tensors
         head = "output.weight" if "output.weight" in names else "token_embd.weight"
         self.shared = {"embedding": "token_embd.weight", "head": head}

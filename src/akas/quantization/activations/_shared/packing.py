@@ -77,8 +77,13 @@ def packing(p, *, components, provider="webgpu"):
                 | (T.reinterpret("uint32", quants[component, tx * 4 + 3]) & 255) << 24
             )
         if components == 2:
-            values[tx] = T.call_extern("float32", "fma",
-                -T.cast(quants[component, tx], "float32"), factor, values[tx])
+            values[tx] = T.call_extern(
+                "float32",
+                "fma",
+                -T.cast(quants[component, tx], "float32"),
+                factor,
+                values[tx],
+            )
         scratch[tx] = T.cast(quants[component, tx], "float32")
         T.sync_threads()
         total_reduce(scratch, tx)
@@ -96,7 +101,11 @@ def packing(p, *, components, provider="webgpu"):
             factor = divide(factor, T.float32(254))
         else:
             factor = T.max(
-                divide(T.call_extern("float32", "subgroupMax", T.abs(value)), T.float32(127)), 1e-20
+                divide(
+                    T.call_extern("float32", "subgroupMax", T.abs(value)),
+                    T.float32(127),
+                ),
+                1e-20,
             )
         quant = T.cast(T.round(divide(value, factor)), "int32")
         bits = (
@@ -142,7 +151,9 @@ def packing(p, *, components, provider="webgpu"):
         if tx == 0:
             scales[block + component * blocks] = factor
             sums[block + component * blocks] = total
-        value = T.call_extern("float32", "fma", -T.cast(quant, "float32"), factor, value)
+        value = T.call_extern(
+            "float32", "fma", -T.cast(quant, "float32"), factor, value
+        )
 
     @T.macro
     def quantize(x, packed, scales, sums):
