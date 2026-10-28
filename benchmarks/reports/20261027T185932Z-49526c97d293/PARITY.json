@@ -1,0 +1,127 @@
+{
+  "criterion": "AKAS median >= llama.cpp median for both phases at every matched prefix",
+  "passed": false,
+  "prefixes": 8,
+  "rows": [
+    {
+      "prefix_tokens": 32,
+      "prefill": {
+        "akas": 3266.5597483779147,
+        "llama": 3206.4128256513022,
+        "ratio": 1.0187583215253624,
+        "parity_or_better": true
+      },
+      "decode": {
+        "akas": 200.81651806496131,
+        "llama": 190.0580200743172,
+        "ratio": 1.0566063878095608,
+        "parity_or_better": true
+      }
+    },
+    {
+      "prefix_tokens": 512,
+      "prefill": {
+        "akas": 12002.277901015645,
+        "llama": 13559.681135623296,
+        "ratio": 0.8851445532508784,
+        "parity_or_better": false
+      },
+      "decode": {
+        "akas": 199.558350971381,
+        "llama": 186.0579592518419,
+        "ratio": 1.0725601407960486,
+        "parity_or_better": true
+      }
+    },
+    {
+      "prefix_tokens": 2048,
+      "prefill": {
+        "akas": 12924.059011729882,
+        "llama": 12957.186873256189,
+        "ratio": 0.9974432828784245,
+        "parity_or_better": false
+      },
+      "decode": {
+        "akas": 196.38873983205,
+        "llama": 183.45337250857318,
+        "ratio": 1.070510381720414,
+        "parity_or_better": true
+      }
+    },
+    {
+      "prefix_tokens": 8192,
+      "prefill": {
+        "akas": 11990.725513393603,
+        "llama": 12381.448986223522,
+        "ratio": 0.9684428314275118,
+        "parity_or_better": false
+      },
+      "decode": {
+        "akas": 186.4107904678284,
+        "llama": 172.82650260396468,
+        "ratio": 1.0786007218753502,
+        "parity_or_better": true
+      }
+    },
+    {
+      "prefix_tokens": 16384,
+      "prefill": {
+        "akas": 10939.287097494871,
+        "llama": 11565.867701269675,
+        "ratio": 0.945825024117644,
+        "parity_or_better": false
+      },
+      "decode": {
+        "akas": 174.10632784780123,
+        "llama": 160.25701692288862,
+        "ratio": 1.0864193730223777,
+        "parity_or_better": true
+      }
+    },
+    {
+      "prefix_tokens": 32768,
+      "prefill": {
+        "akas": 9299.147945736366,
+        "llama": 9988.221896542895,
+        "ratio": 0.9310113493729019,
+        "parity_or_better": false
+      },
+      "decode": {
+        "akas": 148.6310136849457,
+        "llama": 140.15277756319566,
+        "ratio": 1.0604928155485693,
+        "parity_or_better": true
+      }
+    },
+    {
+      "prefix_tokens": 65536,
+      "prefill": {
+        "akas": 7128.866726366997,
+        "llama": 6517.06922019313,
+        "ratio": 1.0938761712516745,
+        "parity_or_better": true
+      },
+      "decode": {
+        "akas": 117.93697576899422,
+        "llama": 109.96584997540921,
+        "ratio": 1.072487283964681,
+        "parity_or_better": true
+      }
+    },
+    {
+      "prefix_tokens": 130944,
+      "prefill": {
+        "akas": 4821.325982465706,
+        "llama": 3942.3180676090205,
+        "ratio": 1.2229672745278506,
+        "parity_or_better": true
+      },
+      "decode": {
+        "akas": 84.54120250603454,
+        "llama": 79.28273471747254,
+        "ratio": 1.0663255096749724,
+        "parity_or_better": true
+      }
+    }
+  ]
+}

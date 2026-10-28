@@ -1,0 +1,5438 @@
+{
+  "schema": "akas.campaign-schedules.v1",
+  "configurations": {
+    "lfm3-1.7b-q4_0-cuda-float16-ar": {
+      "run_id": "20261028072145009000-65166f09",
+      "recipe": {
+        "chunk": 1024,
+        "prefill_requests": 1,
+        "graphs": true,
+        "trials": 1
+      },
+      "phases": [
+        {
+          "program_sha256": "bf267936ef29b65e825d02fe63f0820ffcf83580acaad455c69aee18a2c94ec8",
+          "phase": "decode",
+          "batch": 1,
+          "chunk": 1,
+          "provider": "cuda",
+          "target": "sm_89",
+          "contract": "reference",
+          "qualification": "programs/bf267936ef29b65e825d02fe63f0820ffcf83580acaad455c69aee18a2c94ec8/decode-b1-t1.json",
+          "profile": {
+            "schema": "tensor.schedule-profile.v1",
+            "provider": "cuda",
+            "target": "sm_89",
+            "entries": [
+              {
+                "operation": "embedding",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "v": 128000,
+                  "start": 0,
+                  "ggml": true,
+                  "type": 14
+                },
+                "schedule": {
+                  "implementation": "vocabulary.cuda.packed_baseline"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 6144,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2,
+                  "weight_layout": "planar",
+                  "weight_options": {
+                    "layout": "planar"
+                  }
+                },
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 2,
+                  "f16_values": 8,
+                  "implementation": "linear.cuda.packed"
+                }
+              },
+              {
+                "operation": "conv",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "length": 7,
+                  "chunk": 1
+                },
+                "schedule": {
+                  "implementation": "convolution.reference"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 2048,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2,
+                  "weight_layout": "planar",
+                  "weight_options": {
+                    "layout": "planar"
+                  }
+                },
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 2,
+                  "f16_values": 4,
+                  "implementation": "linear.cuda.packed"
+                }
+              },
+              {
+                "operation": "post_add_rms",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "akas.ops.normalization.cuda:post_add_rms"
+                }
+              },
+              {
+                "operation": "ffn",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 7680,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2,
+                  "weight_layout": "planar",
+                  "weight_options": {
+                    "layout": "planar"
+                  }
+                },
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 2,
+                  "f16_values": 8,
+                  "implementation": "linear.cuda.packed"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1,
+                  "k": 7680,
+                  "o": 2048,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2,
+                  "weight_layout": "planar",
+                  "weight_options": {
+                    "layout": "planar"
+                  }
+                },
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 1,
+                  "f16_values": 4,
+                  "implementation": "linear.cuda.packed"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 512,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2,
+                  "weight_layout": "planar",
+                  "weight_options": {
+                    "layout": "planar"
+                  }
+                },
+                "schedule": {
+                  "threads": 128,
+                  "unroll": 1,
+                  "f16_values": 4,
+                  "implementation": "linear.cuda.packed"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 16,
+                  "c": 128,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 4,
+                  "c": 128,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "rotary_compact",
+                "parameters": {
+                  "r": 1,
+                  "h": 16,
+                  "d": 128,
+                  "theta": 1000000.0,
+                  "rotary": 64,
+                  "full_head_pairs": true,
+                  "capacity": 131072,
+                  "stride": 1024,
+                  "blocks": 128
+                },
+                "schedule": {
+                  "implementation": "attention.cuda.rotary_compact"
+                }
+              },
+              {
+                "operation": "rotary_compact",
+                "parameters": {
+                  "r": 1,
+                  "h": 4,
+                  "d": 128,
+                  "theta": 1000000.0,
+                  "rotary": 64,
+                  "full_head_pairs": true,
+                  "capacity": 131072,
+                  "stride": 1024,
+                  "blocks": 128
+                },
+                "schedule": {
+                  "implementation": "attention.cuda.rotary_compact"
+                }
+              },
+              {
+                "operation": "window_cache",
+                "parameters": {
+                  "r": 1,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 131072,
+                  "chunk": 1,
+                  "window": 0
+                },
+                "schedule": {
+                  "implementation": "attention.window_cache"
+                }
+              },
+              {
+                "operation": "window_grouped",
+                "parameters": {
+                  "r": 1,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 131072,
+                  "chunk": 1,
+                  "window": 0,
+                  "splits": 32
+                },
+                "schedule": {
+                  "implementation": "attention.cuda.window_grouped"
+                }
+              },
+              {
+                "operation": "window_merge",
+                "parameters": {
+                  "r": 1,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 131072,
+                  "chunk": 1,
+                  "window": 0,
+                  "splits": 32
+                },
+                "schedule": {
+                  "implementation": "attention.window_merge"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 16,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2,
+                  "weight_layout": "planar",
+                  "weight_options": {
+                    "layout": "planar"
+                  }
+                },
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 1,
+                  "f16_values": 16,
+                  "implementation": "linear.cuda.packed"
+                }
+              },
+              {
+                "operation": "head_gate",
+                "parameters": {
+                  "r": 1,
+                  "h": 16,
+                  "d": 128
+                },
+                "schedule": {
+                  "implementation": "activation.head_gate"
+                }
+              },
+              {
+                "operation": "rotary_compact",
+                "parameters": {
+                  "r": 1,
+                  "h": 16,
+                  "d": 128,
+                  "theta": 10000.0,
+                  "rotary": 128,
+                  "full_head_pairs": true,
+                  "capacity": 131072,
+                  "stride": 1024,
+                  "blocks": 128
+                },
+                "schedule": {
+                  "implementation": "attention.cuda.rotary_compact"
+                }
+              },
+              {
+                "operation": "rotary_compact",
+                "parameters": {
+                  "r": 1,
+                  "h": 4,
+                  "d": 128,
+                  "theta": 10000.0,
+                  "rotary": 128,
+                  "full_head_pairs": true,
+                  "capacity": 131072,
+                  "stride": 1024,
+                  "blocks": 128
+                },
+                "schedule": {
+                  "implementation": "attention.cuda.rotary_compact"
+                }
+              },
+              {
+                "operation": "window_cache",
+                "parameters": {
+                  "r": 1,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 1280,
+                  "chunk": 1,
+                  "window": 256
+                },
+                "schedule": {
+                  "implementation": "attention.window_cache"
+                }
+              },
+              {
+                "operation": "window_grouped",
+                "parameters": {
+                  "r": 1,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 1280,
+                  "chunk": 1,
+                  "window": 256,
+                  "splits": 4
+                },
+                "schedule": {
+                  "implementation": "attention.cuda.window_grouped"
+                }
+              },
+              {
+                "operation": "window_merge",
+                "parameters": {
+                  "r": 1,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 1280,
+                  "chunk": 1,
+                  "window": 256,
+                  "splits": 4
+                },
+                "schedule": {
+                  "implementation": "attention.window_merge"
+                }
+              },
+              {
+                "operation": "add_rms",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 128000,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 14
+                },
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 8,
+                  "f16_values": 4,
+                  "implementation": "linear.cuda.packed"
+                }
+              },
+              {
+                "operation": "argmax",
+                "parameters": {
+                  "r": 1,
+                  "c": 128000
+                },
+                "schedule": {
+                  "implementation": "vocabulary.reference"
+                }
+              },
+              {
+                "operation": "next_tokens",
+                "parameters": {
+                  "r": 1
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              },
+              {
+                "operation": "advance",
+                "parameters": {
+                  "r": 1
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              }
+            ]
+          },
+          "winners": [
+            {
+              "kind": "embedding",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "v": 128000,
+                "start": 0,
+                "ggml": true,
+                "type": 14
+              },
+              "selected": {
+                "implementation": "vocabulary.cuda.packed_baseline",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  6.890666671097278e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  6.677333420763412e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 6144,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2,
+                "weight_layout": "planar",
+                "weight_options": {
+                  "layout": "planar"
+                }
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed",
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 2,
+                  "f16_values": 8
+                },
+                "score": 1.0,
+                "measurements": [
+                  1.563733288397392e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "conv",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "length": 7,
+                "chunk": 1
+              },
+              "selected": {
+                "implementation": "convolution.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  7.338666667540869e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 2048,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2,
+                "weight_layout": "planar",
+                "weight_options": {
+                  "layout": "planar"
+                }
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed",
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 2,
+                  "f16_values": 4
+                },
+                "score": 0.9279957013283325,
+                "measurements": [
+                  9.210666796813407e-06
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "post_add_rms",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "akas.ops.normalization.cuda:post_add_rms",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.0421333524088065e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "ffn",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 7680,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2,
+                "weight_layout": "planar",
+                "weight_options": {
+                  "layout": "planar"
+                }
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed",
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 2,
+                  "f16_values": 8
+                },
+                "score": 1.0,
+                "measurements": [
+                  2.5770666388173896e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1,
+                "k": 7680,
+                "o": 2048,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2,
+                "weight_layout": "planar",
+                "weight_options": {
+                  "layout": "planar"
+                }
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed",
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 1,
+                  "f16_values": 4
+                },
+                "score": 1.0,
+                "measurements": [
+                  2.0133332659800848e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 512,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2,
+                "weight_layout": "planar",
+                "weight_options": {
+                  "layout": "planar"
+                }
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed",
+                "schedule": {
+                  "threads": 128,
+                  "unroll": 1,
+                  "f16_values": 4
+                },
+                "score": 0.9984984870815267,
+                "measurements": [
+                  7.093333328763645e-06
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 16,
+                "c": 128,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.1210666658977668e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 4,
+                "c": 128,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  9.55200009047985e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rotary_compact",
+              "parameters": {
+                "r": 1,
+                "h": 16,
+                "d": 128,
+                "theta": 1000000.0,
+                "rotary": 64,
+                "full_head_pairs": true,
+                "capacity": 131072,
+                "stride": 1024,
+                "blocks": 128
+              },
+              "selected": {
+                "implementation": "attention.cuda.rotary_compact",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.075199975942572e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rotary_compact",
+              "parameters": {
+                "r": 1,
+                "h": 4,
+                "d": 128,
+                "theta": 1000000.0,
+                "rotary": 64,
+                "full_head_pairs": true,
+                "capacity": 131072,
+                "stride": 1024,
+                "blocks": 128
+              },
+              "selected": {
+                "implementation": "attention.cuda.rotary_compact",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  8.677333360537886e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_cache",
+              "parameters": {
+                "r": 1,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 131072,
+                "chunk": 1,
+                "window": 0
+              },
+              "selected": {
+                "implementation": "attention.window_cache",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  2.3578666461010772e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_grouped",
+              "parameters": {
+                "r": 1,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 131072,
+                "chunk": 1,
+                "window": 0,
+                "splits": 32
+              },
+              "selected": {
+                "implementation": "attention.cuda.window_grouped",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.585066628952821e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "window_merge",
+              "parameters": {
+                "r": 1,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 131072,
+                "chunk": 1,
+                "window": 0,
+                "splits": 32
+              },
+              "selected": {
+                "implementation": "attention.window_merge",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  6.4533335777620474e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 16,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2,
+                "weight_layout": "planar",
+                "weight_options": {
+                  "layout": "planar"
+                }
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed",
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 1,
+                  "f16_values": 16
+                },
+                "score": 0.9737490014509178,
+                "measurements": [
+                  6.33066683076322e-06
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "head_gate",
+              "parameters": {
+                "r": 1,
+                "h": 16,
+                "d": 128
+              },
+              "selected": {
+                "implementation": "activation.head_gate",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  6.4640000928193335e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rotary_compact",
+              "parameters": {
+                "r": 1,
+                "h": 16,
+                "d": 128,
+                "theta": 10000.0,
+                "rotary": 128,
+                "full_head_pairs": true,
+                "capacity": 131072,
+                "stride": 1024,
+                "blocks": 128
+              },
+              "selected": {
+                "implementation": "attention.cuda.rotary_compact",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  7.2586666016529e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rotary_compact",
+              "parameters": {
+                "r": 1,
+                "h": 4,
+                "d": 128,
+                "theta": 10000.0,
+                "rotary": 128,
+                "full_head_pairs": true,
+                "capacity": 131072,
+                "stride": 1024,
+                "blocks": 128
+              },
+              "selected": {
+                "implementation": "attention.cuda.rotary_compact",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  8.613333416481814e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_cache",
+              "parameters": {
+                "r": 1,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 1280,
+                "chunk": 1,
+                "window": 256
+              },
+              "selected": {
+                "implementation": "attention.window_cache",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  8.026666706427932e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_grouped",
+              "parameters": {
+                "r": 1,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 1280,
+                "chunk": 1,
+                "window": 256,
+                "splits": 4
+              },
+              "selected": {
+                "implementation": "attention.cuda.window_grouped",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  7.680000116427739e-06
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "window_merge",
+              "parameters": {
+                "r": 1,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 1280,
+                "chunk": 1,
+                "window": 256,
+                "splits": 4
+              },
+              "selected": {
+                "implementation": "attention.window_merge",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  6.2720001054306825e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "add_rms",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.0085333449145158e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 128000,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 14
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed",
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 8,
+                  "f16_values": 4
+                },
+                "score": 0.9985727333276366,
+                "measurements": [
+                  0.0008209066589673359
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "argmax",
+              "parameters": {
+                "r": 1,
+                "c": 128000
+              },
+              "selected": {
+                "implementation": "vocabulary.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  3.7024001280466716e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "next_tokens",
+              "parameters": {
+                "r": 1
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  6.512000147874156e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "advance",
+              "parameters": {
+                "r": 1
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  5.973333260044456e-06
+                ],
+                "trials": 0
+              }
+            }
+          ]
+        },
+        {
+          "program_sha256": "bf267936ef29b65e825d02fe63f0820ffcf83580acaad455c69aee18a2c94ec8",
+          "phase": "prefill",
+          "batch": 1,
+          "chunk": 32,
+          "provider": "cuda",
+          "target": "sm_89",
+          "contract": "reference",
+          "qualification": "programs/bf267936ef29b65e825d02fe63f0820ffcf83580acaad455c69aee18a2c94ec8/prefill-b1-t32.json",
+          "profile": {
+            "schema": "tensor.schedule-profile.v1",
+            "provider": "cuda",
+            "target": "sm_89",
+            "entries": [
+              {
+                "operation": "chunk_controls",
+                "parameters": {
+                  "r": 1,
+                  "chunk": 32
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              },
+              {
+                "operation": "embedding",
+                "parameters": {
+                  "r": 32,
+                  "c": 2048,
+                  "v": 128000,
+                  "start": 0,
+                  "ggml": true,
+                  "type": 14
+                },
+                "schedule": {
+                  "implementation": "vocabulary.cuda.packed_baseline"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 32,
+                  "c": 2048,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 32,
+                  "k": 2048,
+                  "o": 6144,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2,
+                  "weight_layout": "planar",
+                  "weight_options": {
+                    "layout": "planar"
+                  }
+                },
+                "schedule": {
+                  "implementation": "linear.cuda.short_packed"
+                }
+              },
+              {
+                "operation": "conv",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "length": 7,
+                  "chunk": 32
+                },
+                "schedule": {
+                  "columns": 8,
+                  "threads": 256,
+                  "implementation": "convolution.cuda.parallel_prefill"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 32,
+                  "k": 2048,
+                  "o": 2048,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2,
+                  "weight_layout": "planar",
+                  "weight_options": {
+                    "layout": "planar"
+                  }
+                },
+                "schedule": {
+                  "short_rows": 32,
+                  "short_columns": 64,
+                  "short_k": 256,
+                  "short_threads": 128,
+                  "implementation": "linear.cuda.short_packed"
+                }
+              },
+              {
+                "operation": "post_add_rms",
+                "parameters": {
+                  "r": 32,
+                  "c": 2048,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "akas.ops.normalization.cuda:post_add_rms"
+                }
+              },
+              {
+                "operation": "ffn",
+                "parameters": {
+                  "r": 32,
+                  "k": 2048,
+                  "o": 7680,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2,
+                  "weight_layout": "planar",
+                  "weight_options": {
+                    "layout": "planar"
+                  },
+                  "prefill_tile_m": 32,
+                  "prefill_tile_n": 64,
+                  "prefill_tile_k": 64,
+                  "prefill_tile_threads": 128
+                },
+                "schedule": {
+                  "block_m": 32,
+                  "block_n": 64,
+                  "block_k": 64,
+                  "stages": 2,
+                  "threads": 128,
+                  "implementation": "linear.cuda.packed:prefill"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 32,
+                  "k": 7680,
+                  "o": 2048,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2,
+                  "weight_layout": "planar",
+                  "weight_options": {
+                    "layout": "planar"
+                  }
+                },
+                "schedule": {
+                  "short_rows": 32,
+                  "short_columns": 64,
+                  "short_k": 256,
+                  "short_threads": 128,
+                  "implementation": "linear.cuda.short_packed"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 32,
+                  "k": 2048,
+                  "o": 512,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2,
+                  "weight_layout": "planar",
+                  "weight_options": {
+                    "layout": "planar"
+                  }
+                },
+                "schedule": {
+                  "short_rows": 16,
+                  "short_columns": 64,
+                  "short_k": 256,
+                  "short_threads": 128,
+                  "implementation": "linear.cuda.short_packed"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 512,
+                  "c": 128,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 128,
+                  "c": 128,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "rotary_compact",
+                "parameters": {
+                  "r": 32,
+                  "h": 16,
+                  "d": 128,
+                  "theta": 1000000.0,
+                  "rotary": 64,
+                  "full_head_pairs": true,
+                  "capacity": 131072,
+                  "stride": 1024,
+                  "blocks": 128
+                },
+                "schedule": {
+                  "implementation": "attention.cuda.rotary_compact"
+                }
+              },
+              {
+                "operation": "rotary_compact",
+                "parameters": {
+                  "r": 32,
+                  "h": 4,
+                  "d": 128,
+                  "theta": 1000000.0,
+                  "rotary": 64,
+                  "full_head_pairs": true,
+                  "capacity": 131072,
+                  "stride": 1024,
+                  "blocks": 128
+                },
+                "schedule": {
+                  "implementation": "attention.cuda.rotary_compact"
+                }
+              },
+              {
+                "operation": "window_cache",
+                "parameters": {
+                  "r": 32,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 131072,
+                  "chunk": 32,
+                  "window": 0
+                },
+                "schedule": {
+                  "implementation": "attention.window_cache"
+                }
+              },
+              {
+                "operation": "window_attention",
+                "parameters": {
+                  "r": 32,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 131072,
+                  "chunk": 32,
+                  "window": 0,
+                  "splits": 1,
+                  "query_rows": 64,
+                  "key_rows": 32,
+                  "contiguous": true
+                },
+                "schedule": {
+                  "implementation": "attention.window_attention"
+                }
+              },
+              {
+                "operation": "window_merge",
+                "parameters": {
+                  "r": 32,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 131072,
+                  "chunk": 32,
+                  "window": 0,
+                  "splits": 1,
+                  "query_rows": 64,
+                  "key_rows": 32,
+                  "contiguous": true
+                },
+                "schedule": {
+                  "implementation": "attention.window_merge"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 32,
+                  "k": 2048,
+                  "o": 16,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2,
+                  "weight_layout": "planar",
+                  "weight_options": {
+                    "layout": "planar"
+                  }
+                },
+                "schedule": {
+                  "short_rows": 16,
+                  "short_columns": 64,
+                  "short_k": 128,
+                  "short_threads": 128,
+                  "implementation": "linear.cuda.short_packed"
+                }
+              },
+              {
+                "operation": "head_gate",
+                "parameters": {
+                  "r": 32,
+                  "h": 16,
+                  "d": 128
+                },
+                "schedule": {
+                  "implementation": "activation.head_gate"
+                }
+              },
+              {
+                "operation": "rotary_compact",
+                "parameters": {
+                  "r": 32,
+                  "h": 16,
+                  "d": 128,
+                  "theta": 10000.0,
+                  "rotary": 128,
+                  "full_head_pairs": true,
+                  "capacity": 131072,
+                  "stride": 1024,
+                  "blocks": 128
+                },
+                "schedule": {
+                  "implementation": "attention.cuda.rotary_compact"
+                }
+              },
+              {
+                "operation": "rotary_compact",
+                "parameters": {
+                  "r": 32,
+                  "h": 4,
+                  "d": 128,
+                  "theta": 10000.0,
+                  "rotary": 128,
+                  "full_head_pairs": true,
+                  "capacity": 131072,
+                  "stride": 1024,
+                  "blocks": 128
+                },
+                "schedule": {
+                  "implementation": "attention.cuda.rotary_compact"
+                }
+              },
+              {
+                "operation": "window_cache",
+                "parameters": {
+                  "r": 32,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 1280,
+                  "chunk": 32,
+                  "window": 256
+                },
+                "schedule": {
+                  "implementation": "attention.window_cache"
+                }
+              },
+              {
+                "operation": "window_attention",
+                "parameters": {
+                  "r": 32,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 1280,
+                  "chunk": 32,
+                  "window": 256,
+                  "splits": 1,
+                  "query_rows": 64,
+                  "key_rows": 32,
+                  "contiguous": false
+                },
+                "schedule": {
+                  "implementation": "attention.window_attention"
+                }
+              },
+              {
+                "operation": "window_merge",
+                "parameters": {
+                  "r": 32,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 1280,
+                  "chunk": 32,
+                  "window": 256,
+                  "splits": 1,
+                  "query_rows": 64,
+                  "key_rows": 32,
+                  "contiguous": false
+                },
+                "schedule": {
+                  "implementation": "attention.window_merge"
+                }
+              },
+              {
+                "operation": "chunk_last",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "chunk": 32
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 2048,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2,
+                  "weight_layout": "planar",
+                  "weight_options": {
+                    "layout": "planar"
+                  }
+                },
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 2,
+                  "f16_values": 4,
+                  "implementation": "linear.cuda.packed"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "add_rms",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "ffn",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 7680,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2,
+                  "weight_layout": "planar",
+                  "weight_options": {
+                    "layout": "planar"
+                  },
+                  "prefill_tile_m": 32,
+                  "prefill_tile_n": 64,
+                  "prefill_tile_k": 64,
+                  "prefill_tile_threads": 128
+                },
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 2,
+                  "f16_values": 8,
+                  "implementation": "linear.cuda.packed"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1,
+                  "k": 7680,
+                  "o": 2048,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2,
+                  "weight_layout": "planar",
+                  "weight_options": {
+                    "layout": "planar"
+                  }
+                },
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 1,
+                  "f16_values": 4,
+                  "implementation": "linear.cuda.packed"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 128000,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 14
+                },
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 8,
+                  "f16_values": 4,
+                  "implementation": "linear.cuda.packed"
+                }
+              },
+              {
+                "operation": "argmax",
+                "parameters": {
+                  "r": 1,
+                  "c": 128000
+                },
+                "schedule": {
+                  "implementation": "vocabulary.reference"
+                }
+              },
+              {
+                "operation": "next_tokens",
+                "parameters": {
+                  "r": 1
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              },
+              {
+                "operation": "advance",
+                "parameters": {
+                  "r": 1,
+                  "chunk": 32
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              }
+            ]
+          },
+          "winners": [
+            {
+              "kind": "chunk_controls",
+              "parameters": {
+                "r": 1,
+                "chunk": 32
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  6.464000170429547e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "embedding",
+              "parameters": {
+                "r": 32,
+                "c": 2048,
+                "v": 128000,
+                "start": 0,
+                "ggml": true,
+                "type": 14
+              },
+              "selected": {
+                "implementation": "vocabulary.cuda.packed_baseline",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  6.832000023374955e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 32,
+                "c": 2048,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  7.63733343531688e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 32,
+                "k": 2048,
+                "o": 6144,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2,
+                "weight_layout": "planar",
+                "weight_options": {
+                  "layout": "planar"
+                }
+              },
+              "selected": {
+                "implementation": "linear.cuda.short_packed",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  3.0549333120385804e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "conv",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "length": 7,
+                "chunk": 32
+              },
+              "selected": {
+                "implementation": "convolution.cuda.parallel_prefill",
+                "schedule": {
+                  "columns": 8,
+                  "threads": 256
+                },
+                "score": 0.8382780738252092,
+                "measurements": [
+                  7.685333412761489e-06
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 32,
+                "k": 2048,
+                "o": 2048,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2,
+                "weight_layout": "planar",
+                "weight_options": {
+                  "layout": "planar"
+                }
+              },
+              "selected": {
+                "implementation": "linear.cuda.short_packed",
+                "schedule": {
+                  "short_rows": 32,
+                  "short_columns": 64,
+                  "short_k": 256,
+                  "short_threads": 128
+                },
+                "score": 1.0,
+                "measurements": [
+                  2.370666681478421e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "post_add_rms",
+              "parameters": {
+                "r": 32,
+                "c": 2048,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "akas.ops.normalization.cuda:post_add_rms",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.630400012557705e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "ffn",
+              "parameters": {
+                "r": 32,
+                "k": 2048,
+                "o": 7680,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2,
+                "weight_layout": "planar",
+                "weight_options": {
+                  "layout": "planar"
+                },
+                "prefill_tile_m": 32,
+                "prefill_tile_n": 64,
+                "prefill_tile_k": 64,
+                "prefill_tile_threads": 128
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed:prefill",
+                "schedule": {
+                  "block_m": 32,
+                  "block_n": 64,
+                  "block_k": 64,
+                  "stages": 2,
+                  "threads": 128
+                },
+                "score": 1.0,
+                "measurements": [
+                  8.15733311076959e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 32,
+                "k": 7680,
+                "o": 2048,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2,
+                "weight_layout": "planar",
+                "weight_options": {
+                  "layout": "planar"
+                }
+              },
+              "selected": {
+                "implementation": "linear.cuda.short_packed",
+                "schedule": {
+                  "short_rows": 32,
+                  "short_columns": 64,
+                  "short_k": 256,
+                  "short_threads": 128
+                },
+                "score": 1.0,
+                "measurements": [
+                  6.517866626381874e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 32,
+                "k": 2048,
+                "o": 512,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2,
+                "weight_layout": "planar",
+                "weight_options": {
+                  "layout": "planar"
+                }
+              },
+              "selected": {
+                "implementation": "linear.cuda.short_packed",
+                "schedule": {
+                  "short_rows": 16,
+                  "short_columns": 64,
+                  "short_k": 256,
+                  "short_threads": 128
+                },
+                "score": 0.9890547202305728,
+                "measurements": [
+                  1.590399987374743e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 512,
+                "c": 128,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  6.997333529094855e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 128,
+                "c": 128,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  6.485333433374762e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rotary_compact",
+              "parameters": {
+                "r": 32,
+                "h": 16,
+                "d": 128,
+                "theta": 1000000.0,
+                "rotary": 64,
+                "full_head_pairs": true,
+                "capacity": 131072,
+                "stride": 1024,
+                "blocks": 128
+              },
+              "selected": {
+                "implementation": "attention.cuda.rotary_compact",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  6.794666793818275e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rotary_compact",
+              "parameters": {
+                "r": 32,
+                "h": 4,
+                "d": 128,
+                "theta": 1000000.0,
+                "rotary": 64,
+                "full_head_pairs": true,
+                "capacity": 131072,
+                "stride": 1024,
+                "blocks": 128
+              },
+              "selected": {
+                "implementation": "attention.cuda.rotary_compact",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  6.325333379209042e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_cache",
+              "parameters": {
+                "r": 32,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 131072,
+                "chunk": 32,
+                "window": 0
+              },
+              "selected": {
+                "implementation": "attention.window_cache",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  2.218666672706604e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_attention",
+              "parameters": {
+                "r": 32,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 131072,
+                "chunk": 32,
+                "window": 0,
+                "splits": 1,
+                "query_rows": 64,
+                "key_rows": 32,
+                "contiguous": true
+              },
+              "selected": {
+                "implementation": "attention.window_attention",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.000447994664311409
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_merge",
+              "parameters": {
+                "r": 32,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 131072,
+                "chunk": 32,
+                "window": 0,
+                "splits": 1,
+                "query_rows": 64,
+                "key_rows": 32,
+                "contiguous": true
+              },
+              "selected": {
+                "implementation": "attention.window_merge",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  6.298666664709647e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 32,
+                "k": 2048,
+                "o": 16,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2,
+                "weight_layout": "planar",
+                "weight_options": {
+                  "layout": "planar"
+                }
+              },
+              "selected": {
+                "implementation": "linear.cuda.short_packed",
+                "schedule": {
+                  "short_rows": 16,
+                  "short_columns": 64,
+                  "short_k": 128,
+                  "short_threads": 128
+                },
+                "score": 0.9986125558991908,
+                "measurements": [
+                  1.5354666703691084e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "head_gate",
+              "parameters": {
+                "r": 32,
+                "h": 16,
+                "d": 128
+              },
+              "selected": {
+                "implementation": "activation.head_gate",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  7.189333283652861e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rotary_compact",
+              "parameters": {
+                "r": 32,
+                "h": 16,
+                "d": 128,
+                "theta": 10000.0,
+                "rotary": 128,
+                "full_head_pairs": true,
+                "capacity": 131072,
+                "stride": 1024,
+                "blocks": 128
+              },
+              "selected": {
+                "implementation": "attention.cuda.rotary_compact",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  8.186666838203867e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rotary_compact",
+              "parameters": {
+                "r": 32,
+                "h": 4,
+                "d": 128,
+                "theta": 10000.0,
+                "rotary": 128,
+                "full_head_pairs": true,
+                "capacity": 131072,
+                "stride": 1024,
+                "blocks": 128
+              },
+              "selected": {
+                "implementation": "attention.cuda.rotary_compact",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  6.1813332916547854e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_cache",
+              "parameters": {
+                "r": 32,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 1280,
+                "chunk": 32,
+                "window": 256
+              },
+              "selected": {
+                "implementation": "attention.window_cache",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.084266665081183e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_attention",
+              "parameters": {
+                "r": 32,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 1280,
+                "chunk": 32,
+                "window": 256,
+                "splits": 1,
+                "query_rows": 64,
+                "key_rows": 32,
+                "contiguous": false
+              },
+              "selected": {
+                "implementation": "attention.window_attention",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  4.383466703196367e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_merge",
+              "parameters": {
+                "r": 32,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 1280,
+                "chunk": 32,
+                "window": 256,
+                "splits": 1,
+                "query_rows": 64,
+                "key_rows": 32,
+                "contiguous": false
+              },
+              "selected": {
+                "implementation": "attention.window_merge",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  9.184000082314013e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "chunk_last",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "chunk": 32
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  9.781333307425181e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 2048,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2,
+                "weight_layout": "planar",
+                "weight_options": {
+                  "layout": "planar"
+                }
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed",
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 2,
+                  "f16_values": 4
+                },
+                "score": 0.9279957013283325,
+                "measurements": [
+                  9.210666796813407e-06
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  6.677333420763412e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "add_rms",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.0085333449145158e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "ffn",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 7680,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2,
+                "weight_layout": "planar",
+                "weight_options": {
+                  "layout": "planar"
+                },
+                "prefill_tile_m": 32,
+                "prefill_tile_n": 64,
+                "prefill_tile_k": 64,
+                "prefill_tile_threads": 128
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed",
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 2,
+                  "f16_values": 8
+                },
+                "score": 0.8982365751792786,
+                "measurements": [
+                  2.6079999593396986e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1,
+                "k": 7680,
+                "o": 2048,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2,
+                "weight_layout": "planar",
+                "weight_options": {
+                  "layout": "planar"
+                }
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed",
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 1,
+                  "f16_values": 4
+                },
+                "score": 1.0,
+                "measurements": [
+                  2.0133332659800848e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 128000,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 14
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed",
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 8,
+                  "f16_values": 4
+                },
+                "score": 0.9985727333276366,
+                "measurements": [
+                  0.0008209066589673359
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "argmax",
+              "parameters": {
+                "r": 1,
+                "c": 128000
+              },
+              "selected": {
+                "implementation": "vocabulary.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  3.7024001280466716e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "next_tokens",
+              "parameters": {
+                "r": 1
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  6.512000147874156e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "advance",
+              "parameters": {
+                "r": 1,
+                "chunk": 32
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.0042666923254728e-05
+                ],
+                "trials": 0
+              }
+            }
+          ]
+        },
+        {
+          "program_sha256": "bf267936ef29b65e825d02fe63f0820ffcf83580acaad455c69aee18a2c94ec8",
+          "phase": "prefill",
+          "batch": 1,
+          "chunk": 512,
+          "provider": "cuda",
+          "target": "sm_89",
+          "contract": "reference",
+          "qualification": "programs/bf267936ef29b65e825d02fe63f0820ffcf83580acaad455c69aee18a2c94ec8/prefill-b1-t512.json",
+          "profile": {
+            "schema": "tensor.schedule-profile.v1",
+            "provider": "cuda",
+            "target": "sm_89",
+            "entries": [
+              {
+                "operation": "chunk_controls",
+                "parameters": {
+                  "r": 1,
+                  "chunk": 512
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              },
+              {
+                "operation": "embedding",
+                "parameters": {
+                  "r": 512,
+                  "c": 2048,
+                  "v": 128000,
+                  "start": 0,
+                  "ggml": true,
+                  "type": 14
+                },
+                "schedule": {
+                  "implementation": "vocabulary.cuda.packed_baseline"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 512,
+                  "c": 2048,
+                  "eps": 9.999999747378752e-06,
+                  "output_dtype": "float16",
+                  "algorithm": "fragment",
+                  "flat": true
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "quantize_q8",
+                "parameters": {
+                  "r": 512,
+                  "k": 2048,
+                  "input_dtype": "float16"
+                },
+                "schedule": {
+                  "implementation": "akas.quantization.activations.q8.cuda:quantize"
+                }
+              },
+              {
+                "operation": "q4_q8_linear",
+                "parameters": {
+                  "r": 512,
+                  "k": 2048,
+                  "o": 6144,
+                  "paired": false,
+                  "ggml": true,
+                  "type": 2,
+                  "weight_layout": "planar",
+                  "weight_options": {
+                    "layout": "planar"
+                  }
+                },
+                "schedule": {
+                  "block_m": 64,
+                  "block_n": 64,
+                  "threads": 128,
+                  "implementation": "linear.cuda.q4_q8"
+                }
+              },
+              {
+                "operation": "conv",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "length": 7,
+                  "chunk": 512
+                },
+                "schedule": {
+                  "implementation": "convolution.cuda.parallel_prefill"
+                }
+              },
+              {
+                "operation": "linear_half_input",
+                "parameters": {
+                  "r": 512,
+                  "k": 2048
+                },
+                "schedule": {
+                  "implementation": "linear.cuda.half_input"
+                }
+              },
+              {
+                "operation": "q4_q8_linear",
+                "parameters": {
+                  "r": 512,
+                  "k": 2048,
+                  "o": 2048,
+                  "paired": false,
+                  "ggml": true,
+                  "type": 2,
+                  "weight_layout": "planar",
+                  "weight_options": {
+                    "layout": "planar"
+                  }
+                },
+                "schedule": {
+                  "block_m": 64,
+                  "block_n": 64,
+                  "threads": 128,
+                  "implementation": "linear.cuda.q4_q8"
+                }
+              },
+              {
+                "operation": "post_add_rms",
+                "parameters": {
+                  "r": 512,
+                  "c": 2048,
+                  "eps": 9.999999747378752e-06,
+                  "output_dtype": "float16",
+                  "algorithm": "fragment",
+                  "flat": true
+                },
+                "schedule": {
+                  "implementation": "akas.ops.normalization.cuda:post_add_rms"
+                }
+              },
+              {
+                "operation": "q4_q8_ffn",
+                "parameters": {
+                  "r": 512,
+                  "k": 2048,
+                  "o": 7680,
+                  "optimized": true,
+                  "tiled_packed": true,
+                  "input_dtype": "float16",
+                  "output_dtype": "float16",
+                  "prefill_tile_m": 128,
+                  "prefill_tile_n": 64,
+                  "prefill_tile_k": 64,
+                  "prefill_tile_threads": 128,
+                  "ggml": true,
+                  "type": 2,
+                  "weight_layout": "planar",
+                  "weight_options": {
+                    "layout": "planar"
+                  },
+                  "paired": true
+                },
+                "schedule": {
+                  "implementation": "linear.cuda.q4_q8_ffn"
+                }
+              },
+              {
+                "operation": "q4_q8_linear",
+                "parameters": {
+                  "r": 512,
+                  "k": 7680,
+                  "o": 2048,
+                  "paired": false,
+                  "ggml": true,
+                  "type": 2,
+                  "weight_layout": "planar",
+                  "weight_options": {
+                    "layout": "planar"
+                  }
+                },
+                "schedule": {
+                  "block_m": 64,
+                  "block_n": 64,
+                  "threads": 128,
+                  "implementation": "linear.cuda.q4_q8"
+                }
+              },
+              {
+                "operation": "q4_q8_linear",
+                "parameters": {
+                  "r": 512,
+                  "k": 2048,
+                  "o": 512,
+                  "paired": false,
+                  "ggml": true,
+                  "type": 2,
+                  "weight_layout": "planar",
+                  "weight_options": {
+                    "layout": "planar"
+                  }
+                },
+                "schedule": {
+                  "block_m": 64,
+                  "block_n": 64,
+                  "threads": 128,
+                  "implementation": "linear.cuda.q4_q8"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 8192,
+                  "c": 128,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 2048,
+                  "c": 128,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "rotary_compact",
+                "parameters": {
+                  "r": 512,
+                  "h": 16,
+                  "d": 128,
+                  "theta": 1000000.0,
+                  "rotary": 64,
+                  "full_head_pairs": true,
+                  "capacity": 131072,
+                  "stride": 1024,
+                  "blocks": 128
+                },
+                "schedule": {
+                  "implementation": "attention.cuda.rotary_compact"
+                }
+              },
+              {
+                "operation": "rotary_compact",
+                "parameters": {
+                  "r": 512,
+                  "h": 4,
+                  "d": 128,
+                  "theta": 1000000.0,
+                  "rotary": 64,
+                  "full_head_pairs": true,
+                  "capacity": 131072,
+                  "stride": 1024,
+                  "blocks": 128
+                },
+                "schedule": {
+                  "implementation": "attention.cuda.rotary_compact"
+                }
+              },
+              {
+                "operation": "window_cache",
+                "parameters": {
+                  "r": 512,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 131072,
+                  "chunk": 512,
+                  "window": 0
+                },
+                "schedule": {
+                  "implementation": "attention.window_cache"
+                }
+              },
+              {
+                "operation": "window_attention",
+                "parameters": {
+                  "r": 512,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 131072,
+                  "chunk": 512,
+                  "window": 0,
+                  "splits": 1,
+                  "query_rows": 64,
+                  "key_rows": 32,
+                  "contiguous": true
+                },
+                "schedule": {
+                  "implementation": "attention.window_attention"
+                }
+              },
+              {
+                "operation": "window_merge",
+                "parameters": {
+                  "r": 512,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 131072,
+                  "chunk": 512,
+                  "window": 0,
+                  "splits": 1,
+                  "query_rows": 64,
+                  "key_rows": 32,
+                  "contiguous": true
+                },
+                "schedule": {
+                  "implementation": "attention.window_merge"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 512,
+                  "k": 2048,
+                  "o": 16,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "input_dtype": "float16",
+                  "ggml": true,
+                  "type": 2,
+                  "weight_layout": "planar",
+                  "weight_options": {
+                    "layout": "planar"
+                  }
+                },
+                "schedule": {
+                  "tile_m": 128,
+                  "tile_n": 64,
+                  "tile_k": 64,
+                  "tile_stages": 1,
+                  "tile_threads": 256,
+                  "implementation": "linear.cuda.tiled_packed"
+                }
+              },
+              {
+                "operation": "head_gate",
+                "parameters": {
+                  "r": 512,
+                  "h": 16,
+                  "d": 128
+                },
+                "schedule": {
+                  "implementation": "activation.head_gate"
+                }
+              },
+              {
+                "operation": "rotary_compact",
+                "parameters": {
+                  "r": 512,
+                  "h": 16,
+                  "d": 128,
+                  "theta": 10000.0,
+                  "rotary": 128,
+                  "full_head_pairs": true,
+                  "capacity": 131072,
+                  "stride": 1024,
+                  "blocks": 128
+                },
+                "schedule": {
+                  "implementation": "attention.cuda.rotary_compact"
+                }
+              },
+              {
+                "operation": "rotary_compact",
+                "parameters": {
+                  "r": 512,
+                  "h": 4,
+                  "d": 128,
+                  "theta": 10000.0,
+                  "rotary": 128,
+                  "full_head_pairs": true,
+                  "capacity": 131072,
+                  "stride": 1024,
+                  "blocks": 128
+                },
+                "schedule": {
+                  "implementation": "attention.cuda.rotary_compact"
+                }
+              },
+              {
+                "operation": "window_cache",
+                "parameters": {
+                  "r": 512,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 1280,
+                  "chunk": 512,
+                  "window": 256
+                },
+                "schedule": {
+                  "implementation": "attention.window_cache"
+                }
+              },
+              {
+                "operation": "window_attention",
+                "parameters": {
+                  "r": 512,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 1280,
+                  "chunk": 512,
+                  "window": 256,
+                  "splits": 1,
+                  "query_rows": 64,
+                  "key_rows": 32,
+                  "contiguous": false
+                },
+                "schedule": {
+                  "implementation": "attention.window_attention"
+                }
+              },
+              {
+                "operation": "window_merge",
+                "parameters": {
+                  "r": 512,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 1280,
+                  "chunk": 512,
+                  "window": 256,
+                  "splits": 1,
+                  "query_rows": 64,
+                  "key_rows": 32,
+                  "contiguous": false
+                },
+                "schedule": {
+                  "implementation": "attention.window_merge"
+                }
+              },
+              {
+                "operation": "chunk_last",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "chunk": 512
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 2048,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2,
+                  "weight_layout": "planar",
+                  "weight_options": {
+                    "layout": "planar"
+                  },
+                  "prefill_tile_m": 128,
+                  "prefill_tile_n": 64,
+                  "prefill_tile_k": 128
+                },
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 2,
+                  "f16_values": 4,
+                  "implementation": "linear.cuda.packed"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "add_rms",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "ffn",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 7680,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2,
+                  "weight_layout": "planar",
+                  "weight_options": {
+                    "layout": "planar"
+                  },
+                  "prefill_tile_m": 128,
+                  "prefill_tile_n": 64,
+                  "prefill_tile_k": 64,
+                  "prefill_tile_threads": 128
+                },
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 2,
+                  "f16_values": 8,
+                  "implementation": "linear.cuda.packed"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1,
+                  "k": 7680,
+                  "o": 2048,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2,
+                  "weight_layout": "planar",
+                  "weight_options": {
+                    "layout": "planar"
+                  },
+                  "prefill_tile_m": 64,
+                  "prefill_tile_n": 128,
+                  "prefill_tile_k": 64,
+                  "prefill_tile_stages": 2,
+                  "prefill_tile_threads": 128
+                },
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 1,
+                  "f16_values": 4,
+                  "implementation": "linear.cuda.packed"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 128000,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 14
+                },
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 8,
+                  "f16_values": 4,
+                  "implementation": "linear.cuda.packed"
+                }
+              },
+              {
+                "operation": "argmax",
+                "parameters": {
+                  "r": 1,
+                  "c": 128000
+                },
+                "schedule": {
+                  "implementation": "vocabulary.reference"
+                }
+              },
+              {
+                "operation": "next_tokens",
+                "parameters": {
+                  "r": 1
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              },
+              {
+                "operation": "advance",
+                "parameters": {
+                  "r": 1,
+                  "chunk": 512
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              }
+            ]
+          },
+          "winners": [
+            {
+              "kind": "chunk_controls",
+              "parameters": {
+                "r": 1,
+                "chunk": 512
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  6.821333430707454e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "embedding",
+              "parameters": {
+                "r": 512,
+                "c": 2048,
+                "v": 128000,
+                "start": 0,
+                "ggml": true,
+                "type": 14
+              },
+              "selected": {
+                "implementation": "vocabulary.cuda.packed_baseline",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.738666649907827e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 512,
+                "c": 2048,
+                "eps": 9.999999747378752e-06,
+                "output_dtype": "float16",
+                "algorithm": "fragment",
+                "flat": true
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.1455999997754894e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "quantize_q8",
+              "parameters": {
+                "r": 512,
+                "k": 2048,
+                "input_dtype": "float16"
+              },
+              "selected": {
+                "implementation": "akas.quantization.activations.q8.cuda:quantize",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.8415999909241996e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "q4_q8_linear",
+              "parameters": {
+                "r": 512,
+                "k": 2048,
+                "o": 6144,
+                "paired": false,
+                "ggml": true,
+                "type": 2,
+                "weight_layout": "planar",
+                "weight_options": {
+                  "layout": "planar"
+                }
+              },
+              "selected": {
+                "implementation": "linear.cuda.q4_q8",
+                "schedule": {
+                  "block_m": 64,
+                  "block_n": 64,
+                  "threads": 128
+                },
+                "score": 0.9899983480311731,
+                "measurements": [
+                  0.00019321600099404655
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "conv",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "length": 7,
+                "chunk": 512
+              },
+              "selected": {
+                "implementation": "convolution.cuda.parallel_prefill",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  2.6250666628281274e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear_half_input",
+              "parameters": {
+                "r": 512,
+                "k": 2048
+              },
+              "selected": {
+                "implementation": "linear.cuda.half_input",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.0266666766256096e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "q4_q8_linear",
+              "parameters": {
+                "r": 512,
+                "k": 2048,
+                "o": 2048,
+                "paired": false,
+                "ggml": true,
+                "type": 2,
+                "weight_layout": "planar",
+                "weight_options": {
+                  "layout": "planar"
+                }
+              },
+              "selected": {
+                "implementation": "linear.cuda.q4_q8",
+                "schedule": {
+                  "block_m": 64,
+                  "block_n": 64,
+                  "threads": 128
+                },
+                "score": 0.9921235213081668,
+                "measurements": [
+                  8.464533214767774e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "post_add_rms",
+              "parameters": {
+                "r": 512,
+                "c": 2048,
+                "eps": 9.999999747378752e-06,
+                "output_dtype": "float16",
+                "algorithm": "fragment",
+                "flat": true
+              },
+              "selected": {
+                "implementation": "akas.ops.normalization.cuda:post_add_rms",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.9658666414519153e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "q4_q8_ffn",
+              "parameters": {
+                "r": 512,
+                "k": 2048,
+                "o": 7680,
+                "optimized": true,
+                "tiled_packed": true,
+                "input_dtype": "float16",
+                "output_dtype": "float16",
+                "prefill_tile_m": 128,
+                "prefill_tile_n": 64,
+                "prefill_tile_k": 64,
+                "prefill_tile_threads": 128,
+                "ggml": true,
+                "type": 2,
+                "weight_layout": "planar",
+                "weight_options": {
+                  "layout": "planar"
+                },
+                "paired": true
+              },
+              "selected": {
+                "implementation": "linear.cuda.q4_q8_ffn",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0004433919936418534
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "q4_q8_linear",
+              "parameters": {
+                "r": 512,
+                "k": 7680,
+                "o": 2048,
+                "paired": false,
+                "ggml": true,
+                "type": 2,
+                "weight_layout": "planar",
+                "weight_options": {
+                  "layout": "planar"
+                }
+              },
+              "selected": {
+                "implementation": "linear.cuda.q4_q8",
+                "schedule": {
+                  "block_m": 64,
+                  "block_n": 64,
+                  "threads": 128
+                },
+                "score": 0.9963563902196012,
+                "measurements": [
+                  0.0002887679934501648
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "q4_q8_linear",
+              "parameters": {
+                "r": 512,
+                "k": 2048,
+                "o": 512,
+                "paired": false,
+                "ggml": true,
+                "type": 2,
+                "weight_layout": "planar",
+                "weight_options": {
+                  "layout": "planar"
+                }
+              },
+              "selected": {
+                "implementation": "linear.cuda.q4_q8",
+                "schedule": {
+                  "block_m": 64,
+                  "block_n": 64,
+                  "threads": 128
+                },
+                "score": 0.9183118838793957,
+                "measurements": [
+                  3.423466657598813e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 8192,
+                "c": 128,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.7541333412130675e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 2048,
+                "c": 128,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.0570666752755643e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rotary_compact",
+              "parameters": {
+                "r": 512,
+                "h": 16,
+                "d": 128,
+                "theta": 1000000.0,
+                "rotary": 64,
+                "full_head_pairs": true,
+                "capacity": 131072,
+                "stride": 1024,
+                "blocks": 128
+              },
+              "selected": {
+                "implementation": "attention.cuda.rotary_compact",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.4010666559139887e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rotary_compact",
+              "parameters": {
+                "r": 512,
+                "h": 4,
+                "d": 128,
+                "theta": 1000000.0,
+                "rotary": 64,
+                "full_head_pairs": true,
+                "capacity": 131072,
+                "stride": 1024,
+                "blocks": 128
+              },
+              "selected": {
+                "implementation": "attention.cuda.rotary_compact",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.0805333188424509e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_cache",
+              "parameters": {
+                "r": 512,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 131072,
+                "chunk": 512,
+                "window": 0
+              },
+              "selected": {
+                "implementation": "attention.window_cache",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.911466692884763e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_attention",
+              "parameters": {
+                "r": 512,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 131072,
+                "chunk": 512,
+                "window": 0,
+                "splits": 1,
+                "query_rows": 64,
+                "key_rows": 32,
+                "contiguous": true
+              },
+              "selected": {
+                "implementation": "attention.window_attention",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0007396640082200368
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_merge",
+              "parameters": {
+                "r": 512,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 131072,
+                "chunk": 512,
+                "window": 0,
+                "splits": 1,
+                "query_rows": 64,
+                "key_rows": 32,
+                "contiguous": true
+              },
+              "selected": {
+                "implementation": "attention.window_merge",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.44960000179708e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 512,
+                "k": 2048,
+                "o": 16,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "input_dtype": "float16",
+                "ggml": true,
+                "type": 2,
+                "weight_layout": "planar",
+                "weight_options": {
+                  "layout": "planar"
+                }
+              },
+              "selected": {
+                "implementation": "linear.cuda.tiled_packed",
+                "schedule": {
+                  "tile_m": 128,
+                  "tile_n": 64,
+                  "tile_k": 64,
+                  "tile_stages": 1,
+                  "tile_threads": 256
+                },
+                "score": 0.9679321808874405,
+                "measurements": [
+                  1.4005333340416353e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "head_gate",
+              "parameters": {
+                "r": 512,
+                "h": 16,
+                "d": 128
+              },
+              "selected": {
+                "implementation": "activation.head_gate",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.3120000095417103e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rotary_compact",
+              "parameters": {
+                "r": 512,
+                "h": 16,
+                "d": 128,
+                "theta": 10000.0,
+                "rotary": 128,
+                "full_head_pairs": true,
+                "capacity": 131072,
+                "stride": 1024,
+                "blocks": 128
+              },
+              "selected": {
+                "implementation": "attention.cuda.rotary_compact",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.365333345408241e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rotary_compact",
+              "parameters": {
+                "r": 512,
+                "h": 4,
+                "d": 128,
+                "theta": 10000.0,
+                "rotary": 128,
+                "full_head_pairs": true,
+                "capacity": 131072,
+                "stride": 1024,
+                "blocks": 128
+              },
+              "selected": {
+                "implementation": "attention.cuda.rotary_compact",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  7.86133351114889e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_cache",
+              "parameters": {
+                "r": 512,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 1280,
+                "chunk": 512,
+                "window": 256
+              },
+              "selected": {
+                "implementation": "attention.window_cache",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.021866655598084e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_attention",
+              "parameters": {
+                "r": 512,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 1280,
+                "chunk": 512,
+                "window": 256,
+                "splits": 1,
+                "query_rows": 64,
+                "key_rows": 32,
+                "contiguous": false
+              },
+              "selected": {
+                "implementation": "attention.window_attention",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  7.878933474421502e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_merge",
+              "parameters": {
+                "r": 512,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 1280,
+                "chunk": 512,
+                "window": 256,
+                "splits": 1,
+                "query_rows": 64,
+                "key_rows": 32,
+                "contiguous": false
+              },
+              "selected": {
+                "implementation": "attention.window_merge",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.3317333223919074e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "chunk_last",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "chunk": 512
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  7.935999892652035e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 2048,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2,
+                "weight_layout": "planar",
+                "weight_options": {
+                  "layout": "planar"
+                },
+                "prefill_tile_m": 128,
+                "prefill_tile_n": 64,
+                "prefill_tile_k": 128
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed",
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 2,
+                  "f16_values": 4
+                },
+                "score": 0.9691531229389206,
+                "measurements": [
+                  9.216000170757373e-06
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  6.677333420763412e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "add_rms",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.0085333449145158e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "ffn",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 7680,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2,
+                "weight_layout": "planar",
+                "weight_options": {
+                  "layout": "planar"
+                },
+                "prefill_tile_m": 128,
+                "prefill_tile_n": 64,
+                "prefill_tile_k": 64,
+                "prefill_tile_threads": 128
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed",
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 2,
+                  "f16_values": 8
+                },
+                "score": 0.9991772870208658,
+                "measurements": [
+                  2.5909332868953544e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1,
+                "k": 7680,
+                "o": 2048,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2,
+                "weight_layout": "planar",
+                "weight_options": {
+                  "layout": "planar"
+                },
+                "prefill_tile_m": 64,
+                "prefill_tile_n": 128,
+                "prefill_tile_k": 64,
+                "prefill_tile_stages": 2,
+                "prefill_tile_threads": 128
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed",
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 1,
+                  "f16_values": 4
+                },
+                "score": 0.9828365046897568,
+                "measurements": [
+                  1.7408000305294994e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 128000,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 14
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed",
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 8,
+                  "f16_values": 4
+                },
+                "score": 0.9985727333276366,
+                "measurements": [
+                  0.0008209066589673359
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "argmax",
+              "parameters": {
+                "r": 1,
+                "c": 128000
+              },
+              "selected": {
+                "implementation": "vocabulary.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  3.7024001280466716e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "next_tokens",
+              "parameters": {
+                "r": 1
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  6.512000147874156e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "advance",
+              "parameters": {
+                "r": 1,
+                "chunk": 512
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  6.533333410819371e-06
+                ],
+                "trials": 0
+              }
+            }
+          ]
+        },
+        {
+          "program_sha256": "bf267936ef29b65e825d02fe63f0820ffcf83580acaad455c69aee18a2c94ec8",
+          "phase": "prefill",
+          "batch": 1,
+          "chunk": 1024,
+          "provider": "cuda",
+          "target": "sm_89",
+          "contract": "reference",
+          "qualification": "programs/bf267936ef29b65e825d02fe63f0820ffcf83580acaad455c69aee18a2c94ec8/prefill-b1-t1024.json",
+          "profile": {
+            "schema": "tensor.schedule-profile.v1",
+            "provider": "cuda",
+            "target": "sm_89",
+            "entries": [
+              {
+                "operation": "chunk_controls",
+                "parameters": {
+                  "r": 1,
+                  "chunk": 1024
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              },
+              {
+                "operation": "embedding",
+                "parameters": {
+                  "r": 1024,
+                  "c": 2048,
+                  "v": 128000,
+                  "start": 0,
+                  "ggml": true,
+                  "type": 14
+                },
+                "schedule": {
+                  "implementation": "vocabulary.cuda.packed_baseline"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 1024,
+                  "c": 2048,
+                  "eps": 9.999999747378752e-06,
+                  "output_dtype": "float16",
+                  "algorithm": "fragment",
+                  "flat": true
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "quantize_q8",
+                "parameters": {
+                  "r": 1024,
+                  "k": 2048,
+                  "input_dtype": "float16"
+                },
+                "schedule": {
+                  "implementation": "akas.quantization.activations.q8.cuda:quantize"
+                }
+              },
+              {
+                "operation": "q4_q8_linear",
+                "parameters": {
+                  "r": 1024,
+                  "k": 2048,
+                  "o": 6144,
+                  "paired": false,
+                  "ggml": true,
+                  "type": 2,
+                  "weight_layout": "planar",
+                  "weight_options": {
+                    "layout": "planar"
+                  }
+                },
+                "schedule": {
+                  "block_m": 64,
+                  "block_n": 64,
+                  "threads": 128,
+                  "implementation": "linear.cuda.q4_q8"
+                }
+              },
+              {
+                "operation": "conv",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "length": 7,
+                  "chunk": 1024
+                },
+                "schedule": {
+                  "implementation": "convolution.cuda.parallel_prefill"
+                }
+              },
+              {
+                "operation": "linear_half_input",
+                "parameters": {
+                  "r": 1024,
+                  "k": 2048
+                },
+                "schedule": {
+                  "implementation": "linear.cuda.half_input"
+                }
+              },
+              {
+                "operation": "q4_q8_linear",
+                "parameters": {
+                  "r": 1024,
+                  "k": 2048,
+                  "o": 2048,
+                  "paired": false,
+                  "ggml": true,
+                  "type": 2,
+                  "weight_layout": "planar",
+                  "weight_options": {
+                    "layout": "planar"
+                  }
+                },
+                "schedule": {
+                  "block_m": 64,
+                  "block_n": 64,
+                  "threads": 128,
+                  "implementation": "linear.cuda.q4_q8"
+                }
+              },
+              {
+                "operation": "post_add_rms",
+                "parameters": {
+                  "r": 1024,
+                  "c": 2048,
+                  "eps": 9.999999747378752e-06,
+                  "output_dtype": "float16",
+                  "algorithm": "fragment",
+                  "flat": true
+                },
+                "schedule": {
+                  "implementation": "akas.ops.normalization.cuda:post_add_rms"
+                }
+              },
+              {
+                "operation": "q4_q8_ffn",
+                "parameters": {
+                  "r": 1024,
+                  "k": 2048,
+                  "o": 7680,
+                  "optimized": true,
+                  "tiled_packed": true,
+                  "input_dtype": "float16",
+                  "output_dtype": "float16",
+                  "prefill_tile_m": 128,
+                  "prefill_tile_n": 64,
+                  "prefill_tile_k": 64,
+                  "prefill_tile_threads": 128,
+                  "ggml": true,
+                  "type": 2,
+                  "weight_layout": "planar",
+                  "weight_options": {
+                    "layout": "planar"
+                  },
+                  "paired": true
+                },
+                "schedule": {
+                  "block_m": 64,
+                  "block_n": 64,
+                  "threads": 128,
+                  "implementation": "linear.cuda.q4_q8_ffn"
+                }
+              },
+              {
+                "operation": "q4_q8_linear",
+                "parameters": {
+                  "r": 1024,
+                  "k": 7680,
+                  "o": 2048,
+                  "paired": false,
+                  "ggml": true,
+                  "type": 2,
+                  "weight_layout": "planar",
+                  "weight_options": {
+                    "layout": "planar"
+                  }
+                },
+                "schedule": {
+                  "block_m": 64,
+                  "block_n": 64,
+                  "threads": 128,
+                  "implementation": "linear.cuda.q4_q8"
+                }
+              },
+              {
+                "operation": "q4_q8_linear",
+                "parameters": {
+                  "r": 1024,
+                  "k": 2048,
+                  "o": 512,
+                  "paired": false,
+                  "ggml": true,
+                  "type": 2,
+                  "weight_layout": "planar",
+                  "weight_options": {
+                    "layout": "planar"
+                  }
+                },
+                "schedule": {
+                  "implementation": "linear.cuda.q4_q8"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 16384,
+                  "c": 128,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 4096,
+                  "c": 128,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "rotary_compact",
+                "parameters": {
+                  "r": 1024,
+                  "h": 16,
+                  "d": 128,
+                  "theta": 1000000.0,
+                  "rotary": 64,
+                  "full_head_pairs": true,
+                  "capacity": 131072,
+                  "stride": 1024,
+                  "blocks": 128
+                },
+                "schedule": {
+                  "implementation": "attention.cuda.rotary_compact"
+                }
+              },
+              {
+                "operation": "rotary_compact",
+                "parameters": {
+                  "r": 1024,
+                  "h": 4,
+                  "d": 128,
+                  "theta": 1000000.0,
+                  "rotary": 64,
+                  "full_head_pairs": true,
+                  "capacity": 131072,
+                  "stride": 1024,
+                  "blocks": 128
+                },
+                "schedule": {
+                  "implementation": "attention.cuda.rotary_compact"
+                }
+              },
+              {
+                "operation": "window_cache",
+                "parameters": {
+                  "r": 1024,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 131072,
+                  "chunk": 1024,
+                  "window": 0
+                },
+                "schedule": {
+                  "implementation": "attention.window_cache"
+                }
+              },
+              {
+                "operation": "window_attention",
+                "parameters": {
+                  "r": 1024,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 131072,
+                  "chunk": 1024,
+                  "window": 0,
+                  "splits": 1,
+                  "query_rows": 64,
+                  "key_rows": 32,
+                  "contiguous": true
+                },
+                "schedule": {
+                  "implementation": "attention.window_attention"
+                }
+              },
+              {
+                "operation": "window_merge",
+                "parameters": {
+                  "r": 1024,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 131072,
+                  "chunk": 1024,
+                  "window": 0,
+                  "splits": 1,
+                  "query_rows": 64,
+                  "key_rows": 32,
+                  "contiguous": true
+                },
+                "schedule": {
+                  "implementation": "attention.window_merge"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1024,
+                  "k": 2048,
+                  "o": 16,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "input_dtype": "float16",
+                  "ggml": true,
+                  "type": 2,
+                  "weight_layout": "planar",
+                  "weight_options": {
+                    "layout": "planar"
+                  }
+                },
+                "schedule": {
+                  "tile_m": 128,
+                  "tile_n": 64,
+                  "tile_k": 64,
+                  "tile_stages": 1,
+                  "tile_threads": 256,
+                  "implementation": "linear.cuda.tiled_packed"
+                }
+              },
+              {
+                "operation": "head_gate",
+                "parameters": {
+                  "r": 1024,
+                  "h": 16,
+                  "d": 128
+                },
+                "schedule": {
+                  "implementation": "activation.head_gate"
+                }
+              },
+              {
+                "operation": "rotary_compact",
+                "parameters": {
+                  "r": 1024,
+                  "h": 16,
+                  "d": 128,
+                  "theta": 10000.0,
+                  "rotary": 128,
+                  "full_head_pairs": true,
+                  "capacity": 131072,
+                  "stride": 1024,
+                  "blocks": 128
+                },
+                "schedule": {
+                  "implementation": "attention.cuda.rotary_compact"
+                }
+              },
+              {
+                "operation": "rotary_compact",
+                "parameters": {
+                  "r": 1024,
+                  "h": 4,
+                  "d": 128,
+                  "theta": 10000.0,
+                  "rotary": 128,
+                  "full_head_pairs": true,
+                  "capacity": 131072,
+                  "stride": 1024,
+                  "blocks": 128
+                },
+                "schedule": {
+                  "implementation": "attention.cuda.rotary_compact"
+                }
+              },
+              {
+                "operation": "window_cache",
+                "parameters": {
+                  "r": 1024,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 1280,
+                  "chunk": 1024,
+                  "window": 256
+                },
+                "schedule": {
+                  "implementation": "attention.window_cache"
+                }
+              },
+              {
+                "operation": "window_attention",
+                "parameters": {
+                  "r": 1024,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 1280,
+                  "chunk": 1024,
+                  "window": 256,
+                  "splits": 1,
+                  "query_rows": 64,
+                  "key_rows": 32,
+                  "contiguous": false
+                },
+                "schedule": {
+                  "implementation": "attention.window_attention"
+                }
+              },
+              {
+                "operation": "window_merge",
+                "parameters": {
+                  "r": 1024,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 1280,
+                  "chunk": 1024,
+                  "window": 256,
+                  "splits": 1,
+                  "query_rows": 64,
+                  "key_rows": 32,
+                  "contiguous": false
+                },
+                "schedule": {
+                  "implementation": "attention.window_merge"
+                }
+              },
+              {
+                "operation": "chunk_last",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "chunk": 1024
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 2048,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2,
+                  "weight_layout": "planar",
+                  "weight_options": {
+                    "layout": "planar"
+                  },
+                  "prefill_tile_m": 128,
+                  "prefill_tile_n": 64,
+                  "prefill_tile_k": 128
+                },
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 2,
+                  "f16_values": 4,
+                  "implementation": "linear.cuda.packed"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "add_rms",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "ffn",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 7680,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2,
+                  "weight_layout": "planar",
+                  "weight_options": {
+                    "layout": "planar"
+                  },
+                  "prefill_tile_m": 128,
+                  "prefill_tile_n": 64,
+                  "prefill_tile_k": 64,
+                  "prefill_tile_threads": 128
+                },
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 2,
+                  "f16_values": 8,
+                  "implementation": "linear.cuda.packed"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1,
+                  "k": 7680,
+                  "o": 2048,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2,
+                  "weight_layout": "planar",
+                  "weight_options": {
+                    "layout": "planar"
+                  },
+                  "prefill_tile_m": 64,
+                  "prefill_tile_n": 128,
+                  "prefill_tile_k": 64,
+                  "prefill_tile_stages": 2,
+                  "prefill_tile_threads": 128
+                },
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 1,
+                  "f16_values": 4,
+                  "implementation": "linear.cuda.packed"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 128000,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 14
+                },
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 8,
+                  "f16_values": 4,
+                  "implementation": "linear.cuda.packed"
+                }
+              },
+              {
+                "operation": "argmax",
+                "parameters": {
+                  "r": 1,
+                  "c": 128000
+                },
+                "schedule": {
+                  "implementation": "vocabulary.reference"
+                }
+              },
+              {
+                "operation": "next_tokens",
+                "parameters": {
+                  "r": 1
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              },
+              {
+                "operation": "advance",
+                "parameters": {
+                  "r": 1,
+                  "chunk": 1024
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              }
+            ]
+          },
+          "winners": [
+            {
+              "kind": "chunk_controls",
+              "parameters": {
+                "r": 1,
+                "chunk": 1024
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  6.325333379209041e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "embedding",
+              "parameters": {
+                "r": 1024,
+                "c": 2048,
+                "v": 128000,
+                "start": 0,
+                "ggml": true,
+                "type": 14
+              },
+              "selected": {
+                "implementation": "vocabulary.cuda.packed_baseline",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  2.7631999924778937e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 1024,
+                "c": 2048,
+                "eps": 9.999999747378752e-06,
+                "output_dtype": "float16",
+                "algorithm": "fragment",
+                "flat": true
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.2282666750252247e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "quantize_q8",
+              "parameters": {
+                "r": 1024,
+                "k": 2048,
+                "input_dtype": "float16"
+              },
+              "selected": {
+                "implementation": "akas.quantization.activations.q8.cuda:quantize",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  3.0394666207333407e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "q4_q8_linear",
+              "parameters": {
+                "r": 1024,
+                "k": 2048,
+                "o": 6144,
+                "paired": false,
+                "ggml": true,
+                "type": 2,
+                "weight_layout": "planar",
+                "weight_options": {
+                  "layout": "planar"
+                }
+              },
+              "selected": {
+                "implementation": "linear.cuda.q4_q8",
+                "schedule": {
+                  "block_m": 64,
+                  "block_n": 64,
+                  "threads": 128
+                },
+                "score": 0.9988348688989035,
+                "measurements": [
+                  0.0003931946754455566
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "conv",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "length": 7,
+                "chunk": 1024
+              },
+              "selected": {
+                "implementation": "convolution.cuda.parallel_prefill",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  4.475200052062671e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear_half_input",
+              "parameters": {
+                "r": 1024,
+                "k": 2048
+              },
+              "selected": {
+                "implementation": "linear.cuda.half_input",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.515199989080429e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "q4_q8_linear",
+              "parameters": {
+                "r": 1024,
+                "k": 2048,
+                "o": 2048,
+                "paired": false,
+                "ggml": true,
+                "type": 2,
+                "weight_layout": "planar",
+                "weight_options": {
+                  "layout": "planar"
+                }
+              },
+              "selected": {
+                "implementation": "linear.cuda.q4_q8",
+                "schedule": {
+                  "block_m": 64,
+                  "block_n": 64,
+                  "threads": 128
+                },
+                "score": 0.9879292532090678,
+                "measurements": [
+                  0.0001379359985391299
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "post_add_rms",
+              "parameters": {
+                "r": 1024,
+                "c": 2048,
+                "eps": 9.999999747378752e-06,
+                "output_dtype": "float16",
+                "algorithm": "fragment",
+                "flat": true
+              },
+              "selected": {
+                "implementation": "akas.ops.normalization.cuda:post_add_rms",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  2.0479999482631683e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "q4_q8_ffn",
+              "parameters": {
+                "r": 1024,
+                "k": 2048,
+                "o": 7680,
+                "optimized": true,
+                "tiled_packed": true,
+                "input_dtype": "float16",
+                "output_dtype": "float16",
+                "prefill_tile_m": 128,
+                "prefill_tile_n": 64,
+                "prefill_tile_k": 64,
+                "prefill_tile_threads": 128,
+                "ggml": true,
+                "type": 2,
+                "weight_layout": "planar",
+                "weight_options": {
+                  "layout": "planar"
+                },
+                "paired": true
+              },
+              "selected": {
+                "implementation": "linear.cuda.q4_q8_ffn",
+                "schedule": {
+                  "block_m": 64,
+                  "block_n": 64,
+                  "threads": 128
+                },
+                "score": 0.9998555076302905,
+                "measurements": [
+                  0.0008857386708259582
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "q4_q8_linear",
+              "parameters": {
+                "r": 1024,
+                "k": 7680,
+                "o": 2048,
+                "paired": false,
+                "ggml": true,
+                "type": 2,
+                "weight_layout": "planar",
+                "weight_options": {
+                  "layout": "planar"
+                }
+              },
+              "selected": {
+                "implementation": "linear.cuda.q4_q8",
+                "schedule": {
+                  "block_m": 64,
+                  "block_n": 64,
+                  "threads": 128
+                },
+                "score": 0.993471382446509,
+                "measurements": [
+                  0.0004950666626294454
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "q4_q8_linear",
+              "parameters": {
+                "r": 1024,
+                "k": 2048,
+                "o": 512,
+                "paired": false,
+                "ggml": true,
+                "type": 2,
+                "weight_layout": "planar",
+                "weight_options": {
+                  "layout": "planar"
+                }
+              },
+              "selected": {
+                "implementation": "linear.cuda.q4_q8",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  5.694400022427241e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 16384,
+                "c": 128,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  2.48800003901124e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 4096,
+                "c": 128,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.075199991464615e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rotary_compact",
+              "parameters": {
+                "r": 1024,
+                "h": 16,
+                "d": 128,
+                "theta": 1000000.0,
+                "rotary": 64,
+                "full_head_pairs": true,
+                "capacity": 131072,
+                "stride": 1024,
+                "blocks": 128
+              },
+              "selected": {
+                "implementation": "attention.cuda.rotary_compact",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.7584000093241536e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rotary_compact",
+              "parameters": {
+                "r": 1024,
+                "h": 4,
+                "d": 128,
+                "theta": 1000000.0,
+                "rotary": 64,
+                "full_head_pairs": true,
+                "capacity": 131072,
+                "stride": 1024,
+                "blocks": 128
+              },
+              "selected": {
+                "implementation": "attention.cuda.rotary_compact",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  9.183999927093586e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_cache",
+              "parameters": {
+                "r": 1024,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 131072,
+                "chunk": 1024,
+                "window": 0
+              },
+              "selected": {
+                "implementation": "attention.window_cache",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  2.111999969929457e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_attention",
+              "parameters": {
+                "r": 1024,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 131072,
+                "chunk": 1024,
+                "window": 0,
+                "splits": 1,
+                "query_rows": 64,
+                "key_rows": 32,
+                "contiguous": true
+              },
+              "selected": {
+                "implementation": "attention.window_attention",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.001224021315574646
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_merge",
+              "parameters": {
+                "r": 1024,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 131072,
+                "chunk": 1024,
+                "window": 0,
+                "splits": 1,
+                "query_rows": 64,
+                "key_rows": 32,
+                "contiguous": true
+              },
+              "selected": {
+                "implementation": "attention.window_merge",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  2.1125333383679392e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1024,
+                "k": 2048,
+                "o": 16,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "input_dtype": "float16",
+                "ggml": true,
+                "type": 2,
+                "weight_layout": "planar",
+                "weight_options": {
+                  "layout": "planar"
+                }
+              },
+              "selected": {
+                "implementation": "linear.cuda.tiled_packed",
+                "schedule": {
+                  "tile_m": 128,
+                  "tile_n": 64,
+                  "tile_k": 64,
+                  "tile_stages": 1,
+                  "tile_threads": 256
+                },
+                "score": 0.9996364824791666,
+                "measurements": [
+                  1.4666666742414238e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "head_gate",
+              "parameters": {
+                "r": 1024,
+                "h": 16,
+                "d": 128
+              },
+              "selected": {
+                "implementation": "activation.head_gate",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.7893333608905474e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rotary_compact",
+              "parameters": {
+                "r": 1024,
+                "h": 16,
+                "d": 128,
+                "theta": 10000.0,
+                "rotary": 128,
+                "full_head_pairs": true,
+                "capacity": 131072,
+                "stride": 1024,
+                "blocks": 128
+              },
+              "selected": {
+                "implementation": "attention.cuda.rotary_compact",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  2.133333310484886e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rotary_compact",
+              "parameters": {
+                "r": 1024,
+                "h": 4,
+                "d": 128,
+                "theta": 10000.0,
+                "rotary": 128,
+                "full_head_pairs": true,
+                "capacity": 131072,
+                "stride": 1024,
+                "blocks": 128
+              },
+              "selected": {
+                "implementation": "attention.cuda.rotary_compact",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.0069333482533693e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_cache",
+              "parameters": {
+                "r": 1024,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 1280,
+                "chunk": 1024,
+                "window": 256
+              },
+              "selected": {
+                "implementation": "attention.window_cache",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.1600000007698936e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_attention",
+              "parameters": {
+                "r": 1024,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 1280,
+                "chunk": 1024,
+                "window": 256,
+                "splits": 1,
+                "query_rows": 64,
+                "key_rows": 32,
+                "contiguous": false
+              },
+              "selected": {
+                "implementation": "attention.window_attention",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00011985066657265028
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_merge",
+              "parameters": {
+                "r": 1024,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 1280,
+                "chunk": 1024,
+                "window": 256,
+                "splits": 1,
+                "query_rows": 64,
+                "key_rows": 32,
+                "contiguous": false
+              },
+              "selected": {
+                "implementation": "attention.window_merge",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  2.0938666847844917e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "chunk_last",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "chunk": 1024
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  6.778666749596596e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 2048,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2,
+                "weight_layout": "planar",
+                "weight_options": {
+                  "layout": "planar"
+                },
+                "prefill_tile_m": 128,
+                "prefill_tile_n": 64,
+                "prefill_tile_k": 128
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed",
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 2,
+                  "f16_values": 4
+                },
+                "score": 0.9691531229389206,
+                "measurements": [
+                  9.216000170757373e-06
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  6.677333420763412e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "add_rms",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  1.0085333449145158e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "ffn",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 7680,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2,
+                "weight_layout": "planar",
+                "weight_options": {
+                  "layout": "planar"
+                },
+                "prefill_tile_m": 128,
+                "prefill_tile_n": 64,
+                "prefill_tile_k": 64,
+                "prefill_tile_threads": 128
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed",
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 2,
+                  "f16_values": 8
+                },
+                "score": 0.9991772870208658,
+                "measurements": [
+                  2.5909332868953544e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1,
+                "k": 7680,
+                "o": 2048,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2,
+                "weight_layout": "planar",
+                "weight_options": {
+                  "layout": "planar"
+                },
+                "prefill_tile_m": 64,
+                "prefill_tile_n": 128,
+                "prefill_tile_k": 64,
+                "prefill_tile_stages": 2,
+                "prefill_tile_threads": 128
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed",
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 1,
+                  "f16_values": 4
+                },
+                "score": 0.9828365046897568,
+                "measurements": [
+                  1.7408000305294994e-05
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 128000,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 14
+              },
+              "selected": {
+                "implementation": "linear.cuda.packed",
+                "schedule": {
+                  "threads": 64,
+                  "unroll": 8,
+                  "f16_values": 4
+                },
+                "score": 0.9985727333276366,
+                "measurements": [
+                  0.0008209066589673359
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "argmax",
+              "parameters": {
+                "r": 1,
+                "c": 128000
+              },
+              "selected": {
+                "implementation": "vocabulary.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  3.7024001280466716e-05
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "next_tokens",
+              "parameters": {
+                "r": 1
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  6.512000147874156e-06
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "advance",
+              "parameters": {
+                "r": 1,
+                "chunk": 1024
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  6.309333412597578e-06
+                ],
+                "trials": 0
+              }
+            }
+          ]
+        },
+        {
+          "program_sha256": "bf267936ef29b65e825d02fe63f0820ffcf83580acaad455c69aee18a2c94ec8",
+          "phase": "reset",
+          "batch": 1,
+          "chunk": 1,
+          "provider": "cuda",
+          "target": "sm_89",
+          "contract": "state",
+          "qualification": "programs/bf267936ef29b65e825d02fe63f0820ffcf83580acaad455c69aee18a2c94ec8/reset-b1-t1.json",
+          "profile": {
+            "schema": "tensor.schedule-profile.v1",
+            "provider": "cuda",
+            "target": "sm_89",
+            "entries": [
+              {
+                "operation": "clear_rows",
+                "parameters": {
+                  "rows": 1,
+                  "pool": 1,
+                  "width": 12288,
+                  "dtype": "float32"
+                },
+                "schedule": {
+                  "implementation": "indexing.rows"
+                }
+              },
+              {
+                "operation": "clear_rows",
+                "parameters": {
+                  "rows": 1,
+                  "pool": 1,
+                  "width": 1,
+                  "dtype": "int32"
+                },
+                "schedule": {
+                  "threads": 64,
+                  "implementation": "indexing.rows"
+                }
+              }
+            ]
+          },
+          "winners": [
+            {
+              "kind": "clear_rows",
+              "parameters": {
+                "rows": 1,
+                "pool": 1,
+                "width": 12288,
+                "dtype": "float32"
+              },
+              "selected": {
+                "implementation": "indexing.rows",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  6.4213334117084745e-06
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "clear_rows",
+              "parameters": {
+                "rows": 1,
+                "pool": 1,
+                "width": 1,
+                "dtype": "int32"
+              },
+              "selected": {
+                "implementation": "indexing.rows",
+                "schedule": {
+                  "threads": 64
+                },
+                "score": 0.9037995132437365,
+                "measurements": [
+                  5.96266674498717e-06
+                ],
+                "trials": 1
+              }
+            }
+          ]
+        }
+      ],
+      "record": "../../runs/20261028072145009000-65166f09/run.json"
+    }
+  }
+}
