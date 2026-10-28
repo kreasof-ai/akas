@@ -1,13 +1,62 @@
 {
-  "schema": "akas.benchmark-run.v1",
-  "id": "20261028151859229290-78dfc7e2",
-  "started_at": "2026-10-28T15:18:59.229290Z",
-  "completed_at": "2026-10-28T15:19:01.071388Z",
-  "status": "passed",
+  "schema": "akas.matrix-campaign.v1",
+  "identity": "5a82c9f7e263ad9a6d9e8790dd54d86218c66e29bc0686e999cc4de000266d27",
+  "specification": {
+    "schema": "akas.matrix-campaign.v1",
+    "models": [
+      "lfm3-1.7b"
+    ],
+    "formats": [
+      "q4_0"
+    ],
+    "backends": [
+      "webgpu"
+    ],
+    "caches": [
+      "float16"
+    ],
+    "workload": {
+      "id": "lfm3-rx6700xt-wall-decode-v1",
+      "batches": [
+        1
+      ],
+      "prefix_tokens": [
+        32,
+        512,
+        2048,
+        8192,
+        16384,
+        32768,
+        65536,
+        130944
+      ],
+      "output_tokens": 128
+    },
+    "baselines": [
+      {
+        "runtime": "llama",
+        "provider": "vulkan",
+        "weight_format": "q4_0",
+        "mode": "ar"
+      }
+    ]
+  },
+  "models": {
+    "lfm3-1.7b": {
+      "id": "lfm3-1.7b",
+      "model": "LiquidAI/LFM3-1.7B",
+      "modes": [
+        "ar"
+      ]
+    }
+  },
+  "created_at": "2026-10-28T12:34:06.615870Z",
+  "updated_at": "2026-10-28T14:40:57.451881Z",
+  "status": "completed",
   "source": {
     "revision": "c8e7ac8dc1c771c4a9918a76d8d022676e4d3bc1",
     "dirty": true,
-    "tree_sha256": "809e4a8422e563c6e6d71c20af88a3c3c82ee3a6acb374e7ce0367b379e1018d",
+    "tree_sha256": "6b553a96ffcab91106b65ae3bb1aaa58c1b533de3d578bac79178290f0af0fda",
     "files": {
       "MANIFEST.in": "ab4a5b03a6dd13352c3501c7d01918a693b53c8a12083a2596da688866da30f2",
       "examples/graphs/residual/config.py": "ba3b44d29bba6a673dd7a39987e7da80f509f6b4ed79cf13a8461f85e56e1146",
@@ -28,7 +77,7 @@
       "src/akas/artifacts/write.py": "0c1e7f6001fe6b1568f1f38497ef77f1df4339a3db2b0abd20d92b3e27ef9ab2",
       "src/akas/benchmarking/README.md": "c97d3691c4ea712030c3368d0da2b126965e61fb3f5d9a95de91170b357c6b45",
       "src/akas/benchmarking/__init__.py": "4e519727e8b00fd3852c292faef1679b8eb5b9af0bb49788811f50298c4271f3",
-      "src/akas/benchmarking/archive.py": "0182447bf23c7df254dcfe1c8ac4c0a63150ad7b9af7c2c9dd411d05c74c613b",
+      "src/akas/benchmarking/archive.py": "b45e3f59341c81d7ca1dfbb019b376ea726822489150a316efee00c84bc6a03c",
       "src/akas/benchmarking/cases.py": "59dcb662c566121ea2fe1b00865359894341a18b5ac4c3d4d1b81ce019718404",
       "src/akas/benchmarking/history.py": "4e7cf1ca4fd9e4470db9512b4123a8a9e9657817925a79be0c402266143a072e",
       "src/akas/benchmarking/replay.py": "6bb7b6cc28e69583419e062d86dd3fb7051fcdbc324c1643b7e7705ea7c6c66f",
@@ -57,7 +106,7 @@
       "src/akas/compilation/paths.py": "c407d3afb624e28452229c1a176134dda2bb87672f0005675bcb5f06b72fea75",
       "src/akas/compilation/phases.py": "af151d78b45ccf5bc00e083b0dee7acb48ce66328aa58e4431259c503351dad3",
       "src/akas/compilation/policy.py": "d7acf4798fc9bb01161430c6adade129df87bf753c3206f4a3290f925c4843f0",
-      "src/akas/compilation/quantization.py": "14ea2089d4265eb3faa430a2bf6fc9115989e51d04e095e150c4bddec1e76222",
+      "src/akas/compilation/quantization.py": "90009373d1c1302043117e72fb2260be502e6457bebfd5365bbe91728d052c29",
       "src/akas/compilation/rewrites.py": "93ca518a73eee11948c8e98fe2603dbaa5e1cffd8ac94f9fc4cfb288986013f3",
       "src/akas/compilation/selection.py": "020a0b8dbc064b3502c077c6c4e69f769990d9e775ddb48a756e918d6bac6c1e",
       "src/akas/compilation/state.py": "5981b01f521502fe1ce986d3f8651e44db5e7c2f890fe72f7aeb5f59e176281a",
@@ -87,7 +136,7 @@
       "src/akas/graph.py": "803c45ca5f577c4e05ec321e12c634e74dc8c7694033a6e5eb93b207891567d6",
       "src/akas/kernels/README.md": "9dd8507e8796ef8bbdcea489400ca1514980ad2f0d72b31c6a7b4332dc18cd40",
       "src/akas/kernels/__init__.py": "26df371a7cf3405dc9c4d11d4769ecb0a0bfcadd7e63da3470042521366da02f",
-      "src/akas/kernels/contracts.py": "7d46801441613e6ad679bcd7ecc7939026f6ad52e7e00edabf05babb396b594d",
+      "src/akas/kernels/contracts.py": "1933c858a981acf1132b2d5ac821264828bb8736a722ba3ad622760fc4fcae70",
       "src/akas/kernels/definition.py": "cdc83efd52482346bfe1824bcc8ea72ef9aa92f2ebaf0de0423503d454580bd5",
       "src/akas/kernels/kernel.py": "9b523a5b7e6fb1c36259b71179d746800832286bfe7f8624b8fa087280415620",
       "src/akas/kernels/reductions.py": "55acbdffa50842ee1a3a2a09c8da3728888b8f34bcc4a8dd590f2a8645e9980f",
@@ -109,18 +158,18 @@
       "src/akas/models/dspark/__init__.py": "44e195da6598a5e2eb59b7365233ab3b46936e3fc1215a28bebd6e5888422bbf",
       "src/akas/models/dspark/config.py": "b262d402a9c22569fd70e42dc5dab67fb6e0b104f7ce3501131d8b36054e2e1c",
       "src/akas/models/dspark/model.py": "95d052c35cbf43a120af1a02c7c46ead24998edac9abd797bb79745c33d7d1bc",
-      "src/akas/models/dspark/proposer.py": "a293aea79183b8f4f2d815e181731c31000a135b0f15a9e3b323729c4943aaa9",
-      "src/akas/models/dspark/weights.py": "4ea17695d71d22b501fe685e4fa0b6275ae0142bbd91556c773da08f1ed4c926",
+      "src/akas/models/dspark/proposer.py": "51844fcff3a01bb65c647711ab5fdab22744bb8ceb68eb6171e9f3c87156d14d",
+      "src/akas/models/dspark/weights.py": "d02599d30fd7de4b137bc2fdcdaec6269f7983db2af77572c0a8572c06bee5b9",
       "src/akas/models/lfm2/__init__.py": "60dd49d51a391cc11e955876adbd51311dd367679695666ddd21233e11b4f914",
-      "src/akas/models/lfm2/_composition.py": "2c2d764308a872b5b955e44493fe5910fe68ac0680049b977d280e11da748621",
+      "src/akas/models/lfm2/_composition.py": "b988f818db6b71460c2f94dfe49e5b86bf65795f45004c80e009c614f516504d",
       "src/akas/models/lfm2/config.py": "6dbda4f2d4e45e5715cd932cb94ceb07798c61fda689fcc0544f7d36e39b4322",
       "src/akas/models/lfm2/model.py": "05910769b8526de711d564944cb2cabc100a055b28e99050822a1a5116e5648e",
-      "src/akas/models/lfm2/weights.py": "b9613613a610bcbb002afe293c69d7c147782d42c1e62669fc723db05bbdf877",
-      "src/akas/models/lfm3/README.md": "817a90a32f05a9bb3918b881b25b516de7a59bb103740dd1cdcfdead6aaeda71",
+      "src/akas/models/lfm2/weights.py": "c3c66a96a8acefb1e692faebf73fe2011fb3e0cbdf988e52ac9b99b60e61ecd0",
+      "src/akas/models/lfm3/README.md": "b4ccb6a445a7dbf363deac8d8460e98929fdc253c93e67083b677305fcf04f6b",
       "src/akas/models/lfm3/__init__.py": "12c4f8bfd70504376a233b40e3f5346f469dabd5cee42cab0064044b525c0de6",
       "src/akas/models/lfm3/config.py": "04d3878ab42c9b2b2944582c9bf29a2db6898ce3103a3e7a1668678d3d45f2a0",
-      "src/akas/models/lfm3/model.py": "79d0bdbdb4fc0f2533c824c5061127e9361b9830d97420ecb61d5c7a40f09427",
-      "src/akas/models/lfm3/weights.py": "99ad37b8cd5770afbaa4622ef5865d60ed92672b2f89a8e7d47c5901f2bd9e61",
+      "src/akas/models/lfm3/model.py": "38e3bc923002a06144f4131822d9e991ac6a359678b70c62a9f5b055cdc3325c",
+      "src/akas/models/lfm3/weights.py": "b912cc960835bd04c966bd0a2278dd189dba4023ff31e9b21df00ec35ab00db6",
       "src/akas/models/qwen35/__init__.py": "150a4be104207f9d92ca40a81fdf66fb9802390f09504d0621c28b04e98e2fa6",
       "src/akas/models/qwen35/_composition.py": "873008b4e3f21cfccb2bac57f8d8143b43ee603ef00575c3b93082f7a083204f",
       "src/akas/models/qwen35/_gguf.py": "bcf9f5d1110f14f50ef6103bc930cd5e6500781c2502de23b976c2efa9b7840b",
@@ -138,17 +187,19 @@
       "src/akas/ops/activation/README.md": "fffdcc390e80a41fecdd5cc81ccd5b28e03f4f25e9c42195d17354d7e8421bef",
       "src/akas/ops/activation/__init__.py": "63ebc9b14c440d346defbb92e2069a0c7573cc13c20e402e1780b464934a5b47",
       "src/akas/ops/activation/cuda.py": "2dbe556d54d85f65cf269cad1d280ab899ecfdcccf3955ccc91e6dc3631fa8a8",
-      "src/akas/ops/activation/definition.py": "7318a71020229f29b82c8a80fb326e55871eebdf871fbda001de8a2af48ba340",
+      "src/akas/ops/activation/definition.py": "9e0c39dc56e1b14f766bc7c331664e320dbb3de8c00432f052004f64fb69c684",
       "src/akas/ops/activation/kernel.py": "fa117e7b73389a4e8d650f3db0c13bbcd703bec978348356009e0b6769c827bd",
       "src/akas/ops/activation/validation.py": "6bc38feab6d7701fe2284d2e2af7848d846bb6713f2bee27bb3fb747d678b645",
       "src/akas/ops/activation/webgpu.py": "97c478f034990044ca0f76a34ac552f7d204a4ef1173ea7f2af744ae1bc21b5d",
       "src/akas/ops/attention/README.md": "9b2bed8e34a4163aa66d30ebd1c12dedc39d7736d10419e20a74d7080bacbcbf",
       "src/akas/ops/attention/__init__.py": "a4dc1547e74215e69d3ff8aff20cfd27c70b555efccdc0efbfcb00a4c504faca",
-      "src/akas/ops/attention/cuda.py": "f85a465216e664a020aea114899ebe83a2cf94f7d281e7d75a05fe06c2065877",
-      "src/akas/ops/attention/definition.py": "793bae98807982fc4b6566c5b8ccfdf98de114d463e1d6ee17321a9cac85b65d",
-      "src/akas/ops/attention/kernel.py": "6008ba0005585d1e477058fd097fd04da8f86aca84769160a000b697fb452f9f",
-      "src/akas/ops/attention/validation.py": "ddbf69f3bbe87c9cc1cca6ed5414a5c056a9d9a1068067b80871008006f2d119",
-      "src/akas/ops/attention/webgpu.py": "62208f78c2ab0d243e331794c8b453610e8d372bb248259afbc741786fd6b0d3",
+      "src/akas/ops/attention/cuda.py": "0744df9fd586ae27d687864832a68ec57b36f69b85b02fde51f8870e38b9851d",
+      "src/akas/ops/attention/definition.py": "39150f8be4406f3801fc670e9a765db765068bacf88949676fcacba2bdddaec3",
+      "src/akas/ops/attention/kernel.py": "86166f5d709a0ef136fd51a2e35ffb4617e9a7257e01cb90015f2926dc337e92",
+      "src/akas/ops/attention/validation.py": "5ee78e745471e48615afd2e34d6155e54792a2d4fd81fc15c648667b7d4f1a6b",
+      "src/akas/ops/attention/webgpu.py": "194287baad9fd637edd3ebb2f167003b73fd254d2439e29af999e84b84976fa0",
+      "src/akas/ops/attention/webgpu_long.py": "e1c8fbc9f5c2c047fa2528297dba53e52f8e52a3d10dc74fca152cb2a0731ea4",
+      "src/akas/ops/attention/webgpu_merge.py": "79fdef954e0355ccbcc7fd750e8f5f757e70a142d6ecc85f4ab83d7e77d87351",
       "src/akas/ops/control/README.md": "62c73a6fcf40af81d18c732592153a0e0cad18e4b468cad5ef2c4cf1e81aafdf",
       "src/akas/ops/control/__init__.py": "e0624fbbee8e5e96d53596071122a75a3d9a1c07219ee642816925a92cd53f30",
       "src/akas/ops/control/cuda.py": "bbead5d1fa1743646e1c3c473b5b9e70e44c067eea63e25c7fd6983cc53da5e0",
@@ -179,17 +230,17 @@
       "src/akas/ops/indexing/webgpu.py": "9fbd2332e7a368d0e17bd7874976cebda36ec1034aa4b3495019e246348945eb",
       "src/akas/ops/linear/README.md": "567c95740e0cf2af3c030dcfa2a06f43382a122d5900bf11fd877c83a2ad8cee",
       "src/akas/ops/linear/__init__.py": "c392795621a2c65190fd1faf495a2217ce496c30cdef3922043d5066cad64a34",
-      "src/akas/ops/linear/cuda.py": "071b5788f680597d320880c1cc9f44096e82554b8eff0a157350512df0bbb461",
-      "src/akas/ops/linear/definition.py": "fdd8d06cb8743af97c8ee54fa110728762a70d380b292fa528ca79396b3ad220",
+      "src/akas/ops/linear/cuda.py": "2830d49669b41174dc7cf676228081ba020c82fad235f5273fca76e322beacce",
+      "src/akas/ops/linear/definition.py": "e832a89e01eeed5a6f4b9755bf683e6ead02df7aa69815c7f2cd9b2008865498",
       "src/akas/ops/linear/kernel.py": "98323697e531e524b47bddd9c670a343be0a1b5b282cf6da49066fe71b482a2b",
-      "src/akas/ops/linear/validation.py": "d1b9de3983b7068719231e6c64cf325f88b8ee2890bce997416205a02a482d82",
-      "src/akas/ops/linear/webgpu.py": "0bc40a15a927a0dd12a24e0adf57e3d93079c4f3ca5bc2e00ec67847aecb4344",
+      "src/akas/ops/linear/validation.py": "5c4d3021b9967e8e578843eb9294e68392dc79095037aa887fbadb18b16dc925",
+      "src/akas/ops/linear/webgpu.py": "5221a6fd2e2ea4186f94d6b65a8519d55ab69547f19751f7bda443c9dd70126b",
       "src/akas/ops/moe/README.md": "a4346ba67bf43e23f2f4ad62f08adf76689f632e132dd37214fadfa4f699a3b5",
       "src/akas/ops/moe/__init__.py": "4f3f1f930f8e762c1ac6186b244b6c928c517bfd0ea23461588d30f3ab60c2a4",
       "src/akas/ops/moe/cuda.py": "4720922d64c19340f0e71c4219153581c15e10b24e71479dc8352a457bca9235",
-      "src/akas/ops/moe/definition.py": "4541bafafc8e80528d9e173c6b6c72974b8e5971636be2728bff746a47ee108d",
+      "src/akas/ops/moe/definition.py": "37f749ae5127a09bb01fe2f14d128b99ff1d08f088ca15df1531eef99e7d20d3",
       "src/akas/ops/moe/kernel.py": "e053ffd8c793fdcffa10d117b2127e337ed126618b324e4579e8ce3b9c4f138c",
-      "src/akas/ops/moe/validation.py": "8532a7b5f8c719f8ea576e5c87e54e01559deb534842f2c4a4be143bc53a9d0a",
+      "src/akas/ops/moe/validation.py": "404dbb4433898d5bf64d1857b003a0dc39eaa5a1197a8a5893b362dae1566ca9",
       "src/akas/ops/moe/webgpu.py": "7d37e448a4bc32902a335a55b9e410fe9046d0cf9be8d7acc099ccf37b236bb4",
       "src/akas/ops/mtp/README.md": "37bc0b722c8092869461d59f36ce966881208d9b1c7ed8457a7da3ec3e3032d7",
       "src/akas/ops/mtp/__init__.py": "7ef3d02043d8be518d2f9ae11e14b9a69f25a899ad576a03365d7fef3fa17a33",
@@ -201,7 +252,7 @@
       "src/akas/ops/normalization/README.md": "88049e7ad179b8f9826bd405a620b0df0f4aeb3205b95cc61632ea260a1494be",
       "src/akas/ops/normalization/__init__.py": "45b480a8dc815f91e040fe1cf9ca941ec4940ed3482e9db18b04feca3a11699d",
       "src/akas/ops/normalization/cuda.py": "fb556ea61bf3a4000ad89ceb22228d2250a44cf1b535e8f1bf6b952912e779ce",
-      "src/akas/ops/normalization/definition.py": "6c61a5d7ef75cdae2f4ee175445b8fceb1b798edfc841dd6429f75f6894cc3e3",
+      "src/akas/ops/normalization/definition.py": "c899d737d4d2daa95fdaa42e735564cba216c62b3bfb9a077605121306a9d903",
       "src/akas/ops/normalization/kernel.py": "02f03aad9aa9f52b24cfc669784db0bf4e107a57739a414a34eed11f2cbdb6cc",
       "src/akas/ops/normalization/validation.py": "552aeb749e61425791a161553b257ae1796e4a075878fe5abac0b2833e5d33b6",
       "src/akas/ops/normalization/webgpu.py": "56bf08f03c3d57e3355536531f9384b6482b23d0d192eee4e70d557649d31beb",
@@ -242,11 +293,11 @@
       "src/akas/quantization/_shared/e4m3.py": "5174dffd51e7920687dcdc74e06069b050f2fb22149b9786073313dd090d42d7",
       "src/akas/quantization/_shared/fp8.py": "40057788ddeb9b1281d57ae1c09ee120be704ea45eaeb550ee85abbdd90aa955",
       "src/akas/quantization/_shared/packing.py": "829d6e3ac005656065ce062cff1b6866e4cb41a6e955a54ff11c2c371b7a96e4",
-      "src/akas/quantization/_shared/rounding.py": "dfe93ebca46297e7d1fb8bd6cf3c59cf1419275dfda1378281d3126f5b87b169",
+      "src/akas/quantization/_shared/rounding.py": "95c21ccca4d82377549a237b305dda4e6c13f5eadce7807ea9e0ae68e8ae5218",
       "src/akas/quantization/activations/__init__.py": "26eeed512688977f5b31279e74d2c6fcf25b99fcf466a02906006cfa675c310f",
       "src/akas/quantization/activations/_shared/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "src/akas/quantization/activations/_shared/integer.py": "5e372ac88c2065d33c422983520da28fbf28a3ab141f36f16d76ada06ca0b2a2",
-      "src/akas/quantization/activations/_shared/packing.py": "d8e8be52468dac3f05ca636ee87bc092c5bc114ce28aed733360b9a170cf53b0",
+      "src/akas/quantization/activations/_shared/packing.py": "8c3310274851504cc43b9a671ef320006ac7da053b1dab603379a5c9d7c6bacf",
       "src/akas/quantization/activations/fp8/README.md": "0f7cf60a311c9071dec210dba9fe98800d86af733b0f49a92b28d45c7c00cbfe",
       "src/akas/quantization/activations/fp8/__init__.py": "1feabc5f9efcdd6f0be83da5d3afd2f4a8b814f8b246e09a7afd2455b352b8e6",
       "src/akas/quantization/activations/fp8/cuda.py": "df493581e2b3d7f46090cdb0b12480b645aaf58ff8e038a89ef258dabd91e44b",
@@ -259,7 +310,7 @@
       "src/akas/quantization/activations/q16/cuda.py": "55f7f95882b9646babf9c5241461d2334c07f93ca869f6c3b107ef0d10973a82",
       "src/akas/quantization/activations/q16/definition.py": "f41b9b27cc56432186c4308157911b84ced4d3447af2fca92686624537970c13",
       "src/akas/quantization/activations/q16/kernel.py": "fafebb86df2a11e2ea5f236b67eba78e48a84ea64538bbe4efe91b39dba86567",
-      "src/akas/quantization/activations/q16/validation.py": "45882627f7f301fa5f24eb8024c5b24acc2f52d7d12beabeaa579e6aee815b61",
+      "src/akas/quantization/activations/q16/validation.py": "ef9c4956e111eb4d1e4542acb8ab84223f3a9bea3d8b9fbaff95ccf36d2ed2b8",
       "src/akas/quantization/activations/q16/webgpu.py": "aa12f77c7322da2c2adcee8a89e2502468f6e341d4ab5f779a13ed7a2a1aee1d",
       "src/akas/quantization/activations/q8/README.md": "2dee4c81232783c23ed1320f756604b4d419a6f5e7487d3eab5b248ca6d36e45",
       "src/akas/quantization/activations/q8/__init__.py": "1feabc5f9efcdd6f0be83da5d3afd2f4a8b814f8b246e09a7afd2455b352b8e6",
@@ -279,7 +330,7 @@
       "src/akas/quantization/kv/fp8/kernel.py": "9e46db97fa5415af6a66bca28359569b065ef9bb13dcb9f1a208b68d6dda65fb",
       "src/akas/quantization/kv/fp8/validation.py": "b9f566491bc7aed1a5bae429f672a3ab712def02e944f4e56182953986bf55bf",
       "src/akas/quantization/kv/fp8/webgpu.py": "2e22265d3dcddc6a42705409523da184a61e48224807f260beb382e9c1bd39c1",
-      "src/akas/quantization/weights/__init__.py": "4516d8367e5854189930ffa540ba9d21dddb7ce11842d280fb77eff2cb02577d",
+      "src/akas/quantization/weights/__init__.py": "0b17c113c2dca3621f24d5f6d192237c65316032bdb464e271fd120e4e779ccb",
       "src/akas/quantization/weights/fp8/README.md": "e539b464fb7dadc534258a98e13683b58735ca001bd8acffb74fad2258112fdd",
       "src/akas/quantization/weights/fp8/__init__.py": "1feabc5f9efcdd6f0be83da5d3afd2f4a8b814f8b246e09a7afd2455b352b8e6",
       "src/akas/quantization/weights/fp8/cuda.py": "168004b5bb4f8b474b4071bfba7447027f4159830ddbbeb61463c5bb0dfda9b6",
@@ -289,11 +340,11 @@
       "src/akas/quantization/weights/fp8/webgpu.py": "8cb07840948bf06dfa9257e7896bff26c1c47aaf7afd53fde0e81d41e06c2dc8",
       "src/akas/quantization/weights/ggml/README.md": "0268a777316b8e239721976f55c4b2e97c4399182972a5266228d6ec1d6dc402",
       "src/akas/quantization/weights/ggml/__init__.py": "1feabc5f9efcdd6f0be83da5d3afd2f4a8b814f8b246e09a7afd2455b352b8e6",
-      "src/akas/quantization/weights/ggml/cuda.py": "341ebbe1710afda8399b8fe6b928fc7491f2df82ab98005bc52feb6a1e1b8d15",
+      "src/akas/quantization/weights/ggml/cuda.py": "06db56cf93c5ac4cf2c2ec2b87ac57f6c3ca47e4e2cf9aaafa4b4400c2db33fc",
       "src/akas/quantization/weights/ggml/definition.py": "eee62286fe7d7c1200b9c93c00ead5ae3d6cc5b15583f49b820e8981f801b1f3",
       "src/akas/quantization/weights/ggml/kernel.py": "54c552cdb1e1cb576242e456ae1178b57aa7d142de6c024917fbeb09c81828a9",
       "src/akas/quantization/weights/ggml/validation.py": "dfb9ad19d6b40abb9f62b6a394dc6750319167779ab9615acc4297bdb38a4823",
-      "src/akas/quantization/weights/ggml/webgpu.py": "b64585fb8ffa43867d6a8727aac6f2e8892bda89d68fc7006f97b3a703ce89bd",
+      "src/akas/quantization/weights/ggml/webgpu.py": "d305a95679e8b3576da5bc8898f5bfac873455755244a105a11bef9e9f84716a",
       "src/akas/quantization/weights/reference.py": "9d85261b20cac0a80733138c96ae004a8f02b255cbdb6e4c6d77cd73e867d9a0",
       "src/akas/requests.py": "739e8cceced1449f5a59d66324d3cf6766d5f838ad85f2e78826b5a9bba70087",
       "src/akas/scheduling/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -358,7 +409,7 @@
       "tests/test_attention_ordered.py": "702a7e1c34c5686a969f50b1d7d5e2740e5a739226dc59585e40313c3fac7be1",
       "tests/test_attention_pipeline.py": "46f62a14bfa0add7546771da20726c3ded05b9727da5450ab9461950dfe97a7e",
       "tests/test_attention_reference_precision.py": "abef92b48841b15612997edeee0fc2d7e712484abe964a1d9423b5770563b239",
-      "tests/test_benchmark_archive.py": "0263fdcb0b9b6d302ac3dc765d429c1e4b49bad8b8d2c2806fa2c720f80060d4",
+      "tests/test_benchmark_archive.py": "049c24a1447991059cc5831615a3d8a99b403abf9faa54a1a2844201c075780b",
       "tests/test_benchmark_history.py": "3eb0d4cb46df5c9760d33cbdb75df4c9568beb7676bd842485be101ec61a080f",
       "tests/test_benchmark_replay.py": "45b2998a3d9cdd4de40ae34f98b6c8389a14be0256eecb36bc4901e39eb441ad",
       "tests/test_benchmarking.py": "96ef3ef09584ec66cb35d79730418d5e766782defd3a83e9e0463288e467ad6c",
@@ -482,20 +533,18 @@
       "tools/baselines/llama_state.py": "61d4235e533b89b8ffdcc2f8244da5d09103897787d842388f4efadaa40169a4",
       "tools/baselines/sglang.py": "514ba62f2aa41edc65d5b0defc24c9357f09520408572b03037066db2833269b",
       "tools/baselines/vllm.py": "04fd1af5949e83ae96e7c262e2b3666e46537e6d9c8ab61d9e24ed8e1add47a3",
-      "tools/benchmark_archive.py": "bd22bac3fd5a8a68b1285535c7eb205792d0b215358e96e0eb07b810e5d8c38c",
+      "tools/benchmark_archive.py": "b29369aa31d0e7ea82cf06e2ade8fe2b7421ea9f102c7d3aa58aa552a9e58249",
       "tools/bootstrap_nvrtc.py": "87320067e26aaa09072829e2e4d6f0050b51f02400d1d5e391d33d517cf63470",
       "tools/campaign.py": "bc156bdc70bf1c0b14ef7c4a7091a069388090f0ae11640c04c4e7eb5b9130ee",
-      "tools/campaign_report.py": "a3373082a4dc9f71949db3e355701b8e935443b3f8e01296ab03c59d36143e3b",
+      "tools/campaign_report.py": "5676645caa06756fa6520671f437dab9e20fc614d7bf99437d803a9373c1ea5c",
       "tools/context_sweep.py": "3c55b4d26945bbaa20349b120ca7d69f249c2806330445be75d209d18b8f0756",
       "tools/lfm3_benchmark.py": "1edf466726c169a02abb2a73372fdb796a97fc63dbf2af585524acb4e3e28355",
-      "tools/lfm3_long_decode.py": "fd51f2c37ed7ea187c08f7b7130af89117b258f7066e28a3e321e37cb2e1c483",
+      "tools/lfm3_long_decode.py": "d2a43f9209d7af28f28ac38177564eaf06d116d61b4a9c968596db1b991202f3",
       "tools/lfm3_plot.py": "2ab16141deb75ebb5e2417ec5192d631810c98eacb7bd9b7cafb59d561582906",
       "tools/lfm3_qualify.py": "2f05ffaa80576e38643f1848749ca34af15190082d56b292f20ddcec4c70ab43",
-      "tools/lfm3_showcase.py": "8e4a3d73c449c8e16cfc188a7df76514571d8c0ff8c53535676c31ac3558818e",
       "tools/lfm3_state_cache.py": "5590f9eedc84952d84f12df326ec919e28c32b2033c5cc28a6faa5ede637f654",
       "tools/lfm3_vulkan_benchmark.py": "4a453775ef2855386ff97e2c44805ffeac6ca90bac7f27cb8ce22a76d91f3893",
       "tools/lfm3_vulkan_demo.py": "c402461cc58d50931233219754ba139f19473c981da474051ab22d578e5b8a40",
-      "tools/lfm3_vulkan_plot.py": "924d879d48bdb6c8e968c1a3ea273fb2c1343af560dad4565ef695a90e055950",
       "tools/model_benchmark.py": "d7a948931fda83933212ffe34f7390fd2bfdb27f84c107c79009284d93555b20",
       "tools/plot_comparison.py": "6d640c15a8fdb0e00b57f4619fe715278a328ea709b73b493c2184d8dc3f7776",
       "tools/spark_benchmark.py": "aff6f5a74866ec478b6e04c5d8ac40df185049207fac3a539a3b1e5d80f7fe48",
@@ -509,196 +558,33 @@
       "tools/vulkan_tune.py": "1cb88f27de4078b5c84da62e9d5089f00d0e1cabeae1c1208477772037f04c19",
       "uv.lock": "f1a3bd98daa7cc4c1484e5e02304e4e287064cd0472fa70e219d488804be0a78"
     },
-    "captured_at": "2026-10-28T15:18:59.229290Z",
+    "captured_at": "2026-10-28T14:21:01.939494Z",
     "changed_during_run": false
   },
-  "metadata": {
-    "runtime": "akas",
-    "purpose": "showcase-publication",
-    "model": "LiquidAI/LFM3-1.7B",
-    "provider": "webgpu",
-    "device": {
-      "name": "AMD Radeon RX 6700 XT"
-    },
-    "measurement_runs": [
-      "20261028142101939494-891196a6",
-      "20261028123406615870-990f1f0a",
-      "20261028143228923276-636cfb77",
-      "20261028142134711853-d02eb781"
-    ],
-    "qualification_run": "20261028141136652938-ea6c563c",
-    "note": "Documentation, plots and reproduction assets only; no new measurements."
-  },
-  "change": {
-    "kind": "publication",
-    "description": "Publish Radeon LFM3 wall-decode showcase assets",
-    "parent_run": null
-  },
-  "dependencies": {
-    "akas": "0.1.0",
-    "aiohappyeyeballs": "2.7.1",
-    "aiohttp": "3.14.5",
-    "aiosignal": "1.4.0",
-    "apache-tvm-ffi": "0.1.12",
-    "attrs": "26.1.0",
-    "cffi": "2.1.1",
-    "cloudpickle": "3.1.2",
-    "colorama": "0.4.6",
-    "contourpy": "1.4.0",
-    "cycler": "0.12.1",
-    "filelock": "4.1.0",
-    "fonttools": "4.66.1",
-    "frozenlist": "1.8.0",
-    "fsspec": "2026.9.0",
-    "idna": "3.20",
-    "iniconfig": "2.3.1",
-    "Jinja2": "3.1.6",
-    "kiwisolver": "1.5.1",
-    "MarkupSafe": "3.0.4",
-    "matplotlib": "3.11.2",
-    "ml_dtypes": "0.6.0",
-    "mpmath": "1.3.0",
-    "multidict": "7.1.0",
-    "networkx": "3.7",
-    "numpy": "2.5.3",
-    "packaging": "26.3",
-    "pillow": "12.3.0",
-    "pluggy": "1.6.0",
-    "propcache": "0.5.4",
-    "psutil": "7.2.2",
-    "pycparser": "3.11",
-    "Pygments": "2.21.0",
-    "pyparsing": "3.3.3",
-    "pytest": "9.1.1",
-    "python-dateutil": "2.9.0.post0",
-    "regex": "2026.9.29",
-    "rendercanvas": "2.7.2",
-    "ruff": "0.17.0",
-    "setuptools": "84.0.0",
-    "six": "1.17.0",
-    "sympy": "1.14.0",
-    "tensor-workspace": "0.1.0",
-    "tilelang": "0.1.14",
-    "torch": "2.14.1",
-    "torch_c_dlpack_ext": "0.1.5",
-    "tqdm": "4.70.1",
-    "typing_extensions": "4.16.0",
-    "wgpu": "0.29.0",
-    "yarl": "1.25.1",
-    "z3-solver": "4.15.4.0"
-  },
-  "environment": {
-    "platform": "Windows-11-10.0.26300-SP0",
-    "python": "3.12.13",
-    "cpu_count": 12,
-    "packages": {
-      "tensor-workspace": {
-        "version": "0.1.0",
-        "record_sha256": "2c879a6b29d477d3aee0a65a9fc6a1f38a9b13d40d7a4dc197288e007cbc4223",
-        "vcs": {
-          "vcs": "git",
-          "commit_id": "541d11ac9d93de92915082d09b68d7503f1c9741",
-          "requested_revision": "541d11ac9d93de92915082d09b68d7503f1c9741"
+  "entries": [
+    {
+      "id": "lfm3-1.7b-q4_0-webgpu-float16-ar",
+      "status": "passed",
+      "context": {
+        "workload": {
+          "id": "lfm3-rx6700xt-wall-decode-v1",
+          "batches": [
+            1
+          ],
+          "prefix_tokens": [
+            32,
+            512,
+            2048,
+            8192,
+            16384,
+            32768,
+            65536,
+            130944
+          ],
+          "output_tokens": 128
         }
-      },
-      "wgpu": {
-        "version": "0.29.0",
-        "record_sha256": "1f94d76cc74fa3d5f141d1b4b5e0423c3a9c4c55a20ad524945eb8eb2d0842c9",
-        "vcs": null
-      },
-      "tilelang": {
-        "version": "0.1.14",
-        "record_sha256": "61ec596142b141323ef53b148fad84e9420ff74241e0e29fcb29ce1ec5d0ca02",
-        "vcs": null
-      },
-      "apache-tvm-ffi": {
-        "version": "0.1.12",
-        "record_sha256": "1def23c07c54d8306c5a8e91cf06d802011237a8bbd6794915063e9b340d7927",
-        "vcs": null
-      },
-      "numpy": {
-        "version": "2.5.3",
-        "record_sha256": "d050a967e145bfde7b1dfe9900c450f54863c02674c508b6f1b62336c75d62e3",
-        "vcs": null
       }
     }
-  },
-  "workload": {
-    "id": "custom",
-    "shapes": []
-  },
-  "results": [],
-  "search": [],
-  "artifacts": [
-    {
-      "path": "source.tar.gz",
-      "sha256": "469d5440a3a04f0a2875be6d5759439406ed8047339fe6561b795fdbf5e23942",
-      "bytes": 913091
-    },
-    {
-      "path": "source.patch",
-      "sha256": "2b7d8ec745eb47cefceebe7782a54676fb5c9180e6751eaf76b40c37e13b6b28",
-      "bytes": 256768
-    },
-    {
-      "path": "figures/throughput.svg",
-      "sha256": "2c8d8e38ceea9aac2b2d9d2f3d382949d6f7b75247da17dffc87c2dd2d1437c6",
-      "bytes": 117040
-    },
-    {
-      "path": "figures/throughput.png",
-      "sha256": "74aa571a44de0d2717b3ce76601ececfcfb879265190e2fa1c1e4b5dd01adf62",
-      "bytes": 187137
-    },
-    {
-      "path": "reproduction/README.md",
-      "sha256": "b044e020a7f6d549d65f34b48977db8f4c7fec8197148a6e13f795a4a190fd27",
-      "bytes": 5397
-    },
-    {
-      "path": "reproduction/schedules.json",
-      "sha256": "e68d13995e189e207ca8bb7273e28be1bb8ea4f3ae12371806e5c65827cfdb3b",
-      "bytes": 16309
-    },
-    {
-      "path": "reproduction/policy.json",
-      "sha256": "e9780e31250ddb77c949e13eb2f5f72c128818159c6898d0ad3fd5d48a599f06",
-      "bytes": 152
-    },
-    {
-      "path": "environment.json",
-      "sha256": "78dc40983f52541c6d33dc2d566e904d1e7a93c9e16b26cc0f66f4ea904cb713",
-      "bytes": 1079
-    },
-    {
-      "path": "text-demo.json",
-      "sha256": "811c409ec468a96c9a92e80509b2900fe1ab68b475754a862ce32cecf775f31d",
-      "bytes": 9002
-    },
-    {
-      "path": "checks/focused-tests.log",
-      "sha256": "66a28a297459eee4a01466653472eb2d77cc9207a89ffa5e710d86dcc0585b73",
-      "bytes": 113
-    },
-    {
-      "path": "checks/baseline-failures.log",
-      "sha256": "97f15335f166511f24286ac98f2aa1aa1e3ffb6024539755fea3257b18842154",
-      "bytes": 61738
-    },
-    {
-      "path": "checks/identical-kernel-ir.log",
-      "sha256": "88b02a85bbaea552a80885e00bca40afe96d58c2dca2f5b139bf950779a68d76",
-      "bytes": 661
-    },
-    {
-      "path": "reproduction/plot.py",
-      "sha256": "924d879d48bdb6c8e968c1a3ea273fb2c1343af560dad4565ef695a90e055950",
-      "bytes": 5065
-    },
-    {
-      "path": "report.json",
-      "sha256": "4e751788c449a808439193347df738657a8c5f65b7f3d638f46aa5a8678db1ed",
-      "bytes": 557
-    }
-  ]
+  ],
+  "spent_seconds": 2983.974298
 }

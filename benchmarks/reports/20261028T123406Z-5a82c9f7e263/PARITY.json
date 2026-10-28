@@ -1,0 +1,82 @@
+{
+  "criterion": "AKAS median >= llama.cpp median for completed wall decode at every matched prefix",
+  "phases": [
+    "decode"
+  ],
+  "passed": true,
+  "prefixes": 8,
+  "rows": [
+    {
+      "prefix_tokens": 32,
+      "decode": {
+        "akas": 247.50685559347863,
+        "llama": 208.2414420022123,
+        "ratio": 1.1885571537237491,
+        "parity_or_better": true
+      }
+    },
+    {
+      "prefix_tokens": 512,
+      "decode": {
+        "akas": 244.05556551810727,
+        "llama": 202.07465434576642,
+        "ratio": 1.2077495137045147,
+        "parity_or_better": true
+      }
+    },
+    {
+      "prefix_tokens": 2048,
+      "decode": {
+        "akas": 225.42259187792726,
+        "llama": 187.539686067105,
+        "ratio": 1.2019994093264457,
+        "parity_or_better": true
+      }
+    },
+    {
+      "prefix_tokens": 8192,
+      "decode": {
+        "akas": 186.63389752142186,
+        "llama": 180.11703636305734,
+        "ratio": 1.0361812590855017,
+        "parity_or_better": true
+      }
+    },
+    {
+      "prefix_tokens": 16384,
+      "decode": {
+        "akas": 179.6122299059765,
+        "llama": 164.4080410657506,
+        "ratio": 1.092478377223322,
+        "parity_or_better": true
+      }
+    },
+    {
+      "prefix_tokens": 32768,
+      "decode": {
+        "akas": 153.40287435210004,
+        "llama": 140.89211780148932,
+        "ratio": 1.0887967101767737,
+        "parity_or_better": true
+      }
+    },
+    {
+      "prefix_tokens": 65536,
+      "decode": {
+        "akas": 117.2967441529241,
+        "llama": 109.60861955107285,
+        "ratio": 1.070141605955259,
+        "parity_or_better": true
+      }
+    },
+    {
+      "prefix_tokens": 130944,
+      "decode": {
+        "akas": 79.54634282604805,
+        "llama": 74.62764623964328,
+        "ratio": 1.065909844866471,
+        "parity_or_better": true
+      }
+    }
+  ]
+}
