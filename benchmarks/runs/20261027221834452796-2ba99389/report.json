@@ -1,0 +1,109 @@
+{
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "kernel-qualification",
+    "provider": "cuda",
+    "target": "sm_89",
+    "checks": [
+      {
+        "case": "conv-1",
+        "parameters": {
+          "r": 2,
+          "c": 128,
+          "length": 7,
+          "chunk": 1
+        },
+        "outputs": [
+          "out",
+          "state"
+        ],
+        "bitwise": true
+      },
+      {
+        "case": "conv-32",
+        "parameters": {
+          "r": 2,
+          "c": 128,
+          "length": 7,
+          "chunk": 32
+        },
+        "outputs": [
+          "out",
+          "state"
+        ],
+        "bitwise": true
+      },
+      {
+        "case": "conv-512",
+        "parameters": {
+          "r": 2,
+          "c": 128,
+          "length": 7,
+          "chunk": 512
+        },
+        "outputs": [
+          "out",
+          "state"
+        ],
+        "bitwise": true
+      },
+      {
+        "case": "linear-f32",
+        "parameters": {
+          "r": 32,
+          "k": 256,
+          "o": 128,
+          "type": 2,
+          "ggml": true
+        },
+        "outputs": [
+          "out"
+        ],
+        "bitwise": true
+      },
+      {
+        "case": "ffn-f32",
+        "parameters": {
+          "r": 32,
+          "k": 256,
+          "o": 128,
+          "type": 2,
+          "ggml": true
+        },
+        "outputs": [
+          "out"
+        ],
+        "bitwise": true
+      },
+      {
+        "case": "linear-f16-tail",
+        "parameters": {
+          "r": 129,
+          "k": 256,
+          "o": 128,
+          "type": 2,
+          "ggml": true
+        },
+        "outputs": [
+          "out"
+        ],
+        "bitwise": true
+      },
+      {
+        "case": "ffn-f16-tail",
+        "parameters": {
+          "r": 129,
+          "k": 256,
+          "o": 128,
+          "type": 2,
+          "ggml": true
+        },
+        "outputs": [
+          "out"
+        ],
+        "bitwise": true
+      }
+    ]
+  },
+  "results": []
+}

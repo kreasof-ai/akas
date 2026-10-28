@@ -1,0 +1,26 @@
+{
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "model-qualification",
+    "model": "LiquidAI/LFM3-1.7B",
+    "provider": "cuda",
+    "target": "sm_89",
+    "mode": "ar",
+    "weight_formats": [
+      "bf16",
+      "fp8",
+      "gguf"
+    ],
+    "reference": "Independent NumPy full-sequence equations; reordered/ragged requests, sliding wrap, convolution slot reuse and Q8 packing",
+    "command": [
+      "/home/sagemaker-user/akas/.venv/bin/python",
+      "-m",
+      "pytest",
+      "tests/test_lfm3.py",
+      "tests/test_activation_q8.py",
+      "-q"
+    ],
+    "exit_code": 0
+  },
+  "results": []
+}

@@ -1,0 +1,157 @@
+sssss....sss.sss....sssssss.sssssss...ss..s....s.............................................................................ss.................. [  7%]
+.......................................ssssss....ssssssssssssssssssss.............ssssssss....ssssss....ssssssssss............................... [ 14%]
+...............F.........F.................................sssss.............ss.................................sssssssssssssssssssssssssssssssss [ 22%]
+sssssssssssssss...............FF.....F......................................ssssss.......................................ssssssssssssssssssssssss [ 29%]
+ssssssssssssssssssssssssssss.............sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss..ssss............sssssssssssssssss [ 36%]
+sssssssssssssss..................................ssssssssssssssssssss....ssssss.........ssssss.s......sssssssssssssssssssssssssssssssssssssssssss [ 44%]
+ssssssssssssssss..sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss.ssssss.FFFF.ss...s........ssssss..s..ss..ssssssssssss.... [ 51%]
+.............................................ss...........ssss.......ss.sss..................ssssssssss..........ssssssssss................F.ssss [ 59%]
+ssssssssssssss.....................................................................................................ssssssssssssssssssssssssssssss [ 66%]
+ssssssssssssssssssssssssssssssssssssssssssssssssss........................ssssssssssssssssssssss.........ssssssssssssssssssssssssssssssssss.s.ss. [ 73%]
+ss.ssss..ss.ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss......sssssssssssssss [ 81%]
+s....ssssssssss.........ss.........................................sss.s.ss.ssssssssssssssssssssssssssssssssssssssssssssssss.................ssss [ 88%]
+ssssssssssss.sssssss..ssss.s.................................................................................ssssssssssssssssss.sss.sssssssssssss [ 96%]
+sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss                                                                       [100%]
+======================================================================= FAILURES ========================================================================
+______________________________________ test_kernel_arithmetic_matches_pre_refactor_source[akas.ops.linear.webgpu] _______________________________________
+tests/test_engine_layout.py:52: in test_kernel_arithmetic_matches_pre_refactor_source
+    assert required <= observed
+E   AssertionError: assert {'inline:0dbe...a9c7d3c', ...} <= {'inline:0dbe...17317cb', ...}
+E     
+E     Extra items in the left set:
+E     'inline:79627c605e26cb92f4f2f3d9fb2de5589300dde4c8130ce53318c9bd803bb341'
+___________________________ test_kernel_arithmetic_matches_pre_refactor_source[akas.quantization.activations._shared.packing] ___________________________
+tests/test_engine_layout.py:52: in test_kernel_arithmetic_matches_pre_refactor_source
+    assert required <= observed
+E   AssertionError: assert {'inline:661a...6091558ee13c'} <= {'inline:3090...6091558ee13c'}
+E     
+E     Extra items in the left set:
+E     'inline:661a592ceef48ed83f64bd68698dc0eb7fac2360f44e428fd92d491ef1d9f453'
+E     'inline:e5a9c5e65e979fc87fa88eff5f885bf66c01c0475acf527a669091007d1e2329'
+__________________________________ test_sequences_complete_cancel_and_reuse_without_provider_fields[Counter-expected0] __________________________________
+tests/test_independent_adapter.py:49: in test_sequences_complete_cancel_and_reuse_without_provider_fields
+    while engine.step():
+          ^^^^^^^^^^^^^
+src/akas/engine.py:76: in step
+    return self.scheduler.turn()
+           ^^^^^^^^^^^^^^^^^^^^^
+src/akas/scheduling/scheduler.py:146: in turn
+    tokens = self.engine.prefill_batch(
+src/akas/execution/executor.py:196: in prefill_batch
+    return self.prefill([r.slot for r in requests], sequences,
+src/akas/execution/executor.py:277: in prefill
+    result = self._prefill_groups(
+src/akas/execution/executor.py:209: in _prefill_groups
+    self.run_batch(slots[start:stop], sequences[start:stop], chunk=chunk)
+src/akas/execution/executor.py:93: in run_batch
+    return self._execute_batch(slots, sequences, chunk, phase=phase, read=read)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: Counter._execute_batch() got an unexpected keyword argument 'phase'
+_________________________________ test_sequences_complete_cancel_and_reuse_without_provider_fields[Recurrent-expected1] _________________________________
+tests/test_independent_adapter.py:49: in test_sequences_complete_cancel_and_reuse_without_provider_fields
+    while engine.step():
+          ^^^^^^^^^^^^^
+src/akas/engine.py:76: in step
+    return self.scheduler.turn()
+           ^^^^^^^^^^^^^^^^^^^^^
+src/akas/scheduling/scheduler.py:146: in turn
+    tokens = self.engine.prefill_batch(
+src/akas/execution/executor.py:196: in prefill_batch
+    return self.prefill([r.slot for r in requests], sequences,
+src/akas/execution/executor.py:277: in prefill
+    result = self._prefill_groups(
+src/akas/execution/executor.py:209: in _prefill_groups
+    self.run_batch(slots[start:stop], sequences[start:stop], chunk=chunk)
+src/akas/execution/executor.py:93: in run_batch
+    return self._execute_batch(slots, sequences, chunk, phase=phase, read=read)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: Counter._execute_batch() got an unexpected keyword argument 'phase'
+___________________________________________________ test_engine_close_releases_both_active_sequences ____________________________________________________
+tests/test_independent_adapter.py:99: in test_engine_close_releases_both_active_sequences
+    engine.step()
+src/akas/engine.py:76: in step
+    return self.scheduler.turn()
+           ^^^^^^^^^^^^^^^^^^^^^
+src/akas/scheduling/scheduler.py:146: in turn
+    tokens = self.engine.prefill_batch(
+src/akas/execution/executor.py:196: in prefill_batch
+    return self.prefill([r.slot for r in requests], sequences,
+src/akas/execution/executor.py:277: in prefill
+    result = self._prefill_groups(
+src/akas/execution/executor.py:209: in _prefill_groups
+    self.run_batch(slots[start:stop], sequences[start:stop], chunk=chunk)
+src/akas/execution/executor.py:93: in run_batch
+    return self._execute_batch(slots, sequences, chunk, phase=phase, read=read)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: Counter._execute_batch() got an unexpected keyword argument 'phase'
+_____________________________________ test_lfm_verifier_uses_private_journals_and_preserves_target_features[1-cuda] _____________________________________
+tests/test_lfm_verification.py:43: in test_lfm_verifier_uses_private_journals_and_preserves_target_features
+    assert [c.kind for c in commit.calls] == ["conv_commit", "advance"]
+E   AssertionError: assert ['conv_commit...x', 'advance'] == ['conv_commit', 'advance']
+E     
+E     At index 0 diff: 'conv_commit_prefix' != 'conv_commit'
+E     Use -v to get more diff
+____________________________________ test_lfm_verifier_uses_private_journals_and_preserves_target_features[1-webgpu] ____________________________________
+tests/test_lfm_verification.py:43: in test_lfm_verifier_uses_private_journals_and_preserves_target_features
+    assert [c.kind for c in commit.calls] == ["conv_commit", "advance"]
+E   AssertionError: assert ['conv_commit...x', 'advance'] == ['conv_commit', 'advance']
+E     
+E     At index 0 diff: 'conv_commit_prefix' != 'conv_commit'
+E     Use -v to get more diff
+_____________________________________ test_lfm_verifier_uses_private_journals_and_preserves_target_features[3-cuda] _____________________________________
+tests/test_lfm_verification.py:43: in test_lfm_verifier_uses_private_journals_and_preserves_target_features
+    assert [c.kind for c in commit.calls] == ["conv_commit", "advance"]
+E   AssertionError: assert ['conv_commit...x', 'advance'] == ['conv_commit', 'advance']
+E     
+E     At index 0 diff: 'conv_commit_prefix' != 'conv_commit'
+E     Use -v to get more diff
+____________________________________ test_lfm_verifier_uses_private_journals_and_preserves_target_features[3-webgpu] ____________________________________
+tests/test_lfm_verification.py:43: in test_lfm_verifier_uses_private_journals_and_preserves_target_features
+    assert [c.kind for c in commit.calls] == ["conv_commit", "advance"]
+E   AssertionError: assert ['conv_commit...x', 'advance'] == ['conv_commit', 'advance']
+E     
+E     At index 0 diff: 'conv_commit_prefix' != 'conv_commit'
+E     Use -v to get more diff
+__________________________________________ test_prefill_and_decode_partition_requests_by_qualified_phase_rows ___________________________________________
+tests/test_program_geometry.py:22: in test_prefill_and_decode_partition_requests_by_qualified_phase_rows
+    assert executor.prefill(slots, [[1, 2, 3, 4, 5, 6]] * 4) == [6] * 4
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/akas/execution/executor.py:277: in prefill
+    result = self._prefill_groups(
+src/akas/execution/executor.py:209: in _prefill_groups
+    self.run_batch(slots[start:stop], sequences[start:stop], chunk=chunk)
+src/akas/execution/executor.py:93: in run_batch
+    return self._execute_batch(slots, sequences, chunk, phase=phase, read=read)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: test_prefill_and_decode_partition_requests_by_qualified_phase_rows.<locals>.execute() got an unexpected keyword argument 'phase'
+=================================================================== warnings summary ====================================================================
+tests/test_cuda.py:9
+  /home/sagemaker-user/akas/tests/test_cuda.py:9: DeprecationWarning: Import LFM2 from its akas.models family package instead of akas
+    from akas import LFM2
+
+tests/test_compilation_policy.py: 6 warnings
+tests/test_cuda_frontend.py: 12 warnings
+tests/test_dsl.py: 282 warnings
+tests/test_forward.py: 6 warnings
+tests/test_functional_kernels.py: 11 warnings
+tests/test_lfm2_floating.py: 312 warnings
+tests/test_lfm2_reference.py: 28 warnings
+tests/test_native_pipeline_policy.py: 7 warnings
+tests/test_quantization_codecs.py: 163 warnings
+tests/test_qwen_graph.py: 20 warnings
+  /home/sagemaker-user/akas/.venv/lib/python3.12/site-packages/tilelang/language/tir/op.py:404: DeprecationWarning: T.reinterpret(dtype, value) is deprecated, use reinterpret(value, dtype) instead
+    deprecated_warning("T.reinterpret(dtype, value)", "reinterpret(value, dtype)")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================================================================ short test summary info ================================================================
+FAILED tests/test_engine_layout.py::test_kernel_arithmetic_matches_pre_refactor_source[akas.ops.linear.webgpu] - AssertionError: assert {'inline:0dbe....
+FAILED tests/test_engine_layout.py::test_kernel_arithmetic_matches_pre_refactor_source[akas.quantization.activations._shared.packing] - AssertionError...
+FAILED tests/test_independent_adapter.py::test_sequences_complete_cancel_and_reuse_without_provider_fields[Counter-expected0] - TypeError: Counter._ex...
+FAILED tests/test_independent_adapter.py::test_sequences_complete_cancel_and_reuse_without_provider_fields[Recurrent-expected1] - TypeError: Counter._...
+FAILED tests/test_independent_adapter.py::test_engine_close_releases_both_active_sequences - TypeError: Counter._execute_batch() got an unexpected key...
+FAILED tests/test_lfm_verification.py::test_lfm_verifier_uses_private_journals_and_preserves_target_features[1-cuda] - AssertionError: assert ['conv_c...
+FAILED tests/test_lfm_verification.py::test_lfm_verifier_uses_private_journals_and_preserves_target_features[1-webgpu] - AssertionError: assert ['conv...
+FAILED tests/test_lfm_verification.py::test_lfm_verifier_uses_private_journals_and_preserves_target_features[3-cuda] - AssertionError: assert ['conv_c...
+FAILED tests/test_lfm_verification.py::test_lfm_verifier_uses_private_journals_and_preserves_target_features[3-webgpu] - AssertionError: assert ['conv...
+FAILED tests/test_program_geometry.py::test_prefill_and_decode_partition_requests_by_qualified_phase_rows - TypeError: test_prefill_and_decode_partiti...
+10 failed, 933 passed, 1017 skipped, 848 warnings in 145.78s (0:02:25)

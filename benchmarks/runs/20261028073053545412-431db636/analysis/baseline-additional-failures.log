@@ -1,0 +1,49 @@
+FFFF.F.                                                                                                                                           [100%]
+======================================================================= FAILURES ========================================================================
+_____________________________________ test_lfm_verifier_uses_private_journals_and_preserves_target_features[1-cuda] _____________________________________
+build/lfm3/baseline-check/tests/test_lfm_verification.py:43: in test_lfm_verifier_uses_private_journals_and_preserves_target_features
+    assert [c.kind for c in commit.calls] == ["conv_commit", "advance"]
+E   AssertionError: assert ['conv_commit...x', 'advance'] == ['conv_commit', 'advance']
+E     
+E     At index 0 diff: 'conv_commit_prefix' != 'conv_commit'
+E     Use -v to get more diff
+____________________________________ test_lfm_verifier_uses_private_journals_and_preserves_target_features[1-webgpu] ____________________________________
+build/lfm3/baseline-check/tests/test_lfm_verification.py:43: in test_lfm_verifier_uses_private_journals_and_preserves_target_features
+    assert [c.kind for c in commit.calls] == ["conv_commit", "advance"]
+E   AssertionError: assert ['conv_commit...x', 'advance'] == ['conv_commit', 'advance']
+E     
+E     At index 0 diff: 'conv_commit_prefix' != 'conv_commit'
+E     Use -v to get more diff
+_____________________________________ test_lfm_verifier_uses_private_journals_and_preserves_target_features[3-cuda] _____________________________________
+build/lfm3/baseline-check/tests/test_lfm_verification.py:43: in test_lfm_verifier_uses_private_journals_and_preserves_target_features
+    assert [c.kind for c in commit.calls] == ["conv_commit", "advance"]
+E   AssertionError: assert ['conv_commit...x', 'advance'] == ['conv_commit', 'advance']
+E     
+E     At index 0 diff: 'conv_commit_prefix' != 'conv_commit'
+E     Use -v to get more diff
+____________________________________ test_lfm_verifier_uses_private_journals_and_preserves_target_features[3-webgpu] ____________________________________
+build/lfm3/baseline-check/tests/test_lfm_verification.py:43: in test_lfm_verifier_uses_private_journals_and_preserves_target_features
+    assert [c.kind for c in commit.calls] == ["conv_commit", "advance"]
+E   AssertionError: assert ['conv_commit...x', 'advance'] == ['conv_commit', 'advance']
+E     
+E     At index 0 diff: 'conv_commit_prefix' != 'conv_commit'
+E     Use -v to get more diff
+__________________________________________ test_prefill_and_decode_partition_requests_by_qualified_phase_rows ___________________________________________
+build/lfm3/baseline-check/tests/test_program_geometry.py:22: in test_prefill_and_decode_partition_requests_by_qualified_phase_rows
+    assert executor.prefill(slots, [[1, 2, 3, 4, 5, 6]] * 4) == [6] * 4
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+build/lfm3/baseline-check/src/akas/execution/executor.py:277: in prefill
+    result = self._prefill_groups(
+build/lfm3/baseline-check/src/akas/execution/executor.py:209: in _prefill_groups
+    self.run_batch(slots[start:stop], sequences[start:stop], chunk=chunk)
+build/lfm3/baseline-check/src/akas/execution/executor.py:93: in run_batch
+    return self._execute_batch(slots, sequences, chunk, phase=phase, read=read)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: test_prefill_and_decode_partition_requests_by_qualified_phase_rows.<locals>.execute() got an unexpected keyword argument 'phase'
+================================================================ short test summary info ================================================================
+FAILED build/lfm3/baseline-check/tests/test_lfm_verification.py::test_lfm_verifier_uses_private_journals_and_preserves_target_features[1-cuda] - Asser...
+FAILED build/lfm3/baseline-check/tests/test_lfm_verification.py::test_lfm_verifier_uses_private_journals_and_preserves_target_features[1-webgpu] - Ass...
+FAILED build/lfm3/baseline-check/tests/test_lfm_verification.py::test_lfm_verifier_uses_private_journals_and_preserves_target_features[3-cuda] - Asser...
+FAILED build/lfm3/baseline-check/tests/test_lfm_verification.py::test_lfm_verifier_uses_private_journals_and_preserves_target_features[3-webgpu] - Ass...
+FAILED build/lfm3/baseline-check/tests/test_program_geometry.py::test_prefill_and_decode_partition_requests_by_qualified_phase_rows - TypeError: test_...
+5 failed, 2 passed in 0.66s
