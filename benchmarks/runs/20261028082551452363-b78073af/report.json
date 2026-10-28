@@ -1,0 +1,24 @@
+{
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "model-qualification",
+    "model": "LiquidAI/LFM3-1.7B",
+    "provider": "webgpu",
+    "target": "webgpu-portable-v1",
+    "mode": "ar",
+    "weight_formats": [
+      "gguf"
+    ],
+    "base_qualification_run_id": null,
+    "reference": "Independent NumPy full-sequence equations; reordered/ragged requests, sliding wrap, convolution slot reuse; floating and mixed prefill on WebGPU, Q8 packing on CUDA",
+    "command": [
+      "D:\\Workspace\\kreasof-ai\\github\\akas\\.venv\\Scripts\\python.exe",
+      "-m",
+      "pytest",
+      "tests/test_lfm3_webgpu.py",
+      "-q"
+    ],
+    "exit_code": 1
+  },
+  "results": []
+}

@@ -1,0 +1,213 @@
+{
+  "schema": "akas.program.v1",
+  "provider": "webgpu",
+  "target": "webgpu-portable-v1",
+  "config": {
+    "width": 2048,
+    "ff": 7680,
+    "heads": 16,
+    "kv_heads": 4,
+    "head_dim": 128,
+    "layers": [
+      "conv",
+      "conv",
+      "full_attention",
+      "conv",
+      "sliding_attention",
+      "conv",
+      "full_attention",
+      "conv",
+      "sliding_attention",
+      "conv",
+      "full_attention",
+      "conv",
+      "sliding_attention",
+      "conv",
+      "full_attention",
+      "conv",
+      "sliding_attention",
+      "conv",
+      "full_attention",
+      "conv",
+      "sliding_attention",
+      "conv",
+      "full_attention",
+      "conv"
+    ],
+    "vocab": 128000,
+    "conv": 7,
+    "epsilon": 9.999999747378752e-06,
+    "max_context": 262144,
+    "window": 256,
+    "theta": [
+      1000000.0,
+      1000000.0,
+      1000000.0,
+      1000000.0,
+      10000.0,
+      1000000.0,
+      1000000.0,
+      1000000.0,
+      10000.0,
+      1000000.0,
+      1000000.0,
+      1000000.0,
+      10000.0,
+      1000000.0,
+      1000000.0,
+      1000000.0,
+      10000.0,
+      1000000.0,
+      1000000.0,
+      1000000.0,
+      10000.0,
+      1000000.0,
+      1000000.0,
+      1000000.0
+    ],
+    "rotary": [
+      64,
+      64,
+      64,
+      64,
+      128,
+      64,
+      64,
+      64,
+      128,
+      64,
+      64,
+      64,
+      128,
+      64,
+      64,
+      64,
+      128,
+      64,
+      64,
+      64,
+      128,
+      64,
+      64,
+      64
+    ],
+    "sandwich": true,
+    "tied": true
+  },
+  "max_requests": 1,
+  "max_context": 8192,
+  "phases": [
+    {
+      "phase": "decode",
+      "rows": 1,
+      "chunk": 1,
+      "path": "programs/4900c0ab381440a4919ee2894826be9f/phases/decode-b1-t1.json",
+      "sha256": "bf9ffe74b31386600a6848179ee9f8998c838748a9360271f0e4a98d1fbf44b2",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "feedback": true,
+      "features": {
+        "logits": "logits"
+      }
+    },
+    {
+      "phase": "prefill",
+      "rows": 1,
+      "chunk": 32,
+      "path": "programs/4900c0ab381440a4919ee2894826be9f/phases/prefill-b1-t32.json",
+      "sha256": "bceecf3962cc824b180c987e3f54ddb8d2b44cd703cbb14dea41fa528b019730",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "feedback": false,
+      "features": {
+        "logits": "logits"
+      }
+    },
+    {
+      "phase": "prefill_state",
+      "rows": 1,
+      "chunk": 32,
+      "path": "programs/4900c0ab381440a4919ee2894826be9f/phases/prefill-state-b1-t32.json",
+      "sha256": "469aa56ca4ca130dfa4fe10c4abd05f81803a87aabcfea904c9c6ca84a7ea638",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "state_only": true
+    },
+    {
+      "phase": "prefill",
+      "rows": 1,
+      "chunk": 512,
+      "path": "programs/4900c0ab381440a4919ee2894826be9f/phases/prefill-b1-t512.json",
+      "sha256": "aa04ecba6d342a021d969e34e9c88fcbf8c7b0697cbbaaa1bb6afea054a1502a",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "feedback": false,
+      "features": {
+        "logits": "logits"
+      }
+    },
+    {
+      "phase": "prefill_state",
+      "rows": 1,
+      "chunk": 512,
+      "path": "programs/4900c0ab381440a4919ee2894826be9f/phases/prefill-state-b1-t512.json",
+      "sha256": "5e02f333dccac4dd2142982438b17cf6bab16c63191444580a213bfe5bf19723",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "state_only": true
+    }
+  ],
+  "reset": {
+    "path": "programs/4900c0ab381440a4919ee2894826be9f/phases/reset.json",
+    "sha256": "8be9d54e506a303fd8fd5959bef366db2de1302b163223adc0983c545e07dad7",
+    "mapping": "mapping"
+  },
+  "rounds": [],
+  "upload_options": {
+    "rope_layout": {
+      "stride": 1024,
+      "blocks": 8
+    },
+    "weight_arena": false,
+    "q4_layout": "planar"
+  },
+  "model_options": {
+    "kv_dtype": "float16",
+    "prefill_chunk": 512,
+    "activation_quantization": "mixed",
+    "fused_sandwich": true,
+    "q4_layout": "planar",
+    "decode_splits": 128,
+    "sliding_splits": 8
+  },
+  "policy": {
+    "linear": {
+      "stage_weights": true,
+      "stage_inputs": true
+    },
+    "vocabulary": {
+      "parallel_argmax": true,
+      "block": 1024
+    }
+  }
+}
