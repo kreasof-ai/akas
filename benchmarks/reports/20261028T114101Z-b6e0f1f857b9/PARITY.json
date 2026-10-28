@@ -1,0 +1,70 @@
+{
+  "criterion": "AKAS median >= llama.cpp median for decode at every matched prefix",
+  "phases": [
+    "decode"
+  ],
+  "passed": true,
+  "prefixes": 4,
+  "rows": [
+    {
+      "prefix_tokens": 32,
+      "prefill": {
+        "akas": 903.6893112479207,
+        "llama": 1200.4351577446823,
+        "ratio": 0.7528014365604946,
+        "parity_or_better": false
+      },
+      "decode": {
+        "akas": 255.48477532399468,
+        "llama": 221.63932824086433,
+        "ratio": 1.1527050607478342,
+        "parity_or_better": true
+      }
+    },
+    {
+      "prefix_tokens": 512,
+      "prefill": {
+        "akas": 1399.86176409544,
+        "llama": 3680.805176132279,
+        "ratio": 0.38031400661264786,
+        "parity_or_better": false
+      },
+      "decode": {
+        "akas": 251.63867302662672,
+        "llama": 213.15663152099842,
+        "ratio": 1.1805341041047432,
+        "parity_or_better": true
+      }
+    },
+    {
+      "prefix_tokens": 2048,
+      "prefill": {
+        "akas": 1319.7706280742673,
+        "llama": 2432.5813869514814,
+        "ratio": 0.542539145926874,
+        "parity_or_better": false
+      },
+      "decode": {
+        "akas": 231.2932058118474,
+        "llama": 209.93262319904255,
+        "ratio": 1.101749705630803,
+        "parity_or_better": true
+      }
+    },
+    {
+      "prefix_tokens": 8064,
+      "prefill": {
+        "akas": 1012.1316479036266,
+        "llama": 1003.2732037098714,
+        "ratio": 1.0088295432998695,
+        "parity_or_better": true
+      },
+      "decode": {
+        "akas": 196.38861441406965,
+        "llama": 196.20808562706247,
+        "ratio": 1.0009200884175096,
+        "parity_or_better": true
+      }
+    }
+  ]
+}

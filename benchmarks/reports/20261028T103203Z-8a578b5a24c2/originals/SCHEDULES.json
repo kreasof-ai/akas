@@ -1,0 +1,4125 @@
+{
+  "schema": "akas.campaign-schedules.v1",
+  "configurations": {
+    "lfm3-1.7b-q4_0-webgpu-float16-ar": {
+      "run_id": "20261028103258002832-2d447691",
+      "recipe": {
+        "chunk": 512,
+        "prefill_requests": 1,
+        "graphs": true,
+        "trials": 1
+      },
+      "phases": [
+        {
+          "program_sha256": "96e22eb073a529fa883c3bbb605e7106393858914363dbb56ff6cc7950725fc7",
+          "phase": "decode",
+          "batch": 1,
+          "chunk": 1,
+          "provider": "webgpu",
+          "target": "webgpu-portable-v1",
+          "contract": "reference",
+          "qualification": "programs/96e22eb073a529fa883c3bbb605e7106393858914363dbb56ff6cc7950725fc7/decode-b1-t1.json",
+          "profile": {
+            "schema": "tensor.schedule-profile.v1",
+            "provider": "webgpu",
+            "target": "webgpu-portable-v1",
+            "entries": [
+              {
+                "operation": "embedding",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "v": 128000,
+                  "start": 0,
+                  "ggml": true,
+                  "type": 14
+                },
+                "schedule": {
+                  "implementation": "vocabulary.webgpu.packed"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "sg": true,
+                  "implementation": "normalization.webgpu.parallel-subgroup"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 6144,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2
+                },
+                "schedule": {
+                  "decode_layout": 7,
+                  "implementation": "linear.webgpu.packed:vector-decode"
+                }
+              },
+              {
+                "operation": "conv",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "length": 7,
+                  "chunk": 1
+                },
+                "schedule": {
+                  "implementation": "convolution.reference"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 2048,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2
+                },
+                "schedule": {
+                  "decode_layout": 7,
+                  "implementation": "linear.webgpu.packed:vector-decode"
+                }
+              },
+              {
+                "operation": "post_add_rms",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "threads": 512,
+                  "implementation": "normalization.webgpu.post_add_rms"
+                }
+              },
+              {
+                "operation": "ffn",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 7680,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2
+                },
+                "schedule": {
+                  "decode_layout": 7,
+                  "implementation": "linear.webgpu.packed:vector-decode"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1,
+                  "k": 7680,
+                  "o": 2048,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2
+                },
+                "schedule": {
+                  "decode_layout": 7,
+                  "implementation": "linear.webgpu.packed:vector-decode"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 512,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2
+                },
+                "schedule": {
+                  "decode_layout": 7,
+                  "implementation": "linear.webgpu.packed:vector-decode"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 16,
+                  "c": 128,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "sg": true,
+                  "implementation": "normalization.webgpu.parallel-subgroup"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 4,
+                  "c": 128,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "sg": true,
+                  "implementation": "normalization.webgpu.parallel-subgroup"
+                }
+              },
+              {
+                "operation": "rotary_compact",
+                "parameters": {
+                  "r": 1,
+                  "h": 16,
+                  "d": 128,
+                  "theta": 1000000.0,
+                  "rotary": 64,
+                  "full_head_pairs": true,
+                  "capacity": 8192,
+                  "stride": 1024,
+                  "blocks": 8
+                },
+                "schedule": {
+                  "implementation": "attention.webgpu.rotary_compact"
+                }
+              },
+              {
+                "operation": "rotary_compact",
+                "parameters": {
+                  "r": 1,
+                  "h": 4,
+                  "d": 128,
+                  "theta": 1000000.0,
+                  "rotary": 64,
+                  "full_head_pairs": true,
+                  "capacity": 8192,
+                  "stride": 1024,
+                  "blocks": 8
+                },
+                "schedule": {
+                  "implementation": "attention.webgpu.rotary_compact"
+                }
+              },
+              {
+                "operation": "window_cache",
+                "parameters": {
+                  "r": 1,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 8192,
+                  "chunk": 1,
+                  "window": 0
+                },
+                "schedule": {
+                  "implementation": "attention.webgpu.window_cache"
+                }
+              },
+              {
+                "operation": "window_grouped",
+                "parameters": {
+                  "r": 1,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 8192,
+                  "chunk": 1,
+                  "window": 0,
+                  "splits": 32,
+                  "query_rows": 1,
+                  "key_rows": 32
+                },
+                "schedule": {
+                  "key_unroll": 4,
+                  "implementation": "attention.webgpu.window_blocked"
+                }
+              },
+              {
+                "operation": "window_merge",
+                "parameters": {
+                  "r": 1,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 8192,
+                  "chunk": 1,
+                  "window": 0,
+                  "splits": 32,
+                  "query_rows": 1,
+                  "key_rows": 32
+                },
+                "schedule": {
+                  "implementation": "attention.webgpu.window_merge_subgroup"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 16,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2
+                },
+                "schedule": {
+                  "decode_layout": 7,
+                  "implementation": "linear.webgpu.packed:vector-decode"
+                }
+              },
+              {
+                "operation": "head_gate",
+                "parameters": {
+                  "r": 1,
+                  "h": 16,
+                  "d": 128
+                },
+                "schedule": {
+                  "implementation": "activation.webgpu.head_gate"
+                }
+              },
+              {
+                "operation": "rotary_compact",
+                "parameters": {
+                  "r": 1,
+                  "h": 16,
+                  "d": 128,
+                  "theta": 10000.0,
+                  "rotary": 128,
+                  "full_head_pairs": true,
+                  "capacity": 8192,
+                  "stride": 1024,
+                  "blocks": 8
+                },
+                "schedule": {
+                  "implementation": "attention.webgpu.rotary_compact"
+                }
+              },
+              {
+                "operation": "rotary_compact",
+                "parameters": {
+                  "r": 1,
+                  "h": 4,
+                  "d": 128,
+                  "theta": 10000.0,
+                  "rotary": 128,
+                  "full_head_pairs": true,
+                  "capacity": 8192,
+                  "stride": 1024,
+                  "blocks": 8
+                },
+                "schedule": {
+                  "implementation": "attention.webgpu.rotary_compact"
+                }
+              },
+              {
+                "operation": "window_cache",
+                "parameters": {
+                  "r": 1,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 1024,
+                  "chunk": 1,
+                  "window": 256
+                },
+                "schedule": {
+                  "implementation": "attention.webgpu.window_cache"
+                }
+              },
+              {
+                "operation": "window_grouped",
+                "parameters": {
+                  "r": 1,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 1024,
+                  "chunk": 1,
+                  "window": 256,
+                  "splits": 4,
+                  "query_rows": 1,
+                  "key_rows": 32
+                },
+                "schedule": {
+                  "key_unroll": 4,
+                  "implementation": "attention.webgpu.window_blocked"
+                }
+              },
+              {
+                "operation": "window_merge",
+                "parameters": {
+                  "r": 1,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 1024,
+                  "chunk": 1,
+                  "window": 256,
+                  "splits": 4,
+                  "query_rows": 1,
+                  "key_rows": 32
+                },
+                "schedule": {
+                  "implementation": "attention.webgpu.window_merge_subgroup"
+                }
+              },
+              {
+                "operation": "add_rms",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "sg": true,
+                  "implementation": "normalization.webgpu.parallel-subgroup"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 128000,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 14
+                },
+                "schedule": {
+                  "implementation": "linear.webgpu.packed:archived-decode"
+                }
+              },
+              {
+                "operation": "argmax_partial",
+                "parameters": {
+                  "r": 1,
+                  "c": 128000,
+                  "block": 1024
+                },
+                "schedule": {
+                  "implementation": "akas.ops.vocabulary.webgpu:argmax_partial"
+                }
+              },
+              {
+                "operation": "argmax_merge",
+                "parameters": {
+                  "r": 1,
+                  "c": 128000,
+                  "block": 1024
+                },
+                "schedule": {
+                  "implementation": "akas.ops.vocabulary.webgpu:argmax_merge"
+                }
+              },
+              {
+                "operation": "next_tokens",
+                "parameters": {
+                  "r": 1
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              },
+              {
+                "operation": "advance",
+                "parameters": {
+                  "r": 1
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              }
+            ]
+          },
+          "winners": [
+            {
+              "kind": "embedding",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "v": 128000,
+                "start": 0,
+                "ggml": true,
+                "type": 14
+              },
+              "selected": {
+                "implementation": "vocabulary.webgpu.packed",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00028890006554623443
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.webgpu.parallel-subgroup",
+                "schedule": {
+                  "sg": true
+                },
+                "score": 1.0,
+                "measurements": [
+                  0.0003355666995048523
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 6144,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2
+              },
+              "selected": {
+                "implementation": "linear.webgpu.packed:vector-decode",
+                "schedule": {
+                  "decode_layout": 7
+                },
+                "score": 1.0,
+                "measurements": [
+                  0.00032019995463391143
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "conv",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "length": 7,
+                "chunk": 1
+              },
+              "selected": {
+                "implementation": "convolution.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00030419998802244663
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 2048,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2
+              },
+              "selected": {
+                "implementation": "linear.webgpu.packed:vector-decode",
+                "schedule": {
+                  "decode_layout": 7
+                },
+                "score": 0.9907620540179509,
+                "measurements": [
+                  0.0002788333222270012
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "post_add_rms",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.webgpu.post_add_rms",
+                "schedule": {
+                  "threads": 512
+                },
+                "score": 1.0,
+                "measurements": [
+                  0.00028113337854544324
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "ffn",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 7680,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2
+              },
+              "selected": {
+                "implementation": "linear.webgpu.packed:vector-decode",
+                "schedule": {
+                  "decode_layout": 7
+                },
+                "score": 1.0,
+                "measurements": [
+                  0.00047313328832387924
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1,
+                "k": 7680,
+                "o": 2048,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2
+              },
+              "selected": {
+                "implementation": "linear.webgpu.packed:vector-decode",
+                "schedule": {
+                  "decode_layout": 7
+                },
+                "score": 0.9767597405088653,
+                "measurements": [
+                  0.00034183341388901073
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 512,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2
+              },
+              "selected": {
+                "implementation": "linear.webgpu.packed:vector-decode",
+                "schedule": {
+                  "decode_layout": 7
+                },
+                "score": 1.0,
+                "measurements": [
+                  0.00025949999690055847
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 16,
+                "c": 128,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.webgpu.parallel-subgroup",
+                "schedule": {
+                  "sg": true
+                },
+                "score": 1.0,
+                "measurements": [
+                  0.00024206672484676042
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 4,
+                "c": 128,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.webgpu.parallel-subgroup",
+                "schedule": {
+                  "sg": true
+                },
+                "score": 0.9537502853936253,
+                "measurements": [
+                  0.00023439999980231127
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "rotary_compact",
+              "parameters": {
+                "r": 1,
+                "h": 16,
+                "d": 128,
+                "theta": 1000000.0,
+                "rotary": 64,
+                "full_head_pairs": true,
+                "capacity": 8192,
+                "stride": 1024,
+                "blocks": 8
+              },
+              "selected": {
+                "implementation": "attention.webgpu.rotary_compact",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.000230666638041536
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rotary_compact",
+              "parameters": {
+                "r": 1,
+                "h": 4,
+                "d": 128,
+                "theta": 1000000.0,
+                "rotary": 64,
+                "full_head_pairs": true,
+                "capacity": 8192,
+                "stride": 1024,
+                "blocks": 8
+              },
+              "selected": {
+                "implementation": "attention.webgpu.rotary_compact",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00025513325817883015
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_cache",
+              "parameters": {
+                "r": 1,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 8192,
+                "chunk": 1,
+                "window": 0
+              },
+              "selected": {
+                "implementation": "attention.webgpu.window_cache",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.000993666627133886
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_grouped",
+              "parameters": {
+                "r": 1,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 8192,
+                "chunk": 1,
+                "window": 0,
+                "splits": 32,
+                "query_rows": 1,
+                "key_rows": 32
+              },
+              "selected": {
+                "implementation": "attention.webgpu.window_blocked",
+                "schedule": {
+                  "key_unroll": 4
+                },
+                "score": 1.0,
+                "measurements": [
+                  0.0005989999820788702
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "window_merge",
+              "parameters": {
+                "r": 1,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 8192,
+                "chunk": 1,
+                "window": 0,
+                "splits": 32,
+                "query_rows": 1,
+                "key_rows": 32
+              },
+              "selected": {
+                "implementation": "attention.webgpu.window_merge_subgroup",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00028466666117310524
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 16,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2
+              },
+              "selected": {
+                "implementation": "linear.webgpu.packed:vector-decode",
+                "schedule": {
+                  "decode_layout": 7
+                },
+                "score": 1.0,
+                "measurements": [
+                  0.00025933321254948777
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "head_gate",
+              "parameters": {
+                "r": 1,
+                "h": 16,
+                "d": 128
+              },
+              "selected": {
+                "implementation": "activation.webgpu.head_gate",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0002601667462537686
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rotary_compact",
+              "parameters": {
+                "r": 1,
+                "h": 16,
+                "d": 128,
+                "theta": 10000.0,
+                "rotary": 128,
+                "full_head_pairs": true,
+                "capacity": 8192,
+                "stride": 1024,
+                "blocks": 8
+              },
+              "selected": {
+                "implementation": "attention.webgpu.rotary_compact",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00023246665174762407
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rotary_compact",
+              "parameters": {
+                "r": 1,
+                "h": 4,
+                "d": 128,
+                "theta": 10000.0,
+                "rotary": 128,
+                "full_head_pairs": true,
+                "capacity": 8192,
+                "stride": 1024,
+                "blocks": 8
+              },
+              "selected": {
+                "implementation": "attention.webgpu.rotary_compact",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00026476670367022354
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_cache",
+              "parameters": {
+                "r": 1,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 1024,
+                "chunk": 1,
+                "window": 256
+              },
+              "selected": {
+                "implementation": "attention.webgpu.window_cache",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00035270008568962413
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_grouped",
+              "parameters": {
+                "r": 1,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 1024,
+                "chunk": 1,
+                "window": 256,
+                "splits": 4,
+                "query_rows": 1,
+                "key_rows": 32
+              },
+              "selected": {
+                "implementation": "attention.webgpu.window_blocked",
+                "schedule": {
+                  "key_unroll": 4
+                },
+                "score": 0.9701464480874317,
+                "measurements": [
+                  0.000344466728468736
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "window_merge",
+              "parameters": {
+                "r": 1,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 1024,
+                "chunk": 1,
+                "window": 256,
+                "splits": 4,
+                "query_rows": 1,
+                "key_rows": 32
+              },
+              "selected": {
+                "implementation": "attention.webgpu.window_merge_subgroup",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00025653326883912086
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "add_rms",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.webgpu.parallel-subgroup",
+                "schedule": {
+                  "sg": true
+                },
+                "score": 1.0,
+                "measurements": [
+                  0.0002534334392597278
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 128000,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 14
+              },
+              "selected": {
+                "implementation": "linear.webgpu.packed:archived-decode",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.002830366681640347
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "argmax_partial",
+              "parameters": {
+                "r": 1,
+                "c": 128000,
+                "block": 1024
+              },
+              "selected": {
+                "implementation": "akas.ops.vocabulary.webgpu:argmax_partial",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0002688999908665816
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "argmax_merge",
+              "parameters": {
+                "r": 1,
+                "c": 128000,
+                "block": 1024
+              },
+              "selected": {
+                "implementation": "akas.ops.vocabulary.webgpu:argmax_merge",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00027183334653576213
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "next_tokens",
+              "parameters": {
+                "r": 1
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00026099996951719123
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "advance",
+              "parameters": {
+                "r": 1
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00026399999236067134
+                ],
+                "trials": 0
+              }
+            }
+          ]
+        },
+        {
+          "program_sha256": "96e22eb073a529fa883c3bbb605e7106393858914363dbb56ff6cc7950725fc7",
+          "phase": "prefill",
+          "batch": 1,
+          "chunk": 32,
+          "provider": "webgpu",
+          "target": "webgpu-portable-v1",
+          "contract": "reference",
+          "qualification": "programs/96e22eb073a529fa883c3bbb605e7106393858914363dbb56ff6cc7950725fc7/prefill-b1-t32.json",
+          "profile": {
+            "schema": "tensor.schedule-profile.v1",
+            "provider": "webgpu",
+            "target": "webgpu-portable-v1",
+            "entries": [
+              {
+                "operation": "chunk_controls",
+                "parameters": {
+                  "r": 1,
+                  "chunk": 32
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              },
+              {
+                "operation": "embedding",
+                "parameters": {
+                  "r": 32,
+                  "c": 2048,
+                  "v": 128000,
+                  "start": 0,
+                  "ggml": true,
+                  "type": 14
+                },
+                "schedule": {
+                  "implementation": "vocabulary.webgpu.packed"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 32,
+                  "c": 2048,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "sg": true,
+                  "implementation": "normalization.webgpu.parallel-subgroup"
+                }
+              },
+              {
+                "operation": "quantize_q16",
+                "parameters": {
+                  "r": 32,
+                  "k": 2048,
+                  "sg": true,
+                  "fixed_residual": false
+                },
+                "schedule": {
+                  "implementation": "akas.quantization.activations.packing"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 32,
+                  "k": 2048,
+                  "o": 6144,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2,
+                  "q16": true,
+                  "integer": {
+                    "fixed_residual": false
+                  }
+                },
+                "schedule": {
+                  "integer_layout": 0,
+                  "integer_k": 32,
+                  "implementation": "linear.webgpu.two_component"
+                }
+              },
+              {
+                "operation": "conv",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "length": 7,
+                  "chunk": 32
+                },
+                "schedule": {
+                  "implementation": "convolution.reference"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 32,
+                  "k": 2048,
+                  "o": 2048,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2,
+                  "q16": true,
+                  "integer": {
+                    "fixed_residual": false
+                  }
+                },
+                "schedule": {
+                  "integer_layout": 0,
+                  "integer_k": 32,
+                  "implementation": "linear.webgpu.two_component"
+                }
+              },
+              {
+                "operation": "post_add_rms",
+                "parameters": {
+                  "r": 32,
+                  "c": 2048,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "threads": 128,
+                  "implementation": "normalization.webgpu.post_add_rms"
+                }
+              },
+              {
+                "operation": "ffn",
+                "parameters": {
+                  "r": 32,
+                  "k": 2048,
+                  "o": 7680,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2,
+                  "prefill_tile_m": 32,
+                  "prefill_tile_n": 64,
+                  "prefill_tile_k": 64,
+                  "prefill_tile_threads": 128,
+                  "q16": true,
+                  "integer": {
+                    "fixed_residual": false
+                  }
+                },
+                "schedule": {
+                  "integer_layout": 0,
+                  "integer_k": 32,
+                  "implementation": "linear.webgpu.two_component"
+                }
+              },
+              {
+                "operation": "quantize_q16",
+                "parameters": {
+                  "r": 32,
+                  "k": 7680,
+                  "sg": true,
+                  "fixed_residual": false
+                },
+                "schedule": {
+                  "implementation": "akas.quantization.activations.packing"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 32,
+                  "k": 7680,
+                  "o": 2048,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2,
+                  "q16": true,
+                  "integer": {
+                    "fixed_residual": false
+                  }
+                },
+                "schedule": {
+                  "integer_layout": 0,
+                  "integer_k": 32,
+                  "implementation": "linear.webgpu.two_component"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 32,
+                  "k": 2048,
+                  "o": 512,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2,
+                  "q16": true,
+                  "integer": {
+                    "fixed_residual": false
+                  }
+                },
+                "schedule": {
+                  "integer_layout": 0,
+                  "integer_k": 32,
+                  "implementation": "linear.webgpu.two_component"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 512,
+                  "c": 128,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 128,
+                  "c": 128,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "rotary_compact",
+                "parameters": {
+                  "r": 32,
+                  "h": 16,
+                  "d": 128,
+                  "theta": 1000000.0,
+                  "rotary": 64,
+                  "full_head_pairs": true,
+                  "capacity": 8192,
+                  "stride": 1024,
+                  "blocks": 8
+                },
+                "schedule": {
+                  "implementation": "attention.webgpu.rotary_compact"
+                }
+              },
+              {
+                "operation": "rotary_compact",
+                "parameters": {
+                  "r": 32,
+                  "h": 4,
+                  "d": 128,
+                  "theta": 1000000.0,
+                  "rotary": 64,
+                  "full_head_pairs": true,
+                  "capacity": 8192,
+                  "stride": 1024,
+                  "blocks": 8
+                },
+                "schedule": {
+                  "implementation": "attention.webgpu.rotary_compact"
+                }
+              },
+              {
+                "operation": "window_cache",
+                "parameters": {
+                  "r": 32,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 8192,
+                  "chunk": 32,
+                  "window": 0
+                },
+                "schedule": {
+                  "implementation": "attention.webgpu.window_cache"
+                }
+              },
+              {
+                "operation": "window_attention",
+                "parameters": {
+                  "r": 32,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 8192,
+                  "chunk": 32,
+                  "window": 0,
+                  "splits": 1,
+                  "query_rows": 4,
+                  "key_rows": 32
+                },
+                "schedule": {
+                  "implementation": "attention.webgpu.window_attention"
+                }
+              },
+              {
+                "operation": "window_merge",
+                "parameters": {
+                  "r": 32,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 8192,
+                  "chunk": 32,
+                  "window": 0,
+                  "splits": 1,
+                  "query_rows": 4,
+                  "key_rows": 32
+                },
+                "schedule": {
+                  "implementation": "attention.webgpu.window_merge"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 32,
+                  "k": 2048,
+                  "o": 16,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2,
+                  "q16": true,
+                  "integer": {
+                    "fixed_residual": false
+                  }
+                },
+                "schedule": {
+                  "integer_layout": 0,
+                  "integer_k": 32,
+                  "implementation": "linear.webgpu.two_component"
+                }
+              },
+              {
+                "operation": "head_gate",
+                "parameters": {
+                  "r": 32,
+                  "h": 16,
+                  "d": 128
+                },
+                "schedule": {
+                  "implementation": "activation.webgpu.head_gate"
+                }
+              },
+              {
+                "operation": "rotary_compact",
+                "parameters": {
+                  "r": 32,
+                  "h": 16,
+                  "d": 128,
+                  "theta": 10000.0,
+                  "rotary": 128,
+                  "full_head_pairs": true,
+                  "capacity": 8192,
+                  "stride": 1024,
+                  "blocks": 8
+                },
+                "schedule": {
+                  "implementation": "attention.webgpu.rotary_compact"
+                }
+              },
+              {
+                "operation": "rotary_compact",
+                "parameters": {
+                  "r": 32,
+                  "h": 4,
+                  "d": 128,
+                  "theta": 10000.0,
+                  "rotary": 128,
+                  "full_head_pairs": true,
+                  "capacity": 8192,
+                  "stride": 1024,
+                  "blocks": 8
+                },
+                "schedule": {
+                  "implementation": "attention.webgpu.rotary_compact"
+                }
+              },
+              {
+                "operation": "window_cache",
+                "parameters": {
+                  "r": 32,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 1024,
+                  "chunk": 32,
+                  "window": 256
+                },
+                "schedule": {
+                  "implementation": "attention.webgpu.window_cache"
+                }
+              },
+              {
+                "operation": "window_attention",
+                "parameters": {
+                  "r": 32,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 1024,
+                  "chunk": 32,
+                  "window": 256,
+                  "splits": 1,
+                  "query_rows": 4,
+                  "key_rows": 32
+                },
+                "schedule": {
+                  "implementation": "attention.webgpu.window_attention"
+                }
+              },
+              {
+                "operation": "window_merge",
+                "parameters": {
+                  "r": 32,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 1024,
+                  "chunk": 32,
+                  "window": 256,
+                  "splits": 1,
+                  "query_rows": 4,
+                  "key_rows": 32
+                },
+                "schedule": {
+                  "implementation": "attention.webgpu.window_merge"
+                }
+              },
+              {
+                "operation": "chunk_last",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "chunk": 32
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 2048,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2
+                },
+                "schedule": {
+                  "decode_layout": 7,
+                  "implementation": "linear.webgpu.packed:vector-decode"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "sg": true,
+                  "implementation": "normalization.webgpu.parallel-subgroup"
+                }
+              },
+              {
+                "operation": "add_rms",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "sg": true,
+                  "implementation": "normalization.webgpu.parallel-subgroup"
+                }
+              },
+              {
+                "operation": "ffn",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 7680,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2,
+                  "prefill_tile_m": 32,
+                  "prefill_tile_n": 64,
+                  "prefill_tile_k": 64,
+                  "prefill_tile_threads": 128
+                },
+                "schedule": {
+                  "decode_layout": 7,
+                  "implementation": "linear.webgpu.packed:vector-decode"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1,
+                  "k": 7680,
+                  "o": 2048,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2
+                },
+                "schedule": {
+                  "decode_layout": 7,
+                  "implementation": "linear.webgpu.packed:vector-decode"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 128000,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 14
+                },
+                "schedule": {
+                  "implementation": "linear.webgpu.packed:archived-decode"
+                }
+              },
+              {
+                "operation": "argmax_partial",
+                "parameters": {
+                  "r": 1,
+                  "c": 128000,
+                  "block": 1024
+                },
+                "schedule": {
+                  "implementation": "akas.ops.vocabulary.webgpu:argmax_partial"
+                }
+              },
+              {
+                "operation": "argmax_merge",
+                "parameters": {
+                  "r": 1,
+                  "c": 128000,
+                  "block": 1024
+                },
+                "schedule": {
+                  "implementation": "akas.ops.vocabulary.webgpu:argmax_merge"
+                }
+              },
+              {
+                "operation": "next_tokens",
+                "parameters": {
+                  "r": 1
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              },
+              {
+                "operation": "advance",
+                "parameters": {
+                  "r": 1,
+                  "chunk": 32
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              }
+            ]
+          },
+          "winners": [
+            {
+              "kind": "chunk_controls",
+              "parameters": {
+                "r": 1,
+                "chunk": 32
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00025303328099350136
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "embedding",
+              "parameters": {
+                "r": 32,
+                "c": 2048,
+                "v": 128000,
+                "start": 0,
+                "ggml": true,
+                "type": 14
+              },
+              "selected": {
+                "implementation": "vocabulary.webgpu.packed",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00029656671298046905
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 32,
+                "c": 2048,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.webgpu.parallel-subgroup",
+                "schedule": {
+                  "sg": true
+                },
+                "score": 1.0,
+                "measurements": [
+                  0.0002930999423066775
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "quantize_q16",
+              "parameters": {
+                "r": 32,
+                "k": 2048,
+                "sg": true,
+                "fixed_residual": false
+              },
+              "selected": {
+                "implementation": "akas.quantization.activations.packing",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00031373331633706886
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 32,
+                "k": 2048,
+                "o": 6144,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2,
+                "q16": true,
+                "integer": {
+                  "fixed_residual": false
+                }
+              },
+              "selected": {
+                "implementation": "linear.webgpu.two_component",
+                "schedule": {
+                  "integer_layout": 0,
+                  "integer_k": 32
+                },
+                "score": 0.9838304677502215,
+                "measurements": [
+                  0.0015008333915223677
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "conv",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "length": 7,
+                "chunk": 32
+              },
+              "selected": {
+                "implementation": "convolution.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0005178666518380245
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 32,
+                "k": 2048,
+                "o": 2048,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2,
+                "q16": true,
+                "integer": {
+                  "fixed_residual": false
+                }
+              },
+              "selected": {
+                "implementation": "linear.webgpu.two_component",
+                "schedule": {
+                  "integer_layout": 0,
+                  "integer_k": 32
+                },
+                "score": 0.9702106367339919,
+                "measurements": [
+                  0.0008413666704048713
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "post_add_rms",
+              "parameters": {
+                "r": 32,
+                "c": 2048,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.webgpu.post_add_rms",
+                "schedule": {
+                  "threads": 128
+                },
+                "score": 1.0,
+                "measurements": [
+                  0.00033740000799298286
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "ffn",
+              "parameters": {
+                "r": 32,
+                "k": 2048,
+                "o": 7680,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2,
+                "prefill_tile_m": 32,
+                "prefill_tile_n": 64,
+                "prefill_tile_k": 64,
+                "prefill_tile_threads": 128,
+                "q16": true,
+                "integer": {
+                  "fixed_residual": false
+                }
+              },
+              "selected": {
+                "implementation": "linear.webgpu.two_component",
+                "schedule": {
+                  "integer_layout": 0,
+                  "integer_k": 32
+                },
+                "score": 0.9960288578650869,
+                "measurements": [
+                  0.002608533250167966
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "quantize_q16",
+              "parameters": {
+                "r": 32,
+                "k": 7680,
+                "sg": true,
+                "fixed_residual": false
+              },
+              "selected": {
+                "implementation": "akas.quantization.activations.packing",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00031453332242866355
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 32,
+                "k": 7680,
+                "o": 2048,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2,
+                "q16": true,
+                "integer": {
+                  "fixed_residual": false
+                }
+              },
+              "selected": {
+                "implementation": "linear.webgpu.two_component",
+                "schedule": {
+                  "integer_layout": 0,
+                  "integer_k": 32
+                },
+                "score": 0.99757168625589,
+                "measurements": [
+                  0.0023689334436009326
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 32,
+                "k": 2048,
+                "o": 512,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2,
+                "q16": true,
+                "integer": {
+                  "fixed_residual": false
+                }
+              },
+              "selected": {
+                "implementation": "linear.webgpu.two_component",
+                "schedule": {
+                  "integer_layout": 0,
+                  "integer_k": 32
+                },
+                "score": 1.0,
+                "measurements": [
+                  0.0005455333739519119
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 512,
+                "c": 128,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 0.9299302012670293,
+                "measurements": [
+                  0.00025746668688952923
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 128,
+                "c": 128,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 0.8986000724272947,
+                "measurements": [
+                  0.0002439999176810185
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "rotary_compact",
+              "parameters": {
+                "r": 32,
+                "h": 16,
+                "d": 128,
+                "theta": 1000000.0,
+                "rotary": 64,
+                "full_head_pairs": true,
+                "capacity": 8192,
+                "stride": 1024,
+                "blocks": 8
+              },
+              "selected": {
+                "implementation": "attention.webgpu.rotary_compact",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0002721667600174745
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rotary_compact",
+              "parameters": {
+                "r": 32,
+                "h": 4,
+                "d": 128,
+                "theta": 1000000.0,
+                "rotary": 64,
+                "full_head_pairs": true,
+                "capacity": 8192,
+                "stride": 1024,
+                "blocks": 8
+              },
+              "selected": {
+                "implementation": "attention.webgpu.rotary_compact",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00025159997555116814
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_cache",
+              "parameters": {
+                "r": 32,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 8192,
+                "chunk": 32,
+                "window": 0
+              },
+              "selected": {
+                "implementation": "attention.webgpu.window_cache",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0010371000195542972
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_attention",
+              "parameters": {
+                "r": 32,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 8192,
+                "chunk": 32,
+                "window": 0,
+                "splits": 1,
+                "query_rows": 4,
+                "key_rows": 32
+              },
+              "selected": {
+                "implementation": "attention.webgpu.window_attention",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0033221999183297157
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_merge",
+              "parameters": {
+                "r": 32,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 8192,
+                "chunk": 32,
+                "window": 0,
+                "splits": 1,
+                "query_rows": 4,
+                "key_rows": 32
+              },
+              "selected": {
+                "implementation": "attention.webgpu.window_merge",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00024990000141163665
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 32,
+                "k": 2048,
+                "o": 16,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2,
+                "q16": true,
+                "integer": {
+                  "fixed_residual": false
+                }
+              },
+              "selected": {
+                "implementation": "linear.webgpu.two_component",
+                "schedule": {
+                  "integer_layout": 0,
+                  "integer_k": 32
+                },
+                "score": 1.0,
+                "measurements": [
+                  0.0005820333026349545
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "head_gate",
+              "parameters": {
+                "r": 32,
+                "h": 16,
+                "d": 128
+              },
+              "selected": {
+                "implementation": "activation.webgpu.head_gate",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00026709997716049355
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rotary_compact",
+              "parameters": {
+                "r": 32,
+                "h": 16,
+                "d": 128,
+                "theta": 10000.0,
+                "rotary": 128,
+                "full_head_pairs": true,
+                "capacity": 8192,
+                "stride": 1024,
+                "blocks": 8
+              },
+              "selected": {
+                "implementation": "attention.webgpu.rotary_compact",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0002848000731319189
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rotary_compact",
+              "parameters": {
+                "r": 32,
+                "h": 4,
+                "d": 128,
+                "theta": 10000.0,
+                "rotary": 128,
+                "full_head_pairs": true,
+                "capacity": 8192,
+                "stride": 1024,
+                "blocks": 8
+              },
+              "selected": {
+                "implementation": "attention.webgpu.rotary_compact",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00025379999230305356
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_cache",
+              "parameters": {
+                "r": 32,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 1024,
+                "chunk": 32,
+                "window": 256
+              },
+              "selected": {
+                "implementation": "attention.webgpu.window_cache",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0003755000264694293
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_attention",
+              "parameters": {
+                "r": 32,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 1024,
+                "chunk": 32,
+                "window": 256,
+                "splits": 1,
+                "query_rows": 4,
+                "key_rows": 32
+              },
+              "selected": {
+                "implementation": "attention.webgpu.window_attention",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0010524333144227664
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_merge",
+              "parameters": {
+                "r": 32,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 1024,
+                "chunk": 32,
+                "window": 256,
+                "splits": 1,
+                "query_rows": 4,
+                "key_rows": 32
+              },
+              "selected": {
+                "implementation": "attention.webgpu.window_merge",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00025399991621573764
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "chunk_last",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "chunk": 32
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.000271033418054382
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 2048,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2
+              },
+              "selected": {
+                "implementation": "linear.webgpu.packed:vector-decode",
+                "schedule": {
+                  "decode_layout": 7
+                },
+                "score": 0.9907620540179509,
+                "measurements": [
+                  0.0002788333222270012
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.webgpu.parallel-subgroup",
+                "schedule": {
+                  "sg": true
+                },
+                "score": 1.0,
+                "measurements": [
+                  0.0003355666995048523
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "add_rms",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.webgpu.parallel-subgroup",
+                "schedule": {
+                  "sg": true
+                },
+                "score": 1.0,
+                "measurements": [
+                  0.0002534334392597278
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "ffn",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 7680,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2,
+                "prefill_tile_m": 32,
+                "prefill_tile_n": 64,
+                "prefill_tile_k": 64,
+                "prefill_tile_threads": 128
+              },
+              "selected": {
+                "implementation": "linear.webgpu.packed:vector-decode",
+                "schedule": {
+                  "decode_layout": 7
+                },
+                "score": 1.0,
+                "measurements": [
+                  0.0004138332636406024
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1,
+                "k": 7680,
+                "o": 2048,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2
+              },
+              "selected": {
+                "implementation": "linear.webgpu.packed:vector-decode",
+                "schedule": {
+                  "decode_layout": 7
+                },
+                "score": 0.9767597405088653,
+                "measurements": [
+                  0.00034183341388901073
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 128000,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 14
+              },
+              "selected": {
+                "implementation": "linear.webgpu.packed:archived-decode",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.002830366681640347
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "argmax_partial",
+              "parameters": {
+                "r": 1,
+                "c": 128000,
+                "block": 1024
+              },
+              "selected": {
+                "implementation": "akas.ops.vocabulary.webgpu:argmax_partial",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0002688999908665816
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "argmax_merge",
+              "parameters": {
+                "r": 1,
+                "c": 128000,
+                "block": 1024
+              },
+              "selected": {
+                "implementation": "akas.ops.vocabulary.webgpu:argmax_merge",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00027183334653576213
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "next_tokens",
+              "parameters": {
+                "r": 1
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00026099996951719123
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "advance",
+              "parameters": {
+                "r": 1,
+                "chunk": 32
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00026549988736708957
+                ],
+                "trials": 0
+              }
+            }
+          ]
+        },
+        {
+          "program_sha256": "96e22eb073a529fa883c3bbb605e7106393858914363dbb56ff6cc7950725fc7",
+          "phase": "prefill",
+          "batch": 1,
+          "chunk": 512,
+          "provider": "webgpu",
+          "target": "webgpu-portable-v1",
+          "contract": "reference",
+          "qualification": "programs/96e22eb073a529fa883c3bbb605e7106393858914363dbb56ff6cc7950725fc7/prefill-b1-t512.json",
+          "profile": {
+            "schema": "tensor.schedule-profile.v1",
+            "provider": "webgpu",
+            "target": "webgpu-portable-v1",
+            "entries": [
+              {
+                "operation": "chunk_controls",
+                "parameters": {
+                  "r": 1,
+                  "chunk": 512
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              },
+              {
+                "operation": "embedding",
+                "parameters": {
+                  "r": 512,
+                  "c": 2048,
+                  "v": 128000,
+                  "start": 0,
+                  "ggml": true,
+                  "type": 14
+                },
+                "schedule": {
+                  "implementation": "vocabulary.webgpu.packed"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 512,
+                  "c": 2048,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "sg": true,
+                  "implementation": "normalization.webgpu.parallel-subgroup"
+                }
+              },
+              {
+                "operation": "dequantize_ggml",
+                "parameters": {
+                  "r": 6144,
+                  "k": 2048,
+                  "type": 2,
+                  "output_dtype": "float16"
+                },
+                "schedule": {
+                  "implementation": "akas.quantization.weights.ggml.webgpu:dequantize"
+                }
+              },
+              {
+                "operation": "linear_half_input",
+                "parameters": {
+                  "r": 512,
+                  "k": 2048
+                },
+                "schedule": {
+                  "implementation": "linear.webgpu.half_input"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 512,
+                  "k": 2048,
+                  "o": 6144,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 1,
+                  "half_accum": true,
+                  "input_dtype": "float16"
+                },
+                "schedule": {
+                  "half_layout": 2,
+                  "half_native": true,
+                  "half_pad": 1,
+                  "half_k": 16,
+                  "implementation": "linear.webgpu.short_half"
+                }
+              },
+              {
+                "operation": "conv",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "length": 7,
+                  "chunk": 512
+                },
+                "schedule": {
+                  "implementation": "convolution.reference"
+                }
+              },
+              {
+                "operation": "quantize_q16",
+                "parameters": {
+                  "r": 512,
+                  "k": 2048,
+                  "sg": true,
+                  "fixed_residual": false
+                },
+                "schedule": {
+                  "implementation": "akas.quantization.activations.packing"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 512,
+                  "k": 2048,
+                  "o": 2048,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2,
+                  "prefill_tile_m": 128,
+                  "prefill_tile_n": 64,
+                  "prefill_tile_k": 128,
+                  "q16": true,
+                  "integer": {
+                    "fixed_residual": false
+                  }
+                },
+                "schedule": {
+                  "integer_layout": 1,
+                  "integer_k": 32,
+                  "implementation": "linear.webgpu.two_component"
+                }
+              },
+              {
+                "operation": "post_add_rms",
+                "parameters": {
+                  "r": 512,
+                  "c": 2048,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "threads": 128,
+                  "implementation": "normalization.webgpu.post_add_rms"
+                }
+              },
+              {
+                "operation": "dequantize_ggml",
+                "parameters": {
+                  "r": 7680,
+                  "k": 2048,
+                  "type": 2,
+                  "output_dtype": "float16"
+                },
+                "schedule": {
+                  "implementation": "akas.quantization.weights.ggml.webgpu:dequantize"
+                }
+              },
+              {
+                "operation": "ffn",
+                "parameters": {
+                  "r": 512,
+                  "k": 2048,
+                  "o": 7680,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 1,
+                  "prefill_tile_m": 128,
+                  "prefill_tile_n": 64,
+                  "prefill_tile_k": 64,
+                  "prefill_tile_threads": 128,
+                  "half_accum": true,
+                  "input_dtype": "float16"
+                },
+                "schedule": {
+                  "half_layout": 1,
+                  "half_pad": 1,
+                  "half_native": true,
+                  "half_k": 64,
+                  "implementation": "linear.webgpu.short_half"
+                }
+              },
+              {
+                "operation": "quantize_q16",
+                "parameters": {
+                  "r": 512,
+                  "k": 7680,
+                  "sg": true,
+                  "fixed_residual": false
+                },
+                "schedule": {
+                  "implementation": "akas.quantization.activations.packing"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 512,
+                  "k": 7680,
+                  "o": 2048,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2,
+                  "prefill_tile_m": 64,
+                  "prefill_tile_n": 128,
+                  "prefill_tile_k": 64,
+                  "prefill_tile_stages": 2,
+                  "prefill_tile_threads": 128,
+                  "q16": true,
+                  "integer": {
+                    "fixed_residual": false
+                  }
+                },
+                "schedule": {
+                  "integer_layout": 2,
+                  "integer_k": 32,
+                  "implementation": "linear.webgpu.two_component"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 512,
+                  "k": 2048,
+                  "o": 512,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2,
+                  "prefill_tile_m": 32,
+                  "prefill_tile_n": 64,
+                  "prefill_tile_k": 128,
+                  "q16": true,
+                  "integer": {
+                    "fixed_residual": false
+                  }
+                },
+                "schedule": {
+                  "integer_layout": 0,
+                  "integer_k": 32,
+                  "implementation": "linear.webgpu.two_component"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 8192,
+                  "c": 128,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 2048,
+                  "c": 128,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "implementation": "normalization.kernel"
+                }
+              },
+              {
+                "operation": "rotary_compact",
+                "parameters": {
+                  "r": 512,
+                  "h": 16,
+                  "d": 128,
+                  "theta": 1000000.0,
+                  "rotary": 64,
+                  "full_head_pairs": true,
+                  "capacity": 8192,
+                  "stride": 1024,
+                  "blocks": 8
+                },
+                "schedule": {
+                  "implementation": "attention.webgpu.rotary_compact"
+                }
+              },
+              {
+                "operation": "rotary_compact",
+                "parameters": {
+                  "r": 512,
+                  "h": 4,
+                  "d": 128,
+                  "theta": 1000000.0,
+                  "rotary": 64,
+                  "full_head_pairs": true,
+                  "capacity": 8192,
+                  "stride": 1024,
+                  "blocks": 8
+                },
+                "schedule": {
+                  "implementation": "attention.webgpu.rotary_compact"
+                }
+              },
+              {
+                "operation": "window_cache",
+                "parameters": {
+                  "r": 512,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 8192,
+                  "chunk": 512,
+                  "window": 0
+                },
+                "schedule": {
+                  "implementation": "attention.webgpu.window_cache"
+                }
+              },
+              {
+                "operation": "window_attention",
+                "parameters": {
+                  "r": 512,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 8192,
+                  "chunk": 512,
+                  "window": 0,
+                  "splits": 1,
+                  "query_rows": 4,
+                  "key_rows": 32
+                },
+                "schedule": {
+                  "implementation": "attention.webgpu.window_attention"
+                }
+              },
+              {
+                "operation": "window_merge",
+                "parameters": {
+                  "r": 512,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 8192,
+                  "chunk": 512,
+                  "window": 0,
+                  "splits": 1,
+                  "query_rows": 4,
+                  "key_rows": 32
+                },
+                "schedule": {
+                  "implementation": "attention.webgpu.window_merge"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 512,
+                  "k": 2048,
+                  "o": 16,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2,
+                  "q16": true,
+                  "integer": {
+                    "fixed_residual": false
+                  }
+                },
+                "schedule": {
+                  "integer_layout": 0,
+                  "integer_k": 32,
+                  "implementation": "linear.webgpu.two_component"
+                }
+              },
+              {
+                "operation": "head_gate",
+                "parameters": {
+                  "r": 512,
+                  "h": 16,
+                  "d": 128
+                },
+                "schedule": {
+                  "implementation": "activation.webgpu.head_gate"
+                }
+              },
+              {
+                "operation": "rotary_compact",
+                "parameters": {
+                  "r": 512,
+                  "h": 16,
+                  "d": 128,
+                  "theta": 10000.0,
+                  "rotary": 128,
+                  "full_head_pairs": true,
+                  "capacity": 8192,
+                  "stride": 1024,
+                  "blocks": 8
+                },
+                "schedule": {
+                  "implementation": "attention.webgpu.rotary_compact"
+                }
+              },
+              {
+                "operation": "rotary_compact",
+                "parameters": {
+                  "r": 512,
+                  "h": 4,
+                  "d": 128,
+                  "theta": 10000.0,
+                  "rotary": 128,
+                  "full_head_pairs": true,
+                  "capacity": 8192,
+                  "stride": 1024,
+                  "blocks": 8
+                },
+                "schedule": {
+                  "implementation": "attention.webgpu.rotary_compact"
+                }
+              },
+              {
+                "operation": "window_cache",
+                "parameters": {
+                  "r": 512,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 1024,
+                  "chunk": 512,
+                  "window": 256
+                },
+                "schedule": {
+                  "implementation": "attention.webgpu.window_cache"
+                }
+              },
+              {
+                "operation": "window_attention",
+                "parameters": {
+                  "r": 512,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 1024,
+                  "chunk": 512,
+                  "window": 256,
+                  "splits": 1,
+                  "query_rows": 4,
+                  "key_rows": 32
+                },
+                "schedule": {
+                  "implementation": "attention.webgpu.window_attention"
+                }
+              },
+              {
+                "operation": "window_merge",
+                "parameters": {
+                  "r": 512,
+                  "h": 16,
+                  "kh": 4,
+                  "d": 128,
+                  "capacity": 1024,
+                  "chunk": 512,
+                  "window": 256,
+                  "splits": 1,
+                  "query_rows": 4,
+                  "key_rows": 32
+                },
+                "schedule": {
+                  "implementation": "attention.webgpu.window_merge"
+                }
+              },
+              {
+                "operation": "chunk_last",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "chunk": 512
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 2048,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2,
+                  "prefill_tile_m": 128,
+                  "prefill_tile_n": 64,
+                  "prefill_tile_k": 128
+                },
+                "schedule": {
+                  "decode_layout": 7,
+                  "implementation": "linear.webgpu.packed:vector-decode"
+                }
+              },
+              {
+                "operation": "rms",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "sg": true,
+                  "implementation": "normalization.webgpu.parallel-subgroup"
+                }
+              },
+              {
+                "operation": "add_rms",
+                "parameters": {
+                  "r": 1,
+                  "c": 2048,
+                  "eps": 9.999999747378752e-06
+                },
+                "schedule": {
+                  "sg": true,
+                  "implementation": "normalization.webgpu.parallel-subgroup"
+                }
+              },
+              {
+                "operation": "ffn",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 7680,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2,
+                  "prefill_tile_m": 128,
+                  "prefill_tile_n": 64,
+                  "prefill_tile_k": 64,
+                  "prefill_tile_threads": 128
+                },
+                "schedule": {
+                  "decode_layout": 7,
+                  "implementation": "linear.webgpu.packed:vector-decode"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1,
+                  "k": 7680,
+                  "o": 2048,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 2,
+                  "prefill_tile_m": 64,
+                  "prefill_tile_n": 128,
+                  "prefill_tile_k": 64,
+                  "prefill_tile_stages": 2,
+                  "prefill_tile_threads": 128
+                },
+                "schedule": {
+                  "decode_layout": 7,
+                  "implementation": "linear.webgpu.packed:vector-decode"
+                }
+              },
+              {
+                "operation": "linear",
+                "parameters": {
+                  "r": 1,
+                  "k": 2048,
+                  "o": 128000,
+                  "optimized": true,
+                  "short_packed": true,
+                  "tiled_packed": true,
+                  "vector_q8": true,
+                  "ggml": true,
+                  "type": 14
+                },
+                "schedule": {
+                  "implementation": "linear.webgpu.packed:archived-decode"
+                }
+              },
+              {
+                "operation": "argmax_partial",
+                "parameters": {
+                  "r": 1,
+                  "c": 128000,
+                  "block": 1024
+                },
+                "schedule": {
+                  "implementation": "akas.ops.vocabulary.webgpu:argmax_partial"
+                }
+              },
+              {
+                "operation": "argmax_merge",
+                "parameters": {
+                  "r": 1,
+                  "c": 128000,
+                  "block": 1024
+                },
+                "schedule": {
+                  "implementation": "akas.ops.vocabulary.webgpu:argmax_merge"
+                }
+              },
+              {
+                "operation": "next_tokens",
+                "parameters": {
+                  "r": 1
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              },
+              {
+                "operation": "advance",
+                "parameters": {
+                  "r": 1,
+                  "chunk": 512
+                },
+                "schedule": {
+                  "implementation": "sequence.reference"
+                }
+              }
+            ]
+          },
+          "winners": [
+            {
+              "kind": "chunk_controls",
+              "parameters": {
+                "r": 1,
+                "chunk": 512
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00031586666591465473
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "embedding",
+              "parameters": {
+                "r": 512,
+                "c": 2048,
+                "v": 128000,
+                "start": 0,
+                "ggml": true,
+                "type": 14
+              },
+              "selected": {
+                "implementation": "vocabulary.webgpu.packed",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0006042000216742357
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 512,
+                "c": 2048,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.webgpu.parallel-subgroup",
+                "schedule": {
+                  "sg": true
+                },
+                "score": 0.9667206166522514,
+                "measurements": [
+                  0.000536433265854915
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "dequantize_ggml",
+              "parameters": {
+                "r": 6144,
+                "k": 2048,
+                "type": 2,
+                "output_dtype": "float16"
+              },
+              "selected": {
+                "implementation": "akas.quantization.weights.ggml.webgpu:dequantize",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0019476999683926504
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "linear_half_input",
+              "parameters": {
+                "r": 512,
+                "k": 2048
+              },
+              "selected": {
+                "implementation": "linear.webgpu.half_input",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0004173999186605215
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 512,
+                "k": 2048,
+                "o": 6144,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 1,
+                "half_accum": true,
+                "input_dtype": "float16"
+              },
+              "selected": {
+                "implementation": "linear.webgpu.short_half",
+                "schedule": {
+                  "half_layout": 2,
+                  "half_native": true,
+                  "half_pad": 1,
+                  "half_k": 16
+                },
+                "score": 1.0,
+                "measurements": [
+                  0.008225533335159222
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "conv",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "length": 7,
+                "chunk": 512
+              },
+              "selected": {
+                "implementation": "convolution.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.003494933402786652
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "quantize_q16",
+              "parameters": {
+                "r": 512,
+                "k": 2048,
+                "sg": true,
+                "fixed_residual": false
+              },
+              "selected": {
+                "implementation": "akas.quantization.activations.packing",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0005165667583545049
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 512,
+                "k": 2048,
+                "o": 2048,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2,
+                "prefill_tile_m": 128,
+                "prefill_tile_n": 64,
+                "prefill_tile_k": 128,
+                "q16": true,
+                "integer": {
+                  "fixed_residual": false
+                }
+              },
+              "selected": {
+                "implementation": "linear.webgpu.two_component",
+                "schedule": {
+                  "integer_layout": 1,
+                  "integer_k": 32
+                },
+                "score": 1.0,
+                "measurements": [
+                  0.0050972999694446726
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "post_add_rms",
+              "parameters": {
+                "r": 512,
+                "c": 2048,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.webgpu.post_add_rms",
+                "schedule": {
+                  "threads": 128
+                },
+                "score": 0.9958698863780798,
+                "measurements": [
+                  0.0008117999726285537
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "dequantize_ggml",
+              "parameters": {
+                "r": 7680,
+                "k": 2048,
+                "type": 2,
+                "output_dtype": "float16"
+              },
+              "selected": {
+                "implementation": "akas.quantization.weights.ggml.webgpu:dequantize",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.002235266612842679
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "ffn",
+              "parameters": {
+                "r": 512,
+                "k": 2048,
+                "o": 7680,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 1,
+                "prefill_tile_m": 128,
+                "prefill_tile_n": 64,
+                "prefill_tile_k": 64,
+                "prefill_tile_threads": 128,
+                "half_accum": true,
+                "input_dtype": "float16"
+              },
+              "selected": {
+                "implementation": "linear.webgpu.short_half",
+                "schedule": {
+                  "half_layout": 1,
+                  "half_pad": 1,
+                  "half_native": true,
+                  "half_k": 64
+                },
+                "score": 0.9367318173480744,
+                "measurements": [
+                  0.010761300024266044
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "quantize_q16",
+              "parameters": {
+                "r": 512,
+                "k": 7680,
+                "sg": true,
+                "fixed_residual": false
+              },
+              "selected": {
+                "implementation": "akas.quantization.activations.packing",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0011297666933387518
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 512,
+                "k": 7680,
+                "o": 2048,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2,
+                "prefill_tile_m": 64,
+                "prefill_tile_n": 128,
+                "prefill_tile_k": 64,
+                "prefill_tile_stages": 2,
+                "prefill_tile_threads": 128,
+                "q16": true,
+                "integer": {
+                  "fixed_residual": false
+                }
+              },
+              "selected": {
+                "implementation": "linear.webgpu.two_component",
+                "schedule": {
+                  "integer_layout": 2,
+                  "integer_k": 32
+                },
+                "score": 0.8177656182487814,
+                "measurements": [
+                  0.004584366766115029
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 512,
+                "k": 2048,
+                "o": 512,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2,
+                "prefill_tile_m": 32,
+                "prefill_tile_n": 64,
+                "prefill_tile_k": 128,
+                "q16": true,
+                "integer": {
+                  "fixed_residual": false
+                }
+              },
+              "selected": {
+                "implementation": "linear.webgpu.two_component",
+                "schedule": {
+                  "integer_layout": 0,
+                  "integer_k": 32
+                },
+                "score": 0.9958838471748973,
+                "measurements": [
+                  0.0019839666007707515
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 8192,
+                "c": 128,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 0.9575887845770914,
+                "measurements": [
+                  0.0005501667037606239
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 2048,
+                "c": 128,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.kernel",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0003851999839146932
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "rotary_compact",
+              "parameters": {
+                "r": 512,
+                "h": 16,
+                "d": 128,
+                "theta": 1000000.0,
+                "rotary": 64,
+                "full_head_pairs": true,
+                "capacity": 8192,
+                "stride": 1024,
+                "blocks": 8
+              },
+              "selected": {
+                "implementation": "attention.webgpu.rotary_compact",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0005334667706241211
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rotary_compact",
+              "parameters": {
+                "r": 512,
+                "h": 4,
+                "d": 128,
+                "theta": 1000000.0,
+                "rotary": 64,
+                "full_head_pairs": true,
+                "capacity": 8192,
+                "stride": 1024,
+                "blocks": 8
+              },
+              "selected": {
+                "implementation": "attention.webgpu.rotary_compact",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0003439666082461675
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_cache",
+              "parameters": {
+                "r": 512,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 8192,
+                "chunk": 512,
+                "window": 0
+              },
+              "selected": {
+                "implementation": "attention.webgpu.window_cache",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0010094334526608388
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_attention",
+              "parameters": {
+                "r": 512,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 8192,
+                "chunk": 512,
+                "window": 0,
+                "splits": 1,
+                "query_rows": 4,
+                "key_rows": 32
+              },
+              "selected": {
+                "implementation": "attention.webgpu.window_attention",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.02290473342873156
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_merge",
+              "parameters": {
+                "r": 512,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 8192,
+                "chunk": 512,
+                "window": 0,
+                "splits": 1,
+                "query_rows": 4,
+                "key_rows": 32
+              },
+              "selected": {
+                "implementation": "attention.webgpu.window_merge",
+                "schedule": {},
+                "score": 0.9639954550605035,
+                "measurements": [
+                  0.0005024666121850411
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 512,
+                "k": 2048,
+                "o": 16,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2,
+                "q16": true,
+                "integer": {
+                  "fixed_residual": false
+                }
+              },
+              "selected": {
+                "implementation": "linear.webgpu.two_component",
+                "schedule": {
+                  "integer_layout": 0,
+                  "integer_k": 32
+                },
+                "score": 0.9943890027134228,
+                "measurements": [
+                  0.0006793333838383356
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "head_gate",
+              "parameters": {
+                "r": 512,
+                "h": 16,
+                "d": 128
+              },
+              "selected": {
+                "implementation": "activation.webgpu.head_gate",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0005342333267132441
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rotary_compact",
+              "parameters": {
+                "r": 512,
+                "h": 16,
+                "d": 128,
+                "theta": 10000.0,
+                "rotary": 128,
+                "full_head_pairs": true,
+                "capacity": 8192,
+                "stride": 1024,
+                "blocks": 8
+              },
+              "selected": {
+                "implementation": "attention.webgpu.rotary_compact",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0005312999710440636
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "rotary_compact",
+              "parameters": {
+                "r": 512,
+                "h": 4,
+                "d": 128,
+                "theta": 10000.0,
+                "rotary": 128,
+                "full_head_pairs": true,
+                "capacity": 8192,
+                "stride": 1024,
+                "blocks": 8
+              },
+              "selected": {
+                "implementation": "attention.webgpu.rotary_compact",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00036213321921726066
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_cache",
+              "parameters": {
+                "r": 512,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 1024,
+                "chunk": 512,
+                "window": 256
+              },
+              "selected": {
+                "implementation": "attention.webgpu.window_cache",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00044459997055431205
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_attention",
+              "parameters": {
+                "r": 512,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 1024,
+                "chunk": 512,
+                "window": 256,
+                "splits": 1,
+                "query_rows": 4,
+                "key_rows": 32
+              },
+              "selected": {
+                "implementation": "attention.webgpu.window_attention",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.004496633308008313
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "window_merge",
+              "parameters": {
+                "r": 512,
+                "h": 16,
+                "kh": 4,
+                "d": 128,
+                "capacity": 1024,
+                "chunk": 512,
+                "window": 256,
+                "splits": 1,
+                "query_rows": 4,
+                "key_rows": 32
+              },
+              "selected": {
+                "implementation": "attention.webgpu.window_merge",
+                "schedule": {},
+                "score": 0.9335970564355922,
+                "measurements": [
+                  0.0005033332854509354
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "chunk_last",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "chunk": 512
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00026629997106889885
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 2048,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2,
+                "prefill_tile_m": 128,
+                "prefill_tile_n": 64,
+                "prefill_tile_k": 128
+              },
+              "selected": {
+                "implementation": "linear.webgpu.packed:vector-decode",
+                "schedule": {
+                  "decode_layout": 7
+                },
+                "score": 1.0,
+                "measurements": [
+                  0.0002578999847173691
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "rms",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.webgpu.parallel-subgroup",
+                "schedule": {
+                  "sg": true
+                },
+                "score": 1.0,
+                "measurements": [
+                  0.0002451334148645401
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "add_rms",
+              "parameters": {
+                "r": 1,
+                "c": 2048,
+                "eps": 9.999999747378752e-06
+              },
+              "selected": {
+                "implementation": "normalization.webgpu.parallel-subgroup",
+                "schedule": {
+                  "sg": true
+                },
+                "score": 1.0,
+                "measurements": [
+                  0.00025780002276102704
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "ffn",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 7680,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2,
+                "prefill_tile_m": 128,
+                "prefill_tile_n": 64,
+                "prefill_tile_k": 64,
+                "prefill_tile_threads": 128
+              },
+              "selected": {
+                "implementation": "linear.webgpu.packed:vector-decode",
+                "schedule": {
+                  "decode_layout": 7
+                },
+                "score": 0.906622742068426,
+                "measurements": [
+                  0.0004029333746681611
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1,
+                "k": 7680,
+                "o": 2048,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 2,
+                "prefill_tile_m": 64,
+                "prefill_tile_n": 128,
+                "prefill_tile_k": 64,
+                "prefill_tile_stages": 2,
+                "prefill_tile_threads": 128
+              },
+              "selected": {
+                "implementation": "linear.webgpu.packed:vector-decode",
+                "schedule": {
+                  "decode_layout": 7
+                },
+                "score": 0.9838825691704659,
+                "measurements": [
+                  0.00036423335162301856
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "linear",
+              "parameters": {
+                "r": 1,
+                "k": 2048,
+                "o": 128000,
+                "optimized": true,
+                "short_packed": true,
+                "tiled_packed": true,
+                "vector_q8": true,
+                "ggml": true,
+                "type": 14
+              },
+              "selected": {
+                "implementation": "linear.webgpu.packed:archived-decode",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.002148366610830029
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "argmax_partial",
+              "parameters": {
+                "r": 1,
+                "c": 128000,
+                "block": 1024
+              },
+              "selected": {
+                "implementation": "akas.ops.vocabulary.webgpu:argmax_partial",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00030880002304911613
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "argmax_merge",
+              "parameters": {
+                "r": 1,
+                "c": 128000,
+                "block": 1024
+              },
+              "selected": {
+                "implementation": "akas.ops.vocabulary.webgpu:argmax_merge",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0002798667022337516
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "next_tokens",
+              "parameters": {
+                "r": 1
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0002886000244567792
+                ],
+                "trials": 0
+              }
+            },
+            {
+              "kind": "advance",
+              "parameters": {
+                "r": 1,
+                "chunk": 512
+              },
+              "selected": {
+                "implementation": "sequence.reference",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.00025513341339925927
+                ],
+                "trials": 0
+              }
+            }
+          ]
+        },
+        {
+          "program_sha256": "96e22eb073a529fa883c3bbb605e7106393858914363dbb56ff6cc7950725fc7",
+          "phase": "reset",
+          "batch": 1,
+          "chunk": 1,
+          "provider": "webgpu",
+          "target": "webgpu-portable-v1",
+          "contract": "state",
+          "qualification": "programs/96e22eb073a529fa883c3bbb605e7106393858914363dbb56ff6cc7950725fc7/reset-b1-t1.json",
+          "profile": {
+            "schema": "tensor.schedule-profile.v1",
+            "provider": "webgpu",
+            "target": "webgpu-portable-v1",
+            "entries": [
+              {
+                "operation": "clear_rows",
+                "parameters": {
+                  "rows": 1,
+                  "pool": 1,
+                  "width": 12288,
+                  "dtype": "float32"
+                },
+                "schedule": {
+                  "threads": 64,
+                  "implementation": "indexing.rows"
+                }
+              },
+              {
+                "operation": "clear_rows",
+                "parameters": {
+                  "rows": 1,
+                  "pool": 1,
+                  "width": 1,
+                  "dtype": "int32"
+                },
+                "schedule": {
+                  "implementation": "indexing.rows"
+                }
+              }
+            ]
+          },
+          "winners": [
+            {
+              "kind": "clear_rows",
+              "parameters": {
+                "rows": 1,
+                "pool": 1,
+                "width": 12288,
+                "dtype": "float32"
+              },
+              "selected": {
+                "implementation": "indexing.rows",
+                "schedule": {
+                  "threads": 64
+                },
+                "score": 0.9998808071948907,
+                "measurements": [
+                  0.0002780000989635785
+                ],
+                "trials": 1
+              }
+            },
+            {
+              "kind": "clear_rows",
+              "parameters": {
+                "rows": 1,
+                "pool": 1,
+                "width": 1,
+                "dtype": "int32"
+              },
+              "selected": {
+                "implementation": "indexing.rows",
+                "schedule": {},
+                "score": 1.0,
+                "measurements": [
+                  0.0002580667690684398
+                ],
+                "trials": 1
+              }
+            }
+          ]
+        }
+      ],
+      "record": "..\\..\\runs\\20261028103258002832-2d447691\\run.json"
+    }
+  }
+}
