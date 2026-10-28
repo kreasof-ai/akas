@@ -1,0 +1,1274 @@
+FFFFFFFFFFFFFFF.FFFFFFF                                                  [100%]
+================================== FAILURES ===================================
+___________ test_matrix_resumes_without_repeating_completed_entries ___________
+
+tmp_path = WindowsPath('C:/Users/akbar/AppData/Local/Temp/pytest-of-akbar/pytest-245/test_matrix_resumes_without_re0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000201F7E36CC0>
+
+    def test_matrix_resumes_without_repeating_completed_entries(tmp_path, monkeypatch):
+        root = Path(__file__).resolve().parents[1]
+        spec = tmp_path / "spec.json"
+        write(
+            spec,
+            dict(
+                models=["lfm2.5-230m"],
+                formats=["bf16"],
+                backends=["cuda", "webgpu"],
+                caches=["default"],
+                workload="standard-v1",
+            ),
+        )
+        calls = []
+    
+        def optimize(context, out, **kwargs):
+            calls.append((context.backend, kwargs["budget"]))
+            return dict(status="complete", deployment=str(out / "deployment.json"))
+    
+        monkeypatch.setattr(campaign, "optimize", optimize)
+>       state = campaign.run(
+            spec,
+            tmp_path / "out",
+            budget=60,
+            slice_seconds=10,
+            history=tmp_path / "history",
+        )
+
+tests\test_campaign.py:107: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tools\campaign.py:80: in run
+    with lock(out / ".lock"):
+         ^^^^^^^^^^^^^^^^^^^
+C:\Users\akbar\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('C:/Users/akbar/AppData/Local/Temp/pytest-of-akbar/pytest-245/test_matrix_resumes_without_re0/out/.lock')
+
+    @contextmanager
+    def lock(path):
+>       import fcntl
+E       ModuleNotFoundError: No module named 'fcntl'
+
+src\akas\optimization\supervisor.py:21: ModuleNotFoundError
+---------------------------- Captured stdout call -----------------------------
+Campaign directory: C:\Users\akbar\AppData\Local\Temp\pytest-of-akbar\pytest-245\test_matrix_resumes_without_re0\out
+_______________ test_mtp_cannot_establish_its_own_ar_reference ________________
+
+tmp_path = WindowsPath('C:/Users/akbar/AppData/Local/Temp/pytest-of-akbar/pytest-245/test_mtp_cannot_establish_its_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000201FE502E10>
+
+    def test_mtp_cannot_establish_its_own_ar_reference(tmp_path, monkeypatch):
+        from akas.optimization import supervisor
+        import akas.cli
+    
+        calls = []
+        monkeypatch.setattr(akas.cli, "checkpoint_digest", lambda _: "weights")
+        monkeypatch.setattr(supervisor, "software", lambda: {})
+        probe = dict(
+            status="ok",
+            provider="cuda",
+            device=dict(name="test", arch="sm_89"),
+            chunks=[1],
+            policies=[{}],
+            model_options={},
+            windows=[2],
+            head="family:Head",
+        )
+    
+        def execute(job, directory, **kwargs):
+            if job["action"] == "probe":
+                return probe
+            calls.append(job["recipe"]["window"])
+            return dict(status="failed", error="AR model reference failed")
+    
+        monkeypatch.setattr(supervisor, "execute", execute)
+        context = Context(
+            "weights",
+            "family:Model",
+            dict(batches=[1], prefix_tokens=[32], output_tokens=128),
+            backend="cuda",
+            mode="mtp",
+        )
+>       result = supervisor.optimize(
+            context, tmp_path / "out", budget=30, history=tmp_path / "history"
+        )
+
+tests\test_campaign.py:176: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\akas\optimization\supervisor.py:268: in optimize
+    lock(out / ".lock"),
+    ^^^^^^^^^^^^^^^^^^^
+C:\Users\akbar\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('C:/Users/akbar/AppData/Local/Temp/pytest-of-akbar/pytest-245/test_mtp_cannot_establish_its_0/out/.lock')
+
+    @contextmanager
+    def lock(path):
+>       import fcntl
+E       ModuleNotFoundError: No module named 'fcntl'
+
+src\akas\optimization\supervisor.py:21: ModuleNotFoundError
+______ test_matrix_exports_report_on_completion_and_interruption[False] _______
+
+campaign_evidence = (WindowsPath('C:/Users/akbar/AppData/Local/Temp/pytest-of-akbar/pytest-245/test_matrix_exports_report_on_0/build/campa...s'), WindowsPath('C:/Users/akbar/AppData/Local/Temp/pytest-of-akbar/pytest-245/test_matrix_exports_report_on_0/build'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000201F7E5DF40>
+interrupted = False
+
+    @pytest.mark.parametrize("interrupted", [False, True])
+    def test_matrix_exports_report_on_completion_and_interruption(
+        campaign_evidence, monkeypatch, interrupted
+    ):
+        from tools import campaign as matrix
+        from tools.campaign_report import report_directory
+    
+        original, history, build = campaign_evidence
+        state = read(original)
+        spec = state["specification"]
+        spec["backends"] = ["cuda"]
+        specification = build / "spec.json"
+        write(specification, spec)
+        monkeypatch.setattr(matrix, "declarations", lambda *args: state["models"])
+        monkeypatch.setattr(
+            matrix,
+            "entries",
+            lambda *args: [
+                dict(
+                    id="toy-bf16-cuda-default-ar",
+                    context=dict(
+                        checkpoint="weights",
+                        definition="toy:Model",
+                        workload=state["entries"][0]["context"]["workload"],
+                        backend="cuda",
+                    ),
+                )
+            ],
+        )
+    
+        def optimize(*args, **kwargs):
+            if interrupted:
+                raise KeyboardInterrupt()
+            return dict(status="complete")
+    
+        monkeypatch.setattr(matrix, "optimize", optimize)
+        out = build / "new-matrix"
+        if interrupted:
+            with pytest.raises(KeyboardInterrupt):
+                matrix.run(specification, out, budget=60, slice_seconds=30, history=history)
+        else:
+>           matrix.run(specification, out, budget=60, slice_seconds=30, history=history)
+
+tests\test_campaign_report.py:506: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tools\campaign.py:80: in run
+    with lock(out / ".lock"):
+         ^^^^^^^^^^^^^^^^^^^
+C:\Users\akbar\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('C:/Users/akbar/AppData/Local/Temp/pytest-of-akbar/pytest-245/test_matrix_exports_report_on_0/build/new-matrix/.lock')
+
+    @contextmanager
+    def lock(path):
+>       import fcntl
+E       ModuleNotFoundError: No module named 'fcntl'
+
+src\akas\optimization\supervisor.py:21: ModuleNotFoundError
+---------------------------- Captured stdout call -----------------------------
+Campaign directory: C:\Users\akbar\AppData\Local\Temp\pytest-of-akbar\pytest-245\test_matrix_exports_report_on_0\build\new-matrix
+_______ test_matrix_exports_report_on_completion_and_interruption[True] _______
+
+campaign_evidence = (WindowsPath('C:/Users/akbar/AppData/Local/Temp/pytest-of-akbar/pytest-245/test_matrix_exports_report_on_1/build/campa...s'), WindowsPath('C:/Users/akbar/AppData/Local/Temp/pytest-of-akbar/pytest-245/test_matrix_exports_report_on_1/build'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000201FE50AF60>
+interrupted = True
+
+    @pytest.mark.parametrize("interrupted", [False, True])
+    def test_matrix_exports_report_on_completion_and_interruption(
+        campaign_evidence, monkeypatch, interrupted
+    ):
+        from tools import campaign as matrix
+        from tools.campaign_report import report_directory
+    
+        original, history, build = campaign_evidence
+        state = read(original)
+        spec = state["specification"]
+        spec["backends"] = ["cuda"]
+        specification = build / "spec.json"
+        write(specification, spec)
+        monkeypatch.setattr(matrix, "declarations", lambda *args: state["models"])
+        monkeypatch.setattr(
+            matrix,
+            "entries",
+            lambda *args: [
+                dict(
+                    id="toy-bf16-cuda-default-ar",
+                    context=dict(
+                        checkpoint="weights",
+                        definition="toy:Model",
+                        workload=state["entries"][0]["context"]["workload"],
+                        backend="cuda",
+                    ),
+                )
+            ],
+        )
+    
+        def optimize(*args, **kwargs):
+            if interrupted:
+                raise KeyboardInterrupt()
+            return dict(status="complete")
+    
+        monkeypatch.setattr(matrix, "optimize", optimize)
+        out = build / "new-matrix"
+        if interrupted:
+            with pytest.raises(KeyboardInterrupt):
+>               matrix.run(specification, out, budget=60, slice_seconds=30, history=history)
+
+tests\test_campaign_report.py:504: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tools\campaign.py:80: in run
+    with lock(out / ".lock"):
+         ^^^^^^^^^^^^^^^^^^^
+C:\Users\akbar\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('C:/Users/akbar/AppData/Local/Temp/pytest-of-akbar/pytest-245/test_matrix_exports_report_on_1/build/new-matrix/.lock')
+
+    @contextmanager
+    def lock(path):
+>       import fcntl
+E       ModuleNotFoundError: No module named 'fcntl'
+
+src\akas\optimization\supervisor.py:21: ModuleNotFoundError
+---------------------------- Captured stdout call -----------------------------
+Campaign directory: C:\Users\akbar\AppData\Local\Temp\pytest-of-akbar\pytest-245\test_matrix_exports_report_on_1\build\new-matrix
+_____ test_benchmark_compiles_one_program_bank_for_all_requested_batches ______
+
+args = Namespace(command='bench', history=WindowsPath('C:/Users/akbar/AppData/Local/Temp/pytest-of-akbar/pytest-245/test_benc...son'), baseline=None, max_scaling_regression=None, max_regression=0.1, run=<function _benchmark at 0x00000201FE3D49A0>)
+start = <function _benchmark.<locals>.start at 0x00000201FF8C5F80>
+measured = <function _benchmark.<locals>.measured at 0x00000201FF8C5EE0>
+program = <built-in method add of set object at 0x00000201FF8C0D60>
+
+    def _benchmark_run(args, *, start, measured, program):
+        import tensor
+    
+        cases = matrix(
+            batches=args.batches,
+            prompts=args.prompts,
+            depths=args.depths,
+            generated=args.generated,
+            mixed=args.mixed,
+        )
+        if not 0 <= args.max_regression < 1 or args.repeats < 1 or args.warmup < 0:
+            raise ValueError("invalid repeat/warmup/regression settings")
+        if args.max_scaling_regression is not None:
+            scaling_regressions([], args.max_scaling_regression)
+        capacity = max(case.capacity for case in cases)
+        profile = getattr(args.definition, "compilation_profile", "reference")
+        args.kv_dtype = args.kv_dtype or getattr(args.definition, "model_defaults", {}).get(
+            "kv_dtype", "float16"
+        )
+        chunk = args.prefill_chunk or (
+            min(capacity, 128 if args.provider == "cuda" else 32)
+            if profile in ("floating", "program")
+            else 1
+        )
+        schedules = None
+        if args.schedule_profile:
+            if not args.compile:
+                raise ValueError("schedule profile requires --compile")
+            from tensor.compiler.search import ScheduleProfile
+    
+            schedules = ScheduleProfile(json.loads(args.schedule_profile.read_text()))
+        definition = args.definition.__module__ + ":" + args.definition.__name__
+        device_options = dict(max_buffer_size=args.max_buffer_size)
+        with tensor.Device(args.device, provider=args.provider, **device_options) as probe:
+            detected = dict(probe.info)
+            args.target = args.target or detected["arch"]
+        metadata = dict(
+            device=detected,
+            schedule_profile_sha256=schedules.sha256 if schedules else None,
+            correctness="callback" if args.check else "not checked",
+            definition=definition,
+            checkpoint=str(args.checkpoint.resolve()),
+            checkpoint_sha256=checkpoint_digest(args.checkpoint),
+            provider=args.provider,
+            target=args.target,
+            kv_dtype=args.kv_dtype,
+            graphs=args.graphs,
+            revision=revision(),
+            python=platform.python_version(),
+            seed=args.seed,
+            timestamp=time.time(),
+            protocol="native-token-step-v2",
+            input="seeded synthetic token IDs; greedy device sampling",
+            timing="wall clock, synchronize before/after; compile/load/reset excluded; prefill includes control uploads",
+            ttft="prefill to first greedy token, including logits/head/sampling; no network",
+            prefill="chunked" if chunk > 1 else "serial token-step reference",
+            prefill_chunk=chunk,
+            repeats=args.repeats,
+            warmup=args.warmup,
+        )
+        results = []
+        start(metadata)
+    
+        def publish_report():
+            import resource
+    
+            metadata["cpu_peak_rss_bytes"] = (
+                resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024
+            )
+            report = write_report(args.out, metadata, results)
+            measured(report)
+            return report
+    
+        baseline = json.loads(args.baseline.read_text()) if args.baseline else None
+        program_compiled = False
+        for batch in dict.fromkeys(args.batches):
+            selected = [case for case in cases if case.batch == batch]
+            bundle = args.bundles / (
+                f"{args.provider}-{args.kv_dtype}-program"
+                if profile == "program"
+                else f"{args.provider}-{args.kv_dtype}-b{batch}"
+            )
+            try:
+                program(bundle)
+                if args.compile and (profile != "program" or not program_compiled):
+                    from akas.compilation import compile_checkpoint
+    
+                    options = (
+                        dict(
+                            geometries=list(
+                                dict.fromkeys(
+                                    (rows, tokens)
+                                    for rows in args.batches
+                                    for tokens in (1, min(chunk, min(args.prompts)), chunk)
+                                )
+                            ),
+                            max_requests=max(args.batches),
+                            max_context=capacity,
+                            model_options={"kv_dtype": args.kv_dtype},
+                            schedules=schedules,
+                        )
+                        if profile == "program"
+                        else dict(
+                            batch=batch,
+                            capacity=capacity,
+                            kv_dtype=args.kv_dtype,
+                            schedules=schedules,
+                            prefill_chunk=chunk,
+                        )
+                    )
+                    compile_checkpoint(
+                        args.definition,
+                        args.checkpoint,
+                        bundle,
+                        profile=profile,
+                        checkpoint_options=args.checkpoint_options
+                        if profile == "program"
+                        else {"tokenizer": False, **args.checkpoint_options},
+                        provider=args.provider,
+                        target=args.target,
+                        **options,
+                    )
+                    program_compiled = profile == "program"
+                with tensor.Device(
+                    args.device, provider=args.provider, **device_options
+                ) as device:
+                    metadata["device"] = device.info
+                    from akas.benchmarking.session import Session
+    
+                    constructor_options = dict(graphs=args.graphs)
+                    if profile == "program":
+                        constructor_options["checkpoint_options"] = args.checkpoint_options
+                    else:
+                        constructor_options["tokenizer"] = False
+                    with args.definition(
+                        args.checkpoint, bundle, device, **constructor_options
+                    ) as model:
+                        context = (
+                            Session(model, batch=batch, chunk=chunk)
+                            if profile == "program"
+                            else nullcontext(model)
+                        )
+                        with context as session:
+                            actual_chunk = getattr(session, "prefill_chunk", chunk)
+                            metadata["prefill_chunk"] = actual_chunk
+                            metadata["prefill"] = (
+                                "chunked"
+                                if actual_chunk > 1
+                                else "serial token-step reference"
+                            )
+                            if session.kv_dtype != args.kv_dtype:
+                                raise ValueError(
+                                    "bundle KV dtype differs from benchmark request"
+                                )
+                            for case in selected:
+                                print(
+                                    f"running batch={batch} prompt={case.prompt} depth={case.depth} kv={args.kv_dtype}",
+                                    flush=True,
+                                )
+                                try:
+                                    evidence = (
+                                        args.check(session, case) if args.check else None
+                                    )
+                                    if args.check and (
+                                        not isinstance(evidence, dict)
+                                        or evidence.get("correct") is not True
+                                    ):
+                                        raise ValueError("correctness check failed")
+                                    row = run(
+                                        session,
+                                        case,
+                                        repeats=args.repeats,
+                                        warmup=args.warmup,
+                                        seed=args.seed,
+                                    )
+                                    if evidence is not None:
+                                        row["correctness"] = evidence
+                                except Exception as error:
+                                    row = dict(
+                                        case=case.metadata(),
+                                        status="error",
+                                        error=f"{type(error).__name__}: {error}",
+                                    )
+                                results.append(row)
+>                               publish_report()
+
+src\akas\cli.py:603: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def publish_report():
+>       import resource
+E       ModuleNotFoundError: No module named 'resource'
+
+src\akas\cli.py:483: ModuleNotFoundError
+
+During handling of the above exception, another exception occurred:
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000201F7E5D0D0>
+tmp_path = WindowsPath('C:/Users/akbar/AppData/Local/Temp/pytest-of-akbar/pytest-245/test_benchmark_compiles_one_pr0')
+
+    def test_benchmark_compiles_one_program_bank_for_all_requested_batches(monkeypatch, tmp_path):
+        import tensor
+        from types import SimpleNamespace
+        from akas import cli
+    
+        compiled, opened = [], []
+        class Device:
+            info = {"arch": "sm_89"}
+            def __init__(self, *args, **options):
+                pass
+            def __enter__(self):
+                return self
+            def __exit__(self, *error):
+                pass
+    
+        class Model:
+            compilation_profile = "program"
+            def __init__(self, checkpoint, bundle, device, **options):
+                opened.append((bundle, options))
+            def __enter__(self):
+                return self
+            def __exit__(self, *error):
+                pass
+    
+        class Session:
+            kv_dtype = "float16"
+            def __init__(self, model, *, batch, chunk):
+                self.prefill_chunk = chunk
+            def __enter__(self):
+                return self
+            def __exit__(self, *error):
+                pass
+    
+        checkpoint = tmp_path / "weights.json"
+        checkpoint.write_text('{}')
+        monkeypatch.setattr(tensor, "Device", Device)
+        monkeypatch.setattr(cli, "_factory", lambda value: Model)
+        monkeypatch.setattr("akas.benchmarking.session.Session", Session)
+        monkeypatch.setattr("akas.compilation.compile_checkpoint",
+                            lambda *args, **options: compiled.append((args, options)))
+        monkeypatch.setattr(cli, "run", lambda session, case, **options:
+                            dict(status="ok", case=case.metadata()))
+        monkeypatch.setattr(cli, "table", lambda rows: "")
+        monkeypatch.setattr(cli, "write_report", lambda out, metadata, results:
+                            dict(metadata=metadata, results=results))
+        monkeypatch.setattr(sys, "argv", ["akas", "bench", "--history", str(tmp_path / "history"), "--definition", "foreign:Model",
+            "--checkpoint", str(checkpoint), "--bundles", str(tmp_path / "bank"),
+            "--compile", "--batches", "1", "4", "--prompts", "4", "--generated", "2",
+            "--prefill-chunk", "4", "--checkpoint-options", '{"tokenizer":false}',
+            "--out", str(tmp_path / "report.json")])
+>       cli.main()
+
+tests\test_cli.py:186: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\akas\cli.py:110: in main
+    args.run(args)
+src\akas\cli.py:378: in _benchmark
+    _benchmark_run(args, start=start, measured=measured, program=programs.add)
+src\akas\cli.py:626: in _benchmark_run
+    publish_report()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def publish_report():
+>       import resource
+E       ModuleNotFoundError: No module named 'resource'
+
+src\akas\cli.py:483: ModuleNotFoundError
+---------------------------- Captured stdout call -----------------------------
+running batch=1 prompt=4 depth=0 kv=float16
+___ test_external_draft_descriptor_retains_all_artifacts_and_relative_paths ___
+
+tmp_path = WindowsPath('C:/Users/akbar/AppData/Local/Temp/pytest-of-akbar/pytest-245/test_external_draft_descriptor0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000201FE50B9B0>
+
+    def test_external_draft_descriptor_retains_all_artifacts_and_relative_paths(tmp_path, monkeypatch):
+        import akas.artifacts.read as artifacts
+        import akas.optimization.deployment as deployment
+        import akas.optimization.planning as planning
+    
+        monkeypatch.setattr(artifacts, "read_program", lambda root: json.loads((Path(root) / "program.json").read_text()))
+        monkeypatch.setattr(deployment, "runtime_source", lambda: "runtime")
+        monkeypatch.setattr(planning, "software", lambda: {"tensor-workspace": "test"})
+        target = program(tmp_path / "target", b"target kernel")
+        draft = program(tmp_path / "draft", b"draft kernel")
+        checkpoint = tmp_path / "draft.gguf"
+        checkpoint.write_bytes(b"pinned draft weights")
+        recipe = dict(provider="cuda", window=10, graphs=True, round_capture=False,
+                      head="akas.models.dspark.proposer:load",
+                      head_options=dict(checkpoint=str(checkpoint), bundle=str(draft)))
+        descriptor = deployment.describe({}, recipe, target, checkpoint_sha256="target sha",
+                                         campaign_identity="campaign", run_id="run")
+        options = descriptor["recipe"]["head_options"]
+        assert options["bundle"] == "draft" and options["checkpoint"] == "draft.gguf"
+        assert options["checkpoint_sha256"] == checksum(checkpoint)
+        assert options["program_sha256"] == checksum(draft / "program.json")
+        assert recipe["head_options"]["bundle"] == str(draft)
+>       assert {item["path"] for item in descriptor["artifacts"]} == {
+            "target/program.json", "target/forward.json", "target/kernel.tbin",
+            "draft/program.json", "draft/forward.json", "draft/kernel.tbin"}
+E       AssertionError: assert {'draft\\forw...program.json'} == {'draft/forwa...program.json'}
+E         
+E         Extra items in the left set:
+E         'target\\forward.json'
+E         'target\\kernel.tbin'
+E         'draft\\kernel.tbin'
+E         'draft\\program.json'
+E         'target\\program.json'...
+E         
+E         ...Full output truncated (9 lines hidden), use '-vv' to show
+
+tests\test_draft_deployment.py:44: AssertionError
+_ test_kernel_arithmetic_matches_pre_refactor_source[akas.ops.linear.webgpu] __
+
+record = {'module': 'akas.ops.linear.webgpu', 'computations': ['inline:0dbef03cac768cdbdbe0a6793ca2a717aea4cf81a21a7fb5d71e74c6...16823fd9585d0665f42bb3306dc21704b34d947848a9c7d3c', ...], 'related_modules': ['akas.quantization.weights.ggml.webgpu']}
+
+    @pytest.mark.parametrize("record", MODULES, ids=lambda row: row["module"])
+    def test_kernel_arithmetic_matches_pre_refactor_source(record):
+        from akas.benchmarking.archive import read_file
+    
+        observed = set()
+        for module in (record["module"], *record.get("related_modules", ())):
+            path = ROOT / "src" / Path(module.replace(".", "/")).with_suffix(".py")
+            observed.update(computation_hashes(path.read_text()))
+        # Refactoring preserves frozen computations. An intentional optimization
+        # explicitly identifies both bodies and its retained numerical qualification.
+        required = set(record["computations"])
+        for replacement in record.get("qualified_replacements", ()):
+            original, updated = (
+                set(replacement["original"]),
+                set(replacement["replacement"]),
+            )
+            assert original and original <= required
+            assert updated
+            assert replacement["reason"] and replacement["qualification_tests"]
+            identity = replacement["qualification_run"]
+            run = json.loads(read_file(ROOT / "benchmarks", "runs", identity, "run.json"))
+            report = json.loads(
+                read_file(ROOT / "benchmarks", "runs", identity, "report.json")
+            )
+            assert run["status"] == "passed"
+            checks = report["metadata"]["checks"]
+            assert checks and all(check["bitwise"] for check in checks)
+            required -= original
+            # A later qualified specialization can replace an already qualified body.
+            # Verify every link's evidence, and require the final bodies in the source.
+            required |= updated
+>       assert required <= observed
+E       AssertionError: assert {'inline:0dbe...a9c7d3c', ...} <= {'inline:0dbe...17317cb', ...}
+E         
+E         Extra items in the left set:
+E         'inline:79627c605e26cb92f4f2f3d9fb2de5589300dde4c8130ce53318c9bd803bb341'
+
+tests\test_engine_layout.py:52: AssertionError
+_ test_kernel_arithmetic_matches_pre_refactor_source[akas.quantization.activations._shared.packing] _
+
+record = {'module': 'akas.quantization.activations._shared.packing', 'computations': ['inline:661a592ceef48ed83f64bd68698dc0eb7...f5f885bf66c01c0475acf527a669091007d1e2329', 'launch:50c17d97f6b46ca633300357f51861642efe1b2ab81250cc8f2e6091558ee13c']}
+
+    @pytest.mark.parametrize("record", MODULES, ids=lambda row: row["module"])
+    def test_kernel_arithmetic_matches_pre_refactor_source(record):
+        from akas.benchmarking.archive import read_file
+    
+        observed = set()
+        for module in (record["module"], *record.get("related_modules", ())):
+            path = ROOT / "src" / Path(module.replace(".", "/")).with_suffix(".py")
+            observed.update(computation_hashes(path.read_text()))
+        # Refactoring preserves frozen computations. An intentional optimization
+        # explicitly identifies both bodies and its retained numerical qualification.
+        required = set(record["computations"])
+        for replacement in record.get("qualified_replacements", ()):
+            original, updated = (
+                set(replacement["original"]),
+                set(replacement["replacement"]),
+            )
+            assert original and original <= required
+            assert updated
+            assert replacement["reason"] and replacement["qualification_tests"]
+            identity = replacement["qualification_run"]
+            run = json.loads(read_file(ROOT / "benchmarks", "runs", identity, "run.json"))
+            report = json.loads(
+                read_file(ROOT / "benchmarks", "runs", identity, "report.json")
+            )
+            assert run["status"] == "passed"
+            checks = report["metadata"]["checks"]
+            assert checks and all(check["bitwise"] for check in checks)
+            required -= original
+            # A later qualified specialization can replace an already qualified body.
+            # Verify every link's evidence, and require the final bodies in the source.
+            required |= updated
+>       assert required <= observed
+E       AssertionError: assert {'inline:661a...6091558ee13c'} <= {'inline:3090...6091558ee13c'}
+E         
+E         Extra items in the left set:
+E         'inline:661a592ceef48ed83f64bd68698dc0eb7fac2360f44e428fd92d491ef1d9f453'
+E         'inline:e5a9c5e65e979fc87fa88eff5f885bf66c01c0475acf527a669091007d1e2329'
+
+tests\test_engine_layout.py:52: AssertionError
+_ test_sequences_complete_cancel_and_reuse_without_provider_fields[Counter-expected0] _
+
+kind = <class 'test_independent_adapter.Counter'>, expected = [6, 12, 24, 48]
+
+    @pytest.mark.parametrize("kind,expected", [(Counter, [6, 12, 24, 48]), (Recurrent, [18, 72, 88, 52])])
+    def test_sequences_complete_cancel_and_reuse_without_provider_fields(kind, expected):
+        model = kind()
+        with Engine(model, config=EngineConfig(prefill_chunk=2)) as engine:
+            first = engine.submit([1, 2, 3], max_tokens=4)
+            second = engine.submit([7], max_tokens=2)
+>           while engine.step():
+                  ^^^^^^^^^^^^^
+
+tests\test_independent_adapter.py:49: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\akas\engine.py:76: in step
+    return self.scheduler.turn()
+           ^^^^^^^^^^^^^^^^^^^^^
+src\akas\scheduling\scheduler.py:146: in turn
+    tokens = self.engine.prefill_batch(
+src\akas\execution\executor.py:196: in prefill_batch
+    return self.prefill([r.slot for r in requests], sequences,
+src\akas\execution\executor.py:277: in prefill
+    result = self._prefill_groups(
+src\akas\execution\executor.py:209: in _prefill_groups
+    self.run_batch(slots[start:stop], sequences[start:stop], chunk=chunk)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <test_independent_adapter.Counter object at 0x00000201FE50B8C0>
+slots = [0, 1], sequences = [[1, 2], [7]], chunk = 2, phase = None, read = True
+
+    def run_batch(self, slots, sequences, *, chunk=1, phase=None, read=True):
+        self._check()
+        slots, sequences = self._validate_batch(slots, sequences, chunk)
+>       return self._execute_batch(slots, sequences, chunk, phase=phase, read=read)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: Counter._execute_batch() got an unexpected keyword argument 'phase'
+
+src\akas\execution\executor.py:93: TypeError
+_ test_sequences_complete_cancel_and_reuse_without_provider_fields[Recurrent-expected1] _
+
+kind = <class 'test_independent_adapter.Recurrent'>, expected = [18, 72, 88, 52]
+
+    @pytest.mark.parametrize("kind,expected", [(Counter, [6, 12, 24, 48]), (Recurrent, [18, 72, 88, 52])])
+    def test_sequences_complete_cancel_and_reuse_without_provider_fields(kind, expected):
+        model = kind()
+        with Engine(model, config=EngineConfig(prefill_chunk=2)) as engine:
+            first = engine.submit([1, 2, 3], max_tokens=4)
+            second = engine.submit([7], max_tokens=2)
+>           while engine.step():
+                  ^^^^^^^^^^^^^
+
+tests\test_independent_adapter.py:49: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\akas\engine.py:76: in step
+    return self.scheduler.turn()
+           ^^^^^^^^^^^^^^^^^^^^^
+src\akas\scheduling\scheduler.py:146: in turn
+    tokens = self.engine.prefill_batch(
+src\akas\execution\executor.py:196: in prefill_batch
+    return self.prefill([r.slot for r in requests], sequences,
+src\akas\execution\executor.py:277: in prefill
+    result = self._prefill_groups(
+src\akas\execution\executor.py:209: in _prefill_groups
+    self.run_batch(slots[start:stop], sequences[start:stop], chunk=chunk)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <test_independent_adapter.Recurrent object at 0x00000201FE409490>
+slots = [0, 1], sequences = [[1, 2], [7]], chunk = 2, phase = None, read = True
+
+    def run_batch(self, slots, sequences, *, chunk=1, phase=None, read=True):
+        self._check()
+        slots, sequences = self._validate_batch(slots, sequences, chunk)
+>       return self._execute_batch(slots, sequences, chunk, phase=phase, read=read)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: Counter._execute_batch() got an unexpected keyword argument 'phase'
+
+src\akas\execution\executor.py:93: TypeError
+______________ test_engine_close_releases_both_active_sequences _______________
+
+    def test_engine_close_releases_both_active_sequences():
+        model = Recurrent()
+        with Engine(model, config=EngineConfig(prefill_chunk=1)) as engine:
+            first = engine.submit([1, 2, 3], max_tokens=4)
+            second = engine.submit([7, 8, 9], max_tokens=2)
+>           engine.step()
+
+tests\test_independent_adapter.py:99: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\akas\engine.py:76: in step
+    return self.scheduler.turn()
+           ^^^^^^^^^^^^^^^^^^^^^
+src\akas\scheduling\scheduler.py:146: in turn
+    tokens = self.engine.prefill_batch(
+src\akas\execution\executor.py:196: in prefill_batch
+    return self.prefill([r.slot for r in requests], sequences,
+src\akas\execution\executor.py:277: in prefill
+    result = self._prefill_groups(
+src\akas\execution\executor.py:209: in _prefill_groups
+    self.run_batch(slots[start:stop], sequences[start:stop], chunk=chunk)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <test_independent_adapter.Recurrent object at 0x00000201FE408740>
+slots = [0, 1], sequences = [[1], [7]], chunk = 1, phase = None, read = True
+
+    def run_batch(self, slots, sequences, *, chunk=1, phase=None, read=True):
+        self._check()
+        slots, sequences = self._validate_batch(slots, sequences, chunk)
+>       return self._execute_batch(slots, sequences, chunk, phase=phase, read=read)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: Counter._execute_batch() got an unexpected keyword argument 'phase'
+
+src\akas\execution\executor.py:93: TypeError
+_ test_lfm_verifier_uses_private_journals_and_preserves_target_features[1-cuda] _
+
+tmp_path = WindowsPath('C:/Users/akbar/AppData/Local/Temp/pytest-of-akbar/pytest-245/test_lfm_verifier_uses_private0')
+provider = 'cuda', chunk = 1
+
+    @pytest.mark.parametrize("provider", ["cuda", "webgpu"])
+    @pytest.mark.parametrize("chunk", [1, 3])
+    def test_lfm_verifier_uses_private_journals_and_preserves_target_features(
+        tmp_path, provider, chunk
+    ):
+        checkpoint = ReferenceCheckpoint(fixture(tmp_path / "model.gguf"), tokenizer=False)
+        composed = LFM2Reference.compose(
+            checkpoint,
+            rows=2,
+            chunk=chunk,
+            max_requests=4,
+            max_context=32,
+            provider=provider,
+            phase="verify",
+            auxiliary_layers=(0, 1),
+        )
+        graph, commit = composed.graph, composed.commit
+        kinds = [call.kind for call in graph.calls]
+        assert "conv_verify" in kinds and "conv" not in kinds
+        assert not {"advance", "next_tokens", "chunk_last"} & set(kinds)
+        assert graph.buffers["sampled"].shape == (2 * chunk,)
+        assert graph.buffers["logits"].shape == (2 * chunk * checkpoint.config.vocab,)
+        assert graph.buffers["blk.0.conv_state"].shape == (4, 2, checkpoint.config.width)
+        assert graph.buffers["blk.0.conv_journal"].shape == (
+            2,
+            chunk,
+            2,
+            checkpoint.config.width,
+        )
+        assert graph.buffers["blk.0.conv_journal"].role == "journal"
+        for layer in (0, 1):
+            feature = graph.request["features"][f"layer.{layer}"]
+            assert graph.buffers[feature].role == "output"
+>       assert [c.kind for c in commit.calls] == ["conv_commit", "advance"]
+E       AssertionError: assert ['conv_commit...x', 'advance'] == ['conv_commit', 'advance']
+E         
+E         At index 0 diff: 'conv_commit_prefix' != 'conv_commit'
+E         Use -v to get more diff
+
+tests\test_lfm_verification.py:43: AssertionError
+_ test_lfm_verifier_uses_private_journals_and_preserves_target_features[1-webgpu] _
+
+tmp_path = WindowsPath('C:/Users/akbar/AppData/Local/Temp/pytest-of-akbar/pytest-245/test_lfm_verifier_uses_private1')
+provider = 'webgpu', chunk = 1
+
+    @pytest.mark.parametrize("provider", ["cuda", "webgpu"])
+    @pytest.mark.parametrize("chunk", [1, 3])
+    def test_lfm_verifier_uses_private_journals_and_preserves_target_features(
+        tmp_path, provider, chunk
+    ):
+        checkpoint = ReferenceCheckpoint(fixture(tmp_path / "model.gguf"), tokenizer=False)
+        composed = LFM2Reference.compose(
+            checkpoint,
+            rows=2,
+            chunk=chunk,
+            max_requests=4,
+            max_context=32,
+            provider=provider,
+            phase="verify",
+            auxiliary_layers=(0, 1),
+        )
+        graph, commit = composed.graph, composed.commit
+        kinds = [call.kind for call in graph.calls]
+        assert "conv_verify" in kinds and "conv" not in kinds
+        assert not {"advance", "next_tokens", "chunk_last"} & set(kinds)
+        assert graph.buffers["sampled"].shape == (2 * chunk,)
+        assert graph.buffers["logits"].shape == (2 * chunk * checkpoint.config.vocab,)
+        assert graph.buffers["blk.0.conv_state"].shape == (4, 2, checkpoint.config.width)
+        assert graph.buffers["blk.0.conv_journal"].shape == (
+            2,
+            chunk,
+            2,
+            checkpoint.config.width,
+        )
+        assert graph.buffers["blk.0.conv_journal"].role == "journal"
+        for layer in (0, 1):
+            feature = graph.request["features"][f"layer.{layer}"]
+            assert graph.buffers[feature].role == "output"
+>       assert [c.kind for c in commit.calls] == ["conv_commit", "advance"]
+E       AssertionError: assert ['conv_commit...x', 'advance'] == ['conv_commit', 'advance']
+E         
+E         At index 0 diff: 'conv_commit_prefix' != 'conv_commit'
+E         Use -v to get more diff
+
+tests\test_lfm_verification.py:43: AssertionError
+_ test_lfm_verifier_uses_private_journals_and_preserves_target_features[3-cuda] _
+
+tmp_path = WindowsPath('C:/Users/akbar/AppData/Local/Temp/pytest-of-akbar/pytest-245/test_lfm_verifier_uses_private2')
+provider = 'cuda', chunk = 3
+
+    @pytest.mark.parametrize("provider", ["cuda", "webgpu"])
+    @pytest.mark.parametrize("chunk", [1, 3])
+    def test_lfm_verifier_uses_private_journals_and_preserves_target_features(
+        tmp_path, provider, chunk
+    ):
+        checkpoint = ReferenceCheckpoint(fixture(tmp_path / "model.gguf"), tokenizer=False)
+        composed = LFM2Reference.compose(
+            checkpoint,
+            rows=2,
+            chunk=chunk,
+            max_requests=4,
+            max_context=32,
+            provider=provider,
+            phase="verify",
+            auxiliary_layers=(0, 1),
+        )
+        graph, commit = composed.graph, composed.commit
+        kinds = [call.kind for call in graph.calls]
+        assert "conv_verify" in kinds and "conv" not in kinds
+        assert not {"advance", "next_tokens", "chunk_last"} & set(kinds)
+        assert graph.buffers["sampled"].shape == (2 * chunk,)
+        assert graph.buffers["logits"].shape == (2 * chunk * checkpoint.config.vocab,)
+        assert graph.buffers["blk.0.conv_state"].shape == (4, 2, checkpoint.config.width)
+        assert graph.buffers["blk.0.conv_journal"].shape == (
+            2,
+            chunk,
+            2,
+            checkpoint.config.width,
+        )
+        assert graph.buffers["blk.0.conv_journal"].role == "journal"
+        for layer in (0, 1):
+            feature = graph.request["features"][f"layer.{layer}"]
+            assert graph.buffers[feature].role == "output"
+>       assert [c.kind for c in commit.calls] == ["conv_commit", "advance"]
+E       AssertionError: assert ['conv_commit...x', 'advance'] == ['conv_commit', 'advance']
+E         
+E         At index 0 diff: 'conv_commit_prefix' != 'conv_commit'
+E         Use -v to get more diff
+
+tests\test_lfm_verification.py:43: AssertionError
+_ test_lfm_verifier_uses_private_journals_and_preserves_target_features[3-webgpu] _
+
+tmp_path = WindowsPath('C:/Users/akbar/AppData/Local/Temp/pytest-of-akbar/pytest-245/test_lfm_verifier_uses_private3')
+provider = 'webgpu', chunk = 3
+
+    @pytest.mark.parametrize("provider", ["cuda", "webgpu"])
+    @pytest.mark.parametrize("chunk", [1, 3])
+    def test_lfm_verifier_uses_private_journals_and_preserves_target_features(
+        tmp_path, provider, chunk
+    ):
+        checkpoint = ReferenceCheckpoint(fixture(tmp_path / "model.gguf"), tokenizer=False)
+        composed = LFM2Reference.compose(
+            checkpoint,
+            rows=2,
+            chunk=chunk,
+            max_requests=4,
+            max_context=32,
+            provider=provider,
+            phase="verify",
+            auxiliary_layers=(0, 1),
+        )
+        graph, commit = composed.graph, composed.commit
+        kinds = [call.kind for call in graph.calls]
+        assert "conv_verify" in kinds and "conv" not in kinds
+        assert not {"advance", "next_tokens", "chunk_last"} & set(kinds)
+        assert graph.buffers["sampled"].shape == (2 * chunk,)
+        assert graph.buffers["logits"].shape == (2 * chunk * checkpoint.config.vocab,)
+        assert graph.buffers["blk.0.conv_state"].shape == (4, 2, checkpoint.config.width)
+        assert graph.buffers["blk.0.conv_journal"].shape == (
+            2,
+            chunk,
+            2,
+            checkpoint.config.width,
+        )
+        assert graph.buffers["blk.0.conv_journal"].role == "journal"
+        for layer in (0, 1):
+            feature = graph.request["features"][f"layer.{layer}"]
+            assert graph.buffers[feature].role == "output"
+>       assert [c.kind for c in commit.calls] == ["conv_commit", "advance"]
+E       AssertionError: assert ['conv_commit...x', 'advance'] == ['conv_commit', 'advance']
+E         
+E         At index 0 diff: 'conv_commit_prefix' != 'conv_commit'
+E         Use -v to get more diff
+
+tests\test_lfm_verification.py:43: AssertionError
+_____ test_timeout_terminates_worker_process_group_and_retains_log[None] ______
+
+tmp_path = WindowsPath('C:/Users/akbar/AppData/Local/Temp/pytest-of-akbar/pytest-245/test_timeout_terminates_worker0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000201FF8376E0>
+phase = None
+
+    @pytest.mark.parametrize("phase", [None, "validating-and-measuring", "http-validation"])
+    def test_timeout_terminates_worker_process_group_and_retains_log(
+        tmp_path, monkeypatch, phase
+    ):
+        if phase is not None:
+            write(tmp_path / "progress.json", dict(phase=phase))
+        real = subprocess.Popen
+        launched = []
+    
+        def popen(command, **options):
+            process = real(
+                [
+                    sys.executable,
+                    "-u",
+                    "-c",
+                    "import time; print('entered',flush=True); time.sleep(60)",
+                ],
+                **options,
+            )
+            launched.append(process)
+            return process
+    
+        monkeypatch.setattr(subprocess, "Popen", popen)
+>       result = execute(
+            dict(action="probe"), tmp_path, deadline=time.monotonic() + 2, seconds=0.2
+        )
+
+tests\test_optimization.py:286: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\akas\optimization\supervisor.py:212: in execute
+    terminate(process)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+process = <Popen: returncode: None args: ['D:\\Workspace\\kreasof-ai\\github\\akas\\.v...>
+
+    def terminate(process):
+        if process.poll() is None:
+>           os.killpg(process.pid, signal.SIGTERM)
+            ^^^^^^^^^
+E           AttributeError: module 'os' has no attribute 'killpg'. Did you mean: 'kill'?
+
+src\akas\optimization\supervisor.py:38: AttributeError
+_ test_timeout_terminates_worker_process_group_and_retains_log[validating-and-measuring] _
+
+tmp_path = WindowsPath('C:/Users/akbar/AppData/Local/Temp/pytest-of-akbar/pytest-245/test_timeout_terminates_worker1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000201FF837260>
+phase = 'validating-and-measuring'
+
+    @pytest.mark.parametrize("phase", [None, "validating-and-measuring", "http-validation"])
+    def test_timeout_terminates_worker_process_group_and_retains_log(
+        tmp_path, monkeypatch, phase
+    ):
+        if phase is not None:
+            write(tmp_path / "progress.json", dict(phase=phase))
+        real = subprocess.Popen
+        launched = []
+    
+        def popen(command, **options):
+            process = real(
+                [
+                    sys.executable,
+                    "-u",
+                    "-c",
+                    "import time; print('entered',flush=True); time.sleep(60)",
+                ],
+                **options,
+            )
+            launched.append(process)
+            return process
+    
+        monkeypatch.setattr(subprocess, "Popen", popen)
+>       result = execute(
+            dict(action="probe"), tmp_path, deadline=time.monotonic() + 2, seconds=0.2
+        )
+
+tests\test_optimization.py:286: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\akas\optimization\supervisor.py:212: in execute
+    terminate(process)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+process = <Popen: returncode: None args: ['D:\\Workspace\\kreasof-ai\\github\\akas\\.v...>
+
+    def terminate(process):
+        if process.poll() is None:
+>           os.killpg(process.pid, signal.SIGTERM)
+            ^^^^^^^^^
+E           AttributeError: module 'os' has no attribute 'killpg'. Did you mean: 'kill'?
+
+src\akas\optimization\supervisor.py:38: AttributeError
+_ test_timeout_terminates_worker_process_group_and_retains_log[http-validation] _
+
+tmp_path = WindowsPath('C:/Users/akbar/AppData/Local/Temp/pytest-of-akbar/pytest-245/test_timeout_terminates_worker2')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000201FF8355E0>
+phase = 'http-validation'
+
+    @pytest.mark.parametrize("phase", [None, "validating-and-measuring", "http-validation"])
+    def test_timeout_terminates_worker_process_group_and_retains_log(
+        tmp_path, monkeypatch, phase
+    ):
+        if phase is not None:
+            write(tmp_path / "progress.json", dict(phase=phase))
+        real = subprocess.Popen
+        launched = []
+    
+        def popen(command, **options):
+            process = real(
+                [
+                    sys.executable,
+                    "-u",
+                    "-c",
+                    "import time; print('entered',flush=True); time.sleep(60)",
+                ],
+                **options,
+            )
+            launched.append(process)
+            return process
+    
+        monkeypatch.setattr(subprocess, "Popen", popen)
+>       result = execute(
+            dict(action="probe"), tmp_path, deadline=time.monotonic() + 2, seconds=0.2
+        )
+
+tests\test_optimization.py:286: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\akas\optimization\supervisor.py:212: in execute
+    terminate(process)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+process = <Popen: returncode: None args: ['D:\\Workspace\\kreasof-ai\\github\\akas\\.v...>
+
+    def terminate(process):
+        if process.poll() is None:
+>           os.killpg(process.pid, signal.SIGTERM)
+            ^^^^^^^^^
+E           AttributeError: module 'os' has no attribute 'killpg'. Did you mean: 'kill'?
+
+src\akas\optimization\supervisor.py:38: AttributeError
+_________________ test_optimizer_lock_and_evidence_integrity __________________
+
+tmp_path = WindowsPath('C:/Users/akbar/AppData/Local/Temp/pytest-of-akbar/pytest-245/test_optimizer_lock_and_eviden0')
+
+    def test_optimizer_lock_and_evidence_integrity(tmp_path):
+>       with lock(tmp_path / "lock"):
+             ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_optimization.py:299: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\akbar\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('C:/Users/akbar/AppData/Local/Temp/pytest-of-akbar/pytest-245/test_optimizer_lock_and_eviden0/lock')
+
+    @contextmanager
+    def lock(path):
+>       import fcntl
+E       ModuleNotFoundError: No module named 'fcntl'
+
+src\akas\optimization\supervisor.py:21: ModuleNotFoundError
+_ test_campaign_resumes_completed_jobs_and_preserves_deployment_on_changed_evidence _
+
+tmp_path = WindowsPath('C:/Users/akbar/AppData/Local/Temp/pytest-of-akbar/pytest-245/test_campaign_resumes_complete0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000201FF883620>
+
+    def test_campaign_resumes_completed_jobs_and_preserves_deployment_on_changed_evidence(
+        tmp_path, monkeypatch
+    ):
+        import akas.optimization.supervisor as supervisor
+        import akas.optimization.deployment as deployment
+    
+        weights = tmp_path / "model.gguf"
+        weights.write_bytes(b"checkpoint")
+        intent = Context(**{**context(), "checkpoint": str(weights), "backend": "cuda"})
+        calls = []
+    
+        def execute(job, directory, **options):
+            if job["action"] == "probe":
+                return dict(
+                    status="ok",
+                    provider="cuda",
+                    device=dict(name="test", arch="sm_89"),
+                    chunks=[1],
+                    policies=[{}],
+                    model_options={},
+                    windows=[],
+                    head=None,
+                )
+            calls.append(job["recipe"]["id"])
+            directory.mkdir(parents=True)
+            data = report(1)
+            write(directory / "report.json", data)
+            (directory / "diagnostics.npz").write_bytes(b"diagnostics")
+            write(directory / "candidate.json", dict(program="program", artifacts=[]))
+            result = dict(
+                status="passed",
+                run_id=str(len(calls)),
+                report=str(directory / "report.json"),
+                evidence=str(directory / "diagnostics.npz"),
+                deployment=str(directory / "candidate.json"),
+            )
+            for name in ("report", "evidence", "deployment"):
+                result[name + "_sha256"] = digest(result[name])
+            return result
+    
+        monkeypatch.setattr(supervisor, "execute", execute)
+        monkeypatch.setattr(
+            deployment, "load", lambda path: json.loads(Path(path).read_text())
+        )
+>       result = supervisor.optimize(
+            intent, tmp_path / "out", budget=30, history=tmp_path / "history"
+        )
+
+tests\test_optimization.py:421: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\akas\optimization\supervisor.py:268: in optimize
+    lock(out / ".lock"),
+    ^^^^^^^^^^^^^^^^^^^
+C:\Users\akbar\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = WindowsPath('C:/Users/akbar/AppData/Local/Temp/pytest-of-akbar/pytest-245/test_campaign_resumes_complete0/out/.lock')
+
+    @contextmanager
+    def lock(path):
+>       import fcntl
+E       ModuleNotFoundError: No module named 'fcntl'
+
+src\akas\optimization\supervisor.py:21: ModuleNotFoundError
+_____ test_prefill_and_decode_partition_requests_by_qualified_phase_rows ______
+
+    def test_prefill_and_decode_partition_requests_by_qualified_phase_rows():
+        records = [dict(phase="decode", rows=2, chunk=1), dict(phase="prefill", rows=2, chunk=4)]
+        executor = Executor(capacity=4, context=32, batches=SimpleNamespace(records=records), reset=lambda slot: None)
+        executor.config = SimpleNamespace(vocab=16)
+        slots = [executor.admit() for _ in range(4)]
+        calls = []
+        def execute(slots, sequences, chunk):
+            assert len(slots) <= 2 and chunk in (1, 4)
+            calls.append((tuple(slots), chunk))
+            for slot, sequence in zip(slots, sequences):
+                executor.positions[slot] += len(sequence)
+            return [sequence[-1] for sequence in sequences]
+        executor._execute_batch = execute
+>       assert executor.prefill(slots, [[1, 2, 3, 4, 5, 6]] * 4) == [6] * 4
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_program_geometry.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\akas\execution\executor.py:277: in prefill
+    result = self._prefill_groups(
+src\akas\execution\executor.py:209: in _prefill_groups
+    self.run_batch(slots[start:stop], sequences[start:stop], chunk=chunk)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <akas.execution.executor.Executor object at 0x00000201FF880560>
+slots = [0, 1], sequences = [[1, 2, 3, 4], [1, 2, 3, 4]], chunk = 4
+phase = None, read = True
+
+    def run_batch(self, slots, sequences, *, chunk=1, phase=None, read=True):
+        self._check()
+        slots, sequences = self._validate_batch(slots, sequences, chunk)
+>       return self._execute_batch(slots, sequences, chunk, phase=phase, read=read)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: test_prefill_and_decode_partition_requests_by_qualified_phase_rows.<locals>.execute() got an unexpected keyword argument 'phase'
+
+src\akas\execution\executor.py:93: TypeError
+______________________ test_bundle_symlink_cannot_escape ______________________
+
+tmp_path = WindowsPath('C:/Users/akbar/AppData/Local/Temp/pytest-of-akbar/pytest-245/test_bundle_symlink_cannot_esc0')
+
+    def test_bundle_symlink_cannot_escape(tmp_path):
+        outside = tmp_path.parent / (tmp_path.name + "-outside.tbin")
+        outside.write_bytes(b"outside")
+        try:
+>           (tmp_path / "escape.tbin").symlink_to(outside)
+
+tests\test_shared_backbone.py:63: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = WindowsPath('C:/Users/akbar/AppData/Local/Temp/pytest-of-akbar/pytest-245/test_bundle_symlink_cannot_esc0/escape.tbin')
+target = WindowsPath('C:/Users/akbar/AppData/Local/Temp/pytest-of-akbar/pytest-245/test_bundle_symlink_cannot_esc0-outside.tbin')
+target_is_directory = False
+
+    def symlink_to(self, target, target_is_directory=False):
+        """
+        Make this path a symlink pointing to the target path.
+        Note the order of arguments (link, target) is the reverse of os.symlink.
+        """
+        if not hasattr(os, "symlink"):
+            raise NotImplementedError("os.symlink() not available on this system")
+>       os.symlink(target, self, target_is_directory)
+E       OSError: [WinError 1314] A required privilege is not held by the client: 'C:\\Users\\akbar\\AppData\\Local\\Temp\\pytest-of-akbar\\pytest-245\\test_bundle_symlink_cannot_esc0-outside.tbin' -> 'C:\\Users\\akbar\\AppData\\Local\\Temp\\pytest-of-akbar\\pytest-245\\test_bundle_symlink_cannot_esc0\\escape.tbin'
+
+C:\Users\akbar\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\pathlib.py:1386: OSError
+=========================== short test summary info ===========================
+FAILED tests/test_campaign.py::test_matrix_resumes_without_repeating_completed_entries
+FAILED tests/test_campaign.py::test_mtp_cannot_establish_its_own_ar_reference
+FAILED tests/test_campaign_report.py::test_matrix_exports_report_on_completion_and_interruption[False]
+FAILED tests/test_campaign_report.py::test_matrix_exports_report_on_completion_and_interruption[True]
+FAILED tests/test_cli.py::test_benchmark_compiles_one_program_bank_for_all_requested_batches
+FAILED tests/test_draft_deployment.py::test_external_draft_descriptor_retains_all_artifacts_and_relative_paths
+FAILED tests/test_engine_layout.py::test_kernel_arithmetic_matches_pre_refactor_source[akas.ops.linear.webgpu]
+FAILED tests/test_engine_layout.py::test_kernel_arithmetic_matches_pre_refactor_source[akas.quantization.activations._shared.packing]
+FAILED tests/test_independent_adapter.py::test_sequences_complete_cancel_and_reuse_without_provider_fields[Counter-expected0]
+FAILED tests/test_independent_adapter.py::test_sequences_complete_cancel_and_reuse_without_provider_fields[Recurrent-expected1]
+FAILED tests/test_independent_adapter.py::test_engine_close_releases_both_active_sequences
+FAILED tests/test_lfm_verification.py::test_lfm_verifier_uses_private_journals_and_preserves_target_features[1-cuda]
+FAILED tests/test_lfm_verification.py::test_lfm_verifier_uses_private_journals_and_preserves_target_features[1-webgpu]
+FAILED tests/test_lfm_verification.py::test_lfm_verifier_uses_private_journals_and_preserves_target_features[3-cuda]
+FAILED tests/test_lfm_verification.py::test_lfm_verifier_uses_private_journals_and_preserves_target_features[3-webgpu]
+FAILED tests/test_optimization.py::test_timeout_terminates_worker_process_group_and_retains_log[None]
+FAILED tests/test_optimization.py::test_timeout_terminates_worker_process_group_and_retains_log[validating-and-measuring]
+FAILED tests/test_optimization.py::test_timeout_terminates_worker_process_group_and_retains_log[http-validation]
+FAILED tests/test_optimization.py::test_optimizer_lock_and_evidence_integrity
+FAILED tests/test_optimization.py::test_campaign_resumes_completed_jobs_and_preserves_deployment_on_changed_evidence
+FAILED tests/test_program_geometry.py::test_prefill_and_decode_partition_requests_by_qualified_phase_rows
+FAILED tests/test_shared_backbone.py::test_bundle_symlink_cannot_escape - OSE...
+22 failed, 1 passed in 5.77s
