@@ -46,6 +46,25 @@ def floating_warp(spec: KernelSpec, schedule: Mapping[str, object]):
     return compute
 
 
+def half_input(spec: KernelSpec, schedule: Mapping[str, object]):
+    """Materialize the projection's existing FP16 operand precision once."""
+    import tilelang.language as T
+
+    count = spec.parameters["r"] * spec.parameters["k"]
+
+    @kernel
+    def compute(x: Tensor(count, "float32")) -> Tensor(count, "float16"):
+        out = output(count, "float16")
+        with T.Kernel(T.ceildiv(count, 256), threads=256) as block:
+            for j in T.Parallel(256):
+                index = block * 256 + j
+                if index < count:
+                    out[index] = x[index]
+        return out
+
+    return compute
+
+
 def _mma(p, *, grouped, prequantized):
     import tilelang.language as T
 
@@ -491,10 +510,16 @@ def _packed(p, paired=False, add_residual=False):
                 accum2 = T.alloc_fragment((bm, bn), "float32")
                 T.clear(accum2)
             for tile in T.Pipelined(k // bk, num_stages=stages):
-                for i, j in T.Parallel(bm, bk):
-                    lhs[i, j] = T.if_then_else(
-                        by * bm + i < r, x[(by * bm + i) * k + tile * bk + j], 0
+                if p.get("input_dtype") == "float16":
+                    source = T.meta_var(T.view(x, (r, k)))
+                    T.copy(
+                        source[by * bm : by * bm + bm, tile * bk : tile * bk + bk], lhs
                     )
+                else:
+                    for i, j in T.Parallel(bm, bk):
+                        lhs[i, j] = T.if_then_else(
+                            by * bm + i < r, x[(by * bm + i) * k + tile * bk + j], 0
+                        )
                 if packed:
                     for i, j in T.Parallel(bn, bk // 2):
                         load_rhs(w, rhs, bx, tile, i, j)
@@ -730,6 +755,7 @@ def gemv_packed(p, paired=False, add_residual=False):
     from akas.quantization.weights.ggml.definition import ENCODINGS as TYPES
     from akas.ops.linear.kernel import cuda_abi as projection_abi
     from akas.ops.linear.cuda import _fused as fused_kernel
+    from akas.quantization.weights import bind
     from akas.quantization.weights.ggml.cuda import packed_dot
 
     k, o, q = (p["k"], p["o"], p["type"])
@@ -750,7 +776,17 @@ def gemv_packed(p, paired=False, add_residual=False):
     _, block, size = TYPES[q]
     row_bytes = k * (4 if q == 0 else 2) if q in (0, 1) else k // block * size
     tiles = k // (32 * width) if q in (0, 1) else k // 256
-    dot_product = packed_dot(q, k, row_bytes, width)
+    if (
+        p.get("weight_layout", p.get("weight_options", {}).get("layout", "raw"))
+        == "planar"
+    ):
+        product = bind(p, (o, k), provider="cuda").require("dot")
+
+        @T.macro
+        def dot_product(x, w, tile, lane, row):
+            return product((w,), x, tile, lane, row)
+    else:
+        dot_product = packed_dot(q, k, row_bytes, width)
 
     @T.macro
     def gemv(x, w, out, w2=None, residual=None):
@@ -1356,14 +1392,15 @@ def short_packed_linear(spec, schedule):
     """Larger K tiles amortize GGML coefficient decoding for short prefill."""
     p = {**spec.parameters, **schedule}
     bk = 512 if p["k"] >= 8192 or p["o"] < 32 else 256 if p["type"] == 8 else 128
+    bk = p.get("short_k", bk)
     return _packed(
         {
             **p,
-            "block_m": 32,
-            "block_n": 32 if p["o"] < 32 else 64,
+            "block_m": p.get("short_rows", 32),
+            "block_n": 32 if p["o"] < 32 else p.get("short_columns", 64),
             "block_k": bk,
             "stages": 1 if bk >= 256 else 2,
-            "threads": 128,
+            "threads": p.get("short_threads", 128),
         }
     )
 
@@ -1385,11 +1422,11 @@ def tiled_packed_linear(spec, schedule):
     return _packed(
         {
             **p,
-            "block_m": p.get("tile_m", 256),
-            "block_n": p.get("tile_n", 128),
-            "block_k": p.get("tile_k", 128),
-            "stages": 1,
-            "threads": 256,
+            "block_m": p.get("tile_m", p.get("prefill_tile_m", 256)),
+            "block_n": p.get("tile_n", p.get("prefill_tile_n", 128)),
+            "block_k": p.get("tile_k", p.get("prefill_tile_k", 128)),
+            "stages": p.get("tile_stages", p.get("prefill_tile_stages", 1)),
+            "threads": p.get("tile_threads", p.get("prefill_tile_threads", 256)),
             "weight_access": {"vector_tiles": True},
         }
     )
@@ -1479,5 +1516,196 @@ def q8_linear(spec, schedule):
             if lane == 0 and row < o:
                 out[row] = total
         return out
+
+    return compute
+
+
+def tiled_packed_ffn(spec, schedule):
+    """Reuse Q4_0 gate/up coefficients across a larger paired SwiGLU tile."""
+    p = {**spec.parameters, **schedule}
+    return _packed(
+        {
+            **p,
+            "block_m": p.get("tile_m", p.get("prefill_tile_m", 128)),
+            "block_n": p.get("tile_n", p.get("prefill_tile_n", 64)),
+            "block_k": p.get("tile_k", p.get("prefill_tile_k", 128)),
+            "stages": p.get("tile_stages", p.get("prefill_tile_stages", 1)),
+            "threads": p.get("tile_threads", p.get("prefill_tile_threads", 256)),
+        },
+        paired=True,
+    )
+
+
+def q4_q8_projection(spec: KernelSpec, schedule: Mapping[str, object]):
+    """Packed Q4/Q8 projection, optionally paired with a SwiGLU epilogue."""
+    return _q4_q8({**spec.parameters, **schedule}, packed_output=False)
+
+
+def q4_q8_ffn(spec: KernelSpec, schedule: Mapping[str, object]):
+    """Paired Q4/Q8 SwiGLU followed by block-32 Q8 packing in the same kernel."""
+    return _q4_q8({**spec.parameters, **schedule, "paired": True}, packed_output=True)
+
+
+def _q4_q8(p, *, packed_output):
+    import tilelang.language as T
+    from akas.quantization.weights.ggml.cuda import q4_int8_tile
+    from akas.quantization import get
+
+    r, k, o = p["r"], p["k"], p["o"]
+    paired = p.get("paired", False)
+    bm, bn, threads = p.get("block_m", 64), p.get("block_n", 64), p.get("threads", 128)
+    blocks = k // 32
+    if k % 128:
+        raise ValueError("Q4/Q8 projection requires 32-channel blocks")
+    layout = p.get("weight_options", {}).get("layout", p.get("weight_layout", "raw"))
+    count = (
+        get("weights", "ggml")
+        .storage((o, k), provider="cuda", encoding=2, layout=layout)
+        .values.shape[0]
+    )
+    output_dtype = p.get("output_dtype", "float32")
+
+    bk = 128
+    groups = bk // 32
+    load_weights = q4_int8_tile((o, k), (bn, bk), layout=layout)
+
+    @T.macro
+    def run(x, scales, w, out, w2=None, out_scales=None):
+        with T.Kernel(T.ceildiv(r, bm), T.ceildiv(o, bn), threads=threads) as (by, bx):
+            q = T.meta_var(T.view(x, (r, k), dtype="int8"))
+            a = T.alloc_shared((bm, bk + 16), "int8")
+            b = T.alloc_shared((bn, bk + 16), "int8")
+            sa = T.alloc_shared((bm, groups), "float32")
+            sb = T.alloc_shared((bn, groups), "float32")
+            integer = T.alloc_fragment((bm, bn), "int32")
+            total = T.alloc_fragment((bm, bn), "float32")
+            T.clear(total)
+            if paired:
+                b2 = T.alloc_shared((bn, bk + 16), "int8")
+                sb2 = T.alloc_shared((bn, groups), "float32")
+                total2 = T.alloc_fragment((bm, bn), "float32")
+                T.clear(total2)
+            for tile in T.serial(k // bk):
+                aw = T.meta_var(T.view(a, (bm, (bk + 16) // 4), dtype="uint32"))
+                bw = T.meta_var(T.view(b, (bn, (bk + 16) // 4), dtype="uint32"))
+                if paired:
+                    bw2 = T.meta_var(T.view(b2, (bn, (bk + 16) // 4), dtype="uint32"))
+                for i, j in T.Parallel(bm, bk // 4):
+                    aw[i, j] = T.if_then_else(
+                        by * bm + i < r,
+                        x[T.min(by * bm + i, r - 1) * (k // 4) + tile * (bk // 4) + j],
+                        T.uint32(0),
+                    )
+                for i, g in T.Parallel(bm, groups):
+                    sa[i, g] = T.if_then_else(
+                        by * bm + i < r,
+                        scales[T.min(by * bm + i, r - 1) * blocks + tile * groups + g],
+                        0,
+                    )
+                load_weights((w,), b, sb, bx * bn, tile * bk)
+                if paired:
+                    load_weights((w2,), b2, sb2, bx * bn, tile * bk)
+                for g in T.unroll(groups):
+                    T.gemm(
+                        a[:, g * 32 : g * 32 + 32],
+                        b[:, g * 32 : g * 32 + 32],
+                        integer,
+                        transpose_B=True,
+                        clear_accum=True,
+                    )
+                    for i, j in T.Parallel(bm, bn):
+                        total[i, j] += (
+                            T.cast(integer[i, j], "float32") * sa[i, g] * sb[j, g]
+                        )
+                    if paired:
+                        T.gemm(
+                            a[:, g * 32 : g * 32 + 32],
+                            b2[:, g * 32 : g * 32 + 32],
+                            integer,
+                            transpose_B=True,
+                            clear_accum=True,
+                        )
+                        for i, j in T.Parallel(bm, bn):
+                            total2[i, j] += (
+                                T.cast(integer[i, j], "float32") * sa[i, g] * sb2[j, g]
+                            )
+
+            if packed_output:
+                activated = T.alloc_fragment((bm, bn // 32, 32), "float32")
+                magnitudes = T.alloc_fragment((bm, bn // 32, 32), "float32")
+                maximum = T.alloc_fragment((bm, bn // 32), "float32")
+                for i, group, lane in T.Parallel(bm, bn // 32, 32):
+                    j = group * 32 + lane
+                    activated[i, group, lane] = T.cast(
+                        T.cast(
+                            total[i, j] / (1 + T.exp(-total[i, j])) * total2[i, j],
+                            "float16",
+                        ),
+                        "float32",
+                    )
+                    magnitudes[i, group, lane] = T.abs(activated[i, group, lane])
+                T.reduce_max(magnitudes, maximum, dim=2)
+                quantized = T.alloc_shared((bm, bn), "int8")
+                for i, group, lane in T.Parallel(bm, bn // 32, 32):
+                    scale = T.max(maximum[i, group] / T.float32(127), T.float32(1e-20))
+                    quantized[i, group * 32 + lane] = T.cast(
+                        T.round(activated[i, group, lane] / scale), "int8"
+                    )
+                T.sync_threads()
+                words = T.meta_var(T.view(quantized, (bm, bn // 4), dtype="uint32"))
+                for i, j in T.Parallel(bm, bn // 4):
+                    if by * bm + i < r and bx * bn + j * 4 < o:
+                        out[(by * bm + i) * (o // 4) + bx * (bn // 4) + j] = words[i, j]
+                for i, group in T.Parallel(bm, bn // 32):
+                    if by * bm + i < r and bx * bn + group * 32 < o:
+                        out_scales[
+                            (by * bm + i) * (o // 32) + (bx * bn) // 32 + group
+                        ] = T.max(maximum[i, group] / T.float32(127), T.float32(1e-20))
+            else:
+                for i, j in T.Parallel(bm, bn):
+                    if by * bm + i < r and bx * bn + j < o:
+                        if paired:
+                            out[(by * bm + i) * o + bx * bn + j] = (
+                                total[i, j] / (1 + T.exp(-total[i, j])) * total2[i, j]
+                            )
+                        else:
+                            out[(by * bm + i) * o + bx * bn + j] = total[i, j]
+
+    if packed_output:
+
+        @kernel
+        def compute(
+            x: Tensor((r * k // 4,), "uint32"),
+            scales: Tensor((r * blocks,), "float32"),
+            w: Tensor((count,), "uint8"),
+            w2: Tensor((count,), "uint8"),
+        ) -> tuple[Tensor((r * o // 4,), "uint32"), Tensor((r * o // 32,), "float32")]:
+            out = output((r * o // 4,), "uint32")
+            out_scales = output((r * o // 32,), "float32")
+            run(x, scales, w, out, w2, out_scales)
+            return out, out_scales
+    elif paired:
+
+        @kernel
+        def compute(
+            x: Tensor((r * k // 4,), "uint32"),
+            scales: Tensor((r * blocks,), "float32"),
+            w: Tensor((count,), "uint8"),
+            w2: Tensor((count,), "uint8"),
+        ) -> Tensor((r * o,), output_dtype):
+            out = output((r * o,), output_dtype)
+            run(x, scales, w, out, w2)
+            return out
+    else:
+
+        @kernel
+        def compute(
+            x: Tensor((r * k // 4,), "uint32"),
+            scales: Tensor((r * blocks,), "float32"),
+            w: Tensor((count,), "uint8"),
+        ) -> Tensor((r * o,), output_dtype):
+            out = output((r * o,), output_dtype)
+            run(x, scales, w, out)
+            return out
 
     return compute

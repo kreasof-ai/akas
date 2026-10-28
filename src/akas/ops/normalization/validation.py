@@ -17,7 +17,9 @@ def validation(kind, p, signature):
     out_dtype = next((row["dtype"] for row in signature if row["name"] == "out"))
     bf16 = out_dtype == "bfloat16"
     f16 = out_dtype == "float16"
-    residual_dtype = next((row["dtype"] for row in signature if row["name"] == "residual"), None)
+    residual_dtype = next(
+        (row["dtype"] for row in signature if row["name"] == "residual"), None
+    )
 
     def rounded(x):
         if f16:
@@ -54,3 +56,28 @@ def validation(kind, p, signature):
 
 
 VALIDATIONS = {name: validation for name in ("rms", "add_rms")}
+
+
+def post_add_rms_validation(kind, p, signature):
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    values = sample_arguments(signature)
+    x = values["x"].reshape(p["r"], p["c"]).astype("float64")
+    post = (
+        x / np.sqrt((x * x).mean(-1, keepdims=True) + p["eps"]) * values["post_weight"]
+    ).astype("float32")
+    hidden = (post + values["residual"].reshape(post.shape)).astype("float32")
+    wide = hidden.astype("float64")
+    normal = (
+        wide / np.sqrt((wide * wide).mean(-1, keepdims=True) + p["eps"]) * values["w"]
+    )
+    return ValidationCase(
+        values,
+        {**values, "hidden": hidden.reshape(-1), "out": normal.reshape(-1)},
+        rtol=0.002,
+        atol=0.0002,
+    )
+
+
+VALIDATIONS["post_add_rms"] = post_add_rms_validation

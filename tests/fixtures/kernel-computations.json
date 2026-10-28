@@ -132,6 +132,21 @@
       "computations": [
         "launch:2a4ecbf5dc0686cfae775dc54b00c693f9b7b30def357d25784215cba7fda8c4",
         "launch:e7c0a5d645c826cb3071b654fac370a8f5872c0b5e6ae82c336126ffc89a57d4"
+      ],
+      "qualified_replacements": [
+        {
+          "original": [
+            "launch:2a4ecbf5dc0686cfae775dc54b00c693f9b7b30def357d25784215cba7fda8c4"
+          ],
+          "replacement": [
+            "launch:d0e078541cd084ca7044c6eb0be916f206a9b913e6d917abd2af233345f4a183"
+          ],
+          "reason": "Keep convolution histories in registers across a chunk; preserve tap order, ragged/inactive behavior and the final state.",
+          "qualification_tests": [
+            "qualification/compare_kernels.py"
+          ],
+          "qualification_run": "20261027221834452796-2ba99389"
+        }
       ]
     },
     {
@@ -206,6 +221,19 @@
           "qualification_tests": [
             "tests/test_quantization_codecs.py::test_cuda_prefill_projection_uses_independent_codec_inputs"
           ]
+        },
+        {
+          "original": [
+            "launch:0a3e52fee229b9ebb69a87e5026d2693497f026b50fe6617aaccc13ab5b700a5"
+          ],
+          "replacement": [
+            "launch:950a9418f4a814f23e7eb847153cead9eda9419e78e66be3c692d948ce6fe663"
+          ],
+          "reason": "Stage already-rounded FP16 operands with a typed copy, preserving the original FP32 input path, tensor-core accumulation and epilogues.",
+          "qualification_tests": [
+            "qualification/compare_kernels.py"
+          ],
+          "qualification_run": "20261027221834452796-2ba99389"
         }
       ]
     },

@@ -1418,6 +1418,7 @@ def rotary_compact(spec, schedule):
         p[n] for n in ("r", "h", "d", "rotary", "capacity", "stride", "blocks")
     )
     half = rot // 2
+    pair = d // 2 if p.get("full_head_pairs", False) else half
 
     @kernel
     def compute(
@@ -1432,9 +1433,9 @@ def rotary_compact(spec, schedule):
                 index = block * 256 + thread
                 if index < r * h * d:
                     row, dim = index // (h * d), index % d
-                    if dim < rot:
+                    if dim % pair < half and dim < 2 * pair:
                         pos = T.min(T.max(positions[row], 0), cap - 1)
-                        column = dim % half
+                        column = dim % pair
                         c0, s0 = (
                             fine[pos % stride, column],
                             fine[pos % stride, column + half],
@@ -1445,9 +1446,9 @@ def rotary_compact(spec, schedule):
                         )
                         cosine, sine = c0 * c1 - s0 * s1, s0 * c1 + c0 * s1
                         base = index - dim
-                        left, right = x[base + column], x[base + column + half]
+                        left, right = x[base + column], x[base + column + pair]
                         out[row, index % (h * d)] = T.if_then_else(
-                            dim < half,
+                            dim < pair,
                             left * cosine - right * sine,
                             left * sine + right * cosine,
                         )

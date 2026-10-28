@@ -71,3 +71,44 @@ class Weights:
 
     def matrix(self, name):
         return [(self.buffers[p.name], p.start, p.rows) for p in self.parts[name]]
+
+
+class PackedWeights:
+    """Preserve each matrix's GGML encoding and share embedding/output storage."""
+
+    def __init__(self, graph, gguf, *, layouts=None):
+        from math import prod
+        from akas.quantization.weights.ggml.definition import weight_storage
+
+        self.gguf = gguf
+        self.layouts = dict(layouts or {})
+        self.buffers = {}
+        for name, info in gguf.tensors.items():
+            count, dtype = weight_storage(info.type, prod(info.shape))
+            self.buffers[name] = graph.buffer(name, (count,), dtype, role="weight")
+
+    def __getitem__(self, name):
+        return self.buffers[name]
+
+    def matrix(self, name):
+        return [
+            (
+                self.buffers[name],
+                0,
+                self.gguf.tensors[name].shape[0],
+            )
+        ]
+
+    def parameters(self, name):
+        return {
+            "ggml": True,
+            "type": self.gguf.tensors[name].type,
+            **(
+                {
+                    "weight_layout": self.layouts[name],
+                    "weight_options": {"layout": self.layouts[name]},
+                }
+                if name in self.layouts
+                else {}
+            ),
+        }

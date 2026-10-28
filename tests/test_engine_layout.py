@@ -20,6 +20,8 @@ MODULES = json.loads(
 
 @pytest.mark.parametrize("record", MODULES, ids=lambda row: row["module"])
 def test_kernel_arithmetic_matches_pre_refactor_source(record):
+    from akas.benchmarking.archive import read_file
+
     observed = set()
     for module in (record["module"], *record.get("related_modules", ())):
         path = ROOT / "src" / Path(module.replace(".", "/")).with_suffix(".py")
@@ -33,15 +35,20 @@ def test_kernel_arithmetic_matches_pre_refactor_source(record):
             set(replacement["replacement"]),
         )
         assert original and original <= required
-        assert updated and updated <= observed
+        assert updated
         assert replacement["reason"] and replacement["qualification_tests"]
-        directory = ROOT / "benchmarks/runs" / replacement["qualification_run"]
-        run = json.loads((directory / "run.json").read_text())
-        report = json.loads((directory / "report.json").read_text())
+        identity = replacement["qualification_run"]
+        run = json.loads(read_file(ROOT / "benchmarks", "runs", identity, "run.json"))
+        report = json.loads(
+            read_file(ROOT / "benchmarks", "runs", identity, "report.json")
+        )
         assert run["status"] == "passed"
         checks = report["metadata"]["checks"]
         assert checks and all(check["bitwise"] for check in checks)
         required -= original
+        # A later qualified specialization can replace an already qualified body.
+        # Verify every link's evidence, and require the final bodies in the source.
+        required |= updated
     assert required <= observed
 
 

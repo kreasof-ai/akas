@@ -17,6 +17,7 @@ def validation(kind, p, signature):
     blocks[0] = 0
     if len(blocks) > 1:
         blocks[1, :8] = [127, -127, 0.5, 1.5, 2.5, -0.5, -1.5, -2.5]
+    blocks = blocks.astype("float32")
     scales = np.maximum(
         np.max(np.abs(blocks), axis=1) / np.float32(127), np.float32(1e-20)
     )

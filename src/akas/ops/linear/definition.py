@@ -1090,8 +1090,19 @@ IMPLEMENTATIONS += (
         required=("r", "k", "o"),
         accepts=lambda p: (
             p.get("weight_format") == "fp8"
-            and p.get("weight_options", {}).get("scale_layout") == "channel"
+            and p.get("weight_options", {}).get("scale_layout", "block")
+            in ("channel", "block")
         ),
+    ),
+)
+
+IMPLEMENTATIONS += (
+    Implementation(
+        "linear_half_input",
+        "akas.ops.linear.cuda",
+        "reference",
+        factory="half_input",
+        name="linear.cuda.half_input",
     ),
 )
 
@@ -1299,6 +1310,12 @@ IMPLEMENTATIONS += (
         "reference",
         factory="short_packed_linear",
         name="linear.cuda.short_packed",
+        space=(
+            ("short_rows", (32, 16)),
+            ("short_columns", (64, 32)),
+            ("short_k", (128, 256)),
+            ("short_threads", (128, 256)),
+        ),
         priority=46,
         targets=("sm_89",),
         accepts=lambda p: (
@@ -1306,15 +1323,31 @@ IMPLEMENTATIONS += (
             and p.get("ggml", False)
             and 1 < p["r"] <= 64
             and p["k"] % 512 == 0
-            and p.get("type") in (8, 12, 14, 30)
+            and p.get("type") in (2, 8, 12, 14, 30)
         ),
     ),
     Implementation(
-        "linear", "akas.ops.linear.cuda", "reference", factory="tiled_packed_linear",
-        name="linear.cuda.tiled_packed", priority=47, targets=("sm_89",),
-        accepts=lambda p: p.get("tiled_packed",False) and p.get("ggml",False)
-        and p["r"] >= 128 and p["k"] % 512 == 0 and p.get("type") in (8,12,14,30),
-        space=(("tile_m",(256,128)),("tile_n",(128,256)),("tile_k",(128,))),
+        "linear",
+        "akas.ops.linear.cuda",
+        "reference",
+        factory="tiled_packed_linear",
+        name="linear.cuda.tiled_packed",
+        priority=47,
+        targets=("sm_89",),
+        accepts=lambda p: (
+            p.get("tiled_packed", False)
+            and p.get("ggml", False)
+            and p["r"] >= 128
+            and p["k"] % 512 == 0
+            and p.get("type") in (2, 8, 12, 14, 30)
+        ),
+        space=(
+            ("tile_m", (128, 64, 256)),
+            ("tile_n", (64, 128)),
+            ("tile_k", (64, 128)),
+            ("tile_stages", (1, 2)),
+            ("tile_threads", (256, 128)),
+        ),
     ),
 )
 
@@ -1338,5 +1371,64 @@ IMPLEMENTATIONS += (
             and p.get("type") in (8, 12, 14, 30)
         ),
         space=(("tile_m", (256, 128)), ("tile_n", (64, 128))),
+    ),
+)
+
+# Larger paired Q4_0 tiles reuse decoded coefficients across more prefill rows.
+IMPLEMENTATIONS += (
+    Implementation(
+        "ffn",
+        "akas.ops.linear.cuda",
+        "reference",
+        factory="tiled_packed_ffn",
+        name="linear.cuda.tiled_packed_ffn",
+        priority=47,
+        targets=("sm_89",),
+        accepts=lambda p: (
+            p.get("tiled_packed", False)
+            and p.get("ggml", False)
+            and p["r"] >= 32
+            and p["k"] % 128 == 0
+            and p.get("type") == 2
+        ),
+        space=(
+            ("tile_m", (128, 64, 256, 32)),
+            ("tile_n", (64, 32)),
+            ("tile_k", (64, 128, 256)),
+            ("tile_stages", (1, 2)),
+            ("tile_threads", (256, 128)),
+        ),
+    ),
+)
+
+from akas.ops.linear.validation import q4_q8_validation
+
+OUTPUT_ARGUMENTS["reference"]["q4_q8_linear"] = OutputABI((-1,), ("out",))
+VALIDATIONS["q4_q8_linear"] = q4_q8_validation
+IMPLEMENTATIONS += (
+    Implementation(
+        "q4_q8_linear",
+        "akas.ops.linear.cuda",
+        "reference",
+        factory="q4_q8_projection",
+        name="linear.cuda.q4_q8",
+        targets=("sm_89",),
+        space=(("block_m", (64, 128)), ("block_n", (64, 32)), ("threads", (128, 256))),
+    ),
+)
+
+from akas.ops.linear.validation import q4_q8_ffn_validation
+
+OUTPUT_ARGUMENTS["reference"]["q4_q8_ffn"] = OutputABI((-2, -1), ("out", "out_scales"))
+VALIDATIONS["q4_q8_ffn"] = q4_q8_ffn_validation
+IMPLEMENTATIONS += (
+    Implementation(
+        "q4_q8_ffn",
+        "akas.ops.linear.cuda",
+        "reference",
+        factory="q4_q8_ffn",
+        name="linear.cuda.q4_q8_ffn",
+        targets=("sm_89",),
+        space=(("block_m", (64, 128)), ("block_n", (64, 32)), ("threads", (128, 256))),
     ),
 )

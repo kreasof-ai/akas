@@ -1,0 +1,10 @@
+{
+  "schema": "akas.matrix-campaign.v1",
+  "models": ["lfm3-1.7b"],
+  "formats": ["q4_0"],
+  "backends": ["cuda"],
+  "caches": ["float16"],
+  "workload": "single-user-long-context-v1",
+  "baselines": [{"runtime": "llama", "provider": "cuda", "weight_format": "q4_0", "mode": "ar"}],
+  "configuration_budget": "48h"
+}

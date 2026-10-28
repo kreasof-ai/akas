@@ -8,6 +8,17 @@ VALIDATIONS = {"conv": validation}
 IMPLEMENTATIONS = (
     Implementation(
         "conv",
+        "akas.ops.convolution.cuda",
+        "reference",
+        factory="parallel_prefill",
+        name="convolution.cuda.parallel_prefill",
+        priority=20,
+        targets=("sm_89",),
+        accepts=lambda p: 32 <= p.get("chunk", 1) <= 1024 and p["c"] >= 128,
+        space=(("columns", (8, 16, 32)), ("threads", (256, 128))),
+    ),
+    Implementation(
+        "conv",
         "akas.ops.convolution.kernel",
         "packed-baseline",
         factory="convolution_flat",

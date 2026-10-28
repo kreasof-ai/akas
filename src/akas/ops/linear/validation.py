@@ -385,3 +385,68 @@ def geglu_projection_validation(kind, p, signature):
         )
     expected["out"] = result.reshape(values["out"].shape).astype(values["out"].dtype)
     return ValidationCase(values, expected, rtol=0.002, atol=0.002)
+
+
+def q4_q8_validation(kind, p, signature):
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.quantization.weights.ggml.validation import sample_weight
+
+    v = sample_arguments(signature)
+    r, k, o = p["r"], p["k"], p["o"]
+    rng = np.random.default_rng(83)
+    signed = rng.integers(-127, 128, (r, k), dtype="int16").astype("int8")
+    v["x"][:] = signed.reshape(-1).view("uint32")
+    v["scales"][:] = rng.uniform(0.001, 0.003, v["scales"].shape)
+    x = signed.astype("float64") * v["scales"].reshape(r, k // 32).repeat(32, axis=1)
+    w = sample_weight(v["w"], 2).reshape(o, k).astype("float64")
+    result = x @ w.T
+    if p.get("paired", False):
+        w2 = sample_weight(v["w2"], 2, seed=32).reshape(o, k).astype("float64")
+        result = result / (1 + np.exp(-result)) * (x @ w2.T)
+    if (
+        p.get("weight_options", {}).get("layout", p.get("weight_layout", "raw"))
+        == "planar"
+    ):
+        from akas.quantization.weights.ggml.kernel import repack_host
+
+        for name in ("w", "w2") if p.get("paired", False) else ("w",):
+            v[name][:] = repack_host(v[name], target="planar")
+    return ValidationCase(
+        v, {**v, "out": result.reshape(-1).astype("float32")}, rtol=0.002, atol=0.0002
+    )
+
+
+def q4_q8_ffn_validation(kind, p, signature):
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase
+
+    r, o = p["r"], p["o"]
+    projection_signature = [
+        s for s in signature if s["name"] not in ("out", "out_scales")
+    ]
+    projection_signature.append(dict(name="out", shape=[r * o], dtype="float32"))
+    base = q4_q8_validation(kind, {**p, "paired": True}, projection_signature)
+    # The fused boundary rounds SwiGLU to F16 before independent Q8 encoding.
+    f = base.expected["out"].astype("float16").astype("float32").reshape(-1, 32)
+    scales = np.maximum(np.abs(f).max(axis=1) / np.float32(127), np.float32(1e-20))
+    quantized = np.rint(f / scales[:, None]).astype("int8").reshape(-1).view("uint32")
+    values = {
+        **base.arguments,
+        "out": np.zeros(r * o // 4, "uint32"),
+        "out_scales": np.zeros(r * o // 32, "float32"),
+    }
+
+    def packed(actual, expected):
+        # F64 reference vs F32 accumulation can straddle one rounding boundary.
+        np.testing.assert_allclose(
+            actual.view("int8"), expected.view("int8"), rtol=0, atol=1
+        )
+
+    return ValidationCase(
+        values,
+        {**values, "out": quantized, "out_scales": scales},
+        rtol=0.002,
+        atol=1e-9,
+        comparators={"out": packed},
+    )

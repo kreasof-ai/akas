@@ -26,6 +26,9 @@ def convolution(spec: KernelSpec, schedule: Mapping[str, object]):
             tx = T.get_thread_binding()
             col = block * 64 + tx
             if col < c:
+                history = T.alloc_local((length - 1,), "float32")
+                for i in T.unroll(length - 1):
+                    history[i] = state[row, i, col]
                 for token in T.serial(chunk):
                     index = row * chunk + token
                     if token < enabled[row]:
@@ -35,14 +38,16 @@ def convolution(spec: KernelSpec, schedule: Mapping[str, object]):
                             x[index * 3 * c + col] * x[index * 3 * c + 2 * c + col]
                         )
                         acc = current * w[col * length + length - 1]
-                        for i in T.serial(length - 1):
-                            acc += state[row, i, col] * w[col * length + i]
+                        for i in T.unroll(length - 1):
+                            acc += history[i] * w[col * length + i]
                         out[index * c + col] = x[index * 3 * c + c + col] * acc
-                        for i in T.serial(length - 2):
-                            state[row, i, col] = state[row, i + 1, col]
-                        state[row, length - 2, col] = current
+                        for i in T.unroll(length - 2):
+                            history[i] = history[i + 1]
+                        history[length - 2] = current
                     else:
                         out[index * c + col] = 0
+                for i in T.unroll(length - 1):
+                    state[row, i, col] = history[i]
         return (state, out)
 
     return compute

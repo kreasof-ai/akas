@@ -826,6 +826,15 @@ def render(data, out, history):
         "| Hardware | Driver | Baseline/runtime | Version or revision | Source | Evidence |",
         "| --- | --- | --- | --- | --- | --- |",
     ]
+    if "performance_acceptance" in data:
+        acceptance = data["performance_acceptance"]
+        write(out / "PARITY.json", acceptance)
+        lines.insert(
+            lines.index(notes),
+            "Both-phase median criterion: **"
+            + ("passed" if acceptance["passed"] else "failed")
+            + "**. [Per-prefix acceptance results](PARITY.json).\n",
+        )
     for p in qualified + baselines:
         e = data["evidence"].get(p.get("selected_run_id"), {})
         m = e.get("metadata", {})
@@ -1434,20 +1443,23 @@ def check(history="benchmarks"):
                 continue
             if not folder.is_dir() or not (folder / "report.json").is_file():
                 raise ValueError(f"Unexpected report entry: {folder}")
+            data = read(folder / "report.json")
+            expected_files = REPORT_FILES | (
+                {"PARITY.json"} if "performance_acceptance" in data else set()
+            )
             if {
                 p.name for p in folder.iterdir() if p.name != ".ipynb_checkpoints"
-            } != REPORT_FILES:
+            } != expected_files:
                 raise ValueError(
                     f"Report files differ from the standard bundle: {folder}"
                 )
-            data = read(folder / "report.json")
             if folder != report_directory(data["campaign"], history):
                 raise ValueError(
                     f"Report directory does not match campaign identity: {folder}"
                 )
             staged = staged_history / "reports" / folder.name
             render(data, staged, staged_history)
-            for name in sorted(REPORT_FILES):
+            for name in sorted(expected_files):
                 if (folder / name).read_bytes() != (staged / name).read_bytes():
                     raise ValueError(
                         f"Generated report differs; regenerate it: {folder / name}"

@@ -6,6 +6,11 @@ RMS normalization, residual-add/RMS fusion and Q/K normalization variants. Conce
 `rms(x, weight) -> out` or `add_rms(x, residual, weight) -> (residual, out)` when the
 residual is mutated.
 
+CUDA `post_add_rms(x, post_weight, residual, w)` returns the updated FP32 hidden
+state and its next RMS-normalized value. It fuses sandwich normalization,
+residual addition and the next normalization, using the same epsilon for both
+reductions. The normalized output can be FP16; residual arithmetic stays FP32.
+
 ## Backend choice
 
 **Recommendation: Share normalization mathematics and bind the appropriate reduction

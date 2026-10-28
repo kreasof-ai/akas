@@ -150,3 +150,10 @@ still belongs to the common compiler and the actual operation implementations.
 packed GGUF, CUDA execution precision, bounded sliding caches and the Q4_K_M
 context sweep against llama.cpp. Source FP8 is imported into FP16 execution;
 native dynamic W8A8 arithmetic is not implemented.
+
+## LFM3
+
+`from akas.models.lfm3 import LFM3` selects the LFM3 text architecture with BF16
+and block-scaled FP8 safetensors or packed GGUF. The [LFM3 guide](lfm3/README.md)
+covers seven-tap convolution, sandwich norms, sliding attention, full-head
+partial RoPE, execution precision and the single-user Q4_0 llama.cpp comparison.

@@ -344,3 +344,14 @@ IMPLEMENTATIONS += tuple(
     )
     for kind in ("rms", "add_rms")
 )
+
+OUTPUT_ARGUMENTS["reference"]["post_add_rms"] = OutputABI((-2, -1), ("hidden", "out"))
+IMPLEMENTATIONS += (
+    Implementation(
+        "post_add_rms",
+        "akas.ops.normalization.cuda",
+        "reference",
+        factory="post_add_rms",
+        accepts=lambda p: p["c"] % 32 == 0,
+    ),
+)

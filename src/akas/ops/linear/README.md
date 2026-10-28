@@ -117,3 +117,11 @@ routers as well as larger row batches. It assigns one output column to each
 warp and replaces shared reduction barriers with warp shuffles. Both operands
 and accumulation stay F32; this path does not quantize router weights. Output
 strides, offsets and partial columns retain the common projection contract.
+
+CUDA SM89 `q4_q8_linear` consumes packed Q4_0 coefficients, block-32 signed-byte
+activations and their FP32 scales. Integer tensor cores produce exact partial
+sums, followed by FP32 scaling and accumulation. It optionally pairs gate/up
+projections with SwiGLU. `q4_q8_ffn` additionally rounds that activation to FP16
+and packs its block-32 Q8 values and scales before leaving the kernel. Neither
+operation creates a floating weight copy. The independent reference includes
+original GGML scales and the explicit activation rounding boundary.

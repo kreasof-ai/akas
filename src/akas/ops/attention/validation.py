@@ -1140,7 +1140,11 @@ def rotary_compact_validation(kind, p, signature):
         ),
         r,
     )
-    frequencies = p["theta"] ** (-2 * np.arange(rot // 2, dtype="float64") / rot)
+    pair = d // 2 if p.get("full_head_pairs", False) else rot // 2
+    denominator = d if p.get("full_head_pairs", False) else rot
+    frequencies = p["theta"] ** (
+        -2 * np.arange(rot // 2, dtype="float64") / denominator
+    )
     for name, positions in (
         ("fine", np.arange(stride, dtype="float64")),
         ("coarse", np.arange(blocks, dtype="float64") * stride),
@@ -1151,9 +1155,9 @@ def rotary_compact_validation(kind, p, signature):
     angle = pos[:, None, None] * frequencies[None, None, :]
     x = v["x"].reshape(r, h, d).astype("float64")
     out = x.copy()
-    left, right = x[:, :, : rot // 2], x[:, :, rot // 2 : rot]
+    left, right = x[:, :, : rot // 2], x[:, :, pair : pair + rot // 2]
     out[:, :, : rot // 2] = left * np.cos(angle) - right * np.sin(angle)
-    out[:, :, rot // 2 : rot] = left * np.sin(angle) + right * np.cos(angle)
+    out[:, :, pair : pair + rot // 2] = left * np.sin(angle) + right * np.cos(angle)
     return ValidationCase(
         v, {**v, "out": out.reshape(r, h * d).astype("float32")}, rtol=2e-4, atol=2e-5
     )

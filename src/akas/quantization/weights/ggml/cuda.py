@@ -483,7 +483,9 @@ def supports(capability, shape, *, encoding, layout="raw"):
 
     validate_layout(shape, encoding=encoding, layout=layout)
     if layout == "planar":
-        return capability in ("read", "read_tile", "dot_half", "dot_float")
+        return capability in ("read", "read_tile", "dot_half", "dot_float") or (
+            capability == "dot" and shape[-1] % 256 == 0
+        )
     if capability in ("dot_half", "dot_float"):
         return encoding == 2 and shape[-1] % 256 == 0
     if capability == "read_pair":
@@ -795,17 +797,121 @@ def planar_dot_float(shape):
     return dot
 
 
+def planar_packed_dot(shape):
+    """The raw Q4 dot's arithmetic with aligned planar payload loads."""
+    from math import prod
+    import tilelang.language as T
+
+    depth = shape[-1]
+    words_count = prod(shape) // 32 * 18 // 4
+    scales_offset = prod(shape) // 2
+
+    @T.macro
+    def dot(encoded, x, tile, lane, row):
+        words = T.meta_var(T.view(encoded[0], (words_count,), dtype="uint32"))
+        block = row * (depth // 32) + tile * 8 + lane // 4
+        address = scales_offset + block * 2
+        scale_bits = words[address // 4] >> (address % 4 * 8)
+        scale = T.cast(
+            T.reinterpret("float16", T.cast(scale_bits, "uint16")), "float32"
+        )
+        packed = words[block * 4 + lane % 4]
+        channel = tile * 256 + lane // 4 * 32 + lane % 4 * 4
+        lo = T.alloc_local((4,), "float32")
+        hi = T.alloc_local((4,), "float32")
+        for i in T.vectorized(4):
+            lo[i] = x[channel + i]
+            hi[i] = x[channel + 16 + i]
+        partial = T.alloc_var("float32")
+        partial = 0
+        for i in T.unroll(4):
+            partial = T.ieee_fmaf(
+                lo[i], T.cast(packed >> (i * 8) & 15, "float32") - 8, partial
+            )
+        for i in T.unroll(4):
+            partial = T.ieee_fmaf(
+                hi[i], T.cast(packed >> (i * 8 + 4) & 15, "float32") - 8, partial
+            )
+        return scale * partial
+
+    return dot
+
+
+def q4_int8_tile(shape, tile_shape, *, layout="raw"):
+    """Decode Q4 coefficients to signed-byte shared tiles with original scales."""
+    import tilelang.language as T
+
+    rows, depth = shape
+    height, width = tile_shape
+    blocks = depth // 32
+    groups = width // 32
+    if layout not in ("raw", "planar") or width % 32 or depth % width:
+        raise ValueError("invalid Q4 integer tile geometry or layout")
+    u16, word, _ = hardware_loads()
+    count = rows * blocks * 18
+
+    @T.macro
+    def load(encoded, destination, scales, row, column):
+        packed_words = T.meta_var(T.view(encoded[0], (count // 4,), dtype="uint32"))
+        scale_halves = T.meta_var(T.view(encoded[0], (count // 2,), dtype="uint16"))
+        target = T.meta_var(
+            T.view(destination, (height, destination.shape[1] // 4), dtype="uint32")
+        )
+        for i, g in T.Parallel(height, groups):
+            block = T.min(row + i, rows - 1) * blocks + column // 32 + g
+            if layout == "planar":
+                bits = T.cast(scale_halves[rows * depth // 4 + block], "uint32")
+            else:
+                bits = u16(encoded[0], block * 18)
+            scales[i, g] = T.cast(
+                T.reinterpret("float16", T.cast(bits, "uint16")), "float32"
+            )
+        for i, j in T.Parallel(height, width // 8):
+            local = j // 4 * 32 + j % 4 * 4
+            block = T.min(row + i, rows - 1) * blocks + (column + local) // 32
+            if layout == "planar":
+                bits = packed_words[block * 4 + local % 16 // 4]
+            else:
+                bits = word(encoded[0], block * 18 + 2 + local % 16)
+            target[i, local // 4] = T.call_extern(
+                "uint32", "__vsub4", bits & T.uint32(0x0F0F0F0F), T.uint32(0x08080808)
+            )
+            target[i, (local + 16) // 4] = T.call_extern(
+                "uint32",
+                "__vsub4",
+                (bits >> 4) & T.uint32(0x0F0F0F0F),
+                T.uint32(0x08080808),
+            )
+
+    return load
+
+
 def planar_binding(shape, *, encoding):
+    from math import prod
+    import tilelang.language as T
     from akas.quantization.formats import Codec
     from .definition import FORMAT
-    from .kernel import planar_reader
 
     storage = FORMAT.storage(shape, provider="cuda", encoding=encoding, layout="planar")
-    read = planar_reader(shape)
+    depth = shape[-1]
+    blocks = prod(shape) // 32
+
+    @T.macro
+    def read(encoded, row, column):
+        words = T.meta_var(T.view(encoded[0], (blocks * 18 // 4,), dtype="uint32"))
+        block = row * (depth // 32) + column // 32
+        address = blocks * 16 + block * 2
+        bits = words[address // 4] >> (address % 4 * 8)
+        scale = T.cast(T.reinterpret("float16", T.cast(bits, "uint16")), "float32")
+        packed = words[block * 4 + column % 16 // 4]
+        value = packed >> (column % 4 * 8 + column % 32 // 16 * 4) & T.uint32(15)
+        return (T.cast(value, "float32") - 8) * scale
+
     return Codec(
         storage,
         read,
         planar_tile_half(shape, read),
+        dot=planar_packed_dot(shape) if shape[-1] % 256 == 0 else None,
         dot_half=planar_dot_half(shape),
         dot_float=planar_dot_float(shape),
     )

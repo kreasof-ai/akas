@@ -1,0 +1,22 @@
+{
+  "schema": "akas.benchmark-model.v1",
+  "id": "lfm3-1.7b",
+  "model": "LiquidAI/LFM3-1.7B",
+  "aliases": ["lfm3"],
+  "modes": ["ar"],
+  "weights": {
+    "bf16": {
+      "path": "build/checkpoints/lfm3-1.7b/bf16",
+      "source": {"repo": "LiquidAI/LFM3-1.7B", "revision": "40ebe0aa6662c9d40389c2f5d565b6a2c6aebacd"}
+    },
+    "fp8": {
+      "path": "build/checkpoints/lfm3-1.7b/fp8",
+      "source": {"repo": "LiquidAI/LFM3-1.7B-FP8", "revision": "243955da95b1cd68026f293b29de4b4c13f3638f"}
+    },
+    "q4_0": {
+      "path": "build/checkpoints/lfm3-1.7b/q4_0.gguf",
+      "source": {"repo": "LiquidAI/LFM3-1.7B-GGUF", "revision": "b3f2ae5d73cd3c91bf40e8ba752c648aa05dffdf", "file": "LFM3-1.7B-QAD-Q4_0.gguf"}
+    }
+  },
+  "runtime_options": {"llama": {}}
+}

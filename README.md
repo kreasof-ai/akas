@@ -152,6 +152,45 @@ safetensors and native FP8 weights with channel scales. See the
 and [full report](https://github.com/kreasof-ai/akas/blob/409fb009fc0429da6e6a67576c446cfe55487724/benchmarks/reports/20261026T141034Z-d68a20ede35c/README.md) for raw samples, output comparisons and selected
 schedules. Earlier results remain immutable in [the archive catalog](benchmarks/archive.json).
 
+**LFM3-1.7B · QAD Q4_0 weights · NVIDIA L4 (23,034 MiB) · CUDA**
+
+Results from the [October 28, 2026 comparison](https://github.com/kreasof-ai/akas/blob/2f19a43426682bc9dbeff464b988b2544cec000c/benchmarks/reports/20261027T185932Z-b917d23ac845/COMPARISON.md),
+with one request generating 128 total output tokens. Both runtimes use identical
+official checkpoint bytes, deterministic synthetic prompt IDs and FP16 KV.
+Rates are medians of three retained repetitions after one warmup.
+
+![LFM3 QAD Q4_0 prefill and decode throughput across prefixes 32 through 130,944, comparing AKAS and llama.cpp on NVIDIA L4.](https://raw.githubusercontent.com/kreasof-ai/akas/c1d260dc031cc412ab59180286c5dda978f6cee3/benchmarks/runs/20261028073053545412-431db636/analysis/throughput.svg)
+
+<details>
+<summary>Measurements (tokens per second)</summary>
+
+| Prefix tokens | AKAS prefill tok/s | llama.cpp prefill tok/s | AKAS decode tok/s | llama.cpp decode tok/s |
+| ---: | ---: | ---: | ---: | ---: |
+| 32 | 3,315.6 | 3,206.4 | 204.6 | 190.1 |
+| 512 | 13,932.3 | 13,559.7 | 203.7 | 186.1 |
+| 2,048 | 14,363.0 | 12,957.2 | 200.9 | 183.5 |
+| 8,192 | 13,293.5 | 12,381.4 | 190.0 | 172.8 |
+| 16,384 | 12,041.7 | 11,565.9 | 177.4 | 160.3 |
+| 32,768 | 10,176.7 | 9,988.2 | 150.9 | 140.2 |
+| 65,536 | 7,655.9 | 6,517.1 | 119.5 | 110.0 |
+| 130,944 | 5,081.0 | 3,942.3 | 85.4 | 79.3 |
+
+</details>
+
+Prefill and decode medians exceed llama.cpp at **8/8 prefixes**. The measured
+improvement is **1.9–28.9% for prefill** and **7.6–10.7% for decode**. Weights
+retain one packed device copy. Large Q4 prefill projections use block-32 Q8
+activations with FP32 scaling and accumulation; decode uses floating activations.
+
+AKAS uses a maximum 1024-token prefill chunk and llama.cpp uses 512. Native
+synchronized AKAS phases and llama-server eval phases have different timing
+boundaries; loading is excluded. The pinned llama.cpp run is reused unchanged.
+Generated sequences differ at some prefixes. See the [full report](https://github.com/kreasof-ai/akas/blob/2f19a43426682bc9dbeff464b988b2544cec000c/benchmarks/reports/20261027T185932Z-b917d23ac845/README.md)
+for raw samples, output comparisons and selected schedules, and the
+[validation and reproduction notes](https://github.com/kreasof-ai/akas/blob/c1d260dc031cc412ab59180286c5dda978f6cee3/benchmarks/runs/20261028073053545412-431db636/analysis/VALIDATION.md) for numerical checks and the
+retained compilation recipe. [LFM3 support and usage](src/akas/models/lfm3/README.md)
+also cover BF16 and block-scaled FP8 safetensors.
+
 ## Getting started
 
 Use Python 3.12. `uv.lock` pins Tensor to a published Git revision.
