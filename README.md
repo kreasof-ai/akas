@@ -159,7 +159,7 @@ with one request generating 128 total output tokens. Both runtimes use identical
 official checkpoint bytes, deterministic synthetic prompt IDs and FP16 KV.
 Rates are medians of three retained repetitions after one warmup.
 
-![LFM3 QAD Q4_0 prefill and decode throughput across prefixes 32 through 130,944, comparing AKAS and llama.cpp on NVIDIA L4.](https://raw.githubusercontent.com/kreasof-ai/akas/c1d260dc031cc412ab59180286c5dda978f6cee3/benchmarks/runs/20261028073053545412-431db636/analysis/throughput.svg)
+![LFM3 QAD Q4_0 prefill and decode throughput with observed sample ranges across prefixes 32 through 130,944, comparing AKAS and llama.cpp on NVIDIA L4.](https://raw.githubusercontent.com/kreasof-ai/akas/add6c98ed1b924e3f73e0acbc72257cac00c1db3/benchmarks/runs/20261028074859417380-248050ca/figures/throughput.svg)
 
 <details>
 <summary>Measurements (tokens per second)</summary>
@@ -190,6 +190,9 @@ for raw samples, output comparisons and selected schedules, and the
 [validation and reproduction notes](https://github.com/kreasof-ai/akas/blob/c1d260dc031cc412ab59180286c5dda978f6cee3/benchmarks/runs/20261028073053545412-431db636/analysis/VALIDATION.md) for numerical checks and the
 retained compilation recipe. [LFM3 support and usage](src/akas/models/lfm3/README.md)
 also cover BF16 and block-scaled FP8 safetensors.
+
+Regenerate the plot with `python -m tools.lfm3_plot REPORT_JSON OUTPUT_SVG`
+after retrieving the archived report.
 
 ## Getting started
 

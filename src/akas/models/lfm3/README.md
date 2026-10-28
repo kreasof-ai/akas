@@ -84,7 +84,7 @@ Output capture restarts the request to restore all recurrent histories.
 The retained [NVIDIA L4 comparison](https://github.com/kreasof-ai/akas/blob/2f19a43426682bc9dbeff464b988b2544cec000c/benchmarks/reports/20261027T185932Z-b917d23ac845/README.md)
 passes [both phase checks at all eight prefixes](https://github.com/kreasof-ai/akas/blob/2f19a43426682bc9dbeff464b988b2544cec000c/benchmarks/reports/20261027T185932Z-b917d23ac845/PARITY.json):
 prefill medians improve 1.9–28.9% and decode medians improve 7.6–10.7% over the
-pinned llama.cpp Q4_0 baseline. See the [throughput chart](https://github.com/kreasof-ai/akas/blob/c1d260dc031cc412ab59180286c5dda978f6cee3/benchmarks/runs/20261028073053545412-431db636/analysis/throughput.svg)
+pinned llama.cpp Q4_0 baseline. See the [throughput chart](https://github.com/kreasof-ai/akas/blob/add6c98ed1b924e3f73e0acbc72257cac00c1db3/benchmarks/runs/20261028074859417380-248050ca/figures/throughput.svg)
 and [validation, precision and reproduction notes](https://github.com/kreasof-ai/akas/blob/c1d260dc031cc412ab59180286c5dda978f6cee3/benchmarks/runs/20261028073053545412-431db636/analysis/VALIDATION.md).
 These are phase-rate results; generated sequences differ at some prefixes, as
 recorded in the report's `output_comparisons`.

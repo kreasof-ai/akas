@@ -4,6 +4,7 @@ Generated from run records. See [the benchmark guide](../docs/benchmarking.md).
 
 | UTC | Hardware | Runtime / model | Backend / weights / mode / KV | Shapes (B/P/O) | Purpose | Status | Source | Record |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-10-28T07:48:59.417380Z | {} | akas / LiquidAI/LFM3-1.7B | cuda / q4_0 / ar / unspecified |  | analysis | passed | 9ee86d7d97 + snapshot | [run](https://github.com/kreasof-ai/akas/blob/add6c98ed1b924e3f73e0acbc72257cac00c1db3/benchmarks/runs/20261028074859417380-248050ca/run.json) |
 | 2026-10-28T07:30:53.545412Z | {} | akas / LiquidAI/LFM3-1.7B | cuda / q4_0 / ar / unspecified |  | analysis | passed | ceb52a49d8 + snapshot | [run](https://github.com/kreasof-ai/akas/blob/c1d260dc031cc412ab59180286c5dda978f6cee3/benchmarks/runs/20261028073053545412-431db636/run.json) |
 | 2026-10-28T07:21:45.009000Z | NVIDIA L4 | akas / LiquidAI/LFM3-1.7B | cuda / q4_0 / ar / float16 | 1/32/128, 1/512/128, 1/2048/128, 1/8192/128, 1/16384/128, 1/32768/128, 1/65536/128, 1/130944/128 | benchmark | passed | ceb52a49d8 + snapshot | [run](https://github.com/kreasof-ai/akas/blob/c1d260dc031cc412ab59180286c5dda978f6cee3/benchmarks/runs/20261028072145009000-65166f09/run.json) |
 | 2026-10-28T07:15:46.944954Z | {} | akas / LiquidAI/LFM3-1.7B | cuda / unspecified / ar / unspecified |  | model-qualification | passed | ceb52a49d8 + snapshot | [run](https://github.com/kreasof-ai/akas/blob/c1d260dc031cc412ab59180286c5dda978f6cee3/benchmarks/runs/20261028071546944954-9fb5e2d3/run.json) |
