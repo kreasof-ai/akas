@@ -1,0 +1,391 @@
+{
+  "schema": "akas.forward.v1",
+  "target": "sm_89",
+  "provider": "cuda",
+  "forward": {
+    "contract": "reference",
+    "phase": "forward",
+    "buffers": [
+      {
+        "name": "x",
+        "shape": [
+          8192,
+          2048
+        ],
+        "dtype": "uint8",
+        "role": "input"
+      },
+      {
+        "name": "activation_scales",
+        "shape": [
+          8192,
+          16
+        ],
+        "dtype": "float32",
+        "role": "input"
+      },
+      {
+        "name": "counts",
+        "shape": [
+          64
+        ],
+        "dtype": "int32",
+        "role": "input"
+      },
+      {
+        "name": "routes",
+        "shape": [
+          64,
+          8192
+        ],
+        "dtype": "int32",
+        "role": "input"
+      },
+      {
+        "name": "tile_experts",
+        "shape": [
+          6,
+          8256
+        ],
+        "dtype": "int32",
+        "role": "input"
+      },
+      {
+        "name": "tile_offsets",
+        "shape": [
+          6,
+          8256
+        ],
+        "dtype": "int32",
+        "role": "input"
+      },
+      {
+        "name": "w",
+        "shape": [
+          64,
+          12,
+          16,
+          128,
+          128
+        ],
+        "dtype": "uint8",
+        "role": "input"
+      },
+      {
+        "name": "w_scales",
+        "shape": [
+          64,
+          12,
+          16
+        ],
+        "dtype": "bfloat16",
+        "role": "input"
+      },
+      {
+        "name": "w2",
+        "shape": [
+          64,
+          12,
+          16,
+          128,
+          128
+        ],
+        "dtype": "uint8",
+        "role": "input"
+      },
+      {
+        "name": "w2_scales",
+        "shape": [
+          64,
+          12,
+          16
+        ],
+        "dtype": "bfloat16",
+        "role": "input"
+      },
+      {
+        "name": "down",
+        "shape": [
+          64,
+          16,
+          12,
+          128,
+          128
+        ],
+        "dtype": "uint8",
+        "role": "input"
+      },
+      {
+        "name": "down_scales",
+        "shape": [
+          64,
+          16,
+          12
+        ],
+        "dtype": "bfloat16",
+        "role": "input"
+      },
+      {
+        "name": "out",
+        "shape": [
+          8192,
+          4,
+          2048
+        ],
+        "dtype": "bfloat16",
+        "role": "output"
+      },
+      {
+        "name": "activated",
+        "shape": [
+          40832,
+          1536
+        ],
+        "dtype": "uint8",
+        "role": "scratch"
+      },
+      {
+        "name": "activated_scales",
+        "shape": [
+          40832,
+          12
+        ],
+        "dtype": "float32",
+        "role": "scratch"
+      },
+      {
+        "name": "pipeline.expert_pack.0.values",
+        "shape": [
+          40832,
+          2048
+        ],
+        "dtype": "uint8",
+        "role": "scratch"
+      },
+      {
+        "name": "pipeline.expert_pack.0.scales",
+        "shape": [
+          40832,
+          16
+        ],
+        "dtype": "float32",
+        "role": "scratch"
+      },
+      {
+        "name": "pipeline.expert_pack.0.offsets",
+        "shape": [
+          64
+        ],
+        "dtype": "int32",
+        "role": "scratch"
+      }
+    ],
+    "calls": [
+      {
+        "kind": "expert_pack",
+        "parameters": {
+          "r": 8192,
+          "top": 4,
+          "experts": 64,
+          "k": 2048,
+          "max_block_m": 128
+        },
+        "arguments": [],
+        "bindings": {
+          "x": "x",
+          "activation_scales": "activation_scales",
+          "counts": "counts",
+          "routes": "routes",
+          "tile_experts": "tile_experts",
+          "tile_offsets": "tile_offsets",
+          "packed": "pipeline.expert_pack.0.values",
+          "packed_scales": "pipeline.expert_pack.0.scales",
+          "expert_offsets": "pipeline.expert_pack.0.offsets"
+        },
+        "label": null
+      },
+      {
+        "kind": "fp8_expert_swiglu",
+        "parameters": {
+          "r": 8192,
+          "rows": 8192,
+          "top": 4,
+          "experts": 64,
+          "partitions": 1,
+          "compact": true,
+          "tile_map": true,
+          "max_block_m": 128,
+          "columns": 128,
+          "activation_vector": 16,
+          "mma_dtype": "float8_e4m3fn",
+          "weight_layout": "block128",
+          "k": 2048,
+          "o": 1536,
+          "block_m": 128,
+          "threads": 512,
+          "stages": 2,
+          "pair_layout": "separate",
+          "product_dtype": "bfloat16",
+          "activation_dtype": "bfloat16",
+          "packed_input": true,
+          "packed_output": true
+        },
+        "arguments": [],
+        "bindings": {
+          "x": "pipeline.expert_pack.0.values",
+          "activation_scales": "pipeline.expert_pack.0.scales",
+          "w": "w",
+          "scales": "w_scales",
+          "w2": "w2",
+          "scales2": "w2_scales",
+          "counts": "counts",
+          "routes": "routes",
+          "tile_experts": "tile_experts",
+          "tile_offsets": "tile_offsets",
+          "out": "activated",
+          "output_scales": "activated_scales",
+          "expert_offsets": "pipeline.expert_pack.0.offsets"
+        },
+        "label": null
+      },
+      {
+        "kind": "expert_partial",
+        "parameters": {
+          "r": 8192,
+          "rows": 8192,
+          "top": 4,
+          "experts": 64,
+          "partitions": 1,
+          "compact": true,
+          "tile_map": true,
+          "max_block_m": 128,
+          "columns": 128,
+          "activation_vector": 16,
+          "mma_dtype": "float8_e4m3fn",
+          "weight_layout": "block128",
+          "k": 1536,
+          "o": 2048,
+          "block_m": 128,
+          "threads": 512,
+          "stages": 2,
+          "routed_input": true,
+          "output_dtype": "bfloat16",
+          "packed_input": true
+        },
+        "arguments": [],
+        "bindings": {
+          "x": "activated",
+          "activation_scales": "activated_scales",
+          "w": "down",
+          "scales": "down_scales",
+          "counts": "counts",
+          "routes": "routes",
+          "tile_experts": "tile_experts",
+          "tile_offsets": "tile_offsets",
+          "out": "out",
+          "expert_offsets": "pipeline.expert_pack.0.offsets"
+        },
+        "label": null
+      }
+    ]
+  },
+  "allocations": [
+    [
+      "pipeline.expert_pack.0.values"
+    ],
+    [
+      "pipeline.expert_pack.0.scales"
+    ],
+    [
+      "pipeline.expert_pack.0.offsets"
+    ],
+    [
+      "activated"
+    ],
+    [
+      "activated_scales"
+    ]
+  ],
+  "tuning": {
+    "status": "explicitly disabled"
+  },
+  "kernels": {
+    "a0c641c991367e314a2f2d81": {
+      "kind": "expert_pack",
+      "parameters": {
+        "r": 8192,
+        "top": 4,
+        "experts": 64,
+        "k": 2048,
+        "max_block_m": 128
+      },
+      "sha256": "7ead824c6f7e0ccdf609a3bd63d1667b66d072150743c067500451ce50ae86a3",
+      "path": "a0c641c991367e314a2f2d81.tbin",
+      "schedule": {
+        "implementation": "moe.cuda.pack:reference"
+      }
+    },
+    "fedd6a4e0a8173feb75d3f22": {
+      "kind": "fp8_expert_swiglu",
+      "parameters": {
+        "r": 8192,
+        "rows": 8192,
+        "top": 4,
+        "experts": 64,
+        "partitions": 1,
+        "compact": true,
+        "tile_map": true,
+        "max_block_m": 128,
+        "columns": 128,
+        "activation_vector": 16,
+        "mma_dtype": "float8_e4m3fn",
+        "weight_layout": "block128",
+        "k": 2048,
+        "o": 1536,
+        "block_m": 128,
+        "threads": 512,
+        "stages": 2,
+        "pair_layout": "separate",
+        "product_dtype": "bfloat16",
+        "activation_dtype": "bfloat16",
+        "packed_input": true,
+        "packed_output": true
+      },
+      "sha256": "6bcd660f331d8dd1c25757cc829a387aa32a180e13c965b7acadb31cc91cbb79",
+      "path": "fedd6a4e0a8173feb75d3f22.tbin",
+      "schedule": {
+        "implementation": "moe.cuda.fp8-swiglu:mapped"
+      }
+    },
+    "d7ddc2b1f16aca62e61ccc4c": {
+      "kind": "expert_partial",
+      "parameters": {
+        "r": 8192,
+        "rows": 8192,
+        "top": 4,
+        "experts": 64,
+        "partitions": 1,
+        "compact": true,
+        "tile_map": true,
+        "max_block_m": 128,
+        "columns": 128,
+        "activation_vector": 16,
+        "mma_dtype": "float8_e4m3fn",
+        "weight_layout": "block128",
+        "k": 1536,
+        "o": 2048,
+        "block_m": 128,
+        "threads": 512,
+        "stages": 2,
+        "routed_input": true,
+        "output_dtype": "bfloat16",
+        "packed_input": true
+      },
+      "sha256": "28e9da39b47316c2afe9af12325ccb2933e614da64e59bb2395afcbe9c5c6433",
+      "path": "d7ddc2b1f16aca62e61ccc4c.tbin",
+      "schedule": {
+        "implementation": "moe.cuda.fp8-bucketed:mapped"
+      }
+    }
+  }
+}

@@ -1,0 +1,288 @@
+{
+  "schema": "akas.program.v1",
+  "provider": "cuda",
+  "target": "sm_89",
+  "config": {
+    "width": 2048,
+    "ff": 11776,
+    "heads": 32,
+    "kv_heads": 8,
+    "layers": [
+      "conv",
+      "conv",
+      "attention",
+      "conv",
+      "conv",
+      "conv",
+      "attention",
+      "conv",
+      "conv",
+      "conv",
+      "attention",
+      "conv",
+      "conv",
+      "conv",
+      "attention",
+      "conv",
+      "conv",
+      "conv",
+      "attention",
+      "conv",
+      "conv",
+      "conv",
+      "attention",
+      "conv",
+      "conv",
+      "conv",
+      "attention",
+      "conv",
+      "conv",
+      "conv",
+      "attention",
+      "conv",
+      "conv",
+      "conv",
+      "attention",
+      "conv",
+      "conv",
+      "conv",
+      "attention",
+      "conv"
+    ],
+    "vocab": 128000,
+    "conv": 3,
+    "epsilon": 1e-05,
+    "theta": 10000000.0,
+    "max_context": 131072,
+    "experts": 64,
+    "top_k": 4,
+    "expert_width": 1536,
+    "dense_layers": 2,
+    "routing_scale": 1.0,
+    "normalize_routes": true
+  },
+  "max_requests": 256,
+  "max_context": 2176,
+  "phases": [
+    {
+      "phase": "decode",
+      "rows": 1,
+      "chunk": 1,
+      "path": "programs/1c3e3645c7be4f6cb0645f92ded2b139/phases/decode-b1-t1.json",
+      "sha256": "d600972dc3bb77fa0f813f96719e9b91f9e538d51f2e99dc1293541051f0f7a0",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "feedback": true,
+      "features": {
+        "logits": "logits"
+      }
+    },
+    {
+      "phase": "decode",
+      "rows": 4,
+      "chunk": 1,
+      "path": "programs/1c3e3645c7be4f6cb0645f92ded2b139/phases/decode-b4-t1.json",
+      "sha256": "f9e22dc5d3a263df828ddb744eb64cc6ad18c502f826953e64d9bb3e1033488a",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "feedback": true,
+      "features": {
+        "logits": "logits"
+      }
+    },
+    {
+      "phase": "decode",
+      "rows": 16,
+      "chunk": 1,
+      "path": "programs/1c3e3645c7be4f6cb0645f92ded2b139/phases/decode-b16-t1.json",
+      "sha256": "370031c855794667b9e9a4e9546e053fd49702013b08e60eb54f8186b125f178",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "feedback": true,
+      "features": {
+        "logits": "logits"
+      }
+    },
+    {
+      "phase": "decode",
+      "rows": 64,
+      "chunk": 1,
+      "path": "programs/1c3e3645c7be4f6cb0645f92ded2b139/phases/decode-b64-t1.json",
+      "sha256": "bbfd8d0c83ba86ca623bb973d4600c160f37be07d074785cd2a6fb362aa7ec0f",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "feedback": true,
+      "features": {
+        "logits": "logits"
+      }
+    },
+    {
+      "phase": "decode",
+      "rows": 256,
+      "chunk": 1,
+      "path": "programs/1c3e3645c7be4f6cb0645f92ded2b139/phases/decode-b256-t1.json",
+      "sha256": "a760fb633792f976d6a46f1486486c3e89c02f0f100a4cafd7a5fc58ea6168aa",
+      "inputs": {
+        "tokens": "tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "feedback": true,
+      "features": {
+        "logits": "logits"
+      }
+    },
+    {
+      "phase": "prefill",
+      "rows": 1,
+      "chunk": 256,
+      "path": "programs/1c3e3645c7be4f6cb0645f92ded2b139/phases/prefill-b1-t256.json",
+      "sha256": "001403bbd72d7468c83a90bedd19aec65ad695aa3194820dce5a5e72475adcb7",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "feedback": false,
+      "features": {
+        "logits": "logits"
+      }
+    },
+    {
+      "phase": "prefill_state",
+      "rows": 1,
+      "chunk": 256,
+      "path": "programs/1c3e3645c7be4f6cb0645f92ded2b139/phases/prefill-state-b1-t256.json",
+      "sha256": "d820238e1f81964ea370264b3464dedb9bfc9833579637a573793575224ef2f1",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "state_only": true
+    },
+    {
+      "phase": "prefill",
+      "rows": 1,
+      "chunk": 2048,
+      "path": "programs/1c3e3645c7be4f6cb0645f92ded2b139/phases/prefill-b1-t2048.json",
+      "sha256": "93e498868a892a2174a8db44996448ed9ff8c70757b4b2dd8259b3a6fb2432f6",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "feedback": false,
+      "features": {
+        "logits": "logits"
+      }
+    },
+    {
+      "phase": "prefill_state",
+      "rows": 1,
+      "chunk": 2048,
+      "path": "programs/1c3e3645c7be4f6cb0645f92ded2b139/phases/prefill-state-b1-t2048.json",
+      "sha256": "db065523920cb42d0b19f29651971bb6b873386e183f28e0d62c2da58e8a0ffc",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "state_only": true
+    },
+    {
+      "phase": "prefill",
+      "rows": 4,
+      "chunk": 2048,
+      "path": "programs/1c3e3645c7be4f6cb0645f92ded2b139/phases/prefill-b4-t2048.json",
+      "sha256": "0d58188b84b1234ce9c3ff851ae58de979e0072400a980d3e98d166860fc971c",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "feedback": false,
+      "features": {
+        "logits": "logits"
+      }
+    },
+    {
+      "phase": "prefill_state",
+      "rows": 4,
+      "chunk": 2048,
+      "path": "programs/1c3e3645c7be4f6cb0645f92ded2b139/phases/prefill-state-b4-t2048.json",
+      "sha256": "38edd5ecc08ee5af4c640bd56c7c69d0deddeccb7ae240a67c9b96c88843f53c",
+      "inputs": {
+        "tokens": "prefill_tokens",
+        "mapping": "mapping",
+        "lengths": "active"
+      },
+      "prediction": "sampled",
+      "state_only": true
+    }
+  ],
+  "reset": {
+    "path": "programs/1c3e3645c7be4f6cb0645f92ded2b139/phases/reset.json",
+    "sha256": "c82aad6b92aca8c0ca7d24b9f980f6ab6d4745d5ad6f79ab21f61e95a3f8fb59",
+    "mapping": "mapping"
+  },
+  "rounds": [],
+  "upload_options": {},
+  "model_options": {
+    "kv_dtype": "float16",
+    "optimized": true
+  },
+  "policy": {
+    "moe": {
+      "block_m": 32,
+      "fused_swiglu": true,
+      "max_block_m": 128,
+      "fused_quantize_minimum_rows": 9,
+      "intermediate_dtype": "bfloat16",
+      "activation_dtype": "bfloat16",
+      "packed": true,
+      "packed_minimum_rows": 2048
+    },
+    "linear": {
+      "stage_inputs": true,
+      "floating_matmul": true,
+      "partitions": 8,
+      "minimum_split_groups": 64,
+      "minimum_rows": 1,
+      "columns": 128,
+      "block_m": 32,
+      "threads": 256,
+      "stages": 2,
+      "packed_copy": true
+    },
+    "normalization": {
+      "fused_residual": true,
+      "fused_staging": true
+    },
+    "convolution": {
+      "fused_staging": true
+    }
+  }
+}

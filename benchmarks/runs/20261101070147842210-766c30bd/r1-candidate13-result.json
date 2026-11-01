@@ -1,0 +1,35 @@
+{
+  "rows": 1,
+  "implementation": "attention.cuda.mma_decode",
+  "splits": 32,
+  "key_rows": 128,
+  "copy_complete_tiles": true,
+  "maximum_absolute_error": 8.89599323272705e-06,
+  "timing": {
+    "gpu_seconds": [
+      1.8227199837565424e-05,
+      1.8406399711966515e-05,
+      1.6979200020432476e-05,
+      1.7798400297760964e-05,
+      1.802240014076233e-05,
+      1.9660799577832223e-05,
+      1.9251200184226037e-05
+    ],
+    "completed_seconds": [
+      2.704539947444573e-05,
+      2.7023399889003484e-05,
+      2.4361402029171587e-05,
+      2.6227002672385423e-05,
+      2.613359974930063e-05,
+      2.8451200341805817e-05,
+      2.859719970729202e-05
+    ],
+    "median_gpu_seconds": 1.8227199837565424e-05,
+    "median_completed_seconds": 2.7023399889003484e-05,
+    "warmup": 2,
+    "samples": 7,
+    "repeats": 5,
+    "metric": "gpu_seconds",
+    "median_seconds": 1.8227199837565424e-05
+  }
+}

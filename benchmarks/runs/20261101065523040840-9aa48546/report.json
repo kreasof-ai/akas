@@ -1,0 +1,21 @@
+{
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "utilization-accounting",
+    "provider": "cuda",
+    "native_run": "20261101063919843183-6a4ffea7",
+    "model": "LiquidAI/LFM2.5-24B-A2B-FP8",
+    "program_sha256": "1677623f5c662504cdcb859dc7ffe235ea963842b14f9676d67f8d4274a0bc06",
+    "qualification_scope": "Contraction MFU lower bounds and logical weight/KV MBU bounds; no hardware saturation claim",
+    "theoretical_dense_peaks_flops_per_second": {
+      "fp8_tensor": 733000000000000.0,
+      "fp16_tensor": 366500000000000.0,
+      "fp32_simt": 91600000000000.0
+    },
+    "nominal_dram_bytes_per_second": 864000000000.0,
+    "measured_read_bytes_per_second": 743363378006.124,
+    "hardware_counters": "denied ERR_NVGPUCTRPERM",
+    "source_specification": "https://www.nvidia.com/en-sg/data-center/l40s/"
+  },
+  "results": []
+}
