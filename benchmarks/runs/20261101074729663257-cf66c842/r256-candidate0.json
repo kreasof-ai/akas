@@ -1,0 +1,197 @@
+{
+  "schema": "akas.forward.v1",
+  "target": "sm_89",
+  "provider": "cuda",
+  "forward": {
+    "contract": "reference",
+    "phase": "forward",
+    "buffers": [
+      {
+        "name": "q",
+        "shape": [
+          256,
+          2048
+        ],
+        "dtype": "float32",
+        "role": "input"
+      },
+      {
+        "name": "kc",
+        "shape": [
+          256,
+          8,
+          2176,
+          64
+        ],
+        "dtype": "float16",
+        "role": "input"
+      },
+      {
+        "name": "vc",
+        "shape": [
+          256,
+          8,
+          2176,
+          64
+        ],
+        "dtype": "float16",
+        "role": "input"
+      },
+      {
+        "name": "ks",
+        "shape": [
+          256,
+          8,
+          2176,
+          1
+        ],
+        "dtype": "float32",
+        "role": "input"
+      },
+      {
+        "name": "vs",
+        "shape": [
+          256,
+          8,
+          2176,
+          1
+        ],
+        "dtype": "float32",
+        "role": "input"
+      },
+      {
+        "name": "positions",
+        "shape": [
+          256
+        ],
+        "dtype": "int32",
+        "role": "input"
+      },
+      {
+        "name": "enabled",
+        "shape": [
+          256
+        ],
+        "dtype": "int32",
+        "role": "input"
+      },
+      {
+        "name": "out",
+        "shape": [
+          524288
+        ],
+        "dtype": "float32",
+        "role": "output"
+      },
+      {
+        "name": "partial",
+        "shape": [
+          8650752
+        ],
+        "dtype": "float32",
+        "role": "scratch"
+      }
+    ],
+    "calls": [
+      {
+        "kind": "attention_partial",
+        "parameters": {
+          "r": 256,
+          "h": 32,
+          "kh": 8,
+          "d": 64,
+          "capacity": 2176,
+          "splits": 16,
+          "kv_dtype": "float16",
+          "unit_scales": true,
+          "provider": "cuda",
+          "optimized": true
+        },
+        "arguments": [
+          "q",
+          "kc",
+          "vc",
+          "ks",
+          "vs",
+          "partial",
+          "positions",
+          "enabled"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "attention_merge",
+        "parameters": {
+          "r": 256,
+          "h": 32,
+          "kh": 8,
+          "d": 64,
+          "capacity": 2176,
+          "splits": 16,
+          "kv_dtype": "float16",
+          "unit_scales": true,
+          "provider": "cuda",
+          "optimized": true
+        },
+        "arguments": [
+          "partial",
+          "out",
+          "enabled"
+        ],
+        "bindings": {},
+        "label": null
+      }
+    ]
+  },
+  "allocations": [
+    [
+      "partial"
+    ]
+  ],
+  "tuning": {
+    "status": "explicitly disabled"
+  },
+  "kernels": {
+    "ce742ae27b4a03410f4dd0e1": {
+      "kind": "attention_partial",
+      "parameters": {
+        "r": 256,
+        "h": 32,
+        "kh": 8,
+        "d": 64,
+        "capacity": 2176,
+        "splits": 16,
+        "kv_dtype": "float16",
+        "unit_scales": true,
+        "provider": "cuda",
+        "optimized": true
+      },
+      "sha256": "4e1f8bd36d39320981fdd74b93f316f6c726e490ce2fcd5c5ee4ba0b688163b9",
+      "path": "ce742ae27b4a03410f4dd0e1.tbin",
+      "schedule": {
+        "implementation": "attention.cuda.floating"
+      }
+    },
+    "bca0cc96767f2dfa2ec71903": {
+      "kind": "attention_merge",
+      "parameters": {
+        "r": 256,
+        "h": 32,
+        "kh": 8,
+        "d": 64,
+        "capacity": 2176,
+        "splits": 16,
+        "kv_dtype": "float16",
+        "unit_scales": true,
+        "provider": "cuda",
+        "optimized": true
+      },
+      "sha256": "9495ddcdbbc954d65b9a293c98a3e95090f9b487e46529ce7a33108f67a3ea34",
+      "path": "bca0cc96767f2dfa2ec71903.tbin",
+      "schedule": {
+        "implementation": "attention.cuda.floating"
+      }
+    }
+  }
+}

@@ -1,0 +1,201 @@
+{
+  "schema": "akas.forward.v1",
+  "target": "sm_89",
+  "provider": "cuda",
+  "forward": {
+    "contract": "reference",
+    "phase": "forward",
+    "buffers": [
+      {
+        "name": "q",
+        "shape": [
+          256,
+          2048
+        ],
+        "dtype": "float32",
+        "role": "input"
+      },
+      {
+        "name": "kc",
+        "shape": [
+          256,
+          8,
+          2176,
+          64
+        ],
+        "dtype": "float16",
+        "role": "input"
+      },
+      {
+        "name": "vc",
+        "shape": [
+          256,
+          8,
+          2176,
+          64
+        ],
+        "dtype": "float16",
+        "role": "input"
+      },
+      {
+        "name": "ks",
+        "shape": [
+          256,
+          8,
+          2176,
+          1
+        ],
+        "dtype": "float32",
+        "role": "input"
+      },
+      {
+        "name": "vs",
+        "shape": [
+          256,
+          8,
+          2176,
+          1
+        ],
+        "dtype": "float32",
+        "role": "input"
+      },
+      {
+        "name": "positions",
+        "shape": [
+          256
+        ],
+        "dtype": "int32",
+        "role": "input"
+      },
+      {
+        "name": "enabled",
+        "shape": [
+          256
+        ],
+        "dtype": "int32",
+        "role": "input"
+      },
+      {
+        "name": "out",
+        "shape": [
+          524288
+        ],
+        "dtype": "float32",
+        "role": "output"
+      },
+      {
+        "name": "partial",
+        "shape": [
+          2162688
+        ],
+        "dtype": "float32",
+        "role": "scratch"
+      }
+    ],
+    "calls": [
+      {
+        "kind": "attention_partial",
+        "parameters": {
+          "r": 256,
+          "h": 32,
+          "kh": 8,
+          "d": 64,
+          "capacity": 2176,
+          "splits": 4,
+          "kv_dtype": "float16",
+          "unit_scales": true,
+          "provider": "cuda",
+          "optimized": true,
+          "shared_dtype": "float32",
+          "dot_width": 1
+        },
+        "arguments": [
+          "q",
+          "kc",
+          "vc",
+          "ks",
+          "vs",
+          "partial",
+          "positions",
+          "enabled"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "attention_merge",
+        "parameters": {
+          "r": 256,
+          "h": 32,
+          "kh": 8,
+          "d": 64,
+          "capacity": 2176,
+          "splits": 4,
+          "kv_dtype": "float16",
+          "unit_scales": true,
+          "provider": "cuda",
+          "optimized": true
+        },
+        "arguments": [
+          "partial",
+          "out",
+          "enabled"
+        ],
+        "bindings": {},
+        "label": null
+      }
+    ]
+  },
+  "allocations": [
+    [
+      "partial"
+    ]
+  ],
+  "tuning": {
+    "status": "explicitly disabled"
+  },
+  "kernels": {
+    "d41833a349bc4bd3167903b7": {
+      "kind": "attention_partial",
+      "parameters": {
+        "r": 256,
+        "h": 32,
+        "kh": 8,
+        "d": 64,
+        "capacity": 2176,
+        "splits": 4,
+        "kv_dtype": "float16",
+        "unit_scales": true,
+        "provider": "cuda",
+        "optimized": true,
+        "shared_dtype": "float32",
+        "dot_width": 1
+      },
+      "sha256": "dcc9714d117eebfbf7abdb7b2325cd56dc3a130bdb81abecc88efab7fdfb543a",
+      "path": "d41833a349bc4bd3167903b7.tbin",
+      "schedule": {
+        "implementation": "attention.grouped_decode"
+      }
+    },
+    "b8749a4ebaf93ffe986508ec": {
+      "kind": "attention_merge",
+      "parameters": {
+        "r": 256,
+        "h": 32,
+        "kh": 8,
+        "d": 64,
+        "capacity": 2176,
+        "splits": 4,
+        "kv_dtype": "float16",
+        "unit_scales": true,
+        "provider": "cuda",
+        "optimized": true
+      },
+      "sha256": "8d7cc2853dc3225eefe4a2704ecea0b377de16f08f97560ca0cc46947b1f932e",
+      "path": "b8749a4ebaf93ffe986508ec.tbin",
+      "schedule": {
+        "implementation": "attention.cuda.floating"
+      }
+    }
+  }
+}
