@@ -1,0 +1,30 @@
+{
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "numerical-diagnostic",
+    "provider": "cuda",
+    "target": "sm_89",
+    "model": "LiquidAI/LFM2.5-24B-A2B-FP8",
+    "model_revision": "f54bf39547fd5b7955abb9fe8d1b151e31fbbddb",
+    "full_model_numerical_qualification": "open",
+    "model_throughput_qualified": false,
+    "bos_probe_agreement": "8/8",
+    "without_bos_probe_agreement": "5/8",
+    "raw_fp8_comparisons": [
+      {
+        "input": "integer",
+        "bitwise_equal": true,
+        "relative_rms_to_fp64": 0.0
+      },
+      {
+        "input": "fractional",
+        "bitwise_equal": true,
+        "relative_rms_to_fp64": 0.00013889417459722608
+      }
+    ],
+    "captured_logits_bitwise_equal": true,
+    "sglang_version": "0.5.21",
+    "program_sha256": "73553fd23f1b2c33dcfbb7dc2395f790a144e9afe2c794d295536885aa51e3bd"
+  },
+  "results": []
+}

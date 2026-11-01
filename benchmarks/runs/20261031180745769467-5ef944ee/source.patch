@@ -1,0 +1,788 @@
+diff --git a/src/akas/checkpoints/safetensors.py b/src/akas/checkpoints/safetensors.py
+index 0fb67bf..db7d6d6 100644
+--- a/src/akas/checkpoints/safetensors.py
++++ b/src/akas/checkpoints/safetensors.py
+@@ -18,6 +18,28 @@ STORAGE = {
+ }
+ 
+ 
++def block_fp8_config(config):
++    """Validate the shared compressed-tensors block-FP8 checkpoint contract."""
++    q = config.get("quantization_config")
++    if q is None:
++        return False
++    groups = q.get("config_groups", {})
++    if (q.get("quant_method") != "compressed-tensors"
++            or q.get("format") != "float-quantized" or len(groups) != 1
++            or q.get("kv_cache_scheme") is not None):
++        raise ValueError("unsupported block-FP8 checkpoint quantization")
++    group = next(iter(groups.values()))
++    weights, activations = group.get("weights", {}), group.get("input_activations", {})
++    if (weights.get("num_bits") != 8 or weights.get("type") != "float"
++            or weights.get("strategy") != "block" or weights.get("block_structure") != [128, 128]
++            or weights.get("dynamic") is not False or weights.get("symmetric") is not True
++            or activations.get("num_bits") != 8 or activations.get("type") != "float"
++            or activations.get("strategy") != "group" or activations.get("group_size") != 128
++            or activations.get("dynamic") is not True or activations.get("symmetric") is not True):
++        raise ValueError("FP8 requires static 128x128 weights and dynamic group-128 activations")
++    return True
++
++
+ def _object(pairs):
+     result = {}
+     for key, value in pairs:
+diff --git a/src/akas/config.py b/src/akas/config.py
+index 4f2743c..a00e15c 100644
+--- a/src/akas/config.py
++++ b/src/akas/config.py
+@@ -7,8 +7,13 @@ from dataclasses import dataclass
+ class EngineConfig:
+     prefill_chunk: int = 32
+     prefill_requests: int = 32
++    prefill_token_budget: int | None = None
+ 
+     def __post_init__(self):
+         for value in (self.prefill_chunk, self.prefill_requests):
+             if type(value) is not int or value < 1:
+                 raise ValueError("prefill budgets must be positive integers")
++        if self.prefill_token_budget is not None and (
++            type(self.prefill_token_budget) is not int or self.prefill_token_budget < 1
++        ):
++            raise ValueError("prefill token budget must be a positive integer")
+diff --git a/src/akas/engine.py b/src/akas/engine.py
+index 48e2a44..7312c3b 100644
+--- a/src/akas/engine.py
++++ b/src/akas/engine.py
+@@ -26,6 +26,7 @@ class Engine:
+             publish if publish is not None else self.events.extend,
+             prefill_chunk=self.config.prefill_chunk,
+             prefill_requests=self.config.prefill_requests,
++            prefill_token_budget=self.config.prefill_token_budget,
+         )
+ 
+     @classmethod
+diff --git a/src/akas/models/lfm2/_composition.py b/src/akas/models/lfm2/_composition.py
+index 2dd7457..3ce2fa1 100644
+--- a/src/akas/models/lfm2/_composition.py
++++ b/src/akas/models/lfm2/_composition.py
+@@ -136,6 +136,10 @@ def compose(
+         return out
+ 
+     def project(x, weight, k, o, out, *, matrix=False, count=b):
++        if weight in getattr(weights, "scales", {}):
++            plan("fp8_linear", dict(r=count, k=k, o=o, input_dtype=x.dtype),
++                 x.view((count, k)), weights[weight], weights.scales[weight], out.view((count, o)))
++            return
+         if matrix and hasattr(weights, "parameters"):
+             out = out.view((count * o,))
+         for w, start, rows in weights.matrix(weight):
+@@ -317,7 +321,7 @@ def compose(
+                 ("down", (config.experts, c, config.expert_width)),
+             ):
+                 name = p + "ffn_" + part + "_exps.weight"
+-                expert_weights[part] = Weight(
++                expert_weights[part] = weights.weight(name) if hasattr(weights, "weight") else Weight(
+                     shape, (weights[name],), weights.parts(name)
+                 )
+             mixed = routed_moe(
+diff --git a/src/akas/models/lfm2/config.py b/src/akas/models/lfm2/config.py
+index da5aa24..3c7e91f 100644
+--- a/src/akas/models/lfm2/config.py
++++ b/src/akas/models/lfm2/config.py
+@@ -105,6 +105,30 @@ class LFM2MoEConfig(Config):
+     routing_scale: float = 1.0
+     normalize_routes: bool = True
+ 
++    @classmethod
++    def from_huggingface(cls, data):
++        from dataclasses import asdict
++
++        if data.get("model_type") != "lfm2_moe":
++            raise ValueError("requires LFM2 MoE config.json")
++        base = Config.from_huggingface({**data, "model_type": "lfm2"})
++        result = cls(**asdict(base), experts=data["num_experts"],
++                     top_k=data["num_experts_per_tok"],
++                     expert_width=data["moe_intermediate_size"],
++                     dense_layers=data["num_dense_layers"],
++                     routing_scale=data.get("routed_scaling_factor", 1.0),
++                     normalize_routes=data.get("norm_topk_prob", True))
++        if (any(type(n) is not int or n < 1 for n in
++                (result.experts, result.top_k, result.expert_width))
++                or result.top_k > result.experts or result.expert_width % 128
++                or type(result.dense_layers) is not int
++                or not 0 <= result.dense_layers < len(result.layers)
++                or type(result.normalize_routes) is not bool
++                or not math.isfinite(result.routing_scale) or result.routing_scale <= 0
++                or data.get("use_expert_bias") is not True):
++            raise ValueError("unsupported LFM2 MoE routing configuration")
++        return result
++
+     @classmethod
+     def from_gguf(cls, gguf):
+         return parse_config(gguf, moe=True)
+diff --git a/src/akas/models/lfm2/model.py b/src/akas/models/lfm2/model.py
+index 95b8759..c889fdd 100644
+--- a/src/akas/models/lfm2/model.py
++++ b/src/akas/models/lfm2/model.py
+@@ -57,7 +57,7 @@ class LFM2(Definition):
+ 
+ 
+ class LFM2MoE(Definition):
+-    checkpoint_architectures = ("lfm2moe",)
++    checkpoint_architectures = ("lfm2moe", "lfm2_moe")
+     checkpoint_type = LFM2MoECheckpoint
+     model_defaults = {"kv_dtype": "float16", "optimized": True}
+     optimization_chunks = (512, 1024, 2048, 4096, 256, 128, 32, 1)
+diff --git a/src/akas/models/lfm2/weights.py b/src/akas/models/lfm2/weights.py
+index 5d0ce97..2e06afc 100644
+--- a/src/akas/models/lfm2/weights.py
++++ b/src/akas/models/lfm2/weights.py
+@@ -85,11 +85,142 @@ class LFM2MoECheckpoint(LFM2Checkpoint):
+     def __new__(cls, path, *, tokenizer=True):
+         from pathlib import Path
+ 
++        if Path(path).is_dir():
++            return NativeMoECheckpoint(path, tokenizer=tokenizer)
+         if not Path(path).is_file():
+-            raise ValueError("LFM2 MoE currently requires a GGUF checkpoint")
++            raise ValueError("LFM2 MoE requires a checkpoint file or directory")
+         return object.__new__(cls)
+ 
+ 
++class NativeMoECheckpoint:
++    """Map original safetensors into shared encoded and floating operations.
++
++    Expert tensors are grouped using the common shard uploader. FP8 payloads
++    and their original BF16 scales stay resident without a decoded weight copy.
++    """
++
++    def __init__(self, path, *, tokenizer=True):
++        from pathlib import Path
++        from akas.checkpoints.safetensors import (
++            json_document, block_fp8_config, tensor_index, inspect_tensors,
++            read_float_tensor,
++        )
++        import numpy as np
++
++        self.path, self.gguf = Path(path), None
++        data = json_document((self.path / "config.json").read_text())
++        self.config = LFM2MoEConfig.from_huggingface(data)
++        self.fp8 = block_fp8_config(data)
++        index = tensor_index(self.path)
++        self.output = "lm_head.weight" in index
++        self.shapes = tensor_shapes(self.config, output=self.output)
++        mapping = huggingface_names(self.config, output=self.output)
++        self.groups = {name: (mapping[name],) for name in self.shapes if name in mapping}
++        for layer in range(self.config.dense_layers, len(self.config.layers)):
++            logical, source = f"blk.{layer}.", f"model.layers.{layer}.feed_forward."
++            self.groups[logical + "ffn_gate_inp.weight"] = (source + "gate.weight",)
++            self.groups[logical + "exp_probs_b.bias"] = (source + "expert_bias",)
++            for part, original in (("gate", "w1"), ("up", "w3"), ("down", "w2")):
++                self.groups[logical + f"ffn_{part}_exps.weight"] = tuple(
++                    source + f"experts.{expert}.{original}.weight"
++                    for expert in range(self.config.experts)
++                )
++        shapes, dtypes, self.scales, self.layouts, self.conversions = {}, {}, {}, {}, {}
++        from math import prod
++
++        for name, shape in self.shapes.items():
++            sources = self.groups[name]
++            quantized = self.fp8 and (
++                name.endswith("_exps.weight") or (len(shape) == 2
++                and name not in ("token_embd.weight", "output.weight")
++                and "shortconv." not in name and "ffn_gate_inp" not in name)
++            )
++            local = shape[1:] if len(sources) > 1 else shape
++            source_shape = (self.config.width, 1, self.config.conv) if name.endswith("conv.weight") else local
++            source_dtype = "F8_E4M3" if quantized else "F32" if name.endswith(".bias") else "BF16"
++            for expert, source in enumerate(sources):
++                shapes[source], dtypes[source] = source_shape, source_dtype
++                width = 1 if quantized else 4 if source_dtype == "F32" else 2
++                target_shape = shape if quantized else (prod(shape),)
++                self.layouts[source] = (name, expert * prod(local) * width, target_shape)
++            if quantized:
++                scales = tuple(source[:-6] + "weight_scale" for source in sources)
++                scale_shape = ((local[-2] + 127) // 128, local[-1] // 128)
++                grouped_scale = (len(sources), *scale_shape) if len(sources) > 1 else scale_shape
++                self.scales[name] = name + ".scale"
++                for expert, source in enumerate(scales):
++                    shapes[source], dtypes[source] = scale_shape, "BF16"
++                    self.layouts[source] = (name + ".scale", expert * prod(scale_shape) * 2, grouped_scale)
++            else:
++                self.conversions[name] = (
++                    "float16" if len(shape) >= 2 and not name.endswith(("conv.weight", "ffn_gate_inp.weight"))
++                    else "float32"
++                )
++        if index.keys() != shapes.keys():
++            raise ValueError(f"LFM2 MoE tensor inventory differs: {sorted(index.keys() ^ shapes.keys())[:8]}")
++        self.tensors = inspect_tensors(self.path, index, shapes, dtypes)
++        for name in shapes:
++            if name.endswith("weight_scale"):
++                values = read_float_tensor(self.tensors[name])
++                if not np.isfinite(values).all() or (values <= 0).any():
++                    raise ValueError(f"invalid FP8 weight scale: {name}")
++        self.tokenizer = Tokenizer.from_pretrained(self.path) if tokenizer else None
++
++    @property
++    def definition_options(self):
++        return {"output": self.output}
++
++    def program_upload_options(self, weights, *, model_options):
++        return {}
++
++    def graph_weights(self, graph, *, provider, expert_weight_layout="raw", dense_weight_layout="raw"):
++        if provider != "cuda" or expert_weight_layout != "raw" or dense_weight_layout != "raw":
++            raise ValueError("native LFM2 MoE requires CUDA and original weight layouts")
++        return NativeWeights(graph, self)
++
++    def upload(self, device):
++        from akas.checkpoints.upload import upload_shards
++
++        if device.info["provider"] != "cuda":
++            raise ValueError("native LFM2 MoE requires CUDA")
++        return upload_shards(device, self.tensors, tuple(self.layouts), self.layouts,
++                             conversions=self.conversions)
++
++    def inventory(self):
++        return {"tensors": len(self.tensors), "format": "fp8" if self.fp8 else "bf16"}
++
++
++class NativeWeights:
++    """The family's logical names bound to declared native physical storage."""
++
++    def __init__(self, graph, checkpoint):
++        self.checkpoint, self.buffers, self.scales = checkpoint, {}, {}
++        for name, _, shape in checkpoint.layouts.values():
++            if name not in self.buffers:
++                dtype = ("bfloat16" if name.endswith(".scale") else "uint8")
++                self.buffers[name] = graph.buffer(name, shape, checkpoint.conversions.get(name, dtype), role="weight")
++        self.scales = {name: self.buffers[scale] for name, scale in checkpoint.scales.items()}
++
++    def __getitem__(self, name):
++        return self.buffers[name]
++
++    def matrix(self, name):
++        return [(self.buffers[name], 0, self.checkpoint.shapes[name][0])]
++
++    def parameters(self, name):
++        return {"weight_dtype": self.buffers[name].dtype}
++
++    def weight(self, name):
++        from math import prod
++        from akas.quantization.weights import Weight
++
++        shape = self.checkpoint.shapes[name]
++        scaled = name in self.scales
++        return Weight(shape, (self.buffers[name], self.scales[name]) if scaled else (self.buffers[name],),
++                      ({"format": "fp8" if scaled else "ggml", "rows": prod(shape[:-1]),
++                        "options": {} if scaled else {"encoding": 1}},))
++
++
+ def tensor_shapes(config, *, output=False):
+     expected = {
+         "token_embd.weight": (config.vocab, config.width),
+diff --git a/src/akas/models/lfm3/weights.py b/src/akas/models/lfm3/weights.py
+index 9ef80c5..2ce0d4f 100644
+--- a/src/akas/models/lfm3/weights.py
++++ b/src/akas/models/lfm3/weights.py
+@@ -12,6 +12,7 @@ from akas.checkpoints.safetensors import (
+     tensor_index,
+     read_float_tensor,
+     read_tensor,
++    block_fp8_config,
+ )
+ from akas.models.lfm3.config import LFM3Config
+ from akas.text.tokenizer import Tokenizer
+@@ -145,36 +146,7 @@ class LFM3Checkpoint:
+             return
+         data = json_document((self.path / "config.json").read_text())
+         self.config = LFM3Config.from_huggingface(data)
+-        q = data.get("quantization_config")
+-        self.fp8 = q is not None
+-        if self.fp8:
+-            groups = q.get("config_groups", {})
+-            if (
+-                q.get("quant_method") != "compressed-tensors"
+-                or q.get("format") != "float-quantized"
+-                or len(groups) != 1
+-                or q.get("kv_cache_scheme") is not None
+-            ):
+-                raise ValueError("unsupported LFM3 FP8 quantization")
+-            group = next(iter(groups.values()))
+-            w, a = group.get("weights", {}), group.get("input_activations", {})
+-            if (
+-                w.get("num_bits") != 8
+-                or w.get("type") != "float"
+-                or w.get("strategy") != "block"
+-                or w.get("block_structure") != [128, 128]
+-                or w.get("dynamic") is not False
+-                or w.get("symmetric") is not True
+-                or a.get("num_bits") != 8
+-                or a.get("type") != "float"
+-                or a.get("strategy") != "group"
+-                or a.get("group_size") != 128
+-                or a.get("dynamic") is not True
+-                or a.get("symmetric") is not True
+-            ):
+-                raise ValueError(
+-                    "LFM3 FP8 requires static 128x128 weights and dynamic group activations"
+-                )
++        self.fp8 = block_fp8_config(data)
+         self.names = hf_names(self.config)
+         shapes = {self.names[n]: s for n, s in tensor_shapes(self.config).items()}
+         for name in list(shapes):
+diff --git a/src/akas/ops/linear/cuda.py b/src/akas/ops/linear/cuda.py
+index 138991b..09dba55 100644
+--- a/src/akas/ops/linear/cuda.py
++++ b/src/akas/ops/linear/cuda.py
+@@ -74,6 +74,7 @@ def _mma(p, *, grouped, prequantized):
+     threads = p.get("threads", 128)
+     top, e = (p.get("top", 8), p.get("experts", 256))
+     routed = p.get("routed_input", False)
++    input_dtype = p.get("input_dtype", "bfloat16")
+     parts = p.get("partitions", 1)
+     stages = p.get("stages", 1)
+     packed_copy = p.get("packed_copy", False)
+@@ -342,7 +343,7 @@ def _mma(p, *, grouped, prequantized):
+ 
+         @kernel
+         def compute(
+-            x: Tensor((r, top, k) if routed else (r, k), "bfloat16"),
++            x: Tensor((r, top, k) if routed else (r, k), input_dtype),
+             w: Tensor((e, o, k), "uint8"),
+             scales: Tensor((e, T.ceildiv(o, 128), k // 128), "bfloat16"),
+             experts: Tensor((r * top,), "int32"),
+@@ -409,7 +410,7 @@ def _mma(p, *, grouped, prequantized):
+ 
+         @kernel
+         def compute(
+-            x: Tensor((r, k), "bfloat16"),
++            x: Tensor((r, k), input_dtype),
+             w: Tensor((o, k), "uint8"),
+             scales: Tensor((T.ceildiv(o, 128), k // 128), "bfloat16"),
+         ) -> Tensor(output_shape, "float32"):
+@@ -683,6 +684,7 @@ def native_fp8(spec: KernelSpec, schedule: Mapping[str, object]):
+     import tilelang.language as T
+ 
+     r, k, o = (p["r"], p["k"], p["o"])
++    input_dtype = p.get("input_dtype", "bfloat16")
+     columns, threads = (p.get("columns", 4), p.get("threads", 128))
+     if (
+         any((type(v) is not int or v <= 0 for v in (r, k, o, columns, threads)))
+@@ -697,7 +699,7 @@ def native_fp8(spec: KernelSpec, schedule: Mapping[str, object]):
+ 
+     @kernel
+     def compute(
+-        x: Tensor((r, k), "bfloat16"),
++        x: Tensor((r, k), input_dtype),
+         w: Tensor((o, k), "uint8"),
+         scales: Tensor((T.ceildiv(o, 128), k // 128), "bfloat16"),
+     ) -> Tensor((r, o), "float32"):
+diff --git a/src/akas/ops/linear/definition.py b/src/akas/ops/linear/definition.py
+index 7bc0347..c319a1b 100644
+--- a/src/akas/ops/linear/definition.py
++++ b/src/akas/ops/linear/definition.py
+@@ -1569,3 +1569,15 @@ IMPLEMENTATIONS += (
+         space=(("block_m", (64, 128)), ("block_n", (64, 32)), ("threads", (128, 256))),
+     ),
+ )
++
++# The same block-scaled projection is usable by floating inference graphs.
++IMPLEMENTATIONS += (
++    Implementation("fp8_linear", "akas.ops.linear.cuda", "reference",
++                   factory="fp8_inline", name="linear.cuda.fp8:reference",
++                   defaults=(("block_m", 16), ("columns", 64)),
++                   space=(("block_m", (16, 32, 64)), ("columns", (64, 32, 128)),
++                          ("threads", (128, 256)))),
++    Implementation("fp8_linear", "akas.ops.linear.cuda", "reference",
++                   factory="native_fp8", name="linear.cuda.fp8-gemv:reference",
++                   priority=20, accepts=lambda p: p["r"] <= 8),
++)
+diff --git a/src/akas/ops/moe/cuda.py b/src/akas/ops/moe/cuda.py
+index 07e484d..986b1f6 100644
+--- a/src/akas/ops/moe/cuda.py
++++ b/src/akas/ops/moe/cuda.py
+@@ -533,7 +533,7 @@ def _bucketed(p):
+     import tilelang.language as T
+ 
+     rows, k, o = (p["rows"], p["k"], p["o"])
+-    n, top, experts = (p.get("columns", 64), 8, 256)
++    n, top, experts = (p.get("columns", 64), p["top"], p["experts"])
+     m, threads = (p.get("block_m", 16), p.get("threads", 128))
+     routed = p.get("routed_input", False)
+     compact = p.get("compact", False)
+@@ -691,7 +691,7 @@ def partial(spec: KernelSpec, schedule: Mapping[str, object]):
+     import tilelang.language as T
+ 
+     rows, k, o = (p["rows"], p["k"], p["o"])
+-    n, top, experts = (p.get("columns", 64), 8, 256)
++    n, top, experts = (p.get("columns", 64), p["top"], p["experts"])
+     m, threads = (p.get("block_m", 16), p.get("threads", 128))
+     parts = p.get("partitions", 4)
+     stages = p.get("stages", 2)
+diff --git a/src/akas/ops/moe/definition.py b/src/akas/ops/moe/definition.py
+index 94c6134..e414b67 100644
+--- a/src/akas/ops/moe/definition.py
++++ b/src/akas/ops/moe/definition.py
+@@ -44,7 +44,7 @@ def routed_moe(
+         routes,
+     )
+     tiles = ()
+-    if rows > 1:
++    if rows > 1 and any(weight.parts[0]["format"] != "fp8" for weight in weights.values()):
+         capacity = (rows * top + 3) // 4 + experts
+         tiles = tuple(
+             graph.buffer(prefix + name, (5, capacity), "int32")
+@@ -52,9 +52,31 @@ def routed_moe(
+         )
+         graph("expert_tile_map", dict(r=rows, experts=experts, top=top), counts, *tiles)
+ 
++    quantized = {}
++
+     def projection(part, source, routed):
+         weight = weights[part]
+         out = graph.buffer(prefix + part, (rows, top, weight.shape[1]), "float32")
++        if (len(weight.parts) == 1 and weight.parts[0]["format"] == "fp8"
++                and not weight.parts[0].get("row_order")
++                and not weight.parts[0].get("column_order")):
++            if provider != "cuda" or weight.parts[0]["options"].get("scale_layout", "block") != "block":
++                raise ValueError("native routed FP8 currently requires CUDA block scales")
++            from akas.quantization import get
++
++            if source.name not in quantized:
++                storage = get("activations", "fp8").storage(source.shape, provider=provider)
++                encoded = graph.buffer(source.name + ".fp8", storage.values.shape, storage.values.dtype)
++                scales = graph.buffer(source.name + ".fp8_scales", storage.metadata[0].shape, "float32")
++                graph("quantize", dict(r=rows, k=weight.shape[2], input_dtype=source.dtype,
++                      **({"top": top} if routed else {})), source, encoded, scales)
++                quantized[source.name] = encoded, scales
++            encoded, scales = quantized[source.name]
++            graph("expert_partial", dict(r=rows, rows=rows, top=top, experts=experts,
++                  o=weight.shape[1], k=weight.shape[2], routed_input=routed,
++                  partitions=1, block_m=16), encoded, scales, *weight.buffers,
++                  counts, routes, out)
++            return out
+         routing = (ids, counts) if rows == 1 else (counts, routes, *tiles)
+         graph(
+             "quantized_experts",
+@@ -1253,3 +1275,12 @@ IMPLEMENTATIONS += (
+         accepts=lambda p: p["r"] > 1,
+     ),
+ )
++
++OUTPUT_ARGUMENTS["reference"]["expert_partial"] = OutputABI((-1,), ("out",))
++IMPLEMENTATIONS += (
++    Implementation("expert_partial", "akas.ops.moe.cuda", "reference",
++                   factory="bucketed", name="moe.cuda.fp8-bucketed:reference",
++                   accepts=lambda p: p.get("partitions", 1) == 1,
++                   space=(("block_m", (16, 32, 64)), ("columns", (64, 32, 128)),
++                          ("threads", (128, 256)))),
++)
+diff --git a/src/akas/optimization/deployment.py b/src/akas/optimization/deployment.py
+index e1626f8..18461ab 100644
+--- a/src/akas/optimization/deployment.py
++++ b/src/akas/optimization/deployment.py
+@@ -82,6 +82,7 @@ def service(path, *, candidate=False):
+                 config=EngineConfig(
+                     prefill_chunk=recipe["chunk"],
+                     prefill_requests=recipe["prefill_requests"],
++                    prefill_token_budget=recipe.get("prefill_token_budget"),
+                 ),
+             ) as engine:
+                 tokenizer = getattr(target.checkpoint, "tokenizer", None)
+diff --git a/src/akas/optimization/evaluation.py b/src/akas/optimization/evaluation.py
+index be77d6f..6e4166b 100644
+--- a/src/akas/optimization/evaluation.py
++++ b/src/akas/optimization/evaluation.py
+@@ -198,7 +198,8 @@ def evaluate(executor, recipe, workload, *, reference=None, evidence=None):
+     engine = Engine(
+         backend,
+         config=EngineConfig(
+-            prefill_chunk=recipe["chunk"], prefill_requests=recipe["prefill_requests"]
++            prefill_chunk=recipe["chunk"], prefill_requests=recipe["prefill_requests"],
++            prefill_token_budget=recipe.get("prefill_token_budget"),
+         ),
+     )
+     rows = []
+diff --git a/src/akas/quantization/activations/fp8/cuda.py b/src/akas/quantization/activations/fp8/cuda.py
+index ebd5e8b..aed32fe 100644
+--- a/src/akas/quantization/activations/fp8/cuda.py
++++ b/src/akas/quantization/activations/fp8/cuda.py
+@@ -14,12 +14,13 @@ def quantize(spec: KernelSpec, schedule: Mapping[str, object]):
+     r, k, top = (p["r"], p["k"], p.get("top"))
+     rows = r * (top or 1)
+     shape = (r, top, k) if top else (r, k)
++    input_dtype = p.get("input_dtype", "bfloat16")
+     storage = FORMAT.storage(shape, provider="cuda")
+     scales_shape = storage.named["scales"].shape
+ 
+     @kernel
+     def compute(
+-        x: Tensor(shape, "bfloat16"),
++        x: Tensor(shape, input_dtype),
+     ) -> tuple[Tensor(shape, "uint8"), Tensor(scales_shape, "float32")]:
+         out = output(shape, "uint8")
+         scales = output(scales_shape, "float32")
+diff --git a/src/akas/quantization/activations/fp8/definition.py b/src/akas/quantization/activations/fp8/definition.py
+index d5b9957..c42dea8 100644
+--- a/src/akas/quantization/activations/fp8/definition.py
++++ b/src/akas/quantization/activations/fp8/definition.py
+@@ -78,3 +78,8 @@ IMPLEMENTATIONS = (
+         ),
+     )
+ )
++
++IMPLEMENTATIONS += (Implementation(
++    "quantize", "akas.quantization.activations.fp8.cuda", "reference",
++    factory="quantize", name="akas.quantization.activations.fp8:reference",
++),)
+diff --git a/src/akas/quantization/activations/fp8/validation.py b/src/akas/quantization/activations/fp8/validation.py
+index b009537..c7d2f70 100644
+--- a/src/akas/quantization/activations/fp8/validation.py
++++ b/src/akas/quantization/activations/fp8/validation.py
+@@ -22,7 +22,8 @@ def validation(kind, parameters, signature):
+     stress[0] = 0
+     if len(stress) > 1:
+         stress[1, :8] = [448, -448, 1.0625, 1.1875, 2**-10, -(2**-10), 0, -0.0]
+-    values["x"][:] = decode_bfloat16(encode_bfloat16(values["x"]))
++    if parameters.get("input_dtype", "bfloat16") == "bfloat16":
++        values["x"][:] = decode_bfloat16(encode_bfloat16(values["x"]))
+     depth = parameters["k"]
+     blocks = values["x"].reshape(*values["x"].shape[:-1], depth // 128, 128)
+     scales = np.maximum(
+diff --git a/src/akas/quantization/weights/__init__.py b/src/akas/quantization/weights/__init__.py
+index b85a1ae..b671aa8 100644
+--- a/src/akas/quantization/weights/__init__.py
++++ b/src/akas/quantization/weights/__init__.py
+@@ -18,12 +18,18 @@ class Weight:
+     def __post_init__(self):
+         from math import prod
+ 
+-        if not 1 <= len(self.parts) <= 4 or len(self.buffers) != len(self.parts):
++        if not 1 <= len(self.parts) <= 4:
+             raise ValueError("a weight requires one to four encoded pieces")
+         if len(self.shape) not in (2, 3) or any(dim <= 0 for dim in self.shape):
+             raise ValueError("a weight requires positive matrix or expert geometry")
+         if sum(part["rows"] for part in self.parts) != prod(self.shape[:-1]):
+             raise ValueError("weight pieces do not cover the logical rows")
++        from akas.quantization.formats import get
++
++        count = sum(len(get("weights", part["format"]).storage(
++            (part["rows"], self.shape[-1]), **part["options"]).buffers) for part in self.parts)
++        if len(self.buffers) != count:
++            raise ValueError("weight buffers must include each piece's declared metadata")
+ 
+ 
+ def bind_parts(parts, depth, *, provider):
+@@ -40,6 +46,8 @@ def bind_parts(parts, depth, *, provider):
+         )
+         for part in parts
+     )
++    if len(parts) == 1 and not (parts[0].get("row_order") or parts[0].get("column_order")):
++        return codecs[0]
+     if any(codec.storage.metadata for codec in codecs):
+         raise ValueError("segmented weights currently require embedded metadata")
+     readers = tuple(
+diff --git a/src/akas/scheduling/scheduler.py b/src/akas/scheduling/scheduler.py
+index 24f3955..de2a315 100644
+--- a/src/akas/scheduling/scheduler.py
++++ b/src/akas/scheduling/scheduler.py
+@@ -13,7 +13,8 @@ class Scheduler:
+     token budget each turn; decoding compacts its active requests every turn.
+     """
+ 
+-    def __init__(self, engine, publish, *, prefill_chunk=32, prefill_requests=32):
++    def __init__(self, engine, publish, *, prefill_chunk=32, prefill_requests=32,
++                 prefill_token_budget=None):
+         if prefill_chunk <= 0 or prefill_requests <= 0:
+             raise ValueError("invalid prefill budget")
+         self.engine = engine
+@@ -21,6 +22,11 @@ class Scheduler:
+         geometry = getattr(engine, "prefill_geometry", None)
+         self.prefill_chunk = geometry(prefill_chunk) if geometry is not None else prefill_chunk
+         self.prefill_requests = prefill_requests
++        if prefill_token_budget is not None and (
++            type(prefill_token_budget) is not int or prefill_token_budget < 1
++        ):
++            raise ValueError("prefill token budget must be a positive integer")
++        self.prefill_token_budget = prefill_token_budget
+         self.incoming = Queue()
+         self.pending = deque()
+         self.prefilling = deque()
+@@ -36,6 +42,8 @@ class Scheduler:
+             padded_decode_rows=0,
+             max_active=0,
+             capacity_counts={},
++            prefill_tokens=0,
++            max_prefill_tokens_per_turn=0,
+         )
+ 
+     def submit(self, request):
+@@ -134,13 +142,15 @@ class Scheduler:
+                 )
+                 self.decoding = self._emit(self.decoding, tokens)
+         if self.prefilling:
+-            selected = [
+-                self.prefilling.popleft()
+-                for _ in range(min(len(self.prefilling), self.prefill_requests))
+-            ]
+-            sequences = [
+-                r.prompt[r.offset : r.offset + self.prefill_chunk] for r in selected
+-            ]
++            selected, sequences = [], []
++            budget = self.prefill_token_budget
++            remaining = budget if budget is not None else self.prefill_chunk * self.prefill_requests
++            while self.prefilling and len(selected) < self.prefill_requests and remaining:
++                request = self.prefilling.popleft()
++                count = min(self.prefill_chunk, remaining, len(request.prompt) - request.offset)
++                selected.append(request)
++                sequences.append(request.prompt[request.offset:request.offset + count])
++                remaining -= count
+             try:
+                 if hasattr(self.engine, "prefill_batch"):
+                     tokens = self.engine.prefill_batch(
+@@ -154,6 +164,11 @@ class Scheduler:
+                 self.prefilling.extendleft(reversed(selected))
+                 raise
+             self.stats["prefill_rounds"] += 1
++            live_tokens = sum(map(len, sequences))
++            self.stats["prefill_tokens"] += live_tokens
++            self.stats["max_prefill_tokens_per_turn"] = max(
++                self.stats["max_prefill_tokens_per_turn"], live_tokens
++            )
+             finished = []
+             first = []
+             for request, sequence, token in zip(selected, sequences, tokens):
+diff --git a/tests/support/numpy_reference.py b/tests/support/numpy_reference.py
+index e5c3525..6277d4b 100644
+--- a/tests/support/numpy_reference.py
++++ b/tests/support/numpy_reference.py
+@@ -74,6 +74,7 @@ class Reference:
+         tail_half=None,
+         attention=None,
+         head_half=False,
++        projector=None,
+     ):
+         c = self.config
+         r = len(tokens)
+@@ -85,6 +86,8 @@ class Reference:
+             raise ValueError("context capacity exceeded")
+ 
+         def project(name, x, single=False):
++            if projector is not None:
++                return projector(name, x, single=single)
+             precision = (
+                 projection_half(name) if callable(projection_half) else projection_half
+             )
+diff --git a/tests/test_campaign.py b/tests/test_campaign.py
+index 1eb10b9..a897306 100644
+--- a/tests/test_campaign.py
++++ b/tests/test_campaign.py
+@@ -98,6 +98,8 @@ def test_matrix_resumes_without_repeating_completed_entries(tmp_path, monkeypatc
+         ),
+     )
+     calls = []
++    # Matrix scheduling is independent of downloaded checkpoint availability.
++    monkeypatch.setattr(campaign, "discover", lambda _: "akas.models.lfm2.model:LFM2")
+ 
+     def optimize(context, out, **kwargs):
+         calls.append((context.backend, kwargs["budget"]))
+diff --git a/tests/test_dense_scheduler.py b/tests/test_dense_scheduler.py
+index 4b2296a..98b0652 100644
+--- a/tests/test_dense_scheduler.py
++++ b/tests/test_dense_scheduler.py
+@@ -96,6 +96,36 @@ def test_unequal_prompts_and_lengths_drain_from_256_to_one():
+     assert max(count for count, chunk in engine.batches if chunk == 1) <= 256
+ 
+ 
++def test_token_budget_bounds_prefill_while_decoding_and_reuses_slots():
++    specifications = [([i + 1] * n, 4) for i, n in enumerate((5, 17, 29, 7, 31))]
++    control = [Request(prompt, limit) for prompt, limit in specifications]
++    execute(control, 1)
++    actual = [Request(prompt, limit) for prompt, limit in specifications]
++    engine = FakeEngine(3)
++    scheduler = Scheduler(engine, lambda _: None, prefill_chunk=16,
++                          prefill_requests=3, prefill_token_budget=11)
++    for request in actual:
++        scheduler.submit(request)
++    active_decode_during_prefill = False
++    for _ in range(100):
++        before_prefill = scheduler.stats["prefill_tokens"]
++        before_decode = scheduler.stats["decode_rounds"]
++        pending = scheduler.turn()
++        consumed = scheduler.stats["prefill_tokens"] - before_prefill
++        assert consumed <= 11
++        if consumed and scheduler.stats["decode_rounds"] > before_decode:
++            active_decode_during_prefill = True
++        if not pending:
++            break
++    else:
++        raise AssertionError("bounded prefill did not drain")
++    assert active_decode_during_prefill
++    assert [r.output for r in actual] == [r.output for r in control]
++    assert scheduler.stats["prefill_tokens"] == sum(len(prompt) for prompt, _ in specifications)
++    assert scheduler.stats["max_prefill_tokens_per_turn"] == 11
++    assert not engine.state and len(engine.releases) == len(actual)
++
++
+ class FakeSpeculativeEngine(FakeEngine):
+     def decode_many(self, requests):
+         sequences = []
+diff --git a/tools/baselines/__main__.py b/tools/baselines/__main__.py
+index 8c98752..d112bc5 100644
+--- a/tools/baselines/__main__.py
++++ b/tools/baselines/__main__.py
+@@ -26,6 +26,26 @@ def model_definition(directory, name):
+     return matches[0]
+ 
+ 
++def select_weight_format(model, runtime, requested=None):
++    """Select declared checkpoint bytes independently from execution dtype."""
++    if requested is not None:
++        selected = requested
++    elif runtime == "llama":
++        selected = "q4_k_m"
++    elif "bf16" in model["weights"]:
++        selected = "bf16"
++    else:
++        native = [name for name in ("fp8", "f16") if name in model["weights"]]
++        if len(native) != 1:
++            raise ValueError("select an explicit declared native weight format")
++        selected = native[0]
++    if selected not in model["weights"]:
++        raise ValueError(f"model does not declare {selected} weights")
++    if runtime != "llama" and selected not in ("bf16", "fp8", "f16"):
++        raise ValueError("native baselines require safetensors weights")
++    return selected
++
++
+ def main():
+     parser = argparse.ArgumentParser(description=__doc__)
+     parser.add_argument("runtime", choices=("vllm", "sglang", "llama"))
+@@ -33,7 +53,7 @@ def main():
+     parser.add_argument("--models", type=Path, default=Path("benchmarks/models"))
+     parser.add_argument("--mtp", action="store_true")
+     parser.add_argument("--provider", choices=("cuda", "vulkan"), default="cuda")
+-    parser.add_argument("--format", choices=("f16", "q4_0", "q4_k_m"), default="q4_k_m")
++    parser.add_argument("--format", choices=("bf16", "fp8", "f16", "q4_0", "q4_k_m"))
+     parser.add_argument("--history", type=Path, default=Path("benchmarks"))
+     parser.add_argument("--seconds", type=int, default=600)
+     parser.add_argument(
+@@ -62,7 +82,7 @@ def main():
+     root = Path(__file__).resolve().parents[2]
+     work = root / "build/baselines"
+     work.mkdir(parents=True, exist_ok=True)
+-    weight_format = args.format if args.runtime == "llama" else "bf16"
++    weight_format = select_weight_format(model, args.runtime, args.format)
+     weight = model["weights"][weight_format]
+     checkpoint = (root / weight["path"]).resolve()
+     name = f"{args.runtime}-{model['id']}-{mode}-{args.provider}-{weight_format}"
+@@ -136,7 +156,7 @@ def main():
+         )
+     else:
+         hf_config = json.loads(
+-            (root / model["weights"]["bf16"]["path"] / "config.json").read_text()
++            (checkpoint / "config.json").read_text()
+         )
+         config["vocab"] = hf_config.get("text_config", hf_config)["vocab_size"]
+     metadata = dict(

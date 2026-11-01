@@ -1,0 +1,178 @@
+{
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "kernel-qualification",
+    "provider": "cuda",
+    "target": "sm_89",
+    "baseline_revision": "ce32f41e6d5cb8ff9dbb46b2da025c999acc1fa0",
+    "checks": [
+      {
+        "case": "dense-inline-tail",
+        "parameters": {
+          "r": 17,
+          "k": 256,
+          "o": 128,
+          "partitions": 1,
+          "block_m": 16,
+          "columns": 64,
+          "threads": 128,
+          "stages": 1
+        },
+        "outputs": [
+          "out"
+        ],
+        "bitwise": true,
+        "independent_reference": true
+      },
+      {
+        "case": "dense-prequantized-tail",
+        "parameters": {
+          "r": 33,
+          "k": 256,
+          "o": 128,
+          "partitions": 1,
+          "block_m": 32,
+          "columns": 128,
+          "threads": 128,
+          "stages": 2
+        },
+        "outputs": [
+          "out"
+        ],
+        "bitwise": true,
+        "independent_reference": true
+      },
+      {
+        "case": "dense-prequantized-split",
+        "parameters": {
+          "r": 17,
+          "k": 512,
+          "o": 128,
+          "partitions": 2,
+          "block_m": 16,
+          "columns": 64,
+          "threads": 128,
+          "stages": 1
+        },
+        "outputs": [
+          "out"
+        ],
+        "bitwise": true,
+        "independent_reference": true
+      },
+      {
+        "case": "expert-one-row-compact",
+        "parameters": {
+          "r": 1,
+          "k": 256,
+          "o": 128,
+          "experts": 256,
+          "top": 8,
+          "partitions": 1,
+          "block_m": 16,
+          "columns": 64,
+          "threads": 128,
+          "compact": true,
+          "stages": 1,
+          "activation_vector": 16
+        },
+        "outputs": [
+          "out"
+        ],
+        "bitwise": true,
+        "independent_reference": true
+      },
+      {
+        "case": "expert-ragged",
+        "parameters": {
+          "r": 3,
+          "k": 256,
+          "o": 128,
+          "experts": 256,
+          "top": 8,
+          "partitions": 1,
+          "block_m": 16,
+          "columns": 64,
+          "threads": 128,
+          "compact": false,
+          "stages": 1,
+          "activation_vector": 1
+        },
+        "outputs": [
+          "out"
+        ],
+        "bitwise": true,
+        "independent_reference": true
+      },
+      {
+        "case": "expert-routed",
+        "parameters": {
+          "r": 3,
+          "k": 256,
+          "o": 128,
+          "experts": 256,
+          "top": 8,
+          "partitions": 1,
+          "block_m": 16,
+          "columns": 64,
+          "threads": 128,
+          "compact": false,
+          "stages": 1,
+          "routed_input": true,
+          "activation_vector": 16
+        },
+        "outputs": [
+          "out"
+        ],
+        "bitwise": true,
+        "independent_reference": true
+      },
+      {
+        "case": "expert-vector-staged",
+        "parameters": {
+          "r": 33,
+          "k": 384,
+          "o": 128,
+          "experts": 256,
+          "top": 8,
+          "partitions": 1,
+          "block_m": 32,
+          "columns": 128,
+          "threads": 256,
+          "compact": true,
+          "stages": 2,
+          "activation_vector": 16
+        },
+        "outputs": [
+          "out"
+        ],
+        "bitwise": true,
+        "independent_reference": true
+      },
+      {
+        "case": "expert-vector-routed",
+        "parameters": {
+          "r": 33,
+          "k": 384,
+          "o": 128,
+          "experts": 256,
+          "top": 8,
+          "partitions": 1,
+          "block_m": 32,
+          "columns": 128,
+          "threads": 256,
+          "compact": true,
+          "stages": 2,
+          "routed_input": true,
+          "activation_vector": 16
+        },
+        "outputs": [
+          "out"
+        ],
+        "bitwise": true,
+        "independent_reference": true
+      }
+    ]
+  },
+  "results": []
+}

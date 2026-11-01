@@ -1,0 +1,38 @@
+{
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "concurrent-fp8-diagnostic",
+    "model": "LiquidAI/LFM2.5-24B-A2B-FP8",
+    "model_revision": "f54bf39547fd5b7955abb9fe8d1b151e31fbbddb",
+    "weight_format": "fp8",
+    "provider": "cuda",
+    "target": "sm_89",
+    "mode": "ar",
+    "kv_dtype": "float16",
+    "kv_bits": 16,
+    "prefix_cache": false,
+    "speculative_decoding": false,
+    "cpu_offload": false,
+    "early_eos": false,
+    "protocol": "client-stream-burst-v1",
+    "full_model_numerical_qualification": "open",
+    "model_throughput_qualified": false,
+    "engine_config": {
+      "prefill_chunk": 2048,
+      "prefill_requests": 256,
+      "prefill_token_budget": 524288,
+      "decode_prefill_token_budget": 256
+    },
+    "program_sha256": "280f3d4623a9f2ba7e789d0862e6ff9367d6edcb0bf2700d59e69e297cc312a6",
+    "reference_run_id": "20261031203613246653-4a984cbd",
+    "warmup": 1,
+    "repeats": 3,
+    "device": {
+      "ordinal": 0,
+      "name": "NVIDIA L40S",
+      "arch": "sm_89",
+      "provider": "cuda"
+    }
+  },
+  "results": []
+}
