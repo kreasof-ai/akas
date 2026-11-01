@@ -18,39 +18,44 @@ generation and serving. Tensor provides compilation and device execution.
 
 ## Benchmark showcase
 
-**LFM2.5-24B-A2B · Q4_0 weights · NVIDIA L4 (23,034 MiB) · CUDA**
+**LFM2.5-24B-A2B-FP8 · Block-scaled FP8 weights · NVIDIA L40S (46,068 MiB) · CUDA**
 
-Selected results from the [October 23, 2026 comparison](https://github.com/kreasof-ai/akas/blob/0b702210b8c4d722b1c1f420e00272f418658136/benchmarks/reports/20261023T155400Z-cdcde64a14b5/COMPARISON.md),
-with one request generating 128 tokens. All rates are tokens per second; FP16 and
-FP8 below refer to the KV cache dtype.
+Results from the [November 1, 2026 comparison](https://github.com/kreasof-ai/akas/blob/f19575adf59fa682eb15ac3756de0f62a8320728/benchmarks/reports/20261101T074055Z-ad51ac551826/COMPARISON.md),
+across concurrent batch sizes 1 through 256 with 2,048 prompt tokens and 128 total
+output tokens per request. All runtimes use identical official checkpoint bytes,
+deterministic synthetic prompt IDs, pure autoregressive decoding and 16-bit KV
+(AKAS FP16 KV; vLLM 0.31.0 and SGLang 0.5.21 BF16 KV). Rates are medians of three
+retained repetitions after one warmup.
 
-![Prefill and decode throughput across all measured prefix lengths for autoregressive and Dspark speculative decoding, comparing AKAS FP16 KV, AKAS FP8 KV and llama.cpp FP16 KV on NVIDIA L4.](https://raw.githubusercontent.com/kreasof-ai/akas/0b702210b8c4d722b1c1f420e00272f418658136/benchmarks/reports/20261023T155400Z-cdcde64a14b5/throughput.svg)
+![LFM2.5-24B-A2B-FP8 prefill and decode throughput with observed sample ranges across concurrent requests 1 through 256, comparing AKAS, vLLM and SGLang on NVIDIA L40S.](https://raw.githubusercontent.com/kreasof-ai/akas/e41c218b4304cb70299ec767f0f8c5613f8c0e4b/benchmarks/runs/20261101114644970547-04a3dc56/figures/throughput.svg)
 
 <details>
-<summary>Selected measurements (tokens per second)</summary>
+<summary>Measurements (tokens per second) and median TTFT</summary>
 
-| Mode | Phase | Prefix tokens | AKAS FP16 KV | AKAS FP8 KV | llama.cpp FP16 KV |
-| --- | --- | ---: | ---: | ---: | ---: |
-| Autoregressive | Prefill | 2,048 | 2,631.2 | 2,648.7 | 3,279.2 |
-| Autoregressive | Prefill | 16,384 | 4,259.0 | 4,220.0 | 3,112.6 |
-| Autoregressive | Prefill | 130,944 | 2,771.7 | 2,755.7 | 1,593.4 |
-| Autoregressive | Decode | 2,048 | 128.9 | 129.0 | 129.9 |
-| Autoregressive | Decode | 16,384 | 112.7 | 118.6 | 111.0 |
-| Autoregressive | Decode | 130,944 | 55.7 | 75.1 | 51.3 |
-| Dspark speculative | Prefill | 2,048 | 3,430.9 | 3,409.4 | 2,544.8 |
-| Dspark speculative | Decode | 2,048 | 256.1 | 191.0 | 171.2 |
+| Concurrent requests | AKAS prefill tok/s | vLLM prefill tok/s | SGLang prefill tok/s | AKAS decode tok/s | vLLM decode tok/s | SGLang decode tok/s | AKAS TTFT ms | vLLM TTFT ms | SGLang TTFT ms |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 26,018.8 | 28,016.3 | 25,915.5 | 140.2 | 159.7 | 146.7 | 78.7 | 73.1 | 79.0 |
+| 4 | 31,975.3 | 27,059.3 | 27,521.3 | 201.2 | 357.0 | 316.6 | 256.2 | 302.7 | 297.7 |
+| 16 | 31,990.3 | 28,078.3 | 28,033.2 | 722.5 | 600.2 | 550.6 | 1,024.3 | 1,167.0 | 1,168.9 |
+| 64 | 31,888.5 | 27,312.1 | 28,369.9 | 1,627.9 | 1,169.9 | 905.4 | 4,110.3 | 4,799.0 | 4,620.1 |
+| 256 | 31,797.5 | 23,224.5 | 28,358.3 | 3,698.0 | 2,890.9 | 1,266.4 | 16,488.4 | 22,574.7 | 18,488.0 |
 
 </details>
 
-These are reported phase rates from a diagnostic context sweep with one retained
-sample per shape. AKAS uses `native-token-step-v2`; llama.cpp uses
-`llama-server-eval-real-text-v1`. Their timing boundaries differ, so these values
-do not establish equivalent kernel timings or end-to-end speedups. Complete-burst
-throughput was not measured. Speculative performance varies with context and draft
-acceptance; the [full comparison](https://github.com/kreasof-ai/akas/blob/0b702210b8c4d722b1c1f420e00272f418658136/benchmarks/reports/20261023T155400Z-cdcde64a14b5/COMPARISON.md)
-includes shorter and longer contexts, including speculative slowdowns. See the
-[campaign report](https://github.com/kreasof-ai/akas/blob/0b702210b8c4d722b1c1f420e00272f418658136/benchmarks/reports/20261023T155400Z-cdcde64a14b5/README.md)
-for hardware, retained settings, qualification and output agreement.
+AKAS prefill medians exceed both vLLM and SGLang at **B=4 through B=256** (by
+**12.1–16.2%** over the faster baseline), with lower median TTFT at **4/5 batch
+sizes**. Decode medians exceed both baselines at **B=16 (+20.4%), B=64 (+39.1%)
+and B=256 (+27.9%)**, while trailing at B=1 and B=4.
+
+All three runtimes are measured through `client-stream-burst-v1`: TTFT includes
+queueing and token delivery, prefill rate is total prompt tokens divided by maximum
+TTFT, and decode counts the remaining 127 output tokens after the first prediction.
+Model loading and compilation are excluded. Three-way numerical qualification
+matches **16/16** greedy first tokens across BOS-prefixed and chat-template probes
+with matching FP8 Tensor Core logit noise floor across all three engines. See the
+[campaign report](https://github.com/kreasof-ai/akas/blob/f19575adf59fa682eb15ac3756de0f62a8320728/benchmarks/reports/20261101T074055Z-ad51ac551826/README.md)
+and [three-way numerical qualification](https://github.com/kreasof-ai/akas/blob/8ce8c3da31b2c74f0cd757be3bf152b2e25bc239/benchmarks/runs/20261101113717922004-dcb7262b/report.json)
+for raw samples, selected kernel schedules and logit comparisons.
 
 Regenerate the plot with `uv run python tools/plot_comparison.py`.
 

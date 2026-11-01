@@ -5,6 +5,7 @@ Each report contains the full requested matrix, all available AKAS and baseline 
 | Started UTC | Workload | Source | Qualified AKAS | Qualified baselines | Report |
 | --- | --- | --- | ---: | ---: | --- |
 | 2026-11-01T08:25:23.921626Z | concurrent-prefill-v1 | `ce32f41e6d5cb8ff9dbb46b2da025c999acc1fa0` | 0/1 | 2/2 | [full tables](https://github.com/kreasof-ai/akas/blob/a3eae947241ba408bc9035428d1c6e2d760d064c/benchmarks/reports/20261101T082523Z-bc6ddc1fa5b6/README.md) |
+| 2026-11-01T07:40:55.313788Z | concurrent-prefill-v1 | `ce32f41e6d5cb8ff9dbb46b2da025c999acc1fa0` | 1/1 | 2/2 | [full tables](https://github.com/kreasof-ai/akas/blob/f19575adf59fa682eb15ac3756de0f62a8320728/benchmarks/reports/20261101T074055Z-ad51ac551826/README.md) |
 | 2026-11-01T07:40:55.313788Z | concurrent-prefill-v1 | `ce32f41e6d5cb8ff9dbb46b2da025c999acc1fa0` | 0/1 | 2/2 | [full tables](https://github.com/kreasof-ai/akas/blob/a3eae947241ba408bc9035428d1c6e2d760d064c/benchmarks/reports/20261101T074055Z-52cb5ec4db62/README.md) |
 | 2026-11-01T06:39:19.843183Z | concurrent-prefill-v1 | `ce32f41e6d5cb8ff9dbb46b2da025c999acc1fa0` | 0/1 | 2/2 | [full tables](https://github.com/kreasof-ai/akas/blob/a3eae947241ba408bc9035428d1c6e2d760d064c/benchmarks/reports/20261101T063919Z-ccd02e261243/README.md) |
 | 2026-11-01T06:03:06.871297Z | concurrent-prefill-v1 | `ce32f41e6d5cb8ff9dbb46b2da025c999acc1fa0` | 0/1 | 2/2 | [full tables](https://github.com/kreasof-ai/akas/blob/a3eae947241ba408bc9035428d1c6e2d760d064c/benchmarks/reports/20261101T060306Z-9ccdb2ccfdfa/README.md) |
