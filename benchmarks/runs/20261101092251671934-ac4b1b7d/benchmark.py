@@ -1,0 +1,87 @@
+"""Original-weight complete expert chains, including route packing overhead."""
+from pathlib import Path
+from contextlib import ExitStack
+import hashlib,json,zipfile
+import numpy as np,tensor
+from akas.models.lfm2 import LFM2MoE
+from akas.checkpoints.upload import upload_shards
+from akas.quantization._shared.e4m3 import encode_storage
+from akas.ops.moe.validation import tile_tables
+from akas.graph import Graph
+from akas.compilation.policy import lower
+from akas.compilation.compile import produce
+from akas.execution.forward import Forward
+from akas.benchmarking.history import Recorder
+from tensor.compiler.tuning import cuda_working_set,measure
+from tensor.compiler.cuda.nvrtc import NvrtcCompiler
+original_options=NvrtcCompiler.options
+compiler_fast_math=False
+NvrtcCompiler.options=lambda self,target,includes: original_options(self,target,includes)+(["--use_fast_math"] if compiler_fast_math else [])
+main=Path('/home/sagemaker-user/akas');work=Path.cwd();root=work/'build/lfm-serving/real-fastmath-chain';root.mkdir(parents=True,exist_ok=True)
+metadata=dict(runtime='akas',purpose='expert-chain-benchmark',provider='cuda',model='LiquidAI/LFM2.5-24B-A2B-FP8',model_revision='f54bf39547fd5b7955abb9fe8d1b151e31fbbddb',qualification_scope='Original gate/up/down banks; complete captured expert chain including packing; errors recorded against strict compiler baseline; fast compiler arithmetic experiment is not a qualified model or throughput claim')
+rec=Recorder(main/'benchmarks',metadata,source_root=work,kind='benchmark',change='Measure strict versus fast compiler arithmetic on complete original-weight expert chains',dependency_sources={'tensor':main.parent/'tensor'})
+rec.artifact(Path(__file__),'benchmark.py');print('STARTED',rec.id,flush=True)
+results=[]
+try:
+ cp=LFM2MoE.checkpoint_type(main/'build/checkpoints/lfm2.5-24b-a2b-fp8',tokenizer=False)
+ names=['blk.2.ffn_'+part+'_exps.weight' for part in ('gate','up','down')];groups=names+[cp.scales[name] for name in names]
+ wanted=tuple(n for n,layout in cp.layouts.items() if layout[0] in groups)
+ with tensor.Device() as device,ExitStack() as lifetime:
+  from ctypes import c_int,byref
+  limit=c_int();device.driver.call('cuDeviceGetAttribute',byref(limit),97,device.device);shared_limit=limit.value
+  bank=upload_shards(device,cp.tensors,wanted,cp.layouts)
+  for value in bank.values():lifetime.callback(value.release)
+  prepare,conditioning=lifetime.enter_context(cuda_working_set(device,256<<20,out=root/'working-set',target='sm_89'))
+  metadata['weight_banks']=names
+  for rows,case_index in ((2048,0),(8192,1)):
+   profile_path=main/f'build/lfm-serving/extended-serving-profile/profile.case-{case_index}.json';profile=json.loads(profile_path.read_text());rec.artifact(profile_path,f'r{rows}-routing-profile.json')
+   counts=np.array(profile['observations'][0]['outputs']['counts']['values'],dtype='int32')
+   routes=np.full((64,rows),-1,'int32');filled=np.zeros(rows,'int32')
+   for expert in np.argsort(-counts,kind='stable'):
+    for offset,row in enumerate(sorted(np.argsort(filled,kind='stable')[:counts[expert]])):
+     routes[expert,offset]=row*4+filled[row];filled[row]+=1
+   assert (filled==4).all()
+   tile_experts,tile_offsets=tile_tables(counts,(rows*4+3)//4+64,6)
+   rng=np.random.default_rng(8017+rows)
+   host=dict(x=encode_storage(rng.normal(0,96,(rows,2048)).astype('float32')),activation_scales=rng.uniform(.001,.01,(rows,16)).astype('float32'),counts=counts,routes=routes,tile_experts=tile_experts,tile_offsets=tile_offsets)
+   with ExitStack() as case:
+    buffers={name:device.from_numpy(array) for name,array in host.items()}
+    for value in buffers.values():case.callback(value.release)
+    for key,name in zip(('w','w2','down'),names):buffers[key]=bank[name];buffers[key+'_scales']=bank[cp.scales[name]]
+    buffers['out']=device.zeros((rows,4,2048),'bfloat16');case.callback(buffers['out'].release)
+    current=(32,256,1,'wide',64,256,1) if rows==2048 else (128,512,2,'separate',128,512,2)
+    candidates=[(adaptive,m,t,s,l,m,t,s) for m,t,s,l in ((64,256,2,'wide'),(128,512,2,'separate')) for adaptive in (False,True)]
+    reference=None
+    for index,(adaptive,bm,threads,stages,layout,down_m,down_threads,down_stages) in enumerate(candidates):
+     compiler_fast_math=bool(adaptive)
+     packed=True
+     graph=Graph(contract='reference')
+     for name,value in buffers.items():graph.buffer(name,value.shape,str(value.dtype),role='output' if name=='out' else 'input')
+     activated=graph.buffer('activated',(rows,4,1536),'uint8');activated_scales=graph.buffer('activated_scales',(rows,4,12),'float32')
+     shared={name:graph.buffers[name] for name in ('counts','routes','tile_experts','tile_offsets')}
+     common=dict(r=rows,rows=rows,top=4,experts=64,partitions=1,compact=True,tile_map=True,max_block_m=128,columns=128,activation_vector=16,mma_dtype='float8_e4m3fn')
+     graph('fp8_expert_swiglu',dict(common,k=2048,o=1536,block_m=bm,threads=threads,stages=stages,pair_layout=layout,product_dtype='bfloat16',activation_dtype='bfloat16'),x=graph.buffers['x'],activation_scales=graph.buffers['activation_scales'],w=graph.buffers['w'],scales=graph.buffers['w_scales'],w2=graph.buffers['w2'],scales2=graph.buffers['w2_scales'],**shared,out=activated,output_scales=activated_scales)
+     graph('expert_partial',dict(common,k=1536,o=2048,block_m=down_m,threads=down_threads,stages=down_stages,routed_input=True,output_dtype='bfloat16'),x=activated,activation_scales=activated_scales,w=graph.buffers['down'],scales=graph.buffers['down_scales'],**shared,out=graph.buffers['out'])
+     if packed:graph,_=lower(graph,policy={'moe':dict(packed=True,packed_minimum_rows=1)})
+     destination=root/f'r{rows}-candidate{index}';produce(graph,destination,search=False,target='sm_89')
+     shared=[]
+     for artifact in destination.glob('*.tbin'):
+      with zipfile.ZipFile(artifact) as bundle:shared.append(json.loads(bundle.read('manifest.json'))['launch']['shared_memory_bytes'])
+     if max(shared)>shared_limit:
+      print('SKIP_SHARED',rows,index,max(shared),flush=True)
+      continue
+     with Forward(destination,device,buffers,graphs=True) as forward:
+      forward.run();actual=buffers['out'].to_numpy()
+      if reference is None:reference=actual.copy()
+      else:assert np.isfinite(actual).all()
+      timing=measure(device,forward.run,warmup=2,samples=7,repeats=5,reset=prepare)
+      row=dict(rows=rows,fast_math=adaptive,packed=packed,block_m=bm,threads=threads,stages=stages,pair_layout=layout,down_block_m=down_m,down_threads=down_threads,down_stages=down_stages,bitwise=bool(np.array_equal(actual,reference)),maximum_absolute_error=float(np.max(np.abs(actual-reference))),relative_rms_error=float(np.linalg.norm(actual-reference)/np.linalg.norm(reference)),timing=timing)
+      results.append(row);path=root/f'r{rows}-candidate{index}-result.json';path.write_text(json.dumps(row,indent=2)+'\n');rec.artifact(path,path.name)
+      print('RESULT',rows,adaptive,packed,bm,threads,stages,layout,down_m,down_threads,down_stages,timing['median_seconds'],flush=True)
+     rec.artifact(destination/'forward.json',f'r{rows}-candidate{index}.json')
+  path=root/'results.json';path.write_text(json.dumps(dict(results=results,cache_conditioning=conditioning),indent=2)+'\n');rec.artifact(path,'results.json')
+  for path in root.rglob('*.tbin'):rec.artifact(path,'producer/'+str(path.relative_to(root)))
+ rec.update(dict(metadata=metadata,results=[]),final=True,status='passed');print('RUN',rec.id,flush=True)
+except BaseException as error:
+ if rec.record['completed_at'] is None:rec.update(dict(metadata=metadata,results=[],error=repr(error)),final=True,status='failed')
+ raise

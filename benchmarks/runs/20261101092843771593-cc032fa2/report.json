@@ -1,0 +1,18 @@
+{
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "arithmetic-qualification",
+    "provider": "cuda",
+    "compiler_experiment": {
+      "nvrtc_options": [
+        "--use_fast_math",
+        "--prec-div=true",
+        "--prec-sqrt=true",
+        "--ftz=false"
+      ]
+    },
+    "qualification_scope": "Unchanged independent operation tolerances plus a two-layer model with ragged/reordered requests and state reuse; not production-model qualification"
+  },
+  "results": [],
+  "error": "BuildError('output already exists: /home/sagemaker-user/akas/build/lfm-serving/fastmath-arithmetic-qualification/operation-0/kernel.tbin')"
+}

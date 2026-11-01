@@ -1,0 +1,41 @@
+{
+  "rows": 2048,
+  "weight_layout": "raw",
+  "preload_scales": false,
+  "packed": true,
+  "block_m": 128,
+  "threads": 512,
+  "stages": 2,
+  "pair_layout": "separate",
+  "down_block_m": 128,
+  "down_threads": 512,
+  "down_stages": 2,
+  "bitwise": true,
+  "timing": {
+    "gpu_seconds": [
+      0.001309286379814148,
+      0.0013111295700073242,
+      0.0013081919908523559,
+      0.001305190372467041,
+      0.0013080383777618406,
+      0.0013088127851486205,
+      0.0013090752124786378
+    ],
+    "completed_seconds": [
+      0.001331271798699163,
+      0.0013203376016463152,
+      0.0013170156002161094,
+      0.001314337199437432,
+      0.001316123199649155,
+      0.0013165631971787661,
+      0.001316567399771884
+    ],
+    "median_gpu_seconds": 0.0013088127851486205,
+    "median_completed_seconds": 0.001316567399771884,
+    "warmup": 2,
+    "samples": 7,
+    "repeats": 5,
+    "metric": "gpu_seconds",
+    "median_seconds": 0.0013088127851486205
+  }
+}

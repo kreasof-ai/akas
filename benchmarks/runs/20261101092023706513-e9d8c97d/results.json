@@ -1,0 +1,260 @@
+{
+  "results": [
+    {
+      "rows": 2048,
+      "warp_policy": "square",
+      "packed": true,
+      "block_m": 64,
+      "threads": 256,
+      "stages": 2,
+      "pair_layout": "wide",
+      "down_block_m": 64,
+      "down_threads": 256,
+      "down_stages": 2,
+      "bitwise": true,
+      "timing": {
+        "gpu_seconds": [
+          0.0012810239791870117,
+          0.001280191969871521,
+          0.0012805375814437866,
+          0.0012799999713897705,
+          0.0012805951833724976,
+          0.0012808191776275636,
+          0.0012808063983917237
+        ],
+        "completed_seconds": [
+          0.0012919729997520335,
+          0.0012883953982964157,
+          0.001289583400648553,
+          0.0012884994008345529,
+          0.001290761199197732,
+          0.0012898310000309722,
+          0.0012884111987659709
+        ],
+        "median_gpu_seconds": 0.0012805951833724976,
+        "median_completed_seconds": 0.001289583400648553,
+        "warmup": 2,
+        "samples": 7,
+        "repeats": 5,
+        "metric": "gpu_seconds",
+        "median_seconds": 0.0012805951833724976
+      }
+    },
+    {
+      "rows": 2048,
+      "warp_policy": "full_row",
+      "packed": true,
+      "block_m": 64,
+      "threads": 256,
+      "stages": 2,
+      "pair_layout": "wide",
+      "down_block_m": 64,
+      "down_threads": 256,
+      "down_stages": 2,
+      "bitwise": true,
+      "timing": {
+        "gpu_seconds": [
+          0.0012738304138183595,
+          0.0012713600158691407,
+          0.0012717952251434328,
+          0.0012703744173049928,
+          0.001271987223625183,
+          0.0012720128297805788,
+          0.001270956802368164
+        ],
+        "completed_seconds": [
+          0.0012848689977545292,
+          0.0012801450022379868,
+          0.0012806229991838337,
+          0.0012781929995981044,
+          0.001281251199543476,
+          0.0012805610007490032,
+          0.00128010879852809
+        ],
+        "median_gpu_seconds": 0.0012717952251434328,
+        "median_completed_seconds": 0.0012805610007490032,
+        "warmup": 2,
+        "samples": 7,
+        "repeats": 5,
+        "metric": "gpu_seconds",
+        "median_seconds": 0.0012717952251434328
+      }
+    },
+    {
+      "rows": 2048,
+      "warp_policy": "full_column",
+      "packed": true,
+      "block_m": 64,
+      "threads": 256,
+      "stages": 2,
+      "pair_layout": "wide",
+      "down_block_m": 64,
+      "down_threads": 256,
+      "down_stages": 2,
+      "bitwise": true,
+      "timing": {
+        "gpu_seconds": [
+          0.00129267840385437,
+          0.0012902080297470093,
+          0.0012877824068069459,
+          0.0012879680156707763,
+          0.0012885696411132812,
+          0.0012890111923217775,
+          0.0012877824306488038
+        ],
+        "completed_seconds": [
+          0.0013030884001636878,
+          0.0012981523992493748,
+          0.0012959281986695715,
+          0.0012959247978869826,
+          0.001296818999981042,
+          0.0012970685987966136,
+          0.0012965806017746218
+        ],
+        "median_gpu_seconds": 0.0012885696411132812,
+        "median_completed_seconds": 0.001296818999981042,
+        "warmup": 2,
+        "samples": 7,
+        "repeats": 5,
+        "metric": "gpu_seconds",
+        "median_seconds": 0.0012885696411132812
+      }
+    },
+    {
+      "rows": 8192,
+      "warp_policy": "square",
+      "packed": true,
+      "block_m": 64,
+      "threads": 256,
+      "stages": 2,
+      "pair_layout": "wide",
+      "down_block_m": 64,
+      "down_threads": 256,
+      "down_stages": 2,
+      "bitwise": true,
+      "timing": {
+        "gpu_seconds": [
+          0.003016908836364746,
+          0.0030138368606567384,
+          0.003016908884048462,
+          0.003014451265335083,
+          0.0030148608684539796,
+          0.003017318439483643,
+          0.00301648006439209
+        ],
+        "completed_seconds": [
+          0.0030274198012193664,
+          0.003023182199103758,
+          0.0030266739981016145,
+          0.0030241517990361897,
+          0.003024654601176735,
+          0.003026689800026361,
+          0.0030257100021117366
+        ],
+        "median_gpu_seconds": 0.00301648006439209,
+        "median_completed_seconds": 0.0030257100021117366,
+        "warmup": 2,
+        "samples": 7,
+        "repeats": 5,
+        "metric": "gpu_seconds",
+        "median_seconds": 0.00301648006439209
+      }
+    },
+    {
+      "rows": 8192,
+      "warp_policy": "full_row",
+      "packed": true,
+      "block_m": 64,
+      "threads": 256,
+      "stages": 2,
+      "pair_layout": "wide",
+      "down_block_m": 64,
+      "down_threads": 256,
+      "down_stages": 2,
+      "bitwise": true,
+      "timing": {
+        "gpu_seconds": [
+          0.002979404830932617,
+          0.002977779245376587,
+          0.0029793920040130616,
+          0.0029796160221099858,
+          0.0029784000396728518,
+          0.002977772808074951,
+          0.0029790208339691157
+        ],
+        "completed_seconds": [
+          0.002990577199670952,
+          0.002987462999590207,
+          0.002988157000800129,
+          0.0029880633985158054,
+          0.0029889196026488206,
+          0.002985914998862427,
+          0.0029897014013840818
+        ],
+        "median_gpu_seconds": 0.0029790208339691157,
+        "median_completed_seconds": 0.002988157000800129,
+        "warmup": 2,
+        "samples": 7,
+        "repeats": 5,
+        "metric": "gpu_seconds",
+        "median_seconds": 0.0029790208339691157
+      }
+    },
+    {
+      "rows": 8192,
+      "warp_policy": "full_column",
+      "packed": true,
+      "block_m": 64,
+      "threads": 256,
+      "stages": 2,
+      "pair_layout": "wide",
+      "down_block_m": 64,
+      "down_threads": 256,
+      "down_stages": 2,
+      "bitwise": true,
+      "timing": {
+        "gpu_seconds": [
+          0.003067903995513916,
+          0.0030674943923950197,
+          0.003068287992477417,
+          0.003068089580535889,
+          0.0030693312168121336,
+          0.0030678719997406004,
+          0.003068723201751709
+        ],
+        "completed_seconds": [
+          0.003078226999787148,
+          0.003076706800493412,
+          0.0030834854012937287,
+          0.0030776208004681394,
+          0.003078354801982641,
+          0.0030780027984292245,
+          0.003077944801771082
+        ],
+        "median_gpu_seconds": 0.003068089580535889,
+        "median_completed_seconds": 0.0030780027984292245,
+        "warmup": 2,
+        "samples": 7,
+        "repeats": 5,
+        "metric": "gpu_seconds",
+        "median_seconds": 0.003068089580535889
+      }
+    }
+  ],
+  "cache_conditioning": {
+    "method": "independent-canonical-matmul",
+    "target": "sm_89",
+    "seed": 17,
+    "requested_weight_bytes": 268435456,
+    "weight_bytes": 268435456,
+    "working_set_bytes": 276955136,
+    "geometry": {
+      "m": 32,
+      "n": 65536,
+      "k": 2048
+    },
+    "dtype": "float16",
+    "artifact_sha256": "a8c0c56f966d01fda4f0fec71f0cf42c0ca5adcf46461d18d02df0c484c4f211",
+    "source_sha256": "e677f9c9bc8ef73d275e6df9657d8dfc248c015e44a999f0bf3ba62000414185"
+  }
+}

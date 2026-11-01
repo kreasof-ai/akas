@@ -1,0 +1,230 @@
+{
+  "results": [
+    {
+      "rows": 16,
+      "implementation": "attention.cuda.floating",
+      "splits": 16,
+      "key_rows": 64,
+      "shared_dtype": null,
+      "maximum_absolute_error": 0.0,
+      "timing": {
+        "gpu_seconds": [
+          0.0001474559992551804,
+          0.0001495039999485016,
+          0.00014766080081462862,
+          0.0001456128031015396,
+          0.0001466368019580841,
+          0.00014499840140342712,
+          0.00014497919976711273
+        ],
+        "completed_seconds": [
+          0.00015547299844911321,
+          0.0001591813997947611,
+          0.0001554292015498504,
+          0.00015267900162143632,
+          0.00015433300141012296,
+          0.00015631700080120936,
+          0.00015207499964162708
+        ],
+        "median_gpu_seconds": 0.0001466368019580841,
+        "median_completed_seconds": 0.0001554292015498504,
+        "warmup": 2,
+        "samples": 7,
+        "repeats": 5,
+        "metric": "gpu_seconds",
+        "median_seconds": 0.0001466368019580841
+      }
+    },
+    {
+      "rows": 16,
+      "implementation": "attention.cuda.floating",
+      "splits": 4,
+      "key_rows": 64,
+      "shared_dtype": null,
+      "maximum_absolute_error": 1.30385160446167e-08,
+      "timing": {
+        "gpu_seconds": [
+          0.00020766719877719878,
+          0.00020479999482631684,
+          0.00020684799551963805,
+          0.0002074624001979828,
+          0.00020520959794521334,
+          0.00020581759810447695,
+          0.00020561919510364533
+        ],
+        "completed_seconds": [
+          0.00021762800170108676,
+          0.00021349600137909874,
+          0.00021590020041912795,
+          0.0002169544022763148,
+          0.00021410599874798207,
+          0.00021485019969986753,
+          0.0002144458019756712
+        ],
+        "median_gpu_seconds": 0.00020581759810447695,
+        "median_completed_seconds": 0.00021485019969986753,
+        "warmup": 2,
+        "samples": 7,
+        "repeats": 5,
+        "metric": "gpu_seconds",
+        "median_seconds": 0.00020581759810447695
+      }
+    },
+    {
+      "rows": 16,
+      "implementation": "attention.grouped_decode",
+      "splits": 4,
+      "key_rows": 64,
+      "shared_dtype": "float32",
+      "maximum_absolute_error": 2.9802322387695312e-08,
+      "timing": {
+        "gpu_seconds": [
+          0.00021524480283260347,
+          0.00021459840238094327,
+          0.00021299200057983396,
+          0.00021299200057983396,
+          0.000211558398604393,
+          0.00021316480338573457,
+          0.0002127807974815369
+        ],
+        "completed_seconds": [
+          0.00022494480072055012,
+          0.00022285459999693558,
+          0.00022040620242478327,
+          0.00021979059820296243,
+          0.0002187983991461806,
+          0.00022088279947638512,
+          0.00021981259778840466
+        ],
+        "median_gpu_seconds": 0.00021299200057983396,
+        "median_completed_seconds": 0.00022040620242478327,
+        "warmup": 2,
+        "samples": 7,
+        "repeats": 5,
+        "metric": "gpu_seconds",
+        "median_seconds": 0.00021299200057983396
+      }
+    },
+    {
+      "rows": 64,
+      "implementation": "attention.cuda.floating",
+      "splits": 16,
+      "key_rows": 64,
+      "shared_dtype": null,
+      "maximum_absolute_error": 0.0,
+      "timing": {
+        "gpu_seconds": [
+          0.0005594688057899476,
+          0.0005625856041908265,
+          0.0005625599980354309,
+          0.0005591040015220643,
+          0.0005617663979530335,
+          0.0005613119959831238,
+          0.000562771189212799
+        ],
+        "completed_seconds": [
+          0.0005686851989594288,
+          0.0005721932000597007,
+          0.0005715309976949357,
+          0.0005666570010362193,
+          0.0005701632020645775,
+          0.0005691251993994228,
+          0.0005719673979911021
+        ],
+        "median_gpu_seconds": 0.0005617663979530335,
+        "median_completed_seconds": 0.0005701632020645775,
+        "warmup": 2,
+        "samples": 7,
+        "repeats": 5,
+        "metric": "gpu_seconds",
+        "median_seconds": 0.0005617663979530335
+      }
+    },
+    {
+      "rows": 64,
+      "implementation": "attention.cuda.floating",
+      "splits": 1,
+      "key_rows": 64,
+      "shared_dtype": null,
+      "maximum_absolute_error": 3.725290298461914e-08,
+      "timing": {
+        "gpu_seconds": [
+          0.0007896768093109132,
+          0.0007882688045501709,
+          0.0007880512118339539,
+          0.0007899135947227479,
+          0.0007886847972869874,
+          0.0007882624030113221,
+          0.0007905279994010926
+        ],
+        "completed_seconds": [
+          0.0007980519992997869,
+          0.0007957322013680823,
+          0.0007956860019476153,
+          0.000798740002210252,
+          0.0007966377976117656,
+          0.0007954216009238735,
+          0.00079819400125416
+        ],
+        "median_gpu_seconds": 0.0007886847972869874,
+        "median_completed_seconds": 0.0007966377976117656,
+        "warmup": 2,
+        "samples": 7,
+        "repeats": 5,
+        "metric": "gpu_seconds",
+        "median_seconds": 0.0007886847972869874
+      }
+    },
+    {
+      "rows": 64,
+      "implementation": "attention.grouped_decode",
+      "splits": 1,
+      "key_rows": 64,
+      "shared_dtype": "float32",
+      "maximum_absolute_error": 8.568167686462402e-08,
+      "timing": {
+        "gpu_seconds": [
+          0.00039546879529953,
+          0.00039544960260391233,
+          0.00039523839950561523,
+          0.000394624000787735,
+          0.0003960319995880127,
+          0.0003958591997623443,
+          0.0003960575938224792
+        ],
+        "completed_seconds": [
+          0.0004035953999846242,
+          0.0004034134020912461,
+          0.00040316300000995395,
+          0.00040223560063168406,
+          0.0004039997991640121,
+          0.0004043212014948949,
+          0.00040492559783160685
+        ],
+        "median_gpu_seconds": 0.00039546879529953,
+        "median_completed_seconds": 0.0004035953999846242,
+        "warmup": 2,
+        "samples": 7,
+        "repeats": 5,
+        "metric": "gpu_seconds",
+        "median_seconds": 0.00039546879529953
+      }
+    }
+  ],
+  "cache_conditioning": {
+    "method": "independent-canonical-matmul",
+    "target": "sm_89",
+    "seed": 17,
+    "requested_weight_bytes": 268435456,
+    "weight_bytes": 268435456,
+    "working_set_bytes": 276955136,
+    "geometry": {
+      "m": 32,
+      "n": 65536,
+      "k": 2048
+    },
+    "dtype": "float16",
+    "artifact_sha256": "eaddf364ca19e27c3fe304ac36328b85102d4e9242239ff5fabfdc43a08ba797",
+    "source_sha256": "e677f9c9bc8ef73d275e6df9657d8dfc248c015e44a999f0bf3ba62000414185"
+  }
+}
