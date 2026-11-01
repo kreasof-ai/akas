@@ -1,0 +1,43 @@
+{
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "numerical-qualification",
+    "provider": "cuda",
+    "target": "sm_89",
+    "model": "LiquidAI/LFM2.5-24B-A2B-FP8",
+    "model_revision": "f54bf39547fd5b7955abb9fe8d1b151e31fbbddb",
+    "weight_format": "fp8",
+    "kv_dtype": "float16",
+    "qualified_akas_run_id": "20261101074055313788-b49b56d1",
+    "qualified_report_id": "20261101T074055Z-52cb5ec4db62",
+    "vllm_baseline_run_id": "20261031183705001992-d62597ef",
+    "sglang_baseline_run_id": "20261031182740133509-0f8da2dc",
+    "precision_matched_reference_run_id": "20261101075518157832-38226ee5",
+    "qualification_status": "passed",
+    "summary": {
+      "bos_three_way_first_token_agreement": "8/8",
+      "chat_three_way_first_token_agreement": "8/8",
+      "bos_mean_logit_rms": {
+        "vllm_sglang": 0.5843987582222732,
+        "vllm_akas": 0.6050320368436981,
+        "sglang_akas": 0.5555849456854756
+      },
+      "chat_mean_logit_rms": {
+        "vllm_sglang": 0.5587281538755677,
+        "vllm_akas": 0.4852871037211797,
+        "sglang_akas": 0.5555232989612598
+      },
+      "nobos_mean_logit_rms_vs_fp64_reference": {
+        "vllm": 1.0974280768173932,
+        "sglang": 1.3324038801590863,
+        "akas": 1.6117856738911627
+      },
+      "synthetic_341_first_token_agreement": {
+        "vllm_sglang": "240/341",
+        "vllm_akas": "236/341",
+        "sglang_akas": "227/341"
+      }
+    }
+  },
+  "results": []
+}
