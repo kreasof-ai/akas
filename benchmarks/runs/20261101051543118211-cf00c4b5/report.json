@@ -1,0 +1,23 @@
+{
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "expert-reduction-sequence-benchmark",
+    "provider": "cuda",
+    "model": "LiquidAI/LFM2.5-24B-A2B-FP8",
+    "model_revision": "f54bf39547fd5b7955abb9fe8d1b151e31fbbddb",
+    "qualification_scope": "Original checkpoint gate/up banks, independent equations, complete captured paired projection, activation, quantization sequence; not model throughput",
+    "weight_banks": [
+      {
+        "name": "blk.2.ffn_gate_exps.weight",
+        "weight_bits_sha256": "226862673af7d14308170bc650cd6471ad09cc340b90f36fff6552b93bc29c00",
+        "scale_bits_sha256": "7aa59d31632e2d7eec72d9e68217d075094074bb7e6d393875459f1496a54428"
+      },
+      {
+        "name": "blk.2.ffn_up_exps.weight",
+        "weight_bits_sha256": "c75a6cb8132a22da9fb7652985f8388fb67b91898a5fd00e6b4f66821d13613e",
+        "scale_bits_sha256": "ed983e5d167516482a0371906fbc262bac9d0e3eaa9b75163a7e72d88a5125b3"
+      }
+    ]
+  },
+  "results": []
+}

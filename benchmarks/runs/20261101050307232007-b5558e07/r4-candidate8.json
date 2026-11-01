@@ -1,0 +1,214 @@
+{
+  "schema": "akas.forward.v1",
+  "target": "sm_89",
+  "provider": "cuda",
+  "forward": {
+    "contract": "reference",
+    "phase": "forward",
+    "buffers": [
+      {
+        "name": "x",
+        "shape": [
+          4,
+          4,
+          1536
+        ],
+        "dtype": "uint8",
+        "role": "input"
+      },
+      {
+        "name": "activation_scales",
+        "shape": [
+          4,
+          4,
+          12
+        ],
+        "dtype": "float32",
+        "role": "input"
+      },
+      {
+        "name": "counts",
+        "shape": [
+          64
+        ],
+        "dtype": "int32",
+        "role": "input"
+      },
+      {
+        "name": "routes",
+        "shape": [
+          64,
+          4
+        ],
+        "dtype": "int32",
+        "role": "input"
+      },
+      {
+        "name": "tile_experts",
+        "shape": [
+          6,
+          68
+        ],
+        "dtype": "int32",
+        "role": "input"
+      },
+      {
+        "name": "tile_offsets",
+        "shape": [
+          6,
+          68
+        ],
+        "dtype": "int32",
+        "role": "input"
+      },
+      {
+        "name": "w",
+        "shape": [
+          64,
+          2048,
+          1536
+        ],
+        "dtype": "uint8",
+        "role": "weight"
+      },
+      {
+        "name": "scales",
+        "shape": [
+          64,
+          16,
+          12
+        ],
+        "dtype": "bfloat16",
+        "role": "weight"
+      },
+      {
+        "name": "out",
+        "shape": [
+          4,
+          4,
+          2048
+        ],
+        "dtype": "bfloat16",
+        "role": "output"
+      },
+      {
+        "name": "partial",
+        "shape": [
+          4,
+          4,
+          4,
+          2048
+        ],
+        "dtype": "float32",
+        "role": "scratch"
+      }
+    ],
+    "calls": [
+      {
+        "kind": "expert_partial",
+        "parameters": {
+          "r": 4,
+          "rows": 4,
+          "top": 4,
+          "experts": 64,
+          "k": 1536,
+          "o": 2048,
+          "routed_input": true,
+          "compact": true,
+          "tile_map": true,
+          "max_block_m": 128,
+          "block_m": 16,
+          "partitions": 4,
+          "columns": 64,
+          "threads": 128,
+          "stages": 2,
+          "activation_vector": 16,
+          "mma_dtype": "float16",
+          "output_dtype": "float32"
+        },
+        "arguments": [],
+        "bindings": {
+          "x": "x",
+          "activation_scales": "activation_scales",
+          "w": "w",
+          "scales": "scales",
+          "counts": "counts",
+          "routes": "routes",
+          "tile_experts": "tile_experts",
+          "tile_offsets": "tile_offsets",
+          "out": "partial"
+        },
+        "label": null
+      },
+      {
+        "kind": "expert_merge",
+        "parameters": {
+          "r": 4,
+          "top": 4,
+          "o": 2048,
+          "partitions": 4,
+          "output_dtype": "bfloat16"
+        },
+        "arguments": [],
+        "bindings": {
+          "partial": "partial",
+          "out": "out"
+        },
+        "label": null
+      }
+    ]
+  },
+  "allocations": [
+    [
+      "partial"
+    ]
+  ],
+  "tuning": {
+    "status": "explicitly disabled"
+  },
+  "kernels": {
+    "c692a475220a2ead65999b6d": {
+      "kind": "expert_partial",
+      "parameters": {
+        "r": 4,
+        "rows": 4,
+        "top": 4,
+        "experts": 64,
+        "k": 1536,
+        "o": 2048,
+        "routed_input": true,
+        "compact": true,
+        "tile_map": true,
+        "max_block_m": 128,
+        "block_m": 16,
+        "partitions": 4,
+        "columns": 64,
+        "threads": 128,
+        "stages": 2,
+        "activation_vector": 16,
+        "mma_dtype": "float16",
+        "output_dtype": "float32"
+      },
+      "sha256": "df5baf8a1de0b55d02c0b88740aa8ad1396e61360277be4b3d21f9c02461e9bb",
+      "path": "c692a475220a2ead65999b6d.tbin",
+      "schedule": {
+        "implementation": "moe.cuda.fp8-bucketed:mapped"
+      }
+    },
+    "900e5109d10ca6673570a7ed": {
+      "kind": "expert_merge",
+      "parameters": {
+        "r": 4,
+        "top": 4,
+        "o": 2048,
+        "partitions": 4,
+        "output_dtype": "bfloat16"
+      },
+      "sha256": "02e97061c1457c3c717b66766cb17ee255f03f061d5f1b4726826e2c149f0798",
+      "path": "900e5109d10ca6673570a7ed.tbin",
+      "schedule": {
+        "implementation": "moe.cuda.merge:reference"
+      }
+    }
+  }
+}

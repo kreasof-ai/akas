@@ -1,0 +1,121 @@
+{
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "kernel-qualification",
+    "provider": "cuda",
+    "target": "sm_89",
+    "checks": [
+      {
+        "case": "cuda.compact_experts",
+        "bitwise": true,
+        "method": "identical complete default primitive IR"
+      },
+      {
+        "case": "webgpu.register_experts",
+        "bitwise": true,
+        "method": "identical complete default primitive IR"
+      },
+      {
+        "case": "cuda",
+        "bitwise": true,
+        "method": "identical complete default map primitive IR"
+      },
+      {
+        "case": "portableFalse-beforeTrue-max64-counts0",
+        "bitwise": true,
+        "method": "exact independent route-map equations"
+      },
+      {
+        "case": "portableFalse-beforeTrue-max64-counts1",
+        "bitwise": true,
+        "method": "exact independent route-map equations"
+      },
+      {
+        "case": "portableFalse-beforeTrue-max64-counts2",
+        "bitwise": true,
+        "method": "exact independent route-map equations"
+      },
+      {
+        "case": "portableFalse-beforeFalse-max64-counts0",
+        "bitwise": true,
+        "method": "exact independent route-map equations"
+      },
+      {
+        "case": "portableFalse-beforeFalse-max64-counts1",
+        "bitwise": true,
+        "method": "exact independent route-map equations"
+      },
+      {
+        "case": "portableFalse-beforeFalse-max64-counts2",
+        "bitwise": true,
+        "method": "exact independent route-map equations"
+      },
+      {
+        "case": "portableFalse-beforeFalse-max128-counts0",
+        "bitwise": true,
+        "method": "exact independent route-map equations"
+      },
+      {
+        "case": "portableFalse-beforeFalse-max128-counts1",
+        "bitwise": true,
+        "method": "exact independent route-map equations"
+      },
+      {
+        "case": "portableFalse-beforeFalse-max128-counts2",
+        "bitwise": true,
+        "method": "exact independent route-map equations"
+      },
+      {
+        "case": "portable",
+        "bitwise": true,
+        "method": "identical complete default map primitive IR"
+      },
+      {
+        "case": "portableTrue-beforeTrue-max64-counts0",
+        "bitwise": true,
+        "method": "exact independent route-map equations"
+      },
+      {
+        "case": "portableTrue-beforeTrue-max64-counts1",
+        "bitwise": true,
+        "method": "exact independent route-map equations"
+      },
+      {
+        "case": "portableTrue-beforeTrue-max64-counts2",
+        "bitwise": true,
+        "method": "exact independent route-map equations"
+      },
+      {
+        "case": "portableTrue-beforeFalse-max64-counts0",
+        "bitwise": true,
+        "method": "exact independent route-map equations"
+      },
+      {
+        "case": "portableTrue-beforeFalse-max64-counts1",
+        "bitwise": true,
+        "method": "exact independent route-map equations"
+      },
+      {
+        "case": "portableTrue-beforeFalse-max64-counts2",
+        "bitwise": true,
+        "method": "exact independent route-map equations"
+      },
+      {
+        "case": "portableTrue-beforeFalse-max128-counts0",
+        "bitwise": true,
+        "method": "exact independent route-map equations"
+      },
+      {
+        "case": "portableTrue-beforeFalse-max128-counts1",
+        "bitwise": true,
+        "method": "exact independent route-map equations"
+      },
+      {
+        "case": "portableTrue-beforeFalse-max128-counts2",
+        "bitwise": true,
+        "method": "exact independent route-map equations"
+      }
+    ]
+  },
+  "results": []
+}

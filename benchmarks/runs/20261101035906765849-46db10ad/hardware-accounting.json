@@ -1,0 +1,122 @@
+{
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "utilization-accounting",
+    "provider": "cuda",
+    "native_run": "20261101034946288520-60611d52",
+    "model": "LiquidAI/LFM2.5-24B-A2B-FP8",
+    "program_sha256": "4b026ef009da923c0e2666cbbad09e321bd80e5f5d25a5c764e6885e3739328b",
+    "qualification_scope": "Contraction MFU lower bounds and logical weight/KV MBU bounds; no hardware saturation claim",
+    "theoretical_dense_peaks_flops_per_second": {
+      "fp8_tensor": 733000000000000.0,
+      "fp16_tensor": 366500000000000.0,
+      "fp32_simt": 91600000000000.0
+    },
+    "nominal_dram_bytes_per_second": 864000000000.0,
+    "measured_read_bytes_per_second": 743363378006.124,
+    "hardware_counters": "denied ERR_NVGPUCTRPERM",
+    "source_specification": "https://www.nvidia.com/en-sg/data-center/l40s/"
+  },
+  "rows": [
+    {
+      "batch": 1,
+      "scope": "average streamed decode interval",
+      "seconds_per_step": 0.006928561023593694,
+      "flops_by_precision": {
+        "fp8_tensor": 0,
+        "fp16_tensor": 3368026112,
+        "fp32_simt": 1540882432
+      },
+      "ideal_contraction_seconds": 2.6011563509034474e-05,
+      "weight_payload_bytes_bounds": [
+        3236478208,
+        3236478208
+      ],
+      "excluded_from_contraction_flops": [
+        "add_rms",
+        "advance",
+        "argmax",
+        "attention_merge",
+        "attention_partial",
+        "biased_router",
+        "cache_write",
+        "conv",
+        "embedding",
+        "expert_tile_map",
+        "next_tokens",
+        "projection_merge",
+        "quantize",
+        "quantized_routes",
+        "rms",
+        "rope",
+        "routed_combine",
+        "swiglu"
+      ],
+      "contraction_mfu_lower_bound": 0.003754251917599889,
+      "kv_cache_read_bytes_per_step": 43253760.0,
+      "kv_cache_write_bytes_per_step": 20480,
+      "logical_weight_kv_mbu_bounds_vs_nominal": [
+        0.5478785226616754,
+        0.5478785226616754
+      ],
+      "logical_weight_kv_mbu_bounds_vs_measured_read": [
+        0.6367909122041626,
+        0.6367909122041626
+      ]
+    },
+    {
+      "batch": 4,
+      "scope": "average streamed decode interval",
+      "seconds_per_step": 0.013119948377986768,
+      "flops_by_precision": {
+        "fp8_tensor": 0,
+        "fp16_tensor": 13472104448,
+        "fp32_simt": 6163529728
+      },
+      "ideal_contraction_seconds": 0.0001040462540361379,
+      "weight_payload_bytes_bounds": [
+        3236478208,
+        7540359424
+      ],
+      "excluded_from_contraction_flops": [
+        "add_rms",
+        "advance",
+        "argmax",
+        "attention_merge",
+        "attention_partial",
+        "biased_router",
+        "cache_write",
+        "conv",
+        "embedding",
+        "expert_tile_map",
+        "next_tokens",
+        "projection_merge",
+        "quantize",
+        "quantized_routes",
+        "rms",
+        "rope",
+        "routed_combine",
+        "swiglu"
+      ],
+      "contraction_mfu_lower_bound": 0.007930385931297666,
+      "kv_cache_read_bytes_per_step": 173015040.0,
+      "kv_cache_write_bytes_per_step": 81920,
+      "logical_weight_kv_mbu_bounds_vs_nominal": [
+        0.3007837715411121,
+        0.6804608751765135
+      ],
+      "logical_weight_kv_mbu_bounds_vs_measured_read": [
+        0.3495964239031693,
+        0.7908893732826104
+      ]
+    }
+  ],
+  "observed_phases": [],
+  "assumptions": [
+    "FMA counts as two FLOPs; attention and pointwise FLOPs are excluded explicitly.",
+    "MBU counts each selected weight payload once and the minimally shared 16-bit KV reads/writes.",
+    "Expert weight bounds span top-k through min(experts, rows*top-k) distinct experts; C1 bounds coincide.",
+    "This accounting excludes unnecessary traffic and does not measure DRAM counters or prove a ceiling.",
+    "Timing includes scheduler and streamed delivery, using the retained mean decode interval per token."
+  ]
+}

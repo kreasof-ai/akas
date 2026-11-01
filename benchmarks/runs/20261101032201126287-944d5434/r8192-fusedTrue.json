@@ -1,0 +1,93 @@
+{
+  "schema": "akas.forward.v1",
+  "target": "sm_89",
+  "provider": "cuda",
+  "forward": {
+    "contract": "reference",
+    "phase": "forward",
+    "buffers": [
+      {
+        "name": "x",
+        "shape": [
+          16777216
+        ],
+        "dtype": "float32",
+        "role": "input"
+      },
+      {
+        "name": "mixed",
+        "shape": [
+          16777216
+        ],
+        "dtype": "float32",
+        "role": "input"
+      },
+      {
+        "name": "w",
+        "shape": [
+          2048
+        ],
+        "dtype": "float32",
+        "role": "input"
+      },
+      {
+        "name": "residual",
+        "shape": [
+          16777216
+        ],
+        "dtype": "float32",
+        "role": "output"
+      },
+      {
+        "name": "out",
+        "shape": [
+          16777216
+        ],
+        "dtype": "float32",
+        "role": "output"
+      }
+    ],
+    "calls": [
+      {
+        "kind": "add_rms",
+        "parameters": {
+          "r": 8192,
+          "c": 2048,
+          "eps": 1e-06,
+          "algorithm": "serial-tree",
+          "stage_values": true
+        },
+        "arguments": [
+          "x",
+          "mixed",
+          "residual",
+          "w",
+          "out"
+        ],
+        "bindings": {},
+        "label": null
+      }
+    ]
+  },
+  "allocations": [],
+  "tuning": {
+    "status": "explicitly disabled"
+  },
+  "kernels": {
+    "f75c1cb8c68322a90c4beedc": {
+      "kind": "add_rms",
+      "parameters": {
+        "r": 8192,
+        "c": 2048,
+        "eps": 1e-06,
+        "algorithm": "serial-tree",
+        "stage_values": true
+      },
+      "sha256": "8e290c4a43a6cfadab1dee7e872bdb45d98f52f50da44ee29b9ecf7099dd7054",
+      "path": "f75c1cb8c68322a90c4beedc.tbin",
+      "schedule": {
+        "implementation": "normalization.kernel"
+      }
+    }
+  }
+}

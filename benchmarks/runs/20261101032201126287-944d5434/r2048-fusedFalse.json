@@ -1,0 +1,113 @@
+{
+  "schema": "akas.forward.v1",
+  "target": "sm_89",
+  "provider": "cuda",
+  "forward": {
+    "contract": "reference",
+    "phase": "forward",
+    "buffers": [
+      {
+        "name": "x",
+        "shape": [
+          4194304
+        ],
+        "dtype": "float32",
+        "role": "input"
+      },
+      {
+        "name": "mixed",
+        "shape": [
+          4194304
+        ],
+        "dtype": "float32",
+        "role": "input"
+      },
+      {
+        "name": "w",
+        "shape": [
+          2048
+        ],
+        "dtype": "float32",
+        "role": "input"
+      },
+      {
+        "name": "residual",
+        "shape": [
+          4194304
+        ],
+        "dtype": "float32",
+        "role": "output"
+      },
+      {
+        "name": "out",
+        "shape": [
+          4194304
+        ],
+        "dtype": "float32",
+        "role": "output"
+      }
+    ],
+    "calls": [
+      {
+        "kind": "add",
+        "parameters": {
+          "r": 2048,
+          "c": 2048
+        },
+        "arguments": [
+          "x",
+          "mixed",
+          "residual"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "rms",
+        "parameters": {
+          "r": 2048,
+          "c": 2048,
+          "eps": 1e-06
+        },
+        "arguments": [
+          "residual",
+          "w",
+          "out"
+        ],
+        "bindings": {},
+        "label": null
+      }
+    ]
+  },
+  "allocations": [],
+  "tuning": {
+    "status": "explicitly disabled"
+  },
+  "kernels": {
+    "30c8fb4819cc6ef04799aefb": {
+      "kind": "add",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "sha256": "bf027e69f828d4ec99d36bb202e3b9a57a6d2159294d6a2e031497dd4b9e0062",
+      "path": "30c8fb4819cc6ef04799aefb.tbin",
+      "schedule": {
+        "implementation": "residual.kernel"
+      }
+    },
+    "d08ecb018bddccc462957005": {
+      "kind": "rms",
+      "parameters": {
+        "r": 2048,
+        "c": 2048,
+        "eps": 1e-06
+      },
+      "sha256": "15ab15245922744db6010cbea83b3560d24ba882004aab11b8928b1ce8d28499",
+      "path": "d08ecb018bddccc462957005.tbin",
+      "schedule": {
+        "implementation": "normalization.kernel"
+      }
+    }
+  }
+}

@@ -1,0 +1,5 @@
+# DSL implementation SHA256: f6b2dd9e42f39dc0b308c9d535629f6c24fab15b16375079ff9c3a3c1226bea1
+from akas.kernels.definition import define
+
+def tensor_export():
+    return {"kernel": define({'contract': 'reference', 'kind': 'expert_swiglu', 'parameters': {'activation_vector': 16, 'block_m': 32, 'columns': 64, 'compact': True, 'experts': 64, 'input_dtype': 'uint8', 'k': 2048, 'mma_dtype': 'float16', 'o': 1536, 'r': 2048, 'stages': 1, 'threads': 256, 'tile_map': True, 'top': 4, 'weight_format': 'fp8'}, 'phase': 'forward'}, {}, {'provider': 'cuda', 'target': 'sm_89'}, {'axes': ['block_m', 'columns', 'threads', 'pair_layout', 'stages', 'mma_dtype', 'activation_vector'], 'contract': 'reference', 'defaults': {'activation_vector': 16, 'columns': 64}, 'factory': 'fp8_paired_swiglu', 'identifier': 'moe.cuda.fp8-paired-swiglu:reference', 'kind': 'expert_swiglu', 'module': 'akas.ops.moe.cuda', 'phase': 'forward', 'provider': 'cuda', 'semantic_keys': ['r', 'rows', 'k', 'o', 'experts', 'top', 'routed_input', 'partitions', 'compact', 'tile_map', 'input_dtype', 'weight_format'], 'targets': []})}

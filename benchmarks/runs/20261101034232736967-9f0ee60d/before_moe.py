@@ -1,0 +1,1712 @@
+"""CUDA specializations and shared bindings for moe."""
+
+from collections.abc import Mapping
+from akas.kernels.definition import KernelSpec
+from akas.kernels.kernel import Tensor, kernel, output
+
+
+def quantized_experts(spec, schedule):
+    """Packed expert GEMV for decode; grouped tensor-core GEMM for prefill."""
+    import tilelang.language as T
+    from akas.kernels.kernel import Tensor, kernel, output
+    from akas.quantization.weights import bind_parts
+
+    p = {**spec.parameters, **schedule}
+    rows, top, experts, columns, depth = (
+        p[name] for name in ("r", "top", "experts", "o", "k")
+    )
+    binding = bind_parts(p["weight_parts"], depth, provider="cuda")
+    storage, read = (binding.storage.values, binding.read)
+    routed = p.get("routed_input", False)
+    shape = (rows, top, depth) if routed else (rows, depth)
+    input_dtype = p.get("input_dtype", "bfloat16")
+    bm, bn, bk = (
+        p.get("block_m", 16),
+        p.get("columns", 64),
+        p.get("block_k", 32),
+    )
+
+    @T.macro
+    def activation(x, route, channel):
+        if routed:
+            return x[route // top, route % top, channel]
+        else:
+            return x[route // top, channel]
+
+    if rows == 1:
+
+        @kernel
+        def compute(
+            x: Tensor(shape, input_dtype),
+            w: Tensor(storage.shape, storage.dtype),
+            ids: Tensor((rows, top), "int32"),
+            counts: Tensor((experts,), "int32"),
+        ) -> Tensor((rows, top, columns), "float32"):
+            out = output((rows, top, columns), "float32")
+            with T.Kernel(T.ceildiv(columns, 4), top, threads=128) as (bx, rank):
+                expert = ids[0, rank]
+                tx = T.get_thread_binding()
+                warp, lane = (tx // 32, tx % 32)
+                source = T.alloc_shared((128,), "float16")
+                scratch = T.alloc_shared((128,), "float32")
+                accum = T.alloc_var("float32")
+                accum = 0
+                if p.get("warp_shuffle", False):
+                    for tile in T.serial(T.ceildiv(depth, 32)):
+                        channel = tile * 32 + lane
+                        if channel < depth and bx * 4 + warp < columns:
+                            coefficient = T.cast(
+                                read((w,), expert * columns + bx * 4 + warp, channel),
+                                "float16",
+                            )
+                            accum += T.cast(
+                                T.cast(activation(x, rank, channel), "float16"),
+                                "float32",
+                            ) * T.cast(coefficient, "float32")
+                    for step in T.unroll(5):
+                        accum += T.shfl_down(accum, 16 >> step)
+                else:
+                    for tile in T.serial(T.ceildiv(depth, 128)):
+                        source[tx] = T.if_then_else(
+                            tile * 128 + tx < depth,
+                            activation(x, rank, tile * 128 + tx),
+                            0,
+                        )
+                        T.sync_threads()
+                        for step in T.unroll(4):
+                            channel = tile * 128 + step * 32 + lane
+                            if channel < depth and bx * 4 + warp < columns:
+                                coefficient = T.cast(
+                                    read(
+                                        (w,), expert * columns + bx * 4 + warp, channel
+                                    ),
+                                    "float16",
+                                )
+                                accum += T.cast(
+                                    source[step * 32 + lane], "float32"
+                                ) * T.cast(coefficient, "float32")
+                        T.sync_threads()
+                    scratch[tx] = accum
+                    T.sync_threads()
+                    for step in T.unroll(5):
+                        if lane < 16 >> step:
+                            scratch[tx] += scratch[tx + (16 >> step)]
+                        T.sync_threads()
+                    accum = scratch[tx]
+                if lane == 0 and bx * 4 + warp < columns:
+                    out[0, rank, bx * 4 + warp] = T.if_then_else(
+                        counts[expert] > 0, accum, 0
+                    )
+            return out
+    else:
+
+        @kernel
+        def compute(
+            x: Tensor(shape, input_dtype),
+            w: Tensor(storage.shape, storage.dtype),
+            counts: Tensor((experts,), "int32"),
+            routes: Tensor((experts, rows), "int32"),
+        ) -> Tensor((rows, top, columns), "float32"):
+            out = output((rows, top, columns), "float32")
+            with T.Kernel(
+                T.ceildiv(columns, bn), T.ceildiv(rows, bm), experts, threads=128
+            ) as (bx, by, expert):
+                if by * bm < counts[expert]:
+                    lhs = T.alloc_shared((bm, bk), "float16")
+                    rhs = T.alloc_shared((bn, bk), "float16")
+                    accum = T.alloc_fragment((bm, bn), "float32")
+                    T.clear(accum)
+                    for tile in T.Pipelined(T.ceildiv(depth, bk), num_stages=2):
+                        for i, j in T.Parallel(bm, bk):
+                            index = by * bm + i
+                            route = routes[expert, T.min(index, rows - 1)]
+                            lhs[i, j] = T.if_then_else(
+                                index < counts[expert] and tile * bk + j < depth,
+                                activation(
+                                    x, T.max(route, 0), T.min(tile * bk + j, depth - 1)
+                                ),
+                                0,
+                            )
+                        for i, j in T.Parallel(bn, bk):
+                            rhs[i, j] = T.if_then_else(
+                                bx * bn + i < columns and tile * bk + j < depth,
+                                read(
+                                    (w,),
+                                    expert * columns + T.min(bx * bn + i, columns - 1),
+                                    T.min(tile * bk + j, depth - 1),
+                                ),
+                                0,
+                            )
+                        T.gemm(lhs, rhs, accum, transpose_B=True)
+                    for i, j in T.Parallel(bm, bn):
+                        index = by * bm + i
+                        if index < counts[expert] and bx * bn + j < columns:
+                            route = routes[expert, index]
+                            out[route // top, route % top, bx * bn + j] = accum[i, j]
+            return out
+
+    return compute
+
+
+def compact_experts(spec, schedule):
+    """Grouped tensor-core projection dispatched through compact expert tiles."""
+    return _compact_experts(spec, schedule, staged=False)
+
+
+def staged_experts(spec, schedule):
+    """Pipeline compressed codec tiles before grouped expert projection."""
+    return _compact_experts(spec, schedule, staged=True)
+
+
+def _compact_experts(spec, schedule, *, staged):
+    import tilelang.language as T
+    from akas.quantization.weights import bind_parts
+
+    p = {**spec.parameters, **schedule}
+    rows, top, experts, columns, depth = (
+        p[n] for n in ("r", "top", "experts", "o", "k")
+    )
+    bm, bn, bk = p.get("block_m", 16), p.get("columns", 64), p.get("block_k", 32)
+    allowed_depths = (32, 64, 128, 256, 512) if staged else (32, 64, 128)
+    if bm not in (16, 32, 64) or bn not in (32, 64, 128) or bk not in allowed_depths:
+        raise ValueError("invalid compact CUDA expert tile")
+    threads = p.get("threads", 128)
+    if threads not in (128, 256):
+        raise ValueError("compact CUDA expert tiles require 128 or 256 threads")
+    capacity = (rows * top + 3) // 4 + experts
+    groups = (rows * top + bm - 1) // bm + experts
+    layout = bm.bit_length() - 3
+    binding = bind_parts(p["weight_parts"], depth, provider="cuda")
+    storage, read_tile = binding.storage.values, binding.require("read_tile")
+    tile = None
+    if staged:
+        if columns % bn or depth % bk:
+            raise ValueError("staged experts require complete output and depth tiles")
+        tile = binding.require("stage_tile")((bn, bk), "float16")
+    stages = p.get("stages", 2) if staged else 2
+    routed = p.get("routed_input", False)
+    shape = (rows, top, depth) if routed else (rows, depth)
+    input_dtype = p.get("input_dtype", "float32")
+
+    @T.macro
+    def activation(x, route, channel):
+        if routed:
+            return x[route // top, route % top, channel]
+        else:
+            return x[route // top, channel]
+
+    @kernel
+    def compute(
+        x: Tensor(shape, input_dtype),
+        w: Tensor(storage.shape, storage.dtype),
+        counts: Tensor((experts,), "int32"),
+        routes: Tensor((experts, rows), "int32"),
+        tile_experts: Tensor((5, capacity), "int32"),
+        tile_rows: Tensor((5, capacity), "int32"),
+    ) -> Tensor((rows, top, columns), "float32"):
+        out = output((rows, top, columns), "float32")
+        with T.Kernel(T.ceildiv(columns, bn), groups, threads=threads) as (bx, group):
+            expert = tile_experts[layout, group]
+            by = tile_rows[layout, group]
+            if expert >= 0 and by * bm < counts[expert]:
+                lhs = T.alloc_shared((bm, bk), "float16")
+                rhs = T.alloc_shared((bn, bk), "float16")
+                if staged:
+                    encoded = T.alloc_shared(tile.storage.shape, tile.storage.dtype)
+                accum = T.alloc_fragment((bm, bn), "float32")
+                T.clear(accum)
+                for step in T.Pipelined(T.ceildiv(depth, bk), num_stages=stages):
+                    for i, j in T.Parallel(bm, bk):
+                        index = by * bm + i
+                        route = routes[expert, T.min(index, rows - 1)]
+                        lhs[i, j] = T.if_then_else(
+                            index < counts[expert] and step * bk + j < depth,
+                            activation(
+                                x, T.max(route, 0), T.min(step * bk + j, depth - 1)
+                            ),
+                            0,
+                        )
+                    if staged:
+                        tile.load((w,), encoded, expert * columns + bx * bn, step * bk)
+                        tile.decode(encoded, rhs)
+                    else:
+                        read_tile((w,), rhs, expert * columns + bx * bn, step * bk)
+                    T.gemm(lhs, rhs, accum, transpose_B=True)
+                for i, j in T.Parallel(bm, bn):
+                    index = by * bm + i
+                    if index < counts[expert] and bx * bn + j < columns:
+                        route = routes[expert, index]
+                        out[route // top, route % top, bx * bn + j] = accum[i, j]
+        return out
+
+    return compute
+
+
+def packed_experts(spec: KernelSpec, schedule: Mapping[str, object]):
+    """Warp-local expert GEMV over a codec's packed FP16 dot capability."""
+    import tilelang.language as T
+    from akas.quantization.weights import bind_parts
+
+    p = {**spec.parameters, **schedule}
+    rows, top, experts, columns, depth = (
+        p[n] for n in ("r", "top", "experts", "o", "k")
+    )
+    threads = p.get("threads", 128)
+    if rows != 1 or depth % 256 or threads not in (128, 256):
+        raise ValueError("unsupported packed expert decode geometry")
+    binding = bind_parts(p["weight_parts"], depth, provider="cuda")
+    storage, dot = binding.storage.values, binding.require("dot_half")
+    routed = p.get("routed_input", False)
+    shape = (1, top, depth) if routed else (1, depth)
+    dtype = p.get("input_dtype", "bfloat16")
+    warps = threads // 32
+
+    @kernel
+    def compute(
+        x: Tensor(shape, dtype),
+        w: Tensor(storage.shape, storage.dtype),
+        ids: Tensor((1, top), "int32"),
+        counts: Tensor((experts,), "int32"),
+    ) -> Tensor((1, top, columns), "float32"):
+        out = output((1, top, columns), "float32")
+        flat = T.view(x, (top * depth if routed else depth,), dtype=dtype)
+        with T.Kernel(T.ceildiv(columns, warps), top, threads=threads) as (block, rank):
+            tx = T.get_thread_binding()
+            lane, column = tx % 32, block * warps + tx // 32
+            expert = ids[0, rank]
+            accum = T.alloc_var("float32")
+            accum = 0
+            if column < columns:
+                for tile in T.serial(depth // 256):
+                    accum = dot(
+                        (w,),
+                        flat,
+                        rank * depth if routed else 0,
+                        tile,
+                        lane,
+                        expert * columns + column,
+                        accum,
+                    )
+            for step in T.unroll(5):
+                accum += T.shfl_down(accum, 16 >> step)
+            if lane == 0 and column < columns:
+                out[0, rank, column] = T.if_then_else(counts[expert] > 0, accum, 0)
+        return out
+
+    return compute
+
+
+def quantized_experts_warp(spec: KernelSpec, schedule: Mapping[str, object]):
+    """Reuse each activation across several output columns within a warp."""
+    import tilelang.language as T
+    from akas.quantization.weights import bind_parts
+
+    p = {**spec.parameters, **schedule}
+    rows, top, experts, columns, depth = (
+        p[n] for n in ("r", "top", "experts", "o", "k")
+    )
+    width, threads, unroll = (
+        p.get("columns_per_warp", 2),
+        p.get("threads", 128),
+        p.get("unroll", 2),
+    )
+    if (
+        rows != 1
+        or width not in (1, 2, 4)
+        or threads not in (128, 256)
+        or unroll not in (1, 2, 4)
+    ):
+        raise ValueError("unsupported expert decode schedule")
+    binding = bind_parts(p["weight_parts"], depth, provider="cuda")
+    storage, read = binding.storage.values, binding.read
+    routed = p.get("routed_input", False)
+    shape = (rows, top, depth) if routed else (rows, depth)
+    input_dtype = p.get("input_dtype", "bfloat16")
+    warps = threads // 32
+
+    @kernel
+    def compute(
+        x: Tensor(shape, input_dtype),
+        w: Tensor(storage.shape, storage.dtype),
+        ids: Tensor((rows, top), "int32"),
+        counts: Tensor((experts,), "int32"),
+    ) -> Tensor((rows, top, columns), "float32"):
+        out = output((rows, top, columns), "float32")
+        with T.Kernel(T.ceildiv(columns, warps * width), top, threads=threads) as (
+            block,
+            rank,
+        ):
+            tx = T.get_thread_binding()
+            warp, lane = tx // 32, tx % 32
+            expert = ids[0, rank]
+            accum = T.alloc_local((width,), "float32")
+            for col in T.unroll(width):
+                accum[col] = 0
+            for tile in T.serial(T.ceildiv(depth, 32 * unroll)):
+                for step in T.unroll(unroll):
+                    channel = (tile * unroll + step) * 32 + lane
+                    activation = T.alloc_var("float32")
+                    activation = 0
+                    if channel < depth:
+                        if routed:
+                            activation = T.cast(
+                                T.cast(x[0, rank, channel], "float16"), "float32"
+                            )
+                        else:
+                            activation = T.cast(
+                                T.cast(x[0, channel], "float16"), "float32"
+                            )
+                    for col in T.unroll(width):
+                        column = (block * warps + warp) * width + col
+                        if column < columns and channel < depth:
+                            coefficient = T.cast(
+                                T.cast(
+                                    read((w,), expert * columns + column, channel),
+                                    "float16",
+                                ),
+                                "float32",
+                            )
+                            accum[col] += activation * coefficient
+            for col in T.unroll(width):
+                for step in T.unroll(5):
+                    accum[col] += T.shfl_down(accum[col], 16 >> step)
+                column = (block * warps + warp) * width + col
+                if lane == 0 and column < columns:
+                    out[0, rank, column] = T.if_then_else(
+                        counts[expert] > 0, accum[col], 0
+                    )
+        return out
+
+    return compute
+
+
+def decode_moe_combine(spec: KernelSpec, schedule: Mapping[str, object]):
+    p = {**spec.parameters, **schedule}
+    import tilelang.language as T
+
+    r, top, c = (p["r"], p["top"], p["c"])
+
+    @kernel
+    def compute(
+        experts: Tensor((r, top, c), "float32"),
+        weights: Tensor((r, top), "float32"),
+        shared: Tensor((r, c), "float32"),
+        gate: Tensor((r, 1), "float32"),
+    ) -> Tensor((r, c), "float32"):
+        out = output((r, c), "float32")
+        with T.Kernel(r, T.ceildiv(c, 256), threads=256) as (b, tile):
+            for j in T.Parallel(256):
+                col = tile * 256 + j
+                if col < c:
+                    total = T.alloc_var("float32")
+                    total = 0
+                    for rank in T.serial(top):
+                        total += (
+                            T.cast(T.cast(experts[b, rank, col], "bfloat16"), "float32")
+                            * weights[b, rank]
+                        )
+                    shared_value = T.cast(T.cast(shared[b, col], "bfloat16"), "float32")
+                    shared_gate = T.cast(T.cast(gate[b, 0], "bfloat16"), "float32")
+                    out[b, col] = total + shared_value / (1 + T.exp(-shared_gate))
+        return out
+
+    return compute
+
+
+def fp8_inline(spec: KernelSpec, schedule: Mapping[str, object]):
+    from akas.ops.linear.cuda import _mma
+
+    p = {**spec.parameters, **schedule}
+    return _mma(p, grouped=True, prequantized=False)
+
+
+def fp8_prequantized(spec: KernelSpec, schedule: Mapping[str, object]):
+    from akas.ops.linear.cuda import _mma
+
+    p = {**spec.parameters, **schedule}
+    return _mma(p, grouped=True, prequantized=True)
+
+
+def decode_fp8_experts(spec: KernelSpec, schedule: Mapping[str, object]):
+    p = {**spec.parameters, **schedule}
+    import tilelang.language as T
+
+    r, k, o, top, e = (p[n] for n in ("r", "k", "o", "top", "experts"))
+    columns, threads = (p.get("columns", 4), p.get("threads", 128))
+    routed = p.get("routed_input", False)
+
+    @kernel
+    def compute(
+        x: Tensor((r, top, k) if routed else (r, k), "bfloat16"),
+        w: Tensor((e, o, k), "uint8"),
+        scales: Tensor((e, T.ceildiv(o, 128), k // 128), "bfloat16"),
+        experts: Tensor((r * top,), "int32"),
+        routes: Tensor((r * top, r), "int32"),
+    ) -> Tensor((r, top, o), "float32"):
+        out = output((r, top, o), "float32")
+        with T.Kernel(o // columns, r * top, threads=threads) as (bx, group):
+            expert = experts[group]
+            if expert >= 0:
+                accum = T.alloc_fragment((r, columns, 32), "float32")
+                total = T.alloc_fragment((r, columns), "float32")
+                coefficient = T.alloc_fragment((columns, 32), "float32")
+                activation = T.alloc_shared((r, 128), "float32")
+                absolute = T.alloc_fragment((r, 128), "float32")
+                maximum = T.alloc_fragment((r,), "float32")
+                T.clear(accum)
+                for tile in T.serial(k // 128):
+                    for b, j in T.Parallel(r, 128):
+                        if routes[group, b] >= 0:
+                            if routed:
+                                absolute[b, j] = T.abs(
+                                    T.cast(
+                                        x[b, routes[group, b], tile * 128 + j],
+                                        "float32",
+                                    )
+                                )
+                            else:
+                                absolute[b, j] = T.abs(
+                                    T.cast(x[b, tile * 128 + j], "float32")
+                                )
+                        else:
+                            absolute[b, j] = 0
+                    T.reduce_max(absolute, maximum, dim=1)
+                    for b, j in T.Parallel(r, 128):
+                        if routes[group, b] >= 0:
+                            scale = T.max(maximum[b], T.float32(1e-12)) / T.float32(448)
+                            if routed:
+                                value = T.cast(
+                                    x[b, routes[group, b], tile * 128 + j], "float32"
+                                )
+                            else:
+                                value = T.cast(x[b, tile * 128 + j], "float32")
+                            encoded = T.call_extern(
+                                "uint32", "tensor_encode_e4m3", value / scale
+                            )
+                            activation[b, j] = (
+                                T.call_extern("float32", "tensor_decode_e4m3", encoded)
+                                * scale
+                            )
+                        else:
+                            activation[b, j] = 0
+                    for part in T.unroll(4):
+                        for n, lane in T.Parallel(columns, 32):
+                            coefficient[n, lane] = T.call_extern(
+                                "float32",
+                                "tensor_decode_e4m3",
+                                T.cast(
+                                    w[
+                                        expert,
+                                        bx * columns + n,
+                                        tile * 128 + part * 32 + lane,
+                                    ],
+                                    "uint32",
+                                ),
+                            )
+                            coefficient[n, lane] *= T.cast(
+                                scales[expert, (bx * columns + n) // 128, tile],
+                                "float32",
+                            )
+                        for b, n, lane in T.Parallel(r, columns, 32):
+                            accum[b, n, lane] = T.ieee_fmaf(
+                                activation[b, part * 32 + lane],
+                                coefficient[n, lane],
+                                accum[b, n, lane],
+                            )
+                T.reduce_sum(accum, total, dim=2)
+                for b, n in T.Parallel(r, columns):
+                    if routes[group, b] >= 0:
+                        out[b, routes[group, b], bx * columns + n] = total[b, n]
+        return out
+
+    return compute
+
+
+def prefill_fp8_experts(spec: KernelSpec, schedule: Mapping[str, object]):
+    from akas.ops.moe.cuda import _bucketed as expert_kernel
+
+    p = {**spec.parameters, **schedule}
+    return expert_kernel({**p, "rows": p["r"]})
+
+
+def _bucketed(p, *, paired=False, quantized_output=True):
+    import tilelang.language as T
+
+    rows, k, o = (p["rows"], p["k"], p["o"])
+    n, top, experts = (p.get("columns", 64), p["top"], p["experts"])
+    m, threads = (p.get("block_m", 16), p.get("threads", 128))
+    stages = p.get("stages", 1)
+    vector = p.get("activation_vector", 1)
+    mma_dtype = p.get("mma_dtype", "float8_e4m3fn")
+    if mma_dtype not in ("float8_e4m3fn", "float16"):
+        raise ValueError("FP8 expert MMA dtype must be float8_e4m3fn or float16")
+    output_dtype = p.get("output_dtype", "float32")
+    if output_dtype not in ("float32", "float16", "bfloat16") or paired and output_dtype != "float32":
+        raise ValueError("invalid floating expert output storage")
+    if type(vector) is not int or vector not in (1, 4, 8, 16):
+        raise ValueError("FP8 activation vector must be 1, 4, 8 or 16 bytes")
+    if type(stages) is not int or stages < 1:
+        raise ValueError("FP8 pipeline stages must be a positive integer")
+    loop = T.Pipelined if stages > 1 else T.serial
+    loop_options = {"num_stages": stages} if stages > 1 else {}
+    routed = p.get("routed_input", False)
+    compact = p.get("compact", False)
+    if paired and (not compact or routed or o % 128
+                   or n not in ((128,) if quantized_output else (32, 64, 128))):
+        raise ValueError("invalid compact paired FP8 expert tile")
+    pair_layout = p.get("pair_layout", "wide")
+    if pair_layout not in ("wide", "separate"):
+        raise ValueError("paired FP8 layout must be wide or separate")
+    wide = paired and pair_layout == "wide"
+    width = 2 * n if wide else n
+    mapped = p.get("tile_map", False)
+    from akas.ops.moe.definition import tile_capacity
+
+    max_tiles = tile_capacity(rows, top, experts, m)
+    map_shape = (5, (rows * top + 3) // 4 + experts) if mapped else (max_tiles,)
+    layout = m.bit_length() - 3
+
+    @T.macro
+    def accumulate(block, total, scale, scales, scales2, bx, expert, tile):
+        for b, j in T.Parallel(m, width):
+            if wide:
+                coefficient = T.if_then_else(j < n,
+                    T.cast(scales[expert, (bx * n + j % n) // 128, tile], "float32"),
+                    T.cast(scales2[expert, (bx * n + j % n) // 128, tile], "float32"))
+            else:
+                coefficient = T.cast(scales[expert, (bx * n + j) // 128, tile], "float32")
+            if compact:
+                product = T.call_extern("float32", "__fmul_rn", block[b, j], scale[b])
+                total[b, j] = T.call_extern("float32", "__fmaf_rn",
+                                          product, coefficient, total[b, j])
+            else:
+                total[b, j] += block[b, j] * scale[b] * coefficient
+
+    @T.macro
+    def body(x, activation_scales, w, scales, w2, scales2, counts, routes, out,
+             output_scales, bx, expert, tokens):
+        if tokens * m < counts[expert]:
+            lhs = T.alloc_shared((m, 128), mma_dtype)
+            rhs = T.alloc_shared((width, 128), mma_dtype)
+            scale = T.alloc_shared((m,), "float32")
+            selected = T.alloc_shared((m,), "int32")
+            block = T.alloc_fragment((m, width), "float32")
+            total = T.alloc_fragment((m, width), "float32")
+            if paired and not wide:
+                rhs2 = T.alloc_shared((n, 128), mma_dtype)
+                block2 = T.alloc_fragment((m, n), "float32")
+                total2 = T.alloc_fragment((m, n), "float32")
+                T.clear(total2)
+            for b in T.Parallel(m):
+                selected[b] = T.if_then_else(
+                    tokens * m + b < counts[expert],
+                    routes[expert, T.min(tokens * m + b, rows - 1)],
+                    -1,
+                )
+            T.sync_threads()
+            T.clear(total)
+            activations = T.view(x, dtype="float8_e4m3fn")
+            for tile in loop(k // 128, **loop_options):
+                for b in T.Parallel(m):
+                    if routed:
+                        scale[b] = T.if_then_else(selected[b] >= 0, activation_scales[
+                            T.max(selected[b], 0) // top, T.max(selected[b], 0) % top, tile], 1)
+                    else:
+                        scale[b] = T.if_then_else(selected[b] >= 0, activation_scales[
+                            T.max(selected[b], 0) // top, tile], 1)
+                T.sync_threads()
+                for b, v in T.Parallel(m, 128 // vector):
+                    if selected[b] >= 0:
+                        for lane in T.vectorized(vector):
+                            j = v * vector + lane
+                            if routed:
+                                lhs[b, j] = activations[selected[b] // top, selected[b] % top, tile * 128 + j]
+                            else:
+                                lhs[b, j] = activations[selected[b] // top, tile * 128 + j]
+                    else:
+                        for lane in T.vectorized(vector):
+                            lhs[b, v * vector + lane] = 0
+                weights = T.view(w, dtype="float8_e4m3fn")
+                T.copy(
+                    weights[expert, bx * n : bx * n + n, tile * 128 : tile * 128 + 128],
+                    rhs[0:n, 0:128],
+                )
+                if paired:
+                    weights2 = T.view(w2, dtype="float8_e4m3fn")
+                    if wide:
+                        T.copy(weights2[expert, bx * n:bx * n + n,
+                                        tile * 128:tile * 128 + 128], rhs[n:width, 0:128])
+                    else:
+                        T.copy(weights2[expert, bx * n:bx * n + n,
+                                        tile * 128:tile * 128 + 128], rhs2)
+                T.gemm(lhs, rhs, block, transpose_B=True, clear_accum=True)
+                accumulate(block, total, scale, scales, scales2, bx, expert, tile)
+                if paired and not wide:
+                    T.gemm(lhs, rhs2, block2, transpose_B=True, clear_accum=True)
+                    accumulate(block2, total2, scale, scales2, scales2, bx, expert, tile)
+            if paired:
+                values = T.alloc_fragment((m, n), "float32")
+                absolute = T.alloc_fragment((m, n), "float32")
+                maximum = T.alloc_fragment((m,), "float32")
+                if wide:
+                    paired_values = T.alloc_shared((m, width), "float32")
+                    T.copy(total, paired_values)
+                    T.sync_threads()
+                    for b, j in T.Parallel(m, n):
+                        values[b, j] = paired_values[b, j] / (1 + T.exp(-paired_values[b, j])) * paired_values[b, n + j]
+                else:
+                    for b, j in T.Parallel(m, n):
+                        values[b, j] = total[b, j] / (1 + T.exp(-total[b, j])) * total2[b, j]
+                if quantized_output:
+                    for b, j in T.Parallel(m, n):
+                        absolute[b, j] = T.abs(values[b, j])
+                    T.reduce_max(absolute, maximum, dim=1)
+                    for b, j in T.Parallel(m, n):
+                        if selected[b] >= 0:
+                            encoded = T.call_extern("uint32", "tensor_encode_e4m3",
+                                values[b, j] / (T.max(maximum[b], T.float32(1e-12)) / T.float32(448)))
+                            out[selected[b] // top, selected[b] % top, bx * n + j] = T.cast(encoded, "uint8")
+                    for b in T.Parallel(m):
+                        if selected[b] >= 0:
+                            output_scales[selected[b] // top, selected[b] % top, bx] = (
+                                T.max(maximum[b], T.float32(1e-12)) / T.float32(448))
+                else:
+                    for b, j in T.Parallel(m, n):
+                        if selected[b] >= 0:
+                            out[selected[b] // top, selected[b] % top, bx * n + j] = values[b, j]
+            else:
+                for b, j in T.Parallel(m, n):
+                    if selected[b] >= 0:
+                        out[selected[b] // top, selected[b] % top, bx * n + j] = total[b, j]
+
+    if paired and quantized_output:
+
+        @kernel
+        def compute(
+            x: Tensor((rows, k), "uint8"),
+            activation_scales: Tensor((rows, k // 128), "float32"),
+            w: Tensor((experts, o, k), "uint8"),
+            scales: Tensor((experts, o // 128, k // 128), "bfloat16"),
+            w2: Tensor((experts, o, k), "uint8"),
+            scales2: Tensor((experts, o // 128, k // 128), "bfloat16"),
+            counts: Tensor((experts,), "int32"),
+            routes: Tensor((experts, rows), "int32"),
+            tile_experts: Tensor(map_shape, "int32"),
+            tile_offsets: Tensor(map_shape, "int32"),
+        ) -> tuple[Tensor((rows, top, o), "uint8"), Tensor((rows, top, o // 128), "float32")]:
+            out = output((rows, top, o), "uint8")
+            output_scales = output((rows, top, o // 128), "float32")
+            with T.Kernel(o // n, max_tiles, threads=threads) as (bx, tile):
+                if mapped:
+                    expert = tile_experts[layout, tile]
+                    offset = tile_offsets[layout, tile]
+                else:
+                    expert = tile_experts[tile]
+                    offset = tile_offsets[tile]
+                if expert >= 0:
+                    body(x, activation_scales, w, scales, w2, scales2, counts, routes,
+                         out, output_scales, bx, expert, offset)
+            return out, output_scales
+
+        return compute
+
+    if paired:
+
+        @kernel
+        def compute(
+            x: Tensor((rows, k), "uint8"),
+            activation_scales: Tensor((rows, k // 128), "float32"),
+            w: Tensor((experts, o, k), "uint8"),
+            scales: Tensor((experts, o // 128, k // 128), "bfloat16"),
+            w2: Tensor((experts, o, k), "uint8"),
+            scales2: Tensor((experts, o // 128, k // 128), "bfloat16"),
+            counts: Tensor((experts,), "int32"),
+            routes: Tensor((experts, rows), "int32"),
+            tile_experts: Tensor(map_shape, "int32"),
+            tile_offsets: Tensor(map_shape, "int32"),
+        ) -> Tensor((rows, top, o), "float32"):
+            out = output((rows, top, o), "float32")
+            with T.Kernel(o // n, max_tiles, threads=threads) as (bx, tile):
+                if mapped:
+                    expert = tile_experts[layout, tile]
+                    offset = tile_offsets[layout, tile]
+                else:
+                    expert = tile_experts[tile]
+                    offset = tile_offsets[tile]
+                if expert >= 0:
+                    body(x, activation_scales, w, scales, w2, scales2, counts, routes,
+                         out, activation_scales, bx, expert, offset)
+            return out
+
+        return compute
+
+    if compact:
+
+        @kernel
+        def compute(
+            x: Tensor((rows, top, k) if routed else (rows, k), "uint8"),
+            activation_scales: Tensor(
+                (rows, top, k // 128) if routed else (rows, k // 128), "float32"
+            ),
+            w: Tensor((experts, o, k), "uint8"),
+            scales: Tensor((experts, T.ceildiv(o, 128), k // 128), "bfloat16"),
+            counts: Tensor((experts,), "int32"),
+            routes: Tensor((experts, rows), "int32"),
+            tile_experts: Tensor(map_shape, "int32"),
+            tile_offsets: Tensor(map_shape, "int32"),
+        ) -> Tensor((rows, top, o), output_dtype):
+            out = output((rows, top, o), output_dtype, position=6)
+            with T.Kernel(o // n, max_tiles, threads=threads) as (bx, tile):
+                if mapped:
+                    expert = tile_experts[layout, tile]
+                    offset = tile_offsets[layout, tile]
+                else:
+                    expert = tile_experts[tile]
+                    offset = tile_offsets[tile]
+                if expert >= 0:
+                    body(
+                        x,
+                        activation_scales,
+                        w,
+                        scales,
+                        w,
+                        scales,
+                        counts,
+                        routes,
+                        out,
+                        activation_scales,
+                        bx,
+                        expert,
+                        offset,
+                    )
+            return out
+
+        return compute
+    if not compact:
+
+        @kernel
+        def compute(
+            x: Tensor((rows, top, k) if routed else (rows, k), "uint8"),
+            activation_scales: Tensor(
+                (rows, top, k // 128) if routed else (rows, k // 128), "float32"
+            ),
+            w: Tensor((experts, o, k), "uint8"),
+            scales: Tensor((experts, T.ceildiv(o, 128), k // 128), "bfloat16"),
+            counts: Tensor((experts,), "int32"),
+            routes: Tensor((experts, rows), "int32"),
+        ) -> Tensor((rows, top, o), output_dtype):
+            out = output((rows, top, o), output_dtype)
+            with T.Kernel(o // n, experts, T.ceildiv(rows, m), threads=threads) as (
+                bx,
+                expert,
+                tokens,
+            ):
+                body(
+                    x,
+                    activation_scales,
+                    w,
+                    scales,
+                    w,
+                    scales,
+                    counts,
+                    routes,
+                    out,
+                    activation_scales,
+                    bx,
+                    expert,
+                    tokens,
+                )
+            return out
+
+        return compute
+
+
+def bucketed(spec: KernelSpec, schedule: Mapping[str, object]):
+    """Bucketed expert GEMM with the graph's logical row count."""
+    p = {**spec.parameters, **schedule}
+    return _bucketed({**p, "rows": p["r"]})
+
+
+def fp8_expert_swiglu(spec: KernelSpec, schedule: Mapping[str, object]):
+    """Pair the shared bucketed products and retain their quantized epilogue."""
+    p = {**spec.parameters, **schedule}
+    return _bucketed({**p, "rows": p["r"]}, paired=True)
+
+
+def fp8_paired_swiglu(spec: KernelSpec, schedule: Mapping[str, object]):
+    """Share paired products while retaining an independent quantization call."""
+    p = {**spec.parameters, **schedule}
+    return _bucketed({**p, "rows": p["r"]}, paired=True, quantized_output=False)
+
+
+def partial(spec: KernelSpec, schedule: Mapping[str, object]):
+    p = {**spec.parameters, **schedule}
+    import tilelang.language as T
+
+    rows, k, o = (p["rows"], p["k"], p["o"])
+    n, top, experts = (p.get("columns", 64), p["top"], p["experts"])
+    m, threads = (p.get("block_m", 16), p.get("threads", 128))
+    parts = p.get("partitions", 4)
+    stages = p.get("stages", 2)
+    routed = p.get("routed_input", False)
+
+    @kernel
+    def compute(
+        x: Tensor((rows, top, k) if routed else (rows, k), "uint8"),
+        activation_scales: Tensor(
+            (rows, top, k // 128) if routed else (rows, k // 128), "float32"
+        ),
+        w: Tensor((experts, o, k), "uint8"),
+        scales: Tensor((experts, T.ceildiv(o, 128), k // 128), "bfloat16"),
+        counts: Tensor((experts,), "int32"),
+        routes: Tensor((experts, rows), "int32"),
+    ) -> Tensor((rows, top, parts, o), "float32"):
+        out = output((rows, top, parts, o), "float32")
+        with T.Kernel(o // n, experts, T.ceildiv(rows, m) * parts, threads=threads) as (
+            bx,
+            expert,
+            group,
+        ):
+            tokens = group // parts
+            part = group % parts
+            if tokens * m < counts[expert]:
+                lhs = T.alloc_shared((m, 128), "float8_e4m3fn")
+                rhs = T.alloc_shared((n, 128), "float8_e4m3fn")
+                scale = T.alloc_shared((m,), "float32")
+                selected = T.alloc_shared((m,), "int32")
+                block = T.alloc_fragment((m, n), "float32")
+                total = T.alloc_fragment((m, n), "float32")
+                for b in T.Parallel(m):
+                    selected[b] = T.if_then_else(
+                        tokens * m + b < counts[expert],
+                        routes[expert, T.min(tokens * m + b, rows - 1)],
+                        -1,
+                    )
+                T.sync_threads()
+                T.clear(total)
+                for local in T.Pipelined(k // (128 * parts), num_stages=stages):
+                    tile = part * (k // (128 * parts)) + local
+                    for b in T.Parallel(m):
+                        scale[b] = 1
+                        if selected[b] >= 0:
+                            if routed:
+                                scale[b] = activation_scales[
+                                    selected[b] // top, selected[b] % top, tile
+                                ]
+                            else:
+                                scale[b] = activation_scales[selected[b] // top, tile]
+                    T.sync_threads()
+                    for b, j in T.Parallel(m, 128):
+                        bits = T.alloc_var("uint8")
+                        bits = 0
+                        if selected[b] >= 0:
+                            if routed:
+                                bits = x[
+                                    selected[b] // top,
+                                    selected[b] % top,
+                                    tile * 128 + j,
+                                ]
+                            else:
+                                bits = x[selected[b] // top, tile * 128 + j]
+                        lhs[b, j] = T.reinterpret("float8_e4m3fn", bits)
+                    weights = T.view(w, dtype="float8_e4m3fn")
+                    T.copy(
+                        weights[
+                            expert, bx * n : bx * n + n, tile * 128 : tile * 128 + 128
+                        ],
+                        rhs,
+                    )
+                    T.gemm(lhs, rhs, block, transpose_B=True, clear_accum=True)
+                    for b, j in T.Parallel(m, n):
+                        total[b, j] += (
+                            block[b, j]
+                            * scale[b]
+                            * T.cast(
+                                scales[expert, (bx * n + j) // 128, tile], "float32"
+                            )
+                        )
+                for b, j in T.Parallel(m, n):
+                    if selected[b] >= 0:
+                        out[selected[b] // top, selected[b] % top, part, bx * n + j] = (
+                            total[b, j]
+                        )
+        return out
+
+    return compute
+
+
+def split(spec: KernelSpec, schedule: Mapping[str, object]):
+    from dataclasses import replace
+
+    return partial(
+        replace(spec, parameters={**spec.parameters, "rows": spec.parameters["r"]}),
+        schedule,
+    )
+
+
+def hopper_experts_partial(spec: KernelSpec, schedule: Mapping[str, object]):
+    p = {**spec.parameters, **schedule}
+    import tilelang.language as T
+
+    rows, k, o = (p["rows"], p["k"], p["o"])
+    n, top, experts = (p.get("columns", 64), 8, 256)
+    m, threads = (p.get("block_m", 16), p.get("threads", 128))
+    routed = p.get("routed_input", False)
+    compact = p.get("compact", True)
+    stages = p.get("stages", 1)
+    packed_gather = p.get("packed_gather", False)
+    bf16_mma = p.get("bf16_mma", False)
+    parts = p.get("partitions", 1)
+    persistent = p.get("persistent_tiles", 0)
+    if type(persistent) is not int or persistent < 0:
+        raise ValueError("invalid persistent expert grid")
+    reduction = p.get("mma_reduction", 128)
+    reorder = p.get("mma_reorder", False)
+    asynchronous = p.get("async_mma", False)
+    packed_widen = p.get("packed_widen", False)
+    resident_weights = p.get("resident_weights", False)
+    if resident_weights and (
+        not bf16_mma or not reorder or asynchronous or packed_widen
+    ):
+        raise ValueError("resident operands require synchronous paired MMA")
+    if packed_widen and (not bf16_mma or not reorder or asynchronous):
+        raise ValueError("packed widening requires synchronous paired MMA")
+    if asynchronous and (not (reorder and reduction == 32)):
+        raise ValueError("async MMA requires paired K32")
+    if reorder and reduction != 32:
+        raise ValueError("paired operands require K32")
+    if reduction not in (32, 128):
+        raise ValueError("invalid Hopper MMA reduction")
+    if k % (128 * parts):
+        raise ValueError("invalid expert reduction partition")
+    from akas.ops.moe.definition import tile_capacity
+
+    max_tiles = tile_capacity(rows, top, experts, m)
+
+    @T.macro
+    def body(
+        x, activation_scales, w, scales, counts, routes, out, bx, expert, tokens, part
+    ):
+        if tokens * m < counts[expert]:
+            if packed_widen:
+                from akas.quantization.weights.fp8.cuda import CUDA_SOURCE
+
+                T.import_source(CUDA_SOURCE)
+            lhs = T.alloc_shared((m, 128), "float8_e4m3fn")
+            rhs = T.alloc_shared((n, 128), "float8_e4m3fn")
+            if bf16_mma:
+                if asynchronous:
+                    lhs_batch = T.alloc_shared((m, 128), "float16")
+                    rhs_batch = T.alloc_shared((n, 128), "float16")
+                    p1 = T.alloc_fragment((m, n), "float32")
+                    p2 = T.alloc_fragment((m, n), "float32")
+                    p3 = T.alloc_fragment((m, n), "float32")
+                if reduction == 128:
+                    lhs_wide = T.alloc_shared((m, 128), "bfloat16")
+                    rhs_wide = T.alloc_shared((n, 128), "bfloat16")
+                if reduction < 128:
+                    lhs_sub = T.alloc_shared((m, reduction), "float16")
+                    rhs_sub = T.alloc_shared((n, reduction), "float16")
+                    partial = T.alloc_fragment((m, n), "float32")
+            scale = T.alloc_shared((m,), "float32")
+            selected = T.alloc_shared((m,), "int32")
+            block = T.alloc_fragment((m, n), "float32")
+            total = T.alloc_fragment((m, n), "float32")
+            for b in T.Parallel(m):
+                selected[b] = T.if_then_else(
+                    tokens * m + b < counts[expert],
+                    routes[expert, T.min(tokens * m + b, rows - 1)],
+                    -1,
+                )
+            T.sync_threads()
+            T.clear(total)
+            for local in T.Pipelined(k // (128 * parts), num_stages=stages):
+                tile = part * (k // (128 * parts)) + local
+                for b in T.Parallel(m):
+                    scale[b] = 1
+                    if selected[b] >= 0:
+                        if routed:
+                            scale[b] = activation_scales[
+                                selected[b] // top, selected[b] % top, tile
+                            ]
+                        else:
+                            scale[b] = activation_scales[selected[b] // top, tile]
+                T.sync_threads()
+                if packed_gather:
+                    words = T.view(
+                        x,
+                        shape=(rows, top, k // 4) if routed else (rows, k // 4),
+                        dtype="uint32",
+                    )
+                    destination = T.view(lhs, shape=(m, 32), dtype="uint32")
+                    for b, j in T.Parallel(m, 32):
+                        bits = T.alloc_var("uint32")
+                        bits = 0
+                        if selected[b] >= 0:
+                            if routed:
+                                bits = words[
+                                    selected[b] // top, selected[b] % top, tile * 32 + j
+                                ]
+                            else:
+                                bits = words[selected[b] // top, tile * 32 + j]
+                        if stages > 1:
+                            for byte in T.unroll(4):
+                                lhs[b, j * 4 + byte] = T.reinterpret(
+                                    "float8_e4m3fn",
+                                    T.cast(bits >> byte * 8 & 255, "uint8"),
+                                )
+                        else:
+                            destination[b, j] = bits
+                else:
+                    for b, j in T.Parallel(m, 128):
+                        bits = T.alloc_var("uint8")
+                        bits = 0
+                        if selected[b] >= 0:
+                            if routed:
+                                bits = x[
+                                    selected[b] // top,
+                                    selected[b] % top,
+                                    tile * 128 + j,
+                                ]
+                            else:
+                                bits = x[selected[b] // top, tile * 128 + j]
+                        lhs[b, j] = T.reinterpret("float8_e4m3fn", bits)
+                if not resident_weights:
+                    weights = T.view(w, dtype="float8_e4m3fn")
+                    T.copy(
+                        weights[
+                            expert, bx * n : bx * n + n, tile * 128 : tile * 128 + 128
+                        ],
+                        rhs,
+                    )
+                if packed_gather:
+                    T.sync_threads()
+                if bf16_mma:
+                    if asynchronous:
+                        for b, j in T.Parallel(m, 128):
+                            lhs_batch[b, j] = lhs[
+                                b,
+                                j // 32 * 32
+                                + j % 16 // 2 * 4
+                                + j % 2
+                                + j % 32 // 16 * 2,
+                            ]
+                        for i, j in T.Parallel(n, 128):
+                            rhs_batch[i, j] = rhs[
+                                i,
+                                j // 32 * 32
+                                + j % 16 // 2 * 4
+                                + j % 2
+                                + j % 32 // 16 * 2,
+                            ]
+                        T.sync_threads()
+                        T.wgmma_gemm(
+                            lhs_batch[:, 0:32],
+                            rhs_batch[:, 0:32],
+                            block,
+                            transpose_B=True,
+                            clear_accum=True,
+                        )
+                        T.wgmma_gemm(
+                            lhs_batch[:, 32:64],
+                            rhs_batch[:, 32:64],
+                            p1,
+                            transpose_B=True,
+                            clear_accum=True,
+                        )
+                        T.wgmma_gemm(
+                            lhs_batch[:, 64:96],
+                            rhs_batch[:, 64:96],
+                            p2,
+                            transpose_B=True,
+                            clear_accum=True,
+                        )
+                        T.wgmma_gemm(
+                            lhs_batch[:, 96:128],
+                            rhs_batch[:, 96:128],
+                            p3,
+                            transpose_B=True,
+                            clear_accum=True,
+                        )
+                        T.wait_wgmma(0)
+                        for b, j in T.Parallel(m, n):
+                            block[b, j] = T.call_extern(
+                                "float32", "__fadd_rn", block[b, j], p1[b, j]
+                            )
+                            block[b, j] = T.call_extern(
+                                "float32", "__fadd_rn", block[b, j], p2[b, j]
+                            )
+                            block[b, j] = T.call_extern(
+                                "float32", "__fadd_rn", block[b, j], p3[b, j]
+                            )
+                    elif reduction == 128:
+                        for b, j in T.Parallel(m, 128):
+                            lhs_wide[b, j] = lhs[b, j]
+                        for i, j in T.Parallel(n, 128):
+                            rhs_wide[i, j] = rhs[i, j]
+                        T.sync_threads()
+                        T.gemm(
+                            lhs_wide,
+                            rhs_wide,
+                            block,
+                            transpose_B=True,
+                            clear_accum=True,
+                        )
+                    else:
+                        T.clear(block)
+                        for sub in T.serial(128 // reduction):
+                            if packed_widen:
+                                lhs_pairs = T.view(lhs, shape=(m, 64), dtype="uint16")
+                                rhs_pairs = T.view(rhs, shape=(n, 64), dtype="uint16")
+                                a_pairs = T.view(lhs_sub, shape=(m, 16), dtype="uint32")
+                                b_pairs = T.view(rhs_sub, shape=(n, 16), dtype="uint32")
+                                for b, j in T.Parallel(m, 16):
+                                    a_pairs[b, j] = T.call_extern(
+                                        "uint32",
+                                        "tensor_widen_e4m3x2",
+                                        lhs_pairs[b, sub * 16 + j % 8 * 2 + j // 8],
+                                    )
+                                for i, j in T.Parallel(n, 16):
+                                    b_pairs[i, j] = T.call_extern(
+                                        "uint32",
+                                        "tensor_widen_e4m3x2",
+                                        rhs_pairs[i, sub * 16 + j % 8 * 2 + j // 8],
+                                    )
+                                T.sync_threads()
+                            elif reorder:
+                                for b, j in T.Parallel(m, reduction):
+                                    lhs_sub[b, j] = lhs[
+                                        b,
+                                        sub * 32
+                                        + j % 16 // 2 * 4
+                                        + j % 2
+                                        + j // 16 * 2,
+                                    ]
+                                if resident_weights:
+                                    T.copy(
+                                        w[
+                                            expert,
+                                            bx * n : bx * n + n,
+                                            tile * 128 + sub * 32 : tile * 128
+                                            + (sub + 1) * 32,
+                                        ],
+                                        rhs_sub,
+                                    )
+                                else:
+                                    for i, j in T.Parallel(n, reduction):
+                                        rhs_sub[i, j] = rhs[
+                                            i,
+                                            sub * 32
+                                            + j % 16 // 2 * 4
+                                            + j % 2
+                                            + j // 16 * 2,
+                                        ]
+                            else:
+                                T.copy(
+                                    lhs[:, sub * reduction : (sub + 1) * reduction],
+                                    lhs_sub,
+                                )
+                                T.copy(
+                                    rhs[:, sub * reduction : (sub + 1) * reduction],
+                                    rhs_sub,
+                                )
+                            T.gemm(
+                                lhs_sub,
+                                rhs_sub,
+                                partial,
+                                transpose_B=True,
+                                clear_accum=True,
+                            )
+                            for b, j in T.Parallel(m, n):
+                                block[b, j] = T.call_extern(
+                                    "float32", "__fadd_rn", block[b, j], partial[b, j]
+                                )
+                else:
+                    T.gemm(lhs, rhs, block, transpose_B=True, clear_accum=True)
+                for b, j in T.Parallel(m, n):
+                    if compact:
+                        product = T.call_extern(
+                            "float32", "__fmul_rn", block[b, j], scale[b]
+                        )
+                        total[b, j] = T.call_extern(
+                            "float32",
+                            "__fmaf_rn",
+                            product,
+                            T.cast(
+                                scales[expert, (bx * n + j) // 128, tile], "float32"
+                            ),
+                            total[b, j],
+                        )
+                    else:
+                        total[b, j] += (
+                            block[b, j]
+                            * scale[b]
+                            * T.cast(
+                                scales[expert, (bx * n + j) // 128, tile], "float32"
+                            )
+                        )
+            for b, j in T.Parallel(m, n):
+                if selected[b] >= 0:
+                    if parts > 1:
+                        out[selected[b] // top, selected[b] % top, part, bx * n + j] = (
+                            total[b, j]
+                        )
+                    else:
+                        out[selected[b] // top, selected[b] % top, bx * n + j] = total[
+                            b, j
+                        ]
+
+    if compact:
+
+        @kernel
+        def compute(
+            x: Tensor((rows, top, k) if routed else (rows, k), "uint8"),
+            activation_scales: Tensor(
+                (rows, top, k // 128) if routed else (rows, k // 128), "float32"
+            ),
+            w: Tensor((experts, o, k), "float16" if resident_weights else "uint8"),
+            scales: Tensor((experts, T.ceildiv(o, 128), k // 128), "bfloat16"),
+            counts: Tensor((experts,), "int32"),
+            routes: Tensor((experts, rows), "int32"),
+            tile_experts: Tensor((max_tiles,), "int32"),
+            tile_offsets: Tensor((max_tiles,), "int32"),
+        ) -> Tensor((rows, top, parts, o) if parts > 1 else (rows, top, o), "float32"):
+            out = output(
+                (rows, top, parts, o) if parts > 1 else (rows, top, o),
+                "float32",
+                position=6,
+            )
+            with T.Kernel(
+                o // n, persistent if persistent else max_tiles, parts, threads=threads
+            ) as (bx, block, part):
+                if persistent:
+                    for iteration in T.serial(T.ceildiv(max_tiles, persistent)):
+                        tile = block + iteration * persistent
+                        if tile < max_tiles:
+                            expert = tile_experts[tile]
+                            if expert >= 0:
+                                body(
+                                    x,
+                                    activation_scales,
+                                    w,
+                                    scales,
+                                    counts,
+                                    routes,
+                                    out,
+                                    bx,
+                                    expert,
+                                    tile_offsets[tile],
+                                    part,
+                                )
+                else:
+                    expert = tile_experts[block]
+                    if expert >= 0:
+                        body(
+                            x,
+                            activation_scales,
+                            w,
+                            scales,
+                            counts,
+                            routes,
+                            out,
+                            bx,
+                            expert,
+                            tile_offsets[block],
+                            part,
+                        )
+            return out
+
+        return compute
+    if not compact:
+
+        @kernel
+        def compute(
+            x: Tensor((rows, top, k) if routed else (rows, k), "uint8"),
+            activation_scales: Tensor(
+                (rows, top, k // 128) if routed else (rows, k // 128), "float32"
+            ),
+            w: Tensor((experts, o, k), "float16" if resident_weights else "uint8"),
+            scales: Tensor((experts, T.ceildiv(o, 128), k // 128), "bfloat16"),
+            counts: Tensor((experts,), "int32"),
+            routes: Tensor((experts, rows), "int32"),
+        ) -> Tensor((rows, top, parts, o) if parts > 1 else (rows, top, o), "float32"):
+            out = output(
+                (rows, top, parts, o) if parts > 1 else (rows, top, o), "float32"
+            )
+            with T.Kernel(
+                o // n, experts, T.ceildiv(rows, m) * parts, threads=threads
+            ) as (bx, expert, group):
+                body(
+                    x,
+                    activation_scales,
+                    w,
+                    scales,
+                    counts,
+                    routes,
+                    out,
+                    bx,
+                    expert,
+                    group // parts,
+                    group % parts,
+                )
+            return out
+
+        return compute
+
+
+def decode_moe_groups(spec: KernelSpec, schedule: Mapping[str, object]):
+    p = {**spec.parameters, **schedule}
+    import tilelang.language as T
+
+    r, top = (p["r"], p["top"])
+
+    @kernel
+    def compute(
+        ids: Tensor((r, top), "int32"),
+    ) -> tuple[Tensor((r * top,), "int32"), Tensor((r * top, r), "int32")]:
+        experts = output((r * top,), "int32")
+        routes = output((r * top, r), "int32")
+        with T.Kernel(r * top, threads=32) as group:
+            expert = ids[group // top, group % top]
+            owner = T.alloc_var("int32")
+            owner = group
+            for earlier in T.serial(r * top):
+                if (earlier < group) & (ids[earlier // top, earlier % top] == expert):
+                    owner = T.min(owner, earlier)
+            for i in T.Parallel(1):
+                experts[group] = T.if_then_else(owner == group, expert, -1)
+            for b in T.Parallel(r):
+                rank = T.alloc_var("int32")
+                rank = -1
+                for j in T.serial(top):
+                    if ids[b, j] == expert:
+                        rank = j
+                routes[group, b] = T.if_then_else(owner == group, rank, -1)
+        return (experts, routes)
+
+    return compute
+
+
+def decode_router(spec: KernelSpec, schedule: Mapping[str, object]):
+    p = {**spec.parameters, **schedule}
+    import tilelang.language as T
+
+    r, e, top = (p["r"], p["experts"], p["top"])
+
+    @kernel
+    def compute(
+        logits: Tensor((r, e), "float32"),
+    ) -> tuple[Tensor((r, top), "int32"), Tensor((r, top), "float32")]:
+        ids = output((r, top), "int32")
+        weights = output((r, top), "float32")
+        with T.Kernel(r, threads=256) as b:
+            values = T.alloc_fragment((e,), "float32")
+            maximum = T.alloc_fragment((1,), "float32")
+            indices = T.alloc_fragment((e,), "int32")
+            first = T.alloc_fragment((1,), "int32")
+            selected = T.alloc_shared((top,), "float32")
+            for j in T.Parallel(e):
+                values[j] = T.cast(T.cast(logits[b, j], "bfloat16"), "float32")
+            for rank in T.serial(top):
+                T.reduce_max(values, maximum, dim=0)
+                for j in T.Parallel(e):
+                    indices[j] = T.if_then_else(values[j] == maximum[0], j, e)
+                T.reduce_min(indices, first, dim=0)
+                for j in T.Parallel(1):
+                    ids[b, rank] = first[0]
+                    selected[rank] = maximum[0]
+                for j in T.Parallel(e):
+                    if j == first[0]:
+                        values[j] = -T.infinity("float32")
+            for j in T.Parallel(top):
+                denominator = T.alloc_var("float32")
+                denominator = 0
+                for rank in T.serial(top):
+                    denominator += T.exp(selected[rank] - selected[0])
+                weights[b, j] = T.exp(selected[j] - selected[0]) / denominator
+        return (ids, weights)
+
+    return compute
+
+
+def prefill_expert_routes(spec: KernelSpec, schedule: Mapping[str, object]):
+    p = {**spec.parameters, **schedule}
+    import tilelang.language as T
+
+    slots, chunk = (p["slots"], p["chunk"])
+    rows = slots * chunk
+    experts, top = (p.get("experts", 256), p.get("top", 8))
+
+    @kernel
+    def compute(
+        ids: Tensor((rows, top), "int32"),
+        active: Tensor((rows,), "int32"),
+        counts: Tensor((experts,), "int32"),
+    ) -> tuple[Tensor((experts,), "int32"), Tensor((experts, rows), "int32")]:
+        routes = output((experts, rows), "int32")
+        with T.Kernel(experts, threads=256) as expert:
+            tx = T.get_thread_binding()
+            counter = T.alloc_shared((1,), "int32")
+            if tx == 0:
+                counter[0] = 0
+            T.sync_threads()
+            for tile in T.serial(T.ceildiv(rows, 256)):
+                row = tile * 256 + tx
+                if row < rows:
+                    if active[row] != 0:
+                        for rank in T.unroll(top):
+                            if ids[row, rank] == expert:
+                                index = T.atomic_add(counter[0], 1, return_prev=True)
+                                routes[expert, index] = row * top + rank
+            T.sync_threads()
+            if tx == 0:
+                counts[expert] = counter[0]
+        return (counts, routes)
+
+    return compute
+
+
+def tile_map(spec: KernelSpec, schedule: Mapping[str, object]):
+    p = {**spec.parameters, **schedule}
+    return _tile_map(p, layouts=False)
+
+
+def expert_tile_map(spec: KernelSpec, schedule: Mapping[str, object]):
+    p = {**spec.parameters, **schedule}
+    return _tile_map({**p, "rows": p["r"]}, layouts=True)
+
+
+def _tile_map(p, *, layouts):
+    """Parallel emission over the same prefix table for one or all tile layouts."""
+    import tilelang.language as T
+
+    rows = p["rows"]
+    experts, top = (p.get("experts", 256), p.get("top", 8))
+    from akas.ops.moe.definition import tile_capacity
+
+    capacity = ((rows * top + 3) // 4 + experts if layouts
+                else tile_capacity(rows, top, experts, p["block_m"]))
+
+    @T.macro
+    def fill(counts, tile_experts, tile_offsets, layout, block_m):
+        prefix = T.alloc_shared((experts + 1,), "int32")
+        tx = T.get_thread_binding()
+        if tx == 0:
+            prefix[0] = 0
+            for expert in T.serial(experts):
+                prefix[expert + 1] = prefix[expert] + T.ceildiv(counts[expert], block_m)
+        for i in T.Parallel(capacity):
+            tile_experts[layout, i] = -1
+            tile_offsets[layout, i] = 0
+        T.sync_threads()
+        for expert in T.Parallel(experts):
+            for tile in T.serial(T.ceildiv(counts[expert], block_m)):
+                index = prefix[expert] + tile
+                tile_experts[layout, index] = expert
+                tile_offsets[layout, index] = tile
+
+    if layouts:
+
+        @kernel
+        def compute(counts: Tensor((experts,), "int32")) -> tuple[
+            Tensor((5, capacity), "int32"), Tensor((5, capacity), "int32")
+        ]:
+            tile_experts = output((5, capacity), "int32")
+            tile_rows = output((5, capacity), "int32")
+            with T.Kernel(5, threads=256) as layout:
+                fill(counts, tile_experts, tile_rows, layout, 4 << layout)
+            return tile_experts, tile_rows
+
+        return compute
+
+    @kernel
+    def compute(
+        counts: Tensor((experts,), "int32"),
+    ) -> tuple[Tensor((capacity,), "int32"), Tensor((capacity,), "int32")]:
+        tile_experts = output((capacity,), "int32")
+        tile_offsets = output((capacity,), "int32")
+        with T.Kernel(1, threads=256):
+            tasks = T.view(tile_experts, (1, capacity))
+            offsets = T.view(tile_offsets, (1, capacity))
+            fill(counts, tasks, offsets, 0, p["block_m"])
+        return (tile_experts, tile_offsets)
+
+    return compute
+
+
+def tiles(spec: KernelSpec, schedule: Mapping[str, object]):
+    from dataclasses import replace
+
+    return tile_map(
+        replace(spec, parameters={**spec.parameters, "rows": spec.parameters["r"]}),
+        schedule,
+    )
+
+
+def parallel_routes(spec: KernelSpec, schedule: Mapping[str, object]):
+    """Stable expert compaction in token/rank order, including empty batches."""
+    p = {**spec.parameters, **schedule}
+    import tilelang.language as T
+
+    rows, top, experts = (p[n] for n in ("r", "top", "experts"))
+    threads = 128
+
+    @kernel
+    def compute(
+        ids: Tensor((rows, top), "int32"), active: Tensor(rows, "int32")
+    ) -> tuple[Tensor(experts, "int32"), Tensor((experts, rows), "int32")]:
+        counts = output(experts, "int32")
+        routes = output((experts, rows), "int32")
+        with T.Kernel(experts, threads=threads) as expert:
+            tx = T.get_thread_binding()
+            lane = tx % 32
+            warp = tx // 32
+            totals = T.alloc_shared((4,), "int32")
+            cursor = T.alloc_shared((1,), "int32")
+            for row in T.Parallel(rows):
+                routes[expert, row] = -1
+            if tx == 0:
+                cursor[0] = 0
+            T.sync_threads()
+            for tile in T.serial(T.ceildiv(rows, threads)):
+                row = tile * threads + tx
+                count = T.alloc_var("int32")
+                inclusive = T.alloc_var("int32")
+                prefix = T.alloc_var("int32")
+                local = T.alloc_var("int32")
+                count = 0
+                for rank in T.unroll(top):
+                    count += T.if_then_else(
+                        row < rows
+                        and active[T.min(row, rows - 1)] != 0
+                        and ids[T.min(row, rows - 1), rank] == expert,
+                        1,
+                        0,
+                    )
+                inclusive = count
+                for step in T.unroll(5):
+                    previous = T.shfl_sync(inclusive, T.max(lane - (1 << step), 0))
+                    inclusive += T.if_then_else(lane >= (1 << step), previous, 0)
+                if lane == 31:
+                    totals[warp] = inclusive
+                T.sync_threads()
+                prefix = cursor[0] + inclusive - count
+                for w in T.unroll(4):
+                    prefix += T.if_then_else(w < warp, totals[w], 0)
+                local = 0
+                for rank in T.unroll(top):
+                    if (
+                        row < rows
+                        and active[T.min(row, rows - 1)] != 0
+                        and ids[T.min(row, rows - 1), rank] == expert
+                    ):
+                        routes[expert, prefix + local] = row * top + rank
+                        local += 1
+                # Every thread has consumed the previous cursor before it is updated.
+                T.sync_threads()
+                if tx == 0:
+                    cursor[0] += totals[0] + totals[1] + totals[2] + totals[3]
+                T.sync_threads()
+            if tx == 0:
+                counts[expert] = cursor[0]
+        return counts, routes
+
+    return compute
+
+
+from akas.ops.moe.definition import IMPLEMENTATIONS as _CHOICES
+
+IMPLEMENTATIONS = tuple((choice for choice in _CHOICES if choice.provider == "cuda"))
+
+
+def expert_swiglu(spec, schedule):
+    """Decode gate/up/SwiGLU through codec FP16 dots and continuous F32 sums."""
+    p = {**spec.parameters, **schedule}
+    import tilelang.language as T
+    from akas.quantization.weights import bind_parts
+
+    depth, columns, experts, top = (p[n] for n in ("k", "o", "experts", "top"))
+    binding = bind_parts(p["weight_parts"], depth, provider="cuda")
+    storage, dot = binding.storage.values, binding.require("dot_half")
+    up = bind_parts(p["up_weight_parts"], depth, provider="cuda")
+    up_storage, up_dot = up.storage.values, up.require("dot_half")
+    threads, width, unroll = (
+        p.get(n, default)
+        for n, default in (("threads", 128), ("columns_per_warp", 1), ("unroll", 1))
+    )
+    if (
+        p["r"] != 1
+        or p.get("input_dtype") != "float32"
+        or not p.get("round_inputs", False)
+        or depth % 256
+        or threads not in (128, 256)
+        or width not in (1, 2)
+        or unroll not in (1, 2)
+    ):
+        raise ValueError("unsupported packed expert SwiGLU geometry")
+    warps = threads // 32
+
+    @kernel
+    def compute(
+        x: Tensor((1, depth), "float32"),
+        w: Tensor(storage.shape, storage.dtype),
+        w2: Tensor(up_storage.shape, up_storage.dtype),
+        ids: Tensor((1, top), "int32"),
+        counts: Tensor((experts,), "int32"),
+    ) -> Tensor((1, top, columns), "float32"):
+        out = output((1, top, columns), "float32")
+        flat = T.meta_var(T.view(x, (depth,), dtype="float32"))
+        with T.Kernel(T.ceildiv(columns, warps * width), top, threads=threads) as (
+            block,
+            rank,
+        ):
+            tx = T.get_thread_binding()
+            warp, lane = tx // 32, tx % 32
+            expert = ids[0, rank]
+            g = T.alloc_local((width,), "float32")
+            u = T.alloc_local((width,), "float32")
+            for col in T.unroll(width):
+                g[col] = 0
+                u[col] = 0
+            for tile in T.serial(T.ceildiv(depth // 256, unroll)):
+                for step in T.unroll(unroll):
+                    for col in T.unroll(width):
+                        column = (block * warps + warp) * width + col
+                        if column < columns and tile * unroll + step < depth // 256:
+                            g[col] = dot(
+                                (w,),
+                                flat,
+                                0,
+                                tile * unroll + step,
+                                lane,
+                                expert * columns + column,
+                                g[col],
+                            )
+                            u[col] = up_dot(
+                                (w2,),
+                                flat,
+                                0,
+                                tile * unroll + step,
+                                lane,
+                                expert * columns + column,
+                                u[col],
+                            )
+            for col in T.unroll(width):
+                for step in T.unroll(5):
+                    g[col] += T.shfl_down(g[col], 16 >> step)
+                    u[col] += T.shfl_down(u[col], 16 >> step)
+                column = (block * warps + warp) * width + col
+                if lane == 0 and column < columns:
+                    out[0, rank, column] = T.if_then_else(
+                        counts[expert] > 0, g[col] / (1 + T.exp(-g[col])) * u[col], 0
+                    )
+        return out
+
+    return compute
+
+
+def packed_float_experts(spec, schedule):
+    """Decode through the codec F32 lane-product capability."""
+    from akas.ops.moe.kernel import _packed_float_experts
+
+    return _packed_float_experts(spec, schedule, provider="cuda")

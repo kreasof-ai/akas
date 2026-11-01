@@ -1,0 +1,5 @@
+# DSL implementation SHA256: 7ed9a7c765e14f8b4354cd98e77cf199784e0995b0bba942ee98a2ba550b350a
+from akas.kernels.definition import define
+
+def tensor_export():
+    return {"kernel": define({'contract': 'reference', 'kind': 'expert_partial', 'parameters': {'block_m': 32, 'compact': True, 'experts': 64, 'k': 1536, 'o': 2048, 'output_dtype': 'bfloat16', 'partitions': 1, 'r': 2048, 'routed_input': True, 'rows': 2048, 'tile_map': True, 'top': 4}, 'phase': 'forward'}, {'activation_vector': 16, 'columns': 64, 'mma_dtype': 'float8_e4m3fn', 'stages': 1, 'threads': 128}, {'provider': 'cuda', 'target': 'sm_89'}, {'axes': ['block_m', 'columns', 'threads', 'stages', 'mma_dtype', 'activation_vector'], 'contract': 'reference', 'defaults': {'activation_vector': 16}, 'factory': 'bucketed', 'identifier': 'moe.cuda.fp8-bucketed:mapped', 'kind': 'expert_partial', 'module': 'akas.ops.moe.cuda', 'phase': 'forward', 'provider': 'cuda', 'semantic_keys': ['r', 'rows', 'k', 'o', 'experts', 'top', 'routed_input', 'partitions', 'compact', 'tile_map', 'output_dtype'], 'targets': []})}

@@ -1,0 +1,348 @@
+{
+  "results": [
+    {
+      "rows": 2048,
+      "width": 2048,
+      "fused": false,
+      "bitwise": true,
+      "resources": [
+        {
+          "registers": 12,
+          "local_bytes": 0
+        },
+        {
+          "registers": 80,
+          "local_bytes": 0
+        }
+      ],
+      "timing": {
+        "warm": {
+          "gpu_seconds": [
+            2.4780799448490145e-05,
+            2.4569599330425262e-05,
+            2.457599937915802e-05,
+            2.4371199309825897e-05,
+            2.434560060501099e-05,
+            2.4166400730609895e-05,
+            2.4569599330425262e-05
+          ],
+          "completed_seconds": [
+            2.6817400066647678e-05,
+            2.602519962238148e-05,
+            2.587120106909424e-05,
+            2.5757199910003693e-05,
+            2.5701399135868996e-05,
+            2.560920111136511e-05,
+            2.576120023149997e-05
+          ],
+          "median_gpu_seconds": 2.4569599330425262e-05,
+          "median_completed_seconds": 2.576120023149997e-05,
+          "warmup": 2,
+          "samples": 7,
+          "repeats": 5,
+          "metric": "gpu_seconds",
+          "median_seconds": 2.4569599330425262e-05
+        },
+        "working-set": {
+          "gpu_seconds": [
+            6.101760044693946e-05,
+            6.1030401289463054e-05,
+            6.038400158286095e-05,
+            6.0416001826524736e-05,
+            6.062080115079879e-05,
+            6.0172801464796066e-05,
+            6.369279995560648e-05
+          ],
+          "completed_seconds": [
+            6.81629971950315e-05,
+            6.847140175523237e-05,
+            6.781360134482384e-05,
+            6.76070005283691e-05,
+            6.865300092613324e-05,
+            6.723740079905838e-05,
+            7.408759993268176e-05
+          ],
+          "median_gpu_seconds": 6.062080115079879e-05,
+          "median_completed_seconds": 6.81629971950315e-05,
+          "warmup": 2,
+          "samples": 7,
+          "repeats": 5,
+          "metric": "gpu_seconds",
+          "median_seconds": 6.062080115079879e-05
+        }
+      },
+      "cache_conditioning": {
+        "method": "independent-canonical-matmul",
+        "target": "sm_89",
+        "seed": 17,
+        "requested_weight_bytes": 268435456,
+        "weight_bytes": 268435456,
+        "working_set_bytes": 276955136,
+        "geometry": {
+          "m": 32,
+          "n": 65536,
+          "k": 2048
+        },
+        "dtype": "float16",
+        "artifact_sha256": "f4bdb2539394e7124d69489dae766d046bfa75a4c215106c0b165d71d111a64d",
+        "source_sha256": "e677f9c9bc8ef73d275e6df9657d8dfc248c015e44a999f0bf3ba62000414185"
+      }
+    },
+    {
+      "rows": 2048,
+      "width": 2048,
+      "fused": true,
+      "bitwise": true,
+      "resources": [
+        {
+          "registers": 80,
+          "local_bytes": 0
+        }
+      ],
+      "timing": {
+        "warm": {
+          "gpu_seconds": [
+            2.2118400037288665e-05,
+            2.1913599967956543e-05,
+            2.170879989862442e-05,
+            2.170879989862442e-05,
+            2.170879989862442e-05,
+            2.170879989862442e-05,
+            2.170879989862442e-05
+          ],
+          "completed_seconds": [
+            2.4315199698321522e-05,
+            2.3281200265046208e-05,
+            2.3100999533198775e-05,
+            2.29572004172951e-05,
+            2.309120027348399e-05,
+            2.3366999812424183e-05,
+            2.3116999363992365e-05
+          ],
+          "median_gpu_seconds": 2.170879989862442e-05,
+          "median_completed_seconds": 2.3116999363992365e-05,
+          "warmup": 2,
+          "samples": 7,
+          "repeats": 5,
+          "metric": "gpu_seconds",
+          "median_seconds": 2.170879989862442e-05
+        },
+        "working-set": {
+          "gpu_seconds": [
+            5.672960057854652e-05,
+            5.713920071721077e-05,
+            5.649280026555062e-05,
+            5.672960057854652e-05,
+            5.6729600578546535e-05,
+            5.611520037055016e-05,
+            5.7548800855875016e-05
+          ],
+          "completed_seconds": [
+            6.463320023613051e-05,
+            6.495300185633823e-05,
+            6.372499919962137e-05,
+            6.419300043489785e-05,
+            6.467900093412026e-05,
+            6.291700119618327e-05,
+            6.59014011034742e-05
+          ],
+          "median_gpu_seconds": 5.672960057854652e-05,
+          "median_completed_seconds": 6.463320023613051e-05,
+          "warmup": 2,
+          "samples": 7,
+          "repeats": 5,
+          "metric": "gpu_seconds",
+          "median_seconds": 5.672960057854652e-05
+        }
+      },
+      "cache_conditioning": {
+        "method": "independent-canonical-matmul",
+        "target": "sm_89",
+        "seed": 17,
+        "requested_weight_bytes": 268435456,
+        "weight_bytes": 268435456,
+        "working_set_bytes": 276955136,
+        "geometry": {
+          "m": 32,
+          "n": 65536,
+          "k": 2048
+        },
+        "dtype": "float16",
+        "artifact_sha256": "f4bdb2539394e7124d69489dae766d046bfa75a4c215106c0b165d71d111a64d",
+        "source_sha256": "e677f9c9bc8ef73d275e6df9657d8dfc248c015e44a999f0bf3ba62000414185"
+      }
+    },
+    {
+      "rows": 8192,
+      "width": 2048,
+      "fused": false,
+      "bitwise": true,
+      "resources": [
+        {
+          "registers": 12,
+          "local_bytes": 0
+        },
+        {
+          "registers": 80,
+          "local_bytes": 0
+        }
+      ],
+      "timing": {
+        "warm": {
+          "gpu_seconds": [
+            0.0004597760200500488,
+            0.0004593664169311523,
+            0.0004618239879608154,
+            0.0004544511795043945,
+            0.0004616191864013672,
+            0.0004618239879608154,
+            0.00046346240043640137
+          ],
+          "completed_seconds": [
+            0.0004617063998011872,
+            0.00046081440086709335,
+            0.0004637145990272984,
+            0.0004565601993817836,
+            0.0004632923999452032,
+            0.00046372659999178724,
+            0.0004657126002712175
+          ],
+          "median_gpu_seconds": 0.0004616191864013672,
+          "median_completed_seconds": 0.0004632923999452032,
+          "warmup": 2,
+          "samples": 7,
+          "repeats": 5,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.0004616191864013672
+        },
+        "working-set": {
+          "gpu_seconds": [
+            0.0003770111978054047,
+            0.0003768320024013519,
+            0.000376198399066925,
+            0.0003766207993030548,
+            0.00037683199644088743,
+            0.000377209597826004,
+            0.00037908480167388913
+          ],
+          "completed_seconds": [
+            0.0003857006013276987,
+            0.0003848126012599096,
+            0.00038330019742716104,
+            0.00038409660337492826,
+            0.0003840805991785601,
+            0.00038515699707204477,
+            0.00038735679991077634
+          ],
+          "median_gpu_seconds": 0.0003768320024013519,
+          "median_completed_seconds": 0.0003848126012599096,
+          "warmup": 2,
+          "samples": 7,
+          "repeats": 5,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.0003768320024013519
+        }
+      },
+      "cache_conditioning": {
+        "method": "independent-canonical-matmul",
+        "target": "sm_89",
+        "seed": 17,
+        "requested_weight_bytes": 268435456,
+        "weight_bytes": 268435456,
+        "working_set_bytes": 276955136,
+        "geometry": {
+          "m": 32,
+          "n": 65536,
+          "k": 2048
+        },
+        "dtype": "float16",
+        "artifact_sha256": "f4bdb2539394e7124d69489dae766d046bfa75a4c215106c0b165d71d111a64d",
+        "source_sha256": "e677f9c9bc8ef73d275e6df9657d8dfc248c015e44a999f0bf3ba62000414185"
+      }
+    },
+    {
+      "rows": 8192,
+      "width": 2048,
+      "fused": true,
+      "bitwise": true,
+      "resources": [
+        {
+          "registers": 80,
+          "local_bytes": 0
+        }
+      ],
+      "timing": {
+        "warm": {
+          "gpu_seconds": [
+            0.0004495552062988281,
+            0.00045096960067749024,
+            0.0004495552062988281,
+            0.00045055999755859373,
+            0.000449945592880249,
+            0.000449126386642456,
+            0.0004503551959991455
+          ],
+          "completed_seconds": [
+            0.0004534198000328615,
+            0.00045321180077735336,
+            0.00045166759955463933,
+            0.00045253360003698616,
+            0.00045197759900474923,
+            0.0004539898000075482,
+            0.0004524796007899567
+          ],
+          "median_gpu_seconds": 0.000449945592880249,
+          "median_completed_seconds": 0.00045253360003698616,
+          "warmup": 2,
+          "samples": 7,
+          "repeats": 5,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.000449945592880249
+        },
+        "working-set": {
+          "gpu_seconds": [
+            0.00032829440236091615,
+            0.0003270720064640045,
+            0.00032872320413589477,
+            0.00032829440236091615,
+            0.0003278784036636352,
+            0.00032747520208358763,
+            0.00032849919199943545
+          ],
+          "completed_seconds": [
+            0.00033568000071682036,
+            0.0003348519967403263,
+            0.00033642420021351427,
+            0.0003366262011695653,
+            0.0003357780005899258,
+            0.0003356959990924224,
+            0.0003365783966728486
+          ],
+          "median_gpu_seconds": 0.00032829440236091615,
+          "median_completed_seconds": 0.0003357780005899258,
+          "warmup": 2,
+          "samples": 7,
+          "repeats": 5,
+          "metric": "gpu_seconds",
+          "median_seconds": 0.00032829440236091615
+        }
+      },
+      "cache_conditioning": {
+        "method": "independent-canonical-matmul",
+        "target": "sm_89",
+        "seed": 17,
+        "requested_weight_bytes": 268435456,
+        "weight_bytes": 268435456,
+        "working_set_bytes": 276955136,
+        "geometry": {
+          "m": 32,
+          "n": 65536,
+          "k": 2048
+        },
+        "dtype": "float16",
+        "artifact_sha256": "f4bdb2539394e7124d69489dae766d046bfa75a4c215106c0b165d71d111a64d",
+        "source_sha256": "e677f9c9bc8ef73d275e6df9657d8dfc248c015e44a999f0bf3ba62000414185"
+      }
+    }
+  ]
+}
