@@ -1,13 +1,98 @@
 {
-  "schema": "akas.benchmark-run.v1",
-  "id": "20261031235549630865-fe96c7b0",
-  "started_at": "2026-10-31T23:55:49.630865Z",
-  "completed_at": "2026-10-31T23:55:50.317217Z",
-  "status": "failed",
+  "schema": "akas.matrix-campaign.v1",
+  "specification": {
+    "models": [
+      "lfm2.5-24b-a2b-fp8"
+    ],
+    "formats": [
+      "fp8"
+    ],
+    "backends": [
+      "cuda"
+    ],
+    "caches": [
+      "float16"
+    ],
+    "workload": {
+      "schema": "akas.workload.v1",
+      "id": "concurrent-prefill-v1",
+      "description": "Concurrent autoregressive requests with medium prompts and 16-bit KV.",
+      "batches": [
+        1,
+        4,
+        16,
+        64,
+        256
+      ],
+      "prefix_tokens": [
+        2048
+      ],
+      "output_tokens": 128,
+      "kv_bits": 16,
+      "speculative_decoding": false,
+      "cached_prefix_tokens": 0,
+      "early_eos": false,
+      "sampling": {
+        "temperature": 0
+      },
+      "prefix_cache": false,
+      "cpu_offload": false,
+      "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens. Streamed TTFT includes queueing and delivery.",
+      "metrics": [
+        "prefill_tokens_per_second",
+        "decode_tokens_per_second",
+        "ttft_seconds",
+        "inter_token_seconds",
+        "peak_vram_bytes"
+      ]
+    },
+    "baselines": [
+      {
+        "runtime": "vllm",
+        "provider": "cuda",
+        "weight_format": "fp8",
+        "mode": "ar"
+      },
+      {
+        "runtime": "sglang",
+        "provider": "cuda",
+        "weight_format": "fp8",
+        "mode": "ar"
+      }
+    ]
+  },
+  "models": {
+    "lfm2.5-24b-a2b-fp8": {
+      "schema": "akas.benchmark-model.v1",
+      "id": "lfm2.5-24b-a2b-fp8",
+      "model": "LiquidAI/LFM2.5-24B-A2B-FP8",
+      "aliases": [],
+      "modes": [
+        "ar"
+      ],
+      "weights": {
+        "fp8": {
+          "path": "build/checkpoints/lfm2.5-24b-a2b-fp8",
+          "source": {
+            "repo": "LiquidAI/LFM2.5-24B-A2B-FP8",
+            "revision": "f54bf39547fd5b7955abb9fe8d1b151e31fbbddb"
+          }
+        }
+      },
+      "runtime_options": {
+        "vllm": {
+          "kv_cache_dtype": "auto"
+        },
+        "sglang": {
+          "kv_cache_dtype": "auto"
+        }
+      }
+    }
+  },
   "source": {
     "revision": "ce32f41e6d5cb8ff9dbb46b2da025c999acc1fa0",
     "dirty": true,
-    "tree_sha256": "05bd4cb34470e4c2f35800ca4e9068fe1985f1540597ea4260bf96a1ce021f52",
+    "tree_sha256": "13daf8fee0fae0877bbc99f949209b9eef282b44364ba307238f8bec7b670d58",
     "files": {
       "MANIFEST.in": "8afdb8a7eb227704fa0b2cb64afa1ca9866eff4ba997350d7f9512760c47198d",
       "examples/graphs/residual/config.py": "62db23515fac60c8331c3de4f7029e301eb6a97d887b7ec8c082360a5cbdccd2",
@@ -22,7 +107,7 @@
       "src/akas/__init__.py": "1569d3614ee277b90447daf275a734adfba0b07f4ae519e03cad5cc1454f2f57",
       "src/akas/__main__.py": "afaa46660428fe963d5eb4120d1170cfb3ee63af67bbc22a2b1ce2ae4304c422",
       "src/akas/artifacts/__init__.py": "d2655b8f0c591dcb4e7af614fb20056cfc93eae32e5a3f7b19ba97bd5830ac1c",
-      "src/akas/artifacts/fingerprint.py": "a39fcfb070e3612f5ccb59c838f5dcb8be396a48c5a655cde1645570e2aab7c1",
+      "src/akas/artifacts/fingerprint.py": "7b7de204ab67fc762232ae209273eae8ac055506567c03c50997ea6b95f42164",
       "src/akas/artifacts/read.py": "4c08294f3e3dec9b25d3934ed8ee5102b14f29b204bcdec754c78c82399eafac",
       "src/akas/artifacts/schema.py": "7c92b944820291e1f95d9d4464d89684e0185c92b32e6ae0b149125b46b42ae1",
       "src/akas/artifacts/write.py": "ac513618894bf244b611c51ee0c66cfea9e9b769d6584269b482b44631e4de50",
@@ -181,17 +266,17 @@
       "src/akas/ops/indexing/webgpu.py": "9421d4e9e9f1b816736bd0b99b4384954d55e5d1885598352acabca19cc6ec3b",
       "src/akas/ops/linear/README.md": "12422feab95de8ba4eb45dd91da857ced064c30fb44ac2059fb5101621c21103",
       "src/akas/ops/linear/__init__.py": "5283e17a1aa15700224602151db757fd6744d43b6621b536b11bf0bb1e1397c9",
-      "src/akas/ops/linear/cuda.py": "ea40ebe457f9c0c3dac79d34aa0b624d64155f93f04959ff9f6093f4d423da9c",
-      "src/akas/ops/linear/definition.py": "4a657d5e2ab3b6023312b3f605173a3d0db2351f30d5a725b68b036c24ef90e9",
+      "src/akas/ops/linear/cuda.py": "e644a3f58a03c69ca9039c03af7b437c0789fb92349b271f7a6bb3ac60310424",
+      "src/akas/ops/linear/definition.py": "5f6f14dad6650aace03d219f4173898dacb2d1c0a8442fe8a345cde54a6bfaf1",
       "src/akas/ops/linear/kernel.py": "50d03638493aaee59cad809c68cb98002dc6c737a9838a4fdfb54fba4d09af25",
       "src/akas/ops/linear/validation.py": "4c406e1d98e5615bc09b842d0f7dda20c9c7806252bd3826e06d645ce23404fe",
       "src/akas/ops/linear/webgpu.py": "afa1fcfa37fdbb9d42df933a37dbd183dbbeec2a317a842cef3af3a268059078",
       "src/akas/ops/moe/README.md": "8289bff84ebd627dc718698f6a13d114b0340a90edc5fed3b2b14588126ba862",
       "src/akas/ops/moe/__init__.py": "7321001deffebfdac70f237b769e5444b75e2ba094a8d40794ac4d6cd49d35b2",
-      "src/akas/ops/moe/cuda.py": "377da886c81add66f881a9a8d6bb1d333145e1e96df8743bd789b8d11eab33cd",
-      "src/akas/ops/moe/definition.py": "742dbbeeedc8b73e58da2ff5c91cfeba43a05413a537fad85a932bc799c0f3ac",
+      "src/akas/ops/moe/cuda.py": "eddde12b3530b9c89454c14fe6bb1427fb39e21cf050275504111dd354c4d623",
+      "src/akas/ops/moe/definition.py": "118ccceaaf712d9ab7a3e1e02da81f63ce3830447996d26458bae8c6b5de2d05",
       "src/akas/ops/moe/kernel.py": "d18ecc6f693c3596d2f00009382f469615131d2a683d94578e7a1f5d6a084bf0",
-      "src/akas/ops/moe/validation.py": "d84e6b31fcd948851a187985e0e9fba5e4bf7afa9b866ac5357f55f0fb0120b9",
+      "src/akas/ops/moe/validation.py": "8e3edae3dbf483ddac0286a7c28f7063dc5e0be4769f3a8e5a0756549b49be9a",
       "src/akas/ops/moe/webgpu.py": "c536f505643e6df63d1a54395b33249af1412f8ddb53bbec723c5c49f67e1da3",
       "src/akas/ops/mtp/README.md": "5fd647277ec1f6a3720778d09aac73dfe8c36bf8b422e8fac69a6286e987d5c8",
       "src/akas/ops/mtp/__init__.py": "4e593aa53db448c51624cbdeb68f5ed0b89b2a5422d954ac3c661013a70550d2",
@@ -291,7 +376,7 @@
       "src/akas/quantization/weights/fp8/webgpu.py": "29893484f3952be28d9abc67e8bee9be99303bdd3e407435cb45894fb06d6141",
       "src/akas/quantization/weights/ggml/README.md": "0bf40be8fa3da2f58ff7792a97ecb947a8b082f6a4b7ee307d55c6bbff2de18e",
       "src/akas/quantization/weights/ggml/__init__.py": "f1bc375c705d14532dd007953c4e0569d6a00d0ec8f620470ac7f8c6afdf0004",
-      "src/akas/quantization/weights/ggml/cuda.py": "86e67e6a344eaf7511e2404bbeb6145e3b691440b232ab333d6ed5ebfcd59c2d",
+      "src/akas/quantization/weights/ggml/cuda.py": "83e76fe5e5318ec15c7f2fae8664c67214e331f4a0e35c5befea607717b9a3a0",
       "src/akas/quantization/weights/ggml/definition.py": "7b0be873ceb144bf0e0048d1eb81d6061d8660500627ae3dfd55e8a75d770b01",
       "src/akas/quantization/weights/ggml/kernel.py": "b40511a9e2709d37713e6b8428a59052b2572467ed7c396b024b6f1f9ece6086",
       "src/akas/quantization/weights/ggml/validation.py": "c56409e83f24ecdf993e525502f2bfa50cd42c4cec7a675d105ce975006bebed",
@@ -411,7 +496,7 @@
       "tests/test_lfm3_state_cache.py": "0b8ee1bda3b2447472cffe16218bcc27b33ea985efbfd0d0efbc98b56011d9b2",
       "tests/test_lfm3_webgpu.py": "0fc2242f22e4ef3cdc2891c024016a88939a3375bbe21e91612b66d5b43238db",
       "tests/test_lfm_moe.py": "13851a54a09daafb6af89e86ad427d7a906fc3555c058e1ce8cc061fbf9342fb",
-      "tests/test_lfm_moe_native.py": "403f4928ca3b18372e810cf985a0e28c8ea843de8e301916421e3292d5efd87c",
+      "tests/test_lfm_moe_native.py": "91843ee87f7bd93b72d530a875f0fcb8a13f74458e74b7b3aaef2794f3c9713f",
       "tests/test_lfm_program.py": "e57a835a904027ec93f6cf3bd9eb67a7aceca9e89e9df4ba254771699c34eb9d",
       "tests/test_lfm_verification.py": "f7c5cd29d7f8f2785a56be5d1439e6aa9bc382fc5839729982da13c5e3693002",
       "tests/test_linear_floating_warp.py": "fac312b7179afb317638cdd7cfebfd74912e53f5d7792f2b9b70d29b6afeb7c4",
@@ -420,7 +505,7 @@
       "tests/test_model_conventions.py": "93516df56c0a89e84f99c3da4e217c774ee1244b247493a9c360b343b713f4f1",
       "tests/test_moe_decode_fusion.py": "beadc998d88d681ac0585c88a558ea41d0734072f283393211d9d8baabe475c7",
       "tests/test_moe_speculative_program.py": "dc57a6fcb7d55a365537af8d780e1917575c5b93dfecc2c791bf65fdf5061984",
-      "tests/test_native_pipeline_policy.py": "5ed37d9ca0a9bf4fcec45605972b582c2e0da465e31b40e65796db12c175dfcd",
+      "tests/test_native_pipeline_policy.py": "c1f036a3e20d8dbb5098de8a834cab8e5e149df9dbeb1484d1f428cc3616aa75",
       "tests/test_normalization_parity.py": "d8b8cc85abee70aa3a492e8e8d34f2be30c7d8a2319b2f5bd7a2ab8cf16c83e0",
       "tests/test_operation_composition.py": "6e05e0098d33d558bf7b17237a7ef6ee55734b205abb52a0e47701a4fa3a159b",
       "tests/test_operation_writes.py": "2f1cbd1cc73d161a38368b47dc1c7096b61239e8723c25a8fa0e68b16db0ffe5",
@@ -435,7 +520,7 @@
       "tests/test_precision_report.py": "f40934723e389dde4280f8a09ce52eeea4d03eac221785c6bf761b645234a6cc",
       "tests/test_program_contracts.py": "d24119a2684c6b1e22eaa8b0a9229fcbc45eb98e5b04e523243cd1782596254e",
       "tests/test_program_geometry.py": "d7a8aa5840f0b5e1fc34e3ef7158e3e40b4833e115d5baa4ee2b03bd8c85d1f1",
-      "tests/test_quantization_codecs.py": "54c8ebf463dc369e78a93aed0946aa51276bdb66d6878f42b406d51b85decbc6",
+      "tests/test_quantization_codecs.py": "c0d67df26fc1ec541c92281daa3f3784e9dfe3ab7c8ed98e0cab53fd67cf6c67",
       "tests/test_quantization_conventions.py": "d3822bcd6c68f2af0ae3dcf4a5565d879786c9b38433b76698e1d060e2bcb2e4",
       "tests/test_qwen35.py": "940030745418df966a1ac99eeeb6ab09a1a2f2b7c62ceb311ad0d64e92ad0e05",
       "tests/test_qwen_batch_scaling.py": "58ce1d12c5f0f19c127881257286118b6d9cb83bc9d51328a96d10616f29b7c5",
@@ -456,7 +541,7 @@
       "tests/test_sampling_policy.py": "c2581864a2244c22c529ac7497d383abb8180c0b99eb92faefff84f767aa65bd",
       "tests/test_sequence_tail.py": "1e673e356f9baf2506db631f106c022d25cc6c109dc6697ace28cc382346ed35",
       "tests/test_serving.py": "8ce3b70c5bffcd0e69fd57ee98d96c78a258cd73b59f40f5aef99156d2417b36",
-      "tests/test_shared_backbone.py": "0fc2386f6568fe2281cb8fef643b8fe7ad93b62dec19c4ab8e7225fdd96e1282",
+      "tests/test_shared_backbone.py": "96fcfaa32ae7b0c432349d4b4b4462eb9c272df28b7cb4279ab83d9bc9beef57",
       "tests/test_shared_execution.py": "df2a96720d24999a14212d33ecae9ef0e26c118f4fa116984888c64d0bfb4a81",
       "tests/test_spark.py": "cff1b562475508e8ea9b8d31cc041e0cc1f0e37badbfcbf07e3968dd1f19d949",
       "tests/test_spark_mfu.py": "985e216ebe1367315ba69f8119f367fc8bd17d0808f55655ec0e4e9282d63c36",
@@ -493,7 +578,7 @@
       "tools/campaign.py": "1c6047b1dc2c486289f563be90dbe77aa737543bbef47fc2b3ba02905326b640",
       "tools/campaign_report.py": "57ff8b7e44b82784f751d9bfbb653d6795be80712ea5103c309594b67fcc14da",
       "tools/context_sweep.py": "3c55b4d26945bbaa20349b120ca7d69f249c2806330445be75d209d18b8f0756",
-      "tools/cuda_profile.py": "be4bf72c9a7b20e507144bd593ba2ebdf516cd7ec0f67b01721d0c0af99863e9",
+      "tools/cuda_profile.py": "838310d2bbbd68dec76f59bfcbd497b909adc001ab89f7ef5d317254c7672a1c",
       "tools/lfm3_benchmark.py": "a3b82f6fcb56c987c5b07ace917d18cc35c2a8b42d4ee84ccaf201f2295e4d4c",
       "tools/lfm3_long_decode.py": "fd51f2c37ed7ea187c08f7b7130af89117b258f7066e28a3e321e37cb2e1c483",
       "tools/lfm3_plot.py": "b5aaf6f353b4b2c21c4e2e7df877a49237174e345a0f1bb6e139942191e28f1f",
@@ -516,128 +601,22 @@
       "tools/vulkan_tune.py": "1cb88f27de4078b5c84da62e9d5089f00d0e1cabeae1c1208477772037f04c19",
       "uv.lock": "76299f37c065f69bf8a280cf080dd9fef038773a215404a8822c2d3d7ddf6c60"
     },
-    "captured_at": "2026-10-31T23:55:49.630865Z",
+    "captured_at": "2026-10-31T22:05:57.911853Z",
     "changed_during_run": false
   },
-  "metadata": {
-    "runtime": "akas",
-    "purpose": "kernel-qualification",
-    "provider": "cuda",
-    "protocol": "operation-tuning-v1",
-    "qualification_scope": "Native FP16 projections; not model throughput"
-  },
-  "change": {
-    "kind": "benchmark",
-    "description": "Qualify shared typed weight tile copies and projection schedules",
-    "parent_run": null
-  },
-  "dependencies": {
-    "typing_extensions": "4.16.0",
-    "cuda-toolkit": "13.0.3.0",
-    "iniconfig": "2.3.0",
-    "nvidia-nvtx": "13.0.85",
-    "cuda-pathfinder": "1.8.2",
-    "cloudpickle": "3.1.2",
-    "psutil": "7.2.2",
-    "tqdm": "4.70.1",
-    "MarkupSafe": "3.0.3",
-    "pluggy": "1.6.0",
-    "filelock": "4.0.6",
-    "fsspec": "2026.9.0",
-    "Jinja2": "3.1.6",
-    "packaging": "26.3",
-    "pytest": "9.1.1",
-    "ml_dtypes": "0.6.0",
-    "networkx": "3.7",
-    "mpmath": "1.3.0",
-    "apache-tvm-ffi": "0.1.12",
-    "setuptools": "84.0.0",
-    "torch_c_dlpack_ext": "0.1.5",
-    "nvidia-cufile": "1.15.1.6",
-    "Pygments": "2.21.0",
-    "nvidia-cuda-runtime": "13.0.96",
-    "sympy": "1.14.0",
-    "cuda-bindings": "13.4.3",
-    "numpy": "2.5.3",
-    "tensor-workspace": "0.1.0",
-    "tensor-nn": "0.1.0",
-    "z3-solver": "4.15.4.0",
-    "nvidia-cuda-cupti": "13.0.85",
-    "tilelang": "0.1.14",
-    "nvidia-nvjitlink": "13.4.92",
-    "nvidia-curand": "10.4.0.35",
-    "nvidia-nvshmem-cu13": "3.4.5",
-    "nvidia-cusparse": "12.6.3.3",
-    "nvidia-cufft": "12.0.0.61",
-    "nvidia-cuda-nvrtc": "13.0.88",
-    "nvidia-cusparselt-cu13": "0.8.1",
-    "nvidia-nccl-cu13": "2.30.7",
-    "nvidia-cusolver": "12.0.4.66",
-    "nvidia-cublas": "13.1.1.3",
-    "nvidia-cudnn-cu13": "9.24.0.43",
-    "triton": "3.8.0",
-    "torch": "2.14.0",
-    "akas": "0.1.0",
-    "regex": "2026.9.29",
-    "aiohttp": "3.14.5",
-    "aiosignal": "1.4.0",
-    "aiohappyeyeballs": "2.7.1",
-    "multidict": "7.2.1",
-    "yarl": "1.25.1",
-    "propcache": "0.5.4",
-    "frozenlist": "1.8.0",
-    "attrs": "26.1.0",
-    "idna": "3.20"
-  },
-  "environment": {
-    "platform": "Linux-6.12.110-135.202.amzn2023.x86_64-x86_64-with-glibc2.39",
-    "python": "3.12.15",
-    "cpu_count": 4,
-    "packages": {
-      "tensor-workspace": {
-        "version": "0.1.0",
-        "record_sha256": "5b58fc26598f37ae44d41b66a13e22bbb7ea159dc1d7c7b9ed1ad4cbd5cf7ae5",
-        "vcs": null
-      },
-      "tilelang": {
-        "version": "0.1.14",
-        "record_sha256": "696f0e32bc84cfc534f617251546014cdcfd75fbb6e39277a9cf6ac276a581b2",
-        "vcs": null
-      },
-      "apache-tvm-ffi": {
-        "version": "0.1.12",
-        "record_sha256": "a416dce5942c97bcf33fe056a9b91532a380873713beb3e2990d2032adb0ee20",
-        "vcs": null
-      },
-      "numpy": {
-        "version": "2.5.3",
-        "record_sha256": "bb87e4739823d2035b16fd023369e8e2ce8634be86df3f0001cb7921f6aef550",
-        "vcs": null
-      }
-    },
-    "nvidia_smi": "index, uuid, name, driver_version, memory.total [MiB], power.limit [W], clocks.max.sm [MHz], clocks.max.memory [MHz]\n0, GPU-27c9bcec-0258-ab6d-796a-7682a541edf9, NVIDIA L40S, 595.91.07, 46068 MiB, 350.00 W, 2520 MHz, 9001 MHz"
-  },
-  "workload": {
-    "id": "custom",
-    "shapes": []
-  },
-  "results": [],
-  "search": [],
-  "artifacts": [
+  "created_at": "2026-10-31T22:05:57.911853Z",
+  "updated_at": "2026-10-31T22:12:00.107897Z",
+  "status": "retained measurements",
+  "spent_seconds": 0,
+  "entries": [
     {
-      "path": "source.tar.gz",
-      "sha256": "c732f00e55dd4a5aa38806a3b337ecb169a26571dbd7bbaa35e2c2c1a680c3ca",
-      "bytes": 928169
-    },
-    {
-      "path": "source.patch",
-      "sha256": "09c75afcac0cdcdf5da95721ceba357e8272668113f264a712b7f693ba207d17",
-      "bytes": 149072
-    },
-    {
-      "path": "report.json",
-      "sha256": "65303e40b7e17d2bfdaca009166124f1ec37b4756ba7cc7d4c6c2bdf1ca03c71",
-      "bytes": 357
+      "id": "lfm2.5-24b-a2b-fp8-fp8-cuda-float16-ar",
+      "status": "unqualified",
+      "error": "Retained measurements; no qualified deployment imported"
     }
-  ]
+  ],
+  "retained_run_ids": [
+    "20261031220557911853-4cb13161"
+  ],
+  "identity": "f74ead37648aac9a3327f4c377570fc5d381a810ef7a6d094df175efd1223086"
 }
