@@ -16,6 +16,20 @@ jobs:
       - run: uv sync --locked --extra compiler
       - run: uv run --no-sync ruff check src examples
       - run: uv run --no-sync ruff format --check src/akas/ops src/akas/kernels src/akas/quantization src/akas/models src/akas/compilation
+      - name: Fetch retained arithmetic qualification evidence
+        run: |
+          uv run --no-sync python - <<'PY'
+          import json
+          from pathlib import Path
+          from akas.benchmarking.archive import catalog, ensure_commit
+          root = Path("benchmarks")
+          records = catalog(root)["runs"]
+          fixture = json.loads(Path("tests/fixtures/kernel-computations.json").read_text())
+          identities = {proof["qualification_run"] for module in fixture["modules"]
+                        for proof in module.get("qualified_replacements", ())}
+          for identity in sorted(identities):
+              ensure_commit(root, records[identity], fetch=True)
+          PY
       - run: uv run --no-sync python -m pytest
       - name: Verify benchmark report format and generated tables
         run: uv run --no-sync python -m tools.campaign_report --check
