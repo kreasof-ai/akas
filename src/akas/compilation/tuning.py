@@ -322,6 +322,7 @@ class SearchSettings:
     warmup: int = 1
     samples: int = 3
     repeats: int = 3
+    cache_working_set_bytes: int = 0
 
     def __post_init__(self):
         for name in ("budget", "width", "samples", "repeats"):
@@ -329,6 +330,11 @@ class SearchSettings:
                 raise ValueError(f"search {name} must be a positive integer")
         if type(self.warmup) is not int or self.warmup < 0:
             raise ValueError("search warmup must be nonnegative")
+        if (
+            type(self.cache_working_set_bytes) is not int
+            or self.cache_working_set_bytes < 0
+        ):
+            raise ValueError("search cache working-set bytes must be nonnegative")
 
 
 def qualify(bundle, out, *, settings=None, device=None):
@@ -384,6 +390,18 @@ def qualify(bundle, out, *, settings=None, device=None):
             )
         if device.info["provider"] != bundle.provider:
             raise ValueError("search device/provider mismatch")
+        cache_prepare, cache_description = None, None
+        if settings.cache_working_set_bytes:
+            from tensor.compiler.tuning import cuda_working_set
+
+            cache_prepare, cache_description = stack.enter_context(
+                cuda_working_set(
+                    device,
+                    settings.cache_working_set_bytes,
+                    target=bundle.target,
+                    out=out / "measurement-working-set",
+                )
+            )
         device_identity = {name: str(value) for name, value in device.info.items()}
         context = dict(
             graph=graph.metadata(),
@@ -391,6 +409,7 @@ def qualify(bundle, out, *, settings=None, device=None):
             provider=bundle.provider,
             device=device_identity,
             settings=asdict(settings),
+            cache_working_set=cache_description,
             sources=backbone_hashes(),
             compiler=_compiler_identity(bundle.provider),
             qualification_sources=_hashes(
@@ -642,6 +661,8 @@ def qualify(bundle, out, *, settings=None, device=None):
                     def reset():
                         for name in written:
                             write(device, buffers[name], case.arguments[name])
+                        if cache_prepare is not None:
+                            cache_prepare()
 
                     if verified_readonly:
                         reset()

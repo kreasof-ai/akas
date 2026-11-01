@@ -82,6 +82,8 @@ def service(path, *, candidate=False):
                 config=EngineConfig(
                     prefill_chunk=recipe["chunk"],
                     prefill_requests=recipe["prefill_requests"],
+                    prefill_token_budget=recipe.get("prefill_token_budget"),
+                    decode_prefill_token_budget=recipe.get("decode_prefill_token_budget"),
                 ),
             ) as engine:
                 tokenizer = getattr(target.checkpoint, "tokenizer", None)

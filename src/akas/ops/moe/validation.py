@@ -3,6 +3,8 @@
 
 def expert_swiglu_validation(kind, p, signature):
     """Independent gate/up products, preserving the declared operand rounding."""
+    if p.get("weight_format") == "fp8":
+        return fp8_expert_swiglu_validation(kind, p, signature)
     import numpy as np
     from akas.kernels.contracts import ValidationCase, sample_arguments
     from akas.quantization.weights.reference import sample_parts
@@ -36,12 +38,13 @@ def expert_swiglu_validation(kind, p, signature):
     return ValidationCase(values, {**values, "out": result}, rtol=0.002, atol=0.0002)
 
 
-def tile_tables(counts, capacity):
+def tile_tables(counts, capacity, layouts=5):
     import numpy as np
 
-    experts = np.full((5, capacity), -1, dtype="int32")
+    experts = np.full((layouts, capacity), -1, dtype="int32")
     rows = np.zeros_like(experts)
-    for layout, block in enumerate((4, 8, 16, 32, 64)):
+    for layout in range(layouts):
+        block = 4 << layout
         sizes = (counts + block - 1) // block
         selected = np.repeat(np.arange(len(counts)), sizes)
         local = np.concatenate([np.arange(size) for size in sizes])
@@ -59,7 +62,11 @@ def tile_validation(kind, p, signature):
     if p["r"] > 1:
         ids = ids[:-1]
     values["counts"][:] = np.bincount(ids.reshape(-1), minlength=p["experts"])
-    experts, rows = tile_tables(values["counts"], values["tile_experts"].shape[1])
+    experts, rows = tile_tables(
+        values["counts"],
+        values["tile_experts"].shape[1],
+        values["tile_experts"].shape[0],
+    )
     return ValidationCase(
         values, {**values, "tile_experts": experts, "tile_rows": rows}, rtol=0, atol=0
     )
@@ -94,7 +101,9 @@ def encoded_validation(kind, p, signature):
     if "routes" in values:
         values["routes"][:] = routes
     if "tile_experts" in values:
-        tiles, tile_rows = tile_tables(counts, values["tile_experts"].shape[1])
+        tiles, tile_rows = tile_tables(
+            counts, values["tile_experts"].shape[1], values["tile_experts"].shape[0]
+        )
         values["tile_experts"][:], values["tile_rows"][:] = tiles, tile_rows
     columns, depth = p["o"], p["k"]
     encoding = p["weight_parts"][0]["options"]["encoding"]
@@ -165,15 +174,20 @@ def tiles(counts, m, size):
 
 
 def pipeline_validation(kind, p, signature):
+    if p.get("packed_input"):
+        return packed_validation(kind, p, signature)
     import numpy as np
     from akas.kernels.contracts import ValidationCase, sample_arguments
     from akas.ops.moe.validation import validation as reference
     from akas.quantization._shared.e4m3 import decode_storage
 
+    if kind == "fp8_expert_swiglu":
+        return fp8_expert_swiglu_validation(kind, p, signature)
+
     if kind == "expert_tiles":
         values = sample_arguments(signature)
         values["counts"][:] = 0
-        values["counts"][:8] = p["r"]
+        values["counts"][: p["top"]] = p["r"]
         expected = {name: value.copy() for name, value in values.items()}
         expected["tile_experts"], expected["tile_offsets"] = tiles(
             values["counts"], p["block_m"], values["tile_experts"].size
@@ -182,9 +196,16 @@ def pipeline_validation(kind, p, signature):
     if kind == "expert_merge":
         values = sample_arguments(signature)
         expected = {name: value.copy() for name, value in values.items()}
-        result = np.zeros_like(values["out"])
+        result = np.zeros(values["out"].shape, dtype="float32")
         for part in range(p["partitions"]):
             result += values["partial"][:, :, part]
+        dtype = next(a["dtype"] for a in signature if a["name"] == "out")
+        if dtype == "bfloat16":
+            from tensor.runtime.dtypes import decode_bfloat16, encode_bfloat16
+
+            result = decode_bfloat16(encode_bfloat16(result))
+        elif dtype == "float16":
+            result = result.astype("float16").astype("float32")
         expected["out"] = result
         return ValidationCase(values, expected, rtol=0, atol=0)
     adapted = [
@@ -202,14 +223,38 @@ def pipeline_validation(kind, p, signature):
         values["w"] = decode_storage(values["w"]).astype("float16")
         expected["w"] = values["w"].copy()
     if "tile_experts" in values:
+        tables = (
+            tile_tables(
+                values["counts"],
+                values["tile_experts"].shape[1],
+                values["tile_experts"].shape[0],
+            )
+            if p.get("tile_map")
+            else tiles(values["counts"], p["block_m"], values["tile_experts"].size)
+        )
         for name, array in zip(
             ("tile_experts", "tile_offsets"),
-            tiles(values["counts"], p["block_m"], values["tile_experts"].size),
+            tables,
         ):
             values[name] = array
             expected[name] = array.copy()
     if p["partitions"] == 1:
+        dtype = next(item["dtype"] for item in signature if item["name"] == "out")
+        if dtype == "float16":
+            expected["out"] = expected["out"].astype("float16").astype("float32")
+        elif dtype == "bfloat16":
+            from tensor.runtime.dtypes import decode_bfloat16, encode_bfloat16
+
+            expected["out"] = decode_bfloat16(encode_bfloat16(expected["out"]))
         return baseline
+    _partial_products(values, expected, p)
+    return baseline
+
+
+def _partial_products(values, expected, p):
+    import numpy as np
+    from akas.quantization._shared.e4m3 import decode_storage
+
     shape = (p["r"], p["top"], p["partitions"], p["o"])
     values["out"] = np.zeros(shape, dtype="float32")
     expected["out"] = values["out"].copy()
@@ -249,7 +294,150 @@ def pipeline_validation(kind, p, signature):
             for part in range(p["partitions"]):
                 segment = slice(part * span, (part + 1) * span)
                 expected["out"][row, rank, part] = weight[:, segment] @ x[segment]
-    return baseline
+
+
+def paired_partial_validation(kind, p, signature):
+    """Evaluate both partitioned products independently from decoded operands."""
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase
+
+    adapted = [
+        dict(spec, name="out") if spec["name"] == "gate" else spec
+        for spec in signature
+        if spec["name"] not in ("w2", "scales2", "up")
+    ]
+    baseline = pipeline_validation("expert_partial", p, adapted)
+    values, expected = baseline.arguments, baseline.expected
+    if p["partitions"] == 1:
+        _partial_products(values, expected, p)
+    # Distinct gate/up data prevents a swapped or repeated product from passing.
+    values["w2"] = np.flip(values["w"], axis=-2).copy()
+    values["scales2"] = np.flip(values["scales"], axis=-1).copy()
+    other = {**values, "w": values["w2"], "scales": values["scales2"]}
+    other_expected = {}
+    _partial_products(other, other_expected, p)
+    values["gate"] = values.pop("out")
+    values["up"] = other["out"]
+    expected["gate"] = expected.pop("out")
+    expected["up"] = other_expected["out"]
+    expected["w2"], expected["scales2"] = values["w2"], values["scales2"]
+    return ValidationCase(values, expected, rtol=baseline.rtol, atol=baseline.atol)
+
+
+def fp8_expert_swiglu_validation(kind, p, signature):
+    """Independent paired products, nonlinear activation and block quantization.
+
+    Integer operands with binary scales keep the products exactly representable.
+    Signed operands exercise both branches of the nonlinear activation without an
+    ideal F64 GEMM obscuring the separately specified MMA accumulation.
+    """
+    if p.get("packed_input"):
+        return packed_validation(kind, p, signature)
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.quantization._shared.e4m3 import decode_storage, encode_storage
+
+    values = sample_arguments(signature)
+    quantized_output = kind == "fp8_expert_swiglu"
+
+    def rounded(array, dtype):
+        if dtype == "bfloat16":
+            from tensor.runtime.dtypes import decode_bfloat16, encode_bfloat16
+
+            return decode_bfloat16(encode_bfloat16(array))
+        return array.astype(dtype).astype("float32")
+
+    rows, top, experts, depth, columns = (
+        p[n] for n in ("r", "top", "experts", "k", "o")
+    )
+    rng = np.random.default_rng(831)
+    for name in ("x", "w", "w2"):
+        values[name][:] = rng.choice(
+            np.array([56, 64], dtype="uint8"), values[name].shape
+        )
+        values[name] |= rng.integers(0, 2, values[name].shape, dtype="uint8") * 128
+    for name in ("activation_scales", "scales", "scales2"):
+        values[name][:] = 0.125
+    values["counts"][:] = 0
+    values["routes"][:] = -1
+    for row in range(rows - (rows > 1)):
+        for rank in range(top):
+            expert = (row + rank) % experts
+            index = values["counts"][expert]
+            values["routes"][expert, index] = row * top + rank
+            values["counts"][expert] += 1
+    values["tile_experts"], values["tile_offsets"] = (
+        tile_tables(
+            values["counts"],
+            values["tile_experts"].shape[1],
+            values["tile_experts"].shape[0],
+        )
+        if p.get("tile_map")
+        else tiles(values["counts"], p["block_m"], values["tile_experts"].size)
+    )
+    values["out"][:] = 0
+    if quantized_output:
+        values["output_scales"][:] = 0
+    expected = {
+        name: value.copy() if name in ("out", "output_scales") else value
+        for name, value in values.items()
+    }
+    normalized = np.zeros(values["out"].shape, dtype="float32")
+    source = decode_storage(values["x"]).astype("float64") * 0.125
+    for expert, count in enumerate(values["counts"]):
+        if not count:
+            continue
+        owners, ranks = np.divmod(values["routes"][expert, :count], top)
+        for start in range(0, columns, 128):
+            products = []
+            for name in ("w", "w2"):
+                weights = (
+                    decode_storage(values[name][expert, start : start + 128]).astype(
+                        "float64"
+                    )
+                    * 0.125
+                )
+                products.append((source[owners] @ weights.T).astype("float32"))
+            gate, up = (
+                rounded(value, p.get("product_dtype", "float32")) for value in products
+            )
+            activation = rounded(
+                gate / (1 + np.exp(-gate)) * up, p.get("activation_dtype", "float32")
+            )
+            if quantized_output:
+                scales = np.maximum(
+                    np.abs(activation).max(axis=1), np.float32(1e-12)
+                ) / np.float32(448)
+                normalized[owners, ranks, start : start + 128] = (
+                    activation / scales[:, None]
+                )
+                expected["out"][owners, ranks, start : start + 128] = encode_storage(
+                    activation / scales[:, None]
+                )
+                expected["output_scales"][owners, ranks, start // 128] = scales
+            else:
+                expected["out"][owners, ranks, start : start + 128] = rounded(
+                    activation, p.get("output_dtype", "float32")
+                )
+
+    def compare_encoding(actual, reference):
+        # CPU exp and CUDA exp need not round to the same F32 value. Preserve
+        # the F32 tolerance at the activation boundary: a different FP8 code is
+        # allowed only when that tiny interval crosses its rounding midpoint.
+        # The separate GPU equivalence tests require exact values and scales.
+        tolerance = np.abs(normalized) * np.float32(2e-6) + np.float32(1e-8)
+        lower = encode_storage(normalized - tolerance)
+        upper = encode_storage(normalized + tolerance)
+        allowed = (actual == reference) | (actual == lower) | (actual == upper)
+        np.testing.assert_array_equal(allowed, np.ones_like(allowed))
+
+    return ValidationCase(
+        values,
+        expected,
+        rtol=2e-6,
+        atol=1e-8,
+        comparators={"out": compare_encoding} if quantized_output else {},
+    )
 
 
 def validation(kind, p, signature):
@@ -386,9 +574,13 @@ def validation(kind, p, signature):
             weight *= np.repeat(
                 np.repeat(values["scales"][expert], 128, axis=0), 128, axis=1
             )[:o, :k]
-            for row, rank in routes:
-                x = activation[row, rank] if p.get("routed_input") else activation[row]
-                expected["out"][row, rank] = x.astype("float64") @ weight.T
+            owners, ranks = np.asarray(routes, dtype="int64").T
+            source = (
+                activation[owners, ranks]
+                if p.get("routed_input")
+                else activation[owners]
+            )
+            expected["out"][owners, ranks] = source.astype("float64") @ weight.T
     else:
         raise ValueError(f"missing mixture-of-experts validation: {kind}")
     return ValidationCase(values, expected, comparators=comparators)
@@ -398,3 +590,116 @@ VALIDATIONS = {
     name: validation
     for name in ("router", "moe_groups", "expert_routes", "fp8_experts", "moe_combine")
 }
+
+
+def pack_validation(kind, p, signature):
+    """Byte-for-byte routed packing, aligned padding and reusable offsets."""
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    values = sample_arguments(signature)
+    rows, top, experts = (p[name] for name in ("r", "top", "experts"))
+    alignment = p.get("max_block_m", 64)
+    values["counts"][:] = 0
+    values["routes"][:] = -1
+    # Include empty experts, inactive rows and uneven final tiles.
+    for row in range(rows - (rows > 1)):
+        for rank in range(top):
+            expert = (row * 3 + rank) % experts
+            index = values["counts"][expert]
+            values["routes"][expert, index] = row * top + rank
+            values["counts"][expert] += 1
+    values["tile_experts"], values["tile_offsets"] = tile_tables(
+        values["counts"],
+        values["tile_experts"].shape[1],
+        values["tile_experts"].shape[0],
+    )
+    expected = pack_reference(values, p)
+    return ValidationCase(values, expected, rtol=0, atol=0)
+
+
+def pack_reference(values, p):
+    """Independent aligned address mapping shared by pack and product recipes."""
+    top = p["top"]
+    alignment = p.get("max_block_m", 64)
+    expected = {name: value.copy() for name, value in values.items()}
+    offset = 0
+    for expert, count in enumerate(values["counts"]):
+        if not count:
+            continue
+        expected["expert_offsets"][expert] = offset
+        padded = (int(count) + alignment - 1) // alignment * alignment
+        expected["packed"][offset : offset + padded] = 0
+        expected["packed_scales"][offset : offset + padded] = 1
+        for local, route in enumerate(values["routes"][expert, :count]):
+            row, rank = divmod(int(route), top)
+            index = (row, rank) if p.get("routed_input") else row
+            expected["packed"][offset + local] = values["x"][index]
+            expected["packed_scales"][offset + local] = values["activation_scales"][
+                index
+            ]
+        offset += padded
+    return expected
+
+
+def packed_validation(kind, p, signature):
+    import numpy as np
+    from akas.kernels.registry import validation
+    from akas.kernels.contracts import ValidationCase
+    from akas.ops.moe.definition import tile_capacity
+
+    rows, top, experts, depth, columns = (
+        p[name] for name in ("r", "top", "experts", "k", "o")
+    )
+    alignment = p.get("max_block_m", 64)
+    capacity = tile_capacity(rows, top, experts, alignment) * alignment
+    shape = (rows, top, depth) if p.get("routed_input") else (rows, depth)
+    adapted = []
+    for item in signature:
+        name = item["name"]
+        if name == "expert_offsets":
+            continue
+        if name in ("x", "activation_scales"):
+            item = {
+                **item,
+                "shape": [*shape[:-1], depth if name == "x" else depth // 128],
+            }
+        elif p.get("packed_output") and name in ("out", "output_scales"):
+            item = {
+                **item,
+                "shape": [rows, top, columns if name == "out" else columns // 128],
+            }
+        adapted.append(item)
+    baseline = validation(
+        kind, {**p, "packed_input": False, "packed_output": False}, adapted
+    )
+    values, expected = baseline.arguments, baseline.expected
+    packed = pack_reference(
+        {
+            **values,
+            "packed": np.zeros((capacity, depth), "uint8"),
+            "packed_scales": np.ones((capacity, depth // 128), "float32"),
+            "expert_offsets": np.zeros(experts, "int32"),
+        },
+        p,
+    )
+    for name, target in [
+        ("x", "packed"),
+        ("activation_scales", "packed_scales"),
+        ("expert_offsets", "expert_offsets"),
+    ]:
+        values[name] = packed[target]
+        expected[name] = packed[target].copy()
+    if p.get("packed_output"):
+        for name, width in [("out", columns), ("output_scales", columns // 128)]:
+            if name not in values:
+                continue
+            old = expected[name]
+            values[name] = np.zeros((capacity, width), values[name].dtype)
+            expected[name] = values[name].copy()
+            for expert, count in enumerate(values["counts"]):
+                begin = int(values["expert_offsets"][expert])
+                for local, route in enumerate(values["routes"][expert, :count]):
+                    row, rank = divmod(int(route), top)
+                    expected[name][begin + local] = old[row, rank]
+    return ValidationCase(values, expected, rtol=baseline.rtol, atol=baseline.atol)

@@ -10,6 +10,8 @@ def validation(kind, p, signature):
     values["enabled"][:] = chunk
     if r > 1:
         values["enabled"][-1] = max(0, chunk - 1)
+    if r > 2:
+        values["enabled"][1] = 0
     expected = {name: value.copy() for name, value in values.items()}
     x = values["x"].reshape(r, chunk, 3, c).astype("float64")
     w = values["w"].reshape(c, length).astype("float64")

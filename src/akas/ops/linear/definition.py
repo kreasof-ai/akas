@@ -7,16 +7,134 @@ from akas.kernels.contracts import Implementation
 from akas.ops.linear.validation import pipeline_validation as pipeline_validation
 from akas.ops.linear.validation import VALIDATIONS
 
+GEMV_ROW_CEILINGS = (31, 24, 8, 16, 25, 28, 32, 64)
+
+
+def _projection_partitions(
+    rows, depth, width, ceiling, minimum_groups, block_m, columns
+):
+    """Use legal K partitions to fill an underoccupied projection launch."""
+    from math import isqrt
+
+    if depth < 128 or depth % 128:
+        raise ValueError("split projection requires whole block-128 partitions")
+    blocks = depth // 128
+    ceiling = min(ceiling, blocks)
+    if minimum_groups is None:
+        if blocks % ceiling:
+            raise ValueError("split projection requires whole block-128 partitions")
+        return ceiling
+    if any(type(value) is not int or value < 1 for value in (block_m, columns)):
+        raise ValueError("projection tile sizes must be positive integers")
+    groups = ((rows + block_m - 1) // block_m) * ((width + columns - 1) // columns)
+    required = (minimum_groups + groups - 1) // groups
+    choices = sorted(
+        {
+            value
+            for factor in range(1, isqrt(blocks) + 1)
+            if blocks % factor == 0
+            for value in (factor, blocks // factor)
+            if value <= ceiling
+        }
+    )
+    return next((value for value in choices if value >= required), choices[-1])
+
+
+def _floating_matmuls(graph, *, minimum_rows):
+    """Bind contiguous F32 projections through canonical matrix views."""
+    from math import prod
+    from akas.graph import Call
+
+    if type(minimum_rows) is not int or minimum_rows < 1:
+        raise ValueError("projection minimum rows must be a positive integer")
+    calls = []
+    for index, call in enumerate(graph.calls):
+        p = call.parameters
+        if (
+            call.kind != "linear"
+            or p.get("r", 1) < minimum_rows
+            or p.get("ggml")
+            or "type" in p
+            or p.get("weight_dtype", "float32") != "float32"
+            or p.get("input_dtype", "float32") != "float32"
+            or p.get("output_stride", p["o"]) != p["o"]
+            or p.get("output_offset", 0)
+        ):
+            calls.append(call)
+            continue
+        if not call.bindings and len(call.arguments) != 3:
+            calls.append(call)
+            continue
+        names = (
+            dict(call.bindings)
+            if call.bindings
+            else dict(zip(("x", "w", "out"), call.arguments))
+        )
+        if set(names) != {"x", "w", "out"}:
+            calls.append(call)
+            continue
+        shapes = {"x": (p["r"], p["k"]), "w": (p["o"], p["k"]), "out": (p["r"], p["o"])}
+        if any(
+            graph.buffers[names[key]].dtype != "float32"
+            or prod(graph.buffers[names[key]].shape) != prod(shape)
+            for key, shape in shapes.items()
+        ):
+            calls.append(call)
+            continue
+        views = {
+            key: graph.view(
+                f"pipeline.matmul.{index}.{key}", graph.buffers[names[key]], shape
+            )
+            for key, shape in shapes.items()
+        }
+        # Retain the established 32-lane FMA/reduction order of F32 projections.
+        calls.append(
+            Call(
+                "matmul",
+                dict(r=p["r"], k=p["k"], o=p["o"], dtype="float32", reduction_lanes=32),
+                (),
+                {key: view.name for key, view in views.items()},
+                label=call.label,
+            )
+        )
+    graph.calls = calls
+
 
 def search_policies(graph, commit, *, provider, target):
-    if (
-        graph.contract != "block-fp8"
-        or provider != "cuda"
-        or not any(call.kind == "fp8_linear" for call in graph.calls)
-    ):
+    if graph.contract not in ("block-fp8", "reference") or provider != "cuda":
         return []
-    choices = [{"partitions": count} for count in (2, 4, 8)]
-    if target == "sm_90a":
+    floating = graph.contract == "reference" and any(
+        call.kind == "linear"
+        and call.parameters.get("r", 1) >= 9
+        and call.parameters.get("weight_dtype", "float32") == "float32"
+        and not call.parameters.get("ggml")
+        and "type" not in call.parameters
+        for call in graph.calls
+    )
+    has_fp8 = any(call.kind == "fp8_linear" for call in graph.calls)
+    choices = (
+        (
+            [{"partitions": count, "minimum_rows": 9} for count in (1, 2, 4, 8)]
+            if graph.contract == "reference"
+            else [{"partitions": count} for count in (2, 4, 8)]
+        )
+        if has_fp8
+        else []
+    )
+    if graph.contract == "reference" and any(
+        call.kind == "fp8_linear" and 1 < call.parameters["r"] < 9
+        for call in graph.calls
+    ):
+        choices.extend(
+            {"partitions": count, "minimum_rows": 2} for count in (1, 2, 4, 8)
+        )
+        choices.extend(
+            {"partitions": 8, "minimum_rows": 2, "minimum_split_groups": groups}
+            for groups in (32, 64, 128)
+        )
+    if floating:
+        choices.insert(0, {**(choices[0] if choices else {}), "floating_matmul": True})
+    if target == "sm_90a" and has_fp8:
         choices.append({"hopper": True, "partitions": 2})
     return choices
 
@@ -42,17 +160,23 @@ def lower(graph, commit, settings, *, provider, target):
         "split_ffn_min_rows",
         "stage_weights",
         "stage_inputs",
+        "minimum_rows",
+        "minimum_split_groups",
+        "floating_matmul",
+        "floating_matmul_minimum_rows",
     }
     if set(settings) - allowed:
         raise ValueError("unknown projection pipeline policy")
     if graph.contract == "reference":
-        if set(settings) - {
-            "split_ffn",
-            "split_ffn_min_rows",
-            "stage_weights",
-            "stage_inputs",
-        }:
-            raise ValueError("unknown floating projection policy")
+        if type(settings.get("floating_matmul", False)) is not bool:
+            raise ValueError("floating matmul policy must be a boolean")
+        floating_minimum = settings.get("floating_matmul_minimum_rows", 9)
+        if type(floating_minimum) is not int or floating_minimum < 1:
+            raise ValueError("floating matmul minimum rows must be a positive integer")
+        if settings.get("floating_matmul"):
+            if provider != "cuda":
+                raise ValueError("canonical floating matmul currently requires CUDA")
+            _floating_matmuls(graph, minimum_rows=floating_minimum)
         if type(settings.get("split_ffn", False)) is not bool:
             raise ValueError("split FFN policy must be a boolean")
         minimum_rows = settings.get("split_ffn_min_rows", 2)
@@ -64,8 +188,6 @@ def lower(graph, commit, settings, *, provider, target):
             raise ValueError("floating weight staging currently requires WebGPU")
         if type(settings.get("stage_inputs", False)) is not bool:
             raise ValueError("input staging policy must be a boolean")
-        if settings.get("stage_inputs") and provider != "webgpu":
-            raise ValueError("floating input staging currently requires WebGPU")
         if settings.get("split_ffn"):
             from akas.graph import Call
 
@@ -154,9 +276,19 @@ def lower(graph, commit, settings, *, provider, target):
             calls = []
             for index, call in enumerate(graph.calls):
                 p = call.parameters
+                native_mma = (
+                    provider == "cuda"
+                    and call.kind in ("linear", "ffn")
+                    and p.get("optimized")
+                    and p.get("weight_dtype") == "float16"
+                    and p.get("r", 0) > max(GEMV_ROW_CEILINGS)
+                    and p.get("algorithm", "auto") != "gemv"
+                )
                 if (
                     call.kind not in ("linear", "linear_add", "ffn")
-                    or not p.get("half_accum")
+                    or not (
+                        native_mma or (provider == "webgpu" and p.get("half_accum"))
+                    )
                     or p["r"] == 1
                 ):
                     calls.append(call)
@@ -183,15 +315,31 @@ def lower(graph, commit, settings, *, provider, target):
                     )
                 )
             graph.calls = calls
-        return graph, commit
+        settings = {
+            name: value
+            for name, value in settings.items()
+            if name
+            not in {
+                "split_ffn",
+                "split_ffn_min_rows",
+                "stage_weights",
+                "stage_inputs",
+                "floating_matmul",
+                "floating_matmul_minimum_rows",
+            }
+        }
+        if not settings:
+            return graph, commit
     if set(settings) & {
         "split_ffn",
         "split_ffn_min_rows",
         "stage_weights",
         "stage_inputs",
+        "floating_matmul",
+        "floating_matmul_minimum_rows",
     }:
         raise ValueError("prefill projection policies require the floating contract")
-    if graph.contract != "block-fp8":
+    if graph.contract not in ("block-fp8", "reference"):
         return (graph, commit)
     if provider != "cuda":
         raise ValueError("native FP8 projection pipelines require CUDA")
@@ -200,15 +348,37 @@ def lower(graph, commit, settings, *, provider, target):
     partitions = settings.get("partitions", 1)
     if type(partitions) is not int or partitions < 1:
         raise ValueError("projection partitions must be positive")
+    minimum_rows = settings.get("minimum_rows", 1)
+    if type(minimum_rows) is not int or minimum_rows < 1:
+        raise ValueError("projection minimum rows must be a positive integer")
+    minimum_groups = settings.get("minimum_split_groups")
+    if minimum_groups is not None and (
+        type(minimum_groups) is not int or minimum_groups < 1
+    ):
+        raise ValueError("projection minimum split groups must be a positive integer")
     recorder = Graph(contract=graph.contract, phase=graph.phase)
     recorder.buffers = graph.buffers
     quantized, valid = ({}, set())
+    from akas.kernels.registry import graph_outputs
+
+    def base(name):
+        while graph.buffers[name].alias_of is not None:
+            name = graph.buffers[name].alias_of
+        return name
+
+    def invalidate(call):
+        written = graph_outputs(call, contract=graph.contract)
+        if written is None:
+            valid.clear()
+        else:
+            roots = {base(name) for name in written}
+            valid.difference_update(key for key in tuple(valid) if key[0] in roots)
+
     calls = []
     for index, call in enumerate(graph.calls):
-        if call.kind != "fp8_linear":
+        if call.kind != "fp8_linear" or call.parameters["r"] < minimum_rows:
             calls.append(call)
-            for name in (call.bindings.get("out"),):
-                valid.discard(name)
+            invalidate(call)
             continue
         if call.arguments:
             names = dict(zip(("x", "w", "scales", "out"), call.arguments))
@@ -216,12 +386,20 @@ def lower(graph, commit, settings, *, provider, target):
             names = dict(call.bindings)
         p = call.parameters
         count, depth, width = (p["r"], p["k"], p["o"])
-        parts = min(partitions, depth // 128)
-        if depth % (128 * parts):
-            raise ValueError("split projection requires whole block-128 partitions")
+        parts = _projection_partitions(
+            count,
+            depth,
+            width,
+            partitions,
+            minimum_groups,
+            settings.get("block_m", 16),
+            settings.get("columns", 64),
+        )
         if "activation_scales" not in names:
             source = names["x"]
-            if source not in quantized:
+            spec = graph.buffers[source]
+            key = (base(source), spec.shape, spec.dtype)
+            if key not in quantized:
                 storage = get("activations", "fp8").storage(
                     graph.buffers[source].shape, provider=provider
                 )
@@ -235,19 +413,19 @@ def lower(graph, commit, settings, *, provider, target):
                     storage.metadata[0].shape,
                     storage.metadata[0].dtype,
                 )
-                quantized[source] = (bits, scales)
-            bits, scales = quantized[source]
-            if source not in valid:
+                quantized[key] = (bits, scales)
+            bits, scales = quantized[key]
+            if key not in valid:
                 recorder(
                     "quantize",
-                    dict(r=count, k=depth),
+                    dict(r=count, k=depth, input_dtype=graph.buffers[source].dtype),
                     x=graph.buffers[source],
                     out=bits,
                     scales=scales,
                 )
                 calls.extend(recorder.calls)
                 recorder.calls = []
-                valid.add(source)
+                valid.add(key)
             names.update(x=bits.name, activation_scales=scales.name)
         original = graph.buffers[names["out"]]
         partial = (
@@ -265,7 +443,11 @@ def lower(graph, commit, settings, *, provider, target):
             "threads": 128,
             "stages": 1,
             "packed_copy": False,
-            **settings,
+            **{
+                name: value
+                for name, value in settings.items()
+                if name not in ("minimum_rows", "minimum_split_groups")
+            },
         }
         parameters["partitions"] = parts
         recorder(
@@ -287,7 +469,7 @@ def lower(graph, commit, settings, *, provider, target):
             )
         calls.extend(recorder.calls)
         recorder.calls = []
-        valid.discard(original.name)
+        invalidate(call)
     graph.calls = calls
     return (graph, commit)
 
@@ -519,6 +701,10 @@ def schedule(rows, k, o, width):
 REWRITES = (fuse_projections, fuse_residual_projection)
 ROW_INDEPENDENT = ("linear",)
 OUTPUT_ARGUMENTS = {"reference": {"linear": (-1,), "ffn": (-1,), "linear_add": (-1,)}}
+OUTPUT_ARGUMENTS["reference"]["matmul"] = OutputABI((-1,), ("out",))
+from akas.ops.linear.validation import validation as matrix_validation
+
+VALIDATIONS["matmul"] = matrix_validation
 OUTPUT_ARGUMENTS["reference"]["linear_half_input"] = OutputABI((-1,), ("out",))
 from .validation import half_input_validation
 
@@ -797,10 +983,12 @@ IMPLEMENTATIONS = (
         priority=30,
         space=(
             ("minimum_mma_groups", (32, 0, 64, 128, 256)),
-            ("maximum_gemv_rows", (31, 24, 8, 16, 25, 28, 32, 64)),
+            ("maximum_gemv_rows", GEMV_ROW_CEILINGS),
             ("block_m", (32, 16, 64)),
             ("block_n", (64, 32, 128)),
             ("block_k", (32, 64, 128)),
+            ("stages", (2, 1, 3)),
+            ("threads", (128, 256)),
         ),
         accepts=lambda p: (
             not p.get("ggml", False)
@@ -817,10 +1005,12 @@ IMPLEMENTATIONS = (
         priority=30,
         space=(
             ("minimum_mma_groups", (32, 0, 64, 128, 256)),
-            ("maximum_gemv_rows", (31, 24, 8, 16, 25, 28, 32, 64)),
+            ("maximum_gemv_rows", GEMV_ROW_CEILINGS),
             ("block_m", (32, 16, 64)),
             ("block_n", (64, 32, 128)),
             ("block_k", (32, 64, 128)),
+            ("stages", (2, 1, 3)),
+            ("threads", (128, 256)),
         ),
         accepts=lambda p: (
             not p.get("ggml", False)
@@ -1078,6 +1268,7 @@ IMPLEMENTATIONS = (
             ("block_m", (16, 32, 64)),
             ("threads", (128, 256)),
             ("stages", (1, 2, 3)),
+            ("packed_copy", (False, True)),
         ),
         semantic_keys=("r", "k", "o", "partitions"),
         factory="fp8_prequantized",
@@ -1396,6 +1587,23 @@ IMPLEMENTATIONS += (
             "type" not in p and p.get("weight_dtype", "float32") == "float32"
         ),
     ),
+    Implementation(
+        "matmul",
+        "akas.ops.linear.cuda",
+        "reference",
+        factory="matmul",
+        name="linear.cuda.canonical_matmul",
+        accepts=lambda p: p.get("dtype", "float32") == "float32",
+        semantic_keys=("r", "k", "o", "dtype", "reduction_lanes"),
+        space=(
+            ("block_m", (8, 16, 32)),
+            ("block_n", (8, 16, 32)),
+            ("block_k", (128, 64, 32)),
+            ("threads", (128, 256)),
+            ("stages", (2, 1, 3)),
+            ("orientation", ("activation", "weight")),
+        ),
+    ),
 )
 
 
@@ -1568,4 +1776,48 @@ IMPLEMENTATIONS += (
         targets=("sm_89",),
         space=(("block_m", (64, 128)), ("block_n", (64, 32)), ("threads", (128, 256))),
     ),
+)
+
+# The same block-scaled projection is usable by floating inference graphs.
+IMPLEMENTATIONS += (
+    Implementation(
+        "fp8_linear",
+        "akas.ops.linear.cuda",
+        "reference",
+        factory="fp8_inline",
+        name="linear.cuda.fp8:reference",
+        defaults=(("block_m", 16), ("columns", 64)),
+        space=(
+            ("block_m", (16, 32, 64)),
+            ("columns", (64, 32, 128)),
+            ("threads", (128, 256)),
+        ),
+    ),
+    Implementation(
+        "fp8_linear",
+        "akas.ops.linear.cuda",
+        "reference",
+        factory="native_fp8",
+        name="linear.cuda.fp8-gemv:reference",
+        priority=20,
+        accepts=lambda p: p["r"] <= 8,
+    ),
+)
+
+# A promoted operand preserves every FP8 code while allowing full FP32 tensor
+# core accumulation on targets whose FP8 accumulator has lower precision.
+IMPLEMENTATIONS = tuple(
+    replace(item, space=(*item.space, ("mma_dtype", ("float8_e4m3fn", "float16"))))
+    if item.module_name == "akas.ops.linear.cuda"
+    and item.factory in ("fp8_inline", "fp8_prequantized")
+    else item
+    for item in IMPLEMENTATIONS
+)
+
+# Both graph contracts lower to the same prequantized projection ABI.
+IMPLEMENTATIONS += tuple(
+    replace(item, contract="reference", name=item.identifier + ":reference")
+    for item in IMPLEMENTATIONS
+    if item.contract == "block-fp8"
+    and item.kind in ("projection_partial", "projection_merge")
 )

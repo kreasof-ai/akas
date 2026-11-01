@@ -1,13 +1,12 @@
 """SGLang eager preflight using the common worker protocol."""
 
-from tools.baselines.common import main, synthetic_prompts, measurements, phase_metrics
+from tools.baselines.common import main, synthetic_prompts, measurements, phase_metrics, stream_burst
 
 
 def run(config):
     import time
     import torch
     import sglang
-    from transformers import AutoTokenizer
 
     settings = dict(
         model_path=config["checkpoint"],
@@ -27,6 +26,9 @@ def run(config):
     )
     if config.get("optimized"):
         settings["cuda_graph_bs_decode"] = sorted({b for b, _ in config["shapes"]})
+    if config.get("streaming"):
+        settings.update(skip_tokenizer_init=True, stream_interval=1,
+                        incremental_streaming_output=False)
     if config["mode"] == "mtp":
         settings.update(
             speculative_algorithm="EAGLE",
@@ -46,7 +48,18 @@ def run(config):
     )
     engine = sglang.Engine(**settings)
     try:
-        tokenizer = AutoTokenizer.from_pretrained(config["checkpoint"])
+        if config.get("streaming"):
+            async def generate(index, prompt):
+                stream = await engine.async_generate(input_ids=prompt, sampling_params=sampling, stream=True)
+                async for row in stream:
+                    yield list(row["output_ids"]), row["meta_info"]
+
+            def invoke(batch, prefix):
+                return engine.loop.run_until_complete(stream_burst(
+                    synthetic_prompts(config["vocab"], batch, prefix), generate, config["output_tokens"]))
+
+            measurements(config, invoke, report)
+            return report
 
         def invoke(batch, prefix):
             outputs = engine.generate(

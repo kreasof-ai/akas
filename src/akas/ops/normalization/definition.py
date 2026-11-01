@@ -43,12 +43,33 @@ def normalize(
     return out
 
 
-def fuse_residual_normalization(graph):
+def fuse_residual_normalization(graph, *, batched=False):
 
     def storage(name):
         while graph.buffers[name].alias_of is not None:
             name = graph.buffers[name].alias_of
         return name
+
+    def compatible(addition, normalization):
+        if len(addition.arguments) != 3 or len(normalization.arguments) != 3:
+            return False
+        x, y, residual = (graph.buffers[name] for name in addition.arguments)
+        source, weight, out = (graph.buffers[name] for name in normalization.arguments)
+        if any(
+            len(value.shape) != 1
+            or value.dtype not in ("float32", "float16", "bfloat16")
+            for value in (x, y, residual, source, weight, out)
+        ):
+            return False
+        a, n = addition.parameters, normalization.parameters
+        return (
+            a.get("input_dtype", "float32") == x.dtype
+            and a.get("other_dtype", x.dtype) == y.dtype
+            and a.get("output_dtype", x.dtype) == residual.dtype
+            and n.get("input_dtype", "float32") == source.dtype
+            and n.get("weight_dtype", "float32") == weight.dtype
+            and n.get("output_dtype", source.dtype) == out.dtype
+        )
 
     result, index = ([], 0)
     while index < len(graph.calls):
@@ -59,7 +80,9 @@ def fuse_residual_normalization(graph):
                 graph.contract == "reference"
                 and addition.kind == "add"
                 and (normalization.kind == "rms")
-                and (addition.parameters.get("r") == 1)
+                and (batched or addition.parameters.get("r") == 1)
+                and addition.parameters.get("r", 1)
+                == normalization.parameters.get("r", 1)
                 and (len(addition.arguments) == len(normalization.arguments) == 3)
                 and (addition.arguments[-1] == normalization.arguments[0])
                 and (
@@ -67,18 +90,28 @@ def fuse_residual_normalization(graph):
                     not in {storage(name) for name in addition.arguments[:2]}
                 )
                 and (addition.parameters["c"] == normalization.parameters["c"])
-                and all(
-                    (
-                        len(graph.buffers[name].shape) == 1
-                        and graph.buffers[name].dtype == "float32"
-                        for name in (*addition.arguments, *normalization.arguments)
-                    )
-                )
+                and compatible(addition, normalization)
             ):
+                parameters = dict(normalization.parameters)
+                typed = any(
+                    graph.buffers[name].dtype != "float32"
+                    for name in (*addition.arguments, *normalization.arguments)
+                )
+                if typed:
+                    parameters.update(
+                        input_dtype=graph.buffers[addition.arguments[0]].dtype,
+                        mixed_dtype=graph.buffers[addition.arguments[1]].dtype,
+                        residual_dtype=graph.buffers[addition.arguments[2]].dtype,
+                        weight_dtype=graph.buffers[normalization.arguments[1]].dtype,
+                        output_dtype=graph.buffers[normalization.arguments[2]].dtype,
+                    )
+                if batched or typed:
+                    parameters.update(algorithm="serial-tree", stage_values=True)
                 result.append(
                     replace(
                         normalization,
                         kind="add_rms",
+                        parameters=parameters,
                         arguments=(*addition.arguments, *normalization.arguments[1:]),
                     )
                 )
@@ -88,6 +121,47 @@ def fuse_residual_normalization(graph):
         index += 1
     graph.calls = result
     return graph
+
+
+def lower(graph, commit, settings, *, provider, target):
+    """Reuse residual normalization for explicitly selected batched pipelines."""
+    if set(settings) - {"fused_residual", "fused_staging"}:
+        raise ValueError("unknown normalization policy")
+    if type(settings.get("fused_residual", False)) is not bool:
+        raise ValueError("residual normalization fusion must be a boolean")
+    if type(settings.get("fused_staging", False)) is not bool:
+        raise ValueError("normalization staging fusion must be a boolean")
+    if settings.get("fused_residual"):
+        if provider != "cuda" or graph.contract != "reference":
+            raise ValueError(
+                "batched residual normalization currently requires CUDA reference arithmetic"
+            )
+        graph = fuse_residual_normalization(graph, batched=True)
+    if settings.get("fused_staging"):
+        if provider != "cuda" or graph.contract != "reference":
+            raise ValueError(
+                "normalization staging fusion currently requires CUDA reference arithmetic"
+            )
+        from akas.compilation.storage import fuse_output_casts
+
+        graph = fuse_output_casts(
+            graph,
+            {"rms": -1, "add_rms": -1},
+            cast_kind="linear_half_input",
+            dtype="float16",
+        )
+    return graph, commit
+
+
+def search_policies(graph, commit, *, provider, target):
+    if provider != "cuda" or graph.contract != "reference":
+        return []
+    from akas.graph import Graph
+
+    candidate = fuse_residual_normalization(
+        Graph.from_metadata(graph.metadata()), batched=True
+    )
+    return [{"fused_residual": True}] if len(candidate.calls) < len(graph.calls) else []
 
 
 ROW_INDEPENDENT = ("rms",)

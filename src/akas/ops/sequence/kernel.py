@@ -319,12 +319,14 @@ def chunk_last(spec: KernelSpec, schedule: Mapping[str, object]):
     r = p["r"]
     chunk = p.get("chunk", 1)
     c = p["c"]
+    input_dtype = p.get("input_dtype", "float32")
+    output_dtype = p.get("output_dtype", input_dtype)
 
     @kernel
     def compute(
-        x: Tensor((r * chunk * c,), "float32"), lengths: Tensor((r,), "int32")
-    ) -> Tensor((r * c,), "float32"):
-        out = output((r * c,), "float32", position=1)
+        x: Tensor((r * chunk * c,), input_dtype), lengths: Tensor((r,), "int32")
+    ) -> Tensor((r * c,), output_dtype):
+        out = output((r * c,), output_dtype, position=1)
         with T.Kernel(T.ceildiv(c, 64), r, threads=64) as (block, slot):
             col = block * 64 + T.get_thread_binding()
             if col < c:

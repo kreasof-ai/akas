@@ -136,6 +136,16 @@ def compose(
         return out
 
     def project(x, weight, k, o, out, *, matrix=False, count=b):
+        if weight in getattr(weights, "scales", {}):
+            plan(
+                "fp8_linear",
+                dict(r=count, k=k, o=o, input_dtype=x.dtype),
+                x.view((count, k)),
+                weights[weight],
+                weights.scales[weight],
+                out.view((count, o)),
+            )
+            return
         if matrix and hasattr(weights, "parameters"):
             out = out.view((count * o,))
         for w, start, rows in weights.matrix(weight):
@@ -317,8 +327,10 @@ def compose(
                 ("down", (config.experts, c, config.expert_width)),
             ):
                 name = p + "ffn_" + part + "_exps.weight"
-                expert_weights[part] = Weight(
-                    shape, (weights[name],), weights.parts(name)
+                expert_weights[part] = (
+                    weights.weight(name)
+                    if hasattr(weights, "weight")
+                    else Weight(shape, (weights[name],), weights.parts(name))
                 )
             mixed = routed_moe(
                 plan,

@@ -47,15 +47,15 @@ def test_residual_projection_keeps_observable_projection_and_view():
     assert [call.kind for call in fuse_residual_projection(original).calls] == ["linear", "add"]
 
 
-def norm_graph():
+def norm_graph(rows=1, width=256):
     graph = Graph(contract="reference")
-    x = graph.buffer("x", (256,), "float32", role="input")
-    mixed = graph.buffer("mixed", (256,), "float32", role="input")
-    residual = graph.buffer("residual", (256,), "float32", role="output")
-    w = graph.buffer("w", (256,), "float32", role="weight")
-    out = graph.buffer("out", (256,), "float32", role="output")
-    graph("add", dict(r=1, c=256), x, mixed, residual)
-    graph("rms", dict(r=1, c=256, eps=1e-6), residual, w, out)
+    x = graph.buffer("x", (rows * width,), "float32", role="input")
+    mixed = graph.buffer("mixed", (rows * width,), "float32", role="input")
+    residual = graph.buffer("residual", (rows * width,), "float32", role="output")
+    w = graph.buffer("w", (width,), "float32", role="weight")
+    out = graph.buffer("out", (rows * width,), "float32", role="output")
+    graph("add", dict(r=rows, c=width), x, mixed, residual)
+    graph("rms", dict(r=rows, c=width, eps=1e-6), residual, w, out)
     return graph
 
 
@@ -66,6 +66,54 @@ def test_normalization_fusion_preserves_residual_and_excludes_aliased_update():
     from dataclasses import replace
     graph.buffers["residual"] = replace(graph.buffers["residual"], alias_of="x", role="input")
     assert len(fuse_residual_normalization(graph).calls) == 2
+
+
+def test_batched_normalization_fusion_uses_explicit_operation_policy():
+    from akas.compilation.policy import lower, candidates
+    from akas.compilation.compile import plan
+
+    graph = norm_graph(33)
+    assert len(fuse_residual_normalization(graph).calls) == 2
+    assert {"normalization": {"fused_residual": True}} in candidates(graph, provider="cuda", target="sm_89")
+    graph, _ = lower(graph, policy={"normalization": {"fused_residual": True}}, target="sm_89")
+    assert [call.kind for call in graph.calls] == ["add_rms"]
+    assert graph.calls[0].parameters["r"] == 33
+    plan(graph, target="sm_89")
+
+
+@pytest.mark.skipif(os.environ.get("AKAS_FORWARD_CUDA") != "1", reason="CUDA fusion qualification")
+@pytest.mark.parametrize("rows,width", [(4, 2048), (33, 256)])
+def test_batched_residual_normalization_preserves_separate_gpu_results(tmp_path, rows, width):
+    from contextlib import ExitStack
+    import tensor
+    from akas.compilation.compile import produce
+    from akas.compilation.policy import lower
+    from akas.execution.forward import Forward
+
+    rng = np.random.default_rng(173)
+    inputs = {name: rng.normal(0, .1, (rows * width if name != "w" else width,)).astype("float32")
+              for name in ("x", "mixed", "w")}
+    outputs = []
+    with tensor.Device() as device:
+        for fused in (False, True):
+            graph = norm_graph(rows, width)
+            if fused:
+                graph, _ = lower(graph, policy={"normalization": {"fused_residual": True}}, target="sm_89")
+            path = tmp_path / str(fused)
+            produce(graph, path, target="sm_89", search=False)
+            with ExitStack() as resources:
+                buffers = {name: device.from_numpy(value) for name, value in inputs.items()}
+                buffers.update({name: device.zeros((rows * width,)) for name in ("residual", "out")})
+                for value in buffers.values():
+                    resources.callback(value.release)
+                forward = resources.enter_context(Forward(path, device, buffers))
+                forward.run()
+                outputs.append({name: forward.buffers[name].to_numpy() for name in ("residual", "out")})
+        expected = (inputs["x"] + inputs["mixed"]).reshape(rows, width)
+        normalized = expected / np.sqrt(np.mean(expected * expected, axis=1, keepdims=True) + 1e-6) * inputs["w"]
+        np.testing.assert_allclose(outputs[1]["out"].reshape(rows, width), normalized, rtol=2e-5, atol=1e-7)
+        for name in outputs[0]:
+            np.testing.assert_array_equal(outputs[0][name], outputs[1][name])
 
 
 @pytest.mark.parametrize("provider", ["cuda", "webgpu"])

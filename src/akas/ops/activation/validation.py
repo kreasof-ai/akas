@@ -16,13 +16,25 @@ def validation(kind, p, signature):
         name: value.copy() if name == "out" else value for name, value in values.items()
     }
     r, c = (p["r"], p["c"])
-    if p.get("expert_rows"):
+    if p.get("expert_rows", kind == "swiglu_experts"):
         r *= p.get("top", 1)
     if len(values) == 2 and "x" in values:
         x = values["x"].reshape(r, 2 * c)
         gate_all, up_all = (x[:, :c], x[:, c:])
     else:
-        inputs = [v.reshape(r, c) for name, v in values.items() if name != "out"]
+        parts = p.get("partitions", 1)
+        inputs = []
+        for name, value in values.items():
+            if name == "out":
+                continue
+            if parts > 1:
+                value = value.reshape(r, parts, c)
+                total = np.zeros((r, c), dtype="float32")
+                for part in range(parts):
+                    total += value[:, part].astype("float32")
+                inputs.append(total)
+            else:
+                inputs.append(value.reshape(r, c))
         gate_all, up_all = inputs
     out_dtype = next((row["dtype"] for row in signature if row["name"] == "out"))
     out_bf16 = out_dtype == "bfloat16"
@@ -34,10 +46,11 @@ def validation(kind, p, signature):
         end = min(r, begin + 1024)
         gate, up = (gate_all[begin:end], up_all[begin:end])
         if p.get("round_inputs"):
-            if out_f16 or p.get("round_dtype") == "float16":
+            round_dtype = p.get("round_dtype", out_dtype)
+            if round_dtype == "float16":
                 gate = gate.astype("float16").astype("float32")
                 up = up.astype("float16").astype("float32")
-            else:
+            elif round_dtype == "bfloat16":
                 gate = decode_bfloat16(encode_bfloat16(gate))
                 up = decode_bfloat16(encode_bfloat16(up))
         gate_f64 = gate.astype("float64")

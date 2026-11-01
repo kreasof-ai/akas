@@ -12,12 +12,12 @@ def test_prefill_and_decode_partition_requests_by_qualified_phase_rows():
     executor.config = SimpleNamespace(vocab=16)
     slots = [executor.admit() for _ in range(4)]
     calls = []
-    def execute(slots, sequences, chunk):
+    def execute(slots, sequences, chunk, *, phase=None, read=True):
         assert len(slots) <= 2 and chunk in (1, 4)
         calls.append((tuple(slots), chunk))
         for slot, sequence in zip(slots, sequences):
             executor.positions[slot] += len(sequence)
-        return [sequence[-1] for sequence in sequences]
+        return [sequence[-1] for sequence in sequences] if read else None
     executor._execute_batch = execute
     assert executor.prefill(slots, [[1, 2, 3, 4, 5, 6]] * 4) == [6] * 4
     assert executor.positions.tolist() == [6] * 4

@@ -96,6 +96,60 @@ def test_unequal_prompts_and_lengths_drain_from_256_to_one():
     assert max(count for count, chunk in engine.batches if chunk == 1) <= 256
 
 
+def test_token_budget_bounds_prefill_while_decoding_and_reuses_slots():
+    specifications = [([i + 1] * n, 4) for i, n in enumerate((5, 17, 29, 7, 31))]
+    control = [Request(prompt, limit) for prompt, limit in specifications]
+    execute(control, 1)
+    actual = [Request(prompt, limit) for prompt, limit in specifications]
+    engine = FakeEngine(3)
+    scheduler = Scheduler(engine, lambda _: None, prefill_chunk=16,
+                          prefill_requests=3, prefill_token_budget=11)
+    for request in actual:
+        scheduler.submit(request)
+    active_decode_during_prefill = False
+    for _ in range(100):
+        before_prefill = scheduler.stats["prefill_tokens"]
+        before_decode = scheduler.stats["decode_rounds"]
+        pending = scheduler.turn()
+        consumed = scheduler.stats["prefill_tokens"] - before_prefill
+        assert consumed <= 11
+        if consumed and scheduler.stats["decode_rounds"] > before_decode:
+            active_decode_during_prefill = True
+        if not pending:
+            break
+    else:
+        raise AssertionError("bounded prefill did not drain")
+    assert active_decode_during_prefill
+    assert [r.output for r in actual] == [r.output for r in control]
+    assert scheduler.stats["prefill_tokens"] == sum(len(prompt) for prompt, _ in specifications)
+    assert scheduler.stats["max_prefill_tokens_per_turn"] == 11
+    assert not engine.state and len(engine.releases) == len(actual)
+
+
+def test_prefill_budget_shrinks_while_decodes_remain_active():
+    specifications = [([1], 8), ([2] * 16, 8), ([3] * 20, 8)]
+    control = [Request(prompt, limit) for prompt, limit in specifications]
+    execute(control, 1)
+    requests = [Request(prompt, limit) for prompt, limit in specifications]
+    engine = FakeEngine(3)
+    scheduler = Scheduler(engine, lambda _: None, prefill_chunk=16, prefill_requests=3,
+                          prefill_token_budget=32, decode_prefill_token_budget=3)
+    for request in requests:
+        scheduler.submit(request)
+    assert scheduler.turn()
+    assert scheduler.stats["prefill_tokens"] == 32
+    assert len(scheduler.decoding) == 2
+    while True:
+        before = scheduler.stats["prefill_tokens"]
+        ongoing = scheduler.turn()
+        assert scheduler.stats["prefill_tokens"] - before <= 3
+        if not ongoing:
+            break
+    assert scheduler.stats["max_prefill_tokens_with_decoding"] == 3
+    assert [request.output for request in requests] == [request.output for request in control]
+    assert not engine.state
+
+
 class FakeSpeculativeEngine(FakeEngine):
     def decode_many(self, requests):
         sequences = []

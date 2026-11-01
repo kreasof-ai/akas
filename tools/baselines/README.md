@@ -16,6 +16,8 @@ Create separate Python 3.12 environments under `build/baselines/vllm` and
 install each with `uv pip install --python <environment>/bin/python`. Use a
 complete CUDA toolkit and set `CUDA_HOME` and `PATH` to it. An environment with
 `nvcc` but missing CUDA headers is insufficient for first-use JIT compilation.
+Keep compiler, CRT, NVVM and runtime headers on compatible CUDA versions; merely
+installing a newer `nvcc` beside older headers can fail FlashInfer startup.
 
 Build llama.cpp commit `620d2225cc436ab0b001e3200e590e3b286ef9ab` under
 `build/baselines/llama.cpp`, with separate `build-cuda` and `build-vulkan`
@@ -89,6 +91,25 @@ raw samples and compare like protocols; these are not interchangeable with
 AKAS's isolated native kernel-phase rates. End-to-end committed output throughput
 is retained for every runtime. Default optimized settings are measured settings,
 not proof that exhaustive baseline tuning found the fastest possible setup.
+
+Use `--format fp8` for declarations containing original FP8 safetensors. Weight
+format selection is independent of execution and KV dtypes. For the concurrent
+FP8 workload and real token-delivery timing:
+
+```sh
+python -m tools.baselines vllm lfm2.5-24b-a2b-fp8 --format fp8 \
+  --optimized --streaming --workload concurrent-prefill-v1 --seconds 2400
+python -m tools.baselines sglang lfm2.5-24b-a2b-fp8 --format fp8 \
+  --optimized --streaming --workload concurrent-prefill-v1 --seconds 2400
+```
+
+Both streamed workers use the same cumulative-token collector and record
+`client-stream-burst-v1` phase timings, including per-request arrivals and
+delivery chunk sizes. They submit distinct requests concurrently, use raw token
+IDs with tokenization disabled, and check complete deterministic outputs and
+empty-prefix-cache behavior. Keep the source immutable throughout a measurement;
+the recorder invalidates changed source trees. A separate frozen checkout lets
+development continue while a baseline runs.
 
 First-use FlashInfer warmup also needs cuRAND development headers in the selected
 CUDA toolkit. Keep runtime environments isolated and measurements serial.

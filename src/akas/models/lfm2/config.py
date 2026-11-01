@@ -106,6 +106,39 @@ class LFM2MoEConfig(Config):
     normalize_routes: bool = True
 
     @classmethod
+    def from_huggingface(cls, data):
+        from dataclasses import asdict
+
+        if data.get("model_type") != "lfm2_moe":
+            raise ValueError("requires LFM2 MoE config.json")
+        base = Config.from_huggingface({**data, "model_type": "lfm2"})
+        result = cls(
+            **asdict(base),
+            experts=data["num_experts"],
+            top_k=data["num_experts_per_tok"],
+            expert_width=data["moe_intermediate_size"],
+            dense_layers=data["num_dense_layers"],
+            routing_scale=data.get("routed_scaling_factor", 1.0),
+            normalize_routes=data.get("norm_topk_prob", True),
+        )
+        if (
+            any(
+                type(n) is not int or n < 1
+                for n in (result.experts, result.top_k, result.expert_width)
+            )
+            or result.top_k > result.experts
+            or result.expert_width % 128
+            or type(result.dense_layers) is not int
+            or not 0 <= result.dense_layers < len(result.layers)
+            or type(result.normalize_routes) is not bool
+            or not math.isfinite(result.routing_scale)
+            or result.routing_scale <= 0
+            or data.get("use_expert_bias") is not True
+        ):
+            raise ValueError("unsupported LFM2 MoE routing configuration")
+        return result
+
+    @classmethod
     def from_gguf(cls, gguf):
         return parse_config(gguf, moe=True)
 

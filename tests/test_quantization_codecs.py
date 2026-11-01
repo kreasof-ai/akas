@@ -21,6 +21,71 @@ CODECS = [
 ]
 
 
+@pytest.mark.parametrize("dtype", ["float16", "float32"])
+def test_cuda_floating_codec_describes_matrices_above_int32_bit_count(dtype):
+    from akas.kernels.definition import define
+    from tensor.compiler.frontend.signature import frontend_arguments
+
+    parameters = dict(r=128, k=2048, o=128000, optimized=True,
+                      weight_dtype=dtype, input_dtype="float16")
+    primitive = define(dict(kind="linear", parameters=parameters, contract="reference"))
+    arguments = {a["name"]: a for a in frontend_arguments(primitive, {})}
+    assert arguments["w"]["shape"] == [128000 * 2048]
+    assert arguments["w"]["dtype"] == dtype
+
+
+@pytest.mark.skipif(os.environ.get("AKAS_CUDA") != "1", reason="native CUDA codec execution")
+@pytest.mark.parametrize("encoding,dtype", [(0, "float16"), (0, "float32"),
+                                           (1, "float16"), (1, "float32"), (1, "bfloat16")])
+@pytest.mark.parametrize("row,column", [(0, 0), (3, 48)])
+def test_cuda_native_floating_weight_tiles_preserve_bits_and_zero_tails(
+    tmp_path, encoding, dtype, row, column
+):
+    import tensor
+    from tensor.runtime.dtypes import encode_bfloat16, decode_bfloat16
+    from akas.compilation.emit import build_artifact
+
+    rows, depth, tile_rows, tile_columns = 5, 65, 8, 32
+    source_dtype = "float16" if encoding == 1 else "float32"
+    values = np.random.default_rng(981).normal(size=(rows, depth)).astype(source_dtype)
+    values[:, 0] = np.array([0., -0., 2**-24, -(2**-24), 2**-14], dtype=source_dtype)
+    expected = np.zeros((tile_rows, tile_columns), dtype="float32")
+    height, width = min(tile_rows, rows - row), min(tile_columns, depth - column)
+    expected[:height, :width] = values[row:row + height, column:column + width]
+    if dtype == "float16":
+        expected = expected.astype("float16")
+    elif dtype == "bfloat16":
+        expected = decode_bfloat16(encode_bfloat16(expected))
+    entry, artifact = tmp_path / "floating-tile.py", tmp_path / "floating-tile.tbin"
+    entry.write_text(
+        "from akas.kernels.kernel import Tensor, kernel, output\n"
+        "from akas.quantization.weights.ggml.cuda import bind\n"
+        "import tilelang.language as T\n"
+        "def tensor_export():\n"
+        f" load = bind(({rows}, {depth}), encoding={encoding}).require('read_tile')\n"
+        " @kernel\n"
+        f" def compute(w: Tensor(({rows * depth},), '{source_dtype}')) -> Tensor(({tile_rows}, {tile_columns}), '{dtype}'):\n"
+        f"  out = output(({tile_rows}, {tile_columns}), '{dtype}')\n"
+        "  with T.Kernel(1, threads=128):\n"
+        f"   tile = T.alloc_shared(({tile_rows}, {tile_columns}), '{dtype}')\n"
+        f"   load((w,), tile, {row}, {column})\n"
+        "   T.copy(tile, out)\n"
+        "  return out\n"
+        " return {'kernel': compute}\n"
+    )
+    build_artifact(entry, artifact, provider="cuda", target="sm_89")
+    with tensor.Device() as device, ExitStack() as stack:
+        source = device.from_numpy(values.reshape(-1))
+        result = device.empty(expected.shape, dtype)
+        stack.callback(source.release)
+        stack.callback(result.release)
+        module = stack.enter_context(device.load(artifact))
+        module.launch(source, result)
+        actual = result.to_numpy()
+        unsigned = "uint16" if dtype == "float16" else "uint32"
+        np.testing.assert_array_equal(actual.view(unsigned), expected.view(unsigned))
+
+
 @pytest.mark.parametrize(
     "depth,dtype,row,column,width",
     [

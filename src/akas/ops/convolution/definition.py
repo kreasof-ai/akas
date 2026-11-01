@@ -5,6 +5,27 @@ from akas.ops.convolution.validation import validation
 
 OUTPUT_ARGUMENTS = {"reference": {"conv": (2, 3)}}
 VALIDATIONS = {"conv": validation}
+
+
+def lower(graph, commit, settings, *, provider, target):
+    if (
+        set(settings) - {"fused_staging"}
+        or type(settings.get("fused_staging", False)) is not bool
+    ):
+        raise ValueError("unknown convolution staging policy")
+    if settings.get("fused_staging"):
+        if provider != "cuda" or graph.contract != "reference":
+            raise ValueError(
+                "convolution staging fusion currently requires CUDA reference arithmetic"
+            )
+        from akas.compilation.storage import fuse_output_casts
+
+        graph = fuse_output_casts(
+            graph, {"conv": 3}, cast_kind="linear_half_input", dtype="float16"
+        )
+    return graph, commit
+
+
 IMPLEMENTATIONS = (
     Implementation(
         "conv",
@@ -14,8 +35,19 @@ IMPLEMENTATIONS = (
         name="convolution.cuda.parallel_prefill",
         priority=20,
         targets=("sm_89",),
-        accepts=lambda p: 32 <= p.get("chunk", 1) <= 1024 and p["c"] >= 128,
-        space=(("columns", (8, 16, 32)), ("threads", (256, 128))),
+        accepts=lambda p: (
+            p.get("chunk", 1) >= 32
+            and p["c"] >= 128
+            and (p.get("time_tile", p["chunk"]) + 3 * p.get("length", 3) - 2)
+            * p.get("columns", 8 if p["chunk"] >= 128 else 16)
+            * 4
+            <= 90000
+        ),
+        space=(
+            ("columns", (8, 16, 32, 64, 128)),
+            ("threads", (256, 128)),
+            ("time_tile", (32, 64, 128, 256, 512, 2048)),
+        ),
     ),
     Implementation(
         "conv",

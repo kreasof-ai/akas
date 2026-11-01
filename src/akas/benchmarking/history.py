@@ -135,7 +135,15 @@ class Recorder:
         change=None,
         parent=None,
         kind="configuration",
+        dependency_sources=None,
     ):
+        self.dependency_sources = {
+            name: Path(path).resolve()
+            for name, path in (dependency_sources or {}).items()
+        }
+        if any(not isinstance(name, str) or not re.fullmatch(r"[A-Za-z0-9_-]+", name)
+               for name in self.dependency_sources):
+            raise ValueError("dependency source names must be simple identifiers")
         self.root = Path(root).resolve()
         checkout = Path(__file__).resolve().parents[3]
         default = (
@@ -181,6 +189,17 @@ class Recorder:
             ],
         )
         self.record["source"]["captured_at"] = started
+        self.record["dependency_sources"] = {}
+        for name, path in self.dependency_sources.items():
+            dependency = source_identity(path)
+            dependency["captured_at"] = started
+            self.record["dependency_sources"][name] = dependency
+            snapshot = self.directory / "dependencies" / name / "source.tar.gz"
+            snapshot.parent.mkdir(parents=True)
+            with tarfile.open(snapshot, "w:gz", dereference=False) as stream:
+                for filename in dependency["files"]:
+                    stream.add(path / filename, arcname=filename, recursive=False)
+            self.artifact(snapshot, f"dependencies/{name}/source.tar.gz")
         packages = {}
         for name in ("tensor-workspace", "wgpu", "tilelang", "apache-tvm-ffi", "numpy"):
             try:
@@ -376,6 +395,11 @@ class Recorder:
                 == self.record["source"]["tree_sha256"]
             )
             self.record["source"]["changed_during_run"] = not unchanged
+            for name, path in self.dependency_sources.items():
+                dependency = self.record["dependency_sources"][name]
+                changed = source_identity(path)["tree_sha256"] != dependency["tree_sha256"]
+                dependency["changed_during_run"] = changed
+                unchanged = unchanged and not changed
             self.record["completed_at"] = utc()
             self.record["status"] = (
                 "invalidated"

@@ -14,6 +14,9 @@ def mma_partial(spec: KernelSpec, schedule: Mapping[str, object]):
     splits = p.get("splits", 16)
     bk = p.get("key_rows", 64)
     stages = p.get("stages", 2)
+    copy_complete_tiles = p.get("copy_complete_tiles", False)
+    if type(copy_complete_tiles) is not bool:
+        raise ValueError("complete attention tile copying must be boolean")
     group = h // kh
     qm = 16
     d = 64
@@ -171,17 +174,21 @@ def mma_partial(spec: KernelSpec, schedule: Mapping[str, object]):
             total_tail = T.alloc_fragment((qm,), "float32")
             for tile in T.serial(full_groups * 4, tiles):
                 start = (split * span + tile) * bk
-                for i, j in T.Parallel(bk, d):
-                    key_tail[i, j] = T.if_then_else(
-                        start + i < length,
-                        read(kc, ks, slot, head, T.min(start + i, cap - 1), j),
-                        0,
-                    )
-                    value_tail[i, j] = T.if_then_else(
-                        start + i < length,
-                        read(vc, vs, slot, head, T.min(start + i, cap - 1), j),
-                        0,
-                    )
+                if copy_complete_tiles and native_half and start + bk <= length:
+                    T.copy(kc[slot, head, start, 0], key_tail)
+                    T.copy(vc[slot, head, start, 0], value_tail)
+                else:
+                    for i, j in T.Parallel(bk, d):
+                        key_tail[i, j] = T.if_then_else(
+                            start + i < length,
+                            read(kc, ks, slot, head, T.min(start + i, cap - 1), j),
+                            0,
+                        )
+                        value_tail[i, j] = T.if_then_else(
+                            start + i < length,
+                            read(vc, vs, slot, head, T.min(start + i, cap - 1), j),
+                            0,
+                        )
                 consume(
                     start,
                     length,

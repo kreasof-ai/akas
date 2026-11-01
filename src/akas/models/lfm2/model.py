@@ -57,7 +57,7 @@ class LFM2(Definition):
 
 
 class LFM2MoE(Definition):
-    checkpoint_architectures = ("lfm2moe",)
+    checkpoint_architectures = ("lfm2moe", "lfm2_moe")
     checkpoint_type = LFM2MoECheckpoint
     model_defaults = {"kv_dtype": "float16", "optimized": True}
     optimization_chunks = (512, 1024, 2048, 4096, 256, 128, 32, 1)

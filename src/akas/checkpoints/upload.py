@@ -146,16 +146,21 @@ def upload_shards(device, tensors, wanted, layouts, *, conversions=None):
                 shard.open("rb") as stream,
                 mmap.mmap(stream.fileno(), 0, access=mmap.ACCESS_READ) as mapped,
             ):
-                for name in wanted:
+                # Preserve logical destinations while visiting file pages in
+                # physical order, independent of expert or projection grouping.
+                sources = sorted((name for name in wanted if tensors[name].shard == shard),
+                                 key=lambda name: tensors[name].offset)
+                for name in sources:
                     info = tensors[name]
-                    if info.shard != shard:
-                        continue
                     group, offset, _ = layouts[name]
                     view = np.frombuffer(
                         mapped, dtype="uint8", count=info.nbytes, offset=info.offset
                     )
                     try:
-                        data = view
+                        # Fault file-backed pages into ordinary host storage before
+                        # CUDA pins them for DMA. Direct copies from cold mappings
+                        # can serialize storage faults inside the driver.
+                        data = view.copy() if group not in conversions else view
                         destination_offset = offset
                         if group in conversions:
                             data = convert_storage(

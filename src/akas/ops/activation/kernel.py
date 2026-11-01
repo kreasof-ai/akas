@@ -36,8 +36,18 @@ def _swiglu(p):
     input_dtype = p.get("input_dtype", "float32")
     output_dtype = p.get("output_dtype", input_dtype)
     round_dtype = p.get("round_dtype", output_dtype)
+    parts = p.get("partitions", 1)
+    if (
+        type(parts) is not int
+        or parts < 1
+        or parts > 1
+        and (flat or packed or not expert_rows)
+    ):
+        raise ValueError("partitioned SwiGLU requires separate expert-row products")
     input_shape = (
-        (r, top, c)
+        (r, top, parts, c)
+        if parts > 1
+        else (r, top, c)
         if expert_rows
         else (r * c,)
         if flat
@@ -51,7 +61,13 @@ def _swiglu(p):
     def element(g, u, out, row, column):
         gate = T.alloc_var("float32")
         up = T.alloc_var("float32")
-        if expert_rows:
+        if parts > 1:
+            gate = 0
+            up = 0
+            for part in T.serial(parts):
+                gate += T.cast(g[row // top, row % top, part, column], "float32")
+                up += T.cast(u[row // top, row % top, part, column], "float32")
+        elif expert_rows:
             gate = T.cast(g[row // top, row % top, column], "float32")
             up = T.cast(u[row // top, row % top, column], "float32")
         elif flat:

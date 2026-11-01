@@ -74,6 +74,9 @@ class Reference:
         tail_half=None,
         attention=None,
         head_half=False,
+        projector=None,
+        observer=None,
+        residual=None,
     ):
         c = self.config
         r = len(tokens)
@@ -85,6 +88,8 @@ class Reference:
             raise ValueError("context capacity exceeded")
 
         def project(name, x, single=False):
+            if projector is not None:
+                return projector(name, x, single=single)
             precision = (
                 projection_half(name) if callable(projection_half) else projection_half
             )
@@ -166,9 +171,12 @@ class Reference:
                     hidden, attn, r = hidden[-1:], attn[-1:], 1
                     projection_half = tail_half
                 mix = project(p + "attn_output.weight", attn)
-            hidden = hidden + mix
+            hidden = hidden + mix if residual is None else residual(hidden, mix)
             x = norm(p + "ffn_norm.weight", hidden)
-            hidden = hidden + self.feed_forward(i, x, project)
+            mixed = self.feed_forward(i, x, project)
+            hidden = hidden + mixed if residual is None else residual(hidden, mixed)
+            if observer is not None:
+                observer(i, hidden)
         final = norm("token_embd_norm.weight", hidden[-1:])
         self.position += count
         projection_half = head_half

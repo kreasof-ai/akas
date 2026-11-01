@@ -1,6 +1,48 @@
 """Operation-owned graph policies run before kernel selection and tuning."""
 
 
+def resolve(policy, schedules, parameters, *, provider, target):
+    """Select phase policies through the existing parameter-profile matcher.
+
+    Entries named ``policy.<operation family>`` contain graph-policy settings.
+    Their selectors use phase geometry; ordinary entries still select kernels.
+    """
+    options = {
+        name: dict(settings) if isinstance(settings, dict) else settings
+        for name, settings in (policy or {}).items()
+    }
+    if schedules is None:
+        return options
+    names = list(
+        dict.fromkeys(
+            entry["operation"][7:]
+            for entry in getattr(schedules, "data", {}).get("entries", [])
+            if entry["operation"].startswith("policy.")
+        )
+    )
+    if not names:
+        return options
+    from akas.kernels.registry import planning_rules
+
+    families = {
+        module.__name__.split(".")[-2]
+        for module in planning_rules()
+        if hasattr(module, "lower")
+    }
+    if set(names) - families:
+        raise ValueError(f"unknown operation policies: {sorted(set(names) - families)}")
+    target = target or ("sm_89" if provider == "cuda" else "webgpu-portable-v1")
+    for name in names:
+        selected = schedules.select(
+            "policy." + name, parameters, provider=provider, target=target
+        )
+        if selected:
+            if not isinstance(options.get(name, {}), dict):
+                raise ValueError(f"{name} policy must be a mapping")
+            options[name] = {**options.get(name, {}), **selected}
+    return options
+
+
 def lower(graph, commit=None, *, policy=None, provider="cuda", target=None):
     """Apply explicit pipeline choices without model or runtime dispatch.
 

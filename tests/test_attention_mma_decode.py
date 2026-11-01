@@ -28,6 +28,10 @@ def test_attention_declares_geometry_that_changes_its_reference():
 @pytest.mark.parametrize("key_rows", [64, 128])
 @pytest.mark.parametrize("kv_dtype", ["float16", "fp8"])
 def test_cuda_grouped_mma_decode_padding_and_inactive(tmp_path, key_rows, kv_dtype):
+    check_cuda_grouped_mma_decode(tmp_path, key_rows, kv_dtype)
+
+
+def check_cuda_grouped_mma_decode(tmp_path, key_rows, kv_dtype, *, capacity=8192, copy_complete_tiles=False):
     if os.environ.get("AKAS_LFM_MOE_CUDA") != "1":
         pytest.skip("opt-in native-half GQA qualification")
     import tensor
@@ -42,7 +46,7 @@ def test_cuda_grouped_mma_decode_padding_and_inactive(tmp_path, key_rows, kv_dty
         h=8,
         kh=2,
         d=64,
-        capacity=8192,
+        capacity=capacity,
         splits=16,
         chunk=1,
         kv_dtype=kv_dtype,
@@ -52,6 +56,7 @@ def test_cuda_grouped_mma_decode_padding_and_inactive(tmp_path, key_rows, kv_dty
         key_rows=key_rows,
         stages=2,
         decode_precision="float16",
+        copy_complete_tiles=copy_complete_tiles,
     )
     entry, artifact = tmp_path / "kernel.py", tmp_path / "kernel.tbin"
     entry.write_text(
@@ -80,7 +85,7 @@ def test_cuda_grouped_mma_decode_padding_and_inactive(tmp_path, key_rows, kv_dty
             rtol=case.rtol,
             atol=case.atol,
         )
-        for length in (32, 65, 8191, 8192):
+        for length in (32, 65, capacity - 1, capacity):
             encoded_keys = case.arguments["kc"].copy()
             encoded_values = case.arguments["vc"].copy()
             if kv_dtype == "fp8":
@@ -281,3 +286,15 @@ def test_cuda_packed_prefill_masks_inactive_query_tiles(tmp_path, threads):
         write(device, buffers["enabled"], np.zeros(66, dtype="int32"))
         module.launch(*args)
         np.testing.assert_array_equal(buffers["out"].to_numpy(), 0)
+
+
+@pytest.mark.parametrize("key_rows", [64,128])
+def test_explicit_half_decode_with_short_context_and_complete_tiles(tmp_path,key_rows):
+    check_cuda_grouped_mma_decode(tmp_path,key_rows,"float16",capacity=2176,copy_complete_tiles=True)
+
+
+@pytest.mark.skipif(os.environ.get('AKAS_LFM_MOE_CUDA')!='1',reason='CUDA decode precision model qualification')
+def test_half_decode_model_reorders_ragged_requests_and_reuses_state(tmp_path):
+    from test_lfm_moe_native import test_native_model_reordered_ragged_requests_reuse_common_executor as check
+    check(tmp_path,32,True,True,9,'bfloat16','bfloat16',attention_half=True,
+          expert_mma_dtype='float16',attention_decode_half=True)

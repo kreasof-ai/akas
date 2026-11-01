@@ -24,6 +24,12 @@ optimizations. Operation registrations and rewrite rules live in each operation'
 [operation guide](../ops/README.md) for authoring and the
 [execution guide](../execution/README.md) for running a compiled graph with `Forward`.
 
+Schedule profiles can also select operation policies before lowering. Entries
+named `policy.<family>` match `phase`, `rows` and `chunk` through Tensor's existing
+parameter selector. Their settings override that family's supplied defaults;
+ordinary entries continue to select kernels. Effective overrides are recorded
+with each compiled phase, including its derived state-only prefill phase.
+
 | File | Responsibility |
 | --- | --- |
 | `compile.py` | Coordinate phases, state reset, verification commits and publication |
@@ -36,6 +42,7 @@ optimizations. Operation registrations and rewrite rules live in each operation'
 | `rewrites.py` | Operation fusion, terminal row pruning, token feedback and deferred state |
 | `policy.py` | Apply explicit operation-owned physical pipeline choices before search |
 | `quantization.py` | Reuse activation quantization across projections |
+| `storage.py` | Fold private output casts into producers with typed output contracts |
 | `phases.py` | Describe token phases and proposal-independent speculative controls |
 | `emit.py` | Export dependency-tracked sources and invoke Tensor compilation |
 
@@ -82,6 +89,56 @@ Physical pipeline options belong to operation policies, including split projecti
 attention partitions, expert layouts, resident operands and recurrent recomputation.
 Kernel beam search qualifies schedules inside the selected pipeline. Requested
 geometries are compiled explicitly; this is not one shape-polymorphic kernel.
+
+The CUDA FP8 projection policy accepts `minimum_split_groups` with `partitions`:
+the latter becomes a partition ceiling, and underfilled launches select the
+smallest legal K divisor that reaches the requested group count, or the largest
+legal divisor within that ceiling. Wide launches keep one partition. Without
+`minimum_split_groups`, `partitions` retains its fixed-count behavior.
+`minimum_rows` controls FP8 pipeline eligibility;
+`floating_matmul_minimum_rows` independently controls canonical F32 projections.
+For native FP8 experts, `moe.fused_quantize_minimum_rows` keeps output quantization
+separate below the selected row count when `fused_swiglu=True`. The paired
+`expert_swiglu` operation shares the same grouped GEMM body as the fully fused
+path, exposing 32-, 64- and 128-column tiles while the separate quantizer retains
+its 128-value groups. The default threshold of one preserves full fusion.
+FP8 projection schedules also accept `mma_dtype="float16"` to promote the
+stored FP8 values exactly before multiplication when tighter accumulation
+accuracy is required. Qualify the selected schedules and the resulting model.
+Native FP8 expert schedules expose the same operand-promotion choice without
+changing checkpoint storage, activation codes, scales or KV precision.
+
+`normalization.fused_residual=True` selects batched residual/RMS fusion for CUDA
+reference graphs. It reuses the serial reduction tree and stages row values in
+registers, retaining the separate calls' residual and normalization results.
+The existing default rewrite policy remains available without this option.
+
+`normalization.fused_staging=True` and `convolution.fused_staging=True` fold a
+private FP32-to-FP16 staging cast into the producing operation after linear
+staging has been introduced. Computation retains its original precision and the
+cast remains at the same output boundary. Public buffers, exposed aliases,
+in-place updates and outputs with additional consumers retain separate calls.
+
+`moe.intermediate_dtype="bfloat16"` stores private routed contributions in 16 bits
+between expert projection and reduction, retaining FP32 accumulation. The policy
+updates the producer, consumer and complete alias family together. Contributions
+with other users or external request bindings retain their storage. `float16`
+and the default `float32` are also available; qualify the resulting rounding
+boundary as part of the model's numerical policy.
+
+`moe.packed=True` stages quantized expert inputs once in aligned expert order.
+The paired projection can retain that order for its private output; the down
+projection writes contributions in logical token/rank order. Counts, routes,
+block scales and accumulation remain unchanged. `packed_minimum_rows` limits
+eligibility by workload size. Packing requires a complete mapped CUDA expert
+chain with private activation storage and one reduction partition; its cost
+belongs in the complete chain's measurement.
+
+`SearchSettings(cache_working_set_bytes=...)` conditions each CUDA measurement
+with Tensor's independent working set after restoring mutable outputs and before
+timing. The default keeps the existing warm measurements. The footprint and
+conditioning artifact identity are recorded in search context, so results from
+different residency conditions cannot share a qualification cache entry.
 
 `liveness.py` derives state-only prefill from declared writes and dependencies.
 It shares already-qualified kernel artifacts with the normal prefill phase.

@@ -62,7 +62,7 @@ jobs:
           from akas import Engine, LFM2, Qwen35MoE
           from akas.models.lfm2.model import LFM2Reference, LFM2Batched
           from akas.benchmarking import Case, matrix
-          assert len(matrix()) == 10 and Case(4,32).capacity == 64
+          assert len(matrix()) == 10 and Case(4,32,generated=32).capacity == 64
           from akas.execution.forward import Forward
           from akas.graph import Graph
           plan = Graph(contract='packed')

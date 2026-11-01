@@ -84,14 +84,20 @@ def expert_tile_map(spec, schedule):
     p = {**spec.parameters, **schedule}
     rows, top, experts = p["r"], p["top"], p["experts"]
     capacity = (rows * top + 3) // 4 + experts
+    from akas.ops.moe.definition import tile_layouts
+
+    layout_count = tile_layouts(p)
 
     @kernel
     def compute(
         counts: Tensor((experts,), "int32"),
-    ) -> tuple[Tensor((5, capacity), "int32"), Tensor((5, capacity), "int32")]:
-        tile_experts = output((5, capacity), "int32")
-        tile_rows = output((5, capacity), "int32")
-        with T.Kernel(5, threads=32) as layout:
+    ) -> tuple[
+        Tensor((layout_count, capacity), "int32"),
+        Tensor((layout_count, capacity), "int32"),
+    ]:
+        tile_experts = output((layout_count, capacity), "int32")
+        tile_rows = output((layout_count, capacity), "int32")
+        with T.Kernel(layout_count, threads=32) as layout:
             if T.get_thread_binding() == 0:
                 cursor = T.alloc_var("int32")
                 cursor = 0
@@ -203,10 +209,13 @@ def routed_combine(spec, schedule):
 
     p = {**spec.parameters, **schedule}
     rows, top, width = (p[name] for name in ("r", "top", "c"))
+    input_dtype = p.get("input_dtype", "float32")
+    if input_dtype not in ("float32", "float16", "bfloat16"):
+        raise ValueError("invalid routed contribution storage")
 
     @kernel
     def compute(
-        experts: Tensor((rows, top, width), "float32"),
+        experts: Tensor((rows, top, width), input_dtype),
         weights: Tensor((rows, top), "float32"),
         active: Tensor((rows,), "int32"),
     ) -> Tensor((rows, width), "float32"):

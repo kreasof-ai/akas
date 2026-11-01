@@ -334,6 +334,13 @@ def test_common_build_cache_checks_source_target_provider_and_compiler(
     assert len(calls) == 9
     (tmp_path / "first.tbin").write_text("broken artifact")
     build(declaration, tmp_path)
+    # A valid pooled artifact repairs a corrupted generation without recompiling.
+    assert len(calls) == 9
+    assert json.loads((tmp_path / "first.tbin").read_text())["source"] == "source changed"
+    for path in (tmp_path / "search-kernels").glob("*.tbin"):
+        path.write_text("broken pooled artifact")
+    (tmp_path / "first.tbin").write_text("broken artifact")
+    build(declaration, tmp_path)
     assert len(calls) == 10
 
 

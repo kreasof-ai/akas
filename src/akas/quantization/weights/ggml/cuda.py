@@ -527,6 +527,25 @@ def bind(shape, *, encoding, layout="raw", vector_tiles=False):
         return product(x, encoded[0], tile, lane, row)
 
     tile = packed_tile_half(shape, read) if encoding == 2 else matrix_tile(read, shape)
+    if encoding in (0, 1):
+        from math import prod
+
+        rows, depth = prod(shape[:-1]), shape[-1]
+
+        @T.macro
+        def floating_tile(encoded, destination, row, column):
+            # Codec storage already fixes this contiguous matrix layout. Declare
+            # the alias directly: TileLang's view bit-count check uses int32.
+            source = T.Tensor((rows, depth), encoded[0].dtype, encoded[0].data)
+            T.copy(
+                source[
+                    row : row + destination.shape[0],
+                    column : column + destination.shape[1],
+                ],
+                destination,
+            )
+
+        tile = floating_tile
     if vector_tiles and encoding in (8, 12, 14):
         tile = vector_tile(shape, encoding, tile)
     return Codec(

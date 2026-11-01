@@ -12,6 +12,40 @@ from akas.benchmarking.history import digest, write
 from tools.campaign_report import check, export, read, render, speculative_baselines, validate
 
 
+def test_streamed_native_measurements_preserve_latency_and_failed_qualification():
+    from tools.campaign_report import measurement
+
+    row = dict(case=dict(batch=4, prompt=2048, generated=128), status="ok",
+               model_throughput_qualified=False,
+               samples=[dict(ttft_seconds=.3, tpot_seconds=.02)],
+               serving=dict(samples=[dict(ttft_ms=999, tpot_ms=999)]))
+    result = measurement(row, "akas", True, "diagnostic", "client-stream-burst-v1")
+    assert result["ttft_ms"] == 300
+    assert result["tpot_ms"] == 20
+    assert result["qualification"] == "unqualified"
+
+
+def test_retained_run_export_keeps_original_evidence_and_no_deployment(
+        campaign_evidence, monkeypatch, tmp_path):
+    import tools.campaign_report as reporting
+
+    campaign, history, _ = campaign_evidence
+    model = dict(model="example/toy", modes=["ar"], weights={"bf16": {}})
+    write(tmp_path / "benchmarks/models/toy.json", model)
+    monkeypatch.setattr(reporting, "__file__", str(tmp_path / "tools/campaign_report.py"))
+    original = (history / "runs/winner/run.json").read_bytes()
+    out = reporting.export_runs(["winner"], model_id="toy",
+                                workload_id=read(campaign)["specification"]["workload"],
+                                history=history)
+    data = read(out / "report.json")
+    native = next(p for p in data["profiles"] if p["kind"] == "akas")
+    assert native["qualifying_status"] == "unqualified"
+    assert native["selected_run_id"] is None
+    assert len(native["measurements"]) == 2
+    assert (history / "runs/winner/run.json").read_bytes() == original
+    reporting.check(history)
+
+
 @pytest.mark.parametrize("corruption", [None, "counter", "prompt", "coverage", "workload"])
 def test_speculative_baseline_preserves_verified_acceptance(tmp_path, corruption):
     from akas.benchmarking.workload import prompt_digest

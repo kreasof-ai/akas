@@ -5,6 +5,34 @@ from collections.abc import Mapping
 from akas.kernels.definition import KernelSpec
 
 
+def matmul(spec: KernelSpec, schedule: Mapping[str, object]):
+    """Use Tensor's canonical matmul producer with the graph's matrix views."""
+    from tensor.compiler.cuda.matmul import matmul as canonical
+
+    p = {**spec.parameters, **schedule}
+    options = {
+        name: p[name]
+        for name in (
+            "block_m",
+            "block_n",
+            "block_k",
+            "stages",
+            "threads",
+            "orientation",
+            "reduction_lanes",
+        )
+        if name in p
+    }
+    return canonical(
+        p["r"],
+        p["o"],
+        p["k"],
+        dtype=p.get("dtype", "float32"),
+        out_dtype="float32",
+        **options,
+    )
+
+
 def floating_warp(spec: KernelSpec, schedule: Mapping[str, object]):
     """One warp per F32 output, with F32 FMA and a warp-local reduction."""
     import tilelang.language as T
@@ -74,16 +102,25 @@ def _mma(p, *, grouped, prequantized):
     threads = p.get("threads", 128)
     top, e = (p.get("top", 8), p.get("experts", 256))
     routed = p.get("routed_input", False)
+    input_dtype = p.get("input_dtype", "bfloat16")
     parts = p.get("partitions", 1)
     stages = p.get("stages", 1)
     packed_copy = p.get("packed_copy", False)
+    mma_dtype = p.get("mma_dtype", "float8_e4m3fn")
+    if mma_dtype not in ("float8_e4m3fn", "float16"):
+        raise ValueError(
+            "FP8 projection MMA operands must be FP8 or exactly promoted FP16"
+        )
     if (
         k % (128 * parts)
         or o % n
-        or m not in (m, 32, 64, 128)
+        or m not in (16, 32, 64, 128)
         or (grouped and m != 16)
         or (n not in (32, 64, 128))
         or (threads not in (128, 256))
+        or (m // 16) * (n // 8) < threads // 32
+        or type(stages) is not int
+        or stages < 1
     ):
         raise ValueError("invalid FP8 tensor-core projection schedule")
     output_shape = (
@@ -109,8 +146,8 @@ def _mma(p, *, grouped, prequantized):
         rowbase,
         part,
     ):
-        lhs = T.alloc_shared((m, 128), "float8_e4m3fn")
-        rhs = T.alloc_shared((n, 128), "float8_e4m3fn")
+        lhs = T.alloc_shared((m, 128), mma_dtype)
+        rhs = T.alloc_shared((n, 128), mma_dtype)
         absolute = T.alloc_fragment((m, 128), "float32")
         maxima = T.alloc_fragment((m,), "float32")
         activation_scales = T.alloc_shared((m,), "float32")
@@ -121,9 +158,9 @@ def _mma(p, *, grouped, prequantized):
             tile = part * (k // (128 * parts)) + local_tile
             if prequantized:
                 for b in T.Parallel(m):
-                    activation_scales[b] = 1
-                    if rowbase + b < r:
-                        if grouped:
+                    if grouped:
+                        activation_scales[b] = 1
+                        if rowbase + b < r:
                             if routes[group, rowbase + b] >= 0:
                                 if routed:
                                     activation_scales[b] = input_scales[
@@ -133,14 +170,26 @@ def _mma(p, *, grouped, prequantized):
                                     activation_scales[b] = input_scales[
                                         rowbase + b, tile
                                     ]
-                        else:
-                            activation_scales[b] = input_scales[rowbase + b, tile]
+                    else:
+                        activation_scales[b] = T.if_then_else(
+                            rowbase + b < r,
+                            input_scales[T.min(rowbase + b, r - 1), tile],
+                            1,
+                        )
                 T.sync_threads()
-                for b, j in T.Parallel(m, 128):
-                    bits = T.alloc_var("uint8")
-                    bits = 0
-                    if rowbase + b < r:
-                        if grouped:
+                if not grouped:
+                    activations = T.view(x, dtype="float8_e4m3fn")
+                    T.copy(
+                        activations[
+                            rowbase : rowbase + m, tile * 128 : tile * 128 + 128
+                        ],
+                        lhs,
+                    )
+                else:
+                    for b, j in T.Parallel(m, 128):
+                        bits = T.alloc_var("uint8")
+                        bits = 0
+                        if rowbase + b < r:
                             if routes[group, rowbase + b] >= 0:
                                 if routed:
                                     bits = x[
@@ -150,9 +199,7 @@ def _mma(p, *, grouped, prequantized):
                                     ]
                                 else:
                                     bits = x[rowbase + b, tile * 128 + j]
-                        else:
-                            bits = x[rowbase + b, tile * 128 + j]
-                    lhs[b, j] = T.reinterpret("float8_e4m3fn", bits)
+                        lhs[b, j] = T.reinterpret("float8_e4m3fn", bits)
             else:
                 for b, j in T.Parallel(m, 128):
                     if rowbase + b < r:
@@ -342,7 +389,7 @@ def _mma(p, *, grouped, prequantized):
 
         @kernel
         def compute(
-            x: Tensor((r, top, k) if routed else (r, k), "bfloat16"),
+            x: Tensor((r, top, k) if routed else (r, k), input_dtype),
             w: Tensor((e, o, k), "uint8"),
             scales: Tensor((e, T.ceildiv(o, 128), k // 128), "bfloat16"),
             experts: Tensor((r * top,), "int32"),
@@ -409,7 +456,7 @@ def _mma(p, *, grouped, prequantized):
 
         @kernel
         def compute(
-            x: Tensor((r, k), "bfloat16"),
+            x: Tensor((r, k), input_dtype),
             w: Tensor((o, k), "uint8"),
             scales: Tensor((T.ceildiv(o, 128), k // 128), "bfloat16"),
         ) -> Tensor(output_shape, "float32"):
@@ -683,6 +730,7 @@ def native_fp8(spec: KernelSpec, schedule: Mapping[str, object]):
     import tilelang.language as T
 
     r, k, o = (p["r"], p["k"], p["o"])
+    input_dtype = p.get("input_dtype", "bfloat16")
     columns, threads = (p.get("columns", 4), p.get("threads", 128))
     if (
         any((type(v) is not int or v <= 0 for v in (r, k, o, columns, threads)))
@@ -697,7 +745,7 @@ def native_fp8(spec: KernelSpec, schedule: Mapping[str, object]):
 
     @kernel
     def compute(
-        x: Tensor((r, k), "bfloat16"),
+        x: Tensor((r, k), input_dtype),
         w: Tensor((o, k), "uint8"),
         scales: Tensor((T.ceildiv(o, 128), k // 128), "bfloat16"),
     ) -> Tensor((r, o), "float32"):
@@ -1296,12 +1344,15 @@ def fp8(spec: KernelSpec, schedule: Mapping[str, object]):
     r, o, parts = (p["r"], p["o"], p["partitions"])
     top = p.get("top")
     rows = r * (top or 1)
+    output_dtype = p.get("output_dtype", "float32")
+    if output_dtype not in ("float32", "float16", "bfloat16"):
+        raise ValueError("reduction merge output must be float32, float16 or bfloat16")
 
     @kernel
     def compute(
         partial: Tensor((r, top, parts, o) if top else (r, parts, o), "float32"),
-    ) -> Tensor((r, top, o) if top else (r, o), "float32"):
-        out = output((r, top, o) if top else (r, o), "float32")
+    ) -> Tensor((r, top, o) if top else (r, o), output_dtype):
+        out = output((r, top, o) if top else (r, o), output_dtype)
         with T.Kernel(rows, T.ceildiv(o, 256), threads=256) as (b, tile):
             for j in T.Parallel(256):
                 col = tile * 256 + j

@@ -113,8 +113,14 @@ def plan(
         record_implementation=True,
     )
     from akas.compilation.state import map_requests
+    from akas.compilation.liveness import prune_buffers
+    from akas.graph import Graph
 
     forward, kernels = map_requests(forward, kernels)
+    forward = prune_buffers(
+        Graph.from_metadata(forward.metadata()),
+        preserve_roles=("input", "output", "weight", "state", "journal"),
+    )
     return Bundle(
         dict(
             schema="akas.forward.v1",
@@ -302,10 +308,17 @@ def compile_program(
             graph, commit = (
                 composed if isinstance(composed, tuple) else (composed, None)
             )
-        from akas.compilation.policy import lower
+        from akas.compilation.policy import lower, resolve
 
+        phase_policy = resolve(
+            policy,
+            schedules,
+            dict(phase=phase, rows=rows, chunk=chunk),
+            provider=provider,
+            target=target,
+        )
         graph, commit = lower(
-            graph, commit, policy=policy, provider=provider, target=target
+            graph, commit, policy=phase_policy, provider=provider, target=target
         )
         bindings = graph.request or {}
         phase_inputs = inputs if inputs is not None else bindings.get("inputs")
@@ -359,6 +372,8 @@ def compile_program(
             prediction=phase_prediction,
             feedback=feedback,
         )
+        if phase_policy != dict(policy or {}):
+            record["policy"] = phase_policy
         if bindings.get("features"):
             record["features"] = bindings["features"]
         if commit is not None and commit.calls:
@@ -433,6 +448,11 @@ def compile_program(
                         inputs=dict(phase_inputs),
                         prediction=phase_prediction,
                         state_only=True,
+                        **(
+                            {"policy": phase_policy}
+                            if phase_policy != dict(policy or {})
+                            else {}
+                        ),
                         **(
                             {"features": state_graph.request["features"]}
                             if state_graph.request.get("features")

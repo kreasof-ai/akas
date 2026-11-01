@@ -74,6 +74,14 @@ scales apply during decoding, never as one global factor. Unsupported codecs
 retain their compatible implementations. Report native F16 KV and FP8 KV as
 separate precision configurations, including numerical drift versus F16.
 
+`attention.decode_precision="float16"` explicitly enables this arithmetic at
+short contexts. It changes query/probability operand precision while retaining
+the declared KV storage. `minimum_split_groups` optionally reduces the selected
+partition count once the batch supplies enough independent KV-head groups; `splits`
+remains its upper bound. Scratch, producer and merge descriptors change together.
+The `copy_complete_tiles` schedule uses contiguous native loads for complete
+tiles in the final group and retains guarded loads for the partial tile.
+
 Encoded-cache `packed_prefill` stages each encoded K/V tile and its scales,
 decodes into FP16 shared memory, then shares that tile across grouped queries.
 It retains FP32 softmax statistics and accumulation. Query tile size, stage

@@ -78,3 +78,13 @@ IMPLEMENTATIONS = (
         ),
     )
 )
+
+IMPLEMENTATIONS += (
+    Implementation(
+        "quantize",
+        "akas.quantization.activations.fp8.cuda",
+        "reference",
+        factory="quantize",
+        name="akas.quantization.activations.fp8:reference",
+    ),
+)

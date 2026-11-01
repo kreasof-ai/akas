@@ -1,6 +1,6 @@
 """vLLM eager preflight: the same input/output protocol as other baseline workers."""
 
-from tools.baselines.common import main, synthetic_prompts, measurements, phase_metrics
+from tools.baselines.common import main, synthetic_prompts, measurements, phase_metrics, stream_burst
 
 
 def run(config):
@@ -37,11 +37,39 @@ def run(config):
         settings=settings,
         cases=[],
     )
-    llm = LLM(**settings)
-    tokenizer = llm.get_tokenizer()
     params = SamplingParams(
         temperature=0, max_tokens=config["output_tokens"], ignore_eos=True
     )
+    if config.get("streaming"):
+        import asyncio
+        from vllm.engine.arg_utils import AsyncEngineArgs
+        from vllm.v1.engine.async_llm import AsyncLLM
+
+        settings["skip_tokenizer_init"] = True
+        params.detokenize = False
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        llm = AsyncLLM.from_engine_args(AsyncEngineArgs(**settings))
+        serial = 0
+
+        async def generate(index, prompt):
+            async for row in llm.generate(dict(prompt_token_ids=prompt), params, f"{serial}-{index}"):
+                yield list(row.outputs[0].token_ids), {}
+
+        def invoke(batch, prefix):
+            nonlocal serial
+            serial += 1
+            return loop.run_until_complete(stream_burst(
+                synthetic_prompts(config["vocab"], batch, prefix), generate, config["output_tokens"]))
+
+        try:
+            measurements(config, invoke, report)
+        finally:
+            llm.shutdown()
+            loop.close()
+        return report
+
+    llm = LLM(**settings)
 
     def invoke(batch, prefix):
         prompts = [

@@ -9,6 +9,7 @@ from tensor.runtime.abi import StreamDescriptor
 from akas.execution.plan import ExecutionPlan
 from akas.tensor.executor import capture
 from akas.tensor.executor import submit
+from akas.tensor.executor import bind
 from akas.memory.layouts import allocate_hybrid_states
 
 
@@ -36,6 +37,22 @@ class Kernel:
     def _bind(self, args, kwargs, *, include_outputs):
         assert include_outputs
         return {}, {}, dict(grid=[1, 1, 1], block=[256, 1, 1], shared_memory_bytes=0)
+
+
+def test_public_tensor_bindings_own_submission_and_lifetime_checks():
+    device = Device()
+    submitted = []
+    kernel = SimpleNamespace()
+    call = SimpleNamespace(executable=kernel, launch=lambda: submitted.append(kernel))
+
+    def public_bind(*arguments):
+        assert arguments == (1, 2)
+        return call
+
+    kernel.bind = public_bind
+    assert bind(device, kernel, (1, 2)) is call
+    submit(device, [(kernel, call)])
+    assert submitted == [kernel] and not device.launched
 
 
 def test_derived_plan_and_labels_preserve_submission_order():

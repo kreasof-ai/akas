@@ -81,6 +81,9 @@ def validate_program(directory, manifest):
     identities = set()
     states = {}
     for row in records:
+        if "policy" in row and (not isinstance(row["policy"],dict)
+                or any(not isinstance(value,dict) for value in row["policy"].values())):
+            raise ValueError("invalid phase policy metadata")
         identity = (row["phase"],row["rows"],row["chunk"])
         if identity in identities or any(type(n) is not int or n < 1 for n in identity[1:]):
             raise ValueError("invalid or duplicate program geometry")

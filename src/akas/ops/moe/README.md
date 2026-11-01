@@ -65,10 +65,36 @@ grouped GEMM projections, with a warp-local decode reduction candidate. CUDA
 prefill search varies route rows, output columns, reduction depth and thread
 count per tile. `compact_experts` requests the weight codec's `read_tile` to stage
 FP16 coefficients; format-specific packed loads stay in quantization.
+
+For native CUDA FP8 experts, `moe.activation_dtype` declares the storage precision
+of private gate/up products and the SwiGLU result. `moe.intermediate_dtype`
+separately declares private down-projection contribution storage. Both default
+to FP32 and accept FP16 or BF16. The policy checks consumers and visibility
+before changing buffers. Fused gate/up/SwiGLU kernels retain the same rounding
+boundaries as separate calls, including before activation quantization. Matrix
+accumulation and routed combination remain FP32; these options do not change KV
+storage. `mma_dtype` independently selects native FP8 operands or exact promotion
+of FP8 codes to FP16 operands.
+
 For prefill, the shared `expert_tile_map(counts)` returns expert IDs and local
 tile indices for each supported row tile. Empty experts produce no active work;
 one map serves gate, up and down projections on both providers. The map is
 independent of the selected geometry, so search can reuse its validation inputs.
+The map defaults to row tiles through 64. The `moe.max_block_m` policy declares
+an extended domain through 128 and updates the producer, consumers and buffer
+descriptors together. Tuning can then select 128-row CUDA tiles with 512 threads
+without preparing another map for each projection. The selected row tile must
+fit the declared map domain.
+
+The optional `moe.packed` policy introduces `expert_pack` for eligible private
+CUDA FP8 chains. It copies encoded activations and their scales into aligned
+expert segments, with one shared offset table. Paired gate/up and down
+projections reuse the same matrix body with contiguous activation tiles;
+down-projection outputs retain logical token/rank order. The policy checks
+storage ownership, aliases, additional users and matching route geometry before
+changing private layouts. `packed_minimum_rows` selects the eligible row range.
+Measure packing with both projections, including inactive and padded routes.
+
 CUDA's `compact_experts` keeps tensor-core matrix tiles. WebGPU's
 `register_experts` shares decoded coefficient tiles and keeps accumulators in
 private registers. Its search axes include row/column/depth tiles, per-thread

@@ -4,6 +4,7 @@ import argparse
 from datetime import datetime, timezone
 import json
 from pathlib import Path
+from akas.benchmarking.streaming import phase_metrics, stream_burst
 import traceback
 
 
@@ -86,24 +87,6 @@ def measurements(config, invoke, report):
         save(report)
         print("CASE", batch, prefix, row["status"], row["wall_seconds"], flush=True)
 
-
-def phase_metrics(batch, prefix, output, first, decode):
-    """Burst rates from request timings, including scheduling; not kernel timings."""
-    import math
-
-    if (
-        not first
-        or not decode
-        or any(not math.isfinite(v) or v <= 0 for v in (*first, *decode))
-    ):
-        raise ValueError("runtime did not expose valid phase timings")
-    return dict(
-        phase_protocol="request-phase-v1",
-        prefill_tokens_per_second=batch * prefix / max(first),
-        decode_tokens_per_second=batch * (output - 1) / max(decode),
-        ttft_seconds=max(first),
-        tpot_seconds=max(decode) / (output - 1),
-    )
 
 
 def main(run):

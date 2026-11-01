@@ -21,6 +21,17 @@ def test_source_fingerprints_use_importable_names_on_every_platform():
     assert all("\\" not in name and find_spec(name) is not None for name in names)
 
 
+def test_source_fingerprints_ignore_editor_backups(tmp_path, monkeypatch):
+    import akas.artifacts.fingerprint as fingerprints
+
+    root = tmp_path / "akas"
+    (root / "ops/example/.ipynb_checkpoints").mkdir(parents=True)
+    (root / "ops/example/cuda.py").write_text("value = 1\n")
+    (root / "ops/example/.ipynb_checkpoints/cuda-checkpoint.py").write_text("backup = 1\n")
+    monkeypatch.setattr(fingerprints, "__file__", str(root / "artifacts/fingerprint.py"))
+    assert fingerprints._modules("ops") == {"akas.ops.example.cuda"}
+
+
 class Resource:
     def __init__(self):
         self.released = False

@@ -26,6 +26,26 @@ def model_definition(directory, name):
     return matches[0]
 
 
+def select_weight_format(model, runtime, requested=None):
+    """Select declared checkpoint bytes independently from execution dtype."""
+    if requested is not None:
+        selected = requested
+    elif runtime == "llama":
+        selected = "q4_k_m"
+    elif "bf16" in model["weights"]:
+        selected = "bf16"
+    else:
+        native = [name for name in ("fp8", "f16") if name in model["weights"]]
+        if len(native) != 1:
+            raise ValueError("select an explicit declared native weight format")
+        selected = native[0]
+    if selected not in model["weights"]:
+        raise ValueError(f"model does not declare {selected} weights")
+    if runtime != "llama" and selected not in ("bf16", "fp8", "f16"):
+        raise ValueError("native baselines require safetensors weights")
+    return selected
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("runtime", choices=("vllm", "sglang", "llama"))
@@ -33,7 +53,7 @@ def main():
     parser.add_argument("--models", type=Path, default=Path("benchmarks/models"))
     parser.add_argument("--mtp", action="store_true")
     parser.add_argument("--provider", choices=("cuda", "vulkan"), default="cuda")
-    parser.add_argument("--format", choices=("f16", "q4_0", "q4_k_m"), default="q4_k_m")
+    parser.add_argument("--format", choices=("bf16", "fp8", "f16", "q4_0", "q4_k_m"))
     parser.add_argument("--history", type=Path, default=Path("benchmarks"))
     parser.add_argument("--seconds", type=int, default=600)
     parser.add_argument(
@@ -46,6 +66,7 @@ def main():
         help="optional workload JSON; defaults to standard-v1 for optimized runs",
     )
     parser.add_argument("--repeats", type=int, default=None)
+    parser.add_argument("--streaming", action="store_true", help="measure concurrent token arrival times")
     args = parser.parse_args()
     if (
         args.seconds <= 0
@@ -55,6 +76,8 @@ def main():
         parser.error("a positive deadline and compatible provider are required")
     if args.runtime == "llama" and args.mtp:
         parser.error("the llama.cpp probe currently measures AR")
+    if args.streaming and args.runtime == "llama":
+        parser.error("streamed native timing currently supports vLLM and SGLang")
     definition_path, model = model_definition(args.models, args.model)
     mode = "mtp" if args.mtp else "ar"
     if mode not in model["modes"]:
@@ -62,12 +85,14 @@ def main():
     root = Path(__file__).resolve().parents[2]
     work = root / "build/baselines"
     work.mkdir(parents=True, exist_ok=True)
-    weight_format = args.format if args.runtime == "llama" else "bf16"
+    weight_format = select_weight_format(model, args.runtime, args.format)
     weight = model["weights"][weight_format]
     checkpoint = (root / weight["path"]).resolve()
     name = f"{args.runtime}-{model['id']}-{mode}-{args.provider}-{weight_format}"
     if args.optimized:
         name += "-optimized"
+    if args.streaming:
+        name += "-streaming"
     raw, log, configuration = (
         work / f"{name}.{suffix}" for suffix in ("json", "log", "config.json")
     )
@@ -110,6 +135,7 @@ def main():
         shapes=[[1, 32], [4, 32], [1, 2048]],
         runtime_options=model.get("runtime_options", {}).get(args.runtime, {}),
         optimized=args.optimized,
+        streaming=args.streaming,
         warmup=1,
         repeats=args.repeats or (3 if args.optimized else 1),
         deadline_seconds=args.seconds,
@@ -136,7 +162,7 @@ def main():
         )
     else:
         hf_config = json.loads(
-            (root / model["weights"]["bf16"]["path"] / "config.json").read_text()
+            (checkpoint / "config.json").read_text()
         )
         config["vocab"] = hf_config.get("text_config", hf_config)["vocab_size"]
     metadata = dict(
@@ -152,7 +178,7 @@ def main():
         ),
         purpose="baseline" if args.optimized else "preflight",
         command=command,
-        protocol="baseline-burst-v3" if args.optimized else "baseline-preflight-v1",
+        protocol="baseline-stream-burst-v1" if args.streaming else "baseline-burst-v3" if args.optimized else "baseline-preflight-v1",
         checkpoint=str(checkpoint),
         checkpoint_sha256=checkpoint_digest(checkpoint),
         checkpoint_source=weight["source"],
@@ -276,6 +302,7 @@ def main():
             previous_path = work / (
                 f"{args.runtime}-{model['id']}-ar-{args.provider}-{weight_format}"
                 + ("-optimized" if args.optimized else "")
+                + ("-streaming" if args.streaming else "")
                 + ".json"
             )
             previous = json.loads(previous_path.read_text())

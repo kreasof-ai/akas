@@ -4,6 +4,36 @@ from akas.graph import Graph
 from akas.kernels.registry import graph_outputs
 
 
+def prune_buffers(graph, *, preserve_roles=()):
+    """Remove unreferenced storage, keeping request bindings and alias ancestors.
+
+    Producers can preserve externally owned roles even when no operation uses
+    them. Internal scratch eliminated by a rewrite never needs an allocation.
+    """
+    needed = {
+        name
+        for call in graph.calls
+        for name in (*call.arguments, *call.bindings.values())
+    }
+    needed.update(
+        name for name, spec in graph.buffers.items() if spec.role in preserve_roles
+    )
+    request = graph.request or {}
+    needed.update(request.get("inputs", {}).values())
+    needed.update(request.get("features", {}).values())
+    needed.update(request.get("reset", ()))
+    if "prediction" in request:
+        needed.add(request["prediction"])
+    for name in tuple(needed):
+        while graph.buffers[name].alias_of is not None:
+            name = graph.buffers[name].alias_of
+            needed.add(name)
+    graph.buffers = {
+        name: spec for name, spec in graph.buffers.items() if name in needed
+    }
+    return graph
+
+
 def state_prefill(graph):
     """Keep persistent writes and their dependencies, excluding terminal heads.
 
@@ -12,10 +42,7 @@ def state_prefill(graph):
     """
     graph = Graph.from_metadata(graph.metadata())
 
-    def base(name):
-        while graph.buffers[name].alias_of is not None:
-            name = graph.buffers[name].alias_of
-        return name
+    base = graph.storage_owner
 
     request = graph.request or {}
     retained = {
@@ -48,21 +75,4 @@ def state_prefill(graph):
         request["features"] = retained
     else:
         request.pop("features", None)
-    needed = {
-        name
-        for call in graph.calls
-        for name in (*call.arguments, *call.bindings.values())
-    }
-    needed.update(request["inputs"].values())
-    needed.update(retained.values())
-    needed.update(request.get("reset", ()))
-    needed.add(request["prediction"])
-    needed.update(name for name, spec in graph.buffers.items() if spec.role == "state")
-    for name in tuple(needed):
-        while graph.buffers[name].alias_of is not None:
-            name = graph.buffers[name].alias_of
-            needed.add(name)
-    graph.buffers = {
-        name: spec for name, spec in graph.buffers.items() if name in needed
-    }
-    return graph
+    return prune_buffers(graph, preserve_roles=("state",))

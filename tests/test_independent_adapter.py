@@ -25,12 +25,12 @@ class Counter(Executor):
             raise RuntimeError("injected reset failure")
         self.values[slot] = 0
 
-    def _execute_batch(self, slots, sequences, chunk):
+    def _execute_batch(self, slots, sequences, chunk, *, phase=None, read=True):
         for slot, sequence in zip(slots, sequences):
             for token in sequence:
                 self.values[slot] = (self.multiplier * self.values[slot] + token) % 100
             self.positions[slot] += len(sequence)
-        return self.values[slots].astype(int).tolist()
+        return self.values[slots].astype(int).tolist() if read else None
 
     def _close_resources(self):
         self.resources_closed = True

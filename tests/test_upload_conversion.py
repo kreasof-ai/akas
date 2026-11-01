@@ -20,10 +20,11 @@ def test_e4m3_resident_conversion_is_exact_for_signed_normal_and_subnormal_value
 
 
 @pytest.mark.parametrize("bad", [False, True])
-def test_grouped_conversion_scales_offsets_and_cleans_up_partial_failure(tmp_path, bad):
+@pytest.mark.parametrize("order", [(0, 1), (1, 0)])
+def test_grouped_conversion_scales_offsets_and_cleans_up_partial_failure(tmp_path, bad, order):
     path = tmp_path / "shard"
     path.write_bytes(bytes([56, 184, 64, 127 if bad else 192]))
-    tensors = {name: SimpleNamespace(dtype="F8_E4M3", shard=path, nbytes=2, offset=index*2)
+    tensors = {name: SimpleNamespace(dtype="F8_E4M3", shard=path, nbytes=2, offset=order[index]*2)
                for index, name in enumerate(("one", "two"))}
     layouts = {name: ("experts", index*2, (2, 2)) for index, name in enumerate(tensors)}
     allocated = []
@@ -46,4 +47,5 @@ def test_grouped_conversion_scales_offsets_and_cleans_up_partial_failure(tmp_pat
     else:
         weights = upload_shards(device, tensors, list(tensors), layouts, conversions={"experts": "float16"})
         actual = np.frombuffer(weights["experts"].storage.raw[:8], dtype="float16")
-        np.testing.assert_array_equal(actual, [1, -1, 2, -2])
+        expected = np.array([[1, -1], [2, -2]], dtype="float16")[list(order)].reshape(-1)
+        np.testing.assert_array_equal(actual, expected)

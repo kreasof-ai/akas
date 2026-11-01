@@ -212,12 +212,23 @@ def publish(
                 return
             ref = "refs/heads/" + branch
             state = branches.setdefault(branch, dict(bytes=0, commits=set()))
+            previous = None
             try:
                 parent = (
                     archive.git(repo, "rev-parse", "--verify", ref).decode().strip()
                 )
+                previous = parent
             except ValueError:
-                parent = None
+                try:
+                    parent = archive.git(
+                        repo, "rev-parse", "--verify", "refs/remotes/origin/" + branch
+                    ).decode().strip()
+                except ValueError:
+                    parent = None
+            if parent is None and state["commits"]:
+                raise ValueError(
+                    f"fetch the published archive branch before extending it: {branch}"
+                )
             if parent and parent not in state["commits"]:
                 raise ValueError(f"archive branch has an unrecognized tip: {branch}")
             archive.git(repo, "read-tree", "--empty", env=env)
@@ -274,7 +285,7 @@ def publish(
                 args.extend(["-p", parent])
             message = f"Archive {len(batch)} benchmark bundles ({actual_size / 1024**2:.1f} MiB); replace previous batch\n"
             commit = archive.git(repo, *args, input=message.encode()).decode().strip()
-            archive.git(repo, "update-ref", ref, commit, parent or "0" * 40)
+            archive.git(repo, "update-ref", ref, commit, previous or "0" * 40)
             for kind, folder, summary, snapshot, files, source_files in entries:
                 data[kind][folder.name] = dict(
                     branch=branch,

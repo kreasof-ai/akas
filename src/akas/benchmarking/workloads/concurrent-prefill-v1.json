@@ -1,0 +1,17 @@
+{
+  "schema": "akas.workload.v1",
+  "id": "concurrent-prefill-v1",
+  "description": "Concurrent autoregressive requests with medium prompts and 16-bit KV.",
+  "batches": [1, 4, 16, 64, 256],
+  "prefix_tokens": [2048],
+  "output_tokens": 128,
+  "kv_bits": 16,
+  "speculative_decoding": false,
+  "cached_prefix_tokens": 0,
+  "early_eos": false,
+  "sampling": {"temperature": 0},
+  "prefix_cache": false,
+  "cpu_offload": false,
+  "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens. Streamed TTFT includes queueing and delivery.",
+  "metrics": ["prefill_tokens_per_second", "decode_tokens_per_second", "ttft_seconds", "inter_token_seconds", "peak_vram_bytes"]
+}

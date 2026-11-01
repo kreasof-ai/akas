@@ -366,6 +366,8 @@ def lower(graph, commit, settings, *, provider, target):
         "packed_loads",
         "native_tail",
         "adaptive_splits",
+        "decode_precision",
+        "minimum_split_groups",
     }
     if set(settings) - allowed:
         raise ValueError("unknown attention pipeline policy")
@@ -379,8 +381,22 @@ def lower(graph, commit, settings, *, provider, target):
             "decoded_kv",
             "native_tail",
             "adaptive_splits",
+            "decode_precision",
+            "minimum_split_groups",
         }:
             raise ValueError("unknown floating attention policy")
+        if "decode_precision" in settings and (
+            provider != "cuda"
+            or settings["decode_precision"] not in ("float32", "float16")
+        ):
+            raise ValueError("decode precision requires CUDA float32 or float16")
+        minimum_groups = settings.get("minimum_split_groups")
+        if minimum_groups is not None and (
+            provider != "cuda" or type(minimum_groups) is not int or minimum_groups < 1
+        ):
+            raise ValueError(
+                "attention minimum split groups requires a positive CUDA workgroup count"
+            )
         if "splits" in settings and (
             type(settings["splits"]) is not int
             or settings["splits"] not in (1, 2, 4, 8, 16, 32, 64, 128, 256, 512)
@@ -405,8 +421,16 @@ def lower(graph, commit, settings, *, provider, target):
             raise ValueError("adaptive floating attention currently requires WebGPU")
         calls, workspaces, tails = [], {}, {}
         for call in graph.calls:
+            if "decode_precision" in settings and call.kind == "attention_partial":
+                call = replace(
+                    call,
+                    parameters={
+                        **call.parameters,
+                        "decode_precision": settings["decode_precision"],
+                    },
+                )
             if (
-                "splits" in settings
+                ("splits" in settings or minimum_groups is not None)
                 and call.kind
                 in (
                     "attention_partial",
@@ -415,7 +439,14 @@ def lower(graph, commit, settings, *, provider, target):
                 )
                 and call.parameters.get("optimized")
             ):
-                p = {**call.parameters, "splits": settings["splits"]}
+                splits = settings.get("splits", call.parameters.get("splits", 16))
+                if minimum_groups is not None:
+                    groups = call.parameters["r"] * call.parameters["kh"]
+                    needed = 1
+                    while needed < splits and groups * needed < minimum_groups:
+                        needed *= 2
+                    splits = min(splits, needed)
+                p = {**call.parameters, "splits": splits}
                 if call.kind in ("attention_partial", "attention_adaptive_partial"):
                     name = (
                         call.bindings.get("out") if call.bindings else call.arguments[5]
@@ -1440,14 +1471,19 @@ IMPLEMENTATIONS += (
         reference_keys=("key_rows",),
         priority=40,
         defaults=(("key_rows", 64), ("stages", 2), ("decode_precision", "float16")),
-        space=(("key_rows", (64, 128)), ("stages", (2, 1, 3))),
+        space=(
+            ("key_rows", (64, 128)),
+            ("stages", (2, 1, 3)),
+            ("copy_complete_tiles", (False, True)),
+        ),
         accepts=lambda p: (
             p.get("optimized", False)
             and p.get("d") == 64
+            and p.get("decode_precision", "float16") == "float16"
             and _mma_cache_supported(p)
             and p["h"] % p["kh"] == 0
             and p["h"] // p["kh"] in (2, 4, 8, 16)
-            and p["capacity"] >= 4096
+            and (p["capacity"] >= 4096 or p.get("decode_precision") == "float16")
         ),
     ),
 )

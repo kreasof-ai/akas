@@ -4,6 +4,7 @@ from akas.kernels.contracts import OutputABI
 from akas.kernels.contracts import Implementation
 from akas.ops.residual.validation import validation
 
+
 OUTPUT_ARGUMENTS = {"reference": {"add": (-1,)}}
 for _contract in ("reference", "packed", "packed-baseline", "bf16", "block-fp8"):
     OUTPUT_ARGUMENTS.setdefault(_contract, {}).update(

@@ -53,6 +53,23 @@ def test_state_prefill_removes_head_and_sampling_without_losing_state_writes():
     assert len(original.calls) == 6
 
 
+def test_plan_prunes_dead_scratch_and_preserves_exposed_alias_ancestors():
+    from akas.compilation.compile import plan
+
+    original = graph()
+    original.buffer("dead_projection", (1024, 1024), "float32")
+    root = original.buffer("trace", (3,), "float32")
+    view = original.view("trace.view", root, (1, 3))
+    last = original.view("trace.last", view, (3,))
+    original.bind_requests(inputs=original.request["inputs"], prediction="sampled",
+                           reset=original.request["reset"], features={"trace": last.name})
+    compiled = plan(original)
+    declared = {b["name"] for b in compiled.manifest["forward"]["buffers"]}
+    assert "dead_projection" not in declared
+    assert {"trace", "trace.view", "trace.last"} <= declared
+    assert "dead_projection" in original.buffers
+
+
 def test_unknown_operation_keeps_all_its_inputs_live():
     original = graph()
     original("foreign", {}, "logits")

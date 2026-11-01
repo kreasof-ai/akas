@@ -22,7 +22,8 @@ def validation(kind, parameters, signature):
     stress[0] = 0
     if len(stress) > 1:
         stress[1, :8] = [448, -448, 1.0625, 1.1875, 2**-10, -(2**-10), 0, -0.0]
-    values["x"][:] = decode_bfloat16(encode_bfloat16(values["x"]))
+    if parameters.get("input_dtype", "bfloat16") == "bfloat16":
+        values["x"][:] = decode_bfloat16(encode_bfloat16(values["x"]))
     depth = parameters["k"]
     blocks = values["x"].reshape(*values["x"].shape[:-1], depth // 128, 128)
     scales = np.maximum(

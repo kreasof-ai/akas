@@ -14,12 +14,13 @@ def quantize(spec: KernelSpec, schedule: Mapping[str, object]):
     r, k, top = (p["r"], p["k"], p.get("top"))
     rows = r * (top or 1)
     shape = (r, top, k) if top else (r, k)
+    input_dtype = p.get("input_dtype", "bfloat16")
     storage = FORMAT.storage(shape, provider="cuda")
     scales_shape = storage.named["scales"].shape
 
     @kernel
     def compute(
-        x: Tensor(shape, "bfloat16"),
+        x: Tensor(shape, input_dtype),
     ) -> tuple[Tensor(shape, "uint8"), Tensor(scales_shape, "float32")]:
         out = output(shape, "uint8")
         scales = output(scales_shape, "float32")

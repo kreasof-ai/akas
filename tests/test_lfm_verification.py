@@ -40,7 +40,7 @@ def test_lfm_verifier_uses_private_journals_and_preserves_target_features(
     for layer in (0, 1):
         feature = graph.request["features"][f"layer.{layer}"]
         assert graph.buffers[feature].role == "output"
-    assert [c.kind for c in commit.calls] == ["conv_commit", "advance"]
+    assert [c.kind for c in commit.calls] == ["conv_commit_prefix", "advance"]
     assert commit.request is None
     assert commit.calls[0].bindings["accepted"] == "active"
     # Request mapping must lift only persistent state into the slot pool.

@@ -21,6 +21,10 @@ selects the pinned LFM2.5-24B-A2B QAD Q4_0 GGUF on CUDA and WebGPU; its external
 baseline is llama.cpp on CUDA and Vulkan using identical checkpoint bytes.
 Workload IDs and JSON paths are accepted by the optimizer and baseline tools.
 
+[concurrent-prefill-v1](../src/akas/benchmarking/workloads/concurrent-prefill-v1.json)
+fixes C1/4/16/64/256, P2048 and 128 total outputs, with 16-bit KV and AR only.
+It disables prefix reuse, early EOS, offload and speculative decoding.
+
 A prompt starts with an empty cache. Disable prefix sharing, early EOS and CPU
 offload. Use greedy sampling with repetition penalty 1 and presence/frequency
 penalties 0; set these explicitly rather than inheriting server defaults.
@@ -93,6 +97,40 @@ tok/s, TTFT and time per subsequent token. Timings synchronize at both boundarie
 include required control uploads, and exclude compile, load, reset and warmup.
 The protocol identifier prevents comparison with older reports that counted
 additional decode steps after the first output.
+
+For queueing and delivery latency, use
+`benchmarking.streaming.engine_burst(engine, prompts, output_tokens)` with an
+idle Engine. It runs the actual scheduler and shares the `client-stream-burst-v1`
+token-arrival protocol with `tools.baselines --streaming`. TTFT starts at the
+common burst arrival; prefill rate is total prompt tokens divided by maximum
+TTFT. Decode uses the remaining 127 committed outputs and each request's
+first-to-last arrival interval. Retained arrival arrays and chunk sizes expose
+buffered deliveries. These rates include scheduling and delivery and have a
+different protocol from isolated native phase timings.
+
+`EngineConfig.prefill_token_budget` limits useful prefill tokens per scheduler
+turn, in addition to the chunk and request limits. Decode runs before each
+bounded prefill turn. `decode_prefill_token_budget` adds a smaller cap while
+decodes remain active, allowing larger initial bursts and shorter prefill
+interleaves during generation. Compile appropriate smaller prefill chunks:
+the executor selects a qualified chunk that fits each submitted sequence.
+Static phase geometry may still execute padding; a useful
+token budget does not certify packed-token execution or a latency deadline.
+
+`python -m tools.cuda_profile --checkpoint CHECKPOINT --program PROGRAM
+--chunk 2048 --out profile.json` attributes a complete phase's dependency chain
+with CUDA events. It restores recurrent state outside each sample. Intervals
+include uncaptured host submission gaps and diagnose bottlenecks; they do not
+replace captured or end-to-end measurements. The existing Vulkan profiler uses
+isolated prepared kernels and reports that distinct scope explicitly.
+
+Add `--captured` to attribute the actual CUDA graph using CUPTI kernel
+activities. `--cases phases.json` profiles several batch/chunk/position cases
+with one loaded model. `--observe operation:argument` retains selected buffer
+values from a separate untimed replay, for example routed expert counts.
+For Nsight Compute, `--counter-range` marks a warm graph launch for
+`ncu --profile-from-start off --graph-profiling graph`; retain the raw profiler
+report and verify counter access before making utilization claims.
 
 Compare performance at the same KV-cache precision before attributing a gain to
 the compiler. Keep F16 and FP8 results separately labeled. Changing the cache
@@ -531,7 +569,8 @@ kernel can support a backend while the complete model graph does not.
 | Requested AKAS path | Model-level constraint |
 | --- | --- |
 | LFM2.5 dense text, safetensors or GGUF | CUDA and WebGPU composition; validate each format/cache/shape combination |
-| LFM2 MoE text, GGUF | Packed expert execution on CUDA and WebGPU; safetensors MoE loading is not implemented |
+| LFM2 MoE text, GGUF | Packed expert execution on CUDA and WebGPU |
+| LFM2 MoE text, native block-FP8 safetensors | CUDA import and common execution are implemented; full-checkpoint numerical and serving-performance qualification remain open |
 | LFM2.5 with BF16 source weights | Floating matrix execution uses FP16 with FP32 intermediates; this is not a strict BF16 execution baseline |
 | Qwen3.5 dense text, safetensors or GGUF | CUDA composition with BF16 KV; WebGPU and FP8 KV require implementation |
 | Qwen3.5 dense MTP | Native checkpoint branch exists on CUDA; GGUF MTP is unavailable |

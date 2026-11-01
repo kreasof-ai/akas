@@ -74,6 +74,8 @@ def measurement(row, kind, qualified, run_id, protocol=None):
     serving = row.get("serving", {}).get("samples", [])
     engine = row.get("engine", {}).get("samples", [])
     case = row["case"]
+    streamed = kind == "akas" and protocol == "client-stream-burst-v1"
+    qualified = qualified and row.get("model_throughput_qualified") is not False
     result = dict(
         batch=case["batch"],
         prefix=case["prompt"],
@@ -99,10 +101,10 @@ def measurement(row, kind, qualified, run_id, protocol=None):
         burst_output_tok_s=median(
             serving if kind == "akas" else samples, "output_tokens_per_second"
         ),
-        ttft_ms=median(serving, "ttft_ms")
+        ttft_ms=median(samples, "ttft_seconds", 1000) if streamed else median(serving, "ttft_ms")
         if kind == "akas"
         else median(samples, "ttft_seconds", 1000),
-        tpot_ms=median(serving, "tpot_ms")
+        tpot_ms=median(samples, "tpot_seconds", 1000) if streamed else median(serving, "tpot_ms")
         if kind == "akas"
         else median(samples, "tpot_seconds", 1000),
     )
@@ -558,7 +560,7 @@ def collect(campaign, history):
                     measurement(
                         r,
                         "akas",
-                        data["status"] == "passed",
+                        data["status"] == "passed" and data["metadata"].get("model_throughput_qualified") is not False,
                         run_id,
                         data["metadata"].get("protocol"),
                     )
@@ -583,7 +585,8 @@ def collect(campaign, history):
             )
         winner = entry.get("winner") or child.get("winner") or {}
         selected = saved.get(winner.get("run_id"))
-        if selected and selected[0]["status"] == "passed" and entry.get("deployment"):
+        if (selected and selected[0]["status"] == "passed" and entry.get("deployment")
+                and selected[0]["metadata"].get("model_throughput_qualified") is not False):
             data, job, rows = selected
             if data["source"]["tree_sha256"] != state["source"]["tree_sha256"]:
                 raise ValueError("winner source differs from campaign: " + entry["id"])
@@ -632,6 +635,11 @@ def collect(campaign, history):
                 partial.get((r["batch"], r["prefix"]), r)
                 for r in profile["measurements"]
             ]
+            if partial:
+                profile["qualifying_status"] = "unqualified"
+                profile["kv_dtype"] = next(
+                    (data["metadata"].get("kv_dtype") for data, _, _ in reversed(tuple(saved.values()))
+                     if data["metadata"].get("kv_dtype")), profile["kv_dtype"])
         profiles.append(profile)
     # Freeze baseline selection to measurements completed before this campaign began.
     index_path = history / "index.json"
@@ -665,7 +673,7 @@ def collect(campaign, history):
             candidate
             and candidate.get("completed_at")
             and candidate["status"] != "running"
-            and candidate["metadata"].get("protocol") == "baseline-burst-v3"
+            and candidate["metadata"].get("protocol") in ("baseline-burst-v3", "baseline-stream-burst-v1")
             and (candidate.get("completed_at") or candidate["started_at"])
             <= state["created_at"]
         ):
@@ -675,7 +683,7 @@ def collect(campaign, history):
             key = (model["model"], runtime, provider, weight, mode)
             data = record(history, selected[key]) if key in selected else None
             if data and (
-                data["metadata"].get("protocol") != "baseline-burst-v3"
+                data["metadata"].get("protocol") not in ("baseline-burst-v3", "baseline-stream-burst-v1")
                 or (data.get("completed_at") or data["started_at"])
                 > state["created_at"]
             ):
@@ -1359,6 +1367,81 @@ def export(campaign, *, history="benchmarks", out=None):
     return destination
 
 
+def export_runs(run_ids, *, model_id, workload_id, history="benchmarks", out=None):
+    """Render retained native measurements through the existing campaign exporter.
+
+    Importing a run does not create a qualified deployment or mutate its evidence.
+    Baselines retain the ordinary campaign-start cutoff and workload matching.
+    """
+    history = Path(history).resolve()
+    root = Path(__file__).resolve().parents[1]
+    model = read(root / "benchmarks/models" / (model_id + ".json"))
+    requested = workload(workload_id)
+    runs = [record(history, identity) for identity in run_ids]
+    if not runs or any(data is None for data in runs):
+        raise ValueError("retained native runs must exist")
+    if any(data["metadata"].get("runtime") != "akas" for data in runs):
+        raise ValueError("--runs accepts native AKAS records; baselines use normal selection")
+    runs.sort(key=lambda data: data["started_at"])
+    formats = set()
+    for data in runs:
+        meta = data["metadata"]
+        if meta.get("model") not in (model_id, model["model"]):
+            raise ValueError("retained run belongs to another model")
+        weight = meta.get("weight_format")
+        if weight is None and len(model["weights"]) == 1:
+            weight = next(iter(model["weights"]))
+        if weight not in model["weights"]:
+            raise ValueError("retained run needs a declared weight format")
+        formats.add(weight)
+    spec = dict(models=[model_id], formats=sorted(formats),
+                backends=sorted({data["metadata"]["provider"] for data in runs}),
+                caches=sorted({data["metadata"].get("kv_dtype", "default") for data in runs}),
+                workload=requested,
+                baselines=[dict(runtime=runtime, provider="cuda", weight_format=weight, mode=mode)
+                           for runtime, weight, mode in itertools.product(
+                               ("vllm", "sglang"), sorted(formats), model["modes"])])
+    state = dict(schema="akas.matrix-campaign.v1", specification=spec,
+                 models={model_id: model}, source=runs[0]["source"],
+                 created_at=runs[0]["started_at"],
+                 updated_at=max(data.get("completed_at") or data["started_at"] for data in runs),
+                 status="retained measurements", spent_seconds=0, entries=[],
+                 retained_run_ids=[data["id"] for data in runs])
+    state["identity"] = hashlib.sha256(json.dumps(dict(
+        runs=state["retained_run_ids"], specification=spec), sort_keys=True).encode()).hexdigest()
+    with tempfile.TemporaryDirectory() as directory:
+        directory = Path(directory)
+        for identity, fields in identity_map(state).items():
+            jobs = []
+            for data in runs:
+                meta = data["metadata"]
+                weight = meta.get("weight_format", next(iter(model["weights"])))
+                if (weight, meta["provider"], meta.get("kv_dtype", "default"), meta.get("mode", "ar")) != (
+                    fields["weight_format"], fields["provider"], fields["cache_request"], fields["mode"]):
+                    continue
+                recipe = {"id": "retained-" + data["id"], "trials": 0,
+                          **meta.get("recipe", meta.get("engine_config", {}))}
+                jobs.append(dict(run_id=data["id"], status=data["status"],
+                                 recipe=recipe,
+                                 directory=str(history / "runs" / data["id"])))
+            state["entries"].append(dict(id=identity, status="unqualified" if jobs else "not_measured",
+                                          error="Retained measurements; no qualified deployment imported"))
+            write(directory / identity / "campaign.json", dict(jobs=jobs))
+        path = directory / "campaign.json"
+        write(path, state)
+        data = collect(path, history)
+        data["measurement_notes"] = (
+            "Retained measurements; importing evidence does not qualify an AKAS deployment. "
+            "All values are medians. Phase protocol labels describe the measured boundaries. "
+            "client-stream-burst-v1 measures concurrent native-engine token delivery: TTFT includes "
+            "queueing and prefill rate is total prompt tokens divided by maximum TTFT. "
+            "Decode counts the remaining output tokens after the first. Unqualified values retain †. "
+            "Original run records and source snapshots are unchanged.")
+        destination = Path(out) if out else report_directory(state, history)
+        render(data, destination, history)
+    return destination
+
+
 def validate(data):
     """Require the versioned report contract before rendering or publishing."""
     if data.get("schema") != SCHEMA:
@@ -1501,6 +1584,9 @@ def main():
         type=Path,
         help="portable report.json; compiler/build directories are unnecessary",
     )
+    source.add_argument("--runs", nargs="+", help="native run IDs to export without promoting qualification")
+    parser.add_argument("--model", help="benchmark model declaration ID for --runs")
+    parser.add_argument("--workload", help="versioned workload ID or JSON path for --runs")
     parser.add_argument("--history", type=Path, default=Path("benchmarks"))
     parser.add_argument("--out", type=Path)
     args = parser.parse_args()
@@ -1508,7 +1594,12 @@ def main():
         check(args.history)
         print("Benchmark report format and generated content verified.")
         return
-    if args.render:
+    if args.runs:
+        if not args.model or not args.workload:
+            parser.error("--runs requires --model and --workload")
+        destination = export_runs(args.runs, model_id=args.model, workload_id=args.workload,
+                                  history=args.history, out=args.out)
+    elif args.render:
         destination = args.out or args.render.parent
         render(read(args.render), destination, args.history)
     else:

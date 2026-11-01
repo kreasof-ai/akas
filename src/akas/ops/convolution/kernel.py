@@ -11,6 +11,9 @@ def convolution(spec: KernelSpec, schedule: Mapping[str, object]):
 
     r, c, length = (p["r"], p["c"], p.get("length", 3))
     chunk = p.get("chunk", 1)
+    output_dtype = p.get("output_dtype", "float32")
+    if output_dtype not in ("float32", "float16", "bfloat16"):
+        raise ValueError("convolution output requires floating storage")
 
     @kernel
     def compute(
@@ -19,9 +22,9 @@ def convolution(spec: KernelSpec, schedule: Mapping[str, object]):
         state: Tensor((r, length - 1, c), "float32"),
         enabled: Tensor((r,), "int32"),
     ) -> tuple[
-        Tensor((r, length - 1, c), "float32"), Tensor((r * chunk * c,), "float32")
+        Tensor((r, length - 1, c), "float32"), Tensor((r * chunk * c,), output_dtype)
     ]:
-        out = output((r * chunk * c,), "float32", position=3)
+        out = output((r * chunk * c,), output_dtype, position=3)
         with T.Kernel(T.ceildiv(c, 64), r, threads=64) as (block, row):
             tx = T.get_thread_binding()
             col = block * 64 + tx

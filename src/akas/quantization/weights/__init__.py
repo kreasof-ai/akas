@@ -18,12 +18,26 @@ class Weight:
     def __post_init__(self):
         from math import prod
 
-        if not 1 <= len(self.parts) <= 4 or len(self.buffers) != len(self.parts):
+        if not 1 <= len(self.parts) <= 4:
             raise ValueError("a weight requires one to four encoded pieces")
         if len(self.shape) not in (2, 3) or any(dim <= 0 for dim in self.shape):
             raise ValueError("a weight requires positive matrix or expert geometry")
         if sum(part["rows"] for part in self.parts) != prod(self.shape[:-1]):
             raise ValueError("weight pieces do not cover the logical rows")
+        from akas.quantization.formats import get
+
+        count = sum(
+            len(
+                get("weights", part["format"])
+                .storage((part["rows"], self.shape[-1]), **part["options"])
+                .buffers
+            )
+            for part in self.parts
+        )
+        if len(self.buffers) != count:
+            raise ValueError(
+                "weight buffers must include each piece's declared metadata"
+            )
 
 
 def bind_parts(parts, depth, *, provider):
@@ -40,6 +54,10 @@ def bind_parts(parts, depth, *, provider):
         )
         for part in parts
     )
+    if len(parts) == 1 and not (
+        parts[0].get("row_order") or parts[0].get("column_order")
+    ):
+        return codecs[0]
     if any(codec.storage.metadata for codec in codecs):
         raise ValueError("segmented weights currently require embedded metadata")
     readers = tuple(

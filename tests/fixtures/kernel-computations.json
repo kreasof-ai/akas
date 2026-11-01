@@ -23,6 +23,22 @@
         "launch:3d9002201e1acf3674f7cbac952df1a23ac42e405f66fd848e45b48320f10e6b",
         "launch:5cfd52709faa9442fd193356d30158bbfb32c8a5280e93cdb5978afde2b0a88f",
         "launch:cd405744b51111c30b7341c4ad4984f9a529726dbbce5b6104eaa4384b9f88da"
+      ],
+      "qualified_replacements": [
+        {
+          "original": [
+            "inline:27ee48462564a04d78911ef93ae14129b0bcd7ea2726d7c53f54a3543f590af2"
+          ],
+          "replacement": [
+            "inline:9473029828feef457f60d42aa537fdf2d055bf04b7d9afa9c046cbe098e03d60"
+          ],
+          "reason": "Reuse paired expert products and ordered SwiGLU reduction while preserving all unsplit default arithmetic.",
+          "qualification_tests": [
+            "tests/test_expert_reductions.py",
+            "build/lfm-serving/qualify-paired-reduction-defaults.py"
+          ],
+          "qualification_run": "20261101052011495377-24466dd6"
+        }
       ]
     },
     {
@@ -234,6 +250,34 @@
             "qualification/compare_kernels.py"
           ],
           "qualification_run": "20261027221834452796-2ba99389"
+        },
+        {
+          "original": [
+            "inline:0eb13840f06e309ad5a08e1f55d93ff919e645e83d546be2cee8dca54dfdb1ac"
+          ],
+          "replacement": [
+            "inline:c5f9a41f0525b7739d7d393adb61513b8a8efa1fb96320e8d481b8bfac655d9d"
+          ],
+          "reason": "Copy prequantized FP8 operands through a typed view and assign each live scale once, preserving inline and split projection arithmetic.",
+          "qualification_tests": [
+            "qualification/compare_fp8.py",
+            "tests/test_lfm_moe_native.py::test_native_operations_match_independent_references"
+          ],
+          "qualification_run": "20261031202423898279-aa508c86"
+        },
+        {
+          "original": [
+            "inline:c5f9a41f0525b7739d7d393adb61513b8a8efa1fb96320e8d481b8bfac655d9d"
+          ],
+          "replacement": [
+            "inline:b1b182b981a791325cf5a26233a3586c39c7f7aa24a4c0d5b55126ea59208648"
+          ],
+          "reason": "Expose exact FP16 promotion as a projection schedule choice while preserving the default FP8 path bitwise across inline, prequantized, split, tail and expert cases.",
+          "qualification_tests": [
+            "qualification/compare_fp8_default_dtype.py",
+            "tests/test_lfm_moe_native.py::test_native_model_reordered_ragged_requests_reuse_common_executor"
+          ],
+          "qualification_run": "20261101010121902886-7ccc89a7"
         }
       ]
     },
@@ -249,6 +293,39 @@
     {
       "module": "akas.ops.linear.webgpu",
       "computations": [
+        "inline:0dbef03cac768cdbdbe0a6793ca2a717aea4cf81a21a7fb5d71e74c6ce446984",
+        "inline:104f70f7aa0ad74bbb74ea08267e67745ba52645d7d17c01858c077e8ee595e7",
+        "inline:122a1e0f03da364239e34ae2e2efa7a2f18034d3a79eca8026f0123051d44533",
+        "inline:15f5c9414cdcbd36c4b3cb92168ca064d896a5fae0b92bc4169608a5e2ac08a2",
+        "inline:276401cb51ff888d73470a322693b2e0d5b337efb47bde91aa10706fc175121b",
+        "inline:28f3d3087af247d4f5b1de30011fed49c6b713b22868bca6c2e1f02744042b0e",
+        "inline:3884e782fa64981b1e51810821073d121c6a9660e7c1a2b3ef84a516817317cb",
+        "inline:3d127f88b139af872fd6f218093402941ed1692dacbd9fb78cdce9da0d22bbca",
+        "inline:513b68aa40fe2ff19e4d56007e0ca7401ea9f41706b930c6cd9be81406dab59e",
+        "inline:5eb396ebe9f0f530dad8557fe1cfea80f3be0aced896b44692c08faaad0aa7d0",
+        "inline:68263a9646b9af24e7b4f2a4a1129e080a8702eecfba1adb53abc42bb02578e6",
+        "inline:6a4f819f2efa13d71b76a5b7149b4d84fea2131aef263f33c5737c100b6879e4",
+        "inline:822e6168c0d628960ec6affceef2fb56c3cab3b048c84ea9fd75d927d5546880",
+        "inline:91350deb84b6a76e0171a0bf3cb3ad99a54456afeb7e9e0a2ec1282e48811be6",
+        "inline:932236a0c374ec934544b983c3bd0da2e92f4a5ed99c1fb2c3c345cd5bd48a32",
+        "inline:ae95d46f79f7baeb693805b8877c45d34bbd42bbf729d60629a44acb4b059114",
+        "inline:b4b1401b722cc83f7e98dae20a9eeecf651098163025ef38b56badb851680e45",
+        "inline:b5cf39f9edcc1b14153ce6551652de9e0617e82c2a51a6019c49c7e8fb01d816",
+        "inline:c16daba15f301cc795586172a9a0ae4577e88f898572958dde6b63c22b9a133f",
+        "inline:dd37080a847d59b736864d9b3c4e69d9334e5eb94a0b48633db0b083863c68d6",
+        "inline:dd496cb7735f65d68ffa0e9bdccf8dd0a19a2bdfb10e28ffd26f864b98f91170",
+        "inline:f770417ed912af3dfb0a567985d499b7d00cbaf8b2c5574e0a070ec5ec0cc9c8",
+        "inline:ff92db9e69870558b9830885ccf29229e835b018ccf6787cfa95cdeb89503b06",
+        "launch:125925cd27dfff30f0778cd88d13441464b0cb567c0f5b3c53f9d7c06768a889",
+        "launch:32b8ac34a1ff9db619d358d6235c62836f291570f92d3c186cd6417b863c3838",
+        "launch:60c055e7252b4ec6befdf8738012296343e3caab3f7543b7bff36ad1dd8969e2",
+        "launch:99361867fdf721f320d619e1d60c4ca3ffbad37f1ccf88e04f84345af04ccb10",
+        "launch:9a63170de00246449cfe4ff0f7c44d8110906a82ffc85f926078963639aab65a"
+      ],
+      "related_modules": [
+        "akas.quantization.weights.ggml.webgpu"
+      ],
+      "previous_computations": [
         "inline:0dbef03cac768cdbdbe0a6793ca2a717aea4cf81a21a7fb5d71e74c6ce446984",
         "inline:28f3d3087af247d4f5b1de30011fed49c6b713b22868bca6c2e1f02744042b0e",
         "inline:3884e782fa64981b1e51810821073d121c6a9660e7c1a2b3ef84a516817317cb",
@@ -267,9 +344,11 @@
         "launch:99361867fdf721f320d619e1d60c4ca3ffbad37f1ccf88e04f84345af04ccb10",
         "launch:9a63170de00246449cfe4ff0f7c44d8110906a82ffc85f926078963639aab65a"
       ],
-      "related_modules": [
-        "akas.quantization.weights.ggml.webgpu"
-      ]
+      "baseline": {
+        "revision": "ce32f41e6d5cb8ff9dbb46b2da025c999acc1fa0",
+        "source_sha256": "afa1fcfa37fdbb9d42df933a37dbd183dbbeec2a317a842cef3af3a268059078",
+        "reason": "Refresh stale migration inventory to the unchanged published source; this change modifies neither module."
+      }
     },
     {
       "module": "akas.ops.moe.cuda",
@@ -287,6 +366,153 @@
         "launch:e1e4cd971df29375b126fe3e0a8bf6b2d9898fe16836248355ffdc6594763c17",
         "launch:e3002ec8c6211cd6a93b22ff2ca5a87283708d5a72397ae05d1eb29d8110645f",
         "launch:f664d1da4242d3cbe644d396fc0997ecc135e9902e843b8fc23ec50bce66209f"
+      ],
+      "qualified_replacements": [
+        {
+          "original": [
+            "inline:cc3a63492fd511a72c82fd6eeac1a8b3803d0252e6bff5059ec999739079c2ae"
+          ],
+          "replacement": [
+            "inline:836eee7e65d508a10baee58c09f618a8bd0123f05aa25300f5c9f9081f0f0403"
+          ],
+          "reason": "Use vectorized FP8 gathers and staged compact expert tiles while preserving rank placement and ordered block accumulation.",
+          "qualification_tests": [
+            "qualification/compare_fp8.py",
+            "tests/test_lfm_moe_native.py::test_native_operations_match_independent_references"
+          ],
+          "qualification_run": "20261031202423898279-aa508c86"
+        },
+        {
+          "original": [
+            "inline:836eee7e65d508a10baee58c09f618a8bd0123f05aa25300f5c9f9081f0f0403"
+          ],
+          "replacement": [
+            "inline:387dfd89af3c0f6f795da76e667b4b2a9c0806e6bc34f93e48302706e68de464"
+          ],
+          "reason": "Share paired expert products with a separately scheduled quantizer while preserving default FP8 accumulation and rank placement.",
+          "qualification_tests": [
+            "qualification/compare_fp8_paired_output.py",
+            "tests/test_lfm_moe_native.py::test_native_operations_match_independent_references"
+          ],
+          "qualification_run": "20261101014832705566-78d51c8f"
+        },
+        {
+          "original": [
+            "launch:e1e4cd971df29375b126fe3e0a8bf6b2d9898fe16836248355ffdc6594763c17",
+            "launch:9c8d680632bd611c13add47d741d795b1c0ea827a226df02d39dccfafc4b55e1"
+          ],
+          "replacement": [
+            "launch:9311a2391a0f084718ee74b4d253cd28401fb763c42f4b6db1e3d1db59527889",
+            "launch:0f7a91b3c3956666a6d9de87c4fee750bd5044df78948492e70c0dc4d0a6b958"
+          ],
+          "reason": "Dispatch existing compact and dense expert grids through the shared paired-product body and request-derived capacity.",
+          "qualification_tests": [
+            "qualification/compare_fp8_paired_output.py"
+          ],
+          "qualification_run": "20261101014832705566-78d51c8f"
+        },
+        {
+          "original": [
+            "launch:45b3c1c7ac88461b7543c3333b4b400508e56e7aa3886efb27c57cd834ed0102"
+          ],
+          "replacement": [
+            "launch:eb378a2e8cdbe93aee57c7955793696232c607e6195013c66631eab9948304da",
+            "inline:a1ff547f3f347c00ced275c6c157bf2f90e0108a460f3e3a3580662ffa5a1d95"
+          ],
+          "reason": "Share prefix-table route-map emission while retaining logical task order and inactive padding under tighter physical capacities.",
+          "qualification_tests": [
+            "qualification/compare_tile_maps.py"
+          ],
+          "qualification_run": "20261101015233343533-e8a8ac3c"
+        },
+        {
+          "original": [
+            "inline:387dfd89af3c0f6f795da76e667b4b2a9c0806e6bc34f93e48302706e68de464"
+          ],
+          "replacement": [
+            "inline:570fd87a974175a9e361b39da72c03016b3ab6c3bab90ff85eea68a5059b03e0"
+          ],
+          "reason": "Allow exact FP16 promotion of FP8 expert operands while preserving default FP8 arithmetic.",
+          "qualification_tests": [
+            "qualification/compare_fp8_expert_dtype.py",
+            "tests/test_lfm_moe_native.py::test_native_operations_match_independent_references"
+          ],
+          "qualification_run": "20261101022452056031-770eae70"
+        },
+        {
+          "original": [
+            "inline:570fd87a974175a9e361b39da72c03016b3ab6c3bab90ff85eea68a5059b03e0"
+          ],
+          "replacement": [
+            "inline:5f2f509566baf661476b4651ffe1b77dec3119ff8ce42b696174af518ba9f623"
+          ],
+          "reason": "Explicit optional product and activation precision boundaries preserve default FP8 and promoted FP16 expert computations bitwise.",
+          "qualification_tests": [
+            "tests/test_lfm_moe_native.py::test_native_operations_match_independent_references"
+          ],
+          "qualification_run": "20261101034332110639-b7599f6f"
+        },
+        {
+          "original": [
+            "inline:5f2f509566baf661476b4651ffe1b77dec3119ff8ce42b696174af518ba9f623",
+            "launch:0f7a91b3c3956666a6d9de87c4fee750bd5044df78948492e70c0dc4d0a6b958",
+            "launch:9311a2391a0f084718ee74b4d253cd28401fb763c42f4b6db1e3d1db59527889",
+            "launch:e3002ec8c6211cd6a93b22ff2ca5a87283708d5a72397ae05d1eb29d8110645f"
+          ],
+          "replacement": [
+            "inline:3ab2be50f6ffb97130b5989c6301adf628fa2fceb679f240c05e7166cdcd9d33",
+            "launch:7e72b480b3891db6ae8ea6abef92813e30c23727d59bd093be789fe858fa572f",
+            "launch:7e8482bdbd36df3705b839998c41b2257597fd3e90908b7e6f0a4d3abd157de8",
+            "launch:e65224757308b606adb5a7518d5a88e79937612c0b6c167a3bf28aec6d118c0c",
+            "launch:f165fd29343f7b4406ceb67652eb2623ab1240b5ba5e04a3963d6a6d7f902aeb"
+          ],
+          "reason": "Default compact/paired projections, existing split projections and FP32 merge preserve bitwise results while the shared body gains compact reduction partitions and typed final stores.",
+          "qualification_tests": [
+            "tests/test_expert_reductions.py::test_split_expert_operations_match_independent_equations"
+          ],
+          "qualification_run": "20261101043701639026-426f0e6a"
+        },
+        {
+          "original": [
+            "inline:3ab2be50f6ffb97130b5989c6301adf628fa2fceb679f240c05e7166cdcd9d33"
+          ],
+          "replacement": [
+            "inline:24dac03ff584b6696a59ca488d0d2a3c983333a5d691a9d7ad6a7ad21ce96c45",
+            "launch:3f1a897ea84a775e6aa0bcc64f287bdbf95c25b5c98ca1110a840e2a7ec24515"
+          ],
+          "reason": "Reuse paired expert products and ordered SwiGLU reduction while preserving all unsplit default arithmetic.",
+          "qualification_tests": [
+            "tests/test_expert_reductions.py",
+            "build/lfm-serving/qualify-paired-reduction-defaults.py"
+          ],
+          "qualification_run": "20261101052011495377-24466dd6"
+        },
+        {
+          "original": [
+            "inline:24dac03ff584b6696a59ca488d0d2a3c983333a5d691a9d7ad6a7ad21ce96c45",
+            "launch:3f1a897ea84a775e6aa0bcc64f287bdbf95c25b5c98ca1110a840e2a7ec24515",
+            "launch:7e72b480b3891db6ae8ea6abef92813e30c23727d59bd093be789fe858fa572f",
+            "launch:7e8482bdbd36df3705b839998c41b2257597fd3e90908b7e6f0a4d3abd157de8",
+            "launch:e65224757308b606adb5a7518d5a88e79937612c0b6c167a3bf28aec6d118c0c",
+            "launch:f165fd29343f7b4406ceb67652eb2623ab1240b5ba5e04a3963d6a6d7f902aeb"
+          ],
+          "replacement": [
+            "inline:d3f910d0808ab203cfbeb85e58ab3a3db4f92ece00840ef8dd4a88b37ff1db15",
+            "launch:060ddaad59efc0847183944d01b2eb3047225ab4b48e7544e1aa4f3a2232251a",
+            "launch:15d2b4bb41a2f36eceea5b731cc0669f6e1c4f7dca1abab9f8f6766cf585cc0f",
+            "launch:21895a42cc5c3f1b3d594000cedddc44067f24dde1a596aaf80611e864a6d96d",
+            "launch:410209936dbe2db35d0d790b252f19693d39904bd9d0fd4acf26d1d17201aa43",
+            "launch:4b80c14283a1d250c59603b3c0ed252fb684bbf187101fb706d84808c231077e",
+            "launch:90ff4a12f784c7faa4200fea301db9b34f52c2eb24251f76d64ae62e3d24425c",
+            "launch:d51baded37dcb7873ed5466b8b1f54f30c90cb588026a15c5fb304e86eb848b2"
+          ],
+          "reason": "Use the same expert product body for aligned routed storage while preserving every unpacked default.",
+          "qualification_tests": [
+            "tests/test_expert_packing.py",
+            "build/lfm-serving/qualify-packed-defaults.py"
+          ],
+          "qualification_run": "20261101062001213356-659251b4"
+        }
       ]
     },
     {
@@ -305,12 +531,74 @@
         "launch:3fb5f124909a6aceae47eea58d839debb5195a51bd4542989ee4f5f7d181ba6e",
         "launch:60a9091363150a6cb3fe090e5751e720b56458b628059a404ee1ed3ea5318351",
         "launch:69bfb3b048c37a568a3773258f701cd47a89f7bcefce41a57306fe04014e6fda"
+      ],
+      "qualified_replacements": [
+        {
+          "original": [
+            "launch:3fb5f124909a6aceae47eea58d839debb5195a51bd4542989ee4f5f7d181ba6e"
+          ],
+          "replacement": [
+            "launch:3103eebd92c935d774ff41cfe3604de35373640e336aac9267d07530abab453e",
+            "inline:d06f75fdc95288592e9b0f413ca9d49cf3ee0fc1d8db9ba8bea3718e6eba08e4"
+          ],
+          "reason": "Share serial RMS with residual fusion and optional register staging while preserving its ordered accumulation and reduction tree.",
+          "qualification_tests": [
+            "qualification/compare_serial_norm.py",
+            "tests/test_packed_fusions.py::test_batched_residual_normalization_preserves_separate_gpu_results"
+          ],
+          "qualification_run": "20261101025111115516-4465eaf0"
+        },
+        {
+          "original": [
+            "launch:3103eebd92c935d774ff41cfe3604de35373640e336aac9267d07530abab453e"
+          ],
+          "replacement": [
+            "launch:348c703cae2b2b36d4285e7e70eb149ca1b2dfcd1bb76e515a37f397fc998966"
+          ],
+          "reason": "Stage only each thread's serial-tree row values and unroll their fixed indices, preserving the saved-source arithmetic without replicated local arrays.",
+          "qualification_tests": [
+            "qualification/compare_serial_norm.py",
+            "tests/test_packed_fusions.py::test_batched_residual_normalization_preserves_separate_gpu_results"
+          ],
+          "qualification_run": "20261101031019449697-669e38d4"
+        },
+        {
+          "original": [
+            "launch:348c703cae2b2b36d4285e7e70eb149ca1b2dfcd1bb76e515a37f397fc998966"
+          ],
+          "replacement": [
+            "inline:e874c943fb24e81f2ff6efcf1901576a18e354f8ba1f4c6487e40cbaf9c3c21b",
+            "launch:3c227c534d700f1ba2e71ffaab2e748008b1702f50764445353bbbf3172a4925"
+          ],
+          "reason": "Declare independent floating storage while retaining FP32 addition, reduction order and default outputs.",
+          "qualification_tests": [
+            "tests/test_activation_storage.py",
+            "build/lfm-serving/qualify-typed-activation-defaults.py"
+          ],
+          "qualification_run": "20261101051142587264-600fd451"
+        }
       ]
     },
     {
       "module": "akas.ops.residual.kernel",
       "computations": [
         "launch:c18caab601ac83ac4a3a2c3da2405f393436e0ae05ededa8fe9d0b39ee5163e7"
+      ],
+      "qualified_replacements": [
+        {
+          "original": [
+            "launch:c18caab601ac83ac4a3a2c3da2405f393436e0ae05ededa8fe9d0b39ee5163e7"
+          ],
+          "replacement": [
+            "launch:f7fca8943f777c5ad1e7537a0066a7ff4c769c73ec8ef52f009bb51d47d5661c"
+          ],
+          "reason": "Declare independent floating storage while retaining FP32 addition, reduction order and default outputs.",
+          "qualification_tests": [
+            "tests/test_activation_storage.py",
+            "build/lfm-serving/qualify-typed-activation-defaults.py"
+          ],
+          "qualification_run": "20261101051142587264-600fd451"
+        }
       ]
     },
     {
@@ -374,10 +662,21 @@
     {
       "module": "akas.quantization.activations._shared.packing",
       "computations": [
+        "inline:3090e398fd815d3b6374409dec93bd50edf66d0287c9034220e863a66b2c9632",
+        "inline:96215a80e592cc3108e236e58bfb2f70ca9a89cce011767ba40493a8255dcaf5",
+        "inline:f085b16ccea4ff859591dc55f581a48a4c996912dd4a9107dc3d6d563fa63815",
+        "launch:50c17d97f6b46ca633300357f51861642efe1b2ab81250cc8f2e6091558ee13c"
+      ],
+      "previous_computations": [
         "inline:661a592ceef48ed83f64bd68698dc0eb7fac2360f44e428fd92d491ef1d9f453",
         "inline:e5a9c5e65e979fc87fa88eff5f885bf66c01c0475acf527a669091007d1e2329",
         "launch:50c17d97f6b46ca633300357f51861642efe1b2ab81250cc8f2e6091558ee13c"
-      ]
+      ],
+      "baseline": {
+        "revision": "ce32f41e6d5cb8ff9dbb46b2da025c999acc1fa0",
+        "source_sha256": "c68161886179b9e177d01c34f77cbc18f8fbdd026ee8e8b0b5b4e13e5a5620f8",
+        "reason": "Refresh stale migration inventory to the unchanged published source; this change modifies neither module."
+      }
     },
     {
       "module": "akas.quantization.activations.fp8.cuda",

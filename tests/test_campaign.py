@@ -98,6 +98,8 @@ def test_matrix_resumes_without_repeating_completed_entries(tmp_path, monkeypatc
         ),
     )
     calls = []
+    # Matrix scheduling is independent of downloaded checkpoint availability.
+    monkeypatch.setattr(campaign, "discover", lambda _: "akas.models.lfm2.model:LFM2")
 
     def optimize(context, out, **kwargs):
         calls.append((context.backend, kwargs["budget"]))

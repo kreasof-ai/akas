@@ -13,7 +13,8 @@ class Scheduler:
     token budget each turn; decoding compacts its active requests every turn.
     """
 
-    def __init__(self, engine, publish, *, prefill_chunk=32, prefill_requests=32):
+    def __init__(self, engine, publish, *, prefill_chunk=32, prefill_requests=32,
+                 prefill_token_budget=None, decode_prefill_token_budget=None):
         if prefill_chunk <= 0 or prefill_requests <= 0:
             raise ValueError("invalid prefill budget")
         self.engine = engine
@@ -21,6 +22,16 @@ class Scheduler:
         geometry = getattr(engine, "prefill_geometry", None)
         self.prefill_chunk = geometry(prefill_chunk) if geometry is not None else prefill_chunk
         self.prefill_requests = prefill_requests
+        if prefill_token_budget is not None and (
+            type(prefill_token_budget) is not int or prefill_token_budget < 1
+        ):
+            raise ValueError("prefill token budget must be a positive integer")
+        self.prefill_token_budget = prefill_token_budget
+        if decode_prefill_token_budget is not None and (
+            type(decode_prefill_token_budget) is not int or decode_prefill_token_budget < 1
+        ):
+            raise ValueError("decode prefill token budget must be a positive integer")
+        self.decode_prefill_token_budget = decode_prefill_token_budget
         self.incoming = Queue()
         self.pending = deque()
         self.prefilling = deque()
@@ -36,6 +47,9 @@ class Scheduler:
             padded_decode_rows=0,
             max_active=0,
             capacity_counts={},
+            prefill_tokens=0,
+            max_prefill_tokens_per_turn=0,
+            max_prefill_tokens_with_decoding=0,
         )
 
     def submit(self, request):
@@ -134,13 +148,18 @@ class Scheduler:
                 )
                 self.decoding = self._emit(self.decoding, tokens)
         if self.prefilling:
-            selected = [
-                self.prefilling.popleft()
-                for _ in range(min(len(self.prefilling), self.prefill_requests))
-            ]
-            sequences = [
-                r.prompt[r.offset : r.offset + self.prefill_chunk] for r in selected
-            ]
+            selected, sequences = [], []
+            budget = self.prefill_token_budget
+            remaining = budget if budget is not None else self.prefill_chunk * self.prefill_requests
+            with_decoding = bool(self.decoding)
+            if with_decoding and self.decode_prefill_token_budget is not None:
+                remaining = min(remaining, self.decode_prefill_token_budget)
+            while self.prefilling and len(selected) < self.prefill_requests and remaining:
+                request = self.prefilling.popleft()
+                count = min(self.prefill_chunk, remaining, len(request.prompt) - request.offset)
+                selected.append(request)
+                sequences.append(request.prompt[request.offset:request.offset + count])
+                remaining -= count
             try:
                 if hasattr(self.engine, "prefill_batch"):
                     tokens = self.engine.prefill_batch(
@@ -154,6 +173,15 @@ class Scheduler:
                 self.prefilling.extendleft(reversed(selected))
                 raise
             self.stats["prefill_rounds"] += 1
+            live_tokens = sum(map(len, sequences))
+            self.stats["prefill_tokens"] += live_tokens
+            self.stats["max_prefill_tokens_per_turn"] = max(
+                self.stats["max_prefill_tokens_per_turn"], live_tokens
+            )
+            if with_decoding:
+                self.stats["max_prefill_tokens_with_decoding"] = max(
+                    self.stats["max_prefill_tokens_with_decoding"], live_tokens
+                )
             finished = []
             first = []
             for request, sequence, token in zip(selected, sequences, tokens):

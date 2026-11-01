@@ -79,10 +79,11 @@ def compile_kernel(
         artifact.unlink(missing_ok=True)
         source.write_text(text)
         search_pool = out / "search-kernels"
+        search_pool.mkdir(parents=True, exist_ok=True)
         digest = hashlib.sha256(text.encode()).hexdigest()
         pooled_source = search_pool / (digest + ".py")
         pooled_artifact = search_pool / (digest + ".tbin")
-        if search_pool.is_dir() and not needs_build(
+        if not needs_build(
             pooled_source, pooled_artifact, text, target, provider=provider
         ):
             shutil.copyfile(pooled_artifact, artifact)
@@ -94,10 +95,9 @@ def compile_kernel(
                 provider=provider,
                 cache_dir=out / "compiler-cache",
             )
-            if search_pool.is_dir():
-                pooled_source.write_text(text)
-                if pooled_artifact.resolve() != artifact.resolve():
-                    shutil.copyfile(artifact, pooled_artifact)
+            pooled_source.write_text(text)
+            if pooled_artifact.resolve() != artifact.resolve():
+                shutil.copyfile(artifact, pooled_artifact)
     record = dict(
         kind=kernel.kind, parameters=kernel.parameters, sha256=checksum(artifact)
     )

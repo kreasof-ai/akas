@@ -26,6 +26,8 @@ class Engine:
             publish if publish is not None else self.events.extend,
             prefill_chunk=self.config.prefill_chunk,
             prefill_requests=self.config.prefill_requests,
+            prefill_token_budget=self.config.prefill_token_budget,
+            decode_prefill_token_budget=self.config.decode_prefill_token_budget,
         )
 
     @classmethod

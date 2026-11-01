@@ -15,6 +15,7 @@ def _modules(*owners):
                 "akas." + p.relative_to(root).with_suffix("").as_posix().replace("/", ".")
                 for p in path.rglob("*.py")
                 if p.name != "__init__.py"
+                and all(part.isidentifier() for part in p.relative_to(root).with_suffix("").parts)
             )
         else:
             names.add("akas." + owner)
@@ -65,6 +66,8 @@ def runtime_hashes(provider="cuda"):
         )
     )
     names.update(("tensor.artifacts.format", "tensor.providers." + provider))
+    if find_spec("tensor.runtime.domain") is not None:
+        names.add("tensor.runtime.domain")
     if provider == "cuda":
         names.update(
             "tensor.providers.cuda." + name for name in ("device", "driver", "graph")

@@ -14,7 +14,7 @@ def add_rms(spec: KernelSpec, schedule: Mapping[str, object]):
     p = dict(parameters)
     algorithm = p.pop("algorithm", "fragment")
     if algorithm == "serial-tree":
-        return serial_rms_kernel(p)
+        return serial_rms_kernel({**p, "fused": True})
     if algorithm == "parallel-tree":
         return parallel_rms_kernel(p, fused=True)
     if algorithm != "fragment":
@@ -67,6 +67,7 @@ def _fragment(p):
     centered = p.get("zero_centered", False)
     rounded = p.get("round_inputs", False)
     source_dtype = p.get("input_dtype", "float32")
+    mixed_dtype = p.get("mixed_dtype", source_dtype)
     residual_dtype = p.get("residual_dtype", source_dtype)
     output_dtype = p.get("output_dtype", source_dtype)
     weight_dtype = p.get("weight_dtype", source_dtype)
@@ -148,7 +149,7 @@ def _fragment(p):
         @kernel(names={"x": p.get("input_name", "x")})
         def compute(
             x: Tensor(shape, source_dtype),
-            mixed: Tensor(shape, source_dtype),
+            mixed: Tensor(shape, mixed_dtype),
             w: Tensor((c,), weight_dtype),
         ) -> tuple[Tensor(shape, residual_dtype), Tensor(shape, output_dtype)]:
             residual = output(shape, residual_dtype, position=2)
@@ -267,30 +268,96 @@ def _serial(p):
 
     r, c, eps = (p["r"], p["c"], p["eps"])
     reduce = tree_reduce(64)
-
-    @kernel
-    def compute(x: Tensor((r * c,), "float32"), w: Tensor((c,), "float32")) -> Tensor(
-        (r * c,), "float32"
+    fused, staged = p.get("fused", False), p.get("stage_values", False)
+    loop = T.unroll if staged else T.serial
+    source_dtype = p.get("input_dtype", "float32")
+    mixed_dtype = p.get("mixed_dtype", source_dtype)
+    residual_dtype = p.get("residual_dtype", source_dtype)
+    output_dtype = p.get("output_dtype", source_dtype)
+    weight_dtype = p.get("weight_dtype", "float32")
+    if any(
+        dtype not in ("float32", "float16", "bfloat16")
+        for dtype in (
+            source_dtype,
+            mixed_dtype,
+            residual_dtype,
+            output_dtype,
+            weight_dtype,
+        )
     ):
-        out = output((r * c,), "float32")
+        raise ValueError("normalization requires floating storage")
+
+    @T.macro
+    def value(x, mixed, index):
+        if fused:
+            return T.cast(
+                T.cast(
+                    T.cast(x[index], "float32") + T.cast(mixed[index], "float32"),
+                    residual_dtype,
+                ),
+                "float32",
+            )
+        else:
+            return T.cast(x[index], "float32")
+
+    @T.macro
+    def normalize(x, mixed, residual, w, out):
         with T.Kernel(r, threads=64) as row:
             tx = T.get_thread_binding()
             scratch = T.alloc_shared((64,), "float32")
+            if staged:
+                values = T.alloc_local((T.ceildiv(c, 64),), "float32")
+                for tile in T.unroll(T.ceildiv(c, 64)):
+                    if tile * 64 + tx < c:
+                        values[tile] = value(x, mixed, row * c + tile * 64 + tx)
             acc = T.alloc_var("float32")
             acc = 0
-            for tile in T.serial(T.ceildiv(c, 64)):
+            for tile in loop(T.ceildiv(c, 64)):
                 if tile * 64 + tx < c:
-                    acc += x[row * c + tile * 64 + tx] * x[row * c + tile * 64 + tx]
+                    if staged:
+                        acc += values[tile] * values[tile]
+                    else:
+                        acc += value(x, mixed, row * c + tile * 64 + tx) * value(
+                            x, mixed, row * c + tile * 64 + tx
+                        )
             scratch[tx] = acc
             T.sync_threads()
             reduce(scratch, tx)
-            for tile in T.serial(T.ceildiv(c, 64)):
+            for tile in loop(T.ceildiv(c, 64)):
                 if tile * 64 + tx < c:
+                    if staged:
+                        source = values[tile]
+                    else:
+                        source = value(x, mixed, row * c + tile * 64 + tx)
+                    if fused:
+                        residual[row * c + tile * 64 + tx] = source
                     out[row * c + tile * 64 + tx] = (
-                        x[row * c + tile * 64 + tx]
+                        source
                         * T.rsqrt(scratch[0] / c + eps)
-                        * w[tile * 64 + tx]
+                        * T.cast(w[tile * 64 + tx], "float32")
                     )
+
+    if fused:
+
+        @kernel
+        def compute(
+            x: Tensor(r * c, source_dtype),
+            mixed: Tensor(r * c, mixed_dtype),
+            residual: Tensor(r * c, residual_dtype),
+            w: Tensor(c, weight_dtype),
+        ) -> tuple[Tensor(r * c, residual_dtype), Tensor(r * c, output_dtype)]:
+            out = output(r * c, output_dtype)
+            normalize(x, mixed, residual, w, out)
+            return residual, out
+
+        return compute
+
+    @kernel
+    def compute(
+        x: Tensor((r * c,), source_dtype), w: Tensor((c,), weight_dtype)
+    ) -> Tensor((r * c,), output_dtype):
+        out = output((r * c,), output_dtype)
+        normalize(x, x, x, w, out)
         return out
 
     return compute

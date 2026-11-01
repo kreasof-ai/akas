@@ -12,6 +12,7 @@ from akas.checkpoints.safetensors import (
     tensor_index,
     read_float_tensor,
     read_tensor,
+    block_fp8_config,
 )
 from akas.models.lfm3.config import LFM3Config
 from akas.text.tokenizer import Tokenizer
@@ -145,36 +146,7 @@ class LFM3Checkpoint:
             return
         data = json_document((self.path / "config.json").read_text())
         self.config = LFM3Config.from_huggingface(data)
-        q = data.get("quantization_config")
-        self.fp8 = q is not None
-        if self.fp8:
-            groups = q.get("config_groups", {})
-            if (
-                q.get("quant_method") != "compressed-tensors"
-                or q.get("format") != "float-quantized"
-                or len(groups) != 1
-                or q.get("kv_cache_scheme") is not None
-            ):
-                raise ValueError("unsupported LFM3 FP8 quantization")
-            group = next(iter(groups.values()))
-            w, a = group.get("weights", {}), group.get("input_activations", {})
-            if (
-                w.get("num_bits") != 8
-                or w.get("type") != "float"
-                or w.get("strategy") != "block"
-                or w.get("block_structure") != [128, 128]
-                or w.get("dynamic") is not False
-                or w.get("symmetric") is not True
-                or a.get("num_bits") != 8
-                or a.get("type") != "float"
-                or a.get("strategy") != "group"
-                or a.get("group_size") != 128
-                or a.get("dynamic") is not True
-                or a.get("symmetric") is not True
-            ):
-                raise ValueError(
-                    "LFM3 FP8 requires static 128x128 weights and dynamic group activations"
-                )
+        self.fp8 = block_fp8_config(data)
         self.names = hf_names(self.config)
         shapes = {self.names[n]: s for n, s in tensor_shapes(self.config).items()}
         for name in list(shapes):

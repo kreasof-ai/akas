@@ -51,6 +51,9 @@ def register_experts(spec, schedule):
     micro_rows = bm // row_stride
     groups = (rows * top + bm - 1) // bm + experts
     capacity = (rows * top + 3) // 4 + experts
+    from akas.ops.moe.definition import tile_layouts
+
+    layout_count = tile_layouts(p)
     layout = bm.bit_length() - 3
     binding = bind_parts(p["weight_parts"], depth, provider="webgpu")
     storage, read = binding.storage.values, binding.read
@@ -112,8 +115,8 @@ def register_experts(spec, schedule):
         w: Tensor(storage.shape, storage.dtype),
         counts: Tensor((experts,), "int32"),
         routes: Tensor((experts, rows), "int32"),
-        tile_experts: Tensor((5, capacity), "int32"),
-        tile_rows: Tensor((5, capacity), "int32"),
+        tile_experts: Tensor((layout_count, capacity), "int32"),
+        tile_rows: Tensor((layout_count, capacity), "int32"),
     ) -> Tensor((rows, top, columns), "float32"):
         out = output((rows, top, columns), "float32")
         with T.Kernel(T.ceildiv(columns, bn), groups, threads=128) as (bx, group):

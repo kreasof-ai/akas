@@ -85,9 +85,196 @@ class LFM2MoECheckpoint(LFM2Checkpoint):
     def __new__(cls, path, *, tokenizer=True):
         from pathlib import Path
 
+        if Path(path).is_dir():
+            return NativeMoECheckpoint(path, tokenizer=tokenizer)
         if not Path(path).is_file():
-            raise ValueError("LFM2 MoE currently requires a GGUF checkpoint")
+            raise ValueError("LFM2 MoE requires a checkpoint file or directory")
         return object.__new__(cls)
+
+
+class NativeMoECheckpoint:
+    """Map original safetensors into shared encoded and floating operations.
+
+    Expert tensors are grouped using the common shard uploader. FP8 payloads
+    and their original BF16 scales stay resident without a decoded weight copy.
+    """
+
+    def __init__(self, path, *, tokenizer=True):
+        from pathlib import Path
+        from akas.checkpoints.safetensors import (
+            json_document,
+            block_fp8_config,
+            tensor_index,
+            inspect_tensors,
+            read_float_tensor,
+        )
+        import numpy as np
+
+        self.path, self.gguf = Path(path), None
+        data = json_document((self.path / "config.json").read_text())
+        self.config = LFM2MoEConfig.from_huggingface(data)
+        self.fp8 = block_fp8_config(data)
+        index = tensor_index(self.path)
+        self.output = "lm_head.weight" in index
+        self.shapes = tensor_shapes(self.config, output=self.output)
+        mapping = huggingface_names(self.config, output=self.output)
+        self.groups = {
+            name: (mapping[name],) for name in self.shapes if name in mapping
+        }
+        for layer in range(self.config.dense_layers, len(self.config.layers)):
+            logical, source = f"blk.{layer}.", f"model.layers.{layer}.feed_forward."
+            self.groups[logical + "ffn_gate_inp.weight"] = (source + "gate.weight",)
+            self.groups[logical + "exp_probs_b.bias"] = (source + "expert_bias",)
+            for part, original in (("gate", "w1"), ("up", "w3"), ("down", "w2")):
+                self.groups[logical + f"ffn_{part}_exps.weight"] = tuple(
+                    source + f"experts.{expert}.{original}.weight"
+                    for expert in range(self.config.experts)
+                )
+        shapes, dtypes, self.scales, self.layouts, self.conversions = {}, {}, {}, {}, {}
+        from math import prod
+
+        for name, shape in self.shapes.items():
+            sources = self.groups[name]
+            quantized = self.fp8 and (
+                name.endswith("_exps.weight")
+                or (
+                    len(shape) == 2
+                    and name not in ("token_embd.weight", "output.weight")
+                    and "shortconv." not in name
+                    and "ffn_gate_inp" not in name
+                )
+            )
+            local = shape[1:] if len(sources) > 1 else shape
+            source_shape = (
+                (self.config.width, 1, self.config.conv)
+                if name.endswith("conv.weight")
+                else local
+            )
+            source_dtype = (
+                "F8_E4M3" if quantized else "F32" if name.endswith(".bias") else "BF16"
+            )
+            for expert, source in enumerate(sources):
+                shapes[source], dtypes[source] = source_shape, source_dtype
+                width = 1 if quantized else 4 if source_dtype == "F32" else 2
+                target_shape = shape if quantized else (prod(shape),)
+                self.layouts[source] = (
+                    name,
+                    expert * prod(local) * width,
+                    target_shape,
+                )
+            if quantized:
+                scales = tuple(source[:-6] + "weight_scale" for source in sources)
+                scale_shape = ((local[-2] + 127) // 128, local[-1] // 128)
+                grouped_scale = (
+                    (len(sources), *scale_shape) if len(sources) > 1 else scale_shape
+                )
+                self.scales[name] = name + ".scale"
+                for expert, source in enumerate(scales):
+                    shapes[source], dtypes[source] = scale_shape, "BF16"
+                    self.layouts[source] = (
+                        name + ".scale",
+                        expert * prod(scale_shape) * 2,
+                        grouped_scale,
+                    )
+            else:
+                self.conversions[name] = (
+                    "float16"
+                    if len(shape) >= 2
+                    and not name.endswith(("conv.weight", "ffn_gate_inp.weight"))
+                    else "float32"
+                )
+        if index.keys() != shapes.keys():
+            raise ValueError(
+                f"LFM2 MoE tensor inventory differs: {sorted(index.keys() ^ shapes.keys())[:8]}"
+            )
+        self.tensors = inspect_tensors(self.path, index, shapes, dtypes)
+        for name in shapes:
+            if name.endswith("weight_scale"):
+                values = read_float_tensor(self.tensors[name])
+                if not np.isfinite(values).all() or (values <= 0).any():
+                    raise ValueError(f"invalid FP8 weight scale: {name}")
+        self.tokenizer = Tokenizer.from_pretrained(self.path) if tokenizer else None
+
+    @property
+    def definition_options(self):
+        return {"output": self.output}
+
+    def program_upload_options(self, weights, *, model_options):
+        return {}
+
+    def graph_weights(
+        self, graph, *, provider, expert_weight_layout="raw", dense_weight_layout="raw"
+    ):
+        if (
+            provider != "cuda"
+            or expert_weight_layout != "raw"
+            or dense_weight_layout != "raw"
+        ):
+            raise ValueError(
+                "native LFM2 MoE requires CUDA and original weight layouts"
+            )
+        return NativeWeights(graph, self)
+
+    def upload(self, device):
+        from akas.checkpoints.upload import upload_shards
+
+        if device.info["provider"] != "cuda":
+            raise ValueError("native LFM2 MoE requires CUDA")
+        return upload_shards(
+            device,
+            self.tensors,
+            tuple(self.layouts),
+            self.layouts,
+            conversions=self.conversions,
+        )
+
+    def inventory(self):
+        return {"tensors": len(self.tensors), "format": "fp8" if self.fp8 else "bf16"}
+
+
+class NativeWeights:
+    """The family's logical names bound to declared native physical storage."""
+
+    def __init__(self, graph, checkpoint):
+        self.checkpoint, self.buffers, self.scales = checkpoint, {}, {}
+        for name, _, shape in checkpoint.layouts.values():
+            if name not in self.buffers:
+                dtype = "bfloat16" if name.endswith(".scale") else "uint8"
+                self.buffers[name] = graph.buffer(
+                    name, shape, checkpoint.conversions.get(name, dtype), role="weight"
+                )
+        self.scales = {
+            name: self.buffers[scale] for name, scale in checkpoint.scales.items()
+        }
+
+    def __getitem__(self, name):
+        return self.buffers[name]
+
+    def matrix(self, name):
+        return [(self.buffers[name], 0, self.checkpoint.shapes[name][0])]
+
+    def parameters(self, name):
+        return {"weight_dtype": self.buffers[name].dtype}
+
+    def weight(self, name):
+        from math import prod
+        from akas.quantization.weights import Weight
+
+        shape = self.checkpoint.shapes[name]
+        scaled = name in self.scales
+        return Weight(
+            shape,
+            (self.buffers[name], self.scales[name])
+            if scaled
+            else (self.buffers[name],),
+            (
+                {
+                    "format": "fp8" if scaled else "ggml",
+                    "rows": prod(shape[:-1]),
+                    "options": {} if scaled else {"encoding": 1},
+                },
+            ),
+        )
 
 
 def tensor_shapes(config, *, output=False):

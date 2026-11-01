@@ -88,6 +88,30 @@ class Graph:
             raise ValueError("view base belongs to another graph")
         return self.buffer(name, shape, base.dtype, role=base.role, alias_of=base.name)
 
+    def storage_owner(self, name):
+        """Resolve a borrowed view to the buffer owning its complete storage."""
+        while self.buffers[name].alias_of is not None:
+            name = self.buffers[name].alias_of
+        return name
+
+    def storage_families(self):
+        """Group descriptors sharing one allocation, including unused views."""
+        families = {}
+        for name in self.buffers:
+            families.setdefault(self.storage_owner(name), set()).add(name)
+        return families
+
+    def exposed_buffers(self):
+        """Descriptors whose storage or value is part of the caller contract."""
+        names = {name for name, value in self.buffers.items() if value.role != "scratch"}
+        request = self.request or {}
+        names.update(request.get("inputs", {}).values())
+        names.update(request.get("features", {}).values())
+        names.update(request.get("reset", ()))
+        if request.get("prediction"):
+            names.add(request["prediction"])
+        return names
+
     def __call__(self, kind, parameters, *arguments, label=None, **bindings):
         if arguments and bindings:
             raise TypeError("operation arguments must be positional or named")

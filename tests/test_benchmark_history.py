@@ -188,3 +188,28 @@ def test_installed_source_without_git_has_no_invented_revision(tmp_path):
     assert run.record["source"]["revision"] is None
     assert run.record["source"]["dirty"] is None
     assert "unavailable" in (tmp_path / "history/RESULTS.md").read_text()
+
+
+@pytest.mark.parametrize("changed", [False, True])
+def test_dependency_working_sources_are_retained_and_checked(tmp_path, source, changed):
+    dependency = tmp_path / "compiler"
+    dependency.mkdir()
+    (dependency / "lowering.py").write_text("x = 1\n")
+    run = Recorder(tmp_path / "history", report()["metadata"], source_root=source,
+                   dependency_sources={"compiler": dependency})
+    with tarfile.open(run.directory / "dependencies/compiler/source.tar.gz") as archive:
+        assert archive.extractfile("lowering.py").read() == b"x = 1\n"
+    if changed:
+        (dependency / "lowering.py").write_text("x = 2\n")
+    record = run.update(report(), final=True)
+    assert record["dependency_sources"]["compiler"]["changed_during_run"] is changed
+    assert record["source"]["changed_during_run"] is False
+    assert record["status"] == ("invalidated" if changed else "passed")
+    for artifact in record["artifacts"]:
+        assert digest(run.directory / artifact["path"]) == artifact["sha256"]
+
+
+def test_dependency_source_names_cannot_escape_record(tmp_path, source):
+    with pytest.raises(ValueError, match="simple identifiers"):
+        Recorder(tmp_path / "history", report()["metadata"], source_root=source,
+                 dependency_sources={"../escape": source})

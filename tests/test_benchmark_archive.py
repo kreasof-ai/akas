@@ -147,6 +147,32 @@ def test_prune_refuses_changed_or_unsealed_data(repo):
         publish(root)
 
 
+def test_append_preserves_published_history_with_only_a_remote_tracking_ref(repo):
+    root = repo / "benchmarks"
+    run(root, "published")
+    publish(root, repository_url="https://github.com/example/archive")
+    entry = archive.catalog(root)["runs"]["published"]
+    branch, previous = entry["branch"], entry["commit"]
+    archive.git(repo, "update-ref", "refs/remotes/origin/" + branch, previous)
+    archive.git(repo, "update-ref", "-d", "refs/heads/" + branch)
+    run(root, "new")
+    publish(root)
+    current = archive.catalog(root)["runs"]["new"]["commit"]
+    assert archive.git(repo, "rev-parse", current + "^").decode().strip() == previous
+    check(root, objects=True)
+
+
+def test_append_requires_existing_history_instead_of_starting_another_root(repo):
+    root = repo / "benchmarks"
+    run(root, "published")
+    publish(root, repository_url="https://github.com/example/archive")
+    branch = archive.catalog(root)["runs"]["published"]["branch"]
+    archive.git(repo, "update-ref", "-d", "refs/heads/" + branch)
+    run(root, "new")
+    with pytest.raises(ValueError, match="fetch the published archive branch"):
+        publish(root)
+
+
 def test_fork_publication_keeps_historical_links(repo):
     root = repo / "benchmarks"
     run(root, "upstream")

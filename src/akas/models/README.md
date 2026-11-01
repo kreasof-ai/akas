@@ -49,7 +49,7 @@ Use `<Family><Variant>` for model declarations, with matching `Config` and
 `DenseEngine`, `Qwen35Batch`, `DenseConfig`, `Qwen35Config`, `DenseCheckpoint`
 and `Qwen35Checkpoint` remain compatibility aliases in their original modules;
 new code should use the explicit variant names. `LFM2` selects dense LFM2;
-`LFM2MoE` selects `lfm2moe` GGUF checkpoints. They share the family composition
+`LFM2MoE` selects `lfm2moe` GGUF or `lfm2_moe` safetensors checkpoints. They share the family composition
 and executor, while the reader validates each variant's tensor inventory.
 Vision composition and multimodal naming
 remain future work; these Qwen declarations compose the text model.
@@ -83,6 +83,12 @@ iteration introduces no general speculative-head framework.
 ## LFM2 MoE checkpoints
 
 `from akas.models.lfm2 import LFM2MoE` selects the packed GGUF reader for LFM2 MoE.
+For a safetensors directory, the same declaration maps the original per-expert
+FP8 matrices and BF16 block scales into the common uploader and FP8 operations.
+CUDA currently requires original weight layouts. KV remains FP16 by default.
+Operation and small-model CUDA checks pass; full-checkpoint numerical and
+serving-performance qualification remain open. Do not infer model quality or
+competitive throughput from successful import or compilation.
 The configuration declares leading dense layers, expert dimensions and top-k
 routing. Selection uses sigmoid probabilities plus learned expert biases;
 combination uses the unbiased probabilities, normalized with an epsilon of 1e-6.
