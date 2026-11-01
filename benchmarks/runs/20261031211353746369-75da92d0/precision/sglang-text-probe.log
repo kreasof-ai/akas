@@ -1,29 +1,0 @@
-[2026-10-31 20:49:17] Fail to set RLIMIT_STACK: current limit exceeds maximum limit
-[2026-10-31 20:49:17] No HuggingFace chat template found
-[2026-10-31 20:49:28] Acceleration for non-quantized schemes is not supported by Compressed Tensors. Falling back to UnquantizedLinearMethod
-Multi-thread loading shards:   0% Completed | 0/10 [00:00<?, ?it/s]Multi-thread loading shards:  10% Completed | 1/10 [00:03<00:30,  3.44s/it]Multi-thread loading shards:  20% Completed | 2/10 [00:05<00:19,  2.43s/it]Multi-thread loading shards:  30% Completed | 3/10 [00:34<01:42, 14.61s/it]Multi-thread loading shards:  40% Completed | 4/10 [00:37<00:59,  9.97s/it]Multi-thread loading shards:  50% Completed | 5/10 [00:42<00:42,  8.47s/it]Multi-thread loading shards:  60% Completed | 6/10 [00:47<00:28,  7.08s/it]Multi-thread loading shards:  70% Completed | 7/10 [01:07<00:33, 11.32s/it]Multi-thread loading shards:  80% Completed | 8/10 [01:29<00:29, 14.66s/it]Multi-thread loading shards:  90% Completed | 9/10 [01:43<00:14, 14.43s/it]Multi-thread loading shards: 100% Completed | 10/10 [02:28<00:00, 24.09s/it]Multi-thread loading shards: 100% Completed | 10/10 [02:28<00:00, 14.88s/it]
-[2026-10-31 20:52:16] Triton kernel 'write_req_to_token_pool_triton' took 2.26 s to compile after serving started. Serving-time compilation can stall the engine; pre-compile it during engine init.
-[2026-10-31 20:52:18] Using default W8A8 Block FP8 kernel config. Performance might be sub-optimal! Config file not found at /home/sagemaker-user/akas/build/baselines/sglang/lib/python3.12/site-packages/sglang/kernels/ops/gemm/configs/N=23552,K=2048,device_name=NVIDIA_L40S,dtype=fp8_w8a8,block_shape=[128, 128].json
-[2026-10-31 20:52:18] Using default W8A8 Block FP8 kernel config. Performance might be sub-optimal! Config file not found at /home/sagemaker-user/akas/build/baselines/sglang/lib/python3.12/site-packages/sglang/kernels/ops/gemm/configs/N=2048,K=11776,device_name=NVIDIA_L40S,dtype=fp8_w8a8,block_shape=[128, 128].json
-[2026-10-31 20:52:18] Using default W8A8 Block FP8 kernel config. Performance might be sub-optimal! Config file not found at /home/sagemaker-user/akas/build/baselines/sglang/lib/python3.12/site-packages/sglang/kernels/ops/gemm/configs/N=3072,K=2048,device_name=NVIDIA_L40S,dtype=fp8_w8a8,block_shape=[128, 128].json
-[2026-10-31 20:52:18] Using default W8A8 Block FP8 kernel config. Performance might be sub-optimal! Config file not found at /home/sagemaker-user/akas/build/baselines/sglang/lib/python3.12/site-packages/sglang/kernels/ops/gemm/configs/N=2048,K=2048,device_name=NVIDIA_L40S,dtype=fp8_w8a8,block_shape=[128, 128].json
-[2026-10-31 20:52:19] Using default MoE kernel config. Performance might be sub-optimal! Config file not found at /home/sagemaker-user/akas/build/baselines/sglang/lib/python3.12/site-packages/sglang/srt/layers/moe/moe_runner/triton_utils/configs/triton_3_7_1/E=64,N=1536,device_name=NVIDIA_L40S,dtype=fp8_w8a8,block_shape=[128, 128].json, you can create them with https://github.com/sgl-project/sglang/tree/main/benchmark/kernels/fused_moe_triton
-[2026-10-31 20:52:19] Using default MoE kernel config. Performance might be sub-optimal! Config file not found at /home/sagemaker-user/akas/build/baselines/sglang/lib/python3.12/site-packages/sglang/srt/layers/moe/moe_runner/triton_utils/configs/triton_3_7_1/E=64,N=1536,device_name=NVIDIA_L40S,dtype=fp8_w8a8,block_shape=[128, 128]_down.json, you can create them with https://github.com/sgl-project/sglang/tree/main/benchmark/kernels/fused_moe_triton
-PROBE The capital of France is False [4741]
-PROBE The capital of France is True [4741]
-PROBE The opposite of hot is False [6206]
-PROBE The opposite of hot is True [6206]
-PROBE The first three prime numbers are False [229]
-PROBE The first three prime numbers are True [229]
-PROBE def add(a, b):
-    return False [267]
-PROBE def add(a, b):
-    return True [267]
-PROBE Water freezes at zero degrees False [44530]
-PROBE Water freezes at zero degrees True [44530]
-PROBE A triangle has three False [10108]
-PROBE A triangle has three True [10108]
-PROBE The largest planet in our solar system is False [278]
-PROBE The largest planet in our solar system is True [27486]
-PROBE To calculate the area of a circle, use False [278]
-PROBE To calculate the area of a circle, use True [278]

@@ -1,0 +1,17 @@
+Traceback (most recent call last):
+  File "/home/sagemaker-user/akas/build/lfm-serving/tune-f32-matmul.py", line 28, in <module>
+    record.update(dict(results=[]),final=True,status='passed')
+  File "/home/sagemaker-user/akas/src/akas/benchmarking/history.py", line 355, in update
+    self.record["metadata"] = dict(report["metadata"])
+                                   ~~~~~~^^^^^^^^^^^^
+KeyError: 'metadata'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/sagemaker-user/akas/build/lfm-serving/tune-f32-matmul.py", line 32, in <module>
+    record.update(dict(results=[]),final=True,status='failed')
+  File "/home/sagemaker-user/akas/src/akas/benchmarking/history.py", line 355, in update
+    self.record["metadata"] = dict(report["metadata"])
+                                   ~~~~~~^^^^^^^^^^^^
+KeyError: 'metadata'

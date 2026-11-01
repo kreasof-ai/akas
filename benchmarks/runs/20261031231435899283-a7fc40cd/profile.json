@@ -1,0 +1,45 @@
+{
+  "schema": "tensor.schedule-profile.v1",
+  "provider": "cuda",
+  "target": "sm_89",
+  "entries": [
+    {
+      "operation": "matmul",
+      "parameters": {
+        "r": 2048,
+        "k": 2048,
+        "o": 64,
+        "dtype": "float32",
+        "reduction_lanes": 32
+      },
+      "schedule": {
+        "block_m": 16,
+        "block_n": 16,
+        "block_k": 128,
+        "threads": 128,
+        "stages": 2,
+        "orientation": "activation",
+        "implementation": "linear.cuda.canonical_matmul"
+      }
+    },
+    {
+      "operation": "matmul",
+      "parameters": {
+        "r": 8192,
+        "k": 2048,
+        "o": 64,
+        "dtype": "float32",
+        "reduction_lanes": 32
+      },
+      "schedule": {
+        "block_m": 16,
+        "block_n": 16,
+        "block_k": 128,
+        "threads": 128,
+        "stages": 2,
+        "orientation": "activation",
+        "implementation": "linear.cuda.canonical_matmul"
+      }
+    }
+  ]
+}

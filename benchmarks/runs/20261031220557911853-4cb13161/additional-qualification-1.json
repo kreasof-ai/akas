@@ -1,0 +1,2248 @@
+{
+  "identity": "c479b67111775d9ed70acd8be3ace3eba14c08d4129bfc4de7b67ea45e91a3f3",
+  "context": {
+    "graph": {
+      "contract": "reference",
+      "phase": "forward",
+      "buffers": [
+        {
+          "name": "r1.x",
+          "shape": [
+            1,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "input"
+        },
+        {
+          "name": "r1.activation_scales",
+          "shape": [
+            1,
+            16
+          ],
+          "dtype": "float32",
+          "role": "input"
+        },
+        {
+          "name": "r1.w",
+          "shape": [
+            64,
+            1536,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "input"
+        },
+        {
+          "name": "r1.scales",
+          "shape": [
+            64,
+            12,
+            16
+          ],
+          "dtype": "bfloat16",
+          "role": "input"
+        },
+        {
+          "name": "r1.w2",
+          "shape": [
+            64,
+            1536,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "input"
+        },
+        {
+          "name": "r1.scales2",
+          "shape": [
+            64,
+            12,
+            16
+          ],
+          "dtype": "bfloat16",
+          "role": "input"
+        },
+        {
+          "name": "r1.counts",
+          "shape": [
+            64
+          ],
+          "dtype": "int32",
+          "role": "input"
+        },
+        {
+          "name": "r1.routes",
+          "shape": [
+            64,
+            1
+          ],
+          "dtype": "int32",
+          "role": "input"
+        },
+        {
+          "name": "r1.tile_experts",
+          "shape": [
+            4
+          ],
+          "dtype": "int32",
+          "role": "input"
+        },
+        {
+          "name": "r1.tile_offsets",
+          "shape": [
+            4
+          ],
+          "dtype": "int32",
+          "role": "input"
+        },
+        {
+          "name": "r1.out",
+          "shape": [
+            1,
+            4,
+            1536
+          ],
+          "dtype": "uint8",
+          "role": "output"
+        },
+        {
+          "name": "r1.output_scales",
+          "shape": [
+            1,
+            4,
+            12
+          ],
+          "dtype": "float32",
+          "role": "output"
+        },
+        {
+          "name": "r4.x",
+          "shape": [
+            4,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "input"
+        },
+        {
+          "name": "r4.activation_scales",
+          "shape": [
+            4,
+            16
+          ],
+          "dtype": "float32",
+          "role": "input"
+        },
+        {
+          "name": "r4.w",
+          "shape": [
+            64,
+            1536,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "input"
+        },
+        {
+          "name": "r4.scales",
+          "shape": [
+            64,
+            12,
+            16
+          ],
+          "dtype": "bfloat16",
+          "role": "input"
+        },
+        {
+          "name": "r4.w2",
+          "shape": [
+            64,
+            1536,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "input"
+        },
+        {
+          "name": "r4.scales2",
+          "shape": [
+            64,
+            12,
+            16
+          ],
+          "dtype": "bfloat16",
+          "role": "input"
+        },
+        {
+          "name": "r4.counts",
+          "shape": [
+            64
+          ],
+          "dtype": "int32",
+          "role": "input"
+        },
+        {
+          "name": "r4.routes",
+          "shape": [
+            64,
+            4
+          ],
+          "dtype": "int32",
+          "role": "input"
+        },
+        {
+          "name": "r4.tile_experts",
+          "shape": [
+            16
+          ],
+          "dtype": "int32",
+          "role": "input"
+        },
+        {
+          "name": "r4.tile_offsets",
+          "shape": [
+            16
+          ],
+          "dtype": "int32",
+          "role": "input"
+        },
+        {
+          "name": "r4.out",
+          "shape": [
+            4,
+            4,
+            1536
+          ],
+          "dtype": "uint8",
+          "role": "output"
+        },
+        {
+          "name": "r4.output_scales",
+          "shape": [
+            4,
+            4,
+            12
+          ],
+          "dtype": "float32",
+          "role": "output"
+        },
+        {
+          "name": "r16.x",
+          "shape": [
+            16,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "input"
+        },
+        {
+          "name": "r16.activation_scales",
+          "shape": [
+            16,
+            16
+          ],
+          "dtype": "float32",
+          "role": "input"
+        },
+        {
+          "name": "r16.w",
+          "shape": [
+            64,
+            1536,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "input"
+        },
+        {
+          "name": "r16.scales",
+          "shape": [
+            64,
+            12,
+            16
+          ],
+          "dtype": "bfloat16",
+          "role": "input"
+        },
+        {
+          "name": "r16.w2",
+          "shape": [
+            64,
+            1536,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "input"
+        },
+        {
+          "name": "r16.scales2",
+          "shape": [
+            64,
+            12,
+            16
+          ],
+          "dtype": "bfloat16",
+          "role": "input"
+        },
+        {
+          "name": "r16.counts",
+          "shape": [
+            64
+          ],
+          "dtype": "int32",
+          "role": "input"
+        },
+        {
+          "name": "r16.routes",
+          "shape": [
+            64,
+            16
+          ],
+          "dtype": "int32",
+          "role": "input"
+        },
+        {
+          "name": "r16.tile_experts",
+          "shape": [
+            64
+          ],
+          "dtype": "int32",
+          "role": "input"
+        },
+        {
+          "name": "r16.tile_offsets",
+          "shape": [
+            64
+          ],
+          "dtype": "int32",
+          "role": "input"
+        },
+        {
+          "name": "r16.out",
+          "shape": [
+            16,
+            4,
+            1536
+          ],
+          "dtype": "uint8",
+          "role": "output"
+        },
+        {
+          "name": "r16.output_scales",
+          "shape": [
+            16,
+            4,
+            12
+          ],
+          "dtype": "float32",
+          "role": "output"
+        },
+        {
+          "name": "r64.x",
+          "shape": [
+            64,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "input"
+        },
+        {
+          "name": "r64.activation_scales",
+          "shape": [
+            64,
+            16
+          ],
+          "dtype": "float32",
+          "role": "input"
+        },
+        {
+          "name": "r64.w",
+          "shape": [
+            64,
+            1536,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "input"
+        },
+        {
+          "name": "r64.scales",
+          "shape": [
+            64,
+            12,
+            16
+          ],
+          "dtype": "bfloat16",
+          "role": "input"
+        },
+        {
+          "name": "r64.w2",
+          "shape": [
+            64,
+            1536,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "input"
+        },
+        {
+          "name": "r64.scales2",
+          "shape": [
+            64,
+            12,
+            16
+          ],
+          "dtype": "bfloat16",
+          "role": "input"
+        },
+        {
+          "name": "r64.counts",
+          "shape": [
+            64
+          ],
+          "dtype": "int32",
+          "role": "input"
+        },
+        {
+          "name": "r64.routes",
+          "shape": [
+            64,
+            64
+          ],
+          "dtype": "int32",
+          "role": "input"
+        },
+        {
+          "name": "r64.tile_experts",
+          "shape": [
+            71
+          ],
+          "dtype": "int32",
+          "role": "input"
+        },
+        {
+          "name": "r64.tile_offsets",
+          "shape": [
+            71
+          ],
+          "dtype": "int32",
+          "role": "input"
+        },
+        {
+          "name": "r64.out",
+          "shape": [
+            64,
+            4,
+            1536
+          ],
+          "dtype": "uint8",
+          "role": "output"
+        },
+        {
+          "name": "r64.output_scales",
+          "shape": [
+            64,
+            4,
+            12
+          ],
+          "dtype": "float32",
+          "role": "output"
+        },
+        {
+          "name": "r256.x",
+          "shape": [
+            256,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "input"
+        },
+        {
+          "name": "r256.activation_scales",
+          "shape": [
+            256,
+            16
+          ],
+          "dtype": "float32",
+          "role": "input"
+        },
+        {
+          "name": "r256.w",
+          "shape": [
+            64,
+            1536,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "input"
+        },
+        {
+          "name": "r256.scales",
+          "shape": [
+            64,
+            12,
+            16
+          ],
+          "dtype": "bfloat16",
+          "role": "input"
+        },
+        {
+          "name": "r256.w2",
+          "shape": [
+            64,
+            1536,
+            2048
+          ],
+          "dtype": "uint8",
+          "role": "input"
+        },
+        {
+          "name": "r256.scales2",
+          "shape": [
+            64,
+            12,
+            16
+          ],
+          "dtype": "bfloat16",
+          "role": "input"
+        },
+        {
+          "name": "r256.counts",
+          "shape": [
+            64
+          ],
+          "dtype": "int32",
+          "role": "input"
+        },
+        {
+          "name": "r256.routes",
+          "shape": [
+            64,
+            256
+          ],
+          "dtype": "int32",
+          "role": "input"
+        },
+        {
+          "name": "r256.tile_experts",
+          "shape": [
+            95
+          ],
+          "dtype": "int32",
+          "role": "input"
+        },
+        {
+          "name": "r256.tile_offsets",
+          "shape": [
+            95
+          ],
+          "dtype": "int32",
+          "role": "input"
+        },
+        {
+          "name": "r256.out",
+          "shape": [
+            256,
+            4,
+            1536
+          ],
+          "dtype": "uint8",
+          "role": "output"
+        },
+        {
+          "name": "r256.output_scales",
+          "shape": [
+            256,
+            4,
+            12
+          ],
+          "dtype": "float32",
+          "role": "output"
+        }
+      ],
+      "calls": [
+        {
+          "kind": "fp8_expert_swiglu",
+          "parameters": {
+            "r": 1,
+            "rows": 1,
+            "top": 4,
+            "experts": 64,
+            "o": 1536,
+            "k": 2048,
+            "routed_input": false,
+            "partitions": 1,
+            "block_m": 32,
+            "compact": true
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "r1.x",
+            "activation_scales": "r1.activation_scales",
+            "w": "r1.w",
+            "scales": "r1.scales",
+            "w2": "r1.w2",
+            "scales2": "r1.scales2",
+            "counts": "r1.counts",
+            "routes": "r1.routes",
+            "tile_experts": "r1.tile_experts",
+            "tile_offsets": "r1.tile_offsets",
+            "out": "r1.out",
+            "output_scales": "r1.output_scales"
+          },
+          "label": null
+        },
+        {
+          "kind": "fp8_expert_swiglu",
+          "parameters": {
+            "r": 4,
+            "rows": 4,
+            "top": 4,
+            "experts": 64,
+            "o": 1536,
+            "k": 2048,
+            "routed_input": false,
+            "partitions": 1,
+            "block_m": 32,
+            "compact": true
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "r4.x",
+            "activation_scales": "r4.activation_scales",
+            "w": "r4.w",
+            "scales": "r4.scales",
+            "w2": "r4.w2",
+            "scales2": "r4.scales2",
+            "counts": "r4.counts",
+            "routes": "r4.routes",
+            "tile_experts": "r4.tile_experts",
+            "tile_offsets": "r4.tile_offsets",
+            "out": "r4.out",
+            "output_scales": "r4.output_scales"
+          },
+          "label": null
+        },
+        {
+          "kind": "fp8_expert_swiglu",
+          "parameters": {
+            "r": 16,
+            "rows": 16,
+            "top": 4,
+            "experts": 64,
+            "o": 1536,
+            "k": 2048,
+            "routed_input": false,
+            "partitions": 1,
+            "block_m": 32,
+            "compact": true
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "r16.x",
+            "activation_scales": "r16.activation_scales",
+            "w": "r16.w",
+            "scales": "r16.scales",
+            "w2": "r16.w2",
+            "scales2": "r16.scales2",
+            "counts": "r16.counts",
+            "routes": "r16.routes",
+            "tile_experts": "r16.tile_experts",
+            "tile_offsets": "r16.tile_offsets",
+            "out": "r16.out",
+            "output_scales": "r16.output_scales"
+          },
+          "label": null
+        },
+        {
+          "kind": "fp8_expert_swiglu",
+          "parameters": {
+            "r": 64,
+            "rows": 64,
+            "top": 4,
+            "experts": 64,
+            "o": 1536,
+            "k": 2048,
+            "routed_input": false,
+            "partitions": 1,
+            "block_m": 32,
+            "compact": true
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "r64.x",
+            "activation_scales": "r64.activation_scales",
+            "w": "r64.w",
+            "scales": "r64.scales",
+            "w2": "r64.w2",
+            "scales2": "r64.scales2",
+            "counts": "r64.counts",
+            "routes": "r64.routes",
+            "tile_experts": "r64.tile_experts",
+            "tile_offsets": "r64.tile_offsets",
+            "out": "r64.out",
+            "output_scales": "r64.output_scales"
+          },
+          "label": null
+        },
+        {
+          "kind": "fp8_expert_swiglu",
+          "parameters": {
+            "r": 256,
+            "rows": 256,
+            "top": 4,
+            "experts": 64,
+            "o": 1536,
+            "k": 2048,
+            "routed_input": false,
+            "partitions": 1,
+            "block_m": 32,
+            "compact": true
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "r256.x",
+            "activation_scales": "r256.activation_scales",
+            "w": "r256.w",
+            "scales": "r256.scales",
+            "w2": "r256.w2",
+            "scales2": "r256.scales2",
+            "counts": "r256.counts",
+            "routes": "r256.routes",
+            "tile_experts": "r256.tile_experts",
+            "tile_offsets": "r256.tile_offsets",
+            "out": "r256.out",
+            "output_scales": "r256.output_scales"
+          },
+          "label": null
+        }
+      ]
+    },
+    "target": "sm_89",
+    "provider": "cuda",
+    "device": {
+      "ordinal": "0",
+      "name": "NVIDIA L40S",
+      "arch": "sm_89",
+      "provider": "cuda"
+    },
+    "settings": {
+      "budget": 4,
+      "width": 4,
+      "warmup": 2,
+      "samples": 5,
+      "repeats": 3
+    },
+    "sources": {
+      "akas.artifacts.fingerprint": "7b7de204ab67fc762232ae209273eae8ac055506567c03c50997ea6b95f42164",
+      "akas.artifacts.read": "4c08294f3e3dec9b25d3934ed8ee5102b14f29b204bcdec754c78c82399eafac",
+      "akas.artifacts.schema": "7c92b944820291e1f95d9d4464d89684e0185c92b32e6ae0b149125b46b42ae1",
+      "akas.checkpoints.upload": "1bbf857acb3b37732610c71d456391d9bf161a8562e79676209407ddd6fc099b",
+      "akas.execution.batch": "35aaad0794326650455cb1237a9f415ed00485486eea5841efd71b97f717595f",
+      "akas.execution.executor": "8705ff24435a590542ababa544fec9274daef17b9f349e3261039a9a4f1f2bb0",
+      "akas.execution.forward": "eec4176195628e2aa901fb7b03e9b6ae1f564630a59c28ab7dc226015b24671e",
+      "akas.execution.plan": "00c4fe776d87647aff5ad05db2fe629c3b354f5ec190b67d9f295379d0454364",
+      "akas.execution.replay": "2c4e7fe25a359f3044456aa9eeaafb09bb810de55bc27b9cd8401a557996684d",
+      "akas.execution.state": "3a8288d16a6f612c39b4fd36b773242f49a48a8242c1f1498dda190949711c45",
+      "akas.execution.workspace": "340bfc4147c942a3913a67fdec22fff235ac6af91c708220cdf3775f132a17f4",
+      "akas.graph": "f0827403cbfa61dc20cfd6014b7b2d146c324bae51250b05f063e8c0fbf2d17c",
+      "akas.kernels.contracts": "d6a71d0199583721fcbdeae95ecf0bd5a41ba9c6985294458d197cedd42b4db3",
+      "akas.kernels.definition": "37b541d155f1700ee6fa2f209d28c1e9cd653e0fbd076b65af3a38b39ad92692",
+      "akas.kernels.kernel": "d93633376ad79915c2c68af47423acbfbda53fada88039dc089bd1e414080903",
+      "akas.kernels.reductions": "359fc36b38ce1acef3cac9f953ea041a32e501d773e046bb5e50b459cf38c7b4",
+      "akas.kernels.registry": "0f59c7c2ce608904bcd33f3d7366d2310734ef1dcfb94708fd90035e24da6595",
+      "akas.kernels.webgpu": "7cd6248dc8b9f2b0a70bde32194a4c99a781de1301845b0b95ef4cb18e548b5b",
+      "akas.memory.arena": "7fdbfe93d4c0a8bf1e6f586ad33f6bd13b9758c138f3cdc32aa8ffbeafe11990",
+      "akas.memory.estimates": "92466642678c4b8e8a19feb6f1590af24ade18382214843f04e2ca4bd214454d",
+      "akas.memory.layouts": "f104af0c1a70661584d7bdc782d7c59cd5282f589f4d1025a2243245c407e12f",
+      "akas.memory.mapped": "3db06928c996b89cd8079da5b905d964e1c4c0f0ef60762294fba3ebe859cdf5",
+      "akas.memory.state": "435198681a76f5bdd2088930c2e0bbf6ad30193d8b3d8fc263eb9f2f4ac6c4b8",
+      "akas.memory.transfer": "b477d53281cec5ad04e6f08b05b7941e817e80cfe9a4c4203159c8f729993414",
+      "akas.models.blocks": "9ee87e21e60f4745481d02919d65d55adf2ef7ba59f0d9406c7a378e52aeedde",
+      "akas.ops.activation.cuda": "554b71c7520e69f69c19b4c527551c77d5826251db39c13c76d78f58d14448dd",
+      "akas.ops.activation.definition": "1afbad8398b33130b3bc3c6e577dfac61d8cea3d0da20eb0f33c2376d98efc1f",
+      "akas.ops.activation.kernel": "e9f48656c52d3bccc3c063f9132db4610bbab03ba9fe785b7613288f9c616985",
+      "akas.ops.activation.validation": "469a402802c26f27998438d8b441e7d0062c3dc21e787724bbd84a61a2f64d80",
+      "akas.ops.activation.webgpu": "0241917b82f9524970809581f2370cf00a0926ac83338993f438654cb8851fd3",
+      "akas.ops.attention.cuda": "ae5c62ab30ec07495134c3c975c4cb254304ffc8ecdfdb06385d908067f485ac",
+      "akas.ops.attention.definition": "8fb2d2e369d96d1de561cd10e3b6c6696a304d7414d7d7c408cf435400f246c6",
+      "akas.ops.attention.kernel": "ac4cf7eca3162147565801db407dc4febbf946424b80f41b3869402da6591908",
+      "akas.ops.attention.validation": "6ce761e06e0617bb1ae3e5ea0687727965ba98de74f774338903cf928327ed94",
+      "akas.ops.attention.webgpu": "62208f78c2ab0d243e331794c8b453610e8d372bb248259afbc741786fd6b0d3",
+      "akas.ops.control.cuda": "5d5e4f6b1d41cdb75592e1244597be27849aaf3cc8b0e145875e465dbfef8066",
+      "akas.ops.control.definition": "299986982ea5a84466013ca6c87598bb5b74026617571fcbb4338c35caba6284",
+      "akas.ops.control.kernel": "1deba0e243c317c0ed8cd09298f3d5cbfe02f77f1dbe5061433e17e8a53ff603",
+      "akas.ops.control.validation": "f700ea86a269b2ba6e956deeb42a2936ff124ef6fe8c694f87de3b439a2f6245",
+      "akas.ops.control.webgpu": "6108d4fd2d51769aefc77648fa123f23149980cd2c9e9c516c7665aa294e2f4c",
+      "akas.ops.convolution.cuda": "dab90b40c2a2def0d739f210cf8750f798db913c56336f2755e916a50cbff25c",
+      "akas.ops.convolution.definition": "bc99d0326e305206cf925ef629dfbc612f2578fab220e3db0c7d0499b690a653",
+      "akas.ops.convolution.kernel": "497b30ddce3507714e764b91b747772d1f889715324fb8b7ebf244bc76240721",
+      "akas.ops.convolution.validation": "df71bf5ff5bd754461757f142d067eb2b78a713a329053f2099a53219ce9eddc",
+      "akas.ops.convolution.webgpu": "aea88be88e1ebc8bc4df57bbc0c33de53b1a874479f8a8ffe131537955b770a6",
+      "akas.ops.gdn.cuda": "88f2d45385ad60d8baee388030328b161058fbf6343995901bb043c928ee7ab2",
+      "akas.ops.gdn.definition": "3adbb9ba25d8347fe5d7ecce18c5002279c183abd70509332feabef9dbc82ee1",
+      "akas.ops.gdn.kernel": "ed3f9cbbc6382992add3903c6ad3dd902d4ab74882d94cabc99a7577181931bb",
+      "akas.ops.gdn.validation": "222a821ec915dfe19e68428df387383587edf0d59ba0fcc2e66a968b74f902e8",
+      "akas.ops.gdn.webgpu": "50ab889a8a0438716c1d1ead52a992e2a24c9562dd51a444f09947ef7fbf69c9",
+      "akas.ops.indexing.cuda": "ee4db21f5298e7b780a51bf876f3d0809b322efde9334623135be593211404a3",
+      "akas.ops.indexing.definition": "0b3ea2a2d38a22c704775ac529a70d4503649880ee3d4c752d0f2cd1c2225533",
+      "akas.ops.indexing.kernel": "9ec3c8241fdef174234d8fd04863afa87acdc4ed4e0f8986aa3b84a82f88eeb9",
+      "akas.ops.indexing.validation": "e135d50d0524d163431454a3571eec9964331e447c1a5dfa4bbb4448426e666e",
+      "akas.ops.indexing.webgpu": "9421d4e9e9f1b816736bd0b99b4384954d55e5d1885598352acabca19cc6ec3b",
+      "akas.ops.linear.cuda": "e644a3f58a03c69ca9039c03af7b437c0789fb92349b271f7a6bb3ac60310424",
+      "akas.ops.linear.definition": "5f6f14dad6650aace03d219f4173898dacb2d1c0a8442fe8a345cde54a6bfaf1",
+      "akas.ops.linear.kernel": "50d03638493aaee59cad809c68cb98002dc6c737a9838a4fdfb54fba4d09af25",
+      "akas.ops.linear.validation": "4c406e1d98e5615bc09b842d0f7dda20c9c7806252bd3826e06d645ce23404fe",
+      "akas.ops.linear.webgpu": "afa1fcfa37fdbb9d42df933a37dbd183dbbeec2a317a842cef3af3a268059078",
+      "akas.ops.moe.cuda": "eddde12b3530b9c89454c14fe6bb1427fb39e21cf050275504111dd354c4d623",
+      "akas.ops.moe.definition": "118ccceaaf712d9ab7a3e1e02da81f63ce3830447996d26458bae8c6b5de2d05",
+      "akas.ops.moe.kernel": "d18ecc6f693c3596d2f00009382f469615131d2a683d94578e7a1f5d6a084bf0",
+      "akas.ops.moe.validation": "8e3edae3dbf483ddac0286a7c28f7063dc5e0be4769f3a8e5a0756549b49be9a",
+      "akas.ops.moe.webgpu": "c536f505643e6df63d1a54395b33249af1412f8ddb53bbec723c5c49f67e1da3",
+      "akas.ops.mtp.cuda": "ad6efe94cb41efcae07fe6b90fb6f363b320054e58bafebbfd39f4c6603b5f58",
+      "akas.ops.mtp.definition": "e873cc3830280332fac9d8a55019279373051ce6de2a5745411a5187042cbcbe",
+      "akas.ops.mtp.kernel": "3a52d77e2dd46cd9fca74f02965282102b505fbb2094fdc8e98c569aa251fece",
+      "akas.ops.mtp.validation": "36fb3bb8622e90789217b987427d9e934abab84dfb33ebb1e8f81730393e996a",
+      "akas.ops.mtp.webgpu": "8dae729111115a2a3c49ed17517cbba6612c44ddbe5324c2c2814633746570ff",
+      "akas.ops.normalization.cuda": "d83176e8309a668100595b768ac62ff65854ebcd52fdf0e53e99f8b81f5227b7",
+      "akas.ops.normalization.definition": "20c3ef8b75dfbd77efd36762c496b51e2428c0be4de36d9614eb02dc24561647",
+      "akas.ops.normalization.kernel": "e77d6142412ac37d0976c943a08dc6f5f653fd0ed6430dfbd616f67f6f7d2a84",
+      "akas.ops.normalization.validation": "21106b963dc76d450910c577e02c6a970d39807a7edb7af058fa8b65dd598027",
+      "akas.ops.normalization.webgpu": "8de21bbe493fe1193c61622537c57d0dfef669dd51e86325adaca6160a85980b",
+      "akas.ops.residual.cuda": "aa50ce03dc7c34b466cd73682eabe10767b7bcc1ac4f75abd1e81b6d5292094e",
+      "akas.ops.residual.definition": "283def1e282ebc9fcab50dd392ddfed951c54063a20397f87301146e899246df",
+      "akas.ops.residual.kernel": "877d2b86850d2c19b82adf6c760ebe3ab377e6f410791d96804def4ed2687d53",
+      "akas.ops.residual.validation": "bd50506d9ec2be9b17e5ce60629ffc0e93f50721f30f833eb70a4eee7077acd8",
+      "akas.ops.residual.webgpu": "53a1c44bcbddb04e2f03c3bb4b41e2c6949cdc3d946f5c69900a4889cd67e851",
+      "akas.ops.sequence.cuda": "a5c798e50f497f8ffc7d838f531b9ad915d221c2ac2c830057bbcdeee4c55f1e",
+      "akas.ops.sequence.definition": "f1735a315f3101eeae86955f9095c36cec6f844d567aa713f7ca8492b4f9bc46",
+      "akas.ops.sequence.kernel": "f93967396c152a9b83f87be0905255d8106ee9c42f00ff68b6412f977fc1c6fa",
+      "akas.ops.sequence.validation": "acdb086c7063a4e8e97327ce3e212afed09896f78db114cdaa9b56ed0398c7ba",
+      "akas.ops.sequence.webgpu": "e5b1f8934f673cd4bc5daa991242d4a6b8bf3b8e2c4c5bfa0bc87e7daa3a523d",
+      "akas.ops.vocabulary.cuda": "b8b4ee04fc6603f211b47048c701a5c4360b1b98b4034bfa380d8c436234b9db",
+      "akas.ops.vocabulary.definition": "ec3b99fa6687195104a0e2846daf47a452e010991166194aa04a06d9ffe57af9",
+      "akas.ops.vocabulary.kernel": "9816a54a63c383971ab8e80a84a4a8e015d69f4ebb2b514855fa61fabf309dff",
+      "akas.ops.vocabulary.validation": "1e643fbf728183704bf6c7e629433fd2f939c61aa5c0fe4c234d3185d2e02151",
+      "akas.ops.vocabulary.webgpu": "aa0797f44205e53c962b394c821b8d6aad7cb0e793856c38fc09c090e9590da5",
+      "akas.quantization._shared.access": "c770ea1a6c584dea212aa01282bb8d1636c92a7aa38df188d412551d4ea93546",
+      "akas.quantization._shared.e4m3": "4bde0fc9ce19788d384b7d576756d7ffa59d87f1c05b29e22c44767b0499f9ec",
+      "akas.quantization._shared.fp8": "52db68e7950585d0085004fa43e13087f34a848753dfb85ffab1a9aba206f867",
+      "akas.quantization._shared.packing": "011be35461411aec6bc128f7e8932bbd484633c16035b9520ef026cb33995ec8",
+      "akas.quantization._shared.rounding": "78d7cfe6674d8537d723f0040d78b2a28215d10b5dae2af7ce542ceab96760cd",
+      "akas.quantization.activations._shared.integer": "edf3fca45952610da7f0626c51f2b79491a522e0c860ccd091a990a78c188b83",
+      "akas.quantization.activations._shared.packing": "c68161886179b9e177d01c34f77cbc18f8fbdd026ee8e8b0b5b4e13e5a5620f8",
+      "akas.quantization.activations.fp8.cuda": "4c9f87cabd5f87607bfe67fdf0650110e52c016567a85874e027f5864182e521",
+      "akas.quantization.activations.fp8.definition": "77f38473efb52c16d04315d6d994fb99396720a47f4bac7a51ce5741c6bb3763",
+      "akas.quantization.activations.fp8.kernel": "dfd3646a34cf14ed1eed2b8c7e5c3bfbfa17eebda8c31758ee374c01359a884b",
+      "akas.quantization.activations.fp8.validation": "1e484bea4067469a9414c89ae9d464777b7aa331606d154a5803b5d7f4a1af6c",
+      "akas.quantization.activations.fp8.webgpu": "81a10d91e94c4fa2e43a6b2b73765405abc40d83d3c6ccac00cdb1f023aba074",
+      "akas.quantization.activations.q16.cuda": "ca363aa3945215a357890273d7b769ab4a51def496e9f7bb78a23da7d9c2fb0c",
+      "akas.quantization.activations.q16.definition": "60f450577b7f319f2a2bdcf02173be563fc7df3342ee6aabac8c1232521c3ac6",
+      "akas.quantization.activations.q16.kernel": "25b0b85f5ee3ac193bea20138e20438e80281cb7436ef28026c5c179ca17cfdb",
+      "akas.quantization.activations.q16.validation": "d7ed7be8d1a0d4bb9d3fb9f366ae1a59b234f919e6f6d3a1d80118878ac311c5",
+      "akas.quantization.activations.q16.webgpu": "a6ca1d2e12cefce5330cbe90e3928dfd09f2c06c4316d06851568b842e38b681",
+      "akas.quantization.activations.q8.cuda": "e3bb64fded4a04f4d481e2f7055976076e32918212b0fdeb16b8a7542f8fa94e",
+      "akas.quantization.activations.q8.definition": "3466c17196435d37c6b27a30d5221e0875cfc3872832275e7aa55f2ef6b2d25e",
+      "akas.quantization.activations.q8.kernel": "88c8591b75995a7639ee83884d2905b454e5afa4be447187718ab04ef0bc8038",
+      "akas.quantization.activations.q8.validation": "1731fba73e62e1c6ce91aa6baddfbee0a4bf997ec06c5b1bf2339ebcda9c252c",
+      "akas.quantization.activations.q8.webgpu": "8c874e2a7562d0931093300348288e30317bf3a86b59aba30ff2290a1b173e28",
+      "akas.quantization.formats": "612896cf898a4c2cabc44b57420ecf3f896d5b61678430c936246be748e276a4",
+      "akas.quantization.kv.codec": "32588ff312e8c36644c899deb81d844426bcbfc8081621c7f6cad1811ada73a4",
+      "akas.quantization.kv.fp8.cuda": "0531e5c495665a84ba3347dcf6331c6070fdd8e7fb3e79a511fb2e73f77acc23",
+      "akas.quantization.kv.fp8.definition": "3c66400553e98b92091073198f722c6726edcf1aa88ab79438d709f8b5d6d36e",
+      "akas.quantization.kv.fp8.kernel": "34fcd07d11f938dc3dfb5826fd7d237bc31d29352c7e3e19decb264d9a396ac0",
+      "akas.quantization.kv.fp8.validation": "0973eba21b1ab88e4840a3baf9a51b5a06ded8a79d6d7b442909e364d6078164",
+      "akas.quantization.kv.fp8.webgpu": "da2233edba89a55fbdd88ca3dec22d1246bcb05708a4030294618c3c5c195672",
+      "akas.quantization.weights.fp8.cuda": "95fd4f97689c86ebdab9a663c26b2640f49af632fae25762abb1d9d687eaca2e",
+      "akas.quantization.weights.fp8.definition": "234888906276a19e13dc3e65ce799a612f86d48b84f0bb3b34713e54a10a2f4c",
+      "akas.quantization.weights.fp8.kernel": "052d588e4037ac85c8897fb4f1cb127af269ea9a3b53eb5bcc5f9e7172274393",
+      "akas.quantization.weights.fp8.validation": "225e881b0c27ceacae2da8e7617c0b2c62045bbd5fc4df1e4567ad861a5692f4",
+      "akas.quantization.weights.fp8.webgpu": "29893484f3952be28d9abc67e8bee9be99303bdd3e407435cb45894fb06d6141",
+      "akas.quantization.weights.ggml.cuda": "83e76fe5e5318ec15c7f2fae8664c67214e331f4a0e35c5befea607717b9a3a0",
+      "akas.quantization.weights.ggml.definition": "7b0be873ceb144bf0e0048d1eb81d6061d8660500627ae3dfd55e8a75d770b01",
+      "akas.quantization.weights.ggml.kernel": "b40511a9e2709d37713e6b8428a59052b2572467ed7c396b024b6f1f9ece6086",
+      "akas.quantization.weights.ggml.validation": "c56409e83f24ecdf993e525502f2bfa50cd42c4cec7a675d105ce975006bebed",
+      "akas.quantization.weights.ggml.webgpu": "85a02de0e4e18c5125e6cb891b3a2ad8eb261070d62d5aa3f30be9e7b982f4d0",
+      "akas.quantization.weights.reference": "e584867391dc3d9a38b4a7ad9f960c011e3f5f513b533ec6b3b293744a5af4c8",
+      "akas.tensor.executor": "f74459c1cd8fbe33dc6a8ac275c934bf0111739c020a671cea29cea0e8b80e95",
+      "akas.tensor.graph": "b1ee47df63623f05a90e5f448b8a4e4d5ce85327e66e25900b644118cb00b149"
+    },
+    "compiler": {
+      "lowering_sha256": "3397483bd7cc5e85c144ac1bdb66dc75ac049270ede775864dfaa270d2a714ff"
+    },
+    "qualification_sources": {
+      "akas.compilation.selection": "b72f49bd85e916f6ec4114f34f1fee78e04baf1178224235138cabd0baf59199",
+      "akas.compilation.state": "db99641c6211e463e0818308c09a423545a11c4920602ac70db7da2090ea7127",
+      "akas.compilation.tuning": "c7ca42e8f1f6c7c2aa01e16d4a0f1910ddad3afd18593e1b9f02ed5a00d0d508",
+      "akas.compilation.validate": "1988d1b48268b280f8a477382d2b51259613d287616b8224731f3f7ff498e81a"
+    },
+    "tensor_search_sources": {
+      "tensor.compiler.search": "e8895d3cde26d7bcc1da75db2dbfadc4bdfd0e35b770298e0741bdcadd8ff354",
+      "tensor.compiler.tuning": "6fd2080e38245b7c7bfb0d1384b79c15f3b55bf29b3c9efd2b4190a660049f10"
+    },
+    "baseline": [
+      {
+        "key": "b329faea53fb744230e4c60f",
+        "schedule": {
+          "implementation": "moe.cuda.fp8-swiglu:reference"
+        }
+      },
+      {
+        "key": "374e55636dcfca3b3d33335c",
+        "schedule": {
+          "implementation": "moe.cuda.fp8-swiglu:reference"
+        }
+      },
+      {
+        "key": "b02bf26605791735cfcca56a",
+        "schedule": {
+          "implementation": "moe.cuda.fp8-swiglu:reference"
+        }
+      },
+      {
+        "key": "4987d4acb90369ae0366e28b",
+        "schedule": {
+          "implementation": "moe.cuda.fp8-swiglu:reference"
+        }
+      },
+      {
+        "key": "df41f80b96318b4ffc7b8db4",
+        "schedule": {
+          "implementation": "moe.cuda.fp8-swiglu:reference"
+        }
+      }
+    ],
+    "catalog": null
+  },
+  "profile": {
+    "schema": "tensor.schedule-profile.v1",
+    "provider": "cuda",
+    "target": "sm_89",
+    "entries": [
+      {
+        "operation": "fp8_expert_swiglu",
+        "parameters": {
+          "r": 1,
+          "rows": 1,
+          "top": 4,
+          "experts": 64,
+          "o": 1536,
+          "k": 2048,
+          "routed_input": false,
+          "partitions": 1,
+          "block_m": 32,
+          "compact": true
+        },
+        "schedule": {
+          "threads": 128,
+          "stages": 2,
+          "activation_vector": 16,
+          "implementation": "moe.cuda.fp8-swiglu:reference"
+        }
+      },
+      {
+        "operation": "fp8_expert_swiglu",
+        "parameters": {
+          "r": 4,
+          "rows": 4,
+          "top": 4,
+          "experts": 64,
+          "o": 1536,
+          "k": 2048,
+          "routed_input": false,
+          "partitions": 1,
+          "block_m": 32,
+          "compact": true
+        },
+        "schedule": {
+          "threads": 128,
+          "stages": 2,
+          "activation_vector": 16,
+          "implementation": "moe.cuda.fp8-swiglu:reference"
+        }
+      },
+      {
+        "operation": "fp8_expert_swiglu",
+        "parameters": {
+          "r": 16,
+          "rows": 16,
+          "top": 4,
+          "experts": 64,
+          "o": 1536,
+          "k": 2048,
+          "routed_input": false,
+          "partitions": 1,
+          "block_m": 32,
+          "compact": true
+        },
+        "schedule": {
+          "threads": 256,
+          "stages": 1,
+          "activation_vector": 16,
+          "implementation": "moe.cuda.fp8-swiglu:reference"
+        }
+      },
+      {
+        "operation": "fp8_expert_swiglu",
+        "parameters": {
+          "r": 64,
+          "rows": 64,
+          "top": 4,
+          "experts": 64,
+          "o": 1536,
+          "k": 2048,
+          "routed_input": false,
+          "partitions": 1,
+          "block_m": 32,
+          "compact": true
+        },
+        "schedule": {
+          "threads": 256,
+          "stages": 1,
+          "activation_vector": 16,
+          "implementation": "moe.cuda.fp8-swiglu:reference"
+        }
+      },
+      {
+        "operation": "fp8_expert_swiglu",
+        "parameters": {
+          "r": 256,
+          "rows": 256,
+          "top": 4,
+          "experts": 64,
+          "o": 1536,
+          "k": 2048,
+          "routed_input": false,
+          "partitions": 1,
+          "block_m": 32,
+          "compact": true
+        },
+        "schedule": {
+          "threads": 256,
+          "stages": 1,
+          "activation_vector": 16,
+          "implementation": "moe.cuda.fp8-swiglu:reference"
+        }
+      }
+    ]
+  },
+  "operations": [
+    {
+      "key": "b329faea53fb744230e4c60f",
+      "kind": "fp8_expert_swiglu",
+      "parameters": {
+        "r": 1,
+        "rows": 1,
+        "top": 4,
+        "experts": 64,
+        "o": 1536,
+        "k": 2048,
+        "routed_input": false,
+        "partitions": 1,
+        "block_m": 32,
+        "compact": true
+      },
+      "selected": {
+        "implementation": "moe.cuda.fp8-swiglu:reference",
+        "schedule": {
+          "threads": 128,
+          "stages": 2,
+          "activation_vector": 16
+        },
+        "score": 0.5981017437663826,
+        "measurements": [
+          4.100266595681508e-05
+        ],
+        "trials": 4
+      },
+      "candidates": [
+        {
+          "implementation": "akas.ops.moe.cuda",
+          "parameters": {
+            "r": 1,
+            "rows": 1,
+            "top": 4,
+            "experts": 64,
+            "o": 1536,
+            "k": 2048,
+            "routed_input": false,
+            "partitions": 1,
+            "block_m": 32,
+            "compact": true
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              6.89066673318545e-05,
+              6.963200122117996e-05,
+              6.818133344252903e-05,
+              6.855466713507969e-05,
+              6.826666742563247e-05
+            ],
+            "completed_seconds": [
+              7.632033521076664e-05,
+              7.681666587207776e-05,
+              7.568366587899315e-05,
+              7.544666732428595e-05,
+              7.565366589309026e-05
+            ],
+            "median_gpu_seconds": 6.855466713507969e-05,
+            "median_completed_seconds": 7.568366587899315e-05,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 6.855466713507969e-05,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.moe.cuda",
+          "parameters": {
+            "r": 1,
+            "rows": 1,
+            "top": 4,
+            "experts": 64,
+            "o": 1536,
+            "k": 2048,
+            "routed_input": false,
+            "partitions": 1,
+            "block_m": 32,
+            "compact": true,
+            "threads": 128,
+            "stages": 1,
+            "activation_vector": 16
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              5.802666768431663e-05,
+              5.765333399176598e-05,
+              5.7344000786542894e-05,
+              5.802666768431663e-05,
+              5.802666768431663e-05
+            ],
+            "completed_seconds": [
+              6.577299912654173e-05,
+              6.463966807738568e-05,
+              6.447299892897718e-05,
+              6.459999955647315e-05,
+              6.455000160106768e-05
+            ],
+            "median_gpu_seconds": 5.802666768431663e-05,
+            "median_completed_seconds": 6.459999955647315e-05,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 5.802666768431663e-05,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.moe.cuda",
+          "parameters": {
+            "r": 1,
+            "rows": 1,
+            "top": 4,
+            "experts": 64,
+            "o": 1536,
+            "k": 2048,
+            "routed_input": false,
+            "partitions": 1,
+            "block_m": 32,
+            "compact": true,
+            "threads": 256,
+            "stages": 1,
+            "activation_vector": 16
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              5.047466605901718e-05,
+              5.0175998359918594e-05,
+              4.9493333945671716e-05,
+              5.0175998359918594e-05,
+              4.9834666152795155e-05
+            ],
+            "completed_seconds": [
+              5.832933311467059e-05,
+              5.712933367855536e-05,
+              5.6546000754072644e-05,
+              5.6562332853597276e-05,
+              5.6906332853638254e-05
+            ],
+            "median_gpu_seconds": 5.0175998359918594e-05,
+            "median_completed_seconds": 5.6906332853638254e-05,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 5.0175998359918594e-05,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.moe.cuda",
+          "parameters": {
+            "r": 1,
+            "rows": 1,
+            "top": 4,
+            "experts": 64,
+            "o": 1536,
+            "k": 2048,
+            "routed_input": false,
+            "partitions": 1,
+            "block_m": 32,
+            "compact": true,
+            "threads": 128,
+            "stages": 2,
+            "activation_vector": 16
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              4.100266595681508e-05,
+              4.2325332760810855e-05,
+              4.095999896526337e-05,
+              4.130133241415024e-05,
+              4.090666646758715e-05
+            ],
+            "completed_seconds": [
+              4.9019334255717695e-05,
+              4.969900085901221e-05,
+              4.757933250706022e-05,
+              4.8352333881969876e-05,
+              4.8285332013620064e-05
+            ],
+            "median_gpu_seconds": 4.100266595681508e-05,
+            "median_completed_seconds": 4.8352333881969876e-05,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 4.100266595681508e-05,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.moe.cuda",
+          "parameters": {
+            "r": 1,
+            "rows": 1,
+            "top": 4,
+            "experts": 64,
+            "o": 1536,
+            "k": 2048,
+            "routed_input": false,
+            "partitions": 1,
+            "block_m": 32,
+            "compact": true,
+            "threads": 128,
+            "stages": 1,
+            "activation_vector": 8
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              6.180266539255777e-05,
+              6.211199859778086e-05,
+              6.280533224344253e-05,
+              6.343466540177662e-05,
+              6.142933294177055e-05
+            ],
+            "completed_seconds": [
+              6.96533340184639e-05,
+              6.890966687933542e-05,
+              7.146033385652117e-05,
+              7.090000023405689e-05,
+              6.880333239678293e-05
+            ],
+            "median_gpu_seconds": 6.211199859778086e-05,
+            "median_completed_seconds": 6.96533340184639e-05,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 6.211199859778086e-05,
+            "execution": "prepared-plan"
+          }
+        }
+      ]
+    },
+    {
+      "key": "374e55636dcfca3b3d33335c",
+      "kind": "fp8_expert_swiglu",
+      "parameters": {
+        "r": 4,
+        "rows": 4,
+        "top": 4,
+        "experts": 64,
+        "o": 1536,
+        "k": 2048,
+        "routed_input": false,
+        "partitions": 1,
+        "block_m": 32,
+        "compact": true
+      },
+      "selected": {
+        "implementation": "moe.cuda.fp8-swiglu:reference",
+        "schedule": {
+          "threads": 128,
+          "stages": 2,
+          "activation_vector": 16
+        },
+        "score": 0.5726777188458609,
+        "measurements": [
+          4.261333247025808e-05
+        ],
+        "trials": 4
+      },
+      "candidates": [
+        {
+          "implementation": "akas.ops.moe.cuda",
+          "parameters": {
+            "r": 4,
+            "rows": 4,
+            "top": 4,
+            "experts": 64,
+            "o": 1536,
+            "k": 2048,
+            "routed_input": false,
+            "partitions": 1,
+            "block_m": 32,
+            "compact": true
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              7.611733426650365e-05,
+              7.441066950559616e-05,
+              7.441066950559616e-05,
+              7.33333354194959e-05,
+              7.233066856861114e-05
+            ],
+            "completed_seconds": [
+              8.590066742423612e-05,
+              8.24236655413794e-05,
+              8.241400064434856e-05,
+              8.012733330057624e-05,
+              7.974066708508569e-05
+            ],
+            "median_gpu_seconds": 7.441066950559616e-05,
+            "median_completed_seconds": 8.241400064434856e-05,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 7.441066950559616e-05,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.moe.cuda",
+          "parameters": {
+            "r": 4,
+            "rows": 4,
+            "top": 4,
+            "experts": 64,
+            "o": 1536,
+            "k": 2048,
+            "routed_input": false,
+            "partitions": 1,
+            "block_m": 32,
+            "compact": true,
+            "threads": 128,
+            "stages": 1,
+            "activation_vector": 16
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              5.8048001180092486e-05,
+              5.8368001133203504e-05,
+              5.7344000786542894e-05,
+              6.007466713587443e-05,
+              5.805866792798042e-05
+            ],
+            "completed_seconds": [
+              6.64696660048018e-05,
+              6.534300094547991e-05,
+              6.818600013502873e-05,
+              6.791300014204656e-05,
+              6.541333398975742e-05
+            ],
+            "median_gpu_seconds": 5.805866792798042e-05,
+            "median_completed_seconds": 6.64696660048018e-05,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 5.805866792798042e-05,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.moe.cuda",
+          "parameters": {
+            "r": 4,
+            "rows": 4,
+            "top": 4,
+            "experts": 64,
+            "o": 1536,
+            "k": 2048,
+            "routed_input": false,
+            "partitions": 1,
+            "block_m": 32,
+            "compact": true,
+            "threads": 256,
+            "stages": 1,
+            "activation_vector": 16
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              5.1541332155466075e-05,
+              5.150933315356573e-05,
+              5.085866525769234e-05,
+              5.115733295679093e-05,
+              5.085866525769234e-05
+            ],
+            "completed_seconds": [
+              5.949266536238914e-05,
+              5.8303000211405255e-05,
+              5.8105333058241136e-05,
+              5.788599931596158e-05,
+              5.7782666165924944e-05
+            ],
+            "median_gpu_seconds": 5.115733295679093e-05,
+            "median_completed_seconds": 5.8105333058241136e-05,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 5.115733295679093e-05,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.moe.cuda",
+          "parameters": {
+            "r": 4,
+            "rows": 4,
+            "top": 4,
+            "experts": 64,
+            "o": 1536,
+            "k": 2048,
+            "routed_input": false,
+            "partitions": 1,
+            "block_m": 32,
+            "compact": true,
+            "threads": 128,
+            "stages": 2,
+            "activation_vector": 16
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              4.398933301369349e-05,
+              4.261333247025808e-05,
+              4.263466596603394e-05,
+              4.2005332807699844e-05,
+              4.227199902137121e-05
+            ],
+            "completed_seconds": [
+              5.1655333663802594e-05,
+              4.98656663694419e-05,
+              4.9741999343192823e-05,
+              4.9648666996896886e-05,
+              4.940533350842694e-05
+            ],
+            "median_gpu_seconds": 4.261333247025808e-05,
+            "median_completed_seconds": 4.9741999343192823e-05,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 4.261333247025808e-05,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.moe.cuda",
+          "parameters": {
+            "r": 4,
+            "rows": 4,
+            "top": 4,
+            "experts": 64,
+            "o": 1536,
+            "k": 2048,
+            "routed_input": false,
+            "partitions": 1,
+            "block_m": 32,
+            "compact": true,
+            "threads": 128,
+            "stages": 1,
+            "activation_vector": 8
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              6.315733368198076e-05,
+              6.382933259010315e-05,
+              6.382933259010315e-05,
+              6.413866579532623e-05,
+              6.348799914121627e-05
+            ],
+            "completed_seconds": [
+              7.085966717568226e-05,
+              7.055300132681926e-05,
+              7.077033296809532e-05,
+              7.197066588560119e-05,
+              7.024700122807796e-05
+            ],
+            "median_gpu_seconds": 6.382933259010315e-05,
+            "median_completed_seconds": 7.077033296809532e-05,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 6.382933259010315e-05,
+            "execution": "prepared-plan"
+          }
+        }
+      ]
+    },
+    {
+      "key": "b02bf26605791735cfcca56a",
+      "kind": "fp8_expert_swiglu",
+      "parameters": {
+        "r": 16,
+        "rows": 16,
+        "top": 4,
+        "experts": 64,
+        "o": 1536,
+        "k": 2048,
+        "routed_input": false,
+        "partitions": 1,
+        "block_m": 32,
+        "compact": true
+      },
+      "selected": {
+        "implementation": "moe.cuda.fp8-swiglu:reference",
+        "schedule": {
+          "threads": 256,
+          "stages": 1,
+          "activation_vector": 16
+        },
+        "score": 0.96544718657348,
+        "measurements": [
+          0.00016213333606719972
+        ],
+        "trials": 4
+      },
+      "candidates": [
+        {
+          "implementation": "akas.ops.moe.cuda",
+          "parameters": {
+            "r": 16,
+            "rows": 16,
+            "top": 4,
+            "experts": 64,
+            "o": 1536,
+            "k": 2048,
+            "routed_input": false,
+            "partitions": 1,
+            "block_m": 32,
+            "compact": true
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.00016823466618855795,
+              0.00016759467124938967,
+              0.00016861866414546968,
+              0.00016793599724769593,
+              0.00016691199938456217
+            ],
+            "completed_seconds": [
+              0.00017683466649032198,
+              0.00017465833176781112,
+              0.00017558166534096623,
+              0.0001748883344892723,
+              0.0001739349997175547
+            ],
+            "median_gpu_seconds": 0.00016793599724769593,
+            "median_completed_seconds": 0.0001748883344892723,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.00016793599724769593,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.moe.cuda",
+          "parameters": {
+            "r": 16,
+            "rows": 16,
+            "top": 4,
+            "experts": 64,
+            "o": 1536,
+            "k": 2048,
+            "routed_input": false,
+            "partitions": 1,
+            "block_m": 32,
+            "compact": true,
+            "threads": 128,
+            "stages": 1,
+            "activation_vector": 16
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0001658879965543747,
+              0.00016452266772588094,
+              0.0001638400008281072,
+              0.00016377600034077962,
+              0.00016383999586105347
+            ],
+            "completed_seconds": [
+              0.0001745019993298532,
+              0.00017170499995700084,
+              0.00017055833450285718,
+              0.00017119133311401433,
+              0.00017098833147125939
+            ],
+            "median_gpu_seconds": 0.0001638400008281072,
+            "median_completed_seconds": 0.00017119133311401433,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0001638400008281072,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.moe.cuda",
+          "parameters": {
+            "r": 16,
+            "rows": 16,
+            "top": 4,
+            "experts": 64,
+            "o": 1536,
+            "k": 2048,
+            "routed_input": false,
+            "partitions": 1,
+            "block_m": 32,
+            "compact": true,
+            "threads": 256,
+            "stages": 1,
+            "activation_vector": 16
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.00016213333606719972,
+              0.0001607679973045985,
+              0.00016145066420237221,
+              0.00017066666483879088,
+              0.00016648533443609876
+            ],
+            "completed_seconds": [
+              0.00016990133372019045,
+              0.0001674310005910229,
+              0.00017002133366380198,
+              0.00017971833343229568,
+              0.0001750986666593235
+            ],
+            "median_gpu_seconds": 0.00016213333606719972,
+            "median_completed_seconds": 0.00017002133366380198,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.00016213333606719972,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.moe.cuda",
+          "parameters": {
+            "r": 16,
+            "rows": 16,
+            "top": 4,
+            "experts": 64,
+            "o": 1536,
+            "k": 2048,
+            "routed_input": false,
+            "partitions": 1,
+            "block_m": 32,
+            "compact": true,
+            "threads": 128,
+            "stages": 2,
+            "activation_vector": 16
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.00016457599898179372,
+              0.00016486399869124094,
+              0.00016378666460514072,
+              0.00016452266772588094,
+              0.0001641813317934672
+            ],
+            "completed_seconds": [
+              0.00017317200157170495,
+              0.0001729186660668347,
+              0.00017023899999912828,
+              0.0001720849989699976,
+              0.00017152199992172731
+            ],
+            "median_gpu_seconds": 0.00016452266772588094,
+            "median_completed_seconds": 0.0001720849989699976,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.00016452266772588094,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.moe.cuda",
+          "parameters": {
+            "r": 16,
+            "rows": 16,
+            "top": 4,
+            "experts": 64,
+            "o": 1536,
+            "k": 2048,
+            "routed_input": false,
+            "partitions": 1,
+            "block_m": 32,
+            "compact": true,
+            "threads": 128,
+            "stages": 1,
+            "activation_vector": 8
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0001782293270031611,
+              0.00017783466478188834,
+              0.00017710933585961662,
+              0.00017710933089256286,
+              0.00017614933351675668
+            ],
+            "completed_seconds": [
+              0.0001874290004100961,
+              0.00018520233425078914,
+              0.0001840190016082488,
+              0.00018351600010646507,
+              0.00018304233526578173
+            ],
+            "median_gpu_seconds": 0.00017710933585961662,
+            "median_completed_seconds": 0.0001840190016082488,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.00017710933585961662,
+            "execution": "prepared-plan"
+          }
+        }
+      ]
+    },
+    {
+      "key": "4987d4acb90369ae0366e28b",
+      "kind": "fp8_expert_swiglu",
+      "parameters": {
+        "r": 64,
+        "rows": 64,
+        "top": 4,
+        "experts": 64,
+        "o": 1536,
+        "k": 2048,
+        "routed_input": false,
+        "partitions": 1,
+        "block_m": 32,
+        "compact": true
+      },
+      "selected": {
+        "implementation": "moe.cuda.fp8-swiglu:reference",
+        "schedule": {
+          "threads": 256,
+          "stages": 1,
+          "activation_vector": 16
+        },
+        "score": 0.9857661412735323,
+        "measurements": [
+          0.0006197866598765055
+        ],
+        "trials": 4
+      },
+      "candidates": [
+        {
+          "implementation": "akas.ops.moe.cuda",
+          "parameters": {
+            "r": 64,
+            "rows": 64,
+            "top": 4,
+            "experts": 64,
+            "o": 1536,
+            "k": 2048,
+            "routed_input": false,
+            "partitions": 1,
+            "block_m": 32,
+            "compact": true
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0006284053325653076,
+              0.0006287359992663066,
+              0.0006297279993693034,
+              0.0006277120113372803,
+              0.0006287573377291362
+            ],
+            "completed_seconds": [
+              0.0006376139996670341,
+              0.0006374406669541107,
+              0.0006372473326337058,
+              0.0006373473321824955,
+              0.0006380276669612309
+            ],
+            "median_gpu_seconds": 0.0006287359992663066,
+            "median_completed_seconds": 0.0006374406669541107,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0006287359992663066,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.moe.cuda",
+          "parameters": {
+            "r": 64,
+            "rows": 64,
+            "top": 4,
+            "experts": 64,
+            "o": 1536,
+            "k": 2048,
+            "routed_input": false,
+            "partitions": 1,
+            "block_m": 32,
+            "compact": true,
+            "threads": 128,
+            "stages": 1,
+            "activation_vector": 16
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.000628384013970693,
+              0.0006257279912630717,
+              0.0006253226598103842,
+              0.0006256746649742126,
+              0.0006249813238779703
+            ],
+            "completed_seconds": [
+              0.0006381976672855671,
+              0.0006339036663121078,
+              0.000632960332344131,
+              0.0006339439993704824,
+              0.0006325173332394721
+            ],
+            "median_gpu_seconds": 0.0006256746649742126,
+            "median_completed_seconds": 0.0006339036663121078,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0006256746649742126,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.moe.cuda",
+          "parameters": {
+            "r": 64,
+            "rows": 64,
+            "top": 4,
+            "experts": 64,
+            "o": 1536,
+            "k": 2048,
+            "routed_input": false,
+            "partitions": 1,
+            "block_m": 32,
+            "compact": true,
+            "threads": 256,
+            "stages": 1,
+            "activation_vector": 16
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0006191786726315816,
+              0.0006197866598765055,
+              0.0006215573350588481,
+              0.0006202026605606079,
+              0.0006191146771113078
+            ],
+            "completed_seconds": [
+              0.0006281433343247045,
+              0.0006278736667203096,
+              0.0006314309988132057,
+              0.000628086999010217,
+              0.0006273299998914202
+            ],
+            "median_gpu_seconds": 0.0006197866598765055,
+            "median_completed_seconds": 0.000628086999010217,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0006197866598765055,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.moe.cuda",
+          "parameters": {
+            "r": 64,
+            "rows": 64,
+            "top": 4,
+            "experts": 64,
+            "o": 1536,
+            "k": 2048,
+            "routed_input": false,
+            "partitions": 1,
+            "block_m": 32,
+            "compact": true,
+            "threads": 128,
+            "stages": 2,
+            "activation_vector": 16
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0006225813229878744,
+              0.0006232746442159017,
+              0.0006218453248341879,
+              0.0006246826648712159,
+              0.0006218666632970175
+            ],
+            "completed_seconds": [
+              0.0006313766668123814,
+              0.0006312203331617638,
+              0.0006295333332673181,
+              0.0006325599994549217,
+              0.0006295666668544678
+            ],
+            "median_gpu_seconds": 0.0006225813229878744,
+            "median_completed_seconds": 0.0006312203331617638,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0006225813229878744,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.moe.cuda",
+          "parameters": {
+            "r": 64,
+            "rows": 64,
+            "top": 4,
+            "experts": 64,
+            "o": 1536,
+            "k": 2048,
+            "routed_input": false,
+            "partitions": 1,
+            "block_m": 32,
+            "compact": true,
+            "threads": 128,
+            "stages": 1,
+            "activation_vector": 8
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0006280960043271383,
+              0.0006290773351987204,
+              0.0006263573368390402,
+              0.0006280000011126201,
+              0.0006280320088068644
+            ],
+            "completed_seconds": [
+              0.0006371536680186788,
+              0.0006371866669117784,
+              0.0006344463339094849,
+              0.0006359136665802604,
+              0.0006351870021414167
+            ],
+            "median_gpu_seconds": 0.0006280320088068644,
+            "median_completed_seconds": 0.0006359136665802604,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0006280320088068644,
+            "execution": "prepared-plan"
+          }
+        }
+      ]
+    },
+    {
+      "key": "df41f80b96318b4ffc7b8db4",
+      "kind": "fp8_expert_swiglu",
+      "parameters": {
+        "r": 256,
+        "rows": 256,
+        "top": 4,
+        "experts": 64,
+        "o": 1536,
+        "k": 2048,
+        "routed_input": false,
+        "partitions": 1,
+        "block_m": 32,
+        "compact": true
+      },
+      "selected": {
+        "implementation": "moe.cuda.fp8-swiglu:reference",
+        "schedule": {
+          "threads": 256,
+          "stages": 1,
+          "activation_vector": 16
+        },
+        "score": 0.9425874025997097,
+        "measurements": [
+          0.0006283413370450338
+        ],
+        "trials": 4
+      },
+      "candidates": [
+        {
+          "implementation": "akas.ops.moe.cuda",
+          "parameters": {
+            "r": 256,
+            "rows": 256,
+            "top": 4,
+            "experts": 64,
+            "o": 1536,
+            "k": 2048,
+            "routed_input": false,
+            "partitions": 1,
+            "block_m": 32,
+            "compact": true
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0006666133403778076,
+              0.000666325330734253,
+              0.000667626678943634,
+              0.0006655466556549071,
+              0.0006686826546986898
+            ],
+            "completed_seconds": [
+              0.0006750180012507675,
+              0.0006749219998406867,
+              0.0006762880002497695,
+              0.000673804333928274,
+              0.0006776413332166461
+            ],
+            "median_gpu_seconds": 0.0006666133403778076,
+            "median_completed_seconds": 0.0006750180012507675,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0006666133403778076,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.moe.cuda",
+          "parameters": {
+            "r": 256,
+            "rows": 256,
+            "top": 4,
+            "experts": 64,
+            "o": 1536,
+            "k": 2048,
+            "routed_input": false,
+            "partitions": 1,
+            "block_m": 32,
+            "compact": true,
+            "threads": 128,
+            "stages": 1,
+            "activation_vector": 16
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0006318719983100891,
+              0.0006328426599502564,
+              0.0006314666469891866,
+              0.0006311253309249878,
+              0.0006314239899317424
+            ],
+            "completed_seconds": [
+              0.0006403330007742625,
+              0.0006422203356729975,
+              0.0006400466675889523,
+              0.0006399129997589625,
+              0.000638893331294336
+            ],
+            "median_gpu_seconds": 0.0006314666469891866,
+            "median_completed_seconds": 0.0006400466675889523,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0006314666469891866,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.moe.cuda",
+          "parameters": {
+            "r": 256,
+            "rows": 256,
+            "top": 4,
+            "experts": 64,
+            "o": 1536,
+            "k": 2048,
+            "routed_input": false,
+            "partitions": 1,
+            "block_m": 32,
+            "compact": true,
+            "threads": 256,
+            "stages": 1,
+            "activation_vector": 16
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0006283946832021077,
+              0.0006287253300348918,
+              0.0006260053316752115,
+              0.000628053347269694,
+              0.0006283413370450338
+            ],
+            "completed_seconds": [
+              0.0006381593326902172,
+              0.0006360729991380746,
+              0.0006337456676798562,
+              0.0006356030001673693,
+              0.0006359729995892849
+            ],
+            "median_gpu_seconds": 0.0006283413370450338,
+            "median_completed_seconds": 0.0006359729995892849,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0006283413370450338,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.moe.cuda",
+          "parameters": {
+            "r": 256,
+            "rows": 256,
+            "top": 4,
+            "experts": 64,
+            "o": 1536,
+            "k": 2048,
+            "routed_input": false,
+            "partitions": 1,
+            "block_m": 32,
+            "compact": true,
+            "threads": 128,
+            "stages": 2,
+            "activation_vector": 16
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0006304426789283754,
+              0.0006301013231277466,
+              0.0006311253110567729,
+              0.000629418690999349,
+              0.0006308053334554037
+            ],
+            "completed_seconds": [
+              0.000638866000372218,
+              0.0006380293331555246,
+              0.0006383196681175226,
+              0.0006377893332683016,
+              0.0006387496662985844
+            ],
+            "median_gpu_seconds": 0.0006304426789283754,
+            "median_completed_seconds": 0.0006383196681175226,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0006304426789283754,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.moe.cuda",
+          "parameters": {
+            "r": 256,
+            "rows": 256,
+            "top": 4,
+            "experts": 64,
+            "o": 1536,
+            "k": 2048,
+            "routed_input": false,
+            "partitions": 1,
+            "block_m": 32,
+            "compact": true,
+            "threads": 128,
+            "stages": 1,
+            "activation_vector": 8
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0006324479977289836,
+              0.000633514662583669,
+              0.0006324586669603983,
+              0.0006314666469891865,
+              0.0006338133215904236
+            ],
+            "completed_seconds": [
+              0.0006406633328879252,
+              0.0006414996666232279,
+              0.0006403633330288964,
+              0.0006393230008446457,
+              0.0006412963327117419
+            ],
+            "median_gpu_seconds": 0.0006324586669603983,
+            "median_completed_seconds": 0.0006406633328879252,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0006324586669603983,
+            "execution": "prepared-plan"
+          }
+        }
+      ]
+    }
+  ],
+  "cache_hit": false
+}

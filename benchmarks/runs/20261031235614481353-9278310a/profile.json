@@ -1,0 +1,83 @@
+{
+  "schema": "tensor.schedule-profile.v1",
+  "provider": "cuda",
+  "target": "sm_89",
+  "entries": [
+    {
+      "operation": "linear",
+      "parameters": {
+        "r": 2048,
+        "k": 2048,
+        "o": 6144,
+        "optimized": true,
+        "weight_dtype": "float16",
+        "input_dtype": "float16"
+      },
+      "schedule": {
+        "block_m": 64,
+        "block_n": 128,
+        "block_k": 64,
+        "stages": 2,
+        "threads": 128,
+        "implementation": "linear.cuda.floating"
+      }
+    },
+    {
+      "operation": "linear",
+      "parameters": {
+        "r": 2048,
+        "k": 2048,
+        "o": 2048,
+        "optimized": true,
+        "weight_dtype": "float16",
+        "input_dtype": "float16"
+      },
+      "schedule": {
+        "block_m": 64,
+        "block_n": 128,
+        "block_k": 64,
+        "stages": 1,
+        "threads": 128,
+        "implementation": "linear.cuda.floating"
+      }
+    },
+    {
+      "operation": "linear",
+      "parameters": {
+        "r": 8192,
+        "k": 2048,
+        "o": 6144,
+        "optimized": true,
+        "weight_dtype": "float16",
+        "input_dtype": "float16"
+      },
+      "schedule": {
+        "block_m": 64,
+        "block_n": 128,
+        "block_k": 64,
+        "stages": 2,
+        "threads": 128,
+        "implementation": "linear.cuda.floating"
+      }
+    },
+    {
+      "operation": "linear",
+      "parameters": {
+        "r": 8192,
+        "k": 2048,
+        "o": 2048,
+        "optimized": true,
+        "weight_dtype": "float16",
+        "input_dtype": "float16"
+      },
+      "schedule": {
+        "block_m": 64,
+        "block_n": 128,
+        "block_k": 64,
+        "stages": 2,
+        "threads": 128,
+        "implementation": "linear.cuda.floating"
+      }
+    }
+  ]
+}
