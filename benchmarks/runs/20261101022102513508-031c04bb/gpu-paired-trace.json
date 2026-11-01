@@ -1,0 +1,2442 @@
+{
+  "tokens": [
+    597,
+    5205,
+    302,
+    3980,
+    355
+  ],
+  "manual_prediction": 267,
+  "public_prediction": 267,
+  "steps": [
+    {
+      "index": 1,
+      "kind": "embedding",
+      "name": "hidden",
+      "parameters": {
+        "r": 2048,
+        "c": 2048,
+        "v": 128000,
+        "start": 0,
+        "weight_dtype": "float16"
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 2,
+      "kind": "rms",
+      "name": "blk.0.normalized",
+      "parameters": {
+        "r": 2048,
+        "c": 2048,
+        "eps": 1e-05
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 3,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.3",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 4,
+      "kind": "linear",
+      "name": "blk.0.projection",
+      "parameters": {
+        "r": 2048,
+        "k": 2048,
+        "o": 6144,
+        "optimized": true,
+        "weight_dtype": "float16",
+        "input_dtype": "float16"
+      },
+      "shape": [
+        30720
+      ]
+    },
+    {
+      "index": 6,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.5",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 7,
+      "kind": "linear",
+      "name": "blk.0.operator_output",
+      "parameters": {
+        "r": 2048,
+        "k": 2048,
+        "o": 2048,
+        "optimized": true,
+        "weight_dtype": "float16",
+        "input_dtype": "float16"
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 8,
+      "kind": "add",
+      "name": "blk.0.residual",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 9,
+      "kind": "rms",
+      "name": "blk.0.ffn_normalized",
+      "parameters": {
+        "r": 2048,
+        "c": 2048,
+        "eps": 1e-05
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 10,
+      "kind": "quantize",
+      "name": "pipeline.blk.0.ffn_normalized.view.603.bits",
+      "parameters": {
+        "r": 2048,
+        "k": 2048,
+        "input_dtype": "float32"
+      },
+      "shape": [
+        5,
+        2048
+      ]
+    },
+    {
+      "index": 10,
+      "kind": "quantize",
+      "name": "pipeline.blk.0.ffn_normalized.view.603.scales",
+      "parameters": {
+        "r": 2048,
+        "k": 2048,
+        "input_dtype": "float32"
+      },
+      "shape": [
+        5,
+        16
+      ]
+    },
+    {
+      "index": 11,
+      "kind": "projection_partial",
+      "name": "blk.0.gate",
+      "parameters": {
+        "r": 2048,
+        "k": 2048,
+        "o": 11776,
+        "input_dtype": "float32",
+        "partitions": 1,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "shape": [
+        5,
+        11776
+      ]
+    },
+    {
+      "index": 12,
+      "kind": "projection_partial",
+      "name": "blk.0.up",
+      "parameters": {
+        "r": 2048,
+        "k": 2048,
+        "o": 11776,
+        "input_dtype": "float32",
+        "partitions": 1,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "shape": [
+        5,
+        11776
+      ]
+    },
+    {
+      "index": 13,
+      "kind": "swiglu",
+      "name": "blk.0.activated",
+      "parameters": {
+        "r": 2048,
+        "c": 11776
+      },
+      "shape": [
+        58880
+      ]
+    },
+    {
+      "index": 14,
+      "kind": "quantize",
+      "name": "pipeline.blk.0.activated.view.610.bits",
+      "parameters": {
+        "r": 2048,
+        "k": 11776,
+        "input_dtype": "float32"
+      },
+      "shape": [
+        5,
+        11776
+      ]
+    },
+    {
+      "index": 14,
+      "kind": "quantize",
+      "name": "pipeline.blk.0.activated.view.610.scales",
+      "parameters": {
+        "r": 2048,
+        "k": 11776,
+        "input_dtype": "float32"
+      },
+      "shape": [
+        5,
+        92
+      ]
+    },
+    {
+      "index": 15,
+      "kind": "projection_partial",
+      "name": "blk.0.ffn_output",
+      "parameters": {
+        "r": 2048,
+        "k": 11776,
+        "o": 2048,
+        "input_dtype": "float32",
+        "partitions": 1,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "shape": [
+        5,
+        2048
+      ]
+    },
+    {
+      "index": 16,
+      "kind": "add",
+      "name": "blk.0.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 17,
+      "kind": "rms",
+      "name": "blk.1.normalized",
+      "parameters": {
+        "r": 2048,
+        "c": 2048,
+        "eps": 1e-05
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 18,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.14",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 19,
+      "kind": "linear",
+      "name": "blk.1.projection",
+      "parameters": {
+        "r": 2048,
+        "k": 2048,
+        "o": 6144,
+        "optimized": true,
+        "weight_dtype": "float16",
+        "input_dtype": "float16"
+      },
+      "shape": [
+        30720
+      ]
+    },
+    {
+      "index": 21,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.16",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 22,
+      "kind": "linear",
+      "name": "blk.1.operator_output",
+      "parameters": {
+        "r": 2048,
+        "k": 2048,
+        "o": 2048,
+        "optimized": true,
+        "weight_dtype": "float16",
+        "input_dtype": "float16"
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 23,
+      "kind": "add",
+      "name": "blk.1.residual",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 24,
+      "kind": "rms",
+      "name": "blk.1.ffn_normalized",
+      "parameters": {
+        "r": 2048,
+        "c": 2048,
+        "eps": 1e-05
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 25,
+      "kind": "quantize",
+      "name": "pipeline.blk.1.ffn_normalized.view.621.bits",
+      "parameters": {
+        "r": 2048,
+        "k": 2048,
+        "input_dtype": "float32"
+      },
+      "shape": [
+        5,
+        2048
+      ]
+    },
+    {
+      "index": 25,
+      "kind": "quantize",
+      "name": "pipeline.blk.1.ffn_normalized.view.621.scales",
+      "parameters": {
+        "r": 2048,
+        "k": 2048,
+        "input_dtype": "float32"
+      },
+      "shape": [
+        5,
+        16
+      ]
+    },
+    {
+      "index": 26,
+      "kind": "projection_partial",
+      "name": "blk.1.gate",
+      "parameters": {
+        "r": 2048,
+        "k": 2048,
+        "o": 11776,
+        "input_dtype": "float32",
+        "partitions": 1,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "shape": [
+        5,
+        11776
+      ]
+    },
+    {
+      "index": 27,
+      "kind": "projection_partial",
+      "name": "blk.1.up",
+      "parameters": {
+        "r": 2048,
+        "k": 2048,
+        "o": 11776,
+        "input_dtype": "float32",
+        "partitions": 1,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "shape": [
+        5,
+        11776
+      ]
+    },
+    {
+      "index": 28,
+      "kind": "swiglu",
+      "name": "blk.1.activated",
+      "parameters": {
+        "r": 2048,
+        "c": 11776
+      },
+      "shape": [
+        58880
+      ]
+    },
+    {
+      "index": 29,
+      "kind": "quantize",
+      "name": "pipeline.blk.1.activated.view.628.bits",
+      "parameters": {
+        "r": 2048,
+        "k": 11776,
+        "input_dtype": "float32"
+      },
+      "shape": [
+        5,
+        11776
+      ]
+    },
+    {
+      "index": 29,
+      "kind": "quantize",
+      "name": "pipeline.blk.1.activated.view.628.scales",
+      "parameters": {
+        "r": 2048,
+        "k": 11776,
+        "input_dtype": "float32"
+      },
+      "shape": [
+        5,
+        92
+      ]
+    },
+    {
+      "index": 30,
+      "kind": "projection_partial",
+      "name": "blk.1.ffn_output",
+      "parameters": {
+        "r": 2048,
+        "k": 11776,
+        "o": 2048,
+        "input_dtype": "float32",
+        "partitions": 1,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "shape": [
+        5,
+        2048
+      ]
+    },
+    {
+      "index": 31,
+      "kind": "add",
+      "name": "blk.1.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 32,
+      "kind": "rms",
+      "name": "blk.2.normalized",
+      "parameters": {
+        "r": 2048,
+        "c": 2048,
+        "eps": 1e-05
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 33,
+      "kind": "quantize",
+      "name": "pipeline.blk.2.normalized.view.633.bits",
+      "parameters": {
+        "r": 2048,
+        "k": 2048,
+        "input_dtype": "float32"
+      },
+      "shape": [
+        5,
+        2048
+      ]
+    },
+    {
+      "index": 33,
+      "kind": "quantize",
+      "name": "pipeline.blk.2.normalized.view.633.scales",
+      "parameters": {
+        "r": 2048,
+        "k": 2048,
+        "input_dtype": "float32"
+      },
+      "shape": [
+        5,
+        16
+      ]
+    },
+    {
+      "index": 34,
+      "kind": "projection_partial",
+      "name": "blk.2.q",
+      "parameters": {
+        "r": 2048,
+        "k": 2048,
+        "o": 2048,
+        "input_dtype": "float32",
+        "partitions": 1,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "shape": [
+        5,
+        2048
+      ]
+    },
+    {
+      "index": 35,
+      "kind": "projection_partial",
+      "name": "blk.2.k",
+      "parameters": {
+        "r": 2048,
+        "k": 2048,
+        "o": 512,
+        "input_dtype": "float32",
+        "partitions": 1,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "shape": [
+        5,
+        512
+      ]
+    },
+    {
+      "index": 36,
+      "kind": "projection_partial",
+      "name": "blk.2.v",
+      "parameters": {
+        "r": 2048,
+        "k": 2048,
+        "o": 512,
+        "input_dtype": "float32",
+        "partitions": 1,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "shape": [
+        5,
+        512
+      ]
+    },
+    {
+      "index": 37,
+      "kind": "rms",
+      "name": "blk.2.qn",
+      "parameters": {
+        "r": 65536,
+        "c": 64,
+        "eps": 1e-05
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 38,
+      "kind": "rms",
+      "name": "blk.2.kn",
+      "parameters": {
+        "r": 16384,
+        "c": 64,
+        "eps": 1e-05
+      },
+      "shape": [
+        2560
+      ]
+    },
+    {
+      "index": 39,
+      "kind": "rope",
+      "name": "blk.2.qr",
+      "parameters": {
+        "r": 2048,
+        "h": 32,
+        "d": 64,
+        "theta": 10000000.0,
+        "provider": "cuda",
+        "position_limit": 2176
+      },
+      "shape": [
+        5,
+        2048
+      ]
+    },
+    {
+      "index": 40,
+      "kind": "rope",
+      "name": "blk.2.kr",
+      "parameters": {
+        "r": 2048,
+        "h": 8,
+        "d": 64,
+        "theta": 10000000.0,
+        "provider": "cuda",
+        "position_limit": 2176
+      },
+      "shape": [
+        5,
+        512
+      ]
+    },
+    {
+      "index": 43,
+      "kind": "quantize",
+      "name": "pipeline.blk.2.attended.view.651.bits",
+      "parameters": {
+        "r": 2048,
+        "k": 2048,
+        "input_dtype": "float32"
+      },
+      "shape": [
+        5,
+        2048
+      ]
+    },
+    {
+      "index": 43,
+      "kind": "quantize",
+      "name": "pipeline.blk.2.attended.view.651.scales",
+      "parameters": {
+        "r": 2048,
+        "k": 2048,
+        "input_dtype": "float32"
+      },
+      "shape": [
+        5,
+        16
+      ]
+    },
+    {
+      "index": 44,
+      "kind": "projection_partial",
+      "name": "blk.2.operator_output",
+      "parameters": {
+        "r": 2048,
+        "k": 2048,
+        "o": 2048,
+        "input_dtype": "float32",
+        "partitions": 1,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "shape": [
+        5,
+        2048
+      ]
+    },
+    {
+      "index": 45,
+      "kind": "add",
+      "name": "blk.2.residual",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 46,
+      "kind": "rms",
+      "name": "blk.2.ffn_normalized",
+      "parameters": {
+        "r": 2048,
+        "c": 2048,
+        "eps": 1e-05
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 47,
+      "kind": "matmul",
+      "name": "blk.2.router",
+      "parameters": {
+        "r": 2048,
+        "k": 2048,
+        "o": 64,
+        "dtype": "float32",
+        "reduction_lanes": 32
+      },
+      "shape": [
+        5,
+        64
+      ]
+    },
+    {
+      "index": 48,
+      "kind": "biased_router",
+      "name": "blk.2.moe.ids",
+      "parameters": {
+        "r": 2048,
+        "experts": 64,
+        "top": 4,
+        "scale": 1.0,
+        "normalize": true
+      },
+      "shape": [
+        5,
+        4
+      ]
+    },
+    {
+      "index": 48,
+      "kind": "biased_router",
+      "name": "blk.2.moe.probability",
+      "parameters": {
+        "r": 2048,
+        "experts": 64,
+        "top": 4,
+        "scale": 1.0,
+        "normalize": true
+      },
+      "shape": [
+        5,
+        4
+      ]
+    },
+    {
+      "index": 49,
+      "kind": "quantized_routes",
+      "name": "blk.2.moe.counts",
+      "parameters": {
+        "r": 2048,
+        "experts": 64,
+        "top": 4
+      },
+      "shape": [
+        64
+      ]
+    },
+    {
+      "index": 49,
+      "kind": "quantized_routes",
+      "name": "blk.2.moe.routes",
+      "parameters": {
+        "r": 2048,
+        "experts": 64,
+        "top": 4
+      },
+      "shape": [
+        64,
+        2048
+      ]
+    },
+    {
+      "index": 50,
+      "kind": "expert_tile_map",
+      "name": "blk.2.moe.tile_experts",
+      "parameters": {
+        "r": 2048,
+        "experts": 64,
+        "top": 4
+      },
+      "shape": [
+        5,
+        2112
+      ]
+    },
+    {
+      "index": 50,
+      "kind": "expert_tile_map",
+      "name": "blk.2.moe.tile_rows",
+      "parameters": {
+        "r": 2048,
+        "experts": 64,
+        "top": 4
+      },
+      "shape": [
+        5,
+        2112
+      ]
+    },
+    {
+      "index": 51,
+      "kind": "quantize",
+      "name": "blk.2.ffn_normalized.view.656.fp8",
+      "parameters": {
+        "r": 2048,
+        "k": 2048,
+        "input_dtype": "float32"
+      },
+      "shape": [
+        5,
+        2048
+      ]
+    },
+    {
+      "index": 51,
+      "kind": "quantize",
+      "name": "blk.2.ffn_normalized.view.656.fp8_scales",
+      "parameters": {
+        "r": 2048,
+        "k": 2048,
+        "input_dtype": "float32"
+      },
+      "shape": [
+        5,
+        16
+      ]
+    },
+    {
+      "index": 52,
+      "kind": "fp8_expert_swiglu",
+      "name": "blk.2.moe.activation.fp8",
+      "parameters": {
+        "r": 2048,
+        "rows": 2048,
+        "top": 4,
+        "experts": 64,
+        "o": 1536,
+        "k": 2048,
+        "routed_input": false,
+        "partitions": 1,
+        "compact": true,
+        "tile_map": true,
+        "block_m": 32
+      },
+      "shape": [
+        5,
+        4,
+        1536
+      ]
+    },
+    {
+      "index": 52,
+      "kind": "fp8_expert_swiglu",
+      "name": "blk.2.moe.activation.fp8_scales",
+      "parameters": {
+        "r": 2048,
+        "rows": 2048,
+        "top": 4,
+        "experts": 64,
+        "o": 1536,
+        "k": 2048,
+        "routed_input": false,
+        "partitions": 1,
+        "compact": true,
+        "tile_map": true,
+        "block_m": 32
+      },
+      "shape": [
+        5,
+        4,
+        12
+      ]
+    },
+    {
+      "index": 53,
+      "kind": "expert_partial",
+      "name": "blk.2.moe.down",
+      "parameters": {
+        "r": 2048,
+        "rows": 2048,
+        "top": 4,
+        "experts": 64,
+        "o": 2048,
+        "k": 1536,
+        "routed_input": true,
+        "partitions": 1,
+        "compact": true,
+        "tile_map": true,
+        "block_m": 32
+      },
+      "shape": [
+        5,
+        4,
+        2048
+      ]
+    },
+    {
+      "index": 54,
+      "kind": "routed_combine",
+      "name": "blk.2.moe.out",
+      "parameters": {
+        "r": 2048,
+        "top": 4,
+        "c": 2048
+      },
+      "shape": [
+        5,
+        2048
+      ]
+    },
+    {
+      "index": 55,
+      "kind": "add",
+      "name": "blk.2.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 56,
+      "kind": "rms",
+      "name": "blk.3.normalized",
+      "parameters": {
+        "r": 2048,
+        "c": 2048,
+        "eps": 1e-05
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 57,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.47",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 58,
+      "kind": "linear",
+      "name": "blk.3.projection",
+      "parameters": {
+        "r": 2048,
+        "k": 2048,
+        "o": 6144,
+        "optimized": true,
+        "weight_dtype": "float16",
+        "input_dtype": "float16"
+      },
+      "shape": [
+        30720
+      ]
+    },
+    {
+      "index": 60,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.49",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 61,
+      "kind": "linear",
+      "name": "blk.3.operator_output",
+      "parameters": {
+        "r": 2048,
+        "k": 2048,
+        "o": 2048,
+        "optimized": true,
+        "weight_dtype": "float16",
+        "input_dtype": "float16"
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 62,
+      "kind": "add",
+      "name": "blk.3.residual",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 63,
+      "kind": "rms",
+      "name": "blk.3.ffn_normalized",
+      "parameters": {
+        "r": 2048,
+        "c": 2048,
+        "eps": 1e-05
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 64,
+      "kind": "matmul",
+      "name": "blk.3.router",
+      "parameters": {
+        "r": 2048,
+        "k": 2048,
+        "o": 64,
+        "dtype": "float32",
+        "reduction_lanes": 32
+      },
+      "shape": [
+        5,
+        64
+      ]
+    },
+    {
+      "index": 65,
+      "kind": "biased_router",
+      "name": "blk.3.moe.ids",
+      "parameters": {
+        "r": 2048,
+        "experts": 64,
+        "top": 4,
+        "scale": 1.0,
+        "normalize": true
+      },
+      "shape": [
+        5,
+        4
+      ]
+    },
+    {
+      "index": 65,
+      "kind": "biased_router",
+      "name": "blk.3.moe.probability",
+      "parameters": {
+        "r": 2048,
+        "experts": 64,
+        "top": 4,
+        "scale": 1.0,
+        "normalize": true
+      },
+      "shape": [
+        5,
+        4
+      ]
+    },
+    {
+      "index": 66,
+      "kind": "quantized_routes",
+      "name": "blk.3.moe.counts",
+      "parameters": {
+        "r": 2048,
+        "experts": 64,
+        "top": 4
+      },
+      "shape": [
+        64
+      ]
+    },
+    {
+      "index": 66,
+      "kind": "quantized_routes",
+      "name": "blk.3.moe.routes",
+      "parameters": {
+        "r": 2048,
+        "experts": 64,
+        "top": 4
+      },
+      "shape": [
+        64,
+        2048
+      ]
+    },
+    {
+      "index": 67,
+      "kind": "expert_tile_map",
+      "name": "blk.3.moe.tile_experts",
+      "parameters": {
+        "r": 2048,
+        "experts": 64,
+        "top": 4
+      },
+      "shape": [
+        5,
+        2112
+      ]
+    },
+    {
+      "index": 67,
+      "kind": "expert_tile_map",
+      "name": "blk.3.moe.tile_rows",
+      "parameters": {
+        "r": 2048,
+        "experts": 64,
+        "top": 4
+      },
+      "shape": [
+        5,
+        2112
+      ]
+    },
+    {
+      "index": 68,
+      "kind": "quantize",
+      "name": "blk.3.ffn_normalized.view.683.fp8",
+      "parameters": {
+        "r": 2048,
+        "k": 2048,
+        "input_dtype": "float32"
+      },
+      "shape": [
+        5,
+        2048
+      ]
+    },
+    {
+      "index": 68,
+      "kind": "quantize",
+      "name": "blk.3.ffn_normalized.view.683.fp8_scales",
+      "parameters": {
+        "r": 2048,
+        "k": 2048,
+        "input_dtype": "float32"
+      },
+      "shape": [
+        5,
+        16
+      ]
+    },
+    {
+      "index": 69,
+      "kind": "fp8_expert_swiglu",
+      "name": "blk.3.moe.activation.fp8",
+      "parameters": {
+        "r": 2048,
+        "rows": 2048,
+        "top": 4,
+        "experts": 64,
+        "o": 1536,
+        "k": 2048,
+        "routed_input": false,
+        "partitions": 1,
+        "compact": true,
+        "tile_map": true,
+        "block_m": 32
+      },
+      "shape": [
+        5,
+        4,
+        1536
+      ]
+    },
+    {
+      "index": 69,
+      "kind": "fp8_expert_swiglu",
+      "name": "blk.3.moe.activation.fp8_scales",
+      "parameters": {
+        "r": 2048,
+        "rows": 2048,
+        "top": 4,
+        "experts": 64,
+        "o": 1536,
+        "k": 2048,
+        "routed_input": false,
+        "partitions": 1,
+        "compact": true,
+        "tile_map": true,
+        "block_m": 32
+      },
+      "shape": [
+        5,
+        4,
+        12
+      ]
+    },
+    {
+      "index": 70,
+      "kind": "expert_partial",
+      "name": "blk.3.moe.down",
+      "parameters": {
+        "r": 2048,
+        "rows": 2048,
+        "top": 4,
+        "experts": 64,
+        "o": 2048,
+        "k": 1536,
+        "routed_input": true,
+        "partitions": 1,
+        "compact": true,
+        "tile_map": true,
+        "block_m": 32
+      },
+      "shape": [
+        5,
+        4,
+        2048
+      ]
+    },
+    {
+      "index": 71,
+      "kind": "routed_combine",
+      "name": "blk.3.moe.out",
+      "parameters": {
+        "r": 2048,
+        "top": 4,
+        "c": 2048
+      },
+      "shape": [
+        5,
+        2048
+      ]
+    },
+    {
+      "index": 72,
+      "kind": "add",
+      "name": "blk.3.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 74,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.62",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 77,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.64",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 89,
+      "kind": "add",
+      "name": "blk.4.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 91,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.77",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 94,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.79",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 106,
+      "kind": "add",
+      "name": "blk.5.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 130,
+      "kind": "add",
+      "name": "blk.6.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 132,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.114",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 135,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.116",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 147,
+      "kind": "add",
+      "name": "blk.7.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 149,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.129",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 152,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.131",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 164,
+      "kind": "add",
+      "name": "blk.8.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 166,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.144",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 169,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.146",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 181,
+      "kind": "add",
+      "name": "blk.9.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 205,
+      "kind": "add",
+      "name": "blk.10.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 207,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.181",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 210,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.183",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 222,
+      "kind": "add",
+      "name": "blk.11.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 224,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.196",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 227,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.198",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 239,
+      "kind": "add",
+      "name": "blk.12.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 241,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.211",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 244,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.213",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 256,
+      "kind": "add",
+      "name": "blk.13.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 280,
+      "kind": "add",
+      "name": "blk.14.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 282,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.248",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 285,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.250",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 297,
+      "kind": "add",
+      "name": "blk.15.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 299,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.263",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 302,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.265",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 314,
+      "kind": "add",
+      "name": "blk.16.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 316,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.278",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 319,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.280",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 331,
+      "kind": "add",
+      "name": "blk.17.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 355,
+      "kind": "add",
+      "name": "blk.18.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 357,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.315",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 360,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.317",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 372,
+      "kind": "add",
+      "name": "blk.19.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 374,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.330",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 377,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.332",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 389,
+      "kind": "add",
+      "name": "blk.20.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 391,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.345",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 394,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.347",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 406,
+      "kind": "add",
+      "name": "blk.21.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 430,
+      "kind": "add",
+      "name": "blk.22.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 432,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.382",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 435,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.384",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 447,
+      "kind": "add",
+      "name": "blk.23.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 449,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.397",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 452,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.399",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 464,
+      "kind": "add",
+      "name": "blk.24.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 466,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.412",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 469,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.414",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 481,
+      "kind": "add",
+      "name": "blk.25.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 505,
+      "kind": "add",
+      "name": "blk.26.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 507,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.449",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 510,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.451",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 522,
+      "kind": "add",
+      "name": "blk.27.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 524,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.464",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 527,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.466",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 539,
+      "kind": "add",
+      "name": "blk.28.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 541,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.479",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 544,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.481",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 556,
+      "kind": "add",
+      "name": "blk.29.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 580,
+      "kind": "add",
+      "name": "blk.30.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 582,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.516",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 585,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.518",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 597,
+      "kind": "add",
+      "name": "blk.31.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 599,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.531",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 602,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.533",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 614,
+      "kind": "add",
+      "name": "blk.32.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 616,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.546",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 619,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.548",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 631,
+      "kind": "add",
+      "name": "blk.33.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 655,
+      "kind": "add",
+      "name": "blk.34.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 657,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.583",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 660,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.585",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 672,
+      "kind": "add",
+      "name": "blk.35.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 674,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.598",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 677,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.600",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 689,
+      "kind": "add",
+      "name": "blk.36.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 691,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.613",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 694,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.615",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 706,
+      "kind": "add",
+      "name": "blk.37.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 730,
+      "kind": "add",
+      "name": "blk.38.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 732,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.650",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 735,
+      "kind": "linear_half_input",
+      "name": "pipeline.input.652",
+      "parameters": {
+        "r": 2048,
+        "k": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 747,
+      "kind": "add",
+      "name": "blk.39.output",
+      "parameters": {
+        "r": 2048,
+        "c": 2048
+      },
+      "shape": [
+        10240
+      ]
+    },
+    {
+      "index": 748,
+      "kind": "chunk_last",
+      "name": "last_hidden",
+      "parameters": {
+        "r": 1,
+        "c": 2048,
+        "chunk": 2048
+      },
+      "shape": [
+        5
+      ]
+    },
+    {
+      "index": 749,
+      "kind": "rms",
+      "name": "normalized_output",
+      "parameters": {
+        "r": 1,
+        "c": 2048,
+        "eps": 1e-05
+      },
+      "shape": [
+        5
+      ]
+    },
+    {
+      "index": 750,
+      "kind": "linear",
+      "name": "chunk_logits",
+      "parameters": {
+        "r": 1,
+        "k": 2048,
+        "o": 128000,
+        "optimized": true,
+        "weight_dtype": "float16"
+      },
+      "shape": [
+        128000
+      ]
+    },
+    {
+      "index": 751,
+      "kind": "masked_copy",
+      "name": "logits",
+      "parameters": {
+        "r": 1,
+        "c": 128000
+      },
+      "shape": [
+        128000
+      ]
+    },
+    {
+      "index": 752,
+      "kind": "argmax",
+      "name": "sampled",
+      "parameters": {
+        "r": 1,
+        "c": 128000
+      },
+      "shape": [
+        1
+      ]
+    },
+    {
+      "index": 753,
+      "kind": "next_tokens",
+      "name": "tokens",
+      "parameters": {
+        "r": 1
+      },
+      "shape": [
+        1
+      ]
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "metadata": {
+    "runtime": "device-calibration",
+    "purpose": "hardware-ceiling",
+    "provider": "cuda",
+    "device": "NVIDIA L40S",
+    "torch_version": "2.14.0+cu130",
+    "theoretical_dense_peaks": {
+      "fp8_tflops": 733.0,
+      "fp16_tflops": 366.5,
+      "fp32_tflops": 91.6,
+      "dram_gb_per_second": 864.0
+    },
+    "specification_source": "https://www.nvidia.com/en-sg/data-center/l40s/",
+    "qualification_scope": "Vendor dense GEMM and streaming copy calibration; not model throughput"
+  },
+  "results": [],
+  "error": "TypeError('sum() received an invalid combination of arguments - got (Tensor, out=Tensor), but expected one of:\\n * (Tensor input, *, torch.dtype dtype = None)\\n * (Tensor input, tuple of ints dim, bool keepdim = False, *, torch.dtype dtype = None, Tensor out = None)\\n')"
+}

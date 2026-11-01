@@ -1,0 +1,367 @@
+{
+  "schema": "tensor.schedule-profile.v1",
+  "provider": "cuda",
+  "target": "sm_89",
+  "entries": [
+    {
+      "operation": "projection_partial",
+      "parameters": {
+        "r": 4,
+        "k": 2048,
+        "o": 11776,
+        "input_dtype": "float32",
+        "partitions": 1,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "schedule": {
+        "columns": 64,
+        "block_m": 16,
+        "threads": 128,
+        "stages": 2,
+        "packed_copy": true,
+        "mma_dtype": "float16",
+        "implementation": "linear.pipeline:reference"
+      }
+    },
+    {
+      "operation": "projection_partial",
+      "parameters": {
+        "r": 4,
+        "k": 2048,
+        "o": 11776,
+        "input_dtype": "float32",
+        "partitions": 2,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "schedule": {
+        "columns": 64,
+        "block_m": 16,
+        "threads": 128,
+        "stages": 2,
+        "packed_copy": true,
+        "mma_dtype": "float16",
+        "implementation": "linear.pipeline:reference"
+      }
+    },
+    {
+      "operation": "projection_partial",
+      "parameters": {
+        "r": 4,
+        "k": 2048,
+        "o": 11776,
+        "input_dtype": "float32",
+        "partitions": 4,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "schedule": {
+        "columns": 64,
+        "block_m": 16,
+        "threads": 128,
+        "stages": 1,
+        "packed_copy": true,
+        "mma_dtype": "float16",
+        "implementation": "linear.pipeline:reference"
+      }
+    },
+    {
+      "operation": "projection_partial",
+      "parameters": {
+        "r": 4,
+        "k": 2048,
+        "o": 11776,
+        "input_dtype": "float32",
+        "partitions": 8,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "schedule": {
+        "columns": 64,
+        "block_m": 16,
+        "threads": 256,
+        "stages": 1,
+        "packed_copy": true,
+        "mma_dtype": "float16",
+        "implementation": "linear.pipeline:reference"
+      }
+    },
+    {
+      "operation": "projection_partial",
+      "parameters": {
+        "r": 4,
+        "k": 11776,
+        "o": 2048,
+        "input_dtype": "float32",
+        "partitions": 1,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "schedule": {
+        "columns": 32,
+        "block_m": 16,
+        "threads": 128,
+        "stages": 2,
+        "packed_copy": true,
+        "mma_dtype": "float16",
+        "implementation": "linear.pipeline:reference"
+      }
+    },
+    {
+      "operation": "projection_partial",
+      "parameters": {
+        "r": 4,
+        "k": 11776,
+        "o": 2048,
+        "input_dtype": "float32",
+        "partitions": 2,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "schedule": {
+        "columns": 32,
+        "block_m": 16,
+        "threads": 128,
+        "stages": 2,
+        "packed_copy": true,
+        "mma_dtype": "float16",
+        "implementation": "linear.pipeline:reference"
+      }
+    },
+    {
+      "operation": "projection_partial",
+      "parameters": {
+        "r": 4,
+        "k": 11776,
+        "o": 2048,
+        "input_dtype": "float32",
+        "partitions": 4,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "schedule": {
+        "columns": 32,
+        "block_m": 16,
+        "threads": 128,
+        "stages": 2,
+        "packed_copy": true,
+        "mma_dtype": "float16",
+        "implementation": "linear.pipeline:reference"
+      }
+    },
+    {
+      "operation": "projection_partial",
+      "parameters": {
+        "r": 4,
+        "k": 2048,
+        "o": 2048,
+        "input_dtype": "float32",
+        "partitions": 1,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "schedule": {
+        "columns": 32,
+        "block_m": 16,
+        "threads": 128,
+        "stages": 1,
+        "packed_copy": true,
+        "mma_dtype": "float16",
+        "implementation": "linear.pipeline:reference"
+      }
+    },
+    {
+      "operation": "projection_partial",
+      "parameters": {
+        "r": 4,
+        "k": 2048,
+        "o": 2048,
+        "input_dtype": "float32",
+        "partitions": 2,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "schedule": {
+        "columns": 32,
+        "block_m": 16,
+        "threads": 128,
+        "stages": 2,
+        "packed_copy": true,
+        "mma_dtype": "float16",
+        "implementation": "linear.pipeline:reference"
+      }
+    },
+    {
+      "operation": "projection_partial",
+      "parameters": {
+        "r": 4,
+        "k": 2048,
+        "o": 2048,
+        "input_dtype": "float32",
+        "partitions": 4,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "schedule": {
+        "columns": 64,
+        "block_m": 16,
+        "threads": 128,
+        "stages": 1,
+        "packed_copy": true,
+        "mma_dtype": "float16",
+        "implementation": "linear.pipeline:reference"
+      }
+    },
+    {
+      "operation": "projection_partial",
+      "parameters": {
+        "r": 4,
+        "k": 2048,
+        "o": 2048,
+        "input_dtype": "float32",
+        "partitions": 8,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "schedule": {
+        "columns": 64,
+        "block_m": 16,
+        "threads": 256,
+        "stages": 1,
+        "packed_copy": true,
+        "mma_dtype": "float16",
+        "implementation": "linear.pipeline:reference"
+      }
+    },
+    {
+      "operation": "projection_partial",
+      "parameters": {
+        "r": 4,
+        "k": 2048,
+        "o": 512,
+        "input_dtype": "float32",
+        "partitions": 1,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "schedule": {
+        "columns": 32,
+        "block_m": 16,
+        "threads": 128,
+        "stages": 2,
+        "packed_copy": true,
+        "mma_dtype": "float16",
+        "implementation": "linear.pipeline:reference"
+      }
+    },
+    {
+      "operation": "projection_partial",
+      "parameters": {
+        "r": 4,
+        "k": 2048,
+        "o": 512,
+        "input_dtype": "float32",
+        "partitions": 2,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "schedule": {
+        "columns": 32,
+        "block_m": 16,
+        "threads": 128,
+        "stages": 1,
+        "packed_copy": true,
+        "mma_dtype": "float16",
+        "implementation": "linear.pipeline:reference"
+      }
+    },
+    {
+      "operation": "projection_partial",
+      "parameters": {
+        "r": 4,
+        "k": 2048,
+        "o": 512,
+        "input_dtype": "float32",
+        "partitions": 4,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "schedule": {
+        "columns": 64,
+        "block_m": 16,
+        "threads": 128,
+        "stages": 1,
+        "packed_copy": true,
+        "mma_dtype": "float16",
+        "implementation": "linear.pipeline:reference"
+      }
+    },
+    {
+      "operation": "projection_partial",
+      "parameters": {
+        "r": 4,
+        "k": 2048,
+        "o": 512,
+        "input_dtype": "float32",
+        "partitions": 8,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "schedule": {
+        "columns": 32,
+        "block_m": 16,
+        "threads": 128,
+        "stages": 1,
+        "packed_copy": true,
+        "mma_dtype": "float16",
+        "implementation": "linear.pipeline:reference"
+      }
+    }
+  ]
+}

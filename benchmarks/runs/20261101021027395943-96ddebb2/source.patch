@@ -1,0 +1,3732 @@
+diff --git a/src/akas/artifacts/fingerprint.py b/src/akas/artifacts/fingerprint.py
+index 49fc059..4844361 100644
+--- a/src/akas/artifacts/fingerprint.py
++++ b/src/akas/artifacts/fingerprint.py
+@@ -15,6 +15,7 @@ def _modules(*owners):
+                 "akas." + p.relative_to(root).with_suffix("").as_posix().replace("/", ".")
+                 for p in path.rglob("*.py")
+                 if p.name != "__init__.py"
++                and all(part.isidentifier() for part in p.relative_to(root).with_suffix("").parts)
+             )
+         else:
+             names.add("akas." + owner)
+@@ -65,6 +66,8 @@ def runtime_hashes(provider="cuda"):
+         )
+     )
+     names.update(("tensor.artifacts.format", "tensor.providers." + provider))
++    if find_spec("tensor.runtime.domain") is not None:
++        names.add("tensor.runtime.domain")
+     if provider == "cuda":
+         names.update(
+             "tensor.providers.cuda." + name for name in ("device", "driver", "graph")
+diff --git a/src/akas/benchmarking/history.py b/src/akas/benchmarking/history.py
+index 2ebd8ca..38f6346 100644
+--- a/src/akas/benchmarking/history.py
++++ b/src/akas/benchmarking/history.py
+@@ -135,7 +135,15 @@ class Recorder:
+         change=None,
+         parent=None,
+         kind="configuration",
++        dependency_sources=None,
+     ):
++        self.dependency_sources = {
++            name: Path(path).resolve()
++            for name, path in (dependency_sources or {}).items()
++        }
++        if any(not isinstance(name, str) or not re.fullmatch(r"[A-Za-z0-9_-]+", name)
++               for name in self.dependency_sources):
++            raise ValueError("dependency source names must be simple identifiers")
+         self.root = Path(root).resolve()
+         checkout = Path(__file__).resolve().parents[3]
+         default = (
+@@ -181,6 +189,17 @@ class Recorder:
+             ],
+         )
+         self.record["source"]["captured_at"] = started
++        self.record["dependency_sources"] = {}
++        for name, path in self.dependency_sources.items():
++            dependency = source_identity(path)
++            dependency["captured_at"] = started
++            self.record["dependency_sources"][name] = dependency
++            snapshot = self.directory / "dependencies" / name / "source.tar.gz"
++            snapshot.parent.mkdir(parents=True)
++            with tarfile.open(snapshot, "w:gz", dereference=False) as stream:
++                for filename in dependency["files"]:
++                    stream.add(path / filename, arcname=filename, recursive=False)
++            self.artifact(snapshot, f"dependencies/{name}/source.tar.gz")
+         packages = {}
+         for name in ("tensor-workspace", "wgpu", "tilelang", "apache-tvm-ffi", "numpy"):
+             try:
+@@ -376,6 +395,11 @@ class Recorder:
+                 == self.record["source"]["tree_sha256"]
+             )
+             self.record["source"]["changed_during_run"] = not unchanged
++            for name, path in self.dependency_sources.items():
++                dependency = self.record["dependency_sources"][name]
++                changed = source_identity(path)["tree_sha256"] != dependency["tree_sha256"]
++                dependency["changed_during_run"] = changed
++                unchanged = unchanged and not changed
+             self.record["completed_at"] = utc()
+             self.record["status"] = (
+                 "invalidated"
+diff --git a/src/akas/checkpoints/safetensors.py b/src/akas/checkpoints/safetensors.py
+index 0fb67bf..db7d6d6 100644
+--- a/src/akas/checkpoints/safetensors.py
++++ b/src/akas/checkpoints/safetensors.py
+@@ -18,6 +18,28 @@ STORAGE = {
+ }
+ 
+ 
++def block_fp8_config(config):
++    """Validate the shared compressed-tensors block-FP8 checkpoint contract."""
++    q = config.get("quantization_config")
++    if q is None:
++        return False
++    groups = q.get("config_groups", {})
++    if (q.get("quant_method") != "compressed-tensors"
++            or q.get("format") != "float-quantized" or len(groups) != 1
++            or q.get("kv_cache_scheme") is not None):
++        raise ValueError("unsupported block-FP8 checkpoint quantization")
++    group = next(iter(groups.values()))
++    weights, activations = group.get("weights", {}), group.get("input_activations", {})
++    if (weights.get("num_bits") != 8 or weights.get("type") != "float"
++            or weights.get("strategy") != "block" or weights.get("block_structure") != [128, 128]
++            or weights.get("dynamic") is not False or weights.get("symmetric") is not True
++            or activations.get("num_bits") != 8 or activations.get("type") != "float"
++            or activations.get("strategy") != "group" or activations.get("group_size") != 128
++            or activations.get("dynamic") is not True or activations.get("symmetric") is not True):
++        raise ValueError("FP8 requires static 128x128 weights and dynamic group-128 activations")
++    return True
++
++
+ def _object(pairs):
+     result = {}
+     for key, value in pairs:
+diff --git a/src/akas/checkpoints/upload.py b/src/akas/checkpoints/upload.py
+index d6263e1..000a6f8 100644
+--- a/src/akas/checkpoints/upload.py
++++ b/src/akas/checkpoints/upload.py
+@@ -155,7 +155,10 @@ def upload_shards(device, tensors, wanted, layouts, *, conversions=None):
+                         mapped, dtype="uint8", count=info.nbytes, offset=info.offset
+                     )
+                     try:
+-                        data = view
++                        # Fault file-backed pages into ordinary host storage before
++                        # CUDA pins them for DMA. Direct copies from cold mappings
++                        # can serialize storage faults inside the driver.
++                        data = view.copy() if group not in conversions else view
+                         destination_offset = offset
+                         if group in conversions:
+                             data = convert_storage(
+diff --git a/src/akas/compilation/README.md b/src/akas/compilation/README.md
+index fbb3ef6..7897213 100644
+--- a/src/akas/compilation/README.md
++++ b/src/akas/compilation/README.md
+@@ -83,6 +83,28 @@ attention partitions, expert layouts, resident operands and recurrent recomputat
+ Kernel beam search qualifies schedules inside the selected pipeline. Requested
+ geometries are compiled explicitly; this is not one shape-polymorphic kernel.
+ 
++The CUDA FP8 projection policy accepts `minimum_split_groups` with `partitions`:
++the latter becomes a partition ceiling, and underfilled launches select the
++smallest legal K divisor that reaches the requested group count, or the largest
++legal divisor within that ceiling. Wide launches keep one partition. Without
++`minimum_split_groups`, `partitions` retains its fixed-count behavior.
++`minimum_rows` controls FP8 pipeline eligibility;
++`floating_matmul_minimum_rows` independently controls canonical F32 projections.
++For native FP8 experts, `moe.fused_quantize_minimum_rows` keeps output quantization
++separate below the selected row count when `fused_swiglu=True`. The paired
++`expert_swiglu` operation shares the same grouped GEMM body as the fully fused
++path, exposing 32-, 64- and 128-column tiles while the separate quantizer retains
++its 128-value groups. The default threshold of one preserves full fusion.
++FP8 projection schedules also accept `mma_dtype="float16"` to promote the
++stored FP8 values exactly before multiplication when tighter accumulation
++accuracy is required. Qualify the selected schedules and the resulting model.
++
++`SearchSettings(cache_working_set_bytes=...)` conditions each CUDA measurement
++with Tensor's independent working set after restoring mutable outputs and before
++timing. The default keeps the existing warm measurements. The footprint and
++conditioning artifact identity are recorded in search context, so results from
++different residency conditions cannot share a qualification cache entry.
++
+ `liveness.py` derives state-only prefill from declared writes and dependencies.
+ It shares already-qualified kernel artifacts with the normal prefill phase.
+ 
+diff --git a/src/akas/compilation/compile.py b/src/akas/compilation/compile.py
+index b691978..64f4151 100644
+--- a/src/akas/compilation/compile.py
++++ b/src/akas/compilation/compile.py
+@@ -113,8 +113,12 @@ def plan(
+         record_implementation=True,
+     )
+     from akas.compilation.state import map_requests
++    from akas.compilation.liveness import prune_buffers
++    from akas.graph import Graph
+ 
+     forward, kernels = map_requests(forward, kernels)
++    forward = prune_buffers(Graph.from_metadata(forward.metadata()),
++                            preserve_roles=("input", "output", "weight", "state", "journal"))
+     return Bundle(
+         dict(
+             schema="akas.forward.v1",
+diff --git a/src/akas/compilation/emit.py b/src/akas/compilation/emit.py
+index a3cd536..9a6c1c4 100644
+--- a/src/akas/compilation/emit.py
++++ b/src/akas/compilation/emit.py
+@@ -79,10 +79,11 @@ def compile_kernel(
+         artifact.unlink(missing_ok=True)
+         source.write_text(text)
+         search_pool = out / "search-kernels"
++        search_pool.mkdir(parents=True, exist_ok=True)
+         digest = hashlib.sha256(text.encode()).hexdigest()
+         pooled_source = search_pool / (digest + ".py")
+         pooled_artifact = search_pool / (digest + ".tbin")
+-        if search_pool.is_dir() and not needs_build(
++        if not needs_build(
+             pooled_source, pooled_artifact, text, target, provider=provider
+         ):
+             shutil.copyfile(pooled_artifact, artifact)
+@@ -94,10 +95,9 @@ def compile_kernel(
+                 provider=provider,
+                 cache_dir=out / "compiler-cache",
+             )
+-            if search_pool.is_dir():
+-                pooled_source.write_text(text)
+-                if pooled_artifact.resolve() != artifact.resolve():
+-                    shutil.copyfile(artifact, pooled_artifact)
++            pooled_source.write_text(text)
++            if pooled_artifact.resolve() != artifact.resolve():
++                shutil.copyfile(artifact, pooled_artifact)
+     record = dict(
+         kind=kernel.kind, parameters=kernel.parameters, sha256=checksum(artifact)
+     )
+diff --git a/src/akas/compilation/liveness.py b/src/akas/compilation/liveness.py
+index f6a9f86..925c380 100644
+--- a/src/akas/compilation/liveness.py
++++ b/src/akas/compilation/liveness.py
+@@ -4,6 +4,29 @@ from akas.graph import Graph
+ from akas.kernels.registry import graph_outputs
+ 
+ 
++def prune_buffers(graph, *, preserve_roles=()):
++    """Remove unreferenced storage, keeping request bindings and alias ancestors.
++
++    Producers can preserve externally owned roles even when no operation uses
++    them. Internal scratch eliminated by a rewrite never needs an allocation.
++    """
++    needed = {name for call in graph.calls
++              for name in (*call.arguments, *call.bindings.values())}
++    needed.update(name for name, spec in graph.buffers.items() if spec.role in preserve_roles)
++    request = graph.request or {}
++    needed.update(request.get("inputs", {}).values())
++    needed.update(request.get("features", {}).values())
++    needed.update(request.get("reset", ()))
++    if "prediction" in request:
++        needed.add(request["prediction"])
++    for name in tuple(needed):
++        while graph.buffers[name].alias_of is not None:
++            name = graph.buffers[name].alias_of
++            needed.add(name)
++    graph.buffers = {name: spec for name, spec in graph.buffers.items() if name in needed}
++    return graph
++
++
+ def state_prefill(graph):
+     """Keep persistent writes and their dependencies, excluding terminal heads.
+ 
+@@ -48,21 +71,4 @@ def state_prefill(graph):
+         request["features"] = retained
+     else:
+         request.pop("features", None)
+-    needed = {
+-        name
+-        for call in graph.calls
+-        for name in (*call.arguments, *call.bindings.values())
+-    }
+-    needed.update(request["inputs"].values())
+-    needed.update(retained.values())
+-    needed.update(request.get("reset", ()))
+-    needed.add(request["prediction"])
+-    needed.update(name for name, spec in graph.buffers.items() if spec.role == "state")
+-    for name in tuple(needed):
+-        while graph.buffers[name].alias_of is not None:
+-            name = graph.buffers[name].alias_of
+-            needed.add(name)
+-    graph.buffers = {
+-        name: spec for name, spec in graph.buffers.items() if name in needed
+-    }
+-    return graph
++    return prune_buffers(graph, preserve_roles=("state",))
+diff --git a/src/akas/compilation/tuning.py b/src/akas/compilation/tuning.py
+index ad27ffa..8f87030 100644
+--- a/src/akas/compilation/tuning.py
++++ b/src/akas/compilation/tuning.py
+@@ -322,6 +322,7 @@ class SearchSettings:
+     warmup: int = 1
+     samples: int = 3
+     repeats: int = 3
++    cache_working_set_bytes: int = 0
+ 
+     def __post_init__(self):
+         for name in ("budget", "width", "samples", "repeats"):
+@@ -329,6 +330,8 @@ class SearchSettings:
+                 raise ValueError(f"search {name} must be a positive integer")
+         if type(self.warmup) is not int or self.warmup < 0:
+             raise ValueError("search warmup must be nonnegative")
++        if type(self.cache_working_set_bytes) is not int or self.cache_working_set_bytes < 0:
++            raise ValueError("search cache working-set bytes must be nonnegative")
+ 
+ 
+ def qualify(bundle, out, *, settings=None, device=None):
+@@ -384,6 +387,13 @@ def qualify(bundle, out, *, settings=None, device=None):
+             )
+         if device.info["provider"] != bundle.provider:
+             raise ValueError("search device/provider mismatch")
++        cache_prepare, cache_description = None, None
++        if settings.cache_working_set_bytes:
++            from tensor.compiler.tuning import cuda_working_set
++
++            cache_prepare, cache_description = stack.enter_context(cuda_working_set(
++                device, settings.cache_working_set_bytes, target=bundle.target,
++                out=out / "measurement-working-set"))
+         device_identity = {name: str(value) for name, value in device.info.items()}
+         context = dict(
+             graph=graph.metadata(),
+@@ -391,6 +401,7 @@ def qualify(bundle, out, *, settings=None, device=None):
+             provider=bundle.provider,
+             device=device_identity,
+             settings=asdict(settings),
++            cache_working_set=cache_description,
+             sources=backbone_hashes(),
+             compiler=_compiler_identity(bundle.provider),
+             qualification_sources=_hashes(
+@@ -642,6 +653,8 @@ def qualify(bundle, out, *, settings=None, device=None):
+                     def reset():
+                         for name in written:
+                             write(device, buffers[name], case.arguments[name])
++                        if cache_prepare is not None:
++                            cache_prepare()
+ 
+                     if verified_readonly:
+                         reset()
+diff --git a/src/akas/config.py b/src/akas/config.py
+index 4f2743c..1f89f5e 100644
+--- a/src/akas/config.py
++++ b/src/akas/config.py
+@@ -7,8 +7,18 @@ from dataclasses import dataclass
+ class EngineConfig:
+     prefill_chunk: int = 32
+     prefill_requests: int = 32
++    prefill_token_budget: int | None = None
++    decode_prefill_token_budget: int | None = None
+ 
+     def __post_init__(self):
+         for value in (self.prefill_chunk, self.prefill_requests):
+             if type(value) is not int or value < 1:
+                 raise ValueError("prefill budgets must be positive integers")
++        if self.prefill_token_budget is not None and (
++            type(self.prefill_token_budget) is not int or self.prefill_token_budget < 1
++        ):
++            raise ValueError("prefill token budget must be a positive integer")
++        if self.decode_prefill_token_budget is not None and (
++            type(self.decode_prefill_token_budget) is not int or self.decode_prefill_token_budget < 1
++        ):
++            raise ValueError("decode prefill token budget must be a positive integer")
+diff --git a/src/akas/engine.py b/src/akas/engine.py
+index 48e2a44..474e854 100644
+--- a/src/akas/engine.py
++++ b/src/akas/engine.py
+@@ -26,6 +26,8 @@ class Engine:
+             publish if publish is not None else self.events.extend,
+             prefill_chunk=self.config.prefill_chunk,
+             prefill_requests=self.config.prefill_requests,
++            prefill_token_budget=self.config.prefill_token_budget,
++            decode_prefill_token_budget=self.config.decode_prefill_token_budget,
+         )
+ 
+     @classmethod
+diff --git a/src/akas/models/README.md b/src/akas/models/README.md
+index 93ed302..bf5819f 100644
+--- a/src/akas/models/README.md
++++ b/src/akas/models/README.md
+@@ -49,7 +49,7 @@ Use `<Family><Variant>` for model declarations, with matching `Config` and
+ `DenseEngine`, `Qwen35Batch`, `DenseConfig`, `Qwen35Config`, `DenseCheckpoint`
+ and `Qwen35Checkpoint` remain compatibility aliases in their original modules;
+ new code should use the explicit variant names. `LFM2` selects dense LFM2;
+-`LFM2MoE` selects `lfm2moe` GGUF checkpoints. They share the family composition
++`LFM2MoE` selects `lfm2moe` GGUF or `lfm2_moe` safetensors checkpoints. They share the family composition
+ and executor, while the reader validates each variant's tensor inventory.
+ Vision composition and multimodal naming
+ remain future work; these Qwen declarations compose the text model.
+@@ -83,6 +83,12 @@ iteration introduces no general speculative-head framework.
+ ## LFM2 MoE checkpoints
+ 
+ `from akas.models.lfm2 import LFM2MoE` selects the packed GGUF reader for LFM2 MoE.
++For a safetensors directory, the same declaration maps the original per-expert
++FP8 matrices and BF16 block scales into the common uploader and FP8 operations.
++CUDA currently requires original weight layouts. KV remains FP16 by default.
++Operation and small-model CUDA checks pass; full-checkpoint numerical and
++serving-performance qualification remain open. Do not infer model quality or
++competitive throughput from successful import or compilation.
+ The configuration declares leading dense layers, expert dimensions and top-k
+ routing. Selection uses sigmoid probabilities plus learned expert biases;
+ combination uses the unbiased probabilities, normalized with an epsilon of 1e-6.
+diff --git a/src/akas/models/lfm2/_composition.py b/src/akas/models/lfm2/_composition.py
+index 2dd7457..3ce2fa1 100644
+--- a/src/akas/models/lfm2/_composition.py
++++ b/src/akas/models/lfm2/_composition.py
+@@ -136,6 +136,10 @@ def compose(
+         return out
+ 
+     def project(x, weight, k, o, out, *, matrix=False, count=b):
++        if weight in getattr(weights, "scales", {}):
++            plan("fp8_linear", dict(r=count, k=k, o=o, input_dtype=x.dtype),
++                 x.view((count, k)), weights[weight], weights.scales[weight], out.view((count, o)))
++            return
+         if matrix and hasattr(weights, "parameters"):
+             out = out.view((count * o,))
+         for w, start, rows in weights.matrix(weight):
+@@ -317,7 +321,7 @@ def compose(
+                 ("down", (config.experts, c, config.expert_width)),
+             ):
+                 name = p + "ffn_" + part + "_exps.weight"
+-                expert_weights[part] = Weight(
++                expert_weights[part] = weights.weight(name) if hasattr(weights, "weight") else Weight(
+                     shape, (weights[name],), weights.parts(name)
+                 )
+             mixed = routed_moe(
+diff --git a/src/akas/models/lfm2/config.py b/src/akas/models/lfm2/config.py
+index da5aa24..3c7e91f 100644
+--- a/src/akas/models/lfm2/config.py
++++ b/src/akas/models/lfm2/config.py
+@@ -105,6 +105,30 @@ class LFM2MoEConfig(Config):
+     routing_scale: float = 1.0
+     normalize_routes: bool = True
+ 
++    @classmethod
++    def from_huggingface(cls, data):
++        from dataclasses import asdict
++
++        if data.get("model_type") != "lfm2_moe":
++            raise ValueError("requires LFM2 MoE config.json")
++        base = Config.from_huggingface({**data, "model_type": "lfm2"})
++        result = cls(**asdict(base), experts=data["num_experts"],
++                     top_k=data["num_experts_per_tok"],
++                     expert_width=data["moe_intermediate_size"],
++                     dense_layers=data["num_dense_layers"],
++                     routing_scale=data.get("routed_scaling_factor", 1.0),
++                     normalize_routes=data.get("norm_topk_prob", True))
++        if (any(type(n) is not int or n < 1 for n in
++                (result.experts, result.top_k, result.expert_width))
++                or result.top_k > result.experts or result.expert_width % 128
++                or type(result.dense_layers) is not int
++                or not 0 <= result.dense_layers < len(result.layers)
++                or type(result.normalize_routes) is not bool
++                or not math.isfinite(result.routing_scale) or result.routing_scale <= 0
++                or data.get("use_expert_bias") is not True):
++            raise ValueError("unsupported LFM2 MoE routing configuration")
++        return result
++
+     @classmethod
+     def from_gguf(cls, gguf):
+         return parse_config(gguf, moe=True)
+diff --git a/src/akas/models/lfm2/model.py b/src/akas/models/lfm2/model.py
+index 95b8759..c889fdd 100644
+--- a/src/akas/models/lfm2/model.py
++++ b/src/akas/models/lfm2/model.py
+@@ -57,7 +57,7 @@ class LFM2(Definition):
+ 
+ 
+ class LFM2MoE(Definition):
+-    checkpoint_architectures = ("lfm2moe",)
++    checkpoint_architectures = ("lfm2moe", "lfm2_moe")
+     checkpoint_type = LFM2MoECheckpoint
+     model_defaults = {"kv_dtype": "float16", "optimized": True}
+     optimization_chunks = (512, 1024, 2048, 4096, 256, 128, 32, 1)
+diff --git a/src/akas/models/lfm2/weights.py b/src/akas/models/lfm2/weights.py
+index 5d0ce97..2e06afc 100644
+--- a/src/akas/models/lfm2/weights.py
++++ b/src/akas/models/lfm2/weights.py
+@@ -85,11 +85,142 @@ class LFM2MoECheckpoint(LFM2Checkpoint):
+     def __new__(cls, path, *, tokenizer=True):
+         from pathlib import Path
+ 
++        if Path(path).is_dir():
++            return NativeMoECheckpoint(path, tokenizer=tokenizer)
+         if not Path(path).is_file():
+-            raise ValueError("LFM2 MoE currently requires a GGUF checkpoint")
++            raise ValueError("LFM2 MoE requires a checkpoint file or directory")
+         return object.__new__(cls)
+ 
+ 
++class NativeMoECheckpoint:
++    """Map original safetensors into shared encoded and floating operations.
++
++    Expert tensors are grouped using the common shard uploader. FP8 payloads
++    and their original BF16 scales stay resident without a decoded weight copy.
++    """
++
++    def __init__(self, path, *, tokenizer=True):
++        from pathlib import Path
++        from akas.checkpoints.safetensors import (
++            json_document, block_fp8_config, tensor_index, inspect_tensors,
++            read_float_tensor,
++        )
++        import numpy as np
++
++        self.path, self.gguf = Path(path), None
++        data = json_document((self.path / "config.json").read_text())
++        self.config = LFM2MoEConfig.from_huggingface(data)
++        self.fp8 = block_fp8_config(data)
++        index = tensor_index(self.path)
++        self.output = "lm_head.weight" in index
++        self.shapes = tensor_shapes(self.config, output=self.output)
++        mapping = huggingface_names(self.config, output=self.output)
++        self.groups = {name: (mapping[name],) for name in self.shapes if name in mapping}
++        for layer in range(self.config.dense_layers, len(self.config.layers)):
++            logical, source = f"blk.{layer}.", f"model.layers.{layer}.feed_forward."
++            self.groups[logical + "ffn_gate_inp.weight"] = (source + "gate.weight",)
++            self.groups[logical + "exp_probs_b.bias"] = (source + "expert_bias",)
++            for part, original in (("gate", "w1"), ("up", "w3"), ("down", "w2")):
++                self.groups[logical + f"ffn_{part}_exps.weight"] = tuple(
++                    source + f"experts.{expert}.{original}.weight"
++                    for expert in range(self.config.experts)
++                )
++        shapes, dtypes, self.scales, self.layouts, self.conversions = {}, {}, {}, {}, {}
++        from math import prod
++
++        for name, shape in self.shapes.items():
++            sources = self.groups[name]
++            quantized = self.fp8 and (
++                name.endswith("_exps.weight") or (len(shape) == 2
++                and name not in ("token_embd.weight", "output.weight")
++                and "shortconv." not in name and "ffn_gate_inp" not in name)
++            )
++            local = shape[1:] if len(sources) > 1 else shape
++            source_shape = (self.config.width, 1, self.config.conv) if name.endswith("conv.weight") else local
++            source_dtype = "F8_E4M3" if quantized else "F32" if name.endswith(".bias") else "BF16"
++            for expert, source in enumerate(sources):
++                shapes[source], dtypes[source] = source_shape, source_dtype
++                width = 1 if quantized else 4 if source_dtype == "F32" else 2
++                target_shape = shape if quantized else (prod(shape),)
++                self.layouts[source] = (name, expert * prod(local) * width, target_shape)
++            if quantized:
++                scales = tuple(source[:-6] + "weight_scale" for source in sources)
++                scale_shape = ((local[-2] + 127) // 128, local[-1] // 128)
++                grouped_scale = (len(sources), *scale_shape) if len(sources) > 1 else scale_shape
++                self.scales[name] = name + ".scale"
++                for expert, source in enumerate(scales):
++                    shapes[source], dtypes[source] = scale_shape, "BF16"
++                    self.layouts[source] = (name + ".scale", expert * prod(scale_shape) * 2, grouped_scale)
++            else:
++                self.conversions[name] = (
++                    "float16" if len(shape) >= 2 and not name.endswith(("conv.weight", "ffn_gate_inp.weight"))
++                    else "float32"
++                )
++        if index.keys() != shapes.keys():
++            raise ValueError(f"LFM2 MoE tensor inventory differs: {sorted(index.keys() ^ shapes.keys())[:8]}")
++        self.tensors = inspect_tensors(self.path, index, shapes, dtypes)
++        for name in shapes:
++            if name.endswith("weight_scale"):
++                values = read_float_tensor(self.tensors[name])
++                if not np.isfinite(values).all() or (values <= 0).any():
++                    raise ValueError(f"invalid FP8 weight scale: {name}")
++        self.tokenizer = Tokenizer.from_pretrained(self.path) if tokenizer else None
++
++    @property
++    def definition_options(self):
++        return {"output": self.output}
++
++    def program_upload_options(self, weights, *, model_options):
++        return {}
++
++    def graph_weights(self, graph, *, provider, expert_weight_layout="raw", dense_weight_layout="raw"):
++        if provider != "cuda" or expert_weight_layout != "raw" or dense_weight_layout != "raw":
++            raise ValueError("native LFM2 MoE requires CUDA and original weight layouts")
++        return NativeWeights(graph, self)
++
++    def upload(self, device):
++        from akas.checkpoints.upload import upload_shards
++
++        if device.info["provider"] != "cuda":
++            raise ValueError("native LFM2 MoE requires CUDA")
++        return upload_shards(device, self.tensors, tuple(self.layouts), self.layouts,
++                             conversions=self.conversions)
++
++    def inventory(self):
++        return {"tensors": len(self.tensors), "format": "fp8" if self.fp8 else "bf16"}
++
++
++class NativeWeights:
++    """The family's logical names bound to declared native physical storage."""
++
++    def __init__(self, graph, checkpoint):
++        self.checkpoint, self.buffers, self.scales = checkpoint, {}, {}
++        for name, _, shape in checkpoint.layouts.values():
++            if name not in self.buffers:
++                dtype = ("bfloat16" if name.endswith(".scale") else "uint8")
++                self.buffers[name] = graph.buffer(name, shape, checkpoint.conversions.get(name, dtype), role="weight")
++        self.scales = {name: self.buffers[scale] for name, scale in checkpoint.scales.items()}
++
++    def __getitem__(self, name):
++        return self.buffers[name]
++
++    def matrix(self, name):
++        return [(self.buffers[name], 0, self.checkpoint.shapes[name][0])]
++
++    def parameters(self, name):
++        return {"weight_dtype": self.buffers[name].dtype}
++
++    def weight(self, name):
++        from math import prod
++        from akas.quantization.weights import Weight
++
++        shape = self.checkpoint.shapes[name]
++        scaled = name in self.scales
++        return Weight(shape, (self.buffers[name], self.scales[name]) if scaled else (self.buffers[name],),
++                      ({"format": "fp8" if scaled else "ggml", "rows": prod(shape[:-1]),
++                        "options": {} if scaled else {"encoding": 1}},))
++
++
+ def tensor_shapes(config, *, output=False):
+     expected = {
+         "token_embd.weight": (config.vocab, config.width),
+diff --git a/src/akas/models/lfm3/weights.py b/src/akas/models/lfm3/weights.py
+index 9ef80c5..2ce0d4f 100644
+--- a/src/akas/models/lfm3/weights.py
++++ b/src/akas/models/lfm3/weights.py
+@@ -12,6 +12,7 @@ from akas.checkpoints.safetensors import (
+     tensor_index,
+     read_float_tensor,
+     read_tensor,
++    block_fp8_config,
+ )
+ from akas.models.lfm3.config import LFM3Config
+ from akas.text.tokenizer import Tokenizer
+@@ -145,36 +146,7 @@ class LFM3Checkpoint:
+             return
+         data = json_document((self.path / "config.json").read_text())
+         self.config = LFM3Config.from_huggingface(data)
+-        q = data.get("quantization_config")
+-        self.fp8 = q is not None
+-        if self.fp8:
+-            groups = q.get("config_groups", {})
+-            if (
+-                q.get("quant_method") != "compressed-tensors"
+-                or q.get("format") != "float-quantized"
+-                or len(groups) != 1
+-                or q.get("kv_cache_scheme") is not None
+-            ):
+-                raise ValueError("unsupported LFM3 FP8 quantization")
+-            group = next(iter(groups.values()))
+-            w, a = group.get("weights", {}), group.get("input_activations", {})
+-            if (
+-                w.get("num_bits") != 8
+-                or w.get("type") != "float"
+-                or w.get("strategy") != "block"
+-                or w.get("block_structure") != [128, 128]
+-                or w.get("dynamic") is not False
+-                or w.get("symmetric") is not True
+-                or a.get("num_bits") != 8
+-                or a.get("type") != "float"
+-                or a.get("strategy") != "group"
+-                or a.get("group_size") != 128
+-                or a.get("dynamic") is not True
+-                or a.get("symmetric") is not True
+-            ):
+-                raise ValueError(
+-                    "LFM3 FP8 requires static 128x128 weights and dynamic group activations"
+-                )
++        self.fp8 = block_fp8_config(data)
+         self.names = hf_names(self.config)
+         shapes = {self.names[n]: s for n, s in tensor_shapes(self.config).items()}
+         for name in list(shapes):
+diff --git a/src/akas/ops/convolution/cuda.py b/src/akas/ops/convolution/cuda.py
+index a1e9f7c..08176a2 100644
+--- a/src/akas/ops/convolution/cuda.py
++++ b/src/akas/ops/convolution/cuda.py
+@@ -20,7 +20,7 @@ def parallel_prefill(spec, schedule):
+     p = {**spec.parameters, **schedule}
+     r, c, chunk, length = (p[n] for n in ("r", "c", "chunk", "length"))
+     columns = p.get("columns", 8 if chunk >= 128 else 16)
+-    if columns not in (8, 16, 32) or chunk * columns * 4 > 90000:
++    if columns not in (8, 16, 32) or (chunk + 2 * length - 1) * columns * 4 > 90000:
+         raise ValueError("parallel convolution tile exceeds shared-memory capacity")
+     threads = p.get("threads", 256)
+ 
+diff --git a/src/akas/ops/convolution/definition.py b/src/akas/ops/convolution/definition.py
+index 08c0d39..25f2788 100644
+--- a/src/akas/ops/convolution/definition.py
++++ b/src/akas/ops/convolution/definition.py
+@@ -14,7 +14,9 @@ IMPLEMENTATIONS = (
+         name="convolution.cuda.parallel_prefill",
+         priority=20,
+         targets=("sm_89",),
+-        accepts=lambda p: 32 <= p.get("chunk", 1) <= 1024 and p["c"] >= 128,
++        accepts=lambda p: (p.get("chunk", 1) >= 32 and p["c"] >= 128
++            and (p["chunk"] + 2 * p.get("length", 3) - 1)
++            * p.get("columns", 8 if p["chunk"] >= 128 else 16) * 4 <= 90000),
+         space=(("columns", (8, 16, 32)), ("threads", (256, 128))),
+     ),
+     Implementation(
+diff --git a/src/akas/ops/convolution/validation.py b/src/akas/ops/convolution/validation.py
+index 01484d4..4d3755f 100644
+--- a/src/akas/ops/convolution/validation.py
++++ b/src/akas/ops/convolution/validation.py
+@@ -10,6 +10,8 @@ def validation(kind, p, signature):
+     values["enabled"][:] = chunk
+     if r > 1:
+         values["enabled"][-1] = max(0, chunk - 1)
++    if r > 2:
++        values["enabled"][1] = 0
+     expected = {name: value.copy() for name, value in values.items()}
+     x = values["x"].reshape(r, chunk, 3, c).astype("float64")
+     w = values["w"].reshape(c, length).astype("float64")
+diff --git a/src/akas/ops/linear/cuda.py b/src/akas/ops/linear/cuda.py
+index 138991b..b9865cb 100644
+--- a/src/akas/ops/linear/cuda.py
++++ b/src/akas/ops/linear/cuda.py
+@@ -5,6 +5,17 @@ from collections.abc import Mapping
+ from akas.kernels.definition import KernelSpec
+ 
+ 
++def matmul(spec: KernelSpec, schedule: Mapping[str, object]):
++    """Use Tensor's canonical matmul producer with the graph's matrix views."""
++    from tensor.compiler.cuda.matmul import matmul as canonical
++
++    p = {**spec.parameters, **schedule}
++    options = {name: p[name] for name in ("block_m", "block_n", "block_k", "stages",
++               "threads", "orientation", "reduction_lanes") if name in p}
++    return canonical(p["r"], p["o"], p["k"], dtype=p.get("dtype", "float32"),
++                     out_dtype="float32", **options)
++
++
+ def floating_warp(spec: KernelSpec, schedule: Mapping[str, object]):
+     """One warp per F32 output, with F32 FMA and a warp-local reduction."""
+     import tilelang.language as T
+@@ -74,16 +85,22 @@ def _mma(p, *, grouped, prequantized):
+     threads = p.get("threads", 128)
+     top, e = (p.get("top", 8), p.get("experts", 256))
+     routed = p.get("routed_input", False)
++    input_dtype = p.get("input_dtype", "bfloat16")
+     parts = p.get("partitions", 1)
+     stages = p.get("stages", 1)
+     packed_copy = p.get("packed_copy", False)
++    mma_dtype = p.get("mma_dtype", "float8_e4m3fn")
++    if mma_dtype not in ("float8_e4m3fn", "float16"):
++        raise ValueError("FP8 projection MMA operands must be FP8 or exactly promoted FP16")
+     if (
+         k % (128 * parts)
+         or o % n
+-        or m not in (m, 32, 64, 128)
++        or m not in (16, 32, 64, 128)
+         or (grouped and m != 16)
+         or (n not in (32, 64, 128))
+         or (threads not in (128, 256))
++        or (m // 16) * (n // 8) < threads // 32
++        or type(stages) is not int or stages < 1
+     ):
+         raise ValueError("invalid FP8 tensor-core projection schedule")
+     output_shape = (
+@@ -109,8 +126,8 @@ def _mma(p, *, grouped, prequantized):
+         rowbase,
+         part,
+     ):
+-        lhs = T.alloc_shared((m, 128), "float8_e4m3fn")
+-        rhs = T.alloc_shared((n, 128), "float8_e4m3fn")
++        lhs = T.alloc_shared((m, 128), mma_dtype)
++        rhs = T.alloc_shared((n, 128), mma_dtype)
+         absolute = T.alloc_fragment((m, 128), "float32")
+         maxima = T.alloc_fragment((m,), "float32")
+         activation_scales = T.alloc_shared((m,), "float32")
+@@ -121,9 +138,9 @@ def _mma(p, *, grouped, prequantized):
+             tile = part * (k // (128 * parts)) + local_tile
+             if prequantized:
+                 for b in T.Parallel(m):
+-                    activation_scales[b] = 1
+-                    if rowbase + b < r:
+-                        if grouped:
++                    if grouped:
++                        activation_scales[b] = 1
++                        if rowbase + b < r:
+                             if routes[group, rowbase + b] >= 0:
+                                 if routed:
+                                     activation_scales[b] = input_scales[
+@@ -133,14 +150,18 @@ def _mma(p, *, grouped, prequantized):
+                                     activation_scales[b] = input_scales[
+                                         rowbase + b, tile
+                                     ]
+-                        else:
+-                            activation_scales[b] = input_scales[rowbase + b, tile]
++                    else:
++                        activation_scales[b] = T.if_then_else(
++                            rowbase + b < r, input_scales[T.min(rowbase + b, r - 1), tile], 1)
+                 T.sync_threads()
+-                for b, j in T.Parallel(m, 128):
+-                    bits = T.alloc_var("uint8")
+-                    bits = 0
+-                    if rowbase + b < r:
+-                        if grouped:
++                if not grouped:
++                    activations = T.view(x, dtype="float8_e4m3fn")
++                    T.copy(activations[rowbase:rowbase + m, tile * 128:tile * 128 + 128], lhs)
++                else:
++                    for b, j in T.Parallel(m, 128):
++                        bits = T.alloc_var("uint8")
++                        bits = 0
++                        if rowbase + b < r:
+                             if routes[group, rowbase + b] >= 0:
+                                 if routed:
+                                     bits = x[
+@@ -150,9 +171,7 @@ def _mma(p, *, grouped, prequantized):
+                                     ]
+                                 else:
+                                     bits = x[rowbase + b, tile * 128 + j]
+-                        else:
+-                            bits = x[rowbase + b, tile * 128 + j]
+-                    lhs[b, j] = T.reinterpret("float8_e4m3fn", bits)
++                        lhs[b, j] = T.reinterpret("float8_e4m3fn", bits)
+             else:
+                 for b, j in T.Parallel(m, 128):
+                     if rowbase + b < r:
+@@ -342,7 +361,7 @@ def _mma(p, *, grouped, prequantized):
+ 
+         @kernel
+         def compute(
+-            x: Tensor((r, top, k) if routed else (r, k), "bfloat16"),
++            x: Tensor((r, top, k) if routed else (r, k), input_dtype),
+             w: Tensor((e, o, k), "uint8"),
+             scales: Tensor((e, T.ceildiv(o, 128), k // 128), "bfloat16"),
+             experts: Tensor((r * top,), "int32"),
+@@ -409,7 +428,7 @@ def _mma(p, *, grouped, prequantized):
+ 
+         @kernel
+         def compute(
+-            x: Tensor((r, k), "bfloat16"),
++            x: Tensor((r, k), input_dtype),
+             w: Tensor((o, k), "uint8"),
+             scales: Tensor((T.ceildiv(o, 128), k // 128), "bfloat16"),
+         ) -> Tensor(output_shape, "float32"):
+@@ -683,6 +702,7 @@ def native_fp8(spec: KernelSpec, schedule: Mapping[str, object]):
+     import tilelang.language as T
+ 
+     r, k, o = (p["r"], p["k"], p["o"])
++    input_dtype = p.get("input_dtype", "bfloat16")
+     columns, threads = (p.get("columns", 4), p.get("threads", 128))
+     if (
+         any((type(v) is not int or v <= 0 for v in (r, k, o, columns, threads)))
+@@ -697,7 +717,7 @@ def native_fp8(spec: KernelSpec, schedule: Mapping[str, object]):
+ 
+     @kernel
+     def compute(
+-        x: Tensor((r, k), "bfloat16"),
++        x: Tensor((r, k), input_dtype),
+         w: Tensor((o, k), "uint8"),
+         scales: Tensor((T.ceildiv(o, 128), k // 128), "bfloat16"),
+     ) -> Tensor((r, o), "float32"):
+diff --git a/src/akas/ops/linear/definition.py b/src/akas/ops/linear/definition.py
+index 7bc0347..d6b5f0e 100644
+--- a/src/akas/ops/linear/definition.py
++++ b/src/akas/ops/linear/definition.py
+@@ -7,16 +7,93 @@ from akas.kernels.contracts import Implementation
+ from akas.ops.linear.validation import pipeline_validation as pipeline_validation
+ from akas.ops.linear.validation import VALIDATIONS
+ 
++GEMV_ROW_CEILINGS = (31, 24, 8, 16, 25, 28, 32, 64)
++
++
++def _projection_partitions(rows, depth, width, ceiling, minimum_groups, block_m, columns):
++    """Use legal K partitions to fill an underoccupied projection launch."""
++    from math import isqrt
++
++    if depth < 128 or depth % 128:
++        raise ValueError("split projection requires whole block-128 partitions")
++    blocks = depth // 128
++    ceiling = min(ceiling, blocks)
++    if minimum_groups is None:
++        if blocks % ceiling:
++            raise ValueError("split projection requires whole block-128 partitions")
++        return ceiling
++    if any(type(value) is not int or value < 1 for value in (block_m, columns)):
++        raise ValueError("projection tile sizes must be positive integers")
++    groups = ((rows + block_m - 1) // block_m) * ((width + columns - 1) // columns)
++    required = (minimum_groups + groups - 1) // groups
++    choices = sorted({value for factor in range(1, isqrt(blocks) + 1) if blocks % factor == 0
++                      for value in (factor, blocks // factor) if value <= ceiling})
++    return next((value for value in choices if value >= required), choices[-1])
++
++
++def _floating_matmuls(graph, *, minimum_rows):
++    """Bind contiguous F32 projections through canonical matrix views."""
++    from math import prod
++    from akas.graph import Call
++
++    if type(minimum_rows) is not int or minimum_rows < 1:
++        raise ValueError("projection minimum rows must be a positive integer")
++    calls = []
++    for index, call in enumerate(graph.calls):
++        p = call.parameters
++        if (call.kind != "linear" or p.get("r", 1) < minimum_rows
++                or p.get("ggml") or "type" in p
++                or p.get("weight_dtype", "float32") != "float32"
++                or p.get("input_dtype", "float32") != "float32"
++                or p.get("output_stride", p["o"]) != p["o"] or p.get("output_offset", 0)):
++            calls.append(call)
++            continue
++        if not call.bindings and len(call.arguments) != 3:
++            calls.append(call)
++            continue
++        names = dict(call.bindings) if call.bindings else dict(zip(("x", "w", "out"), call.arguments))
++        if set(names) != {"x", "w", "out"}:
++            calls.append(call)
++            continue
++        shapes = {"x": (p["r"], p["k"]), "w": (p["o"], p["k"]), "out": (p["r"], p["o"])}
++        if any(graph.buffers[names[key]].dtype != "float32"
++               or prod(graph.buffers[names[key]].shape) != prod(shape)
++               for key, shape in shapes.items()):
++            calls.append(call)
++            continue
++        views = {key: graph.view(f"pipeline.matmul.{index}.{key}", graph.buffers[names[key]], shape)
++                 for key, shape in shapes.items()}
++        # Retain the established 32-lane FMA/reduction order of F32 projections.
++        calls.append(Call("matmul", dict(r=p["r"], k=p["k"], o=p["o"], dtype="float32", reduction_lanes=32),
++                          (), {key: view.name for key, view in views.items()}, label=call.label))
++    graph.calls = calls
++
+ 
+ def search_policies(graph, commit, *, provider, target):
+     if (
+-        graph.contract != "block-fp8"
++        graph.contract not in ("block-fp8", "reference")
+         or provider != "cuda"
+-        or not any(call.kind == "fp8_linear" for call in graph.calls)
+     ):
+         return []
+-    choices = [{"partitions": count} for count in (2, 4, 8)]
+-    if target == "sm_90a":
++    floating = graph.contract == "reference" and any(
++        call.kind == "linear" and call.parameters.get("r", 1) >= 9
++        and call.parameters.get("weight_dtype", "float32") == "float32"
++        and not call.parameters.get("ggml") and "type" not in call.parameters
++        for call in graph.calls)
++    has_fp8 = any(call.kind == "fp8_linear" for call in graph.calls)
++    choices = ([{"partitions": count, "minimum_rows": 9} for count in (1, 2, 4, 8)]
++               if graph.contract == "reference" else
++               [{"partitions": count} for count in (2, 4, 8)]) if has_fp8 else []
++    if graph.contract == "reference" and any(
++        call.kind == "fp8_linear" and 1 < call.parameters["r"] < 9
++        for call in graph.calls
++    ):
++        choices.extend({"partitions": count, "minimum_rows": 2} for count in (1, 2, 4, 8))
++        choices.extend({"partitions": 8, "minimum_rows": 2, "minimum_split_groups": groups}
++                       for groups in (32, 64, 128))
++    if floating:
++        choices.insert(0, {**(choices[0] if choices else {}), "floating_matmul": True})
++    if target == "sm_90a" and has_fp8:
+         choices.append({"hopper": True, "partitions": 2})
+     return choices
+ 
+@@ -42,17 +119,23 @@ def lower(graph, commit, settings, *, provider, target):
+         "split_ffn_min_rows",
+         "stage_weights",
+         "stage_inputs",
++        "minimum_rows",
++        "minimum_split_groups",
++        "floating_matmul",
++        "floating_matmul_minimum_rows",
+     }
+     if set(settings) - allowed:
+         raise ValueError("unknown projection pipeline policy")
+     if graph.contract == "reference":
+-        if set(settings) - {
+-            "split_ffn",
+-            "split_ffn_min_rows",
+-            "stage_weights",
+-            "stage_inputs",
+-        }:
+-            raise ValueError("unknown floating projection policy")
++        if type(settings.get("floating_matmul", False)) is not bool:
++            raise ValueError("floating matmul policy must be a boolean")
++        floating_minimum = settings.get("floating_matmul_minimum_rows", 9)
++        if type(floating_minimum) is not int or floating_minimum < 1:
++            raise ValueError("floating matmul minimum rows must be a positive integer")
++        if settings.get("floating_matmul"):
++            if provider != "cuda":
++                raise ValueError("canonical floating matmul currently requires CUDA")
++            _floating_matmuls(graph, minimum_rows=floating_minimum)
+         if type(settings.get("split_ffn", False)) is not bool:
+             raise ValueError("split FFN policy must be a boolean")
+         minimum_rows = settings.get("split_ffn_min_rows", 2)
+@@ -64,8 +147,6 @@ def lower(graph, commit, settings, *, provider, target):
+             raise ValueError("floating weight staging currently requires WebGPU")
+         if type(settings.get("stage_inputs", False)) is not bool:
+             raise ValueError("input staging policy must be a boolean")
+-        if settings.get("stage_inputs") and provider != "webgpu":
+-            raise ValueError("floating input staging currently requires WebGPU")
+         if settings.get("split_ffn"):
+             from akas.graph import Call
+ 
+@@ -154,9 +235,15 @@ def lower(graph, commit, settings, *, provider, target):
+             calls = []
+             for index, call in enumerate(graph.calls):
+                 p = call.parameters
++                native_mma = (
++                    provider == "cuda" and call.kind in ("linear", "ffn")
++                    and p.get("optimized") and p.get("weight_dtype") == "float16"
++                    and p.get("r", 0) > max(GEMV_ROW_CEILINGS)
++                    and p.get("algorithm", "auto") != "gemv"
++                )
+                 if (
+                     call.kind not in ("linear", "linear_add", "ffn")
+-                    or not p.get("half_accum")
++                    or not (native_mma or (provider == "webgpu" and p.get("half_accum")))
+                     or p["r"] == 1
+                 ):
+                     calls.append(call)
+@@ -183,15 +270,22 @@ def lower(graph, commit, settings, *, provider, target):
+                     )
+                 )
+             graph.calls = calls
+-        return graph, commit
++        settings = {name: value for name, value in settings.items() if name not in {
++            "split_ffn", "split_ffn_min_rows", "stage_weights", "stage_inputs", "floating_matmul",
++            "floating_matmul_minimum_rows",
++        }}
++        if not settings:
++            return graph, commit
+     if set(settings) & {
+         "split_ffn",
+         "split_ffn_min_rows",
+         "stage_weights",
+         "stage_inputs",
++        "floating_matmul",
++        "floating_matmul_minimum_rows",
+     }:
+         raise ValueError("prefill projection policies require the floating contract")
+-    if graph.contract != "block-fp8":
++    if graph.contract not in ("block-fp8", "reference"):
+         return (graph, commit)
+     if provider != "cuda":
+         raise ValueError("native FP8 projection pipelines require CUDA")
+@@ -200,15 +294,35 @@ def lower(graph, commit, settings, *, provider, target):
+     partitions = settings.get("partitions", 1)
+     if type(partitions) is not int or partitions < 1:
+         raise ValueError("projection partitions must be positive")
++    minimum_rows = settings.get("minimum_rows", 1)
++    if type(minimum_rows) is not int or minimum_rows < 1:
++        raise ValueError("projection minimum rows must be a positive integer")
++    minimum_groups = settings.get("minimum_split_groups")
++    if minimum_groups is not None and (type(minimum_groups) is not int or minimum_groups < 1):
++        raise ValueError("projection minimum split groups must be a positive integer")
+     recorder = Graph(contract=graph.contract, phase=graph.phase)
+     recorder.buffers = graph.buffers
+     quantized, valid = ({}, set())
++    from akas.kernels.registry import graph_outputs
++
++    def base(name):
++        while graph.buffers[name].alias_of is not None:
++            name = graph.buffers[name].alias_of
++        return name
++
++    def invalidate(call):
++        written = graph_outputs(call, contract=graph.contract)
++        if written is None:
++            valid.clear()
++        else:
++            roots = {base(name) for name in written}
++            valid.difference_update(key for key in tuple(valid) if key[0] in roots)
++
+     calls = []
+     for index, call in enumerate(graph.calls):
+-        if call.kind != "fp8_linear":
++        if call.kind != "fp8_linear" or call.parameters["r"] < minimum_rows:
+             calls.append(call)
+-            for name in (call.bindings.get("out"),):
+-                valid.discard(name)
++            invalidate(call)
+             continue
+         if call.arguments:
+             names = dict(zip(("x", "w", "scales", "out"), call.arguments))
+@@ -216,12 +330,13 @@ def lower(graph, commit, settings, *, provider, target):
+             names = dict(call.bindings)
+         p = call.parameters
+         count, depth, width = (p["r"], p["k"], p["o"])
+-        parts = min(partitions, depth // 128)
+-        if depth % (128 * parts):
+-            raise ValueError("split projection requires whole block-128 partitions")
++        parts = _projection_partitions(count, depth, width, partitions, minimum_groups,
++                                       settings.get("block_m", 16), settings.get("columns", 64))
+         if "activation_scales" not in names:
+             source = names["x"]
+-            if source not in quantized:
++            spec = graph.buffers[source]
++            key = (base(source), spec.shape, spec.dtype)
++            if key not in quantized:
+                 storage = get("activations", "fp8").storage(
+                     graph.buffers[source].shape, provider=provider
+                 )
+@@ -235,19 +350,19 @@ def lower(graph, commit, settings, *, provider, target):
+                     storage.metadata[0].shape,
+                     storage.metadata[0].dtype,
+                 )
+-                quantized[source] = (bits, scales)
+-            bits, scales = quantized[source]
+-            if source not in valid:
++                quantized[key] = (bits, scales)
++            bits, scales = quantized[key]
++            if key not in valid:
+                 recorder(
+                     "quantize",
+-                    dict(r=count, k=depth),
++                    dict(r=count, k=depth, input_dtype=graph.buffers[source].dtype),
+                     x=graph.buffers[source],
+                     out=bits,
+                     scales=scales,
+                 )
+                 calls.extend(recorder.calls)
+                 recorder.calls = []
+-                valid.add(source)
++                valid.add(key)
+             names.update(x=bits.name, activation_scales=scales.name)
+         original = graph.buffers[names["out"]]
+         partial = (
+@@ -265,7 +380,8 @@ def lower(graph, commit, settings, *, provider, target):
+             "threads": 128,
+             "stages": 1,
+             "packed_copy": False,
+-            **settings,
++            **{name: value for name, value in settings.items()
++               if name not in ("minimum_rows", "minimum_split_groups")},
+         }
+         parameters["partitions"] = parts
+         recorder(
+@@ -287,7 +403,7 @@ def lower(graph, commit, settings, *, provider, target):
+             )
+         calls.extend(recorder.calls)
+         recorder.calls = []
+-        valid.discard(original.name)
++        invalidate(call)
+     graph.calls = calls
+     return (graph, commit)
+ 
+@@ -519,6 +635,10 @@ def schedule(rows, k, o, width):
+ REWRITES = (fuse_projections, fuse_residual_projection)
+ ROW_INDEPENDENT = ("linear",)
+ OUTPUT_ARGUMENTS = {"reference": {"linear": (-1,), "ffn": (-1,), "linear_add": (-1,)}}
++OUTPUT_ARGUMENTS["reference"]["matmul"] = OutputABI((-1,), ("out",))
++from akas.ops.linear.validation import validation as matrix_validation
++
++VALIDATIONS["matmul"] = matrix_validation
+ OUTPUT_ARGUMENTS["reference"]["linear_half_input"] = OutputABI((-1,), ("out",))
+ from .validation import half_input_validation
+ 
+@@ -797,10 +917,12 @@ IMPLEMENTATIONS = (
+         priority=30,
+         space=(
+             ("minimum_mma_groups", (32, 0, 64, 128, 256)),
+-            ("maximum_gemv_rows", (31, 24, 8, 16, 25, 28, 32, 64)),
++            ("maximum_gemv_rows", GEMV_ROW_CEILINGS),
+             ("block_m", (32, 16, 64)),
+             ("block_n", (64, 32, 128)),
+             ("block_k", (32, 64, 128)),
++            ("stages", (2, 1, 3)),
++            ("threads", (128, 256)),
+         ),
+         accepts=lambda p: (
+             not p.get("ggml", False)
+@@ -817,10 +939,12 @@ IMPLEMENTATIONS = (
+         priority=30,
+         space=(
+             ("minimum_mma_groups", (32, 0, 64, 128, 256)),
+-            ("maximum_gemv_rows", (31, 24, 8, 16, 25, 28, 32, 64)),
++            ("maximum_gemv_rows", GEMV_ROW_CEILINGS),
+             ("block_m", (32, 16, 64)),
+             ("block_n", (64, 32, 128)),
+             ("block_k", (32, 64, 128)),
++            ("stages", (2, 1, 3)),
++            ("threads", (128, 256)),
+         ),
+         accepts=lambda p: (
+             not p.get("ggml", False)
+@@ -1078,6 +1202,7 @@ IMPLEMENTATIONS = (
+             ("block_m", (16, 32, 64)),
+             ("threads", (128, 256)),
+             ("stages", (1, 2, 3)),
++            ("packed_copy", (False, True)),
+         ),
+         semantic_keys=("r", "k", "o", "partitions"),
+         factory="fp8_prequantized",
+@@ -1396,6 +1521,13 @@ IMPLEMENTATIONS += (
+             "type" not in p and p.get("weight_dtype", "float32") == "float32"
+         ),
+     ),
++    Implementation("matmul", "akas.ops.linear.cuda", "reference", factory="matmul",
++                   name="linear.cuda.canonical_matmul",
++                   accepts=lambda p: p.get("dtype", "float32") == "float32",
++                   semantic_keys=("r", "k", "o", "dtype", "reduction_lanes"),
++                   space=(("block_m", (8, 16, 32)), ("block_n", (8, 16, 32)),
++                          ("block_k", (128, 64, 32)), ("threads", (128, 256)),
++                          ("stages", (2, 1, 3)), ("orientation", ("activation", "weight")))),
+ )
+ 
+ 
+@@ -1569,3 +1701,31 @@ IMPLEMENTATIONS += (
+         space=(("block_m", (64, 128)), ("block_n", (64, 32)), ("threads", (128, 256))),
+     ),
+ )
++
++# The same block-scaled projection is usable by floating inference graphs.
++IMPLEMENTATIONS += (
++    Implementation("fp8_linear", "akas.ops.linear.cuda", "reference",
++                   factory="fp8_inline", name="linear.cuda.fp8:reference",
++                   defaults=(("block_m", 16), ("columns", 64)),
++                   space=(("block_m", (16, 32, 64)), ("columns", (64, 32, 128)),
++                          ("threads", (128, 256)))),
++    Implementation("fp8_linear", "akas.ops.linear.cuda", "reference",
++                   factory="native_fp8", name="linear.cuda.fp8-gemv:reference",
++                   priority=20, accepts=lambda p: p["r"] <= 8),
++)
++
++# A promoted operand preserves every FP8 code while allowing full FP32 tensor
++# core accumulation on targets whose FP8 accumulator has lower precision.
++IMPLEMENTATIONS = tuple(
++    replace(item, space=(*item.space, ("mma_dtype", ("float8_e4m3fn", "float16"))))
++    if item.module_name == "akas.ops.linear.cuda"
++       and item.factory in ("fp8_inline", "fp8_prequantized") else item
++    for item in IMPLEMENTATIONS
++)
++
++# Both graph contracts lower to the same prequantized projection ABI.
++IMPLEMENTATIONS += tuple(
++    replace(item, contract="reference", name=item.identifier + ":reference")
++    for item in IMPLEMENTATIONS
++    if item.contract == "block-fp8" and item.kind in ("projection_partial", "projection_merge")
++)
+diff --git a/src/akas/ops/moe/cuda.py b/src/akas/ops/moe/cuda.py
+index 07e484d..4728bb7 100644
+--- a/src/akas/ops/moe/cuda.py
++++ b/src/akas/ops/moe/cuda.py
+@@ -529,25 +529,81 @@ def prefill_fp8_experts(spec: KernelSpec, schedule: Mapping[str, object]):
+     return expert_kernel({**p, "rows": p["r"]})
+ 
+ 
+-def _bucketed(p):
++def _bucketed(p, *, paired=False, quantized_output=True):
+     import tilelang.language as T
+ 
+     rows, k, o = (p["rows"], p["k"], p["o"])
+-    n, top, experts = (p.get("columns", 64), 8, 256)
++    n, top, experts = (p.get("columns", 64), p["top"], p["experts"])
+     m, threads = (p.get("block_m", 16), p.get("threads", 128))
++    stages = p.get("stages", 1)
++    vector = p.get("activation_vector", 1)
++    preload_scales = p.get("preload_scales", False)
++    if type(preload_scales) is not bool:
++        raise ValueError("FP8 scale preloading must be a boolean")
++    bk = p.get("block_k", 128)
++    if type(bk) is not int or bk not in (64, 128):
++        raise ValueError("FP8 expert K tile must be 64 or 128")
++    scale_steps = 128 // bk
++    if type(vector) is not int or vector not in (1, 4, 8, 16):
++        raise ValueError("FP8 activation vector must be 1, 4, 8 or 16 bytes")
++    if type(stages) is not int or stages < 1:
++        raise ValueError("FP8 pipeline stages must be a positive integer")
++    loop = T.Pipelined if stages > 1 else T.serial
++    loop_options = {"num_stages": stages} if stages > 1 else {}
+     routed = p.get("routed_input", False)
+     compact = p.get("compact", False)
+-    max_tiles = T.ceildiv(rows * top, m) + experts - 1
++    if paired and (not compact or routed or o % 128
++                   or n not in ((128,) if quantized_output else (32, 64, 128))):
++        raise ValueError("invalid compact paired FP8 expert tile")
++    pair_layout = p.get("pair_layout", "wide")
++    if pair_layout not in ("wide", "separate"):
++        raise ValueError("paired FP8 layout must be wide or separate")
++    wide = paired and pair_layout == "wide"
++    width = 2 * n if wide else n
++    mapped = p.get("tile_map", False)
++    from akas.ops.moe.definition import tile_capacity
++
++    max_tiles = tile_capacity(rows, top, experts, m)
++    map_shape = (5, (rows * top + 3) // 4 + experts) if mapped else (max_tiles,)
++    layout = m.bit_length() - 3
++
++    @T.macro
++    def accumulate(block, total, scale, scales, scales2, bx, expert, tile):
++        for b, j in T.Parallel(m, width):
++            if wide:
++                coefficient = T.if_then_else(j < n,
++                    T.cast(scales[expert, (bx * n + j % n) // 128, tile], "float32"),
++                    T.cast(scales2[expert, (bx * n + j % n) // 128, tile], "float32"))
++            else:
++                coefficient = T.cast(scales[expert, (bx * n + j) // 128, tile], "float32")
++            if compact:
++                if preload_scales:
++                    product = T.call_extern("float32", "__fmul_rn", block[b, j], scale[b, tile])
++                else:
++                    product = T.call_extern("float32", "__fmul_rn", block[b, j], scale[b])
++                total[b, j] = T.call_extern("float32", "__fmaf_rn",
++                                          product, coefficient, total[b, j])
++            else:
++                if preload_scales:
++                    total[b, j] += block[b, j] * scale[b, tile] * coefficient
++                else:
++                    total[b, j] += block[b, j] * scale[b] * coefficient
+ 
+     @T.macro
+-    def body(x, activation_scales, w, scales, counts, routes, out, bx, expert, tokens):
++    def body(x, activation_scales, w, scales, w2, scales2, counts, routes, out,
++             output_scales, bx, expert, tokens):
+         if tokens * m < counts[expert]:
+-            lhs = T.alloc_shared((m, 128), "float8_e4m3fn")
+-            rhs = T.alloc_shared((n, 128), "float8_e4m3fn")
+-            scale = T.alloc_shared((m,), "float32")
++            lhs = T.alloc_shared((m, bk), "float8_e4m3fn")
++            rhs = T.alloc_shared((width, bk), "float8_e4m3fn")
++            scale = T.alloc_shared((m, k // 128) if preload_scales else (m,), "float32")
+             selected = T.alloc_shared((m,), "int32")
+-            block = T.alloc_fragment((m, n), "float32")
+-            total = T.alloc_fragment((m, n), "float32")
++            block = T.alloc_fragment((m, width), "float32")
++            total = T.alloc_fragment((m, width), "float32")
++            if paired and not wide:
++                rhs2 = T.alloc_shared((n, bk), "float8_e4m3fn")
++                block2 = T.alloc_fragment((m, n), "float32")
++                total2 = T.alloc_fragment((m, n), "float32")
++                T.clear(total2)
+             for b in T.Parallel(m):
+                 selected[b] = T.if_then_else(
+                     tokens * m + b < counts[expert],
+@@ -555,60 +611,159 @@ def _bucketed(p):
+                     -1,
+                 )
+             T.sync_threads()
++            if preload_scales:
++                for b, tile in T.Parallel(m, k // 128):
++                    if routed:
++                        scale[b, tile] = T.if_then_else(selected[b] >= 0, activation_scales[
++                            T.max(selected[b], 0) // top, T.max(selected[b], 0) % top, tile], 1)
++                    else:
++                        scale[b, tile] = T.if_then_else(selected[b] >= 0, activation_scales[
++                            T.max(selected[b], 0) // top, tile], 1)
++                T.sync_threads()
+             T.clear(total)
+-            for tile in T.serial(k // 128):
+-                for b in T.Parallel(m):
+-                    scale[b] = 1
+-                    if selected[b] >= 0:
++            activations = T.view(x, dtype="float8_e4m3fn")
++            for tile in loop(k // bk, **loop_options):
++                if not preload_scales and tile % scale_steps == 0:
++                    for b in T.Parallel(m):
+                         if routed:
+-                            scale[b] = activation_scales[
+-                                selected[b] // top, selected[b] % top, tile
+-                            ]
++                            scale[b] = T.if_then_else(selected[b] >= 0, activation_scales[
++                                T.max(selected[b], 0) // top, T.max(selected[b], 0) % top, tile // scale_steps], 1)
+                         else:
+-                            scale[b] = activation_scales[selected[b] // top, tile]
+-                T.sync_threads()
+-                for b, j in T.Parallel(m, 128):
+-                    bits = T.alloc_var("uint8")
+-                    bits = 0
++                            scale[b] = T.if_then_else(selected[b] >= 0, activation_scales[
++                                T.max(selected[b], 0) // top, tile // scale_steps], 1)
++                    T.sync_threads()
++                for b, v in T.Parallel(m, bk // vector):
+                     if selected[b] >= 0:
+-                        if routed:
+-                            bits = x[
+-                                selected[b] // top, selected[b] % top, tile * 128 + j
+-                            ]
+-                        else:
+-                            bits = x[selected[b] // top, tile * 128 + j]
+-                    lhs[b, j] = T.reinterpret("float8_e4m3fn", bits)
++                        for lane in T.vectorized(vector):
++                            j = v * vector + lane
++                            if routed:
++                                lhs[b, j] = activations[selected[b] // top, selected[b] % top, tile * bk + j]
++                            else:
++                                lhs[b, j] = activations[selected[b] // top, tile * bk + j]
++                    else:
++                        for lane in T.vectorized(vector):
++                            lhs[b, v * vector + lane] = 0
+                 weights = T.view(w, dtype="float8_e4m3fn")
+                 T.copy(
+-                    weights[expert, bx * n : bx * n + n, tile * 128 : tile * 128 + 128],
+-                    rhs,
++                    weights[expert, bx * n : bx * n + n, tile * bk : tile * bk + bk],
++                    rhs[0:n, 0:bk],
+                 )
+-                T.gemm(lhs, rhs, block, transpose_B=True, clear_accum=True)
+-                for b, j in T.Parallel(m, n):
+-                    if compact:
+-                        product = T.call_extern(
+-                            "float32", "__fmul_rn", block[b, j], scale[b]
+-                        )
+-                        total[b, j] = T.call_extern(
+-                            "float32",
+-                            "__fmaf_rn",
+-                            product,
+-                            T.cast(
+-                                scales[expert, (bx * n + j) // 128, tile], "float32"
+-                            ),
+-                            total[b, j],
+-                        )
++                if paired:
++                    weights2 = T.view(w2, dtype="float8_e4m3fn")
++                    if wide:
++                        T.copy(weights2[expert, bx * n:bx * n + n,
++                                        tile * bk:tile * bk + bk], rhs[n:width, 0:bk])
+                     else:
+-                        total[b, j] += (
+-                            block[b, j]
+-                            * scale[b]
+-                            * T.cast(
+-                                scales[expert, (bx * n + j) // 128, tile], "float32"
+-                            )
+-                        )
+-            for b, j in T.Parallel(m, n):
+-                if selected[b] >= 0:
+-                    out[selected[b] // top, selected[b] % top, bx * n + j] = total[b, j]
++                        T.copy(weights2[expert, bx * n:bx * n + n,
++                                        tile * bk:tile * bk + bk], rhs2)
++                if bk < 128:
++                    if tile % scale_steps == 0:
++                        T.clear(block)
++                T.gemm(lhs, rhs, block, transpose_B=True, clear_accum=bk == 128)
++                if tile % scale_steps == scale_steps - 1:
++                    accumulate(block, total, scale, scales, scales2, bx, expert, tile // scale_steps)
++                if paired and not wide:
++                    if bk < 128:
++                        if tile % scale_steps == 0:
++                            T.clear(block2)
++                    T.gemm(lhs, rhs2, block2, transpose_B=True, clear_accum=bk == 128)
++                    if tile % scale_steps == scale_steps - 1:
++                        accumulate(block2, total2, scale, scales2, scales2, bx, expert, tile // scale_steps)
++            if paired:
++                values = T.alloc_fragment((m, n), "float32")
++                absolute = T.alloc_fragment((m, n), "float32")
++                maximum = T.alloc_fragment((m,), "float32")
++                if wide:
++                    paired_values = T.alloc_shared((m, width), "float32")
++                    T.copy(total, paired_values)
++                    T.sync_threads()
++                    for b, j in T.Parallel(m, n):
++                        values[b, j] = paired_values[b, j] / (1 + T.exp(-paired_values[b, j])) * paired_values[b, n + j]
++                else:
++                    for b, j in T.Parallel(m, n):
++                        values[b, j] = total[b, j] / (1 + T.exp(-total[b, j])) * total2[b, j]
++                if quantized_output:
++                    for b, j in T.Parallel(m, n):
++                        absolute[b, j] = T.abs(values[b, j])
++                    T.reduce_max(absolute, maximum, dim=1)
++                    for b, j in T.Parallel(m, n):
++                        if selected[b] >= 0:
++                            encoded = T.call_extern("uint32", "tensor_encode_e4m3",
++                                values[b, j] / (T.max(maximum[b], T.float32(1e-12)) / T.float32(448)))
++                            out[selected[b] // top, selected[b] % top, bx * n + j] = T.cast(encoded, "uint8")
++                    for b in T.Parallel(m):
++                        if selected[b] >= 0:
++                            output_scales[selected[b] // top, selected[b] % top, bx] = (
++                                T.max(maximum[b], T.float32(1e-12)) / T.float32(448))
++                else:
++                    for b, j in T.Parallel(m, n):
++                        if selected[b] >= 0:
++                            out[selected[b] // top, selected[b] % top, bx * n + j] = values[b, j]
++            else:
++                for b, j in T.Parallel(m, n):
++                    if selected[b] >= 0:
++                        out[selected[b] // top, selected[b] % top, bx * n + j] = total[b, j]
++
++    if paired and quantized_output:
++
++        @kernel
++        def compute(
++            x: Tensor((rows, k), "uint8"),
++            activation_scales: Tensor((rows, k // 128), "float32"),
++            w: Tensor((experts, o, k), "uint8"),
++            scales: Tensor((experts, o // 128, k // 128), "bfloat16"),
++            w2: Tensor((experts, o, k), "uint8"),
++            scales2: Tensor((experts, o // 128, k // 128), "bfloat16"),
++            counts: Tensor((experts,), "int32"),
++            routes: Tensor((experts, rows), "int32"),
++            tile_experts: Tensor(map_shape, "int32"),
++            tile_offsets: Tensor(map_shape, "int32"),
++        ) -> tuple[Tensor((rows, top, o), "uint8"), Tensor((rows, top, o // 128), "float32")]:
++            out = output((rows, top, o), "uint8")
++            output_scales = output((rows, top, o // 128), "float32")
++            with T.Kernel(o // n, max_tiles, threads=threads) as (bx, tile):
++                if mapped:
++                    expert = tile_experts[layout, tile]
++                    offset = tile_offsets[layout, tile]
++                else:
++                    expert = tile_experts[tile]
++                    offset = tile_offsets[tile]
++                if expert >= 0 and expert < experts:
++                    body(x, activation_scales, w, scales, w2, scales2, counts, routes,
++                         out, output_scales, bx, expert, offset)
++            return out, output_scales
++
++        return compute
++
++    if paired:
++
++        @kernel
++        def compute(
++            x: Tensor((rows, k), "uint8"),
++            activation_scales: Tensor((rows, k // 128), "float32"),
++            w: Tensor((experts, o, k), "uint8"),
++            scales: Tensor((experts, o // 128, k // 128), "bfloat16"),
++            w2: Tensor((experts, o, k), "uint8"),
++            scales2: Tensor((experts, o // 128, k // 128), "bfloat16"),
++            counts: Tensor((experts,), "int32"),
++            routes: Tensor((experts, rows), "int32"),
++            tile_experts: Tensor(map_shape, "int32"),
++            tile_offsets: Tensor(map_shape, "int32"),
++        ) -> Tensor((rows, top, o), "float32"):
++            out = output((rows, top, o), "float32")
++            with T.Kernel(o // n, max_tiles, threads=threads) as (bx, tile):
++                if mapped:
++                    expert = tile_experts[layout, tile]
++                    offset = tile_offsets[layout, tile]
++                else:
++                    expert = tile_experts[tile]
++                    offset = tile_offsets[tile]
++                if expert >= 0 and expert < experts:
++                    body(x, activation_scales, w, scales, w2, scales2, counts, routes,
++                         out, activation_scales, bx, expert, offset)
++            return out
++
++        return compute
+ 
+     if compact:
+ 
+@@ -622,24 +777,32 @@ def _bucketed(p):
+             scales: Tensor((experts, T.ceildiv(o, 128), k // 128), "bfloat16"),
+             counts: Tensor((experts,), "int32"),
+             routes: Tensor((experts, rows), "int32"),
+-            tile_experts: Tensor((max_tiles,), "int32"),
+-            tile_offsets: Tensor((max_tiles,), "int32"),
++            tile_experts: Tensor(map_shape, "int32"),
++            tile_offsets: Tensor(map_shape, "int32"),
+         ) -> Tensor((rows, top, o), "float32"):
+             out = output((rows, top, o), "float32", position=6)
+             with T.Kernel(o // n, max_tiles, threads=threads) as (bx, tile):
+-                expert = tile_experts[tile]
+-                if expert >= 0:
++                if mapped:
++                    expert = tile_experts[layout, tile]
++                    offset = tile_offsets[layout, tile]
++                else:
++                    expert = tile_experts[tile]
++                    offset = tile_offsets[tile]
++                if expert >= 0 and expert < experts:
+                     body(
+                         x,
+                         activation_scales,
+                         w,
+                         scales,
++                        w,
++                        scales,
+                         counts,
+                         routes,
+                         out,
++                        activation_scales,
+                         bx,
+                         expert,
+-                        tile_offsets[tile],
++                        offset,
+                     )
+             return out
+ 
+@@ -668,9 +831,12 @@ def _bucketed(p):
+                     activation_scales,
+                     w,
+                     scales,
++                    w,
++                    scales,
+                     counts,
+                     routes,
+                     out,
++                    activation_scales,
+                     bx,
+                     expert,
+                     tokens,
+@@ -686,12 +852,24 @@ def bucketed(spec: KernelSpec, schedule: Mapping[str, object]):
+     return _bucketed({**p, "rows": p["r"]})
+ 
+ 
++def fp8_expert_swiglu(spec: KernelSpec, schedule: Mapping[str, object]):
++    """Pair the shared bucketed products and retain their quantized epilogue."""
++    p = {**spec.parameters, **schedule}
++    return _bucketed({**p, "rows": p["r"]}, paired=True)
++
++
++def fp8_paired_swiglu(spec: KernelSpec, schedule: Mapping[str, object]):
++    """Share paired products while retaining an independent quantization call."""
++    p = {**spec.parameters, **schedule}
++    return _bucketed({**p, "rows": p["r"]}, paired=True, quantized_output=False)
++
++
+ def partial(spec: KernelSpec, schedule: Mapping[str, object]):
+     p = {**spec.parameters, **schedule}
+     import tilelang.language as T
+ 
+     rows, k, o = (p["rows"], p["k"], p["o"])
+-    n, top, experts = (p.get("columns", 64), 8, 256)
++    n, top, experts = (p.get("columns", 64), p["top"], p["experts"])
+     m, threads = (p.get("block_m", 16), p.get("threads", 128))
+     parts = p.get("partitions", 4)
+     stages = p.get("stages", 2)
+@@ -826,7 +1004,9 @@ def hopper_experts_partial(spec: KernelSpec, schedule: Mapping[str, object]):
+         raise ValueError("invalid Hopper MMA reduction")
+     if k % (128 * parts):
+         raise ValueError("invalid expert reduction partition")
+-    max_tiles = T.ceildiv(rows * top, m) + experts - 1
++    from akas.ops.moe.definition import tile_capacity
++
++    max_tiles = tile_capacity(rows, top, experts, m)
+ 
+     @T.macro
+     def body(
+@@ -1280,7 +1460,7 @@ def prefill_expert_routes(spec: KernelSpec, schedule: Mapping[str, object]):
+ 
+     slots, chunk = (p["slots"], p["chunk"])
+     rows = slots * chunk
+-    experts, top = (256, 8)
++    experts, top = (p.get("experts", 256), p.get("top", 8))
+ 
+     @kernel
+     def compute(
+@@ -1313,35 +1493,67 @@ def prefill_expert_routes(spec: KernelSpec, schedule: Mapping[str, object]):
+ 
+ def tile_map(spec: KernelSpec, schedule: Mapping[str, object]):
+     p = {**spec.parameters, **schedule}
++    return _tile_map(p, layouts=False)
++
++
++def expert_tile_map(spec: KernelSpec, schedule: Mapping[str, object]):
++    p = {**spec.parameters, **schedule}
++    return _tile_map({**p, "rows": p["r"]}, layouts=True)
++
++
++def _tile_map(p, *, layouts):
++    """Parallel emission over the same prefix table for one or all tile layouts."""
+     import tilelang.language as T
+ 
+-    rows, m = (p["rows"], p["block_m"])
+-    experts, top = (256, 8)
+-    max_tiles = T.ceildiv(rows * top, m) + experts - 1
++    rows = p["rows"]
++    experts, top = (p.get("experts", 256), p.get("top", 8))
++    from akas.ops.moe.definition import tile_capacity
++
++    capacity = ((rows * top + 3) // 4 + experts if layouts
++                else tile_capacity(rows, top, experts, p["block_m"]))
++
++    @T.macro
++    def fill(counts, tile_experts, tile_offsets, layout, block_m):
++        prefix = T.alloc_shared((experts + 1,), "int32")
++        tx = T.get_thread_binding()
++        if tx == 0:
++            prefix[0] = 0
++            for expert in T.serial(experts):
++                prefix[expert + 1] = prefix[expert] + T.ceildiv(counts[expert], block_m)
++        for i in T.Parallel(capacity):
++            tile_experts[layout, i] = -1
++            tile_offsets[layout, i] = 0
++        T.sync_threads()
++        for expert in T.Parallel(experts):
++            for tile in T.serial(T.ceildiv(counts[expert], block_m)):
++                index = prefix[expert] + tile
++                tile_experts[layout, index] = expert
++                tile_offsets[layout, index] = tile
++
++    if layouts:
++
++        @kernel
++        def compute(counts: Tensor((experts,), "int32")) -> tuple[
++            Tensor((5, capacity), "int32"), Tensor((5, capacity), "int32")
++        ]:
++            tile_experts = output((5, capacity), "int32")
++            tile_rows = output((5, capacity), "int32")
++            with T.Kernel(5, threads=256) as layout:
++                fill(counts, tile_experts, tile_rows, layout, 4 << layout)
++            return tile_experts, tile_rows
++
++        return compute
+ 
+     @kernel
+     def compute(
+         counts: Tensor((experts,), "int32"),
+-    ) -> tuple[Tensor((max_tiles,), "int32"), Tensor((max_tiles,), "int32")]:
+-        tile_experts = output((max_tiles,), "int32")
+-        tile_offsets = output((max_tiles,), "int32")
++    ) -> tuple[Tensor((capacity,), "int32"), Tensor((capacity,), "int32")]:
++        tile_experts = output((capacity,), "int32")
++        tile_offsets = output((capacity,), "int32")
+         with T.Kernel(1, threads=256):
+-            prefix = T.alloc_shared((experts + 1,), "int32")
+-            tx = T.get_thread_binding()
+-            if tx == 0:
+-                prefix[0] = 0
+-                for expert in T.serial(experts):
+-                    prefix[expert + 1] = prefix[expert] + T.ceildiv(counts[expert], m)
+-            for i in T.Parallel(max_tiles):
+-                tile_experts[i] = -1
+-                tile_offsets[i] = 0
+-            T.sync_threads()
+-            for expert in T.Parallel(experts):
+-                for tile in T.serial(T.ceildiv(rows, m)):
+-                    if tile < T.ceildiv(counts[expert], m):
+-                        index = prefix[expert] + tile
+-                        tile_experts[index] = expert
+-                        tile_offsets[index] = tile
++            tasks = T.view(tile_experts, (1, capacity))
++            offsets = T.view(tile_offsets, (1, capacity))
++            fill(counts, tasks, offsets, 0, p["block_m"])
+         return (tile_experts, tile_offsets)
+ 
+     return compute
+diff --git a/src/akas/ops/moe/definition.py b/src/akas/ops/moe/definition.py
+index 94c6134..68af523 100644
+--- a/src/akas/ops/moe/definition.py
++++ b/src/akas/ops/moe/definition.py
+@@ -6,6 +6,14 @@ from akas.ops.moe.validation import pipeline_validation as pipeline_validation
+ from akas.ops.moe.validation import VALIDATIONS
+ 
+ 
++def tile_capacity(rows, top, experts, block_m):
++    """Bound nonempty expert tiles by both route count and partition overhead."""
++    if any(type(value) is not int or value < 1 for value in (rows, top, experts, block_m)):
++        raise ValueError("expert tile geometry must contain positive integers")
++    routes = rows * top
++    return min(routes, (routes + block_m - 1) // block_m + experts - 1)
++
++
+ def routed_moe(
+     graph,
+     x,
+@@ -44,7 +52,8 @@ def routed_moe(
+         routes,
+     )
+     tiles = ()
+-    if rows > 1:
++    has_fp8 = any(weight.parts[0]["format"] == "fp8" for weight in weights.values())
++    if rows > 1 or has_fp8:
+         capacity = (rows * top + 3) // 4 + experts
+         tiles = tuple(
+             graph.buffer(prefix + name, (5, capacity), "int32")
+@@ -52,9 +61,34 @@ def routed_moe(
+         )
+         graph("expert_tile_map", dict(r=rows, experts=experts, top=top), counts, *tiles)
+ 
++    quantized = {}
++    fp8_tiles = tiles if has_fp8 else ()
++
+     def projection(part, source, routed):
+         weight = weights[part]
+         out = graph.buffer(prefix + part, (rows, top, weight.shape[1]), "float32")
++        if (len(weight.parts) == 1 and weight.parts[0]["format"] == "fp8"
++                and not weight.parts[0].get("row_order")
++                and not weight.parts[0].get("column_order")):
++            if provider != "cuda" or weight.parts[0]["options"].get("scale_layout", "block") != "block":
++                raise ValueError("native routed FP8 currently requires CUDA block scales")
++            from akas.quantization import get
++
++            if source.name not in quantized:
++                storage = get("activations", "fp8").storage(source.shape, provider=provider)
++                encoded = graph.buffer(source.name + ".fp8", storage.values.shape, storage.values.dtype)
++                scales = graph.buffer(source.name + ".fp8_scales", storage.metadata[0].shape, "float32")
++                graph("quantize", dict(r=rows, k=weight.shape[2], input_dtype=source.dtype,
++                      **({"top": top} if routed else {})), source, encoded, scales)
++                quantized[source.name] = encoded, scales
++            encoded, scales = quantized[source.name]
++            graph("expert_partial", dict(r=rows, rows=rows, top=top, experts=experts,
++                  o=weight.shape[1], k=weight.shape[2], routed_input=routed,
++                  partitions=1, compact=True, tile_map=True),
++                  x=encoded, activation_scales=scales, w=weight.buffers[0],
++                  scales=weight.buffers[1], counts=counts, routes=routes, out=out,
++                  **(dict(zip(("tile_experts", "tile_offsets"), fp8_tiles)) if fp8_tiles else {}))
++            return out
+         routing = (ids, counts) if rows == 1 else (counts, routes, *tiles)
+         graph(
+             "quantized_experts",
+@@ -324,10 +358,9 @@ def fp8_prefill_moe(ctx, block):
+     )
+ 
+ 
+-def _expert_swiglu_groups(graph):
+-    """Fuse only private, single-token projection pairs consumed by SwiGLU."""
++def _fusion_scope(graph):
++    """Count direct users and conservatively exclude externally visible aliases."""
+     from collections import Counter
+-    from akas.graph import Call
+ 
+     references = Counter(
+         name
+@@ -340,6 +373,62 @@ def _expert_swiglu_groups(graph):
+         exposed.update(graph.request.get("features", {}).values())
+         exposed.update(graph.request.get("reset", ()))
+         exposed.add(graph.request["prediction"])
++    exposed.update(name for name, spec in graph.buffers.items() if spec.role != "scratch")
++    return references, exposed
++
++
++def _fp8_expert_swiglu_groups(graph, *, quantize_minimum_rows=1):
++    """Recognize shared compact products, SwiGLU and 128-wide FP8 quantization."""
++    from akas.graph import Call
++
++    references, exposed = _fusion_scope(graph)
++    names = ("x", "activation_scales", "w", "scales", "counts", "routes", "out",
++             "tile_experts", "tile_offsets")
++    groups = {}
++    for index in range(len(graph.calls) - 3):
++        gate, up, activation, quantize = graph.calls[index:index + 4]
++        if tuple(c.kind for c in (gate, up, activation, quantize)) != (
++                "expert_partial", "expert_partial", "swiglu_experts", "quantize"):
++            continue
++        p, q, a, z = (call.parameters for call in (gate, up, activation, quantize))
++        if (not p.get("compact") or p.get("routed_input") or q != p
++                or p.get("partitions", 1) != 1 or p["o"] % 128
++                or not a.get("expert_rows") or a.get("round_inputs", False)
++                or (a.get("r"), a.get("top"), a.get("c")) != (p["r"], p["top"], p["o"])
++                or a.get("input_dtype") != "float32" or a.get("output_dtype") != "float32"
++                or (z.get("r"), z.get("top"), z.get("k"), z.get("input_dtype"))
++                   != (p["r"], p["top"], p["o"], "float32")):
++            continue
++        g = dict(gate.bindings) if gate.bindings else dict(zip(names, gate.arguments))
++        u = dict(up.bindings) if up.bindings else dict(zip(names, up.arguments))
++        act = dict(activation.bindings) if activation.bindings else dict(zip(("g", "u", "out"), activation.arguments))
++        encoded = dict(quantize.bindings) if quantize.bindings else dict(zip(("x", "out", "scales"), quantize.arguments))
++        if (set(g) != set(names) or set(u) != set(names)
++                or set(act) != {"g", "u", "out"} or set(encoded) != {"x", "out", "scales"}
++                or any(g[key] != u[key] for key in names if key not in ("w", "scales", "out"))
++                or (act["g"], act["u"]) != (g["out"], u["out"])
++                or encoded["x"] != act["out"]
++                or any(name in exposed or references[name] != 2
++                       for name in (g["out"], u["out"], act["out"]))):
++            continue
++        bindings = {key: g[key] for key in names if key != "out"}
++        bindings.update(w2=u["w"], scales2=u["scales"])
++        if p["r"] >= quantize_minimum_rows:
++            bindings.update(out=encoded["out"], output_scales=encoded["scales"])
++            groups[index] = Call("fp8_expert_swiglu", dict(p), (), bindings,
++                                 label=activation.label)
++        else:
++            bindings["out"] = act["out"]
++            groups[index] = Call("expert_swiglu", dict(p, input_dtype="uint8", weight_format="fp8"),
++                                 (), bindings, label=activation.label)
++    return groups
++
++
++def _expert_swiglu_groups(graph):
++    """Fuse only private, single-token projection pairs consumed by SwiGLU."""
++    from akas.graph import Call
++
++    references, exposed = _fusion_scope(graph)
+ 
+     def fields(call, names):
+         if call.bindings:
+@@ -417,7 +506,17 @@ def _expert_swiglu_groups(graph):
+ 
+ def search_policies(graph, commit, *, provider, target):
+     if graph.contract == "reference":
+-        return [{"fused_swiglu": True}] if _expert_swiglu_groups(graph) else []
++        choices = [{"fused_swiglu": True}] if (_expert_swiglu_groups(graph)
++                   or provider == "cuda" and _fp8_expert_swiglu_groups(graph)) else []
++        if provider == "cuda":
++            groups = _fp8_expert_swiglu_groups(graph)
++            if groups:
++                choices.append({"fused_swiglu": True,
++                                "fused_quantize_minimum_rows": max(c.parameters["r"] for c in groups.values()) + 1})
++        if provider == "cuda" and any(c.kind == "expert_partial" and c.parameters.get("compact")
++                                      for c in graph.calls):
++            choices.extend({"block_m": m} for m in (32, 64))
++        return choices
+     if (
+         graph.contract != "block-fp8"
+         or provider != "cuda"
+@@ -433,6 +532,7 @@ def lower(graph, commit, settings, *, provider, target):
+ 
+     allowed = {
+         "fused_swiglu",
++        "fused_quantize_minimum_rows",
+         "compact",
+         "partitions",
+         "columns",
+@@ -454,19 +554,35 @@ def lower(graph, commit, settings, *, provider, target):
+         raise ValueError("unknown routed projection policy")
+     if "fused_swiglu" in settings and type(settings["fused_swiglu"]) is not bool:
+         raise ValueError("expert SwiGLU fusion must be a boolean")
++    minimum = settings.get("fused_quantize_minimum_rows", 1)
++    if type(minimum) is not int or minimum < 1:
++        raise ValueError("expert quantization minimum rows must be a positive integer")
++    if "fused_quantize_minimum_rows" in settings and not settings.get("fused_swiglu"):
++        raise ValueError("expert quantization minimum rows requires SwiGLU fusion")
+     if settings.get("fused_swiglu") and graph.contract != "reference":
+         raise ValueError("expert SwiGLU fusion requires the reference contract")
+     if graph.contract == "reference" and settings.get("fused_swiglu"):
+         groups = _expert_swiglu_groups(graph)
++        fp8_groups = _fp8_expert_swiglu_groups(graph, quantize_minimum_rows=minimum) if provider == "cuda" else {}
+         calls, index = [], 0
+         while index < len(graph.calls):
+-            if index in groups:
++            if index in fp8_groups:
++                calls.append(fp8_groups[index])
++                index += 4 if fp8_groups[index].kind == "fp8_expert_swiglu" else 3
++            elif index in groups:
+                 calls.append(groups[index])
+                 index += 3
+             else:
+                 calls.append(graph.calls[index])
+                 index += 1
+         graph.calls = calls
++        if "block_m" not in settings:
++            return graph, commit
++    if graph.contract == "reference":
++        if set(settings) - {"fused_swiglu", "fused_quantize_minimum_rows", "block_m"}:
++            raise ValueError("unsupported reference expert policy")
++        if "block_m" in settings:
++            _retile_experts(graph, settings["block_m"])
+         return graph, commit
+     if graph.contract != "block-fp8":
+         return (graph, commit)
+@@ -602,11 +718,7 @@ def lower(graph, commit, settings, *, provider, target):
+                 raise ValueError("compact split experts require Hopper")
+             identity = (names["counts"], p["block_m"])
+             if identity not in maps:
+-                maximum = (
+-                    (p["r"] * p["top"] + p["block_m"] - 1) // p["block_m"]
+-                    + p["experts"]
+-                    - 1
+-                )
++                maximum = tile_capacity(p["r"], p["top"], p["experts"], p["block_m"])
+                 tile_experts = graph.buffer(
+                     f"pipeline.expert_tiles.{index}", (maximum,), "int32"
+                 )
+@@ -615,7 +727,7 @@ def lower(graph, commit, settings, *, provider, target):
+                 )
+                 recorder(
+                     "expert_tiles",
+-                    dict(r=p["r"], block_m=p["block_m"]),
++                    dict(r=p["r"], experts=p["experts"], top=p["top"], block_m=p["block_m"]),
+                     counts=graph.buffers[names["counts"]],
+                     tile_experts=tile_experts,
+                     tile_offsets=tile_offsets,
+@@ -666,6 +778,32 @@ def lower(graph, commit, settings, *, provider, target):
+     return (graph, commit)
+ 
+ 
++def _retile_experts(graph, block_m):
++    """Retile existing compact FP8 calls and their shared routing tables."""
++    from dataclasses import replace
++
++    if type(block_m) is not int or block_m not in (16, 32, 64):
++        raise ValueError("compact expert block_m must be 16, 32 or 64")
++    calls = []
++    for call in graph.calls:
++        p = call.parameters
++        if call.kind == "expert_tiles":
++            capacity = tile_capacity(p["r"], p["top"], p["experts"], block_m)
++            names = (call.bindings["tile_experts"], call.bindings["tile_offsets"]) if call.bindings else call.arguments[1:]
++            for name in names:
++                spec = graph.buffers[name]
++                if spec.role != "scratch" or spec.alias_of is not None:
++                    raise ValueError("compact tile maps must own scratch descriptors")
++                value = replace(spec, shape=(capacity,))
++                object.__setattr__(value, "_graph", graph)
++                graph.buffers[name] = value
++            call = replace(call, parameters={**p, "block_m": block_m})
++        elif call.kind in ("expert_partial", "fp8_expert_swiglu", "expert_swiglu") and p.get("compact"):
++            call = replace(call, parameters={**p, "block_m": block_m})
++        calls.append(call)
++    graph.calls = calls
++
++
+ def routed_workspace(graph, rows, config, *, prefix="", grouped=False):
+     """Declare router, expert and shared-branch buffers from operation geometry."""
+     for name, value in (
+@@ -957,6 +1095,23 @@ IMPLEMENTATIONS += (
+         semantic_keys=("r", "top", "experts", "o", "k", "routed_input", "weight_parts"),
+     ),
+ )
++
++OUTPUT_ARGUMENTS["reference"]["fp8_expert_swiglu"] = OutputABI((-2, -1), ("out", "output_scales"))
++VALIDATIONS["fp8_expert_swiglu"] = pipeline_validation
++IMPLEMENTATIONS += (
++    Implementation("fp8_expert_swiglu", "akas.ops.moe.cuda", "reference",
++                   factory="fp8_expert_swiglu", name="moe.cuda.fp8-swiglu:reference",
++                   defaults=(("columns", 128),),
++                   accepts=lambda p: p.get("compact") and not p.get("routed_input")
++                       and not p.get("tile_map")
++                       and p.get("partitions", 1) == 1 and p["o"] % 128 == 0,
++                   semantic_keys=("r", "rows", "k", "o", "experts", "top", "routed_input",
++                                  "partitions", "block_m", "compact"),
++                   space=(("threads", (128, 256)), ("stages", (1, 2, 3)),
++                          ("preload_scales", (False, True)), ("block_k", (128, 64)),
++                          ("pair_layout", ("wide", "separate")),
++                          ("activation_vector", (16, 8, 4, 1)))),
++)
+ OUTPUT_ARGUMENTS["bf16"].update(
+     {
+         "quantized_routes": OutputABI((2, 3), ("counts", "routes")),
+@@ -1177,6 +1332,21 @@ OUTPUT_ARGUMENTS["reference"]["expert_swiglu"] = OutputABI((-1,), ("out",))
+ VALIDATIONS["expert_swiglu"] = expert_swiglu_validation
+ 
+ IMPLEMENTATIONS += (
++    Implementation(
++        "expert_swiglu", "akas.ops.moe.cuda", "reference",
++        factory="fp8_paired_swiglu", name="moe.cuda.fp8-paired-swiglu:reference",
++        accepts=lambda p: p.get("weight_format") == "fp8" and p.get("input_dtype") == "uint8"
++            and p.get("compact") and not p.get("routed_input")
++            and p.get("partitions", 1) == 1 and p["o"] % 128 == 0
++            and p.get("block_m", 16) // 16 * (p.get("columns", 64) // 8)
++                >= p.get("threads", 128) // 32,
++        defaults=(("columns", 64), ("activation_vector", 16)),
++        semantic_keys=("r", "rows", "k", "o", "experts", "top", "routed_input", "partitions",
++                       "compact", "tile_map", "input_dtype", "weight_format"),
++        space=(("block_m", (16, 32, 64)), ("columns", (64, 32, 128)),
++               ("threads", (128, 256)), ("pair_layout", ("wide", "separate")),
++               ("stages", (1, 2, 3)), ("preload_scales", (False, True)), ("block_k", (128, 64)), ("activation_vector", (16,))),
++    ),
+     Implementation(
+         "expert_swiglu",
+         "akas.ops.moe.kernel",
+@@ -1253,3 +1423,51 @@ IMPLEMENTATIONS += (
+         accepts=lambda p: p["r"] > 1,
+     ),
+ )
++
++OUTPUT_ARGUMENTS["reference"]["expert_partial"] = OutputABI((-1,), ("out",))
++OUTPUT_ARGUMENTS["reference"]["expert_tiles"] = OutputABI((1, 2), ("tile_experts", "tile_offsets"))
++IMPLEMENTATIONS += (
++    Implementation("expert_tile_map", "akas.ops.moe.cuda", "reference",
++                   factory="expert_tile_map", name="moe.cuda.parallel_tile_map", priority=30),
++    Implementation("expert_tiles", "akas.ops.moe.cuda", "reference",
++                   factory="tiles", name="moe.cuda.fp8-tiles:reference"),
++    Implementation("expert_partial", "akas.ops.moe.cuda", "reference",
++                   factory="bucketed", name="moe.cuda.fp8-bucketed:reference",
++                   accepts=lambda p: (p.get("partitions", 1) == 1
++                       and not p.get("tile_map")
++                       and p.get("block_m", 16) // 16 * (p.get("columns", 64) // 8)
++                       >= p.get("threads", 128) // 32),
++                   semantic_keys=("r", "rows", "k", "o", "experts", "top", "routed_input",
++                                  "partitions", "block_m", "compact"),
++                   space=(("columns", (64, 32, 128)), ("threads", (128, 256)),
++                          ("stages", (1, 2, 3)), ("activation_vector", (1, 16, 8, 4)))),
++)
++
++# All tile layouts share one input ABI, so M is a schedule choice rather than
++# a graph rewrite. The same route map serves paired and ordinary projections.
++IMPLEMENTATIONS += (
++    Implementation("expert_partial", "akas.ops.moe.cuda", "reference",
++                   factory="bucketed", name="moe.cuda.fp8-bucketed:mapped",
++                   defaults=(("activation_vector", 16),),
++                   accepts=lambda p: p.get("tile_map") and p.get("compact")
++                       and p.get("partitions", 1) == 1
++                       and p.get("block_m", 16) // 16 * (p.get("columns", 64) // 8)
++                           >= p.get("threads", 128) // 32,
++                   semantic_keys=("r", "rows", "k", "o", "experts", "top", "routed_input",
++                                  "partitions", "compact", "tile_map"),
++                   space=(("block_m", (16, 32, 64)), ("columns", (128, 64, 32)),
++                          ("threads", (128, 256)), ("stages", (1, 2, 3)),
++                          ("preload_scales", (False, True)), ("block_k", (128, 64)),
++                          ("activation_vector", (16,)))),
++    Implementation("fp8_expert_swiglu", "akas.ops.moe.cuda", "reference",
++                   factory="fp8_expert_swiglu", name="moe.cuda.fp8-swiglu:mapped",
++                   defaults=(("columns", 128), ("activation_vector", 16)),
++                   accepts=lambda p: p.get("tile_map") and p.get("compact")
++                       and not p.get("routed_input") and p.get("partitions", 1) == 1
++                       and p["o"] % 128 == 0,
++                   semantic_keys=("r", "rows", "k", "o", "experts", "top", "routed_input",
++                                  "partitions", "compact", "tile_map"),
++                   space=(("block_m", (16, 32, 64)), ("threads", (128, 256)),
++                          ("pair_layout", ("wide", "separate")),
++                          ("stages", (1, 2, 3)), ("preload_scales", (False, True)), ("block_k", (128, 64)), ("activation_vector", (16,)))),
++)
+diff --git a/src/akas/ops/moe/validation.py b/src/akas/ops/moe/validation.py
+index b7e93c0..1832eb0 100644
+--- a/src/akas/ops/moe/validation.py
++++ b/src/akas/ops/moe/validation.py
+@@ -3,6 +3,8 @@
+ 
+ def expert_swiglu_validation(kind, p, signature):
+     """Independent gate/up products, preserving the declared operand rounding."""
++    if p.get("weight_format") == "fp8":
++        return fp8_expert_swiglu_validation(kind, p, signature)
+     import numpy as np
+     from akas.kernels.contracts import ValidationCase, sample_arguments
+     from akas.quantization.weights.reference import sample_parts
+@@ -170,10 +172,13 @@ def pipeline_validation(kind, p, signature):
+     from akas.ops.moe.validation import validation as reference
+     from akas.quantization._shared.e4m3 import decode_storage
+ 
++    if kind == "fp8_expert_swiglu":
++        return fp8_expert_swiglu_validation(kind, p, signature)
++
+     if kind == "expert_tiles":
+         values = sample_arguments(signature)
+         values["counts"][:] = 0
+-        values["counts"][:8] = p["r"]
++        values["counts"][:p["top"]] = p["r"]
+         expected = {name: value.copy() for name, value in values.items()}
+         expected["tile_experts"], expected["tile_offsets"] = tiles(
+             values["counts"], p["block_m"], values["tile_experts"].size
+@@ -202,9 +207,12 @@ def pipeline_validation(kind, p, signature):
+         values["w"] = decode_storage(values["w"]).astype("float16")
+         expected["w"] = values["w"].copy()
+     if "tile_experts" in values:
++        tables = (tile_tables(values["counts"], values["tile_experts"].shape[1])
++                  if p.get("tile_map") else
++                  tiles(values["counts"], p["block_m"], values["tile_experts"].size))
+         for name, array in zip(
+             ("tile_experts", "tile_offsets"),
+-            tiles(values["counts"], p["block_m"], values["tile_experts"].size),
++            tables,
+         ):
+             values[name] = array
+             expected[name] = array.copy()
+@@ -252,6 +260,78 @@ def pipeline_validation(kind, p, signature):
+     return baseline
+ 
+ 
++def fp8_expert_swiglu_validation(kind, p, signature):
++    """Independent paired products, nonlinear activation and block quantization.
++
++    Integer operands with binary scales keep the products exactly representable.
++    Signed operands exercise both branches of the nonlinear activation without an
++    ideal F64 GEMM obscuring the separately specified MMA accumulation.
++    """
++    import numpy as np
++    from akas.kernels.contracts import ValidationCase, sample_arguments
++    from akas.quantization._shared.e4m3 import decode_storage, encode_storage
++
++    values = sample_arguments(signature)
++    quantized_output = kind == "fp8_expert_swiglu"
++    rows, top, experts, depth, columns = (p[n] for n in ("r", "top", "experts", "k", "o"))
++    rng = np.random.default_rng(831)
++    for name in ("x", "w", "w2"):
++        values[name][:] = rng.choice(np.array([56, 64], dtype="uint8"), values[name].shape)
++        values[name] |= rng.integers(0, 2, values[name].shape, dtype="uint8") * 128
++    for name in ("activation_scales", "scales", "scales2"):
++        values[name][:] = .125
++    values["counts"][:] = 0
++    values["routes"][:] = -1
++    for row in range(rows - (rows > 1)):
++        for rank in range(top):
++            expert = (row + rank) % experts
++            index = values["counts"][expert]
++            values["routes"][expert, index] = row * top + rank
++            values["counts"][expert] += 1
++    values["tile_experts"], values["tile_offsets"] = (
++        tile_tables(values["counts"], values["tile_experts"].shape[1]) if p.get("tile_map")
++        else tiles(values["counts"], p["block_m"], values["tile_experts"].size))
++    values["out"][:] = 0
++    if quantized_output:
++        values["output_scales"][:] = 0
++    expected = {name: value.copy() if name in ("out", "output_scales") else value
++                for name, value in values.items()}
++    normalized = np.zeros(values["out"].shape, dtype="float32")
++    source = decode_storage(values["x"]).astype("float64") * .125
++    for expert, count in enumerate(values["counts"]):
++        if not count:
++            continue
++        owners, ranks = np.divmod(values["routes"][expert, :count], top)
++        for start in range(0, columns, 128):
++            products = []
++            for name in ("w", "w2"):
++                weights = decode_storage(values[name][expert, start:start + 128]).astype("float64") * .125
++                products.append((source[owners] @ weights.T).astype("float32"))
++            gate, up = products
++            activation = gate / (1 + np.exp(-gate)) * up
++            if quantized_output:
++                scales = np.maximum(np.abs(activation).max(axis=1), np.float32(1e-12)) / np.float32(448)
++                normalized[owners, ranks, start:start + 128] = activation / scales[:, None]
++                expected["out"][owners, ranks, start:start + 128] = encode_storage(activation / scales[:, None])
++                expected["output_scales"][owners, ranks, start // 128] = scales
++            else:
++                expected["out"][owners, ranks, start:start + 128] = activation
++
++    def compare_encoding(actual, reference):
++        # CPU exp and CUDA exp need not round to the same F32 value. Preserve
++        # the F32 tolerance at the activation boundary: a different FP8 code is
++        # allowed only when that tiny interval crosses its rounding midpoint.
++        # The separate GPU equivalence tests require exact values and scales.
++        tolerance = np.abs(normalized) * np.float32(2e-6) + np.float32(1e-8)
++        lower = encode_storage(normalized - tolerance)
++        upper = encode_storage(normalized + tolerance)
++        allowed = (actual == reference) | (actual == lower) | (actual == upper)
++        np.testing.assert_array_equal(allowed, np.ones_like(allowed))
++
++    return ValidationCase(values, expected, rtol=2e-6, atol=1e-8,
++                          comparators={"out": compare_encoding} if quantized_output else {})
++
++
+ def validation(kind, p, signature):
+     """Independent routing, grouped projection and weighted-combine reference."""
+     import numpy as np
+@@ -386,9 +466,9 @@ def validation(kind, p, signature):
+             weight *= np.repeat(
+                 np.repeat(values["scales"][expert], 128, axis=0), 128, axis=1
+             )[:o, :k]
+-            for row, rank in routes:
+-                x = activation[row, rank] if p.get("routed_input") else activation[row]
+-                expected["out"][row, rank] = x.astype("float64") @ weight.T
++            owners, ranks = np.asarray(routes, dtype="int64").T
++            source = activation[owners, ranks] if p.get("routed_input") else activation[owners]
++            expected["out"][owners, ranks] = source.astype("float64") @ weight.T
+     else:
+         raise ValueError(f"missing mixture-of-experts validation: {kind}")
+     return ValidationCase(values, expected, comparators=comparators)
+diff --git a/src/akas/optimization/deployment.py b/src/akas/optimization/deployment.py
+index e1626f8..a8f51fa 100644
+--- a/src/akas/optimization/deployment.py
++++ b/src/akas/optimization/deployment.py
+@@ -82,6 +82,8 @@ def service(path, *, candidate=False):
+                 config=EngineConfig(
+                     prefill_chunk=recipe["chunk"],
+                     prefill_requests=recipe["prefill_requests"],
++                    prefill_token_budget=recipe.get("prefill_token_budget"),
++                    decode_prefill_token_budget=recipe.get("decode_prefill_token_budget"),
+                 ),
+             ) as engine:
+                 tokenizer = getattr(target.checkpoint, "tokenizer", None)
+diff --git a/src/akas/optimization/evaluation.py b/src/akas/optimization/evaluation.py
+index be77d6f..913909a 100644
+--- a/src/akas/optimization/evaluation.py
++++ b/src/akas/optimization/evaluation.py
+@@ -198,7 +198,9 @@ def evaluate(executor, recipe, workload, *, reference=None, evidence=None):
+     engine = Engine(
+         backend,
+         config=EngineConfig(
+-            prefill_chunk=recipe["chunk"], prefill_requests=recipe["prefill_requests"]
++            prefill_chunk=recipe["chunk"], prefill_requests=recipe["prefill_requests"],
++            prefill_token_budget=recipe.get("prefill_token_budget"),
++            decode_prefill_token_budget=recipe.get("decode_prefill_token_budget"),
+         ),
+     )
+     rows = []
+diff --git a/src/akas/quantization/activations/fp8/cuda.py b/src/akas/quantization/activations/fp8/cuda.py
+index ebd5e8b..aed32fe 100644
+--- a/src/akas/quantization/activations/fp8/cuda.py
++++ b/src/akas/quantization/activations/fp8/cuda.py
+@@ -14,12 +14,13 @@ def quantize(spec: KernelSpec, schedule: Mapping[str, object]):
+     r, k, top = (p["r"], p["k"], p.get("top"))
+     rows = r * (top or 1)
+     shape = (r, top, k) if top else (r, k)
++    input_dtype = p.get("input_dtype", "bfloat16")
+     storage = FORMAT.storage(shape, provider="cuda")
+     scales_shape = storage.named["scales"].shape
+ 
+     @kernel
+     def compute(
+-        x: Tensor(shape, "bfloat16"),
++        x: Tensor(shape, input_dtype),
+     ) -> tuple[Tensor(shape, "uint8"), Tensor(scales_shape, "float32")]:
+         out = output(shape, "uint8")
+         scales = output(scales_shape, "float32")
+diff --git a/src/akas/quantization/activations/fp8/definition.py b/src/akas/quantization/activations/fp8/definition.py
+index d5b9957..c42dea8 100644
+--- a/src/akas/quantization/activations/fp8/definition.py
++++ b/src/akas/quantization/activations/fp8/definition.py
+@@ -78,3 +78,8 @@ IMPLEMENTATIONS = (
+         ),
+     )
+ )
++
++IMPLEMENTATIONS += (Implementation(
++    "quantize", "akas.quantization.activations.fp8.cuda", "reference",
++    factory="quantize", name="akas.quantization.activations.fp8:reference",
++),)
+diff --git a/src/akas/quantization/activations/fp8/validation.py b/src/akas/quantization/activations/fp8/validation.py
+index b009537..c7d2f70 100644
+--- a/src/akas/quantization/activations/fp8/validation.py
++++ b/src/akas/quantization/activations/fp8/validation.py
+@@ -22,7 +22,8 @@ def validation(kind, parameters, signature):
+     stress[0] = 0
+     if len(stress) > 1:
+         stress[1, :8] = [448, -448, 1.0625, 1.1875, 2**-10, -(2**-10), 0, -0.0]
+-    values["x"][:] = decode_bfloat16(encode_bfloat16(values["x"]))
++    if parameters.get("input_dtype", "bfloat16") == "bfloat16":
++        values["x"][:] = decode_bfloat16(encode_bfloat16(values["x"]))
+     depth = parameters["k"]
+     blocks = values["x"].reshape(*values["x"].shape[:-1], depth // 128, 128)
+     scales = np.maximum(
+diff --git a/src/akas/quantization/weights/__init__.py b/src/akas/quantization/weights/__init__.py
+index b85a1ae..b671aa8 100644
+--- a/src/akas/quantization/weights/__init__.py
++++ b/src/akas/quantization/weights/__init__.py
+@@ -18,12 +18,18 @@ class Weight:
+     def __post_init__(self):
+         from math import prod
+ 
+-        if not 1 <= len(self.parts) <= 4 or len(self.buffers) != len(self.parts):
++        if not 1 <= len(self.parts) <= 4:
+             raise ValueError("a weight requires one to four encoded pieces")
+         if len(self.shape) not in (2, 3) or any(dim <= 0 for dim in self.shape):
+             raise ValueError("a weight requires positive matrix or expert geometry")
+         if sum(part["rows"] for part in self.parts) != prod(self.shape[:-1]):
+             raise ValueError("weight pieces do not cover the logical rows")
++        from akas.quantization.formats import get
++
++        count = sum(len(get("weights", part["format"]).storage(
++            (part["rows"], self.shape[-1]), **part["options"]).buffers) for part in self.parts)
++        if len(self.buffers) != count:
++            raise ValueError("weight buffers must include each piece's declared metadata")
+ 
+ 
+ def bind_parts(parts, depth, *, provider):
+@@ -40,6 +46,8 @@ def bind_parts(parts, depth, *, provider):
+         )
+         for part in parts
+     )
++    if len(parts) == 1 and not (parts[0].get("row_order") or parts[0].get("column_order")):
++        return codecs[0]
+     if any(codec.storage.metadata for codec in codecs):
+         raise ValueError("segmented weights currently require embedded metadata")
+     readers = tuple(
+diff --git a/src/akas/quantization/weights/ggml/cuda.py b/src/akas/quantization/weights/ggml/cuda.py
+index 1f9c221..1621e5d 100644
+--- a/src/akas/quantization/weights/ggml/cuda.py
++++ b/src/akas/quantization/weights/ggml/cuda.py
+@@ -527,6 +527,20 @@ def bind(shape, *, encoding, layout="raw", vector_tiles=False):
+         return product(x, encoded[0], tile, lane, row)
+ 
+     tile = packed_tile_half(shape, read) if encoding == 2 else matrix_tile(read, shape)
++    if encoding in (0, 1):
++        from math import prod
++
++        rows, depth = prod(shape[:-1]), shape[-1]
++
++        @T.macro
++        def floating_tile(encoded, destination, row, column):
++            # Codec storage already fixes this contiguous matrix layout. Declare
++            # the alias directly: TileLang's view bit-count check uses int32.
++            source = T.Tensor((rows, depth), encoded[0].dtype, encoded[0].data)
++            T.copy(source[row:row + destination.shape[0],
++                          column:column + destination.shape[1]], destination)
++
++        tile = floating_tile
+     if vector_tiles and encoding in (8, 12, 14):
+         tile = vector_tile(shape, encoding, tile)
+     return Codec(
+diff --git a/src/akas/scheduling/scheduler.py b/src/akas/scheduling/scheduler.py
+index 24f3955..35a8de5 100644
+--- a/src/akas/scheduling/scheduler.py
++++ b/src/akas/scheduling/scheduler.py
+@@ -13,7 +13,8 @@ class Scheduler:
+     token budget each turn; decoding compacts its active requests every turn.
+     """
+ 
+-    def __init__(self, engine, publish, *, prefill_chunk=32, prefill_requests=32):
++    def __init__(self, engine, publish, *, prefill_chunk=32, prefill_requests=32,
++                 prefill_token_budget=None, decode_prefill_token_budget=None):
+         if prefill_chunk <= 0 or prefill_requests <= 0:
+             raise ValueError("invalid prefill budget")
+         self.engine = engine
+@@ -21,6 +22,16 @@ class Scheduler:
+         geometry = getattr(engine, "prefill_geometry", None)
+         self.prefill_chunk = geometry(prefill_chunk) if geometry is not None else prefill_chunk
+         self.prefill_requests = prefill_requests
++        if prefill_token_budget is not None and (
++            type(prefill_token_budget) is not int or prefill_token_budget < 1
++        ):
++            raise ValueError("prefill token budget must be a positive integer")
++        self.prefill_token_budget = prefill_token_budget
++        if decode_prefill_token_budget is not None and (
++            type(decode_prefill_token_budget) is not int or decode_prefill_token_budget < 1
++        ):
++            raise ValueError("decode prefill token budget must be a positive integer")
++        self.decode_prefill_token_budget = decode_prefill_token_budget
+         self.incoming = Queue()
+         self.pending = deque()
+         self.prefilling = deque()
+@@ -36,6 +47,9 @@ class Scheduler:
+             padded_decode_rows=0,
+             max_active=0,
+             capacity_counts={},
++            prefill_tokens=0,
++            max_prefill_tokens_per_turn=0,
++            max_prefill_tokens_with_decoding=0,
+         )
+ 
+     def submit(self, request):
+@@ -134,13 +148,18 @@ class Scheduler:
+                 )
+                 self.decoding = self._emit(self.decoding, tokens)
+         if self.prefilling:
+-            selected = [
+-                self.prefilling.popleft()
+-                for _ in range(min(len(self.prefilling), self.prefill_requests))
+-            ]
+-            sequences = [
+-                r.prompt[r.offset : r.offset + self.prefill_chunk] for r in selected
+-            ]
++            selected, sequences = [], []
++            budget = self.prefill_token_budget
++            remaining = budget if budget is not None else self.prefill_chunk * self.prefill_requests
++            with_decoding = bool(self.decoding)
++            if with_decoding and self.decode_prefill_token_budget is not None:
++                remaining = min(remaining, self.decode_prefill_token_budget)
++            while self.prefilling and len(selected) < self.prefill_requests and remaining:
++                request = self.prefilling.popleft()
++                count = min(self.prefill_chunk, remaining, len(request.prompt) - request.offset)
++                selected.append(request)
++                sequences.append(request.prompt[request.offset:request.offset + count])
++                remaining -= count
+             try:
+                 if hasattr(self.engine, "prefill_batch"):
+                     tokens = self.engine.prefill_batch(
+@@ -154,6 +173,15 @@ class Scheduler:
+                 self.prefilling.extendleft(reversed(selected))
+                 raise
+             self.stats["prefill_rounds"] += 1
++            live_tokens = sum(map(len, sequences))
++            self.stats["prefill_tokens"] += live_tokens
++            self.stats["max_prefill_tokens_per_turn"] = max(
++                self.stats["max_prefill_tokens_per_turn"], live_tokens
++            )
++            if with_decoding:
++                self.stats["max_prefill_tokens_with_decoding"] = max(
++                    self.stats["max_prefill_tokens_with_decoding"], live_tokens
++                )
+             finished = []
+             first = []
+             for request, sequence, token in zip(selected, sequences, tokens):
+diff --git a/src/akas/tensor/executor.py b/src/akas/tensor/executor.py
+index f7a4f63..bcc793a 100644
+--- a/src/akas/tensor/executor.py
++++ b/src/akas/tensor/executor.py
+@@ -4,13 +4,19 @@ from tensor.runtime.abi import BoundCall
+ 
+ 
+ def bind(device, kernel, arguments):
++    if hasattr(kernel, "bind"):
++        return kernel.bind(*arguments)
++    # Tensor releases before the public binding API retain the ABI-1.3 path.
+     values, symbols, launch = kernel._bind(arguments, {}, include_outputs=True)
+     return BoundCall(device, kernel.manifest, values, symbols, launch, validated=True)
+ 
+ 
+ def submit(device, calls, *, after_launch=None):
+     for entry in calls:
+-        device._launch(entry[0], entry[1])
++        if getattr(entry[1], "executable", None) is not None:
++            entry[1].launch()
++        else:
++            device._launch(entry[0], entry[1])
+         if after_launch is not None:
+             after_launch(entry)
+ 
+diff --git a/tests/fixtures/kernel-computations.json b/tests/fixtures/kernel-computations.json
+index 10184cd..8944a6b 100644
+--- a/tests/fixtures/kernel-computations.json
++++ b/tests/fixtures/kernel-computations.json
+@@ -234,6 +234,34 @@
+             "qualification/compare_kernels.py"
+           ],
+           "qualification_run": "20261027221834452796-2ba99389"
++        },
++        {
++          "original": [
++            "inline:0eb13840f06e309ad5a08e1f55d93ff919e645e83d546be2cee8dca54dfdb1ac"
++          ],
++          "replacement": [
++            "inline:c5f9a41f0525b7739d7d393adb61513b8a8efa1fb96320e8d481b8bfac655d9d"
++          ],
++          "reason": "Copy prequantized FP8 operands through a typed view and assign each live scale once, preserving inline and split projection arithmetic.",
++          "qualification_tests": [
++            "qualification/compare_fp8.py",
++            "tests/test_lfm_moe_native.py::test_native_operations_match_independent_references"
++          ],
++          "qualification_run": "20261031202423898279-aa508c86"
++        },
++        {
++          "original": [
++            "inline:c5f9a41f0525b7739d7d393adb61513b8a8efa1fb96320e8d481b8bfac655d9d"
++          ],
++          "replacement": [
++            "inline:b1b182b981a791325cf5a26233a3586c39c7f7aa24a4c0d5b55126ea59208648"
++          ],
++          "reason": "Expose exact FP16 promotion as a projection schedule choice while preserving the default FP8 path bitwise across inline, prequantized, split, tail and expert cases.",
++          "qualification_tests": [
++            "qualification/compare_fp8_default_dtype.py",
++            "tests/test_lfm_moe_native.py::test_native_model_reordered_ragged_requests_reuse_common_executor"
++          ],
++          "qualification_run": "20261101010121902886-7ccc89a7"
+         }
+       ]
+     },
+@@ -287,6 +315,65 @@
+         "launch:e1e4cd971df29375b126fe3e0a8bf6b2d9898fe16836248355ffdc6594763c17",
+         "launch:e3002ec8c6211cd6a93b22ff2ca5a87283708d5a72397ae05d1eb29d8110645f",
+         "launch:f664d1da4242d3cbe644d396fc0997ecc135e9902e843b8fc23ec50bce66209f"
++      ],
++      "qualified_replacements": [
++        {
++          "original": [
++            "inline:cc3a63492fd511a72c82fd6eeac1a8b3803d0252e6bff5059ec999739079c2ae"
++          ],
++          "replacement": [
++            "inline:836eee7e65d508a10baee58c09f618a8bd0123f05aa25300f5c9f9081f0f0403"
++          ],
++          "reason": "Use vectorized FP8 gathers and staged compact expert tiles while preserving rank placement and ordered block accumulation.",
++          "qualification_tests": [
++            "qualification/compare_fp8.py",
++            "tests/test_lfm_moe_native.py::test_native_operations_match_independent_references"
++          ],
++          "qualification_run": "20261031202423898279-aa508c86"
++        },
++        {
++          "original": [
++            "inline:836eee7e65d508a10baee58c09f618a8bd0123f05aa25300f5c9f9081f0f0403"
++          ],
++          "replacement": [
++            "inline:387dfd89af3c0f6f795da76e667b4b2a9c0806e6bc34f93e48302706e68de464"
++          ],
++          "reason": "Share paired expert products with a separately scheduled quantizer while preserving default FP8 accumulation and rank placement.",
++          "qualification_tests": [
++            "qualification/compare_fp8_paired_output.py",
++            "tests/test_lfm_moe_native.py::test_native_operations_match_independent_references"
++          ],
++          "qualification_run": "20261101014832705566-78d51c8f"
++        },
++        {
++          "original": [
++            "launch:e1e4cd971df29375b126fe3e0a8bf6b2d9898fe16836248355ffdc6594763c17",
++            "launch:9c8d680632bd611c13add47d741d795b1c0ea827a226df02d39dccfafc4b55e1"
++          ],
++          "replacement": [
++            "launch:9311a2391a0f084718ee74b4d253cd28401fb763c42f4b6db1e3d1db59527889",
++            "launch:0f7a91b3c3956666a6d9de87c4fee750bd5044df78948492e70c0dc4d0a6b958"
++          ],
++          "reason": "Dispatch existing compact and dense expert grids through the shared paired-product body and request-derived capacity.",
++          "qualification_tests": [
++            "qualification/compare_fp8_paired_output.py"
++          ],
++          "qualification_run": "20261101014832705566-78d51c8f"
++        },
++        {
++          "original": [
++            "launch:45b3c1c7ac88461b7543c3333b4b400508e56e7aa3886efb27c57cd834ed0102"
++          ],
++          "replacement": [
++            "launch:eb378a2e8cdbe93aee57c7955793696232c607e6195013c66631eab9948304da",
++            "inline:a1ff547f3f347c00ced275c6c157bf2f90e0108a460f3e3a3580662ffa5a1d95"
++          ],
++          "reason": "Share prefix-table route-map emission while retaining logical task order and inactive padding under tighter physical capacities.",
++          "qualification_tests": [
++            "qualification/compare_tile_maps.py"
++          ],
++          "qualification_run": "20261101015233343533-e8a8ac3c"
++        }
+       ]
+     },
+     {
+diff --git a/tests/support/numpy_reference.py b/tests/support/numpy_reference.py
+index e5c3525..c4376a5 100644
+--- a/tests/support/numpy_reference.py
++++ b/tests/support/numpy_reference.py
+@@ -74,6 +74,8 @@ class Reference:
+         tail_half=None,
+         attention=None,
+         head_half=False,
++        projector=None,
++        observer=None,
+     ):
+         c = self.config
+         r = len(tokens)
+@@ -85,6 +87,8 @@ class Reference:
+             raise ValueError("context capacity exceeded")
+ 
+         def project(name, x, single=False):
++            if projector is not None:
++                return projector(name, x, single=single)
+             precision = (
+                 projection_half(name) if callable(projection_half) else projection_half
+             )
+@@ -169,6 +173,8 @@ class Reference:
+             hidden = hidden + mix
+             x = norm(p + "ffn_norm.weight", hidden)
+             hidden = hidden + self.feed_forward(i, x, project)
++            if observer is not None:
++                observer(i, hidden)
+         final = norm("token_embd_norm.weight", hidden[-1:])
+         self.position += count
+         projection_half = head_half
+diff --git a/tests/test_benchmark_history.py b/tests/test_benchmark_history.py
+index 2ad1373..9953b4c 100644
+--- a/tests/test_benchmark_history.py
++++ b/tests/test_benchmark_history.py
+@@ -188,3 +188,28 @@ def test_installed_source_without_git_has_no_invented_revision(tmp_path):
+     assert run.record["source"]["revision"] is None
+     assert run.record["source"]["dirty"] is None
+     assert "unavailable" in (tmp_path / "history/RESULTS.md").read_text()
++
++
++@pytest.mark.parametrize("changed", [False, True])
++def test_dependency_working_sources_are_retained_and_checked(tmp_path, source, changed):
++    dependency = tmp_path / "compiler"
++    dependency.mkdir()
++    (dependency / "lowering.py").write_text("x = 1\n")
++    run = Recorder(tmp_path / "history", report()["metadata"], source_root=source,
++                   dependency_sources={"compiler": dependency})
++    with tarfile.open(run.directory / "dependencies/compiler/source.tar.gz") as archive:
++        assert archive.extractfile("lowering.py").read() == b"x = 1\n"
++    if changed:
++        (dependency / "lowering.py").write_text("x = 2\n")
++    record = run.update(report(), final=True)
++    assert record["dependency_sources"]["compiler"]["changed_during_run"] is changed
++    assert record["source"]["changed_during_run"] is False
++    assert record["status"] == ("invalidated" if changed else "passed")
++    for artifact in record["artifacts"]:
++        assert digest(run.directory / artifact["path"]) == artifact["sha256"]
++
++
++def test_dependency_source_names_cannot_escape_record(tmp_path, source):
++    with pytest.raises(ValueError, match="simple identifiers"):
++        Recorder(tmp_path / "history", report()["metadata"], source_root=source,
++                 dependency_sources={"../escape": source})
+diff --git a/tests/test_campaign.py b/tests/test_campaign.py
+index 1eb10b9..a897306 100644
+--- a/tests/test_campaign.py
++++ b/tests/test_campaign.py
+@@ -98,6 +98,8 @@ def test_matrix_resumes_without_repeating_completed_entries(tmp_path, monkeypatc
+         ),
+     )
+     calls = []
++    # Matrix scheduling is independent of downloaded checkpoint availability.
++    monkeypatch.setattr(campaign, "discover", lambda _: "akas.models.lfm2.model:LFM2")
+ 
+     def optimize(context, out, **kwargs):
+         calls.append((context.backend, kwargs["budget"]))
+diff --git a/tests/test_campaign_report.py b/tests/test_campaign_report.py
+index 3edc7f4..616acec 100644
+--- a/tests/test_campaign_report.py
++++ b/tests/test_campaign_report.py
+@@ -12,6 +12,40 @@ from akas.benchmarking.history import digest, write
+ from tools.campaign_report import check, export, read, render, speculative_baselines, validate
+ 
+ 
++def test_streamed_native_measurements_preserve_latency_and_failed_qualification():
++    from tools.campaign_report import measurement
++
++    row = dict(case=dict(batch=4, prompt=2048, generated=128), status="ok",
++               model_throughput_qualified=False,
++               samples=[dict(ttft_seconds=.3, tpot_seconds=.02)],
++               serving=dict(samples=[dict(ttft_ms=999, tpot_ms=999)]))
++    result = measurement(row, "akas", True, "diagnostic", "client-stream-burst-v1")
++    assert result["ttft_ms"] == 300
++    assert result["tpot_ms"] == 20
++    assert result["qualification"] == "unqualified"
++
++
++def test_retained_run_export_keeps_original_evidence_and_no_deployment(
++        campaign_evidence, monkeypatch, tmp_path):
++    import tools.campaign_report as reporting
++
++    campaign, history, _ = campaign_evidence
++    model = dict(model="example/toy", modes=["ar"], weights={"bf16": {}})
++    write(tmp_path / "benchmarks/models/toy.json", model)
++    monkeypatch.setattr(reporting, "__file__", str(tmp_path / "tools/campaign_report.py"))
++    original = (history / "runs/winner/run.json").read_bytes()
++    out = reporting.export_runs(["winner"], model_id="toy",
++                                workload_id=read(campaign)["specification"]["workload"],
++                                history=history)
++    data = read(out / "report.json")
++    native = next(p for p in data["profiles"] if p["kind"] == "akas")
++    assert native["qualifying_status"] == "unqualified"
++    assert native["selected_run_id"] is None
++    assert len(native["measurements"]) == 2
++    assert (history / "runs/winner/run.json").read_bytes() == original
++    reporting.check(history)
++
++
+ @pytest.mark.parametrize("corruption", [None, "counter", "prompt", "coverage", "workload"])
+ def test_speculative_baseline_preserves_verified_acceptance(tmp_path, corruption):
+     from akas.benchmarking.workload import prompt_digest
+diff --git a/tests/test_compilation.py b/tests/test_compilation.py
+index bb13f3e..2a19b01 100644
+--- a/tests/test_compilation.py
++++ b/tests/test_compilation.py
+@@ -334,6 +334,13 @@ def test_common_build_cache_checks_source_target_provider_and_compiler(
+     assert len(calls) == 9
+     (tmp_path / "first.tbin").write_text("broken artifact")
+     build(declaration, tmp_path)
++    # A valid pooled artifact repairs a corrupted generation without recompiling.
++    assert len(calls) == 9
++    assert json.loads((tmp_path / "first.tbin").read_text())["source"] == "source changed"
++    for path in (tmp_path / "search-kernels").glob("*.tbin"):
++        path.write_text("broken pooled artifact")
++    (tmp_path / "first.tbin").write_text("broken artifact")
++    build(declaration, tmp_path)
+     assert len(calls) == 10
+ 
+ 
+diff --git a/tests/test_dense_scheduler.py b/tests/test_dense_scheduler.py
+index 4b2296a..14c3b23 100644
+--- a/tests/test_dense_scheduler.py
++++ b/tests/test_dense_scheduler.py
+@@ -96,6 +96,60 @@ def test_unequal_prompts_and_lengths_drain_from_256_to_one():
+     assert max(count for count, chunk in engine.batches if chunk == 1) <= 256
+ 
+ 
++def test_token_budget_bounds_prefill_while_decoding_and_reuses_slots():
++    specifications = [([i + 1] * n, 4) for i, n in enumerate((5, 17, 29, 7, 31))]
++    control = [Request(prompt, limit) for prompt, limit in specifications]
++    execute(control, 1)
++    actual = [Request(prompt, limit) for prompt, limit in specifications]
++    engine = FakeEngine(3)
++    scheduler = Scheduler(engine, lambda _: None, prefill_chunk=16,
++                          prefill_requests=3, prefill_token_budget=11)
++    for request in actual:
++        scheduler.submit(request)
++    active_decode_during_prefill = False
++    for _ in range(100):
++        before_prefill = scheduler.stats["prefill_tokens"]
++        before_decode = scheduler.stats["decode_rounds"]
++        pending = scheduler.turn()
++        consumed = scheduler.stats["prefill_tokens"] - before_prefill
++        assert consumed <= 11
++        if consumed and scheduler.stats["decode_rounds"] > before_decode:
++            active_decode_during_prefill = True
++        if not pending:
++            break
++    else:
++        raise AssertionError("bounded prefill did not drain")
++    assert active_decode_during_prefill
++    assert [r.output for r in actual] == [r.output for r in control]
++    assert scheduler.stats["prefill_tokens"] == sum(len(prompt) for prompt, _ in specifications)
++    assert scheduler.stats["max_prefill_tokens_per_turn"] == 11
++    assert not engine.state and len(engine.releases) == len(actual)
++
++
++def test_prefill_budget_shrinks_while_decodes_remain_active():
++    specifications = [([1], 8), ([2] * 16, 8), ([3] * 20, 8)]
++    control = [Request(prompt, limit) for prompt, limit in specifications]
++    execute(control, 1)
++    requests = [Request(prompt, limit) for prompt, limit in specifications]
++    engine = FakeEngine(3)
++    scheduler = Scheduler(engine, lambda _: None, prefill_chunk=16, prefill_requests=3,
++                          prefill_token_budget=32, decode_prefill_token_budget=3)
++    for request in requests:
++        scheduler.submit(request)
++    assert scheduler.turn()
++    assert scheduler.stats["prefill_tokens"] == 32
++    assert len(scheduler.decoding) == 2
++    while True:
++        before = scheduler.stats["prefill_tokens"]
++        ongoing = scheduler.turn()
++        assert scheduler.stats["prefill_tokens"] - before <= 3
++        if not ongoing:
++            break
++    assert scheduler.stats["max_prefill_tokens_with_decoding"] == 3
++    assert [request.output for request in requests] == [request.output for request in control]
++    assert not engine.state
++
++
+ class FakeSpeculativeEngine(FakeEngine):
+     def decode_many(self, requests):
+         sequences = []
+diff --git a/tests/test_dense_search.py b/tests/test_dense_search.py
+index 14f02cc..b26d8b5 100644
+--- a/tests/test_dense_search.py
++++ b/tests/test_dense_search.py
+@@ -5,6 +5,34 @@ import os
+ import pytest
+ 
+ 
++@pytest.mark.parametrize("value", [-1, True, 1.5])
++def test_search_rejects_invalid_cache_working_sets(value):
++    from akas.compilation.tuning import SearchSettings
++
++    with pytest.raises(ValueError, match="working-set bytes"):
++        SearchSettings(cache_working_set_bytes=value)
++
++
++def test_dense_search_retains_cache_conditioning_context(tmp_path):
++    if os.environ.get("AKAS_FORWARD_CUDA") != "1":
++        pytest.skip("enable native search conditioning qualification")
++    from akas.graph import Graph
++    from akas.compilation.compile import produce
++    from akas.compilation.tuning import SearchSettings
++
++    graph = Graph(contract="bf16")
++    x = graph.buffer("x", (4, 256), "bfloat16", role="input")
++    w = graph.buffer("w", (128, 256), "bfloat16", role="weight")
++    out = graph.buffer("out", (4, 128), "float32", role="output")
++    graph("linear", dict(r=4, k=256, o=128), x, w, out)
++    result = produce(graph, tmp_path, search_settings=SearchSettings(
++        budget=1, warmup=0, samples=1, repeats=1, cache_working_set_bytes=1 << 20))
++    context = result["tuning"]["context"]
++    assert context["settings"]["cache_working_set_bytes"] == 1 << 20
++    assert context["cache_working_set"]["weight_bytes"] >= 1 << 20
++    assert context["cache_working_set"]["artifact_sha256"]
++
++
+ @pytest.mark.parametrize("rows", [1, 4])
+ def test_dense_matmul_matvec_and_fused_head_qualify_without_model_tuner(tmp_path, rows):
+     if os.environ.get("AKAS_FORWARD_CUDA") != "1":
+diff --git a/tests/test_native_pipeline_policy.py b/tests/test_native_pipeline_policy.py
+index 97943db..a486851 100644
+--- a/tests/test_native_pipeline_policy.py
++++ b/tests/test_native_pipeline_policy.py
+@@ -4,24 +4,30 @@ import os
+ import pytest
+ 
+ 
+-def projection_graph():
++def projection_graph(contract="block-fp8", input_dtype="bfloat16"):
+     from akas.graph import Graph
+ 
+-    graph = Graph(contract="block-fp8", phase="decode")
+-    x = graph.buffer("x", (4, 256), "bfloat16", role="input")
++    graph = Graph(contract=contract, phase="decode")
++    x = graph.buffer("x", (4, 256), input_dtype, role="input")
+     w = graph.buffer("w", (128, 256), "uint8", role="weight")
+     scales = graph.buffer("scales", (1, 2), "bfloat16", role="weight")
+     for name in ("a", "b"):
+         out = graph.buffer(name, (4, 128), "float32", role="output")
+-        graph("fp8_linear", dict(r=4, k=256, o=128), x=x, w=w, scales=scales, out=out)
++        parameters = dict(r=4, k=256, o=128)
++        if input_dtype != "bfloat16":
++            parameters["input_dtype"] = input_dtype
++        graph("fp8_linear", parameters, x=x, w=w, scales=scales, out=out)
+     return graph
+ 
+ 
+-def test_projection_policy_declares_shared_quantization_and_split_merge():
++@pytest.mark.parametrize("contract,input_dtype", [
++    ("block-fp8", "bfloat16"), ("reference", "float32"),
++])
++def test_projection_policy_declares_shared_quantization_and_split_merge(contract, input_dtype):
+     from akas.compilation.policy import lower
+     from akas.compilation.compile import plan
+ 
+-    graph, _ = lower(projection_graph(), policy={"linear": {"partitions": 2}})
++    graph, _ = lower(projection_graph(contract, input_dtype), policy={"linear": {"partitions": 2}})
+     assert [call.kind for call in graph.calls] == [
+         "quantize",
+         "projection_partial",
+@@ -30,9 +36,292 @@ def test_projection_policy_declares_shared_quantization_and_split_merge():
+         "projection_merge",
+     ]
+     assert graph.buffers["pipeline.partial.0"].shape == (4, 2, 128)
++    assert graph.calls[0].parameters.get("input_dtype", "bfloat16") == input_dtype
+     plan(graph)
+ 
+ 
++def test_projection_pipeline_can_retain_small_batch_gemv_dispatch():
++    from akas.compilation.policy import lower
++    from akas.compilation.compile import plan
++
++    graph, _ = lower(projection_graph("reference", "float32"),
++                     policy={"linear": {"partitions": 1, "minimum_rows": 9}})
++    assert [call.kind for call in graph.calls] == ["fp8_linear", "fp8_linear"]
++    assert all(kernel.schedule["implementation"] == "linear.cuda.fp8-gemv:reference"
++               for kernel in plan(graph).kernels)
++
++
++@pytest.mark.parametrize("rows,depth,columns,parts", [
++    (4, 2048, 11776, 1), (4, 11776, 2048, 4), (4, 2048, 2048, 4),
++    (4, 2048, 512, 8), (8192, 2048, 512, 1),
++])
++def test_projection_policy_splits_underoccupied_launches_with_legal_k_ranges(rows, depth, columns, parts):
++    from akas.graph import Graph
++    from akas.compilation.policy import lower
++    from akas.compilation.compile import plan
++
++    graph = Graph(contract="reference", phase="forward")
++    x = graph.buffer("x", (rows, depth), "float32", role="input")
++    w = graph.buffer("w", (columns, depth), "uint8", role="weight")
++    scale = graph.buffer("scale", (columns // 128, depth // 128), "bfloat16", role="weight")
++    out = graph.buffer("out", (rows, columns), "float32", role="output")
++    graph("fp8_linear", dict(r=rows, k=depth, o=columns, input_dtype="float32"),
++          x=x, w=w, scales=scale, out=out)
++    graph, _ = lower(graph, policy={"linear": dict(partitions=8, minimum_split_groups=64,
++                     columns=128, block_m=32)})
++    projection = graph.calls[1]
++    assert projection.parameters["partitions"] == parts
++    assert "minimum_split_groups" not in projection.parameters
++    assert (graph.calls[-1].kind == "projection_merge") == (parts > 1)
++    assert graph.buffers[projection.bindings["out"]].shape == (
++        (rows, columns) if parts == 1 else (rows, parts, columns))
++    plan(graph)
++
++
++@pytest.mark.parametrize("minimum", [0, -1, True, 1.5])
++def test_projection_policy_rejects_invalid_split_group_targets(minimum):
++    from akas.compilation.policy import lower
++
++    with pytest.raises(ValueError, match="minimum split groups"):
++        lower(projection_graph("reference", "float32"),
++              policy={"linear": dict(partitions=8, minimum_split_groups=minimum)})
++
++
++@pytest.mark.parametrize("minimum,kind", [(2, "matmul"), (9, "linear")])
++def test_floating_and_fp8_projection_thresholds_are_independent(minimum, kind):
++    from akas.compilation.policy import lower
++
++    graph, _ = lower(floating_projection_graph(4, "float32"), policy={"linear": dict(
++        floating_matmul=True, minimum_rows=2, floating_matmul_minimum_rows=minimum)})
++    assert graph.calls[0].kind == kind
++
++
++@pytest.mark.parametrize("kind", ["expert_partial", "fp8_expert_swiglu"])
++def test_shared_route_maps_allow_m_tuning_without_changing_storage_contract(kind):
++    from akas.kernels.definition import define
++    from tensor.compiler.frontend.signature import frontend_arguments
++
++    p = dict(r=33, rows=33, top=3, experts=7, o=128, k=384,
++             routed_input=False, partitions=1, compact=True, tile_map=True)
++    signatures = [frontend_arguments(define(dict(kind=kind, parameters=p, contract="reference"),
++                     schedule=dict(block_m=m, threads=128,
++                                   **({"columns": 128} if kind == "expert_partial" else {}))), {})
++                  for m in (16, 32, 64)]
++    assert signatures[0] == signatures[1] == signatures[2]
++    maps = [a for a in signatures[0] if a["name"] in ("tile_experts", "tile_offsets")]
++    assert len(maps) == 2 and all(a["shape"][0] == 5 for a in maps)
++
++
++@pytest.mark.parametrize("minimum", [0, -1, True, 1.5])
++def test_expert_quantization_fusion_requires_positive_integer_threshold(minimum):
++    from akas.compilation.policy import lower
++
++    with pytest.raises(ValueError, match="quantization minimum rows"):
++        lower(projection_graph("reference", "float32"), policy={"moe": {
++            "fused_swiglu": True, "fused_quantize_minimum_rows": minimum}})
++
++
++def test_projection_quantization_is_invalidated_by_a_positional_alias_write():
++    from akas.compilation.policy import lower
++
++    graph = projection_graph("reference", "float32")
++    first, second = graph.calls
++    graph.calls = [first]
++    alias = graph.view("alias", graph.buffers["x"], (4 * 256,))
++    weight = graph.buffer("norm", (256,), "float32", role="weight")
++    graph("rms", dict(r=4, c=256, eps=1e-6), alias, weight, alias)
++    graph.calls.append(second)
++    graph, _ = lower(graph, policy={"linear": {"partitions": 1}})
++    assert [call.kind for call in graph.calls] == [
++        "quantize", "projection_partial", "rms", "quantize", "projection_partial",
++    ]
++
++
++def test_projection_quantization_reuses_same_geometry_through_nested_aliases():
++    from dataclasses import replace
++    from akas.compilation.policy import lower, candidates
++    from akas.compilation.compile import plan
++
++    graph = projection_graph("reference", "float32")
++    flat = graph.view("flat", graph.buffers["x"], (1024,))
++    alias = graph.view("nested", flat, (4, 256))
++    graph.calls[1] = replace(graph.calls[1], bindings={**graph.calls[1].bindings, "x": alias.name})
++    assert {"linear": {"partitions": 1, "minimum_rows": 2}} in candidates(graph, provider="cuda", target="sm_89")
++    assert {"linear": {"partitions": 8, "minimum_rows": 2, "minimum_split_groups": 64}} in candidates(
++        graph, provider="cuda", target="sm_89")
++    graph, _ = lower(graph, policy={"linear": {"partitions": 1}})
++    assert [call.kind for call in graph.calls] == ["quantize", "projection_partial", "projection_partial"]
++    assert graph.calls[1].bindings["x"] == graph.calls[2].bindings["x"]
++    plan(graph)
++
++
++def test_projection_quantization_keeps_distinct_alias_row_geometries():
++    from akas.graph import Graph
++    from akas.compilation.policy import lower
++    from akas.compilation.compile import plan
++
++    graph = Graph(contract="reference", phase="decode")
++    source = graph.buffer("source", (1024,), "float32", role="input")
++    for rows, depth in ((4, 256), (8, 128)):
++        x = graph.view(f"x{rows}", source, (rows, depth))
++        w = graph.buffer(f"w{rows}", (128, depth), "uint8", role="weight")
++        scales = graph.buffer(f"scales{rows}", (1, depth // 128), "bfloat16", role="weight")
++        out = graph.buffer(f"out{rows}", (rows, 128), "float32", role="output")
++        graph("fp8_linear", dict(r=rows, k=depth, o=128, input_dtype="float32"),
++              x=x, w=w, scales=scales, out=out)
++    graph, _ = lower(graph, policy={"linear": {"partitions": 1}})
++    assert [call.kind for call in graph.calls].count("quantize") == 2
++    plan(graph)
++
++
++@pytest.mark.skipif(os.environ.get("AKAS_LFM_FP8_CUDA") != "1", reason="native FP8 qualification")
++def test_reference_projection_pipeline_preserves_f32_inputs_and_split_results(tmp_path):
++    import numpy as np
++    import tensor
++    from akas.compilation.policy import lower
++    from akas.compilation.compile import produce
++    from akas.execution.forward import Forward
++    from akas.kernels.registry import validation
++    from akas.kernels.definition import define
++    from tensor.compiler.frontend.signature import frontend_arguments
++
++    original = projection_graph("reference", "float32")
++    parameters = dict(r=4, k=256, o=128, input_dtype="float32")
++    kernel = define(dict(kind="fp8_linear", contract="reference", parameters=parameters))
++    case = validation("fp8_linear", parameters, frontend_arguments(kernel, {}))
++    graph, _ = lower(original, policy={"linear": {"partitions": 2}})
++    produce(graph, tmp_path, search=False)
++    with tensor.Device() as device:
++        supplied = {
++            name: device.from_numpy(case.arguments[name], dtype=spec.dtype)
++            for name, spec in graph.buffers.items() if spec.role in ("input", "weight")
++        }
++        supplied.update({name: device.zeros((4, 128)) for name in ("a", "b")})
++        try:
++            with Forward(tmp_path, device, supplied) as forward:
++                forward.run()
++                for name in ("a", "b"):
++                    np.testing.assert_allclose(forward.buffers[name].to_numpy(),
++                                               case.expected["out"], rtol=.02, atol=.002)
++        finally:
++            for value in supplied.values():
++                value.release()
++
++
++def floating_projection_graph(rows, weight_dtype="float16", *, named=False):
++    from akas.graph import Graph
++
++    graph = Graph(contract="reference", phase="prefill")
++    x = graph.buffer("x", (rows * 256,), "float32", role="input")
++    w = graph.buffer("w", (128 * 256,), weight_dtype, role="weight")
++    out = graph.buffer("out", (rows * 128,), "float32", role="output")
++    p = dict(r=rows, k=256, o=128, optimized=True, weight_dtype=weight_dtype)
++    if named:
++        graph("linear", p, x=x, w=w, out=out)
++    else:
++        graph("linear", p, x, w, out)
++    return graph
++
++
++@pytest.mark.parametrize("rows", [1, 128])
++@pytest.mark.parametrize("named", [False, True])
++def test_floating_projection_policy_uses_canonical_matmul_views(rows, named):
++    from akas.compilation.policy import lower
++    from akas.compilation.compile import plan
++
++    graph, _ = lower(floating_projection_graph(rows, "float32", named=named),
++                     policy={"linear": {"floating_matmul": True}})
++    assert graph.calls[0].kind == ("matmul" if rows > 8 else "linear")
++    if rows > 8:
++        assert graph.calls[0].parameters["reduction_lanes"] == 32
++        assert all(graph.buffers[name].alias_of is not None
++                   for name in graph.calls[0].bindings.values())
++    plan(graph)
++
++
++@pytest.mark.skipif(os.environ.get("AKAS_CUDA") != "1", reason="native CUDA execution")
++@pytest.mark.parametrize("rows,depth,columns", [(33, 65, 19), (2048, 2048, 64)])
++def test_canonical_f32_projection_preserves_legacy_warp_reduction_bitwise(tmp_path, rows, depth, columns):
++    import numpy as np
++    import tensor
++    from akas.graph import Graph
++    from akas.compilation.policy import lower
++    from akas.compilation.compile import produce
++    from akas.execution.forward import Forward
++
++    graph = Graph(contract="reference", phase="prefill")
++    x = graph.buffer("x", (rows * depth,), "float32", role="input")
++    w = graph.buffer("w", (columns * depth,), "float32", role="weight")
++    old = graph.buffer("old", (rows * (columns + 1),), "float32", role="output")
++    out = graph.buffer("out", (rows * columns,), "float32", role="output")
++    graph("linear", dict(r=rows, k=depth, o=columns, output_stride=columns + 1), x, w, old)
++    graph("linear", dict(r=rows, k=depth, o=columns), x=x, w=w, out=out)
++    graph, _ = lower(graph, policy={"linear": {"floating_matmul": True}})
++    assert [call.kind for call in graph.calls] == ["linear", "matmul"]
++    produce(graph, tmp_path, search=False)
++    rng = np.random.default_rng(91)
++    values = rng.normal(size=(rows, depth)).astype("float32")
++    weights = rng.normal(size=(columns, depth)).astype("float32")
++    with tensor.Device() as device:
++        supplied = dict(x=device.from_numpy(values.reshape(-1)), w=device.from_numpy(weights.reshape(-1)),
++                        old=device.zeros(old.shape), out=device.zeros(out.shape))
++        try:
++            with Forward(tmp_path, device, supplied) as forward:
++                forward.run()
++                actual = supplied["out"].to_numpy().reshape(rows, columns)
++                legacy = supplied["old"].to_numpy().reshape(rows, columns + 1)
++                np.testing.assert_array_equal(actual, legacy[:, :columns])
++                np.testing.assert_array_equal(legacy[:, columns], np.zeros(rows))
++                expected = values.astype("float64") @ weights.astype("float64").T
++                np.testing.assert_allclose(actual, expected, rtol=2e-5, atol=5e-5)
++                assert np.linalg.norm(actual - expected) / np.linalg.norm(expected) < 1e-6
++        finally:
++            for value in supplied.values():
++                value.release()
++
++
++@pytest.mark.parametrize("rows,staged", [(2, False), (128, True)])
++def test_cuda_input_staging_uses_existing_mma_operand_precision(rows, staged):
++    from akas.compilation.policy import lower
++    from akas.compilation.compile import plan
++
++    graph, _ = lower(floating_projection_graph(rows), policy={"linear": {"stage_inputs": True}},
++                     provider="cuda", target="sm_89")
++    assert (len(graph.calls) == 2) == staged
++    assert graph.calls[-1].parameters.get("input_dtype", "float32") == (
++        "float16" if staged else "float32")
++    plan(graph)
++
++
++@pytest.mark.skipif(os.environ.get("AKAS_LFM_FP8_CUDA") != "1", reason="native input staging qualification")
++def test_cuda_staged_projection_preserves_original_inputs_and_outputs(tmp_path):
++    import numpy as np
++    import tensor
++    from akas.compilation.policy import lower
++    from akas.compilation.compile import produce
++    from akas.execution.forward import Forward
++
++    graph, _ = lower(floating_projection_graph(128), policy={"linear": {"stage_inputs": True}},
++                     provider="cuda", target="sm_89")
++    produce(graph, tmp_path, search=False)
++    rng = np.random.default_rng(41)
++    x = rng.normal(0, .15, (128, 256)).astype("float32")
++    w = rng.normal(0, .15, (128, 256)).astype("float16")
++    expected = x.astype("float16").astype("float64") @ w.astype("float64").T
++    with tensor.Device() as device:
++        supplied = dict(x=device.from_numpy(x.reshape(-1)), w=device.from_numpy(w.reshape(-1)),
++                        out=device.zeros((128 * 128,)))
++        try:
++            with Forward(tmp_path, device, supplied) as forward:
++                forward.run()
++                np.testing.assert_allclose(supplied["out"].to_numpy().reshape(128, 128),
++                                           expected, rtol=.002, atol=.002)
++                np.testing.assert_array_equal(supplied["x"].to_numpy(), x.reshape(-1))
++        finally:
++            for value in supplied.values():
++                value.release()
++
++
+ def test_recompute_policy_keeps_operands_and_removes_full_state_snapshots():
+     from akas.compilation.policy import lower
+     from akas.compilation.compile import plan
+diff --git a/tests/test_quantization_codecs.py b/tests/test_quantization_codecs.py
+index 2c8e4f7..d005cd0 100644
+--- a/tests/test_quantization_codecs.py
++++ b/tests/test_quantization_codecs.py
+@@ -21,6 +21,71 @@ CODECS = [
+ ]
+ 
+ 
++@pytest.mark.parametrize("dtype", ["float16", "float32"])
++def test_cuda_floating_codec_describes_matrices_above_int32_bit_count(dtype):
++    from akas.kernels.definition import define
++    from tensor.compiler.frontend.signature import frontend_arguments
++
++    parameters = dict(r=128, k=2048, o=128000, optimized=True,
++                      weight_dtype=dtype, input_dtype="float16")
++    primitive = define(dict(kind="linear", parameters=parameters, contract="reference"))
++    arguments = {a["name"]: a for a in frontend_arguments(primitive, {})}
++    assert arguments["w"]["shape"] == [128000 * 2048]
++    assert arguments["w"]["dtype"] == dtype
++
++
++@pytest.mark.skipif(os.environ.get("AKAS_CUDA") != "1", reason="native CUDA codec execution")
++@pytest.mark.parametrize("encoding,dtype", [(0, "float16"), (0, "float32"),
++                                           (1, "float16"), (1, "float32"), (1, "bfloat16")])
++@pytest.mark.parametrize("row,column", [(0, 0), (3, 48)])
++def test_cuda_native_floating_weight_tiles_preserve_bits_and_zero_tails(
++    tmp_path, encoding, dtype, row, column
++):
++    import tensor
++    from tensor.runtime.dtypes import encode_bfloat16, decode_bfloat16
++    from akas.compilation.emit import build_artifact
++
++    rows, depth, tile_rows, tile_columns = 5, 65, 8, 32
++    source_dtype = "float16" if encoding == 1 else "float32"
++    values = np.random.default_rng(981).normal(size=(rows, depth)).astype(source_dtype)
++    values[:, 0] = np.array([0., -0., 2**-24, -(2**-24), 2**-14], dtype=source_dtype)
++    expected = np.zeros((tile_rows, tile_columns), dtype="float32")
++    height, width = min(tile_rows, rows - row), min(tile_columns, depth - column)
++    expected[:height, :width] = values[row:row + height, column:column + width]
++    if dtype == "float16":
++        expected = expected.astype("float16")
++    elif dtype == "bfloat16":
++        expected = decode_bfloat16(encode_bfloat16(expected))
++    entry, artifact = tmp_path / "floating-tile.py", tmp_path / "floating-tile.tbin"
++    entry.write_text(
++        "from akas.kernels.kernel import Tensor, kernel, output\n"
++        "from akas.quantization.weights.ggml.cuda import bind\n"
++        "import tilelang.language as T\n"
++        "def tensor_export():\n"
++        f" load = bind(({rows}, {depth}), encoding={encoding}).require('read_tile')\n"
++        " @kernel\n"
++        f" def compute(w: Tensor(({rows * depth},), '{source_dtype}')) -> Tensor(({tile_rows}, {tile_columns}), '{dtype}'):\n"
++        f"  out = output(({tile_rows}, {tile_columns}), '{dtype}')\n"
++        "  with T.Kernel(1, threads=128):\n"
++        f"   tile = T.alloc_shared(({tile_rows}, {tile_columns}), '{dtype}')\n"
++        f"   load((w,), tile, {row}, {column})\n"
++        "   T.copy(tile, out)\n"
++        "  return out\n"
++        " return {'kernel': compute}\n"
++    )
++    build_artifact(entry, artifact, provider="cuda", target="sm_89")
++    with tensor.Device() as device, ExitStack() as stack:
++        source = device.from_numpy(values.reshape(-1))
++        result = device.empty(expected.shape, dtype)
++        stack.callback(source.release)
++        stack.callback(result.release)
++        module = stack.enter_context(device.load(artifact))
++        module.launch(source, result)
++        actual = result.to_numpy()
++        unsigned = "uint16" if dtype == "float16" else "uint32"
++        np.testing.assert_array_equal(actual.view(unsigned), expected.view(unsigned))
++
++
+ @pytest.mark.parametrize(
+     "depth,dtype,row,column,width",
+     [
+diff --git a/tests/test_shared_backbone.py b/tests/test_shared_backbone.py
+index 06f2f55..dd9c1c2 100644
+--- a/tests/test_shared_backbone.py
++++ b/tests/test_shared_backbone.py
+@@ -21,6 +21,17 @@ def test_source_fingerprints_use_importable_names_on_every_platform():
+     assert all("\\" not in name and find_spec(name) is not None for name in names)
+ 
+ 
++def test_source_fingerprints_ignore_editor_backups(tmp_path, monkeypatch):
++    import akas.artifacts.fingerprint as fingerprints
++
++    root = tmp_path / "akas"
++    (root / "ops/example/.ipynb_checkpoints").mkdir(parents=True)
++    (root / "ops/example/cuda.py").write_text("value = 1\n")
++    (root / "ops/example/.ipynb_checkpoints/cuda-checkpoint.py").write_text("backup = 1\n")
++    monkeypatch.setattr(fingerprints, "__file__", str(root / "artifacts/fingerprint.py"))
++    assert fingerprints._modules("ops") == {"akas.ops.example.cuda"}
++
++
+ class Resource:
+     def __init__(self):
+         self.released = False
+diff --git a/tests/test_shared_execution.py b/tests/test_shared_execution.py
+index 2a7bc8c..b21dd96 100644
+--- a/tests/test_shared_execution.py
++++ b/tests/test_shared_execution.py
+@@ -9,6 +9,7 @@ from tensor.runtime.abi import StreamDescriptor
+ from akas.execution.plan import ExecutionPlan
+ from akas.tensor.executor import capture
+ from akas.tensor.executor import submit
++from akas.tensor.executor import bind
+ from akas.memory.layouts import allocate_hybrid_states
+ 
+ 
+@@ -38,6 +39,22 @@ class Kernel:
+         return {}, {}, dict(grid=[1, 1, 1], block=[256, 1, 1], shared_memory_bytes=0)
+ 
+ 
++def test_public_tensor_bindings_own_submission_and_lifetime_checks():
++    device = Device()
++    submitted = []
++    kernel = SimpleNamespace()
++    call = SimpleNamespace(executable=kernel, launch=lambda: submitted.append(kernel))
++
++    def public_bind(*arguments):
++        assert arguments == (1, 2)
++        return call
++
++    kernel.bind = public_bind
++    assert bind(device, kernel, (1, 2)) is call
++    submit(device, [(kernel, call)])
++    assert submitted == [kernel] and not device.launched
++
++
+ def test_derived_plan_and_labels_preserve_submission_order():
+     device = Device()
+     plan = ExecutionPlan(device, labeled=True)
+diff --git a/tests/test_state_prefill.py b/tests/test_state_prefill.py
+index 52e8f78..ffc5911 100644
+--- a/tests/test_state_prefill.py
++++ b/tests/test_state_prefill.py
+@@ -53,6 +53,23 @@ def test_state_prefill_removes_head_and_sampling_without_losing_state_writes():
+     assert len(original.calls) == 6
+ 
+ 
++def test_plan_prunes_dead_scratch_and_preserves_exposed_alias_ancestors():
++    from akas.compilation.compile import plan
++
++    original = graph()
++    original.buffer("dead_projection", (1024, 1024), "float32")
++    root = original.buffer("trace", (3,), "float32")
++    view = original.view("trace.view", root, (1, 3))
++    last = original.view("trace.last", view, (3,))
++    original.bind_requests(inputs=original.request["inputs"], prediction="sampled",
++                           reset=original.request["reset"], features={"trace": last.name})
++    compiled = plan(original)
++    declared = {b["name"] for b in compiled.manifest["forward"]["buffers"]}
++    assert "dead_projection" not in declared
++    assert {"trace", "trace.view", "trace.last"} <= declared
++    assert "dead_projection" in original.buffers
++
++
+ def test_unknown_operation_keeps_all_its_inputs_live():
+     original = graph()
+     original("foreign", {}, "logits")
+diff --git a/tools/baselines/README.md b/tools/baselines/README.md
+index f269877..653ee57 100644
+--- a/tools/baselines/README.md
++++ b/tools/baselines/README.md
+@@ -16,6 +16,8 @@ Create separate Python 3.12 environments under `build/baselines/vllm` and
+ install each with `uv pip install --python <environment>/bin/python`. Use a
+ complete CUDA toolkit and set `CUDA_HOME` and `PATH` to it. An environment with
+ `nvcc` but missing CUDA headers is insufficient for first-use JIT compilation.
++Keep compiler, CRT, NVVM and runtime headers on compatible CUDA versions; merely
++installing a newer `nvcc` beside older headers can fail FlashInfer startup.
+ 
+ Build llama.cpp commit `620d2225cc436ab0b001e3200e590e3b286ef9ab` under
+ `build/baselines/llama.cpp`, with separate `build-cuda` and `build-vulkan`
+@@ -90,5 +92,24 @@ AKAS's isolated native kernel-phase rates. End-to-end committed output throughpu
+ is retained for every runtime. Default optimized settings are measured settings,
+ not proof that exhaustive baseline tuning found the fastest possible setup.
+ 
++Use `--format fp8` for declarations containing original FP8 safetensors. Weight
++format selection is independent of execution and KV dtypes. For the concurrent
++FP8 workload and real token-delivery timing:
++
++```sh
++python -m tools.baselines vllm lfm2.5-24b-a2b-fp8 --format fp8 \
++  --optimized --streaming --workload concurrent-prefill-v1 --seconds 2400
++python -m tools.baselines sglang lfm2.5-24b-a2b-fp8 --format fp8 \
++  --optimized --streaming --workload concurrent-prefill-v1 --seconds 2400
++```
++
++Both streamed workers use the same cumulative-token collector and record
++`client-stream-burst-v1` phase timings, including per-request arrivals and
++delivery chunk sizes. They submit distinct requests concurrently, use raw token
++IDs with tokenization disabled, and check complete deterministic outputs and
++empty-prefix-cache behavior. Keep the source immutable throughout a measurement;
++the recorder invalidates changed source trees. A separate frozen checkout lets
++development continue while a baseline runs.
++
+ First-use FlashInfer warmup also needs cuRAND development headers in the selected
+ CUDA toolkit. Keep runtime environments isolated and measurements serial.
+diff --git a/tools/baselines/__main__.py b/tools/baselines/__main__.py
+index 8c98752..050f016 100644
+--- a/tools/baselines/__main__.py
++++ b/tools/baselines/__main__.py
+@@ -26,6 +26,26 @@ def model_definition(directory, name):
+     return matches[0]
+ 
+ 
++def select_weight_format(model, runtime, requested=None):
++    """Select declared checkpoint bytes independently from execution dtype."""
++    if requested is not None:
++        selected = requested
++    elif runtime == "llama":
++        selected = "q4_k_m"
++    elif "bf16" in model["weights"]:
++        selected = "bf16"
++    else:
++        native = [name for name in ("fp8", "f16") if name in model["weights"]]
++        if len(native) != 1:
++            raise ValueError("select an explicit declared native weight format")
++        selected = native[0]
++    if selected not in model["weights"]:
++        raise ValueError(f"model does not declare {selected} weights")
++    if runtime != "llama" and selected not in ("bf16", "fp8", "f16"):
++        raise ValueError("native baselines require safetensors weights")
++    return selected
++
++
+ def main():
+     parser = argparse.ArgumentParser(description=__doc__)
+     parser.add_argument("runtime", choices=("vllm", "sglang", "llama"))
+@@ -33,7 +53,7 @@ def main():
+     parser.add_argument("--models", type=Path, default=Path("benchmarks/models"))
+     parser.add_argument("--mtp", action="store_true")
+     parser.add_argument("--provider", choices=("cuda", "vulkan"), default="cuda")
+-    parser.add_argument("--format", choices=("f16", "q4_0", "q4_k_m"), default="q4_k_m")
++    parser.add_argument("--format", choices=("bf16", "fp8", "f16", "q4_0", "q4_k_m"))
+     parser.add_argument("--history", type=Path, default=Path("benchmarks"))
+     parser.add_argument("--seconds", type=int, default=600)
+     parser.add_argument(
+@@ -46,6 +66,7 @@ def main():
+         help="optional workload JSON; defaults to standard-v1 for optimized runs",
+     )
+     parser.add_argument("--repeats", type=int, default=None)
++    parser.add_argument("--streaming", action="store_true", help="measure concurrent token arrival times")
+     args = parser.parse_args()
+     if (
+         args.seconds <= 0
+@@ -55,6 +76,8 @@ def main():
+         parser.error("a positive deadline and compatible provider are required")
+     if args.runtime == "llama" and args.mtp:
+         parser.error("the llama.cpp probe currently measures AR")
++    if args.streaming and args.runtime == "llama":
++        parser.error("streamed native timing currently supports vLLM and SGLang")
+     definition_path, model = model_definition(args.models, args.model)
+     mode = "mtp" if args.mtp else "ar"
+     if mode not in model["modes"]:
+@@ -62,12 +85,14 @@ def main():
+     root = Path(__file__).resolve().parents[2]
+     work = root / "build/baselines"
+     work.mkdir(parents=True, exist_ok=True)
+-    weight_format = args.format if args.runtime == "llama" else "bf16"
++    weight_format = select_weight_format(model, args.runtime, args.format)
+     weight = model["weights"][weight_format]
+     checkpoint = (root / weight["path"]).resolve()
+     name = f"{args.runtime}-{model['id']}-{mode}-{args.provider}-{weight_format}"
+     if args.optimized:
+         name += "-optimized"
++    if args.streaming:
++        name += "-streaming"
+     raw, log, configuration = (
+         work / f"{name}.{suffix}" for suffix in ("json", "log", "config.json")
+     )
+@@ -110,6 +135,7 @@ def main():
+         shapes=[[1, 32], [4, 32], [1, 2048]],
+         runtime_options=model.get("runtime_options", {}).get(args.runtime, {}),
+         optimized=args.optimized,
++        streaming=args.streaming,
+         warmup=1,
+         repeats=args.repeats or (3 if args.optimized else 1),
+         deadline_seconds=args.seconds,
+@@ -136,7 +162,7 @@ def main():
+         )
+     else:
+         hf_config = json.loads(
+-            (root / model["weights"]["bf16"]["path"] / "config.json").read_text()
++            (checkpoint / "config.json").read_text()
+         )
+         config["vocab"] = hf_config.get("text_config", hf_config)["vocab_size"]
+     metadata = dict(
+@@ -152,7 +178,7 @@ def main():
+         ),
+         purpose="baseline" if args.optimized else "preflight",
+         command=command,
+-        protocol="baseline-burst-v3" if args.optimized else "baseline-preflight-v1",
++        protocol="baseline-stream-burst-v1" if args.streaming else "baseline-burst-v3" if args.optimized else "baseline-preflight-v1",
+         checkpoint=str(checkpoint),
+         checkpoint_sha256=checkpoint_digest(checkpoint),
+         checkpoint_source=weight["source"],
+@@ -276,6 +302,7 @@ def main():
+             previous_path = work / (
+                 f"{args.runtime}-{model['id']}-ar-{args.provider}-{weight_format}"
+                 + ("-optimized" if args.optimized else "")
++                + ("-streaming" if args.streaming else "")
+                 + ".json"
+             )
+             previous = json.loads(previous_path.read_text())
+diff --git a/tools/baselines/common.py b/tools/baselines/common.py
+index 985c8c9..34a8600 100644
+--- a/tools/baselines/common.py
++++ b/tools/baselines/common.py
+@@ -4,6 +4,7 @@ import argparse
+ from datetime import datetime, timezone
+ import json
+ from pathlib import Path
++from akas.benchmarking.streaming import phase_metrics, stream_burst
+ import traceback
+ 
+ 
+@@ -87,24 +88,6 @@ def measurements(config, invoke, report):
+         print("CASE", batch, prefix, row["status"], row["wall_seconds"], flush=True)
+ 
+ 
+-def phase_metrics(batch, prefix, output, first, decode):
+-    """Burst rates from request timings, including scheduling; not kernel timings."""
+-    import math
+-
+-    if (
+-        not first
+-        or not decode
+-        or any(not math.isfinite(v) or v <= 0 for v in (*first, *decode))
+-    ):
+-        raise ValueError("runtime did not expose valid phase timings")
+-    return dict(
+-        phase_protocol="request-phase-v1",
+-        prefill_tokens_per_second=batch * prefix / max(first),
+-        decode_tokens_per_second=batch * (output - 1) / max(decode),
+-        ttft_seconds=max(first),
+-        tpot_seconds=max(decode) / (output - 1),
+-    )
+-
+ 
+ def main(run):
+     global _output
+diff --git a/tools/baselines/sglang.py b/tools/baselines/sglang.py
+index 446018f..123b294 100644
+--- a/tools/baselines/sglang.py
++++ b/tools/baselines/sglang.py
+@@ -1,13 +1,12 @@
+ """SGLang eager preflight using the common worker protocol."""
+ 
+-from tools.baselines.common import main, synthetic_prompts, measurements, phase_metrics
++from tools.baselines.common import main, synthetic_prompts, measurements, phase_metrics, stream_burst
+ 
+ 
+ def run(config):
+     import time
+     import torch
+     import sglang
+-    from transformers import AutoTokenizer
+ 
+     settings = dict(
+         model_path=config["checkpoint"],
+@@ -27,6 +26,9 @@ def run(config):
+     )
+     if config.get("optimized"):
+         settings["cuda_graph_bs_decode"] = sorted({b for b, _ in config["shapes"]})
++    if config.get("streaming"):
++        settings.update(skip_tokenizer_init=True, stream_interval=1,
++                        incremental_streaming_output=False)
+     if config["mode"] == "mtp":
+         settings.update(
+             speculative_algorithm="EAGLE",
+@@ -46,7 +48,18 @@ def run(config):
+     )
+     engine = sglang.Engine(**settings)
+     try:
+-        tokenizer = AutoTokenizer.from_pretrained(config["checkpoint"])
++        if config.get("streaming"):
++            async def generate(index, prompt):
++                stream = await engine.async_generate(input_ids=prompt, sampling_params=sampling, stream=True)
++                async for row in stream:
++                    yield list(row["output_ids"]), row["meta_info"]
++
++            def invoke(batch, prefix):
++                return engine.loop.run_until_complete(stream_burst(
++                    synthetic_prompts(config["vocab"], batch, prefix), generate, config["output_tokens"]))
++
++            measurements(config, invoke, report)
++            return report
+ 
+         def invoke(batch, prefix):
+             outputs = engine.generate(
+diff --git a/tools/baselines/vllm.py b/tools/baselines/vllm.py
+index 4256e4b..54f07aa 100644
+--- a/tools/baselines/vllm.py
++++ b/tools/baselines/vllm.py
+@@ -1,6 +1,6 @@
+ """vLLM eager preflight: the same input/output protocol as other baseline workers."""
+ 
+-from tools.baselines.common import main, synthetic_prompts, measurements, phase_metrics
++from tools.baselines.common import main, synthetic_prompts, measurements, phase_metrics, stream_burst
+ 
+ 
+ def run(config):
+@@ -37,11 +37,39 @@ def run(config):
+         settings=settings,
+         cases=[],
+     )
+-    llm = LLM(**settings)
+-    tokenizer = llm.get_tokenizer()
+     params = SamplingParams(
+         temperature=0, max_tokens=config["output_tokens"], ignore_eos=True
+     )
++    if config.get("streaming"):
++        import asyncio
++        from vllm.engine.arg_utils import AsyncEngineArgs
++        from vllm.v1.engine.async_llm import AsyncLLM
++
++        settings["skip_tokenizer_init"] = True
++        params.detokenize = False
++        loop = asyncio.new_event_loop()
++        asyncio.set_event_loop(loop)
++        llm = AsyncLLM.from_engine_args(AsyncEngineArgs(**settings))
++        serial = 0
++
++        async def generate(index, prompt):
++            async for row in llm.generate(dict(prompt_token_ids=prompt), params, f"{serial}-{index}"):
++                yield list(row.outputs[0].token_ids), {}
++
++        def invoke(batch, prefix):
++            nonlocal serial
++            serial += 1
++            return loop.run_until_complete(stream_burst(
++                synthetic_prompts(config["vocab"], batch, prefix), generate, config["output_tokens"]))
++
++        try:
++            measurements(config, invoke, report)
++        finally:
++            llm.shutdown()
++            loop.close()
++        return report
++
++    llm = LLM(**settings)
+ 
+     def invoke(batch, prefix):
+         prompts = [
+diff --git a/tools/campaign_report.py b/tools/campaign_report.py
+index 63cd66a..2cb6f5b 100644
+--- a/tools/campaign_report.py
++++ b/tools/campaign_report.py
+@@ -74,6 +74,8 @@ def measurement(row, kind, qualified, run_id, protocol=None):
+     serving = row.get("serving", {}).get("samples", [])
+     engine = row.get("engine", {}).get("samples", [])
+     case = row["case"]
++    streamed = kind == "akas" and protocol == "client-stream-burst-v1"
++    qualified = qualified and row.get("model_throughput_qualified") is not False
+     result = dict(
+         batch=case["batch"],
+         prefix=case["prompt"],
+@@ -99,10 +101,10 @@ def measurement(row, kind, qualified, run_id, protocol=None):
+         burst_output_tok_s=median(
+             serving if kind == "akas" else samples, "output_tokens_per_second"
+         ),
+-        ttft_ms=median(serving, "ttft_ms")
++        ttft_ms=median(samples, "ttft_seconds", 1000) if streamed else median(serving, "ttft_ms")
+         if kind == "akas"
+         else median(samples, "ttft_seconds", 1000),
+-        tpot_ms=median(serving, "tpot_ms")
++        tpot_ms=median(samples, "tpot_seconds", 1000) if streamed else median(serving, "tpot_ms")
+         if kind == "akas"
+         else median(samples, "tpot_seconds", 1000),
+     )
+@@ -558,7 +560,7 @@ def collect(campaign, history):
+                     measurement(
+                         r,
+                         "akas",
+-                        data["status"] == "passed",
++                        data["status"] == "passed" and data["metadata"].get("model_throughput_qualified") is not False,
+                         run_id,
+                         data["metadata"].get("protocol"),
+                     )
+@@ -583,7 +585,8 @@ def collect(campaign, history):
+             )
+         winner = entry.get("winner") or child.get("winner") or {}
+         selected = saved.get(winner.get("run_id"))
+-        if selected and selected[0]["status"] == "passed" and entry.get("deployment"):
++        if (selected and selected[0]["status"] == "passed" and entry.get("deployment")
++                and selected[0]["metadata"].get("model_throughput_qualified") is not False):
+             data, job, rows = selected
+             if data["source"]["tree_sha256"] != state["source"]["tree_sha256"]:
+                 raise ValueError("winner source differs from campaign: " + entry["id"])
+@@ -632,6 +635,11 @@ def collect(campaign, history):
+                 partial.get((r["batch"], r["prefix"]), r)
+                 for r in profile["measurements"]
+             ]
++            if partial:
++                profile["qualifying_status"] = "unqualified"
++                profile["kv_dtype"] = next(
++                    (data["metadata"].get("kv_dtype") for data, _, _ in reversed(tuple(saved.values()))
++                     if data["metadata"].get("kv_dtype")), profile["kv_dtype"])
+         profiles.append(profile)
+     # Freeze baseline selection to measurements completed before this campaign began.
+     index_path = history / "index.json"
+@@ -665,7 +673,7 @@ def collect(campaign, history):
+             candidate
+             and candidate.get("completed_at")
+             and candidate["status"] != "running"
+-            and candidate["metadata"].get("protocol") == "baseline-burst-v3"
++            and candidate["metadata"].get("protocol") in ("baseline-burst-v3", "baseline-stream-burst-v1")
+             and (candidate.get("completed_at") or candidate["started_at"])
+             <= state["created_at"]
+         ):
+@@ -675,7 +683,7 @@ def collect(campaign, history):
+             key = (model["model"], runtime, provider, weight, mode)
+             data = record(history, selected[key]) if key in selected else None
+             if data and (
+-                data["metadata"].get("protocol") != "baseline-burst-v3"
++                data["metadata"].get("protocol") not in ("baseline-burst-v3", "baseline-stream-burst-v1")
+                 or (data.get("completed_at") or data["started_at"])
+                 > state["created_at"]
+             ):
+@@ -1359,6 +1367,81 @@ def export(campaign, *, history="benchmarks", out=None):
+     return destination
+ 
+ 
++def export_runs(run_ids, *, model_id, workload_id, history="benchmarks", out=None):
++    """Render retained native measurements through the existing campaign exporter.
++
++    Importing a run does not create a qualified deployment or mutate its evidence.
++    Baselines retain the ordinary campaign-start cutoff and workload matching.
++    """
++    history = Path(history).resolve()
++    root = Path(__file__).resolve().parents[1]
++    model = read(root / "benchmarks/models" / (model_id + ".json"))
++    requested = workload(workload_id)
++    runs = [record(history, identity) for identity in run_ids]
++    if not runs or any(data is None for data in runs):
++        raise ValueError("retained native runs must exist")
++    if any(data["metadata"].get("runtime") != "akas" for data in runs):
++        raise ValueError("--runs accepts native AKAS records; baselines use normal selection")
++    runs.sort(key=lambda data: data["started_at"])
++    formats = set()
++    for data in runs:
++        meta = data["metadata"]
++        if meta.get("model") not in (model_id, model["model"]):
++            raise ValueError("retained run belongs to another model")
++        weight = meta.get("weight_format")
++        if weight is None and len(model["weights"]) == 1:
++            weight = next(iter(model["weights"]))
++        if weight not in model["weights"]:
++            raise ValueError("retained run needs a declared weight format")
++        formats.add(weight)
++    spec = dict(models=[model_id], formats=sorted(formats),
++                backends=sorted({data["metadata"]["provider"] for data in runs}),
++                caches=sorted({data["metadata"].get("kv_dtype", "default") for data in runs}),
++                workload=requested,
++                baselines=[dict(runtime=runtime, provider="cuda", weight_format=weight, mode=mode)
++                           for runtime, weight, mode in itertools.product(
++                               ("vllm", "sglang"), sorted(formats), model["modes"])])
++    state = dict(schema="akas.matrix-campaign.v1", specification=spec,
++                 models={model_id: model}, source=runs[0]["source"],
++                 created_at=runs[0]["started_at"],
++                 updated_at=max(data.get("completed_at") or data["started_at"] for data in runs),
++                 status="retained measurements", spent_seconds=0, entries=[],
++                 retained_run_ids=[data["id"] for data in runs])
++    state["identity"] = hashlib.sha256(json.dumps(dict(
++        runs=state["retained_run_ids"], specification=spec), sort_keys=True).encode()).hexdigest()
++    with tempfile.TemporaryDirectory() as directory:
++        directory = Path(directory)
++        for identity, fields in identity_map(state).items():
++            jobs = []
++            for data in runs:
++                meta = data["metadata"]
++                weight = meta.get("weight_format", next(iter(model["weights"])))
++                if (weight, meta["provider"], meta.get("kv_dtype", "default"), meta.get("mode", "ar")) != (
++                    fields["weight_format"], fields["provider"], fields["cache_request"], fields["mode"]):
++                    continue
++                recipe = {"id": "retained-" + data["id"], "trials": 0,
++                          **meta.get("recipe", meta.get("engine_config", {}))}
++                jobs.append(dict(run_id=data["id"], status=data["status"],
++                                 recipe=recipe,
++                                 directory=str(history / "runs" / data["id"])))
++            state["entries"].append(dict(id=identity, status="unqualified" if jobs else "not_measured",
++                                          error="Retained measurements; no qualified deployment imported"))
++            write(directory / identity / "campaign.json", dict(jobs=jobs))
++        path = directory / "campaign.json"
++        write(path, state)
++        data = collect(path, history)
++        data["measurement_notes"] = (
++            "Retained measurements; importing evidence does not qualify an AKAS deployment. "
++            "All values are medians. Phase protocol labels describe the measured boundaries. "
++            "client-stream-burst-v1 measures concurrent native-engine token delivery: TTFT includes "
++            "queueing and prefill rate is total prompt tokens divided by maximum TTFT. "
++            "Decode counts the remaining output tokens after the first. Unqualified values retain †. "
++            "Original run records and source snapshots are unchanged.")
++        destination = Path(out) if out else report_directory(state, history)
++        render(data, destination, history)
++    return destination
++
++
+ def validate(data):
+     """Require the versioned report contract before rendering or publishing."""
+     if data.get("schema") != SCHEMA:
+@@ -1501,6 +1584,9 @@ def main():
+         type=Path,
+         help="portable report.json; compiler/build directories are unnecessary",
+     )
++    source.add_argument("--runs", nargs="+", help="native run IDs to export without promoting qualification")
++    parser.add_argument("--model", help="benchmark model declaration ID for --runs")
++    parser.add_argument("--workload", help="versioned workload ID or JSON path for --runs")
+     parser.add_argument("--history", type=Path, default=Path("benchmarks"))
+     parser.add_argument("--out", type=Path)
+     args = parser.parse_args()
+@@ -1508,7 +1594,12 @@ def main():
+         check(args.history)
+         print("Benchmark report format and generated content verified.")
+         return
+-    if args.render:
++    if args.runs:
++        if not args.model or not args.workload:
++            parser.error("--runs requires --model and --workload")
++        destination = export_runs(args.runs, model_id=args.model, workload_id=args.workload,
++                                  history=args.history, out=args.out)
++    elif args.render:
+         destination = args.out or args.render.parent
+         render(read(args.render), destination, args.history)
+     else:

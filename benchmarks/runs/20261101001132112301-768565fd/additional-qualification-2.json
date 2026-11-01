@@ -1,0 +1,3336 @@
+{
+  "identity": "f6c355105760febaf19f0f3c031b233ff93dff8aea527ecec184f395b40baf37",
+  "context": {
+    "graph": {
+      "contract": "reference",
+      "phase": "prefill",
+      "buffers": [
+        {
+          "name": "2048.6144.x",
+          "shape": [
+            4194304
+          ],
+          "dtype": "float16",
+          "role": "input"
+        },
+        {
+          "name": "2048.6144.w",
+          "shape": [
+            12582912
+          ],
+          "dtype": "float16",
+          "role": "input"
+        },
+        {
+          "name": "2048.6144.out",
+          "shape": [
+            12582912
+          ],
+          "dtype": "float32",
+          "role": "output"
+        },
+        {
+          "name": "2048.2048.x",
+          "shape": [
+            4194304
+          ],
+          "dtype": "float16",
+          "role": "input"
+        },
+        {
+          "name": "2048.2048.w",
+          "shape": [
+            4194304
+          ],
+          "dtype": "float16",
+          "role": "input"
+        },
+        {
+          "name": "2048.2048.out",
+          "shape": [
+            4194304
+          ],
+          "dtype": "float32",
+          "role": "output"
+        },
+        {
+          "name": "8192.6144.x",
+          "shape": [
+            16777216
+          ],
+          "dtype": "float16",
+          "role": "input"
+        },
+        {
+          "name": "8192.6144.w",
+          "shape": [
+            12582912
+          ],
+          "dtype": "float16",
+          "role": "input"
+        },
+        {
+          "name": "8192.6144.out",
+          "shape": [
+            50331648
+          ],
+          "dtype": "float32",
+          "role": "output"
+        },
+        {
+          "name": "8192.2048.x",
+          "shape": [
+            16777216
+          ],
+          "dtype": "float16",
+          "role": "input"
+        },
+        {
+          "name": "8192.2048.w",
+          "shape": [
+            4194304
+          ],
+          "dtype": "float16",
+          "role": "input"
+        },
+        {
+          "name": "8192.2048.out",
+          "shape": [
+            16777216
+          ],
+          "dtype": "float32",
+          "role": "output"
+        }
+      ],
+      "calls": [
+        {
+          "kind": "linear",
+          "parameters": {
+            "r": 2048,
+            "k": 2048,
+            "o": 6144,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16"
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "2048.6144.x",
+            "w": "2048.6144.w",
+            "out": "2048.6144.out"
+          },
+          "label": null
+        },
+        {
+          "kind": "linear",
+          "parameters": {
+            "r": 2048,
+            "k": 2048,
+            "o": 2048,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16"
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "2048.2048.x",
+            "w": "2048.2048.w",
+            "out": "2048.2048.out"
+          },
+          "label": null
+        },
+        {
+          "kind": "linear",
+          "parameters": {
+            "r": 8192,
+            "k": 2048,
+            "o": 6144,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16"
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "8192.6144.x",
+            "w": "8192.6144.w",
+            "out": "8192.6144.out"
+          },
+          "label": null
+        },
+        {
+          "kind": "linear",
+          "parameters": {
+            "r": 8192,
+            "k": 2048,
+            "o": 2048,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16"
+          },
+          "arguments": [],
+          "bindings": {
+            "x": "8192.2048.x",
+            "w": "8192.2048.w",
+            "out": "8192.2048.out"
+          },
+          "label": null
+        }
+      ]
+    },
+    "target": "sm_89",
+    "provider": "cuda",
+    "device": {
+      "ordinal": "0",
+      "name": "NVIDIA L40S",
+      "arch": "sm_89",
+      "provider": "cuda"
+    },
+    "settings": {
+      "budget": 16,
+      "width": 4,
+      "warmup": 2,
+      "samples": 5,
+      "repeats": 3
+    },
+    "sources": {
+      "akas.artifacts.fingerprint": "a39fcfb070e3612f5ccb59c838f5dcb8be396a48c5a655cde1645570e2aab7c1",
+      "akas.artifacts.read": "4c08294f3e3dec9b25d3934ed8ee5102b14f29b204bcdec754c78c82399eafac",
+      "akas.artifacts.schema": "7c92b944820291e1f95d9d4464d89684e0185c92b32e6ae0b149125b46b42ae1",
+      "akas.checkpoints.upload": "b75317da0fc9970f18436213a21220f28ce5dd51cfa8db40e560362eb8b6ebc6",
+      "akas.execution.batch": "35aaad0794326650455cb1237a9f415ed00485486eea5841efd71b97f717595f",
+      "akas.execution.executor": "8705ff24435a590542ababa544fec9274daef17b9f349e3261039a9a4f1f2bb0",
+      "akas.execution.forward": "eec4176195628e2aa901fb7b03e9b6ae1f564630a59c28ab7dc226015b24671e",
+      "akas.execution.plan": "00c4fe776d87647aff5ad05db2fe629c3b354f5ec190b67d9f295379d0454364",
+      "akas.execution.replay": "2c4e7fe25a359f3044456aa9eeaafb09bb810de55bc27b9cd8401a557996684d",
+      "akas.execution.state": "3a8288d16a6f612c39b4fd36b773242f49a48a8242c1f1498dda190949711c45",
+      "akas.execution.workspace": "340bfc4147c942a3913a67fdec22fff235ac6af91c708220cdf3775f132a17f4",
+      "akas.graph": "f0827403cbfa61dc20cfd6014b7b2d146c324bae51250b05f063e8c0fbf2d17c",
+      "akas.kernels.contracts": "d6a71d0199583721fcbdeae95ecf0bd5a41ba9c6985294458d197cedd42b4db3",
+      "akas.kernels.definition": "37b541d155f1700ee6fa2f209d28c1e9cd653e0fbd076b65af3a38b39ad92692",
+      "akas.kernels.kernel": "d93633376ad79915c2c68af47423acbfbda53fada88039dc089bd1e414080903",
+      "akas.kernels.reductions": "359fc36b38ce1acef3cac9f953ea041a32e501d773e046bb5e50b459cf38c7b4",
+      "akas.kernels.registry": "0f59c7c2ce608904bcd33f3d7366d2310734ef1dcfb94708fd90035e24da6595",
+      "akas.kernels.webgpu": "7cd6248dc8b9f2b0a70bde32194a4c99a781de1301845b0b95ef4cb18e548b5b",
+      "akas.memory.arena": "7fdbfe93d4c0a8bf1e6f586ad33f6bd13b9758c138f3cdc32aa8ffbeafe11990",
+      "akas.memory.estimates": "92466642678c4b8e8a19feb6f1590af24ade18382214843f04e2ca4bd214454d",
+      "akas.memory.layouts": "f104af0c1a70661584d7bdc782d7c59cd5282f589f4d1025a2243245c407e12f",
+      "akas.memory.mapped": "3db06928c996b89cd8079da5b905d964e1c4c0f0ef60762294fba3ebe859cdf5",
+      "akas.memory.state": "435198681a76f5bdd2088930c2e0bbf6ad30193d8b3d8fc263eb9f2f4ac6c4b8",
+      "akas.memory.transfer": "b477d53281cec5ad04e6f08b05b7941e817e80cfe9a4c4203159c8f729993414",
+      "akas.models.blocks": "9ee87e21e60f4745481d02919d65d55adf2ef7ba59f0d9406c7a378e52aeedde",
+      "akas.ops.activation.cuda": "554b71c7520e69f69c19b4c527551c77d5826251db39c13c76d78f58d14448dd",
+      "akas.ops.activation.definition": "1afbad8398b33130b3bc3c6e577dfac61d8cea3d0da20eb0f33c2376d98efc1f",
+      "akas.ops.activation.kernel": "e9f48656c52d3bccc3c063f9132db4610bbab03ba9fe785b7613288f9c616985",
+      "akas.ops.activation.validation": "469a402802c26f27998438d8b441e7d0062c3dc21e787724bbd84a61a2f64d80",
+      "akas.ops.activation.webgpu": "0241917b82f9524970809581f2370cf00a0926ac83338993f438654cb8851fd3",
+      "akas.ops.attention.cuda": "ae5c62ab30ec07495134c3c975c4cb254304ffc8ecdfdb06385d908067f485ac",
+      "akas.ops.attention.definition": "8fb2d2e369d96d1de561cd10e3b6c6696a304d7414d7d7c408cf435400f246c6",
+      "akas.ops.attention.kernel": "ac4cf7eca3162147565801db407dc4febbf946424b80f41b3869402da6591908",
+      "akas.ops.attention.validation": "6ce761e06e0617bb1ae3e5ea0687727965ba98de74f774338903cf928327ed94",
+      "akas.ops.attention.webgpu": "62208f78c2ab0d243e331794c8b453610e8d372bb248259afbc741786fd6b0d3",
+      "akas.ops.control.cuda": "5d5e4f6b1d41cdb75592e1244597be27849aaf3cc8b0e145875e465dbfef8066",
+      "akas.ops.control.definition": "299986982ea5a84466013ca6c87598bb5b74026617571fcbb4338c35caba6284",
+      "akas.ops.control.kernel": "1deba0e243c317c0ed8cd09298f3d5cbfe02f77f1dbe5061433e17e8a53ff603",
+      "akas.ops.control.validation": "f700ea86a269b2ba6e956deeb42a2936ff124ef6fe8c694f87de3b439a2f6245",
+      "akas.ops.control.webgpu": "6108d4fd2d51769aefc77648fa123f23149980cd2c9e9c516c7665aa294e2f4c",
+      "akas.ops.convolution.cuda": "dab90b40c2a2def0d739f210cf8750f798db913c56336f2755e916a50cbff25c",
+      "akas.ops.convolution.definition": "bc99d0326e305206cf925ef629dfbc612f2578fab220e3db0c7d0499b690a653",
+      "akas.ops.convolution.kernel": "497b30ddce3507714e764b91b747772d1f889715324fb8b7ebf244bc76240721",
+      "akas.ops.convolution.validation": "df71bf5ff5bd754461757f142d067eb2b78a713a329053f2099a53219ce9eddc",
+      "akas.ops.convolution.webgpu": "aea88be88e1ebc8bc4df57bbc0c33de53b1a874479f8a8ffe131537955b770a6",
+      "akas.ops.gdn.cuda": "88f2d45385ad60d8baee388030328b161058fbf6343995901bb043c928ee7ab2",
+      "akas.ops.gdn.definition": "3adbb9ba25d8347fe5d7ecce18c5002279c183abd70509332feabef9dbc82ee1",
+      "akas.ops.gdn.kernel": "ed3f9cbbc6382992add3903c6ad3dd902d4ab74882d94cabc99a7577181931bb",
+      "akas.ops.gdn.validation": "222a821ec915dfe19e68428df387383587edf0d59ba0fcc2e66a968b74f902e8",
+      "akas.ops.gdn.webgpu": "50ab889a8a0438716c1d1ead52a992e2a24c9562dd51a444f09947ef7fbf69c9",
+      "akas.ops.indexing.cuda": "ee4db21f5298e7b780a51bf876f3d0809b322efde9334623135be593211404a3",
+      "akas.ops.indexing.definition": "0b3ea2a2d38a22c704775ac529a70d4503649880ee3d4c752d0f2cd1c2225533",
+      "akas.ops.indexing.kernel": "9ec3c8241fdef174234d8fd04863afa87acdc4ed4e0f8986aa3b84a82f88eeb9",
+      "akas.ops.indexing.validation": "e135d50d0524d163431454a3571eec9964331e447c1a5dfa4bbb4448426e666e",
+      "akas.ops.indexing.webgpu": "9421d4e9e9f1b816736bd0b99b4384954d55e5d1885598352acabca19cc6ec3b",
+      "akas.ops.linear.cuda": "ea40ebe457f9c0c3dac79d34aa0b624d64155f93f04959ff9f6093f4d423da9c",
+      "akas.ops.linear.definition": "4a657d5e2ab3b6023312b3f605173a3d0db2351f30d5a725b68b036c24ef90e9",
+      "akas.ops.linear.kernel": "50d03638493aaee59cad809c68cb98002dc6c737a9838a4fdfb54fba4d09af25",
+      "akas.ops.linear.validation": "4c406e1d98e5615bc09b842d0f7dda20c9c7806252bd3826e06d645ce23404fe",
+      "akas.ops.linear.webgpu": "afa1fcfa37fdbb9d42df933a37dbd183dbbeec2a317a842cef3af3a268059078",
+      "akas.ops.moe.cuda": "377da886c81add66f881a9a8d6bb1d333145e1e96df8743bd789b8d11eab33cd",
+      "akas.ops.moe.definition": "742dbbeeedc8b73e58da2ff5c91cfeba43a05413a537fad85a932bc799c0f3ac",
+      "akas.ops.moe.kernel": "d18ecc6f693c3596d2f00009382f469615131d2a683d94578e7a1f5d6a084bf0",
+      "akas.ops.moe.validation": "d84e6b31fcd948851a187985e0e9fba5e4bf7afa9b866ac5357f55f0fb0120b9",
+      "akas.ops.moe.webgpu": "c536f505643e6df63d1a54395b33249af1412f8ddb53bbec723c5c49f67e1da3",
+      "akas.ops.mtp.cuda": "ad6efe94cb41efcae07fe6b90fb6f363b320054e58bafebbfd39f4c6603b5f58",
+      "akas.ops.mtp.definition": "e873cc3830280332fac9d8a55019279373051ce6de2a5745411a5187042cbcbe",
+      "akas.ops.mtp.kernel": "3a52d77e2dd46cd9fca74f02965282102b505fbb2094fdc8e98c569aa251fece",
+      "akas.ops.mtp.validation": "36fb3bb8622e90789217b987427d9e934abab84dfb33ebb1e8f81730393e996a",
+      "akas.ops.mtp.webgpu": "8dae729111115a2a3c49ed17517cbba6612c44ddbe5324c2c2814633746570ff",
+      "akas.ops.normalization.cuda": "d83176e8309a668100595b768ac62ff65854ebcd52fdf0e53e99f8b81f5227b7",
+      "akas.ops.normalization.definition": "20c3ef8b75dfbd77efd36762c496b51e2428c0be4de36d9614eb02dc24561647",
+      "akas.ops.normalization.kernel": "e77d6142412ac37d0976c943a08dc6f5f653fd0ed6430dfbd616f67f6f7d2a84",
+      "akas.ops.normalization.validation": "21106b963dc76d450910c577e02c6a970d39807a7edb7af058fa8b65dd598027",
+      "akas.ops.normalization.webgpu": "8de21bbe493fe1193c61622537c57d0dfef669dd51e86325adaca6160a85980b",
+      "akas.ops.residual.cuda": "aa50ce03dc7c34b466cd73682eabe10767b7bcc1ac4f75abd1e81b6d5292094e",
+      "akas.ops.residual.definition": "283def1e282ebc9fcab50dd392ddfed951c54063a20397f87301146e899246df",
+      "akas.ops.residual.kernel": "877d2b86850d2c19b82adf6c760ebe3ab377e6f410791d96804def4ed2687d53",
+      "akas.ops.residual.validation": "bd50506d9ec2be9b17e5ce60629ffc0e93f50721f30f833eb70a4eee7077acd8",
+      "akas.ops.residual.webgpu": "53a1c44bcbddb04e2f03c3bb4b41e2c6949cdc3d946f5c69900a4889cd67e851",
+      "akas.ops.sequence.cuda": "a5c798e50f497f8ffc7d838f531b9ad915d221c2ac2c830057bbcdeee4c55f1e",
+      "akas.ops.sequence.definition": "f1735a315f3101eeae86955f9095c36cec6f844d567aa713f7ca8492b4f9bc46",
+      "akas.ops.sequence.kernel": "f93967396c152a9b83f87be0905255d8106ee9c42f00ff68b6412f977fc1c6fa",
+      "akas.ops.sequence.validation": "acdb086c7063a4e8e97327ce3e212afed09896f78db114cdaa9b56ed0398c7ba",
+      "akas.ops.sequence.webgpu": "e5b1f8934f673cd4bc5daa991242d4a6b8bf3b8e2c4c5bfa0bc87e7daa3a523d",
+      "akas.ops.vocabulary.cuda": "b8b4ee04fc6603f211b47048c701a5c4360b1b98b4034bfa380d8c436234b9db",
+      "akas.ops.vocabulary.definition": "ec3b99fa6687195104a0e2846daf47a452e010991166194aa04a06d9ffe57af9",
+      "akas.ops.vocabulary.kernel": "9816a54a63c383971ab8e80a84a4a8e015d69f4ebb2b514855fa61fabf309dff",
+      "akas.ops.vocabulary.validation": "1e643fbf728183704bf6c7e629433fd2f939c61aa5c0fe4c234d3185d2e02151",
+      "akas.ops.vocabulary.webgpu": "aa0797f44205e53c962b394c821b8d6aad7cb0e793856c38fc09c090e9590da5",
+      "akas.quantization._shared.access": "c770ea1a6c584dea212aa01282bb8d1636c92a7aa38df188d412551d4ea93546",
+      "akas.quantization._shared.e4m3": "4bde0fc9ce19788d384b7d576756d7ffa59d87f1c05b29e22c44767b0499f9ec",
+      "akas.quantization._shared.fp8": "52db68e7950585d0085004fa43e13087f34a848753dfb85ffab1a9aba206f867",
+      "akas.quantization._shared.packing": "011be35461411aec6bc128f7e8932bbd484633c16035b9520ef026cb33995ec8",
+      "akas.quantization._shared.rounding": "78d7cfe6674d8537d723f0040d78b2a28215d10b5dae2af7ce542ceab96760cd",
+      "akas.quantization.activations._shared.integer": "edf3fca45952610da7f0626c51f2b79491a522e0c860ccd091a990a78c188b83",
+      "akas.quantization.activations._shared.packing": "c68161886179b9e177d01c34f77cbc18f8fbdd026ee8e8b0b5b4e13e5a5620f8",
+      "akas.quantization.activations.fp8.cuda": "4c9f87cabd5f87607bfe67fdf0650110e52c016567a85874e027f5864182e521",
+      "akas.quantization.activations.fp8.definition": "77f38473efb52c16d04315d6d994fb99396720a47f4bac7a51ce5741c6bb3763",
+      "akas.quantization.activations.fp8.kernel": "dfd3646a34cf14ed1eed2b8c7e5c3bfbfa17eebda8c31758ee374c01359a884b",
+      "akas.quantization.activations.fp8.validation": "1e484bea4067469a9414c89ae9d464777b7aa331606d154a5803b5d7f4a1af6c",
+      "akas.quantization.activations.fp8.webgpu": "81a10d91e94c4fa2e43a6b2b73765405abc40d83d3c6ccac00cdb1f023aba074",
+      "akas.quantization.activations.q16.cuda": "ca363aa3945215a357890273d7b769ab4a51def496e9f7bb78a23da7d9c2fb0c",
+      "akas.quantization.activations.q16.definition": "60f450577b7f319f2a2bdcf02173be563fc7df3342ee6aabac8c1232521c3ac6",
+      "akas.quantization.activations.q16.kernel": "25b0b85f5ee3ac193bea20138e20438e80281cb7436ef28026c5c179ca17cfdb",
+      "akas.quantization.activations.q16.validation": "d7ed7be8d1a0d4bb9d3fb9f366ae1a59b234f919e6f6d3a1d80118878ac311c5",
+      "akas.quantization.activations.q16.webgpu": "a6ca1d2e12cefce5330cbe90e3928dfd09f2c06c4316d06851568b842e38b681",
+      "akas.quantization.activations.q8.cuda": "e3bb64fded4a04f4d481e2f7055976076e32918212b0fdeb16b8a7542f8fa94e",
+      "akas.quantization.activations.q8.definition": "3466c17196435d37c6b27a30d5221e0875cfc3872832275e7aa55f2ef6b2d25e",
+      "akas.quantization.activations.q8.kernel": "88c8591b75995a7639ee83884d2905b454e5afa4be447187718ab04ef0bc8038",
+      "akas.quantization.activations.q8.validation": "1731fba73e62e1c6ce91aa6baddfbee0a4bf997ec06c5b1bf2339ebcda9c252c",
+      "akas.quantization.activations.q8.webgpu": "8c874e2a7562d0931093300348288e30317bf3a86b59aba30ff2290a1b173e28",
+      "akas.quantization.formats": "612896cf898a4c2cabc44b57420ecf3f896d5b61678430c936246be748e276a4",
+      "akas.quantization.kv.codec": "32588ff312e8c36644c899deb81d844426bcbfc8081621c7f6cad1811ada73a4",
+      "akas.quantization.kv.fp8.cuda": "0531e5c495665a84ba3347dcf6331c6070fdd8e7fb3e79a511fb2e73f77acc23",
+      "akas.quantization.kv.fp8.definition": "3c66400553e98b92091073198f722c6726edcf1aa88ab79438d709f8b5d6d36e",
+      "akas.quantization.kv.fp8.kernel": "34fcd07d11f938dc3dfb5826fd7d237bc31d29352c7e3e19decb264d9a396ac0",
+      "akas.quantization.kv.fp8.validation": "0973eba21b1ab88e4840a3baf9a51b5a06ded8a79d6d7b442909e364d6078164",
+      "akas.quantization.kv.fp8.webgpu": "da2233edba89a55fbdd88ca3dec22d1246bcb05708a4030294618c3c5c195672",
+      "akas.quantization.weights.fp8.cuda": "95fd4f97689c86ebdab9a663c26b2640f49af632fae25762abb1d9d687eaca2e",
+      "akas.quantization.weights.fp8.definition": "234888906276a19e13dc3e65ce799a612f86d48b84f0bb3b34713e54a10a2f4c",
+      "akas.quantization.weights.fp8.kernel": "052d588e4037ac85c8897fb4f1cb127af269ea9a3b53eb5bcc5f9e7172274393",
+      "akas.quantization.weights.fp8.validation": "225e881b0c27ceacae2da8e7617c0b2c62045bbd5fc4df1e4567ad861a5692f4",
+      "akas.quantization.weights.fp8.webgpu": "29893484f3952be28d9abc67e8bee9be99303bdd3e407435cb45894fb06d6141",
+      "akas.quantization.weights.ggml.cuda": "86e67e6a344eaf7511e2404bbeb6145e3b691440b232ab333d6ed5ebfcd59c2d",
+      "akas.quantization.weights.ggml.definition": "7b0be873ceb144bf0e0048d1eb81d6061d8660500627ae3dfd55e8a75d770b01",
+      "akas.quantization.weights.ggml.kernel": "b40511a9e2709d37713e6b8428a59052b2572467ed7c396b024b6f1f9ece6086",
+      "akas.quantization.weights.ggml.validation": "c56409e83f24ecdf993e525502f2bfa50cd42c4cec7a675d105ce975006bebed",
+      "akas.quantization.weights.ggml.webgpu": "85a02de0e4e18c5125e6cb891b3a2ad8eb261070d62d5aa3f30be9e7b982f4d0",
+      "akas.quantization.weights.reference": "e584867391dc3d9a38b4a7ad9f960c011e3f5f513b533ec6b3b293744a5af4c8",
+      "akas.tensor.executor": "f74459c1cd8fbe33dc6a8ac275c934bf0111739c020a671cea29cea0e8b80e95",
+      "akas.tensor.graph": "b1ee47df63623f05a90e5f448b8a4e4d5ce85327e66e25900b644118cb00b149"
+    },
+    "compiler": {
+      "lowering_sha256": "3397483bd7cc5e85c144ac1bdb66dc75ac049270ede775864dfaa270d2a714ff"
+    },
+    "qualification_sources": {
+      "akas.compilation.selection": "b72f49bd85e916f6ec4114f34f1fee78e04baf1178224235138cabd0baf59199",
+      "akas.compilation.state": "db99641c6211e463e0818308c09a423545a11c4920602ac70db7da2090ea7127",
+      "akas.compilation.tuning": "c7ca42e8f1f6c7c2aa01e16d4a0f1910ddad3afd18593e1b9f02ed5a00d0d508",
+      "akas.compilation.validate": "1988d1b48268b280f8a477382d2b51259613d287616b8224731f3f7ff498e81a"
+    },
+    "tensor_search_sources": {
+      "tensor.compiler.search": "e8895d3cde26d7bcc1da75db2dbfadc4bdfd0e35b770298e0741bdcadd8ff354",
+      "tensor.compiler.tuning": "6fd2080e38245b7c7bfb0d1384b79c15f3b55bf29b3c9efd2b4190a660049f10"
+    },
+    "baseline": [
+      {
+        "key": "3295462eb5881f8ea7de6b40",
+        "schedule": {
+          "block_m": 64,
+          "block_n": 128,
+          "block_k": 128,
+          "stages": 1,
+          "threads": 128,
+          "implementation": "linear.cuda.floating"
+        }
+      },
+      {
+        "key": "f3907e0b4401cd723a8bfef5",
+        "schedule": {
+          "block_m": 64,
+          "block_n": 128,
+          "block_k": 64,
+          "stages": 1,
+          "threads": 128,
+          "implementation": "linear.cuda.floating"
+        }
+      },
+      {
+        "key": "0dceae06047180e444bd2526",
+        "schedule": {
+          "block_m": 64,
+          "block_n": 128,
+          "block_k": 128,
+          "stages": 1,
+          "threads": 128,
+          "implementation": "linear.cuda.floating"
+        }
+      },
+      {
+        "key": "237c0aafdc26b0adcc2fe30e",
+        "schedule": {
+          "block_m": 64,
+          "block_n": 128,
+          "block_k": 64,
+          "stages": 1,
+          "threads": 128,
+          "implementation": "linear.cuda.floating"
+        }
+      }
+    ],
+    "catalog": [
+      "Implementation(kind='linear', module='akas.ops.linear.cuda', contract='reference', factory='floating_linear', provider='cuda', phase='forward', priority=30, targets=(), required=(), accepts=None, defaults=(), space=(('block_m', (32, 16, 64)), ('block_n', (64, 32, 128)), ('block_k', (32, 64, 128)), ('stages', (2, 1, 3)), ('threads', (128, 256))), semantic_keys=None, reference_keys=(), variant=None, name='linear.cuda.floating')"
+    ]
+  },
+  "profile": {
+    "schema": "tensor.schedule-profile.v1",
+    "provider": "cuda",
+    "target": "sm_89",
+    "entries": [
+      {
+        "operation": "linear",
+        "parameters": {
+          "r": 2048,
+          "k": 2048,
+          "o": 6144,
+          "optimized": true,
+          "weight_dtype": "float16",
+          "input_dtype": "float16"
+        },
+        "schedule": {
+          "block_m": 64,
+          "block_n": 128,
+          "block_k": 64,
+          "stages": 2,
+          "threads": 128,
+          "implementation": "linear.cuda.floating"
+        }
+      },
+      {
+        "operation": "linear",
+        "parameters": {
+          "r": 2048,
+          "k": 2048,
+          "o": 2048,
+          "optimized": true,
+          "weight_dtype": "float16",
+          "input_dtype": "float16"
+        },
+        "schedule": {
+          "block_m": 64,
+          "block_n": 128,
+          "block_k": 64,
+          "stages": 1,
+          "threads": 128,
+          "implementation": "linear.cuda.floating"
+        }
+      },
+      {
+        "operation": "linear",
+        "parameters": {
+          "r": 8192,
+          "k": 2048,
+          "o": 6144,
+          "optimized": true,
+          "weight_dtype": "float16",
+          "input_dtype": "float16"
+        },
+        "schedule": {
+          "block_m": 64,
+          "block_n": 128,
+          "block_k": 64,
+          "stages": 2,
+          "threads": 128,
+          "implementation": "linear.cuda.floating"
+        }
+      },
+      {
+        "operation": "linear",
+        "parameters": {
+          "r": 8192,
+          "k": 2048,
+          "o": 2048,
+          "optimized": true,
+          "weight_dtype": "float16",
+          "input_dtype": "float16"
+        },
+        "schedule": {
+          "block_m": 64,
+          "block_n": 128,
+          "block_k": 64,
+          "stages": 2,
+          "threads": 128,
+          "implementation": "linear.cuda.floating"
+        }
+      }
+    ]
+  },
+  "operations": [
+    {
+      "key": "3295462eb5881f8ea7de6b40",
+      "kind": "linear",
+      "parameters": {
+        "r": 2048,
+        "k": 2048,
+        "o": 6144,
+        "optimized": true,
+        "weight_dtype": "float16",
+        "input_dtype": "float16"
+      },
+      "selected": {
+        "implementation": "linear.cuda.floating",
+        "schedule": {
+          "block_m": 64,
+          "block_n": 128,
+          "block_k": 64,
+          "stages": 2,
+          "threads": 128
+        },
+        "score": 0.7616530099070312,
+        "measurements": [
+          0.00029351466894149777
+        ],
+        "trials": 16
+      },
+      "candidates": [
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 2048,
+            "k": 2048,
+            "o": 6144,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 128,
+            "stages": 1,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.00038468267520268756,
+              0.00038536533713340765,
+              0.0003853440086046855,
+              0.00038636800646781917,
+              0.00038776532808939613
+            ],
+            "completed_seconds": [
+              0.0003953870012386081,
+              0.00039680666547307436,
+              0.0003947903326964782,
+              0.0003967133331267784,
+              0.0003989736675672854
+            ],
+            "median_gpu_seconds": 0.00038536533713340765,
+            "median_completed_seconds": 0.0003967133331267784,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.00038536533713340765,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 2048,
+            "k": 2048,
+            "o": 6144,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 128,
+            "stages": 1,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0003816106617450714,
+              0.0003843733370304107,
+              0.0003839680055777232,
+              0.0003840000033378601,
+              0.0003833280007044474
+            ],
+            "completed_seconds": [
+              0.00039215333405688096,
+              0.0003958936673977102,
+              0.000393169999976332,
+              0.0003947299992432818,
+              0.0003937269999975494
+            ],
+            "median_gpu_seconds": 0.0003839680055777232,
+            "median_completed_seconds": 0.0003937269999975494,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0003839680055777232,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 2048,
+            "k": 2048,
+            "o": 6144,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 16,
+            "block_n": 128,
+            "block_k": 128,
+            "stages": 1,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0007932586669921875,
+              0.0007929706573486327,
+              0.0007918933232625326,
+              0.0007935786644617716,
+              0.00079257599512736
+            ],
+            "completed_seconds": [
+              0.000804310666959888,
+              0.0008045309987210203,
+              0.0008015770023727479,
+              0.0008043743328016717,
+              0.0008028869997360744
+            ],
+            "median_gpu_seconds": 0.0007929706573486327,
+            "median_completed_seconds": 0.000804310666959888,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0007929706573486327,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 2048,
+            "k": 2048,
+            "o": 6144,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 32,
+            "block_k": 128,
+            "stages": 1,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0005253120064735412,
+              0.0005273066560427348,
+              0.0005294079979260763,
+              0.0005284266670544942,
+              0.0005287679831186931
+            ],
+            "completed_seconds": [
+              0.0005358143328824857,
+              0.0005367506649539185,
+              0.0005391813319874927,
+              0.0005377550005505327,
+              0.000539234999450855
+            ],
+            "median_gpu_seconds": 0.0005284266670544942,
+            "median_completed_seconds": 0.0005377550005505327,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0005284266670544942,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 2048,
+            "k": 2048,
+            "o": 6144,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 64,
+            "stages": 1,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0003034559985001882,
+              0.0003074986735979716,
+              0.0003044586678345998,
+              0.0003095466693242391,
+              0.0003105706671873728
+            ],
+            "completed_seconds": [
+              0.0003137183327150221,
+              0.00031881766820636887,
+              0.0003146380004181992,
+              0.00032068800161747885,
+              0.0003210579998267349
+            ],
+            "median_gpu_seconds": 0.0003074986735979716,
+            "median_completed_seconds": 0.00031881766820636887,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0003074986735979716,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 2048,
+            "k": 2048,
+            "o": 6144,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 128,
+            "stages": 2,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.00031232000390688577,
+              0.00031129599610964454,
+              0.00031027199824651083,
+              0.00031061333417892455,
+              0.00031061333417892455
+            ],
+            "completed_seconds": [
+              0.0003245216660919444,
+              0.00032033466656381887,
+              0.0003199809992414278,
+              0.0003207713331600341,
+              0.00032013466746623936
+            ],
+            "median_gpu_seconds": 0.00031061333417892455,
+            "median_completed_seconds": 0.00032033466656381887,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.00031061333417892455,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 2048,
+            "k": 2048,
+            "o": 6144,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 128,
+            "stages": 3,
+            "threads": 128
+          },
+          "status": "rejected",
+          "reason": "cuFuncSetAttribute: CUDA_ERROR_INVALID_VALUE (1): invalid argument"
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 2048,
+            "k": 2048,
+            "o": 6144,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 128,
+            "stages": 1,
+            "threads": 256
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.00032216533025105796,
+              0.000318122665087382,
+              0.0003188053369522095,
+              0.00032392533620198566,
+              0.0003174720009167989
+            ],
+            "completed_seconds": [
+              0.0003335450007095157,
+              0.00032733866707227816,
+              0.0003275049991013172,
+              0.000334085331511839,
+              0.00032721199992617284
+            ],
+            "median_gpu_seconds": 0.0003188053369522095,
+            "median_completed_seconds": 0.0003275049991013172,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0003188053369522095,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 2048,
+            "k": 2048,
+            "o": 6144,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 16,
+            "block_n": 128,
+            "block_k": 64,
+            "stages": 1,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0007922133406003316,
+              0.0007946239908536275,
+              0.0007970133423805236,
+              0.0007969813346862792,
+              0.0007949653267860413
+            ],
+            "completed_seconds": [
+              0.0008033303323221238,
+              0.0008043769994401373,
+              0.000807260666382111,
+              0.00080770400018082,
+              0.0008055603345079968
+            ],
+            "median_gpu_seconds": 0.0007949653267860413,
+            "median_completed_seconds": 0.0008055603345079968,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0007949653267860413,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 2048,
+            "k": 2048,
+            "o": 6144,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 32,
+            "block_k": 64,
+            "stages": 1,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0005403413375218709,
+              0.0005406720042228698,
+              0.0005434026519457499,
+              0.0005444266597429912,
+              0.0005410133202870687
+            ],
+            "completed_seconds": [
+              0.0005528686682130987,
+              0.0005517816680367105,
+              0.000552995667627935,
+              0.0005541993317213686,
+              0.0005520120006015835
+            ],
+            "median_gpu_seconds": 0.0005410133202870687,
+            "median_completed_seconds": 0.0005528686682130987,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0005410133202870687,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 2048,
+            "k": 2048,
+            "o": 6144,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 32,
+            "stages": 1,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.00029559466242790223,
+              0.00030408533414204915,
+              0.00030104533831278485,
+              0.00030311466256777446,
+              0.00029969066381454465
+            ],
+            "completed_seconds": [
+              0.0003063173341312601,
+              0.00031415733246831223,
+              0.00031078433312359266,
+              0.00031350799933231127,
+              0.0003093576669925824
+            ],
+            "median_gpu_seconds": 0.00030104533831278485,
+            "median_completed_seconds": 0.00031078433312359266,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.00030104533831278485,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 2048,
+            "k": 2048,
+            "o": 6144,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 64,
+            "stages": 2,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.00029351466894149777,
+              0.00029691732923189804,
+              0.0002938666641712189,
+              0.000293503999710083,
+              0.0002911573350429535
+            ],
+            "completed_seconds": [
+              0.00030495766501796123,
+              0.00030774433131834183,
+              0.00030391399923246354,
+              0.00030372399972596514,
+              0.000301083667485121
+            ],
+            "median_gpu_seconds": 0.00029351466894149777,
+            "median_completed_seconds": 0.00030391399923246354,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.00029351466894149777,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 2048,
+            "k": 2048,
+            "o": 6144,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 64,
+            "stages": 3,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0003023786644140879,
+              0.0003013546665509542,
+              0.0003031040132045746,
+              0.0003024213413397471,
+              0.0003021439909934997
+            ],
+            "completed_seconds": [
+              0.00031222500062237185,
+              0.0003100279997549175,
+              0.000313504999212455,
+              0.0003118083344209784,
+              0.000312591665230381
+            ],
+            "median_gpu_seconds": 0.0003023786644140879,
+            "median_completed_seconds": 0.00031222500062237185,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0003023786644140879,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 2048,
+            "k": 2048,
+            "o": 6144,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 64,
+            "stages": 1,
+            "threads": 256
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.00031340799729029335,
+              0.00030956799785296124,
+              0.00031436798969904583,
+              0.0003072000046571096,
+              0.00031094400087992353
+            ],
+            "completed_seconds": [
+              0.00032392199864261784,
+              0.0003190086681570392,
+              0.00032491566647271003,
+              0.00031655166700754006,
+              0.000321371999840873
+            ],
+            "median_gpu_seconds": 0.00031094400087992353,
+            "median_completed_seconds": 0.000321371999840873,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.00031094400087992353,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 2048,
+            "k": 2048,
+            "o": 6144,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 16,
+            "block_n": 128,
+            "block_k": 128,
+            "stages": 2,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0007970133225123087,
+              0.0007942826549212138,
+              0.0007960106730461121,
+              0.0007942826747894286,
+              0.0007963306903839111
+            ],
+            "completed_seconds": [
+              0.0008093386665374661,
+              0.0008045416652748827,
+              0.000806991666953157,
+              0.0008052286648307927,
+              0.0008071050009069344
+            ],
+            "median_gpu_seconds": 0.0007960106730461121,
+            "median_completed_seconds": 0.000806991666953157,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0007960106730461121,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 2048,
+            "k": 2048,
+            "o": 6144,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 32,
+            "block_k": 128,
+            "stages": 2,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0005212159951527913,
+              0.0005246293346087138,
+              0.000523306647936503,
+              0.0005232639908790589,
+              0.0005229226549466451
+            ],
+            "completed_seconds": [
+              0.0005315486657006355,
+              0.0005345026668995464,
+              0.000533409000733324,
+              0.000532775666215457,
+              0.0005326016677524118
+            ],
+            "median_gpu_seconds": 0.0005232639908790589,
+            "median_completed_seconds": 0.000532775666215457,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0005232639908790589,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 2048,
+            "k": 2048,
+            "o": 6144,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 128,
+            "stages": 2,
+            "threads": 256
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0003150506615638733,
+              0.0003150506714979808,
+              0.00031402666370073957,
+              0.00031403732299804685,
+              0.00031607465942700704
+            ],
+            "completed_seconds": [
+              0.00032719866673384484,
+              0.0003258923316025175,
+              0.00032535533197612193,
+              0.00032477600082832697,
+              0.0003267089984243891
+            ],
+            "median_gpu_seconds": 0.0003150506615638733,
+            "median_completed_seconds": 0.0003258923316025175,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0003150506615638733,
+            "execution": "prepared-plan"
+          }
+        }
+      ]
+    },
+    {
+      "key": "f3907e0b4401cd723a8bfef5",
+      "kind": "linear",
+      "parameters": {
+        "r": 2048,
+        "k": 2048,
+        "o": 2048,
+        "optimized": true,
+        "weight_dtype": "float16",
+        "input_dtype": "float16"
+      },
+      "selected": {
+        "implementation": "linear.cuda.floating",
+        "schedule": {
+          "block_m": 64,
+          "block_n": 128,
+          "block_k": 64,
+          "stages": 1,
+          "threads": 128
+        },
+        "score": 1.0,
+        "measurements": [
+          0.00011025066673755645
+        ],
+        "trials": 16
+      },
+      "candidates": [
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 2048,
+            "k": 2048,
+            "o": 2048,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 64,
+            "stages": 1,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.00010990933328866959,
+              0.00011025066673755645,
+              0.00011225600043932596,
+              0.00011059200018644334,
+              0.00010958933333555857
+            ],
+            "completed_seconds": [
+              0.00011874233435567778,
+              0.00011768900003517047,
+              0.00012000266603232983,
+              0.00011833566653270584,
+              0.0001173323325929232
+            ],
+            "median_gpu_seconds": 0.00011025066673755645,
+            "median_completed_seconds": 0.00011833566653270584,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.00011025066673755645,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 2048,
+            "k": 2048,
+            "o": 2048,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 64,
+            "stages": 1,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0001133226677775383,
+              0.00011370666821797688,
+              0.0001133226677775383,
+              0.00011468800157308579,
+              0.00011362133423487345
+            ],
+            "completed_seconds": [
+              0.00012160933207875739,
+              0.00012127566636384775,
+              0.00012161899940110743,
+              0.00012244533475798866,
+              0.00012276866740042655
+            ],
+            "median_gpu_seconds": 0.00011362133423487345,
+            "median_completed_seconds": 0.00012161899940110743,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.00011362133423487345,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 2048,
+            "k": 2048,
+            "o": 2048,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 16,
+            "block_n": 128,
+            "block_k": 64,
+            "stages": 1,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.00027097600698471064,
+              0.00026794666051864626,
+              0.0002679679890473684,
+              0.0002669226626555125,
+              0.00026760533452033995
+            ],
+            "completed_seconds": [
+              0.00028229633244336583,
+              0.00027803333311264095,
+              0.000276456664626797,
+              0.00027484966631163843,
+              0.0002754330004487808
+            ],
+            "median_gpu_seconds": 0.00026794666051864626,
+            "median_completed_seconds": 0.000276456664626797,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.00026794666051864626,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 2048,
+            "k": 2048,
+            "o": 2048,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 32,
+            "block_k": 64,
+            "stages": 1,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0001999786595503489,
+              0.0002010986655950546,
+              0.00019933866957823438,
+              0.0001999999980131785,
+              0.00019899732867876687
+            ],
+            "completed_seconds": [
+              0.0002087726655493801,
+              0.00020971633421140723,
+              0.0002076833334285766,
+              0.00020763666543643922,
+              0.0002069696674880106
+            ],
+            "median_gpu_seconds": 0.0001999786595503489,
+            "median_completed_seconds": 0.0002076833334285766,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0001999786595503489,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 2048,
+            "k": 2048,
+            "o": 2048,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 32,
+            "stages": 1,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0001309760014216105,
+              0.00013175466656684877,
+              0.00013583999872207643,
+              0.00013105066617329918,
+              0.0001303786685069402
+            ],
+            "completed_seconds": [
+              0.00013955333270132542,
+              0.00013962333347687186,
+              0.00014362666721960218,
+              0.00013890633272239938,
+              0.00013791933330746056
+            ],
+            "median_gpu_seconds": 0.00013105066617329918,
+            "median_completed_seconds": 0.00013955333270132542,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.00013105066617329918,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 2048,
+            "k": 2048,
+            "o": 2048,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 128,
+            "stages": 1,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.00013619199891885123,
+              0.0001358506629864375,
+              0.00013649066785971324,
+              0.0001348799963792165,
+              0.0001382186661163966
+            ],
+            "completed_seconds": [
+              0.00014502033324485333,
+              0.00014536366749477261,
+              0.0001453669998833599,
+              0.00014300699816279425,
+              0.0001480536678476104
+            ],
+            "median_gpu_seconds": 0.00013619199891885123,
+            "median_completed_seconds": 0.00014536366749477261,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.00013619199891885123,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 2048,
+            "k": 2048,
+            "o": 2048,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 64,
+            "stages": 2,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.00011267200112342834,
+              0.00011433600137631098,
+              0.00011294933408498764,
+              0.00011468800157308579,
+              0.00011060266693433127
+            ],
+            "completed_seconds": [
+              0.00012153900024713948,
+              0.00012239933372863257,
+              0.00012102199980290607,
+              0.00012334933368644366,
+              0.00011836599999999937
+            ],
+            "median_gpu_seconds": 0.00011294933408498764,
+            "median_completed_seconds": 0.00012153900024713948,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.00011294933408498764,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 2048,
+            "k": 2048,
+            "o": 2048,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 64,
+            "stages": 3,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.00012322133282820384,
+              0.00011976533631483713,
+              0.0001181226670742035,
+              0.00011844266951084137,
+              0.000120448000729084
+            ],
+            "completed_seconds": [
+              0.00013402966699989824,
+              0.00012734266662543328,
+              0.00012824233272112906,
+              0.0001262453321639138,
+              0.00012800266752795628
+            ],
+            "median_gpu_seconds": 0.00011976533631483713,
+            "median_completed_seconds": 0.00012800266752795628,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.00011976533631483713,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 2048,
+            "k": 2048,
+            "o": 2048,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 64,
+            "stages": 1,
+            "threads": 256
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.00012219733248154322,
+              0.00012424533069133758,
+              0.00012561066945393878,
+              0.00012251732995112737,
+              0.00012491733332475026
+            ],
+            "completed_seconds": [
+              0.00013093233307396682,
+              0.0001337696667178534,
+              0.00013606933377256306,
+              0.00013114600127058415,
+              0.0001338493348157499
+            ],
+            "median_gpu_seconds": 0.00012424533069133758,
+            "median_completed_seconds": 0.0001337696667178534,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.00012424533069133758,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 2048,
+            "k": 2048,
+            "o": 2048,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 16,
+            "block_n": 128,
+            "block_k": 64,
+            "stages": 2,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0002723839978377024,
+              0.00027886933088302617,
+              0.0002706666688124339,
+              0.00027206400036811827,
+              0.0002717013359069824
+            ],
+            "completed_seconds": [
+              0.0002816163347839999,
+              0.0002870830006334775,
+              0.00027804966642482515,
+              0.0002800563343043905,
+              0.0002791633329858693
+            ],
+            "median_gpu_seconds": 0.00027206400036811827,
+            "median_completed_seconds": 0.0002800563343043905,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.00027206400036811827,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 2048,
+            "k": 2048,
+            "o": 2048,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 32,
+            "block_k": 64,
+            "stages": 2,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.00018770132958889009,
+              0.00018632533152898153,
+              0.00018807466824849448,
+              0.00018705066541830698,
+              0.00018739199638366698
+            ],
+            "completed_seconds": [
+              0.0001972786667465698,
+              0.00019371566668269224,
+              0.0001962390003124407,
+              0.0001948589997482486,
+              0.00019478899897270216
+            ],
+            "median_gpu_seconds": 0.00018739199638366698,
+            "median_completed_seconds": 0.0001948589997482486,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.00018739199638366698,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 2048,
+            "k": 2048,
+            "o": 2048,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 32,
+            "stages": 2,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.00013038933277130128,
+              0.00012970667084058124,
+              0.00012966400384902953,
+              0.00013141333063443502,
+              0.00012970667084058124
+            ],
+            "completed_seconds": [
+              0.00013920333124891235,
+              0.00013712633153772913,
+              0.00015552700036399378,
+              0.00013975700009420203,
+              0.00013813999976264313
+            ],
+            "median_gpu_seconds": 0.00012970667084058124,
+            "median_completed_seconds": 0.00013920333124891235,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.00012970667084058124,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 2048,
+            "k": 2048,
+            "o": 2048,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 128,
+            "stages": 2,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0001181013360619545,
+              0.00012077866743008296,
+              0.00011671466877063114,
+              0.00011981866757074992,
+              0.00011643733580907186
+            ],
+            "completed_seconds": [
+              0.00012712266592037244,
+              0.00012940333423709186,
+              0.00012484566711160974,
+              0.00012845266731649949,
+              0.00012456266631488688
+            ],
+            "median_gpu_seconds": 0.0001181013360619545,
+            "median_completed_seconds": 0.00012712266592037244,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0001181013360619545,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 2048,
+            "k": 2048,
+            "o": 2048,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 64,
+            "stages": 2,
+            "threads": 256
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.00011334400127331417,
+              0.00011532800147930781,
+              0.00011298133432865143,
+              0.00011366400122642517,
+              0.00011502933502197266
+            ],
+            "completed_seconds": [
+              0.00012267166797149306,
+              0.00012340866669546813,
+              0.00012072100071236491,
+              0.0001215150017136087,
+              0.00012285166546159113
+            ],
+            "median_gpu_seconds": 0.00011366400122642517,
+            "median_completed_seconds": 0.00012267166797149306,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.00011366400122642517,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 2048,
+            "k": 2048,
+            "o": 2048,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 16,
+            "block_n": 128,
+            "block_k": 64,
+            "stages": 3,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.00027373866240183514,
+              0.0002710186739762624,
+              0.00027165866891543073,
+              0.0002710186739762624,
+              0.00027067732810974124
+            ],
+            "completed_seconds": [
+              0.0002837913319429693,
+              0.0002796013335076471,
+              0.00027928433337365277,
+              0.000279338000837015,
+              0.00027949466796902317
+            ],
+            "median_gpu_seconds": 0.0002710186739762624,
+            "median_completed_seconds": 0.00027949466796902317,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0002710186739762624,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 2048,
+            "k": 2048,
+            "o": 2048,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 32,
+            "block_k": 64,
+            "stages": 3,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.00019076266884803772,
+              0.00018944000204404194,
+              0.00019012266894181568,
+              0.00018942933281262714,
+              0.00018942933281262714
+            ],
+            "completed_seconds": [
+              0.00019997799851504774,
+              0.00019790833296913965,
+              0.0001984980008273851,
+              0.00019769466719784154,
+              0.000197118000263193
+            ],
+            "median_gpu_seconds": 0.00018944000204404194,
+            "median_completed_seconds": 0.00019790833296913965,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.00018944000204404194,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 2048,
+            "k": 2048,
+            "o": 2048,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 32,
+            "stages": 3,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.00011946666985750198,
+              0.00011945600310961405,
+              0.00011974400281906129,
+              0.0001191253364086151,
+              0.00011946666985750198
+            ],
+            "completed_seconds": [
+              0.00012908933422295377,
+              0.00012677933409577236,
+              0.00012770266645626785,
+              0.00012654933501229001,
+              0.00012707599914089465
+            ],
+            "median_gpu_seconds": 0.00011946666985750198,
+            "median_completed_seconds": 0.00012707599914089465,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.00011946666985750198,
+            "execution": "prepared-plan"
+          }
+        }
+      ]
+    },
+    {
+      "key": "0dceae06047180e444bd2526",
+      "kind": "linear",
+      "parameters": {
+        "r": 8192,
+        "k": 2048,
+        "o": 6144,
+        "optimized": true,
+        "weight_dtype": "float16",
+        "input_dtype": "float16"
+      },
+      "selected": {
+        "implementation": "linear.cuda.floating",
+        "schedule": {
+          "block_m": 64,
+          "block_n": 128,
+          "block_k": 64,
+          "stages": 2,
+          "threads": 128
+        },
+        "score": 0.7738381077134748,
+        "measurements": [
+          0.0010967040061950683
+        ],
+        "trials": 16
+      },
+      "candidates": [
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 8192,
+            "k": 2048,
+            "o": 6144,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 128,
+            "stages": 1,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.001415168007214864,
+              0.0014189226627349854,
+              0.001417248010635376,
+              0.0014172266721725463,
+              0.001415168007214864
+            ],
+            "completed_seconds": [
+              0.0014295066660755158,
+              0.0014319433333488025,
+              0.0014294036676195294,
+              0.0014293596662658576,
+              0.0014303896653776367
+            ],
+            "median_gpu_seconds": 0.0014172266721725463,
+            "median_completed_seconds": 0.0014295066660755158,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0014172266721725463,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 8192,
+            "k": 2048,
+            "o": 6144,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 128,
+            "stages": 1,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0014114133516947428,
+              0.0014212906757990519,
+              0.0014202666680018109,
+              0.0014161920150121054,
+              0.0014202666282653808
+            ],
+            "completed_seconds": [
+              0.0014246073321070678,
+              0.001432671331713209,
+              0.0014343946665273204,
+              0.0014294710017566103,
+              0.0014345413340682474
+            ],
+            "median_gpu_seconds": 0.0014202666282653808,
+            "median_completed_seconds": 0.001432671331713209,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0014202666282653808,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 8192,
+            "k": 2048,
+            "o": 6144,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 16,
+            "block_n": 128,
+            "block_k": 128,
+            "stages": 1,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0031085760593414307,
+              0.003108522733052572,
+              0.003114325364430746,
+              0.0031098666985829673,
+              0.0031123306751251224
+            ],
+            "completed_seconds": [
+              0.0031212603316816967,
+              0.003121202999561016,
+              0.0031266436672012787,
+              0.0031215536643382316,
+              0.003125873667158885
+            ],
+            "median_gpu_seconds": 0.0031098666985829673,
+            "median_completed_seconds": 0.0031215536643382316,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0031098666985829673,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 8192,
+            "k": 2048,
+            "o": 6144,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 32,
+            "block_k": 128,
+            "stages": 1,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0020415147145589198,
+              0.0020405226548512777,
+              0.0020421547094980875,
+              0.002040149370829264,
+              0.002040832042694092
+            ],
+            "completed_seconds": [
+              0.0020543250005478817,
+              0.0020518510003360766,
+              0.002054311666142894,
+              0.0020521013332957714,
+              0.00205453433469908
+            ],
+            "median_gpu_seconds": 0.002040832042694092,
+            "median_completed_seconds": 0.002054311666142894,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.002040832042694092,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 8192,
+            "k": 2048,
+            "o": 6144,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 64,
+            "stages": 1,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0011014399528503419,
+              0.0011069440046946207,
+              0.0011110080083211263,
+              0.0011045333147048952,
+              0.001104554613431295
+            ],
+            "completed_seconds": [
+              0.0011146509993219904,
+              0.0011198050002955522,
+              0.0011259653329034336,
+              0.001115694332838757,
+              0.001115918334107846
+            ],
+            "median_gpu_seconds": 0.001104554613431295,
+            "median_completed_seconds": 0.001115918334107846,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.001104554613431295,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 8192,
+            "k": 2048,
+            "o": 6144,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 128,
+            "stages": 2,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0011574613253275553,
+              0.0011550719738006592,
+              0.0011566933393478394,
+              0.0011622399886449177,
+              0.001161898692448934
+            ],
+            "completed_seconds": [
+              0.001170196665043477,
+              0.0011667766666505486,
+              0.001168691667165452,
+              0.0011735650004993659,
+              0.001173435666714795
+            ],
+            "median_gpu_seconds": 0.0011574613253275553,
+            "median_completed_seconds": 0.001170196665043477,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0011574613253275553,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 8192,
+            "k": 2048,
+            "o": 6144,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 128,
+            "stages": 3,
+            "threads": 128
+          },
+          "status": "rejected",
+          "reason": "cuFuncSetAttribute: CUDA_ERROR_INVALID_VALUE (1): invalid argument"
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 8192,
+            "k": 2048,
+            "o": 6144,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 128,
+            "stages": 1,
+            "threads": 256
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0011762239933013916,
+              0.0011769173542658488,
+              0.0011762239933013916,
+              0.0011752106746037803,
+              0.0011758400201797485
+            ],
+            "completed_seconds": [
+              0.001189469666618,
+              0.0011888326674428147,
+              0.0011879626666389715,
+              0.0011871330013188224,
+              0.0011878963329460628
+            ],
+            "median_gpu_seconds": 0.0011762239933013916,
+            "median_completed_seconds": 0.0011879626666389715,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0011762239933013916,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 8192,
+            "k": 2048,
+            "o": 6144,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 16,
+            "block_n": 128,
+            "block_k": 64,
+            "stages": 1,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0031061867078145343,
+              0.0031044479211171463,
+              0.003115008036295573,
+              0.003112565279006958,
+              0.003107839981714884
+            ],
+            "completed_seconds": [
+              0.003120276000117883,
+              0.0031164993330700477,
+              0.003127229666764227,
+              0.003124072335291809,
+              0.0031204726668268754
+            ],
+            "median_gpu_seconds": 0.003107839981714884,
+            "median_completed_seconds": 0.0031204726668268754,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.003107839981714884,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 8192,
+            "k": 2048,
+            "o": 6144,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 32,
+            "block_k": 64,
+            "stages": 1,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.00206335997581482,
+              0.0020657066504160566,
+              0.002066431999206543,
+              0.0020619946320851647,
+              0.0020595839818318682
+            ],
+            "completed_seconds": [
+              0.002076479333481984,
+              0.0020773596673582992,
+              0.0020775826669705566,
+              0.002073679000507885,
+              0.0020721326667019944
+            ],
+            "median_gpu_seconds": 0.00206335997581482,
+            "median_completed_seconds": 0.002076479333481984,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.00206335997581482,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 8192,
+            "k": 2048,
+            "o": 6144,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 32,
+            "stages": 1,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0011560959815979004,
+              0.001150325298309326,
+              0.0011523520151774087,
+              0.0011537066698074341,
+              0.0011495360136032104
+            ],
+            "completed_seconds": [
+              0.0011711196651352414,
+              0.001161952666734578,
+              0.001163695667249461,
+              0.0011654526667067937,
+              0.0011601790016963303
+            ],
+            "median_gpu_seconds": 0.0011523520151774087,
+            "median_completed_seconds": 0.001163695667249461,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0011523520151774087,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 8192,
+            "k": 2048,
+            "o": 6144,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 64,
+            "stages": 2,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0010901866356531778,
+              0.0010967040061950683,
+              0.0010990933577219645,
+              0.0011007999976476034,
+              0.001088853359222412
+            ],
+            "completed_seconds": [
+              0.001103539999652033,
+              0.0011083136669185478,
+              0.0011105406665592454,
+              0.0011127573331274714,
+              0.0011011899999478676
+            ],
+            "median_gpu_seconds": 0.0010967040061950683,
+            "median_completed_seconds": 0.0011083136669185478,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0010967040061950683,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 8192,
+            "k": 2048,
+            "o": 6144,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 64,
+            "stages": 3,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0011379306316375733,
+              0.0011298133532206217,
+              0.0011263360182444254,
+              0.0011260266304016114,
+              0.0011356159845987955
+            ],
+            "completed_seconds": [
+              0.0011511386668037933,
+              0.0011419716647651512,
+              0.0011375650004386746,
+              0.001138248332911947,
+              0.0011479620006866753
+            ],
+            "median_gpu_seconds": 0.0011298133532206217,
+            "median_completed_seconds": 0.0011419716647651512,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0011298133532206217,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 8192,
+            "k": 2048,
+            "o": 6144,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 64,
+            "stages": 1,
+            "threads": 256
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.001124298652013143,
+              0.0011195306777954104,
+              0.0011362666686375936,
+              0.0011236799558003744,
+              0.0011301546891530356
+            ],
+            "completed_seconds": [
+              0.001137211667810334,
+              0.0011313180002616718,
+              0.0011485156658939861,
+              0.0011356183337435748,
+              0.0011431916670214075
+            ],
+            "median_gpu_seconds": 0.001124298652013143,
+            "median_completed_seconds": 0.001137211667810334,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.001124298652013143,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 8192,
+            "k": 2048,
+            "o": 6144,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 16,
+            "block_n": 128,
+            "block_k": 128,
+            "stages": 2,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0030993066628774006,
+              0.0030975893338521326,
+              0.003098965326944987,
+              0.0030982826550801598,
+              0.003098304033279419
+            ],
+            "completed_seconds": [
+              0.0031140026658249553,
+              0.003109642999334028,
+              0.003112299998368447,
+              0.003110229332378367,
+              0.003110986333922483
+            ],
+            "median_gpu_seconds": 0.003098304033279419,
+            "median_completed_seconds": 0.003110986333922483,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.003098304033279419,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 8192,
+            "k": 2048,
+            "o": 6144,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 32,
+            "block_k": 128,
+            "stages": 2,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.002025439977645874,
+              0.0020251305898030597,
+              0.0020271786053975426,
+              0.0020278399785359697,
+              0.0020257705847422283
+            ],
+            "completed_seconds": [
+              0.002038409666662725,
+              0.002037373666098574,
+              0.002039333999467393,
+              0.0020416666666278616,
+              0.0020375066681784424
+            ],
+            "median_gpu_seconds": 0.0020257705847422283,
+            "median_completed_seconds": 0.002038409666662725,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0020257705847422283,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 8192,
+            "k": 2048,
+            "o": 6144,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 128,
+            "stages": 2,
+            "threads": 256
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0011670186916987102,
+              0.0011618453661600748,
+              0.0011605013608932495,
+              0.001159168004989624,
+              0.0011597973108291627
+            ],
+            "completed_seconds": [
+              0.0011806166670188152,
+              0.0011732669991033617,
+              0.0011724873329512775,
+              0.0011704370020500694,
+              0.0011717236666299868
+            ],
+            "median_gpu_seconds": 0.0011605013608932495,
+            "median_completed_seconds": 0.0011724873329512775,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0011605013608932495,
+            "execution": "prepared-plan"
+          }
+        }
+      ]
+    },
+    {
+      "key": "237c0aafdc26b0adcc2fe30e",
+      "kind": "linear",
+      "parameters": {
+        "r": 8192,
+        "k": 2048,
+        "o": 2048,
+        "optimized": true,
+        "weight_dtype": "float16",
+        "input_dtype": "float16"
+      },
+      "selected": {
+        "implementation": "linear.cuda.floating",
+        "schedule": {
+          "block_m": 64,
+          "block_n": 128,
+          "block_k": 64,
+          "stages": 2,
+          "threads": 128
+        },
+        "score": 0.9689597629033924,
+        "measurements": [
+          0.0003942400018374125
+        ],
+        "trials": 16
+      },
+      "candidates": [
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 8192,
+            "k": 2048,
+            "o": 2048,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 64,
+            "stages": 1,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0004075520038604736,
+              0.0004048213362693787,
+              0.0004068693220615387,
+              0.0004058240056037903,
+              0.0004085866709550221
+            ],
+            "completed_seconds": [
+              0.0004222456676264604,
+              0.0004184389993800626,
+              0.00041999566747108474,
+              0.00041884833384150016,
+              0.00042341899946526
+            ],
+            "median_gpu_seconds": 0.0004068693220615387,
+            "median_completed_seconds": 0.00041999566747108474,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0004068693220615387,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 8192,
+            "k": 2048,
+            "o": 2048,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 64,
+            "stages": 1,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.00040345600247383115,
+              0.0004027413328488668,
+              0.0004041386644045512,
+              0.0004064853290716807,
+              0.0004044800003369649
+            ],
+            "completed_seconds": [
+              0.00041510199904829886,
+              0.0004145183326424255,
+              0.000414815332381598,
+              0.0004174986667446016,
+              0.00041391166572187405
+            ],
+            "median_gpu_seconds": 0.0004041386644045512,
+            "median_completed_seconds": 0.000414815332381598,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0004041386644045512,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 8192,
+            "k": 2048,
+            "o": 2048,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 16,
+            "block_n": 128,
+            "block_k": 64,
+            "stages": 1,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0010294506549835207,
+              0.001031168023745219,
+              0.0010383359988530476,
+              0.0010376533269882203,
+              0.0010325333277384442
+            ],
+            "completed_seconds": [
+              0.0010410269993978243,
+              0.0010426166651692863,
+              0.0010480573340222084,
+              0.0010489103333384264,
+              0.0010425940017739777
+            ],
+            "median_gpu_seconds": 0.0010325333277384442,
+            "median_completed_seconds": 0.0010426166651692863,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0010325333277384442,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 8192,
+            "k": 2048,
+            "o": 2048,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 32,
+            "block_k": 64,
+            "stages": 1,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0007007573246955871,
+              0.0006976320147514342,
+              0.0007028053402900696,
+              0.0006997973322868347,
+              0.0006983253359794618
+            ],
+            "completed_seconds": [
+              0.0007129290024749935,
+              0.0007074519999150652,
+              0.0007133986667516486,
+              0.000709588664904004,
+              0.0007088186648616102
+            ],
+            "median_gpu_seconds": 0.0006997973322868347,
+            "median_completed_seconds": 0.000709588664904004,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0006997973322868347,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 8192,
+            "k": 2048,
+            "o": 2048,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 32,
+            "stages": 1,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.00040724266568819683,
+              0.0004051520029703776,
+              0.0004048106670379639,
+              0.0004089066684246063,
+              0.0004082666635513306
+            ],
+            "completed_seconds": [
+              0.00041954566768254153,
+              0.00041670166804882075,
+              0.0004168390005361289,
+              0.00041915566665314447,
+              0.0004188390012132004
+            ],
+            "median_gpu_seconds": 0.00040724266568819683,
+            "median_completed_seconds": 0.0004188390012132004,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.00040724266568819683,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 8192,
+            "k": 2048,
+            "o": 2048,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 128,
+            "stages": 1,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0005044906636079153,
+              0.0005068800052007039,
+              0.0005038080016771952,
+              0.0005024000008900961,
+              0.0005061333378156026
+            ],
+            "completed_seconds": [
+              0.0005162199995538685,
+              0.000518579998849115,
+              0.0005139363323299525,
+              0.0005126760006533004,
+              0.0005169060010909258
+            ],
+            "median_gpu_seconds": 0.0005044906636079153,
+            "median_completed_seconds": 0.0005162199995538685,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0005044906636079153,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 8192,
+            "k": 2048,
+            "o": 2048,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 64,
+            "stages": 2,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.00039731200536092127,
+              0.00039560533563296,
+              0.00039253333210945124,
+              0.000392874668041865,
+              0.0003942400018374125
+            ],
+            "completed_seconds": [
+              0.00040943500061985105,
+              0.0004123483328536774,
+              0.0004030646656853302,
+              0.00040382833321928047,
+              0.00040437166777943884
+            ],
+            "median_gpu_seconds": 0.0003942400018374125,
+            "median_completed_seconds": 0.00040437166777943884,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0003942400018374125,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 8192,
+            "k": 2048,
+            "o": 2048,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 64,
+            "stages": 3,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0004042026698589325,
+              0.0004051626722017924,
+              0.00040611200531323746,
+              0.0004014080067475637,
+              0.00039901866515477496
+            ],
+            "completed_seconds": [
+              0.00041801866609603167,
+              0.0004146886652354927,
+              0.0004170253341726493,
+              0.0004111683350250435,
+              0.00041078533346687135
+            ],
+            "median_gpu_seconds": 0.0004042026698589325,
+            "median_completed_seconds": 0.0004146886652354927,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0004042026698589325,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 8192,
+            "k": 2048,
+            "o": 2048,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 64,
+            "stages": 1,
+            "threads": 256
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0004157439966996511,
+              0.0004136746724446615,
+              0.0004123306572437286,
+              0.0004160853326320648,
+              0.0004126719931761424
+            ],
+            "completed_seconds": [
+              0.00042770566627344425,
+              0.0004240526674645177,
+              0.00042354900021261227,
+              0.0004267693329893518,
+              0.00042380866580060683
+            ],
+            "median_gpu_seconds": 0.0004136746724446615,
+            "median_completed_seconds": 0.0004240526674645177,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0004136746724446615,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 8192,
+            "k": 2048,
+            "o": 2048,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 16,
+            "block_n": 128,
+            "block_k": 64,
+            "stages": 2,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0010195306936899822,
+              0.0010189759731292726,
+              0.001021951993306478,
+              0.0010212160348892212,
+              0.0010192533334096273
+            ],
+            "completed_seconds": [
+              0.001032063667177378,
+              0.0010299863327721444,
+              0.0010328136680376094,
+              0.001031486333279948,
+              0.0010296600000098504
+            ],
+            "median_gpu_seconds": 0.0010195306936899822,
+            "median_completed_seconds": 0.001031486333279948,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0010195306936899822,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 8192,
+            "k": 2048,
+            "o": 2048,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 32,
+            "block_k": 64,
+            "stages": 2,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0007044800122578939,
+              0.0007028053204218547,
+              0.0007034880121548971,
+              0.0007065066496531169,
+              0.0007075733343760172
+            ],
+            "completed_seconds": [
+              0.0007156656671819898,
+              0.0007129986661311705,
+              0.0007161393320226731,
+              0.0007168123338487931,
+              0.0007174023327631099
+            ],
+            "median_gpu_seconds": 0.0007044800122578939,
+            "median_completed_seconds": 0.0007161393320226731,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0007044800122578939,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 8192,
+            "k": 2048,
+            "o": 2048,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 32,
+            "stages": 2,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0004119253357251485,
+              0.00040555733442306516,
+              0.0004069119989871979,
+              0.00040652799606323244,
+              0.0004058773318926493
+            ],
+            "completed_seconds": [
+              0.0004252593316778075,
+              0.0004159653326496482,
+              0.00041786533256527036,
+              0.00041621899921058986,
+              0.00041742533236780827
+            ],
+            "median_gpu_seconds": 0.00040652799606323244,
+            "median_completed_seconds": 0.00041742533236780827,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.00040652799606323244,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 8192,
+            "k": 2048,
+            "o": 2048,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 128,
+            "stages": 2,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0004077866673469544,
+              0.0004051626622676849,
+              0.0004078933298587799,
+              0.00040853333473205564,
+              0.00040789333979288734
+            ],
+            "completed_seconds": [
+              0.000418641999810158,
+              0.00041450199933024123,
+              0.00041941566693518933,
+              0.00041775866702664644,
+              0.0004178823340528955
+            ],
+            "median_gpu_seconds": 0.0004078933298587799,
+            "median_completed_seconds": 0.0004178823340528955,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0004078933298587799,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 8192,
+            "k": 2048,
+            "o": 2048,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 64,
+            "stages": 2,
+            "threads": 256
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0004055039982000987,
+              0.0004031146665414175,
+              0.0004034773310025533,
+              0.000403711994489034,
+              0.00040680532654126483
+            ],
+            "completed_seconds": [
+              0.00041725533204347204,
+              0.00041313233426384005,
+              0.0004138419996403779,
+              0.00041378500100108795,
+              0.0004165386671957094
+            ],
+            "median_gpu_seconds": 0.000403711994489034,
+            "median_completed_seconds": 0.0004138419996403779,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.000403711994489034,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 8192,
+            "k": 2048,
+            "o": 2048,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 16,
+            "block_n": 128,
+            "block_k": 64,
+            "stages": 3,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.001024341344833374,
+              0.0010219519933064778,
+              0.0010284372965494793,
+              0.0010250133275985717,
+              0.0010243306557337444
+            ],
+            "completed_seconds": [
+              0.0010371086670299217,
+              0.0010325883340556175,
+              0.0010397620014070223,
+              0.0010347353321170278,
+              0.0010350323318562005
+            ],
+            "median_gpu_seconds": 0.001024341344833374,
+            "median_completed_seconds": 0.0010350323318562005,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.001024341344833374,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 8192,
+            "k": 2048,
+            "o": 2048,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 32,
+            "block_k": 64,
+            "stages": 3,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.0006962560017903645,
+              0.0006983573436737061,
+              0.0006990080078442891,
+              0.0006980479955673219,
+              0.0006973440051078796
+            ],
+            "completed_seconds": [
+              0.000707446666638134,
+              0.0007106596676749177,
+              0.0007100799981950937,
+              0.0007098829992173705,
+              0.0007086766660601521
+            ],
+            "median_gpu_seconds": 0.0006980479955673219,
+            "median_completed_seconds": 0.0007098829992173705,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.0006980479955673219,
+            "execution": "prepared-plan"
+          }
+        },
+        {
+          "implementation": "akas.ops.linear.cuda",
+          "parameters": {
+            "r": 8192,
+            "k": 2048,
+            "o": 2048,
+            "optimized": true,
+            "weight_dtype": "float16",
+            "input_dtype": "float16",
+            "block_m": 64,
+            "block_n": 128,
+            "block_k": 32,
+            "stages": 3,
+            "threads": 128
+          },
+          "status": "passed",
+          "timing": {
+            "gpu_seconds": [
+              0.00041773867607116706,
+              0.00041881600022315984,
+              0.0004167679945627848,
+              0.000417109340429306,
+              0.00041608534256617227
+            ],
+            "completed_seconds": [
+              0.0004296903340825035,
+              0.0004300103343363541,
+              0.00042715333377903636,
+              0.00042873999943064217,
+              0.0004261199986406912
+            ],
+            "median_gpu_seconds": 0.000417109340429306,
+            "median_completed_seconds": 0.00042873999943064217,
+            "warmup": 2,
+            "samples": 5,
+            "repeats": 3,
+            "metric": "gpu_seconds",
+            "median_seconds": 0.000417109340429306,
+            "execution": "prepared-plan"
+          }
+        }
+      ]
+    }
+  ],
+  "cache_hit": false
+}

@@ -1,0 +1,28 @@
+{
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "numerical-experiment",
+    "provider": "cuda",
+    "qualification_scope": "Raw matrix product precision experiment; no model or throughput qualification"
+  },
+  "candidates": [
+    {
+      "candidate": "fp8-k128",
+      "relative_rms": 0.00013531518925447017,
+      "max_absolute": 112.875,
+      "different": 4187
+    },
+    {
+      "candidate": "fp8-k32",
+      "relative_rms": 5.539789344766177e-05,
+      "max_absolute": 51.5,
+      "different": 4155
+    },
+    {
+      "candidate": "fp16-promoted",
+      "relative_rms": 1.5087680438341522e-08,
+      "max_absolute": 0.03125,
+      "different": 65
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "schema": "tensor.schedule-profile.v1",
+  "provider": "cuda",
+  "target": "sm_89",
+  "entries": [
+    {
+      "operation": "expert_swiglu",
+      "parameters": {
+        "r": 1,
+        "rows": 1,
+        "top": 4,
+        "experts": 64,
+        "o": 1536,
+        "k": 2048,
+        "routed_input": false,
+        "partitions": 1,
+        "block_m": 32,
+        "compact": true,
+        "tile_map": true,
+        "input_dtype": "uint8",
+        "weight_format": "fp8"
+      },
+      "schedule": {
+        "block_m": 16,
+        "columns": 32,
+        "threads": 128,
+        "pair_layout": "wide",
+        "stages": 1,
+        "activation_vector": 16,
+        "implementation": "moe.cuda.fp8-paired-swiglu:reference"
+      }
+    },
+    {
+      "operation": "expert_swiglu",
+      "parameters": {
+        "r": 4,
+        "rows": 4,
+        "top": 4,
+        "experts": 64,
+        "o": 1536,
+        "k": 2048,
+        "routed_input": false,
+        "partitions": 1,
+        "block_m": 32,
+        "compact": true,
+        "tile_map": true,
+        "input_dtype": "uint8",
+        "weight_format": "fp8"
+      },
+      "schedule": {
+        "block_m": 16,
+        "columns": 32,
+        "threads": 128,
+        "pair_layout": "wide",
+        "stages": 2,
+        "activation_vector": 16,
+        "implementation": "moe.cuda.fp8-paired-swiglu:reference"
+      }
+    }
+  ]
+}

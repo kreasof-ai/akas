@@ -1,0 +1,108 @@
+{
+  "metadata": {
+    "runtime": "device-calibration",
+    "purpose": "hardware-ceiling",
+    "provider": "cuda",
+    "device": "NVIDIA L40S",
+    "torch_version": "2.14.0+cu130",
+    "theoretical_dense_peaks": {
+      "fp8_tflops": 733.0,
+      "fp16_tflops": 366.5,
+      "fp32_tflops": 91.6,
+      "dram_gb_per_second": 864.0
+    },
+    "specification_source": "https://www.nvidia.com/en-sg/data-center/l40s/",
+    "qualification_scope": "Vendor dense GEMM and streaming copy calibration; not model throughput"
+  },
+  "calibration": [
+    {
+      "kind": "dense_gemm",
+      "dtype": "torch.float8_e4m3fn",
+      "output_dtype": "torch.bfloat16",
+      "m": 8192,
+      "n": 8192,
+      "k": 8192,
+      "fma_counted_as_two_flops": true,
+      "flops": 1099511627776,
+      "samples_seconds": [
+        0.0024186752319335938,
+        0.002638214492797852,
+        0.0028387327194213867,
+        0.0029296640396118167,
+        0.0029302783966064453,
+        0.002937446403503418,
+        0.0029972415924072265,
+        0.002998271942138672,
+        0.002999500846862793
+      ],
+      "median_seconds": 0.0029302783966064453,
+      "teraflops_per_second": 375.2242889444717
+    },
+    {
+      "kind": "dense_gemm",
+      "dtype": "torch.float16",
+      "output_dtype": "torch.float16",
+      "m": 8192,
+      "n": 8192,
+      "k": 8192,
+      "fma_counted_as_two_flops": true,
+      "flops": 1099511627776,
+      "samples_seconds": [
+        0.005241241455078125,
+        0.005240627288818359,
+        0.005357158279418945,
+        0.005398323059082031,
+        0.005397708892822266,
+        0.005357158279418945,
+        0.005381727981567383,
+        0.00534568977355957,
+        0.005433343887329101
+      ],
+      "median_seconds": 0.005357158279418945,
+      "teraflops_per_second": 205.24157966362282
+    },
+    {
+      "kind": "dense_gemm",
+      "dtype": "torch.float32",
+      "output_dtype": "torch.float32",
+      "m": 8192,
+      "n": 8192,
+      "k": 8192,
+      "fma_counted_as_two_flops": true,
+      "flops": 1099511627776,
+      "samples_seconds": [
+        0.028521856689453125,
+        0.02859680786132813,
+        0.02856161193847656,
+        0.028633297729492184,
+        0.0307056640625,
+        0.031077383422851563,
+        0.029927655029296875,
+        0.029079962158203125,
+        0.02864005126953125
+      ],
+      "median_seconds": 0.02864005126953125,
+      "teraflops_per_second": 38.39070040163359
+    },
+    {
+      "kind": "streaming_copy",
+      "source_bytes": 4294967296,
+      "read_plus_write_bytes": 8589934592,
+      "working_set_exceeds_l2": true,
+      "samples_seconds": [
+        0.013138261159261068,
+        0.013132459004720052,
+        0.013138261159261068,
+        0.013132459004720052,
+        0.01313043212890625,
+        0.01315020751953125,
+        0.013143381754557293,
+        0.013139967600504558,
+        0.013148843129475911
+      ],
+      "median_seconds": 0.013138261159261068,
+      "gigabytes_per_second": 653.8106137390195
+    }
+  ],
+  "clocks": "clocks.current.sm [MHz], clocks.current.memory [MHz], power.draw [W], temperature.gpu\n2040 MHz, 9001 MHz, 279.92 W, 39\n"
+}
