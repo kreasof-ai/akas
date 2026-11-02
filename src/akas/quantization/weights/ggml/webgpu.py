@@ -64,12 +64,17 @@ def gemv_terms(p, *, fast_q4, lanes, row_count, dot_q4, dot_q6):
                 )
 
     def q6_terms(acc, x, w, base, tile, lane, slot, scale):
-        if dot_q6:
-            for half in range(2):
-                q6_vector(acc[slot][0], x, w, base, tile, lane, half, scale)
-        else:
-            for group in range(8):
-                q6_scalar(acc[slot][0], x, w, base, tile, lane, group, scale)
+        # A 16-lane subgroup owns both halves of the original 32-lane
+        # assignment, retaining all 256 coefficients without cross-subgroup
+        # workgroup barriers on Mali.
+        for segment in range(32 // lanes):
+            logical_lane = lane + segment * lanes
+            if dot_q6:
+                for half in range(2):
+                    q6_vector(acc[slot][0], x, w, base, tile, logical_lane, half, scale)
+            else:
+                for group in range(8):
+                    q6_scalar(acc[slot][0], x, w, base, tile, logical_lane, group, scale)
 
     @T.macro
     def scalar_term(acc: T.Ref, x, index, scale, packed, shift, offset):

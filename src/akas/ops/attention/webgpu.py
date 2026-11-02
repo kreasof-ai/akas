@@ -189,9 +189,39 @@ def window_prefill(spec, schedule):
             right = kvector(keys, channel, lane)
             score_rows(dots, queries, right, head, channel)
 
-    @T.macro
-    def exchange(value, offset):
-        return T.call_extern("float32", "subgroupShuffleXor", value, T.uint32(offset))
+    def reduction(maximum):
+        @T.macro
+        def reduce(value: T.Ref, scratch, row, head, lane):
+            if T.call_extern("uint32", "tensor_subgroup_size") >= 32:
+                for step in T.unroll(5):
+                    other = T.call_extern(
+                        "float32", "subgroupShuffleXor", value, T.uint32(16 >> step)
+                    )
+                    if maximum:
+                        value = T.max(value, other)
+                    else:
+                        value = value + other
+            else:
+                scratch[row, head, lane] = value
+                T.sync_threads()
+                for step in T.unroll(5):
+                    if lane < (16 >> step):
+                        if maximum:
+                            scratch[row, head, lane] = T.max(
+                                scratch[row, head, lane],
+                                scratch[row, head, lane + (16 >> step)],
+                            )
+                        else:
+                            scratch[row, head, lane] += scratch[
+                                row, head, lane + (16 >> step)
+                            ]
+                    T.sync_threads()
+                value = scratch[row, head, 0]
+                T.sync_threads()
+
+        return reduce
+
+    reduce_max, reduce_sum = reduction(True), reduction(False)
 
     @T.macro
     def probabilities(
@@ -217,15 +247,13 @@ def window_prefill(spec, schedule):
         score = T.if_then_else(live, score * d**-0.5, -1e30)
         peak = T.alloc_var("float32")
         peak = score
-        for step in T.unroll(5):
-            peak = T.max(peak, exchange(peak, 16 >> step))
+        reduce_max(peak, probs, i, head, lane)
         next_max = T.max(maximum, peak)
         factor = T.exp(maximum - next_max)
         probability = T.if_then_else(live, T.exp(score - next_max), 0)
         total = T.alloc_var("float32")
         total = probability
-        for step in T.unroll(5):
-            total += exchange(total, 16 >> step)
+        reduce_sum(total, probs, i, head, lane)
         norm = norm * factor + total
         maximum = next_max
         probs[i, head, lane] = probability
@@ -505,11 +533,7 @@ def window_decode(spec, schedule):
         raise ValueError("decode key unroll must be 1, 2, 4 or 8")
 
     @T.macro
-    def exchange(value, offset):
-        return T.call_extern("float32", "subgroupShuffleXor", value, T.uint32(offset))
-
-    @T.macro
-    def score_key(score: T.Ref, q0, q1, q2, q3, kc, row, head, token, lane, end):
+    def score_key(score: T.Ref, q0, q1, q2, q3, kc, row, head, token, lane, end, scratch, tx):
         physical = token % cap
         score = q0 * T.cast(
             kc[row, head // (heads // kh), physical, lane], "float32"
@@ -520,14 +544,26 @@ def window_decode(spec, schedule):
             ) + q3 * T.cast(
                 kc[row, head // (heads // kh), physical, lane + 96], "float32"
             )
-        for step in T.unroll(5):
-            score += exchange(score, 16 >> step)
+        if T.call_extern("uint32", "tensor_subgroup_size") >= 32:
+            for step in T.unroll(5):
+                score += T.call_extern(
+                    "float32", "subgroupShuffleXor", score, T.uint32(16 >> step)
+                )
+        else:
+            scratch[tx] = score
+            T.sync_threads()
+            for step in T.unroll(5):
+                if lane < (16 >> step):
+                    scratch[tx] += scratch[tx + (16 >> step)]
+                T.sync_threads()
+            score = scratch[tx - lane]
+            T.sync_threads()
         score = T.if_then_else(token < end, score * d**-0.5, -1e30)
 
-    def score_keys(scores, q0, q1, q2, q3, kc, row, head, base, lane, end):
+    def score_keys(scores, q0, q1, q2, q3, kc, row, head, base, lane, end, scratch, tx):
         for j in range(unroll):
             score_key(
-                scores[j,][0], q0, q1, q2, q3, kc, row, head, base + j * 4, lane, end
+                scores[j,][0], q0, q1, q2, q3, kc, row, head, base + j * 4, lane, end, scratch, tx
             )
 
     @T.macro
@@ -625,6 +661,7 @@ def window_decode(spec, schedule):
             maxima = T.alloc_shared((4,), "float32")
             sums = T.alloc_shared((4,), "float32")
             values = T.alloc_shared((4, d), "float32")
+            scratch = T.alloc_shared((128,), "float32")
             maximum, normalizer = T.alloc_var("float32"), T.alloc_var("float32")
             a0, a1 = T.alloc_var("float32"), T.alloc_var("float32")
             a2, a3 = T.alloc_var("float32"), T.alloc_var("float32")
@@ -637,7 +674,7 @@ def window_decode(spec, schedule):
             for offset in T.serial(T.ceildiv(T.max(end - begin, 0), 4 * unroll)):
                 token = begin + offset * (4 * unroll) + warp
                 scores, probs = registers((unroll,)), registers((unroll,))
-                score_keys(scores, q0, q1, q2, q3, kc, row, head, token, lane, end)
+                score_keys(scores, q0, q1, q2, q3, kc, row, head, token, lane, end, scratch, tx)
                 next_max = T.alloc_var("float32")
                 next_max = maximum
                 max_keys(next_max, scores)

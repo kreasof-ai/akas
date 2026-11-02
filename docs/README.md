@@ -12,6 +12,7 @@ Start with the [project setup](../README.md) and the
 | Compile and tune a program | [Compilation](../src/akas/compilation/README.md) |
 | Optimize and serve a deployment | [Optimization](optimization.md) |
 | Measure performance and find previous results | [Benchmarking](benchmarking.md) |
+| Run the experimental Android consumer and CPU comparison | [Android](android.md) |
 | Understand request state and execution | [Execution](../src/akas/execution/README.md) |
 
 [Benchmark records](../benchmarks/README.md) hold dated results and their evidence.

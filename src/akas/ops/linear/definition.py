@@ -1462,7 +1462,7 @@ IMPLEMENTATIONS += tuple(
             ("half_k", 16),
         ),
         space=(
-            ("half_layout", (0, 1, 2, 3, 4, 5)),
+            ("half_layout", (0, 1, 2, 3, 4, 5, 6, 7)),
             ("half_pad", (1, 0)),
             ("half_native", (True, False)),
             ("half_k", (16, 32, 64)),

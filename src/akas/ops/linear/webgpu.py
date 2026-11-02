@@ -245,7 +245,8 @@ def gemv_packed(p, paired=False, add_residual=False):
             raise ValueError("unsupported packed Q4 decode schedule")
     if q == 14:
         threads = p.get("gemv_threads", 128)
-        if threads not in (64, 128, 256, 512):
+        lanes = p.get("gemv_lanes", 32)
+        if threads not in (64, 128, 256, 512) or lanes not in (16, 32):
             raise ValueError("invalid Q6 decode workgroup")
     row_count = threads // lanes
     tiles = (
@@ -588,6 +589,8 @@ def half_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
         (32, 128, 4, 8, 128),
         (64, 128, 8, 8, 128),
         (128, 128, 8, 8, 256),
+        (16, 32, 2, 2, 128),
+        (16, 64, 2, 4, 128),
     )
     m, n, mm, mn, threads = layouts[p.get("half_layout", 0)]
     if p["r"] <= 8:
