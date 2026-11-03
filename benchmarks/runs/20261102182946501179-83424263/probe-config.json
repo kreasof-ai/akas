@@ -1,0 +1,38 @@
+{
+  "device_name": "NVIDIA H200",
+  "checkpoint": "/__modal/volumes/vo-L3ed7Ri26d4wwJmup0wmcp/checkpoint",
+  "mode": "ar",
+  "provider": "cuda",
+  "output_tokens": 128,
+  "shapes": [
+    [
+      1,
+      2048
+    ],
+    [
+      4,
+      2048
+    ],
+    [
+      16,
+      2048
+    ],
+    [
+      64,
+      2048
+    ],
+    [
+      256,
+      2048
+    ]
+  ],
+  "runtime_options": {
+    "kv_cache_dtype": "auto"
+  },
+  "optimized": true,
+  "streaming": true,
+  "warmup": 1,
+  "repeats": 3,
+  "deadline_seconds": 900,
+  "vocab": 128000
+}
