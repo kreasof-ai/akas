@@ -22,8 +22,8 @@ def run(config):
         enable_prefix_caching=False,
         disable_log_stats=False,
         seed=17,
-        **config["runtime_options"],
     )
+    settings.update(config["runtime_options"])
     if config.get("optimized"):
         settings["compilation_config"] = dict(
             cudagraph_capture_sizes=sorted({b for b, _ in config["shapes"]})
@@ -64,6 +64,9 @@ def run(config):
 
         try:
             measurements(config, invoke, report)
+            if config.get("probe_prompts"):
+                from tools.baselines.common import reference_probes
+                loop.run_until_complete(reference_probes(config, generate, report))
         finally:
             llm.shutdown()
             loop.close()

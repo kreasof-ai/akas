@@ -261,6 +261,14 @@ def test_native_moe_rejects_unsupported_semantics_before_allocating(tmp_path, mu
     ("expert_tile_map", dict(r=33, experts=7, top=3)),
     ("quantize", dict(r=3, k=256, input_dtype="float32")),
     ("conv", dict(r=3, c=128, length=3, chunk=2048)),
+    ("expert_swiglu", dict(r=1, rows=1, k=384, o=256, experts=7, top=3,
+        partitions=1, block_m=16, compact=True, tile_map=True,
+        input_dtype="uint8", weight_format="fp8", columns=16, threads=128,
+        pair_layout="wide", stages=2, activation_vector=16)),
+    ("expert_swiglu", dict(r=4, rows=4, k=384, o=256, experts=7, top=3,
+        partitions=1, block_m=16, compact=True, tile_map=True,
+        input_dtype="uint8", weight_format="fp8", columns=16, threads=64,
+        pair_layout="wide", stages=2, activation_vector=16)),
 ])
 def test_native_operations_match_independent_references(tmp_path, kind, p):
     import tensor

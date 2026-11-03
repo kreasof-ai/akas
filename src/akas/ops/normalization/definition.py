@@ -161,7 +161,14 @@ def search_policies(graph, commit, *, provider, target):
     candidate = fuse_residual_normalization(
         Graph.from_metadata(graph.metadata()), batched=True
     )
-    return [{"fused_residual": True}] if len(candidate.calls) < len(graph.calls) else []
+    if len(candidate.calls) >= len(graph.calls):
+        return []
+    if target == "sm_90a":
+        return [
+            {"fused_residual": True, "fused_staging": True},
+            {"fused_residual": True},
+        ]
+    return [{"fused_residual": True}]
 
 
 ROW_INDEPENDENT = ("rms",)
@@ -340,6 +347,15 @@ IMPLEMENTATIONS = (
         "akas.ops.normalization.kernel",
         "reference",
         defaults=(("algorithm", "serial-tree"),),
+        semantic_keys=("r", "c", "eps", "input_dtype", "weight_dtype", "output_dtype"),
+        space=(
+            ("algorithm", ("serial-tree", "fragment", "parallel-tree")),
+            ("rows_per_block", (1, 4, 8, 16)),
+            ("threads", (64, 128, 256)),
+            ("min_blocks", (1, 2, 4, 8)),
+            ("flat", (False, True)),
+            ("stage_values", (False, True)),
+        ),
         factory="rms",
         name="normalization.kernel",
     ),
@@ -357,6 +373,25 @@ IMPLEMENTATIONS = (
         "akas.ops.normalization.kernel",
         "reference",
         defaults=(("flat", True), ("separate_residual", True)),
+        semantic_keys=(
+            "r",
+            "c",
+            "eps",
+            "input_dtype",
+            "mixed_dtype",
+            "residual_dtype",
+            "weight_dtype",
+            "output_dtype",
+        ),
+        space=(
+            ("algorithm", ("fragment", "serial-tree", "parallel-tree")),
+            ("separate_residual", (True, False)),
+            ("flat", (True, False)),
+            ("rows_per_block", (1, 4, 8, 16)),
+            ("threads", (64, 128, 256)),
+            ("min_blocks", (1, 2, 4, 8)),
+            ("stage_values", (False, True)),
+        ),
         factory="add_rms",
         name="normalization.kernel",
     ),

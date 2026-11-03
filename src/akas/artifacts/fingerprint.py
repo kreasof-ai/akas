@@ -66,11 +66,13 @@ def runtime_hashes(provider="cuda"):
         )
     )
     names.update(("tensor.artifacts.format", "tensor.providers." + provider))
+    if find_spec("tensor.runtime.tensor_map") is not None:
+        names.add("tensor.runtime.tensor_map")
     if find_spec("tensor.runtime.domain") is not None:
         names.add("tensor.runtime.domain")
     if provider == "cuda":
         names.update(
-            "tensor.providers.cuda." + name for name in ("device", "driver", "graph")
+            "tensor.providers.cuda." + name for name in ("device", "driver", "graph", "tensor_map")
         )
     elif provider == "webgpu":
         names.update(
@@ -97,7 +99,13 @@ def validate_implementation(manifest, expected):
 def _compiler_identity(provider):
     if provider == "cuda":
         path = Path(find_spec("tensor.compiler.cuda.lowering").origin)
-        return {"lowering_sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+        result = {"lowering_sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+        for module, key in (("tensor.compiler.frontend.signature", "signature_sha256"),
+                            ("tensor.compiler.cuda.tensor_map", "tensor_map_sha256")):
+            spec = find_spec(module)
+            if spec is not None:
+                result[key] = hashlib.sha256(Path(spec.origin).read_bytes()).hexdigest()
+        return result
     from tensor.compiler.webgpu.identity import lowering_hash
 
     producer = Path(find_spec("tensor.compiler.webgpu.build").origin)

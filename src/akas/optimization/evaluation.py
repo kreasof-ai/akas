@@ -198,7 +198,12 @@ def evaluate(executor, recipe, workload, *, reference=None, evidence=None):
     engine = Engine(
         backend,
         config=EngineConfig(
-            prefill_chunk=recipe["chunk"], prefill_requests=recipe["prefill_requests"],
+            prefill_chunk=recipe["chunk"],
+            prefill_requests=(
+                max(workload["batches"])
+                if recipe.get("prefill_token_budget")
+                else recipe["prefill_requests"]
+            ),
             prefill_token_budget=recipe.get("prefill_token_budget"),
             decode_prefill_token_budget=recipe.get("decode_prefill_token_budget"),
         ),
@@ -261,6 +266,14 @@ def evaluate(executor, recipe, workload, *, reference=None, evidence=None):
                             native[key]["native_speculation"] = session.stats
                         native_speculation[key] = {name: value - before[name]
                                                    for name, value in backend.stats.items()}
+                    if skip_autotune and warmup == 0 and hasattr(executor, "batch"):
+                        executor.batch(batch, 1)
+                        executor.batch(
+                            min(batch, recipe["prefill_requests"]),
+                            min(prefix, recipe["chunk"]),
+                        )
+                        if hasattr(executor, "device"):
+                            executor.device.synchronize()
                     for _ in range(warmup):
                         measured_requests(
                             engine,
@@ -269,16 +282,29 @@ def evaluate(executor, recipe, workload, *, reference=None, evidence=None):
                             workload["output_tokens"],
                             timeout=shape_timeout,
                         )
-                    samples = [
-                        measured_requests(
+                    samples = []
+                    for rep_idx in range(repeats):
+                        s = measured_requests(
                             engine,
                             batch,
                             prefix,
                             workload["output_tokens"],
                             timeout=shape_timeout,
                         )
-                        for _ in range(repeats)
-                    ]
+                        samples.append(s)
+                        pp_s = max(s["ttft_ms"] / 1000.0, 1e-6)
+                        tg_s = max(
+                            s.get("tpot_ms", 0.0) * decode_steps / 1000.0,
+                            s["seconds"] - pp_s,
+                            1e-6,
+                        )
+                        print(
+                            f"SAMPLE B={batch} P={prefix} rep={rep_idx} "
+                            f"prefill={sum(case.lengths) / pp_s:.1f} "
+                            f"decode={case.batch * decode_steps / tg_s:.1f} "
+                            f"ttft_ms={s['ttft_ms']:.1f} tpot_ms={s['tpot_ms']:.2f}",
+                            flush=True,
+                        )
                 except TimeoutError as err:
                     if not skip_autotune:
                         err.results = rows + [
@@ -345,11 +371,28 @@ def evaluate(executor, recipe, workload, *, reference=None, evidence=None):
                         )
                     ):
                         validation_error = f"greedy output differs from baseline for B{batch}/P{prefix}"
+                if (
+                    validation_error is None
+                    and expected is not None
+                    and expected.get("status") == "ok"
+                    and expected.get("serving", {}).get("seconds")
+                ):
+                    median_s = statistics.median(s["seconds"] for s in samples)
+                    base_s = expected["serving"]["seconds"]
+                    if median_s > base_s * 1.20:
+                        validation_error = (
+                            f"early phase regression gate failed for B{batch}/P{prefix}: "
+                            f"{median_s:.3f}s vs incumbent {base_s:.3f}s"
+                        )
                 if key not in native:
                     nat_samples = []
                     for s in samples:
                         pp = max(s["ttft_ms"] / 1000.0, 1e-6)
-                        tg = max(s["seconds"] - pp, 1e-6)
+                        tg = max(
+                            s.get("tpot_ms", 0.0) * decode_steps / 1000.0,
+                            s["seconds"] - pp,
+                            1e-6,
+                        )
                         nat_samples.append(
                             dict(
                                 context_seconds=0.0,

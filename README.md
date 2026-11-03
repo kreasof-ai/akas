@@ -59,6 +59,45 @@ for raw samples, selected kernel schedules and logit comparisons.
 
 Regenerate the plot with `uv run python tools/plot_comparison.py`.
 
+**LFM2.5-24B-A2B-FP8 · Block-scaled FP8 weights · NVIDIA H200 (143,771 MiB) · CUDA**
+
+Results from the [November 3, 2026 comparison](https://github.com/kreasof-ai/akas/blob/2e8d1df4513b30ad7806606e0f47b09d8e5485f7/benchmarks/reports/20261103T091207Z-e3686524dce5/COMPARISON.md),
+across concurrent batch sizes 1 through 256 with 2,048 prompt tokens and 128 total
+output tokens per request. All runtimes use identical official checkpoint bytes,
+deterministic synthetic prompt IDs, pure autoregressive decoding and 16-bit KV
+(AKAS FP16 KV; vLLM 0.31.0 and SGLang 0.5.21 BF16 KV).
+
+![LFM2.5-24B-A2B-FP8 prefill and decode throughput across concurrent requests 1 through 256, comparing AKAS, vLLM and SGLang on NVIDIA H200.](https://raw.githubusercontent.com/kreasof-ai/akas/9a0a9fe89bd88e078ca230a1d01ad65a0fa41a53/benchmarks/runs/20261103091212903514-d753d574/figures/throughput.svg)
+
+<details>
+<summary>Measurements (tokens per second) and median TTFT</summary>
+
+| Concurrent requests | AKAS prefill tok/s | vLLM prefill tok/s | SGLang prefill tok/s | AKAS decode tok/s | vLLM decode tok/s | SGLang decode tok/s | AKAS TTFT ms | vLLM TTFT ms | SGLang TTFT ms |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 64,458.8 | 25,618.1 | 34,099.5 | 319.3 | 333.8 | 250.8 | 31.8 | 79.9 | 60.1 |
+| 4 | 87,152.9 | 51,464.2 | 57,952.2 | 932.5 | 998.5 | 755.5 | 94.0 | 159.2 | 141.4 |
+| 16 | 92,201.5 | 78,728.2 | 92,650.8 | 2,207.9 | 2,107.2 | 1,705.6 | 355.4 | 416.2 | 353.7 |
+| 64 | 90,179.5 | 87,455.9 | 98,686.5 | 6,343.1 | 3,699.2 | 3,253.0 | 1,453.5 | 1,498.7 | 1,328.2 |
+| 256 | 89,432.5 | 86,126.2 | 100,233.6 | 14,799.1 | 5,071.3 | 4,479.9 | 5,862.4 | 6,087.4 | 5,230.7 |
+
+</details>
+
+AKAS prefill rates exceed vLLM at **5/5 batch sizes** (up to **2.52x** at B=1 and
+**+17.1%** at B=16) and exceed SGLang at **B=1 (+89.0%) and B=4 (+50.4%)**, reaching
+**92,201.5 tok/s** at B=16. Decode rates exceed SGLang at **5/5 batch sizes** and
+exceed both baselines at **B=16 (+4.8%, 49.7% MBU), B=64 (+71.5%, 56.1% MBU) and
+B=256 (+191.8%, 14,799.1 tok/s, 43.1% MBU)**. See the
+[campaign report](https://github.com/kreasof-ai/akas/blob/2e8d1df4513b30ad7806606e0f47b09d8e5485f7/benchmarks/reports/20261103T091207Z-e3686524dce5/README.md)
+and [selected schedules](https://github.com/kreasof-ai/akas/blob/2e8d1df4513b30ad7806606e0f47b09d8e5485f7/benchmarks/reports/20261103T091207Z-e3686524dce5/SCHEDULES.json)
+for full provenance, MFU/MBU estimates and kernel configurations.
+
+Regenerate the plot after retrieving the archived report:
+
+```sh
+python -m tools.benchmark_archive fetch reports 20261103T091207Z-e3686524dce5
+uv run python -m tools.plot_comparison REPORT_DIRECTORY/report.json build/throughput-h200.svg
+```
+
 **LFM2.5-2.6B · Q4_0 weights · AMD Radeon RX 6700 XT (12 GB) · Vulkan**
 
 Results from the [October 25, 2026 comparison](https://github.com/kreasof-ai/akas/blob/1313601fac2716250811b46f727493a64df4b82d/benchmarks/reports/20261024T191042Z-60f28059ed28/COMPARISON.md),

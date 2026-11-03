@@ -1,0 +1,32 @@
+{
+  "schema": "akas.matrix-campaign.v1",
+  "models": [
+    "lfm2.5-24b-a2b-fp8"
+  ],
+  "formats": [
+    "fp8"
+  ],
+  "backends": [
+    "cuda"
+  ],
+  "caches": [
+    "float16"
+  ],
+  "workload": "concurrent-prefill-v1",
+  "configuration_budget": "30m",
+  "baseline_lock": "benchmarks/runs/20261102212730368879-95d732f7/frozen-baselines.lock.json",
+  "baselines": [
+    {
+      "runtime": "vllm",
+      "provider": "cuda",
+      "weight_format": "fp8",
+      "mode": "ar"
+    },
+    {
+      "runtime": "sglang",
+      "provider": "cuda",
+      "weight_format": "fp8",
+      "mode": "ar"
+    }
+  ]
+}

@@ -72,6 +72,12 @@ def run(specification, out, *, budget, slice_seconds, history):
         measurement_limits=measurement_limits(),
         source=source_identity(root)["tree_sha256"],
     )
+    baseline_lock = None
+    if spec.get("baseline_lock"):
+        baseline_lock = json.loads((root / spec["baseline_lock"]).read_text())
+        if baseline_lock.get("schema") != "akas.baseline-lock.v1":
+            raise ValueError("unsupported baseline lock schema")
+        frozen["baseline_lock"] = baseline_lock
     fingerprint = identity(frozen)
     cap = duration(spec.get("configuration_budget", "1h"))
     out = Path(out).resolve()
@@ -102,6 +108,8 @@ def run(specification, out, *, budget, slice_seconds, history):
                 spent_seconds=0,
                 entries=entries(spec, root),
             )
+            if baseline_lock is not None:
+                state["baseline_lock"] = baseline_lock
         # A hard-killed coordinator cannot know how much of its last grant was
         # used. Charge the reserved grant rather than silently reset that time.
         active = state.pop("active", None)
@@ -224,6 +232,144 @@ def run(specification, out, *, budget, slice_seconds, history):
         return state
 
 
+def modal_command(
+    spec,
+    out,
+    *,
+    budget,
+    slice_duration="30m",
+    history="/data/standard-benchmarks",
+    no_autotune=False,
+    shape_timeout=None,
+    python="python",
+):
+    command = [
+        python,
+        "-u",
+        "-m",
+        "tools.campaign",
+        "--spec",
+        str(spec),
+        "--out",
+        str(out),
+        "--budget",
+        str(budget),
+        "--slice",
+        str(slice_duration),
+        "--history",
+        str(history),
+    ]
+    if no_autotune:
+        command.append("--no-autotune")
+    if shape_timeout is not None:
+        command.extend(["--shape-timeout", str(shape_timeout)])
+    return command
+
+
+def run_modal(args):
+    import subprocess
+    import modal
+
+    root = Path(__file__).resolve().parents[1]
+    tensor_root = root.parent / "tensor"
+    volume = modal.Volume.from_name(args.modal_volume)
+    image = (
+        modal.Image.from_registry(
+            "nvidia/cuda:13.0.2-devel-ubuntu24.04", add_python="3.12"
+        )
+        .apt_install("git", "g++", "curl", "libnuma1")
+        .env(
+            {
+                "HF_HOME": "/data/hf",
+                "CUDA_HOME": "/usr/local/cuda",
+                "OMP_NUM_THREADS": "4",
+                "OPENBLAS_NUM_THREADS": "1",
+                "MAX_JOBS": "4",
+                "PYTHONPATH": "/workspace/akas/src:/workspace/akas:/workspace/tensor/src",
+                "TENSOR_NVRTC_HOME": "/usr/local/cuda",
+                "TOKENIZERS_PARALLELISM": "false",
+            }
+        )
+        .uv_pip_install(
+            "numpy==2.5.3",
+            "tilelang==0.1.14",
+            "apache-tvm-ffi==0.1.12",
+            "torch",
+            "safetensors",
+            "huggingface-hub",
+            "aiohttp",
+            "regex",
+        )
+        .add_local_dir(root / "src", "/workspace/akas/src")
+        .add_local_dir(root / "tools", "/workspace/akas/tools")
+        .add_local_dir(tensor_root / "src", "/workspace/tensor/src")
+        .add_local_dir(
+            root / "benchmarks",
+            "/workspace/akas/benchmarks",
+            ignore=["**/*.tar.gz", "**/*.npz", "**/*.json.gz"],
+        )
+    )
+    app = modal.App("akas-campaign")
+    zero_budget = str(args.budget).strip() in ("0", "0s", "0m", "0h")
+    effective_budget = args.slice if zero_budget else args.budget
+    cmd = modal_command(
+        args.spec,
+        args.out,
+        budget=effective_budget,
+        slice_duration=args.slice,
+        history=args.history,
+        no_autotune=args.no_autotune or zero_budget,
+        shape_timeout=args.shape_timeout,
+    )
+    timeout = max(600, int(duration(effective_budget)) + 300)
+
+    @app.function(
+        image=image,
+        gpu=args.modal_gpu,
+        volumes={"/data": volume},
+        timeout=timeout,
+        cpu=4,
+        memory=65536,
+        scaledown_window=2,
+        max_containers=1,
+        serialized=True,
+    )
+    def execute_remote(command: list[str]):
+        import os
+
+        for rel in ("build/checkpoint", "build/checkpoints/lfm2.5-24b-a2b-fp8"):
+            ckpt = Path("/workspace/akas") / rel
+            if not ckpt.exists() and Path("/data/checkpoint").exists():
+                ckpt.parent.mkdir(parents=True, exist_ok=True)
+                ckpt.symlink_to("/data/checkpoint")
+        env = dict(os.environ)
+        env.setdefault(
+            "AKAS_CHECKPOINT_SHA256",
+            "dff2336439834c4ce4e2c6f0f7b6cd829987f7e9d57ec8074354e0b2cacb2830",
+        )
+        for candidate_prog in (
+            "/data/programs/builtin-winners-v4",
+            "/data/programs/builtin-winners-v3",
+            "/data/programs/builtin-winners-v2",
+            "/data/programs/builtin-winners-v1",
+            "/data/programs/builtin-measured-225932",
+        ):
+            if Path(candidate_prog, "program.json").is_file():
+                env.setdefault("AKAS_PRECOMPILED_PROGRAM", candidate_prog)
+                break
+        env.setdefault("AKAS_SKIP_HTTP_BENCHMARK", "1")
+        proc = subprocess.run(command, cwd="/workspace/akas", env=env)
+        for log_file in sorted(Path(str(args.out)).rglob("worker.log")):
+            print(f"=== {log_file} ===", flush=True)
+            print(log_file.read_text(), flush=True)
+        volume.commit()
+        if proc.returncode != 0:
+            raise SystemExit(proc.returncode)
+
+    with modal.enable_output(), app.run():
+        execute_remote.remote(cmd)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -256,11 +402,26 @@ def main():
         default=None,
         help="maximum duration per measurement repetition, including diagnostics, e.g. 2m",
     )
+    parser.add_argument(
+        "--modal-gpu",
+        default=None,
+        help="run the campaign inside a single-container Modal GPU worker, e.g. H200",
+    )
+    parser.add_argument(
+        "--modal-volume",
+        default="akas-h200-evidence",
+        help="Modal volume mounted at /data when --modal-gpu is used",
+    )
     args = parser.parse_args()
-    if args.no_autotune:
+    if args.modal_gpu:
+        run_modal(args)
+        return
+    zero_budget = str(args.budget).strip() in ("0", "0s", "0m", "0h")
+    if args.no_autotune or zero_budget:
         import os
 
         os.environ["AKAS_SKIP_AUTOTUNE"] = "1"
+        os.environ.setdefault("AKAS_SKIP_HTTP_BENCHMARK", "1")
     if args.shape_timeout is not None:
         import os
 
@@ -270,10 +431,11 @@ def main():
             json.dumps(entries(json.loads(args.spec.read_text()), Path.cwd()), indent=2)
         )
         return
+    effective_budget = duration(args.slice) if zero_budget else duration(args.budget)
     state = run(
         args.spec,
         args.out,
-        budget=duration(args.budget),
+        budget=effective_budget,
         slice_seconds=duration(args.slice),
         history=args.history,
     )

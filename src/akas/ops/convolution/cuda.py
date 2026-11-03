@@ -45,6 +45,7 @@ def parallel_prefill(spec, schedule):
     ]:
         out = output(r * chunk * c, output_dtype, position=3)
         with T.Kernel(T.ceildiv(c, columns), r, threads=threads) as (bx, row):
+            T.annotate_min_blocks_per_sm(p.get("min_blocks", 1))
             products = T.alloc_shared((time_tile, columns), "float32")
             history = T.alloc_shared((length - 1, columns), "float32")
             coeff = T.alloc_shared((length, columns), "float32")

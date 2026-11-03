@@ -135,7 +135,25 @@ def search_policies(graph, commit, *, provider, target):
     if floating:
         choices.insert(0, {**(choices[0] if choices else {}), "floating_matmul": True})
     if target == "sm_90a" and has_fp8:
-        choices.append({"hopper": True, "partitions": 2})
+        if graph.contract == "reference":
+            choices.insert(
+                0,
+                {
+                    "stage_inputs": True,
+                    "floating_matmul": True,
+                    "partitions": 8,
+                    "minimum_split_groups": 128,
+                    "partition_maximum_rows": 4,
+                    "minimum_rows": 1,
+                    "columns": 128,
+                    "block_m": 32,
+                    "threads": 256,
+                    "stages": 2,
+                    "packed_copy": True,
+                },
+            )
+        else:
+            choices.append({"hopper": True, "partitions": 2})
     return choices
 
 
@@ -145,6 +163,7 @@ def lower(graph, commit, settings, *, provider, target):
 
     allowed = {
         "partitions",
+        "partition_maximum_rows",
         "columns",
         "block_m",
         "threads",
@@ -356,6 +375,11 @@ def lower(graph, commit, settings, *, provider, target):
         type(minimum_groups) is not int or minimum_groups < 1
     ):
         raise ValueError("projection minimum split groups must be a positive integer")
+    maximum_rows = settings.get("partition_maximum_rows")
+    if maximum_rows is not None and (
+        type(maximum_rows) is not int or maximum_rows < 1
+    ):
+        raise ValueError("projection partition maximum rows must be a positive integer")
     recorder = Graph(contract=graph.contract, phase=graph.phase)
     recorder.buffers = graph.buffers
     quantized, valid = ({}, set())
@@ -386,14 +410,23 @@ def lower(graph, commit, settings, *, provider, target):
             names = dict(call.bindings)
         p = call.parameters
         count, depth, width = (p["r"], p["k"], p["o"])
-        parts = _projection_partitions(
-            count,
-            depth,
-            width,
-            partitions,
-            minimum_groups,
-            settings.get("block_m", 16),
-            settings.get("columns", 64),
+        row_settings = (
+            {**settings, "columns": 32, "block_m": 16, "threads": 128}
+            if maximum_rows is not None and count == 1
+            else settings
+        )
+        parts = (
+            1
+            if maximum_rows is not None and count > maximum_rows
+            else _projection_partitions(
+                count,
+                depth,
+                width,
+                partitions,
+                minimum_groups,
+                row_settings.get("block_m", 16),
+                row_settings.get("columns", 64),
+            )
         )
         if "activation_scales" not in names:
             source = names["x"]
@@ -445,8 +478,13 @@ def lower(graph, commit, settings, *, provider, target):
             "packed_copy": False,
             **{
                 name: value
-                for name, value in settings.items()
-                if name not in ("minimum_rows", "minimum_split_groups")
+                for name, value in row_settings.items()
+                if name
+                not in (
+                    "minimum_rows",
+                    "minimum_split_groups",
+                    "partition_maximum_rows",
+                )
             },
         }
         parameters["partitions"] = parts
@@ -1265,10 +1303,13 @@ IMPLEMENTATIONS = (
         "block-fp8",
         space=(
             ("columns", (64, 32, 128)),
-            ("block_m", (16, 32, 64)),
+            ("block_m", (16, 32, 64, 128)),
             ("threads", (128, 256)),
             ("stages", (1, 2, 3)),
             ("packed_copy", (False, True)),
+            ("combined_scales", (False, True)),
+            ("min_blocks", (1, 2, 3, 4)),
+            ("tma", (False, True)),
         ),
         semantic_keys=("r", "k", "o", "partitions"),
         factory="fp8_prequantized",
@@ -1596,8 +1637,8 @@ IMPLEMENTATIONS += (
         accepts=lambda p: p.get("dtype", "float32") == "float32",
         semantic_keys=("r", "k", "o", "dtype", "reduction_lanes"),
         space=(
-            ("block_m", (8, 16, 32)),
-            ("block_n", (8, 16, 32)),
+            ("block_m", (8, 16, 32, 64)),
+            ("block_n", (8, 16, 32, 64)),
             ("block_k", (128, 64, 32)),
             ("threads", (128, 256)),
             ("stages", (2, 1, 3)),
@@ -1801,6 +1842,7 @@ IMPLEMENTATIONS += (
         name="linear.cuda.fp8-gemv:reference",
         priority=20,
         accepts=lambda p: p["r"] <= 8,
+        space=(("columns", (2, 4, 8, 16)), ("threads", (64, 128, 256))),
     ),
 )
 
@@ -1820,4 +1862,17 @@ IMPLEMENTATIONS += tuple(
     for item in IMPLEMENTATIONS
     if item.contract == "block-fp8"
     and item.kind in ("projection_partial", "projection_merge")
+)
+
+from dataclasses import replace as _with_algorithm_choice
+IMPLEMENTATIONS = tuple(
+    replace(item, space=(*item.space, ('mma_orientation', ('activation', 'weight'))))
+    if item.module_name == 'akas.ops.linear.cuda' and item.factory in ('fp8_inline','fp8_prequantized')
+    else item for item in IMPLEMENTATIONS
+)
+IMPLEMENTATIONS = tuple(
+    _with_algorithm_choice(item, space=(*item.space, ("algorithm", ("auto", "mma", "gemv")), ("tma", (False, True))))
+    if item.provider == "cuda" and item.factory == "floating_linear"
+    else item
+    for item in IMPLEMENTATIONS
 )

@@ -26,6 +26,17 @@ def lower(graph, commit, settings, *, provider, target):
     return graph, commit
 
 
+def search_policies(graph, commit, *, provider, target):
+    if (
+        provider == "cuda"
+        and graph.contract == "reference"
+        and target == "sm_90a"
+        and any(call.kind == "conv" for call in graph.calls)
+    ):
+        return [{"fused_staging": True}]
+    return []
+
+
 IMPLEMENTATIONS = (
     Implementation(
         "conv",
@@ -34,7 +45,7 @@ IMPLEMENTATIONS = (
         factory="parallel_prefill",
         name="convolution.cuda.parallel_prefill",
         priority=20,
-        targets=("sm_89",),
+        targets=("sm_89", "sm_90a"),
         accepts=lambda p: (
             p.get("chunk", 1) >= 32
             and p["c"] >= 128

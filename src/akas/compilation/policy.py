@@ -63,7 +63,17 @@ def lower(graph, commit=None, *, policy=None, provider="cuda", target=None):
     unknown = options.keys() - callbacks.keys()
     if unknown:
         raise ValueError(f"unknown operation policies: {sorted(unknown)}")
-    for operation, settings in options.items():
+    priority = {
+        "moe": 0,
+        "linear": 1,
+        "attention": 2,
+        "normalization": 3,
+        "convolution": 4,
+    }
+    ordered = sorted(
+        options.items(), key=lambda item: (priority.get(item[0], 2), item[0])
+    )
+    for operation, settings in ordered:
         if not isinstance(settings, dict):
             raise ValueError(f"{operation} policy must be a mapping")
         graph, commit = callbacks[operation](

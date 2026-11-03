@@ -231,7 +231,8 @@ def _parallel_argmax_calls(graph):
 def search_policies(graph, commit, *, provider, target):
     return (
         [{"parallel_argmax": True, "block": 1024}]
-        if any(call.parameters["c"] >= 4096 for call in _parallel_argmax_calls(graph))
+        if target != "sm_90a"
+        and any(call.parameters["c"] >= 4096 for call in _parallel_argmax_calls(graph))
         else []
     )
 
@@ -319,4 +320,13 @@ from .validation import parallel_argmax_validation
 
 VALIDATIONS.update(
     {kind: parallel_argmax_validation for kind in ("argmax_partial", "argmax_merge")}
+)
+
+
+from dataclasses import replace as _with_argmax_threads
+IMPLEMENTATIONS = tuple(
+    _with_argmax_threads(item, space=(*item.space, ("threads", (64, 128, 256, 512, 1024))))
+    if item.provider == "cuda" and item.factory == "argmax"
+    else item
+    for item in IMPLEMENTATIONS
 )

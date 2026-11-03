@@ -88,3 +88,10 @@ IMPLEMENTATIONS += (
         name="akas.quantization.activations.fp8:reference",
     ),
 )
+
+IMPLEMENTATIONS += (
+    Implementation('quantize','akas.quantization.activations.fp8.cuda','reference',
+        factory='warp_quantize',name='fp8.cuda.warp_quantize',priority=-10,
+        semantic_keys=('r','k','top','input_dtype','routed_input'),
+        space=(('groups_per_block',(2,4,8)),)),
+)

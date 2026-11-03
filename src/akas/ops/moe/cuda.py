@@ -5,6 +5,12 @@ from akas.kernels.definition import KernelSpec
 from akas.kernels.kernel import Tensor, kernel, output
 
 
+def buffer_view(*args, **kwargs):
+    from tensor.compiler.frontend.view import buffer_view as view
+
+    return view(*args, **kwargs)
+
+
 def quantized_experts(spec, schedule):
     """Packed expert GEMV for decode; grouped tensor-core GEMM for prefill."""
     import tilelang.language as T
@@ -272,7 +278,7 @@ def packed_experts(spec: KernelSpec, schedule: Mapping[str, object]):
         counts: Tensor((experts,), "int32"),
     ) -> Tensor((1, top, columns), "float32"):
         out = output((1, top, columns), "float32")
-        flat = T.view(x, (top * depth if routed else depth,), dtype=dtype)
+        flat = buffer_view(x, (top * depth if routed else depth,), dtype=dtype)
         with T.Kernel(T.ceildiv(columns, warps), top, threads=threads) as (block, rank):
             tx = T.get_thread_binding()
             lane, column = tx % 32, block * warps + tx // 32
@@ -577,7 +583,7 @@ def _bucketed(p, *, paired=False, quantized_output=True, partial_outputs=False):
         not compact
         or routed
         or o % 128
-        or n not in ((128,) if quantized_output else (32, 64, 128))
+        or n not in ((128,) if quantized_output else (16, 32, 64, 128))
     ):
         raise ValueError("invalid compact paired FP8 expert tile")
     pair_layout = p.get("pair_layout", "wide")
@@ -585,6 +591,10 @@ def _bucketed(p, *, paired=False, quantized_output=True, partial_outputs=False):
         raise ValueError("paired FP8 layout must be wide or separate")
     wide = paired and pair_layout == "wide"
     width = 2 * n if wide else n
+    orientation = p.get('mma_orientation', 'activation')
+    if orientation not in ('activation', 'weight'):
+        raise ValueError('invalid expert MMA operand orientation')
+    transposed = orientation == 'weight'
     mapped = p.get("tile_map", False)
     from akas.ops.moe.definition import tile_capacity
 
@@ -592,7 +602,7 @@ def _bucketed(p, *, paired=False, quantized_output=True, partial_outputs=False):
     from akas.ops.moe.definition import tile_layouts
 
     layout_count = tile_layouts(p)
-    if m not in (16, 32, 64, 128) or threads not in (128, 256, 512):
+    if m not in (16, 32, 64, 128) or threads not in (64, 128, 256, 512):
         raise ValueError("invalid native FP8 expert row tile or thread count")
     if mapped and m > p.get("max_block_m", 64):
         raise ValueError("expert row tile exceeds its shared map maximum")
@@ -613,6 +623,13 @@ def _bucketed(p, *, paired=False, quantized_output=True, partial_outputs=False):
         raise ValueError("packed expert output requires a packed paired projection")
 
     @T.macro
+    def partial_value(block, b, j):
+        if transposed:
+            return block[j,b]
+        else:
+            return block[b,j]
+
+    @T.macro
     def accumulate(block, total, scale, scales, scales2, bx, expert, tile):
         for b, j in T.Parallel(m, width):
             if wide:
@@ -626,12 +643,20 @@ def _bucketed(p, *, paired=False, quantized_output=True, partial_outputs=False):
                     scales[expert, (bx * n + j) // 128, tile], "float32"
                 )
             if compact:
-                product = T.call_extern("float32", "__fmul_rn", block[b, j], scale[b])
-                total[b, j] = T.call_extern(
-                    "float32", "__fmaf_rn", product, coefficient, total[b, j]
-                )
+                if p.get("combined_scales", False):
+                    combined = T.call_extern("float32", "__fmul_rn", scale[b], coefficient)
+                    total[b, j] = T.call_extern(
+                        "float32", "__fmaf_rn", partial_value(block, b, j), combined, total[b, j]
+                    )
+                else:
+                    product = T.call_extern(
+                        "float32", "__fmul_rn", partial_value(block, b, j), scale[b]
+                    )
+                    total[b, j] = T.call_extern(
+                        "float32", "__fmaf_rn", product, coefficient, total[b, j]
+                    )
             else:
-                total[b, j] += block[b, j] * scale[b] * coefficient
+                total[b, j] += partial_value(block, b, j) * scale[b] * coefficient
 
     @T.macro
     def body(
@@ -651,6 +676,7 @@ def _bucketed(p, *, paired=False, quantized_output=True, partial_outputs=False):
         tokens,
         part,
     ):
+        T.annotate_min_blocks_per_sm(p.get('min_blocks', 1))
         if tokens * m < counts[expert]:
             if packed_input:
                 packed_base = expert_offsets[expert] + tokens * m
@@ -658,11 +684,14 @@ def _bucketed(p, *, paired=False, quantized_output=True, partial_outputs=False):
             rhs = T.alloc_shared((width, 128), mma_dtype)
             scale = T.alloc_shared((m,), "float32")
             selected = T.alloc_shared((m,), "int32")
-            block = T.alloc_fragment((m, width), "float32")
+            block = T.alloc_fragment((width, m) if transposed else (m, width), "float32")
             total = T.alloc_fragment((m, width), "float32")
             if paired and not wide:
                 rhs2 = T.alloc_shared((n, 128), mma_dtype)
-                block2 = T.alloc_fragment((m, n), "float32")
+                if p.get("reuse_partial", False):
+                    block2 = T.meta_var(block)
+                else:
+                    block2 = T.alloc_fragment((n, m) if transposed else (m, n), "float32")
                 total2 = T.alloc_fragment((m, n), "float32")
                 T.clear(total2)
             for b in T.Parallel(m):
@@ -673,7 +702,7 @@ def _bucketed(p, *, paired=False, quantized_output=True, partial_outputs=False):
                 )
             T.sync_threads()
             T.clear(total)
-            activations = T.view(x, dtype="float8_e4m3fn")
+            activations = buffer_view(x, dtype="float8_e4m3fn")
             for local_tile in loop(k // (128 * parts), **loop_options):
                 tile = part * (k // (128 * parts)) + local_tile
                 for b in T.Parallel(m):
@@ -721,13 +750,13 @@ def _bucketed(p, *, paired=False, quantized_output=True, partial_outputs=False):
                         else:
                             for lane in T.vectorized(vector):
                                 lhs[b, v * vector + lane] = 0
-                weights = T.view(w, dtype="float8_e4m3fn")
+                weights = buffer_view(w, dtype="float8_e4m3fn")
                 T.copy(
                     weights[expert, bx * n : bx * n + n, tile * 128 : tile * 128 + 128],
                     rhs[0:n, 0:128],
                 )
                 if paired:
-                    weights2 = T.view(w2, dtype="float8_e4m3fn")
+                    weights2 = buffer_view(w2, dtype="float8_e4m3fn")
                     if wide:
                         T.copy(
                             weights2[
@@ -746,13 +775,17 @@ def _bucketed(p, *, paired=False, quantized_output=True, partial_outputs=False):
                             ],
                             rhs2,
                         )
-                T.gemm(lhs, rhs, block, transpose_B=True, clear_accum=True)
+                if transposed:
+                    T.gemm(rhs, lhs, block, transpose_B=True, clear_accum=True)
+                else:
+                    T.gemm(lhs, rhs, block, transpose_B=True, clear_accum=True)
                 accumulate(block, total, scale, scales, scales2, bx, expert, tile)
                 if paired and not wide:
-                    T.gemm(lhs, rhs2, block2, transpose_B=True, clear_accum=True)
-                    accumulate(
-                        block2, total2, scale, scales2, scales2, bx, expert, tile
-                    )
+                    if transposed:
+                        T.gemm(rhs2, lhs, block2, transpose_B=True, clear_accum=True)
+                    else:
+                        T.gemm(lhs, rhs2, block2, transpose_B=True, clear_accum=True)
+                    accumulate(block2, total2, scale, scales2, scales2, bx, expert, tile)
             if partial_outputs:
                 if wide:
                     paired_values = T.alloc_shared((m, width), "float32")
@@ -776,8 +809,12 @@ def _bucketed(p, *, paired=False, quantized_output=True, partial_outputs=False):
                                 selected[b] // top, selected[b] % top, part, bx * n + j
                             ] = total2[b, j]
             elif paired:
-                values = T.alloc_fragment((m, n), "float32")
-                absolute = T.alloc_fragment((m, n), "float32")
+                if p.get("inplace_epilogue", False) and not wide:
+                    values = T.meta_var(total)
+                    absolute = T.meta_var(total2)
+                else:
+                    values = T.alloc_fragment((m, n), "float32")
+                    absolute = T.alloc_fragment((m, n), "float32")
                 maximum = T.alloc_fragment((m,), "float32")
                 if wide:
                     paired_values = T.alloc_shared((m, width), "float32")
@@ -804,24 +841,52 @@ def _bucketed(p, *, paired=False, quantized_output=True, partial_outputs=False):
                     for b, j in T.Parallel(m, n):
                         absolute[b, j] = T.abs(values[b, j])
                     T.reduce_max(absolute, maximum, dim=1)
-                    for b, j in T.Parallel(m, n):
-                        if selected[b] >= 0:
-                            encoded = T.call_extern(
-                                "uint32",
-                                "tensor_encode_e4m3",
-                                values[b, j]
-                                / (
-                                    T.max(maximum[b], T.float32(1e-12)) / T.float32(448)
-                                ),
-                            )
-                            if packed_output:
-                                out[packed_base + b, bx * n + j] = T.cast(
-                                    encoded, "uint8"
+                    if p.get("quantize_pair", False):
+                        pairs = buffer_view(out, shape=(packed_rows if packed_output else rows * top, o // 2), dtype="uint16")
+                        first = T.alloc_fragment((m, n // 2), "float32")
+                        second = T.alloc_fragment((m, n // 2), "float32")
+                        for b, j in T.Parallel(m, n // 2):
+                            first[b,j] = values[b,j*2]
+                        for b, j in T.Parallel(m, n // 2):
+                            second[b,j] = values[b,j*2+1]
+                        for b, j in T.Parallel(m, n // 2):
+                            if selected[b] >= 0:
+                                scale_value = T.max(maximum[b], T.float32(1e-12)) / T.float32(448)
+                                encoded = T.call_extern("uint32", "tensor_encode_e4m3x2", first[b,j]/scale_value, second[b,j]/scale_value)
+                                pairs[packed_base+b if packed_output else selected[b], bx*n//2+j] = T.cast(encoded,"uint16")
+                    elif p.get("packed_quantize", False):
+                        epilogue = T.alloc_shared((m, n), "float32")
+                        T.copy(values, epilogue)
+                        T.sync_threads()
+                        words = buffer_view(out, shape=(packed_rows if packed_output else rows * top, o // 4), dtype="uint32")
+                        for b, j in T.Parallel(m, n // 4):
+                            if selected[b] >= 0:
+                                scale_value = T.max(maximum[b], T.float32(1e-12)) / T.float32(448)
+                                encoded = T.call_extern("uint32", "tensor_encode_e4m3x4",
+                                    epilogue[b, j * 4] / scale_value,
+                                    epilogue[b, j * 4 + 1] / scale_value,
+                                    epilogue[b, j * 4 + 2] / scale_value,
+                                    epilogue[b, j * 4 + 3] / scale_value)
+                                words[packed_base + b if packed_output else selected[b], bx * (n // 4) + j] = encoded
+                    else:
+                        for b, j in T.Parallel(m, n):
+                            if selected[b] >= 0:
+                                encoded = T.call_extern(
+                                    "uint32",
+                                    "tensor_encode_e4m3",
+                                    values[b, j]
+                                    / (
+                                        T.max(maximum[b], T.float32(1e-12)) / T.float32(448)
+                                    ),
                                 )
-                            else:
-                                out[
-                                    selected[b] // top, selected[b] % top, bx * n + j
-                                ] = T.cast(encoded, "uint8")
+                                if packed_output:
+                                    out[packed_base + b, bx * n + j] = T.cast(
+                                        encoded, "uint8"
+                                    )
+                                else:
+                                    out[
+                                        selected[b] // top, selected[b] % top, bx * n + j
+                                    ] = T.cast(encoded, "uint8")
                     for b in T.Parallel(m):
                         if selected[b] >= 0:
                             if packed_output:
@@ -932,7 +997,7 @@ def _bucketed(p, *, paired=False, quantized_output=True, partial_outputs=False):
                 )
                 return out, output_scales
 
-            return compute
+            return compute.with_attr("tensor.cuda.tma", int(p.get("tma", False)))
 
         if paired:
 
@@ -968,7 +1033,7 @@ def _bucketed(p, *, paired=False, quantized_output=True, partial_outputs=False):
                 )
                 return out
 
-            return compute
+            return compute.with_attr("tensor.cuda.tma", int(p.get("tma", False)))
 
         @kernel
         def compute(
@@ -1000,7 +1065,7 @@ def _bucketed(p, *, paired=False, quantized_output=True, partial_outputs=False):
             )
             return out
 
-        return compute
+        return compute.with_attr("tensor.cuda.tma", int(p.get("tma", False)))
 
     if partial_outputs:
 
@@ -1053,7 +1118,7 @@ def _bucketed(p, *, paired=False, quantized_output=True, partial_outputs=False):
                     )
             return gate, up
 
-        return compute
+        return compute.with_attr("tensor.cuda.tma", int(p.get("tma", False)))
 
     if paired and quantized_output:
 
@@ -1101,7 +1166,7 @@ def _bucketed(p, *, paired=False, quantized_output=True, partial_outputs=False):
                     )
             return out, output_scales
 
-        return compute
+        return compute.with_attr("tensor.cuda.tma", int(p.get("tma", False)))
 
     if paired:
 
@@ -1146,7 +1211,7 @@ def _bucketed(p, *, paired=False, quantized_output=True, partial_outputs=False):
                     )
             return out
 
-        return compute
+        return compute.with_attr("tensor.cuda.tma", int(p.get("tma", False)))
 
     if compact:
         output_shape = (rows, top, parts, o) if parts > 1 else (rows, top, o)
@@ -1196,7 +1261,7 @@ def _bucketed(p, *, paired=False, quantized_output=True, partial_outputs=False):
                     )
             return out
 
-        return compute
+        return compute.with_attr("tensor.cuda.tma", int(p.get("tma", False)))
     if not compact:
         output_shape = (rows, top, parts, o) if parts > 1 else (rows, top, o)
 
@@ -1239,7 +1304,7 @@ def _bucketed(p, *, paired=False, quantized_output=True, partial_outputs=False):
                 )
             return out
 
-        return compute
+        return compute.with_attr("tensor.cuda.tma", int(p.get("tma", False)))
 
 
 def bucketed(spec: KernelSpec, schedule: Mapping[str, object]):
@@ -1252,6 +1317,101 @@ def fp8_expert_swiglu(spec: KernelSpec, schedule: Mapping[str, object]):
     """Pair the shared bucketed products and retain their quantized epilogue."""
     p = {**spec.parameters, **schedule}
     return _bucketed({**p, "rows": p["r"]}, paired=True)
+
+
+def serial_fp8_expert_swiglu(spec: KernelSpec, schedule: Mapping[str, object]):
+    """Reuse accumulator registers across the two packed expert projections."""
+    import tilelang.language as T
+    from akas.ops.moe.definition import tile_capacity, tile_layouts
+
+    p = {**spec.parameters, **schedule}
+    rows, top, experts, depth, columns = (p[k] for k in ('r', 'top', 'experts', 'k', 'o'))
+    m, threads, stages = (p.get(k, v) for k, v in [('block_m',64),('threads',256),('stages',2)])
+    n = 128
+    if not (p.get('packed_input') and p.get('packed_output') and p.get('tile_map')
+            and p.get('compact') and p.get('partitions',1)==1 and depth%128==0 and columns%128==0):
+        raise ValueError('serial paired experts require complete packed block-128 products')
+    if m not in (64,128) or threads not in (128,256,512) or stages not in (1,2,3):
+        raise ValueError('unsupported serial expert tile')
+    capacity = tile_capacity(rows,top,experts,p.get('max_block_m',64))*p.get('max_block_m',64)
+    map_shape = (tile_layouts(p),(rows*top+3)//4+experts)
+    layout = m.bit_length()-3
+    grid = tile_capacity(rows,top,experts,m)
+    product_dtype, activation_dtype = p.get('product_dtype','float32'),p.get('activation_dtype','float32')
+
+    @kernel
+    def compute(
+        x: Tensor((capacity,depth),'uint8'),
+        activation_scales: Tensor((capacity,depth//128),'float32'),
+        w: Tensor((experts,columns,depth),'uint8'),
+        scales: Tensor((experts,columns//128,depth//128),'bfloat16'),
+        w2: Tensor((experts,columns,depth),'uint8'),
+        scales2: Tensor((experts,columns//128,depth//128),'bfloat16'),
+        counts: Tensor((experts,),'int32'),
+        routes: Tensor((experts,rows),'int32'),
+        tile_experts: Tensor(map_shape,'int32'),
+        tile_offsets: Tensor(map_shape,'int32'),
+        expert_offsets: Tensor((experts,),'int32'),
+    ) -> tuple[Tensor((capacity,columns),'uint8'),Tensor((capacity,columns//128),'float32')]:
+        out=output((capacity,columns),'uint8')
+        output_scales=output((capacity,columns//128),'float32')
+        with T.Kernel(columns//n,grid,threads=threads) as (bx,tile_index):
+            T.annotate_min_blocks_per_sm(p.get('min_blocks', 1))
+            expert=tile_experts[layout,tile_index]
+            offset=tile_offsets[layout,tile_index]*m
+            if expert>=0:
+                base=expert_offsets[expert]+offset
+                lhs=T.alloc_shared((m,128),'float8_e4m3fn')
+                rhs=T.alloc_shared((n,128),'float8_e4m3fn')
+                row_scales=T.alloc_shared((m,),'float32')
+                selected=T.alloc_shared((m,),'int32')
+                gate=T.alloc_shared((m,n),product_dtype)
+                partial=T.alloc_fragment((m,n),'float32')
+                total=T.alloc_fragment((m,n),'float32')
+                maximum=T.alloc_fragment((m,),'float32')
+                activations=buffer_view(x,dtype='float8_e4m3fn')
+                weights=buffer_view(w,dtype='float8_e4m3fn')
+                weights2=buffer_view(w2,dtype='float8_e4m3fn')
+                for b in T.Parallel(m):
+                    selected[b]=T.if_then_else(offset+b<counts[expert],routes[expert,T.min(offset+b,rows-1)],-1)
+                T.sync_threads()
+                for projection in T.serial(2):
+                    T.clear(total)
+                    for block in T.Pipelined(depth//128,num_stages=stages):
+                        T.copy(activations[base:base+m,block*128:block*128+128],lhs)
+                        for b in T.Parallel(m):
+                            row_scales[b]=activation_scales[base+b,block]
+                        if projection==0:
+                            T.copy(weights[expert,bx*n:bx*n+n,block*128:block*128+128],rhs)
+                        else:
+                            T.copy(weights2[expert,bx*n:bx*n+n,block*128:block*128+128],rhs)
+                        T.gemm(lhs,rhs,partial,transpose_B=True,clear_accum=True)
+                        for b,j in T.Parallel(m,n):
+                            coefficient=T.if_then_else(projection==0,T.cast(scales[expert,bx,block],'float32'),T.cast(scales2[expert,bx,block],'float32'))
+                            product=T.call_extern('float32','__fmul_rn',partial[b,j],row_scales[b])
+                            total[b,j]=T.call_extern('float32','__fmaf_rn',product,coefficient,total[b,j])
+                    if projection==0:
+                        for b,j in T.Parallel(m,n):
+                            gate[b,j]=T.cast(total[b,j],product_dtype)
+                        T.sync_threads()
+                    else:
+                        for b,j in T.Parallel(m,n):
+                            g=T.cast(gate[b,j],'float32')
+                            u=T.cast(T.cast(total[b,j],product_dtype),'float32')
+                            total[b,j]=T.cast(g/(1+T.exp(-g))*u,activation_dtype)
+                        for b,j in T.Parallel(m,n):
+                            partial[b,j]=T.abs(total[b,j])
+                        T.reduce_max(partial,maximum,dim=1)
+                        for b,j in T.Parallel(m,n):
+                            if selected[b]>=0:
+                                scale_value=T.max(maximum[b],T.float32(1e-12))/T.float32(448)
+                                bits=T.call_extern('uint32','tensor_encode_e4m3',total[b,j]/scale_value)
+                                out[base+b,bx*n+j]=T.cast(bits,'uint8')
+                        for b in T.Parallel(m):
+                            if selected[b]>=0:
+                                output_scales[base+b,bx]=T.max(maximum[b],T.float32(1e-12))/T.float32(448)
+        return out,output_scales
+    return compute
 
 
 def fp8_paired_swiglu(spec: KernelSpec, schedule: Mapping[str, object]):
@@ -1372,12 +1532,12 @@ def hopper_experts_partial(spec: KernelSpec, schedule: Mapping[str, object]):
                             scale[b] = activation_scales[selected[b] // top, tile]
                 T.sync_threads()
                 if packed_gather:
-                    words = T.view(
+                    words = buffer_view(
                         x,
                         shape=(rows, top, k // 4) if routed else (rows, k // 4),
                         dtype="uint32",
                     )
-                    destination = T.view(lhs, shape=(m, 32), dtype="uint32")
+                    destination = buffer_view(lhs, shape=(m, 32), dtype="uint32")
                     for b, j in T.Parallel(m, 32):
                         bits = T.alloc_var("uint32")
                         bits = 0
@@ -1411,7 +1571,7 @@ def hopper_experts_partial(spec: KernelSpec, schedule: Mapping[str, object]):
                                 bits = x[selected[b] // top, tile * 128 + j]
                         lhs[b, j] = T.reinterpret("float8_e4m3fn", bits)
                 if not resident_weights:
-                    weights = T.view(w, dtype="float8_e4m3fn")
+                    weights = buffer_view(w, dtype="float8_e4m3fn")
                     T.copy(
                         weights[
                             expert, bx * n : bx * n + n, tile * 128 : tile * 128 + 128
@@ -1495,10 +1655,10 @@ def hopper_experts_partial(spec: KernelSpec, schedule: Mapping[str, object]):
                         T.clear(block)
                         for sub in T.serial(128 // reduction):
                             if packed_widen:
-                                lhs_pairs = T.view(lhs, shape=(m, 64), dtype="uint16")
-                                rhs_pairs = T.view(rhs, shape=(n, 64), dtype="uint16")
-                                a_pairs = T.view(lhs_sub, shape=(m, 16), dtype="uint32")
-                                b_pairs = T.view(rhs_sub, shape=(n, 16), dtype="uint32")
+                                lhs_pairs = buffer_view(lhs, shape=(m, 64), dtype="uint16")
+                                rhs_pairs = buffer_view(rhs, shape=(n, 64), dtype="uint16")
+                                a_pairs = buffer_view(lhs_sub, shape=(m, 16), dtype="uint32")
+                                b_pairs = buffer_view(rhs_sub, shape=(n, 16), dtype="uint32")
                                 for b, j in T.Parallel(m, 16):
                                     a_pairs[b, j] = T.call_extern(
                                         "uint32",
@@ -1844,11 +2004,22 @@ def _tile_map(p, *, layouts):
             tile_experts[layout, i] = -1
             tile_offsets[layout, i] = 0
         T.sync_threads()
-        for expert in T.Parallel(experts):
-            for tile in T.serial(T.ceildiv(counts[expert], block_m)):
-                index = prefix[expert] + tile
-                tile_experts[layout, index] = expert
-                tile_offsets[layout, index] = tile
+        if p.get("parallel_tiles", False):
+            sub_threads = max(256 // experts, 1)
+            for expert, sub in T.Parallel(experts, sub_threads):
+                num_tiles = T.ceildiv(counts[expert], block_m)
+                for step in T.serial(T.ceildiv(num_tiles, sub_threads)):
+                    tile = step * sub_threads + sub
+                    if tile < num_tiles:
+                        index = prefix[expert] + tile
+                        tile_experts[layout, index] = expert
+                        tile_offsets[layout, index] = tile
+        else:
+            for expert in T.Parallel(experts):
+                for tile in T.serial(T.ceildiv(counts[expert], block_m)):
+                    index = prefix[expert] + tile
+                    tile_experts[layout, index] = expert
+                    tile_offsets[layout, index] = tile
 
     if layouts:
 
@@ -1874,8 +2045,8 @@ def _tile_map(p, *, layouts):
         tile_experts = output((capacity,), "int32")
         tile_offsets = output((capacity,), "int32")
         with T.Kernel(1, threads=256):
-            tasks = T.view(tile_experts, (1, capacity))
-            offsets = T.view(tile_offsets, (1, capacity))
+            tasks = buffer_view(tile_experts, (1, capacity))
+            offsets = buffer_view(tile_offsets, (1, capacity))
             fill(counts, tasks, offsets, 0, p["block_m"])
         return (tile_experts, tile_offsets)
 
@@ -1897,7 +2068,74 @@ def parallel_routes(spec: KernelSpec, schedule: Mapping[str, object]):
     import tilelang.language as T
 
     rows, top, experts = (p[n] for n in ("r", "top", "experts"))
-    threads = 128
+    threads = p.get("threads", 128)
+    warps = threads // 32
+    if threads != 128:
+
+        @kernel
+        def compute(
+            ids: Tensor((rows, top), "int32"), active: Tensor(rows, "int32")
+        ) -> tuple[Tensor(experts, "int32"), Tensor((experts, rows), "int32")]:
+            counts = output(experts, "int32")
+            routes = output((experts, rows), "int32")
+            with T.Kernel(experts, threads=threads) as expert:
+                tx = T.get_thread_binding()
+                lane = tx % 32
+                warp = tx // 32
+                totals = T.alloc_shared((warps,), "int32")
+                cursor = T.alloc_shared((1,), "int32")
+                for row in T.Parallel(rows):
+                    routes[expert, row] = -1
+                if tx == 0:
+                    cursor[0] = 0
+                T.sync_threads()
+                for tile in T.serial(T.ceildiv(rows, threads)):
+                    row = tile * threads + tx
+                    count = T.alloc_var("int32")
+                    inclusive = T.alloc_var("int32")
+                    prefix = T.alloc_var("int32")
+                    local = T.alloc_var("int32")
+                    count = 0
+                    for rank in T.unroll(top):
+                        count += T.if_then_else(
+                            row < rows
+                            and active[T.min(row, rows - 1)] != 0
+                            and ids[T.min(row, rows - 1), rank] == expert,
+                            1,
+                            0,
+                        )
+                    inclusive = count
+                    for step in T.unroll(5):
+                        previous = T.shfl_sync(inclusive, T.max(lane - (1 << step), 0))
+                        inclusive += T.if_then_else(lane >= (1 << step), previous, 0)
+                    if lane == 31:
+                        totals[warp] = inclusive
+                    T.sync_threads()
+                    prefix = cursor[0] + inclusive - count
+                    for w in T.unroll(warps):
+                        prefix += T.if_then_else(w < warp, totals[w], 0)
+                    local = 0
+                    for rank in T.unroll(top):
+                        if (
+                            row < rows
+                            and active[T.min(row, rows - 1)] != 0
+                            and ids[T.min(row, rows - 1), rank] == expert
+                        ):
+                            routes[expert, prefix + local] = row * top + rank
+                            local += 1
+                    T.sync_threads()
+                    if tx == 0:
+                        step_total = T.alloc_var("int32")
+                        step_total = 0
+                        for w in T.unroll(warps):
+                            step_total += totals[w]
+                        cursor[0] += step_total
+                    T.sync_threads()
+                if tx == 0:
+                    counts[expert] = cursor[0]
+            return counts, routes
+
+        return compute
 
     @kernel
     def compute(
@@ -2003,7 +2241,7 @@ def expert_swiglu(spec, schedule):
         counts: Tensor((experts,), "int32"),
     ) -> Tensor((1, top, columns), "float32"):
         out = output((1, top, columns), "float32")
-        flat = T.meta_var(T.view(x, (depth,), dtype="float32"))
+        flat = T.meta_var(buffer_view(x, (depth,), dtype="float32"))
         with T.Kernel(T.ceildiv(columns, warps * width), top, threads=threads) as (
             block,
             rank,
@@ -2094,6 +2332,7 @@ def pack_experts(spec: KernelSpec, schedule: Mapping[str, object]):
         packed_scales = output((packed_rows, depth // 128), "float32")
         expert_offsets = output((experts,), "int32")
         with T.Kernel(capacity, depth // 128, threads=128) as (group, block):
+            T.annotate_min_blocks_per_sm(p.get("min_blocks", 1))
             expert = tile_experts[layouts - 1, group]
             local = tile_offsets[layouts - 1, group]
             if expert >= 0:

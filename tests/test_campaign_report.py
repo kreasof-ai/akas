@@ -289,6 +289,22 @@ def campaign_evidence(tmp_path):
     return campaign, history, build
 
 
+def test_explicit_baseline_lock_overrides_newer_index_entries(campaign_evidence):
+    from tools.campaign_report import collect
+
+    campaign, history, _ = campaign_evidence
+    state = read(campaign)
+    baseline = history / "runs/base-old/run.json"
+    state["baseline_lock"] = dict(schema="akas.baseline-lock.v1", runs=dict(
+        vllm=dict(run_id="base-old", sha256=digest(baseline))))
+    write(campaign, state)
+    result = collect(campaign, history)
+    assert next(p for p in result["profiles"] if p["runtime"] == "vllm")["selected_run_id"] == "base-old"
+    baseline.write_text(baseline.read_text() + "\n")
+    with pytest.raises(ValueError, match="frozen baseline checksum mismatch"):
+        collect(campaign, history)
+
+
 def test_all_shapes_and_failed_baseline_values_are_visible(campaign_evidence):
     campaign, history, _ = campaign_evidence
     out = export(campaign, history=history)

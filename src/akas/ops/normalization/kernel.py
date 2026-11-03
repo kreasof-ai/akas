@@ -87,49 +87,155 @@ def _fragment(p):
         else:
             buffer[row, column] = value
 
-    @T.macro
-    def normalize(x, other, residual, w, out):
-        with T.Kernel(r, threads=256) as row:
-            values = T.alloc_fragment((c,), "float32")
-            squares = T.alloc_fragment((c,), "float32")
-            total = T.alloc_fragment((1,), "float32")
-            for j in T.Parallel(c):
-                if fused:
-                    if rounded:
-                        values[j] = T.cast(
-                            T.cast(T.cast(load(x, row, j), residual_dtype), "float32")
-                            + load(other, row, j),
-                            residual_dtype,
+    threads = p.get("threads", 256)
+    rpb = p.get("rows_per_block", 1)
+    min_blocks = p.get("min_blocks", 1)
+    if rpb > 1:
+
+        @T.macro
+        def normalize(x, other, residual, w, out):
+            with T.Kernel(T.ceildiv(r, rpb), threads=threads) as block_row:
+                T.annotate_min_blocks_per_sm(min_blocks)
+                values = T.alloc_fragment((rpb, c), "float32")
+                squares = T.alloc_fragment((rpb, c), "float32")
+                total = T.alloc_fragment((rpb,), "float32")
+                for i, j in T.Parallel(rpb, c):
+                    row = T.min(block_row * rpb + i, r - 1)
+                    if fused:
+                        if rounded:
+                            values[i, j] = T.cast(
+                                T.cast(
+                                    T.cast(load(x, row, j), residual_dtype), "float32"
+                                )
+                                + load(other, row, j),
+                                residual_dtype,
+                            )
+                        else:
+                            values[i, j] = T.cast(
+                                load(x, row, j) + load(other, row, j), residual_dtype
+                            )
+                    else:
+                        values[i, j] = load(x, row, j)
+                    squares[i, j] = values[i, j] * values[i, j]
+                T.reduce_sum(squares, total, dim=1)
+                for i, j in T.Parallel(rpb, c):
+                    if block_row * rpb + i < r:
+                        row = block_row * rpb + i
+                        if fused:
+                            store(residual, row, j, values[i, j])
+                        if centered:
+                            store(
+                                out,
+                                row,
+                                j,
+                                values[i, j]
+                                * T.rsqrt(total[i] / c + eps)
+                                * (1 + T.cast(w[j], "float32")),
+                            )
+                        else:
+                            store(
+                                out,
+                                row,
+                                j,
+                                values[i, j]
+                                * T.rsqrt(total[i] / c + eps)
+                                * T.cast(w[j], "float32"),
+                            )
+    elif threads != 256 or min_blocks > 1:
+
+        @T.macro
+        def normalize(x, other, residual, w, out):
+            with T.Kernel(r, threads=threads) as row:
+                T.annotate_min_blocks_per_sm(min_blocks)
+                values = T.alloc_fragment((c,), "float32")
+                squares = T.alloc_fragment((c,), "float32")
+                total = T.alloc_fragment((1,), "float32")
+                for j in T.Parallel(c):
+                    if fused:
+                        if rounded:
+                            values[j] = T.cast(
+                                T.cast(
+                                    T.cast(load(x, row, j), residual_dtype), "float32"
+                                )
+                                + load(other, row, j),
+                                residual_dtype,
+                            )
+                        else:
+                            values[j] = T.cast(
+                                load(x, row, j) + load(other, row, j), residual_dtype
+                            )
+                    else:
+                        values[j] = load(x, row, j)
+                    squares[j] = values[j] * values[j]
+                T.reduce_sum(squares, total, dim=0)
+                for j in T.Parallel(c):
+                    if fused:
+                        store(residual, row, j, values[j])
+                    if centered:
+                        store(
+                            out,
+                            row,
+                            j,
+                            values[j]
+                            * T.rsqrt(total[0] / c + eps)
+                            * (1 + T.cast(w[j], "float32")),
                         )
                     else:
-                        values[j] = T.cast(
-                            load(x, row, j) + load(other, row, j), residual_dtype
+                        store(
+                            out,
+                            row,
+                            j,
+                            values[j]
+                            * T.rsqrt(total[0] / c + eps)
+                            * T.cast(w[j], "float32"),
                         )
-                else:
-                    values[j] = load(x, row, j)
-                squares[j] = values[j] * values[j]
-            T.reduce_sum(squares, total, dim=0)
-            for j in T.Parallel(c):
-                if fused:
-                    store(residual, row, j, values[j])
-                if centered:
-                    store(
-                        out,
-                        row,
-                        j,
-                        values[j]
-                        * T.rsqrt(total[0] / c + eps)
-                        * (1 + T.cast(w[j], "float32")),
-                    )
-                else:
-                    store(
-                        out,
-                        row,
-                        j,
-                        values[j]
-                        * T.rsqrt(total[0] / c + eps)
-                        * T.cast(w[j], "float32"),
-                    )
+    else:
+
+        @T.macro
+        def normalize(x, other, residual, w, out):
+            with T.Kernel(r, threads=256) as row:
+                values = T.alloc_fragment((c,), "float32")
+                squares = T.alloc_fragment((c,), "float32")
+                total = T.alloc_fragment((1,), "float32")
+                for j in T.Parallel(c):
+                    if fused:
+                        if rounded:
+                            values[j] = T.cast(
+                                T.cast(
+                                    T.cast(load(x, row, j), residual_dtype), "float32"
+                                )
+                                + load(other, row, j),
+                                residual_dtype,
+                            )
+                        else:
+                            values[j] = T.cast(
+                                load(x, row, j) + load(other, row, j), residual_dtype
+                            )
+                    else:
+                        values[j] = load(x, row, j)
+                    squares[j] = values[j] * values[j]
+                T.reduce_sum(squares, total, dim=0)
+                for j in T.Parallel(c):
+                    if fused:
+                        store(residual, row, j, values[j])
+                    if centered:
+                        store(
+                            out,
+                            row,
+                            j,
+                            values[j]
+                            * T.rsqrt(total[0] / c + eps)
+                            * (1 + T.cast(w[j], "float32")),
+                        )
+                    else:
+                        store(
+                            out,
+                            row,
+                            j,
+                            values[j]
+                            * T.rsqrt(total[0] / c + eps)
+                            * T.cast(w[j], "float32"),
+                        )
 
     @T.macro
     def ordinary(x, w, out):

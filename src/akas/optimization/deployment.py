@@ -81,7 +81,11 @@ def service(path, *, candidate=False):
                 backend,
                 config=EngineConfig(
                     prefill_chunk=recipe["chunk"],
-                    prefill_requests=recipe["prefill_requests"],
+                    prefill_requests=(
+                        max(context["workload"]["batches"])
+                        if recipe.get("prefill_token_budget")
+                        else recipe["prefill_requests"]
+                    ),
                     prefill_token_budget=recipe.get("prefill_token_budget"),
                     decode_prefill_token_budget=recipe.get("decode_prefill_token_budget"),
                 ),

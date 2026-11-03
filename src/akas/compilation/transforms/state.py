@@ -69,6 +69,17 @@ def map_state(kernel, states, *, rows, capacity):
         return ir.max(mapping[index // stride], 0) * stride + index % stride
 
     def indices(values, old, new, stride):
+        # Preserve row-major region coordinates for asynchronous copies. A
+        # flatten/unflatten round trip introduces division by the request stride
+        # into the pipelined tile coordinate, obscuring its affine dependence.
+        # The mapping changes only the leading request axis in this layout.
+        old_shape = tuple(int(d) for d in old.shape)
+        new_shape = tuple(int(d) for d in new.shape)
+        if (len(old_shape) == len(new_shape)
+                and old_shape[1:] == new_shape[1:]
+                and old_shape[0] % rows == 0):
+            span = old_shape[0] // rows
+            return [address(values[0], span), *values[1:]]
         flat = sum(
             (
                 value * prod(tuple((int(d) for d in old.shape[i + 1 :])))

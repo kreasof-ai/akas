@@ -98,6 +98,7 @@ def mma_partial(spec: KernelSpec, schedule: Mapping[str, object]):
     ) -> Tensor(r * h * splits * 66, "float32"):
         out = output(r * h * splits * 66, "float32", position=5)
         with T.Kernel(r * kh, splits, threads=128) as (index, split):
+            T.annotate_min_blocks_per_sm(p.get("min_blocks", 1))
             slot = index // kh
             head = index % kh
             length = T.if_then_else(
@@ -330,6 +331,7 @@ def packed_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
             head,
             slot,
         ):
+            T.annotate_min_blocks_per_sm(p.get("min_blocks", 1))
             cache_head = head if group_queries else head // actual_group
             limits = T.alloc_fragment((qm,), "int32")
             last = T.alloc_fragment((1,), "int32")
@@ -2078,6 +2080,7 @@ def floating(spec: KernelSpec, schedule: Mapping[str, object]):
             head,
             slot,
         ):
+            T.annotate_min_blocks_per_sm(p.get("min_blocks", 1))
             query = T.alloc_shared((bq, d), "float16")
             key = T.alloc_shared((bk, d), "float16")
             value = T.alloc_shared((bk, d), "float16")
@@ -2164,7 +2167,7 @@ def floating(spec: KernelSpec, schedule: Mapping[str, object]):
                     )
         return out
 
-    return compute
+    return compute.with_attr("tensor.cuda.tma", int(p.get("tma", False)))
 
 
 def mapped_bf16(spec: KernelSpec, schedule: Mapping[str, object]):
@@ -3656,6 +3659,7 @@ def floating_ordered(spec: KernelSpec, schedule: Mapping[str, object]):
             head,
             slot,
         ):
+            T.annotate_min_blocks_per_sm(p.get("min_blocks", 1))
             query = T.alloc_shared((bq, d), "float16")
             key = T.alloc_shared((bk, d), "float16")
             value = T.alloc_shared((bk, d), "float16")

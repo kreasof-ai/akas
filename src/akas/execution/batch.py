@@ -45,6 +45,7 @@ class Batch:
             updates.append((buffer, values))
         write_many(self.forward.device, updates)
         self.slots, self.lengths = tuple(slots), lengths[:len(slots)].copy()
+        self._feedback_state = None
 
     @property
     def buffers(self):
@@ -69,6 +70,7 @@ class Batch:
         return self.forward.graph
 
     def write(self, name, values):
+        self._feedback_state = None
         write(self.forward.device, self.buffers[name], values)
 
     def feature(self, name):
@@ -91,10 +93,45 @@ class Batch:
             if self.phase == "verify":
                 return self.owner.verify(slots, sequences, chunk=self.chunk)
             return self.owner.run_batch(slots, sequences, chunk=self.chunk, phase=self.phase)
-        self.prepare(slots,sequences,positions)
+        use_feedback = bool(
+            getattr(self, "feedback", False)
+            and self.chunk == 1
+            and slots
+            and len(slots) == len(sequences)
+            and all(len(s) == 1 for s in sequences)
+        )
+        state_gens = (
+            None
+            if not use_feedback or self.owner is None
+            else tuple(int(self.owner.state.generations[s]) for s in slots)
+        )
+        cur_state = (
+            (
+                tuple(slots),
+                tuple(int(positions[s]) for s in slots),
+                tuple(int(s[0]) for s in sequences),
+                state_gens,
+            )
+            if use_feedback
+            else None
+        )
+        if not use_feedback or getattr(self, "_feedback_state", None) != cur_state:
+            self.prepare(slots, sequences, positions)
         self.forward.run()
-        result = self.forward.buffers[self.prediction].to_numpy()
-        return [int(value) for value in result[:len(slots)]]
+        result = [
+            int(value)
+            for value in self.forward.buffers[self.prediction].to_numpy()[: len(slots)]
+        ]
+        if use_feedback:
+            self._feedback_state = (
+                tuple(slots),
+                tuple(int(positions[s]) + 1 for s in slots),
+                tuple(result),
+                state_gens,
+            )
+        else:
+            self._feedback_state = None
+        return result
 
 
 class BatchBank:

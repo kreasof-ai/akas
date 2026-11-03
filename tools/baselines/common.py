@@ -11,6 +11,22 @@ import traceback
 _output = None
 
 
+async def reference_probes(config, generate, report):
+    """Retain optional untimed language probes from the loaded engine."""
+    import asyncio
+
+    async def probe(index, prompt):
+        tokens = []
+        async for current, _ in generate(index, prompt):
+            tokens = list(current)
+        return dict(input_ids=prompt, output_ids=tokens)
+
+    report["reference_probes"] = await asyncio.gather(*(
+        probe(100000 + i, prompt) for i, prompt in enumerate(config.get("probe_prompts", []))
+    ))
+    save(report)
+
+
 def save(report):
     """Retain completed shapes even if a later shape or process fails."""
     if _output is not None:

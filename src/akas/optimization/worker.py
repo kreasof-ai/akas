@@ -206,11 +206,31 @@ def candidate(job, output):
             hardware=job["device"]["name"],
         )
         metadata["incumbents"] = origins
-        with tensor.Device(
-            context["device"],
-            provider=recipe["provider"],
-            max_buffer_size=max_buffer_size,
-        ) as device:
+        from akas.optimization.context import identity as param_identity
+
+        required_ops = {
+            (kind, param_identity(params))
+            for _, g in graphs
+            for kind, params in g.requirements().values()
+        }
+        seeded_ops = (
+            set()
+            if schedules is None
+            else {
+                (e["operation"], param_identity(e["parameters"]))
+                for e in schedules.data.get("entries", ())
+            }
+        )
+        fully_seeded = bool(required_ops) and required_ops <= seeded_ops
+        need_gpu_search = not skip_autotune and (
+            recipe["trials"] > 1 or not fully_seeded
+        )
+        precompiled = os.environ.get("AKAS_PRECOMPILED_PROGRAM")
+        if precompiled and Path(precompiled, "program.json").is_file() and not need_gpu_search:
+            shutil.copytree(
+                precompiled, program, copy_function=link, dirs_exist_ok=True
+            )
+        elif not need_gpu_search and not (program / "program.json").is_file():
             compile_checkpoint(
                 model,
                 context["checkpoint"],
@@ -224,15 +244,38 @@ def candidate(job, output):
                 policy=recipe["policy"],
                 round_windows=windows,
                 deferred=recipe["deferred"],
-                search=not skip_autotune,
-                search_settings=(
-                    SearchSettings(budget=1, width=1, warmup=0, samples=1, repeats=1)
-                    if recipe["trials"] == 1
-                    else SearchSettings(budget=recipe["trials"])
-                ),
+                search=False,
                 schedules=schedules,
-                device=device,
+                device=None,
             )
+        with tensor.Device(
+            context["device"],
+            provider=recipe["provider"],
+            max_buffer_size=max_buffer_size,
+        ) as device:
+            if need_gpu_search or not (program / "program.json").is_file():
+                compile_checkpoint(
+                    model,
+                    context["checkpoint"],
+                    program,
+                    geometries=geometries,
+                    max_requests=capacity,
+                    max_context=limit,
+                    provider=recipe["provider"],
+                    target=recipe["target"],
+                    model_options=recipe["model_options"],
+                    policy=recipe["policy"],
+                    round_windows=windows,
+                    deferred=recipe["deferred"],
+                    search=need_gpu_search,
+                    search_settings=(
+                        SearchSettings(budget=1, width=1, warmup=0, samples=1, repeats=1)
+                        if recipe["trials"] <= 1
+                        else SearchSettings(budget=recipe["trials"])
+                    ),
+                    schedules=schedules,
+                    device=device,
+                )
             status(output, "validating-and-measuring", recipe=recipe["id"])
             previous = (
                 None
@@ -275,14 +318,17 @@ def candidate(job, output):
             hardware=job["device"],
         )
         write(root / "candidate.json", descriptor)
-        status(output, "http-validation", recipe=recipe["id"])
-        metadata["http"] = asyncio.run(
-            http_benchmark(
-                partial(service, root / "candidate.json", candidate=True),
-                report["results"],
-                vocab=loaded.config.vocab,
+        if os.environ.get("AKAS_HTTP_BENCHMARK") == "1" or (
+            not skip_autotune and os.environ.get("AKAS_SKIP_HTTP_BENCHMARK") != "1"
+        ):
+            status(output, "http-validation", recipe=recipe["id"])
+            metadata["http"] = asyncio.run(
+                http_benchmark(
+                    partial(service, root / "candidate.json", candidate=True),
+                    report["results"],
+                    vocab=loaded.config.vocab,
+                )
             )
-        )
         report["metadata"]["cpu_peak_rss_bytes"] = (
             resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024
         )

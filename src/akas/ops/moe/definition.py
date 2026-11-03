@@ -631,6 +631,22 @@ def search_policies(graph, commit, *, provider, target):
         if provider == "cuda":
             groups = _fp8_expert_swiglu_groups(graph)
             if groups:
+                if target == "sm_90a":
+                    choices.insert(
+                        0,
+                        {
+                            "block_m": 32,
+                            "fused_swiglu": True,
+                            "max_block_m": 128,
+                            "fused_quantize_minimum_rows": 9,
+                            "intermediate_dtype": "bfloat16",
+                            "activation_dtype": "bfloat16",
+                            "partitions": 2,
+                            "partition_maximum_rows": 1,
+                            "packed": True,
+                            "packed_minimum_rows": 2048,
+                        },
+                    )
                 choices.append(
                     {
                         "fused_swiglu": True,
@@ -1034,6 +1050,37 @@ def _pack_experts(graph, minimum_rows):
     graph.calls = calls
 
 
+def _separate_expert_quantize(graph):
+    """Expose BF16 activation storage so smaller expert column tiles are legal."""
+    from dataclasses import replace
+    from akas.graph import Call
+
+    calls = []
+    for index, call in enumerate(graph.calls):
+        if call.kind != 'fp8_expert_swiglu':
+            calls.append(call)
+            continue
+        fields = ('x','activation_scales','w','scales','w2','scales2','counts',
+                  'routes','tile_experts','tile_offsets',
+                  *(('expert_offsets',) if call.parameters.get('packed_input') else ()),
+                  'out','output_scales')
+        names = dict(call.bindings) if call.bindings else dict(zip(fields,call.arguments))
+        p = call.parameters
+        dtype = p.get('activation_dtype','float32')
+        shape = graph.buffers[names['out']].shape
+        temporary = graph.buffer(f'pipeline.expert_unquantized.{index}', shape, dtype)
+        calls.append(replace(call, kind='expert_swiglu', arguments=(),
+            parameters={**p,'input_dtype':'uint8','weight_format':'fp8','output_dtype':dtype},
+            bindings={**{k:v for k,v in names.items() if k not in ('out','output_scales')},
+                      'out':temporary.name}, label=None))
+        quant = dict(r=shape[0], k=p['o'], input_dtype=dtype)
+        if len(shape)==3:
+            quant.update(top=p['top'],routed_input=True)
+        calls.append(Call('quantize', quant, (),
+            dict(x=temporary.name,out=names['out'],scales=names['output_scales']),label=call.label))
+    graph.calls=calls
+
+
 def lower(graph, commit, settings, *, provider, target):
     from akas.graph import Graph
     from akas.quantization import get
@@ -1063,11 +1110,16 @@ def lower(graph, commit, settings, *, provider, target):
         "persistent_tiles",
         "resident_weights",
         "fixed_rows",
+        "separate_activation_quantize",
     }
     if set(settings) - allowed:
         raise ValueError("unknown routed projection policy")
     if "fused_swiglu" in settings and type(settings["fused_swiglu"]) is not bool:
         raise ValueError("expert SwiGLU fusion must be a boolean")
+    if type(settings.get('separate_activation_quantize',False)) is not bool:
+        raise ValueError('expert quantization separation must be a boolean')
+    if settings.get('separate_activation_quantize') and (provider!='cuda' or graph.contract!='reference'):
+        raise ValueError('expert quantization separation requires CUDA reference arithmetic')
     if settings.get("intermediate_dtype", "float32") not in (
         "float32",
         "float16",
@@ -1109,7 +1161,13 @@ def lower(graph, commit, settings, *, provider, target):
     if settings.get("packed") and (
         provider != "cuda"
         or graph.contract != "reference"
-        or settings.get("partitions", 1) != 1
+        or (
+            settings.get("partitions", 1) != 1
+            and (
+                settings.get("partition_maximum_rows") is None
+                or settings.get("partition_maximum_rows") >= packed_minimum
+            )
+        )
     ):
         raise ValueError("expert packing requires complete CUDA reference products")
     if "max_block_m" in settings:
@@ -1162,6 +1220,7 @@ def lower(graph, commit, settings, *, provider, target):
                 "partitions",
                 "packed",
                 "packed_minimum_rows",
+                "separate_activation_quantize",
             }
         ):
             return graph, commit
@@ -1177,6 +1236,7 @@ def lower(graph, commit, settings, *, provider, target):
             "partition_maximum_rows",
             "packed",
             "packed_minimum_rows",
+            "separate_activation_quantize",
         }:
             raise ValueError("unsupported reference expert policy")
         if "block_m" in settings or "max_block_m" in settings:
@@ -1189,6 +1249,8 @@ def lower(graph, commit, settings, *, provider, target):
             _partition_experts(graph, parts, maximum_rows)
         if settings.get("intermediate_dtype", "float32") != "float32":
             _contribution_storage(graph, settings["intermediate_dtype"])
+        if settings.get('separate_activation_quantize'):
+            _separate_expert_quantize(graph)
         return graph, commit
     if graph.contract != "block-fp8":
         return (graph, commit)
@@ -1838,7 +1900,21 @@ VALIDATIONS.update(
 VALIDATIONS["expert_tile_map"] = tile_validation
 IMPLEMENTATIONS += tuple(
     Implementation(
-        kind, "akas.ops.moe.kernel", "reference", provider=provider, factory=kind
+        kind,
+        "akas.ops.moe.kernel",
+        "reference",
+        provider=provider,
+        factory=kind,
+        semantic_keys=("r", "top", "c", "input_dtype")
+        if kind == "routed_combine"
+        else None,
+        space=(
+            ("threads", (128, 256, 512)),
+            ("vector", (1, 2, 4, 8)),
+            ("min_blocks", (1, 2, 4)),
+        )
+        if kind == "routed_combine" and provider == "cuda"
+        else (),
     )
     for provider in ("cuda", "webgpu")
     for kind in (
@@ -2028,7 +2104,9 @@ IMPLEMENTATIONS += (
             and not p.get("routed_input")
             and p.get("partitions", 1) == 1
             and p["o"] % 128 == 0
-            and p.get("block_m", 16) // 16 * (p.get("columns", 64) // 8)
+            and p.get("block_m", 16) // 16
+            * (p.get("columns", 64) // 8)
+            * (2 if p.get("pair_layout", "wide") == "wide" else 1)
             >= p.get("threads", 128) // 32
         ),
         defaults=(("columns", 64), ("activation_vector", 16)),
@@ -2054,8 +2132,8 @@ IMPLEMENTATIONS += (
         ),
         space=(
             ("block_m", (16, 32, 64, 128)),
-            ("columns", (64, 32, 128)),
-            ("threads", (128, 256, 512)),
+            ("columns", (64, 32, 16, 128)),
+            ("threads", (64, 128, 256, 512)),
             ("pair_layout", ("wide", "separate")),
             ("stages", (1, 2, 3)),
             ("mma_dtype", ("float8_e4m3fn", "float16")),
@@ -2136,6 +2214,8 @@ IMPLEMENTATIONS += (
         name="moe.cuda.parallel_routes",
         priority=30,
         accepts=lambda p: p["r"] > 1,
+        semantic_keys=("r", "experts", "top"),
+        space=(("threads", (128, 256, 512)),),
     ),
 )
 
@@ -2151,6 +2231,8 @@ IMPLEMENTATIONS += (
         factory="expert_tile_map",
         name="moe.cuda.parallel_tile_map",
         priority=30,
+        semantic_keys=("r", "experts", "top", "max_block_m"),
+        space=(("parallel_tiles", (False, True)),),
     ),
     Implementation(
         "expert_tiles",
@@ -2351,5 +2433,50 @@ IMPLEMENTATIONS += (
         factory="pack_experts",
         name="moe.cuda.pack:reference",
         semantic_keys=("r", "k", "experts", "top", "routed_input", "max_block_m"),
+        space=(("min_blocks", (1, 2, 4, 8)),),
     ),
+)
+
+# TMA is an optional compiler schedule; model arithmetic and layouts are unchanged.
+from dataclasses import replace as _with_tma
+IMPLEMENTATIONS = tuple(
+    _with_tma(item, space=(*item.space, ("tma", (False, True))))
+    if item.provider == "cuda" and item.contract == "reference"
+       and item.factory in ("bucketed", "fp8_expert_swiglu", "fp8_paired_swiglu")
+    else item
+    for item in IMPLEMENTATIONS
+)
+
+IMPLEMENTATIONS = tuple(
+    _with_tma(item, space=(*item.space,
+                          ("reuse_partial", (False, True)),
+                          ("inplace_epilogue", (False, True)),
+                          ("quantize_pair", (False, True)),
+                          ("packed_quantize", (False, True))))
+    if item.provider == "cuda" and item.factory in ("fp8_expert_swiglu", "fp8_paired_swiglu")
+    else item
+    for item in IMPLEMENTATIONS
+)
+
+IMPLEMENTATIONS += (
+    _with_tma(
+        next(item for item in IMPLEMENTATIONS if item.identifier == 'moe.cuda.fp8-swiglu:mapped'),
+        name='moe.cuda.fp8-swiglu:serial', factory='serial_fp8_expert_swiglu',
+        priority=-1, targets=('sm_90a',), defaults=(),
+        accepts=lambda p: bool(p.get('packed_input') and p.get('packed_output')
+                               and p.get('tile_map') and p.get('compact')
+                               and p.get('partitions',1)==1),
+        space=(('block_m',(64,128)),('threads',(128,256,512)),('stages',(1,2,3))),
+    ),
+)
+
+IMPLEMENTATIONS = tuple(
+    _with_tma(item, space=(*item.space, ('min_blocks', (1, 2, 3, 4)),
+                          ('combined_scales', (False, True)),
+                          ('mma_orientation', ('activation', 'weight'))))
+    if item.provider == 'cuda' and item.factory in (
+        'bucketed', 'fp8_expert_swiglu', 'fp8_paired_swiglu',
+        'paired_partial', 'serial_fp8_expert_swiglu')
+    else item
+    for item in IMPLEMENTATIONS
 )

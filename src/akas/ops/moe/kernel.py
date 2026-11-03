@@ -212,6 +212,37 @@ def routed_combine(spec, schedule):
     input_dtype = p.get("input_dtype", "float32")
     if input_dtype not in ("float32", "float16", "bfloat16"):
         raise ValueError("invalid routed contribution storage")
+    threads = p.get("threads", 128)
+    vec = p.get("vector", 1)
+    if vec > 1 or threads != 128:
+
+        @kernel
+        def compute(
+            experts: Tensor((rows, top, width), input_dtype),
+            weights: Tensor((rows, top), "float32"),
+            active: Tensor((rows,), "int32"),
+        ) -> Tensor((rows, width), "float32"):
+            out = output((rows, width), "float32")
+            with T.Kernel(
+                T.ceildiv(width, threads * vec), rows, threads=threads
+            ) as (tile, row):
+                T.annotate_min_blocks_per_sm(p.get("min_blocks", 1))
+                acc = T.alloc_fragment((threads * vec,), "float32")
+                T.clear(acc)
+                if active[row] != 0:
+                    for rank in T.unroll(top):
+                        w = weights[row, rank]
+                        for lane in T.Parallel(threads * vec):
+                            column = tile * threads * vec + lane
+                            if column < width:
+                                acc[lane] += experts[row, rank, column] * w
+                for lane in T.Parallel(threads * vec):
+                    column = tile * threads * vec + lane
+                    if column < width:
+                        out[row, column] = acc[lane]
+            return out
+
+        return compute
 
     @kernel
     def compute(

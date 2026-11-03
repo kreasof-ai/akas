@@ -5,6 +5,12 @@ from collections.abc import Mapping
 from akas.kernels.definition import KernelSpec
 
 
+def buffer_view(*args, **kwargs):
+    from tensor.compiler.frontend.view import buffer_view as view
+
+    return view(*args, **kwargs)
+
+
 def matmul(spec: KernelSpec, schedule: Mapping[str, object]):
     """Use Tensor's canonical matmul producer with the graph's matrix views."""
     from tensor.compiler.cuda.matmul import matmul as canonical
@@ -107,6 +113,10 @@ def _mma(p, *, grouped, prequantized):
     stages = p.get("stages", 1)
     packed_copy = p.get("packed_copy", False)
     mma_dtype = p.get("mma_dtype", "float8_e4m3fn")
+    orientation = p.get('mma_orientation', 'activation')
+    if orientation not in ('activation', 'weight'):
+        raise ValueError('invalid FP8 projection operand orientation')
+    transposed = orientation == 'weight'
     if mma_dtype not in ("float8_e4m3fn", "float16"):
         raise ValueError(
             "FP8 projection MMA operands must be FP8 or exactly promoted FP16"
@@ -146,12 +156,14 @@ def _mma(p, *, grouped, prequantized):
         rowbase,
         part,
     ):
+        T.annotate_min_blocks_per_sm(p.get("min_blocks", 1))
         lhs = T.alloc_shared((m, 128), mma_dtype)
         rhs = T.alloc_shared((n, 128), mma_dtype)
-        absolute = T.alloc_fragment((m, 128), "float32")
-        maxima = T.alloc_fragment((m,), "float32")
+        if not prequantized:
+            absolute = T.alloc_fragment((m, 128), "float32")
+            maxima = T.alloc_fragment((m,), "float32")
         activation_scales = T.alloc_shared((m,), "float32")
-        block = T.alloc_fragment((m, n), "float32")
+        block = T.alloc_fragment((n,m) if transposed else (m,n), "float32")
         total = T.alloc_fragment((m, n), "float32")
         T.clear(total)
         for local_tile in T.Pipelined(k // (128 * parts), num_stages=stages):
@@ -178,7 +190,7 @@ def _mma(p, *, grouped, prequantized):
                         )
                 T.sync_threads()
                 if not grouped:
-                    activations = T.view(x, dtype="float8_e4m3fn")
+                    activations = buffer_view(x, dtype="float8_e4m3fn")
                     T.copy(
                         activations[
                             rowbase : rowbase + m, tile * 128 : tile * 128 + 128
@@ -265,7 +277,7 @@ def _mma(p, *, grouped, prequantized):
                     )
                     lhs[b, j] = T.reinterpret("float8_e4m3fn", bits)
             if packed_copy:
-                weights = T.view(w, dtype="float8_e4m3fn")
+                weights = buffer_view(w, dtype="float8_e4m3fn")
                 if grouped:
                     T.copy(
                         weights[
@@ -287,17 +299,34 @@ def _mma(p, *, grouped, prequantized):
                         rhs[i, j] = T.reinterpret(
                             "float8_e4m3fn", w[bx * n + i, tile * 128 + j]
                         )
-            T.gemm(lhs, rhs, block, transpose_B=True, clear_accum=True)
+            if transposed:
+                T.gemm(rhs, lhs, block, transpose_B=True, clear_accum=True)
+            else:
+                T.gemm(lhs, rhs, block, transpose_B=True, clear_accum=True)
             for b, j in T.Parallel(m, n):
                 if grouped:
                     total[b, j] += (
-                        block[b, j]
+                        (block[j,b] if transposed else block[b,j])
                         * activation_scales[b]
                         * T.cast(scales[expert, (bx * n + j) // 128, tile], "float32")
                     )
+                elif p.get("combined_scales", False) and prequantized:
+                    combined = T.call_extern(
+                        "float32",
+                        "__fmul_rn",
+                        activation_scales[b],
+                        T.cast(scales[(bx * n) // 128, tile], "float32"),
+                    )
+                    total[b, j] = T.call_extern(
+                        "float32",
+                        "__fmaf_rn",
+                        block[j, b] if transposed else block[b, j],
+                        combined,
+                        total[b, j],
+                    )
                 else:
                     total[b, j] += (
-                        block[b, j]
+                        (block[j,b] if transposed else block[b,j])
                         * activation_scales[b]
                         * T.cast(scales[(bx * n + j) // 128, tile], "float32")
                     )
@@ -451,7 +480,7 @@ def _mma(p, *, grouped, prequantized):
                 )
             return out
 
-        return compute
+        return compute.with_attr("tensor.cuda.tma", int(p.get("tma", False)))
     if not grouped and (not prequantized):
 
         @kernel
@@ -558,7 +587,7 @@ def _packed(p, paired=False, add_residual=False):
                 T.clear(accum2)
             for tile in T.Pipelined(k // bk, num_stages=stages):
                 if p.get("input_dtype") == "float16":
-                    source = T.meta_var(T.view(x, (r, k)))
+                    source = T.meta_var(buffer_view(x, (r, k)))
                     T.copy(
                         source[by * bm : by * bm + bm, tile * bk : tile * bk + bk], lhs
                     )
@@ -1037,9 +1066,9 @@ def hopper_gemm_partial(spec: KernelSpec, schedule: Mapping[str, object]):
             block = T.alloc_fragment((m, n), "float32")
             total = T.alloc_fragment((m, n), "float32")
             T.clear(total)
-            words = T.view(x, shape=(r, k // 4), dtype="uint32")
-            destination = T.view(lhs, shape=(m, 32), dtype="uint32")
-            weights = T.view(w, dtype="float8_e4m3fn")
+            words = buffer_view(x, shape=(r, k // 4), dtype="uint32")
+            destination = buffer_view(lhs, shape=(m, 32), dtype="uint32")
+            weights = buffer_view(w, dtype="float8_e4m3fn")
             for local in T.Pipelined(k // (128 * parts), num_stages=stages):
                 tile = part * (k // (128 * parts)) + local
                 if packed:
@@ -1058,7 +1087,7 @@ def hopper_gemm_partial(spec: KernelSpec, schedule: Mapping[str, object]):
                         else:
                             destination[i, j] = bits
                 else:
-                    activations = T.view(x, dtype="float8_e4m3fn")
+                    activations = buffer_view(x, dtype="float8_e4m3fn")
                     T.copy(
                         activations[by * m : by * m + m, tile * 128 : tile * 128 + 128],
                         lhs,
@@ -1131,10 +1160,10 @@ def hopper_gemm_partial(spec: KernelSpec, schedule: Mapping[str, object]):
                     T.clear(block)
                     for sub in T.serial(128 // reduction):
                         if packed_widen:
-                            lhs_pairs = T.view(lhs, shape=(m, 64), dtype="uint16")
-                            rhs_pairs = T.view(rhs, shape=(n, 64), dtype="uint16")
-                            a_pairs = T.view(a_sub, shape=(m, 16), dtype="uint32")
-                            b_pairs = T.view(b_sub, shape=(n, 16), dtype="uint32")
+                            lhs_pairs = buffer_view(lhs, shape=(m, 64), dtype="uint16")
+                            rhs_pairs = buffer_view(rhs, shape=(n, 64), dtype="uint16")
+                            a_pairs = buffer_view(a_sub, shape=(m, 16), dtype="uint32")
+                            b_pairs = buffer_view(b_sub, shape=(n, 16), dtype="uint32")
                             for i, j in T.Parallel(m, 16):
                                 a_pairs[i, j] = T.call_extern(
                                     "uint32",
@@ -1311,7 +1340,7 @@ def floating_linear(spec: KernelSpec, schedule: Mapping[str, object]):
                 add_residual=False,
             )
         )
-    return output_view(kernel, p)
+    return output_view(kernel, p).with_attr("tensor.cuda.tma", int(p.get("tma", False)))
 
 
 def split(spec: KernelSpec, schedule: Mapping[str, object]):
@@ -1625,7 +1654,7 @@ def _q4_q8(p, *, packed_output):
     @T.macro
     def run(x, scales, w, out, w2=None, out_scales=None):
         with T.Kernel(T.ceildiv(r, bm), T.ceildiv(o, bn), threads=threads) as (by, bx):
-            q = T.meta_var(T.view(x, (r, k), dtype="int8"))
+            q = T.meta_var(buffer_view(x, (r, k), dtype="int8"))
             a = T.alloc_shared((bm, bk + 16), "int8")
             b = T.alloc_shared((bn, bk + 16), "int8")
             sa = T.alloc_shared((bm, groups), "float32")
@@ -1639,10 +1668,10 @@ def _q4_q8(p, *, packed_output):
                 total2 = T.alloc_fragment((bm, bn), "float32")
                 T.clear(total2)
             for tile in T.serial(k // bk):
-                aw = T.meta_var(T.view(a, (bm, (bk + 16) // 4), dtype="uint32"))
-                bw = T.meta_var(T.view(b, (bn, (bk + 16) // 4), dtype="uint32"))
+                aw = T.meta_var(buffer_view(a, (bm, (bk + 16) // 4), dtype="uint32"))
+                bw = T.meta_var(buffer_view(b, (bn, (bk + 16) // 4), dtype="uint32"))
                 if paired:
-                    bw2 = T.meta_var(T.view(b2, (bn, (bk + 16) // 4), dtype="uint32"))
+                    bw2 = T.meta_var(buffer_view(b2, (bn, (bk + 16) // 4), dtype="uint32"))
                 for i, j in T.Parallel(bm, bk // 4):
                     aw[i, j] = T.if_then_else(
                         by * bm + i < r,
@@ -1705,7 +1734,7 @@ def _q4_q8(p, *, packed_output):
                         T.round(activated[i, group, lane] / scale), "int8"
                     )
                 T.sync_threads()
-                words = T.meta_var(T.view(quantized, (bm, bn // 4), dtype="uint32"))
+                words = T.meta_var(buffer_view(quantized, (bm, bn // 4), dtype="uint32"))
                 for i, j in T.Parallel(bm, bn // 4):
                     if by * bm + i < r and bx * bn + j * 4 < o:
                         out[(by * bm + i) * (o // 4) + bx * (bn // 4) + j] = words[i, j]

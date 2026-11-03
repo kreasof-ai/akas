@@ -75,3 +75,45 @@ def bind(shape):
 AVAILABLE = "cuda" in dict(FORMAT.providers)
 CAPABILITIES = ("dequantize", "read", "read_tile", "quantize")
 IMPLEMENTATIONS = tuple(choice for choice in _CHOICES if choice.provider == "cuda")
+
+
+def warp_quantize(spec: KernelSpec, schedule: Mapping[str, object]):
+    """Assign one 128-value quantization block to each warp."""
+    import tilelang.language as T
+    from tensor.compiler.frontend.view import buffer_view
+    p = {**spec.parameters, **schedule}
+    r, k, top = p['r'], p['k'], p.get('top')
+    rows = r * (top or 1)
+    shape = (r,top,k) if top else (r,k)
+    scales_shape = (*shape[:-1], k//128)
+    groups = p.get('groups_per_block',4)
+    if groups not in (2,4,8) or k%128:
+        raise ValueError('invalid warp quantization geometry')
+    dtype = p.get('input_dtype','bfloat16')
+    @kernel
+    def compute(x:Tensor(shape,dtype))->tuple[Tensor(shape,'uint8'),Tensor(scales_shape,'float32')]:
+        out=output(shape,'uint8');scales=output(scales_shape,'float32')
+        with T.Kernel(T.ceildiv(rows*(k//128),groups),threads=groups*32) as block:
+            tx=T.get_thread_binding();lane=tx%32;group=block*groups+tx//32
+            words=buffer_view(out,shape=(rows*k//4,),dtype='uint32')
+            metadata=buffer_view(scales,shape=(rows*(k//128),),dtype='float32')
+            if group<rows*(k//128):
+                values=T.alloc_local((4,),'float32')
+                maximum=T.alloc_var('float32');maximum=0
+                for j in T.unroll(4):
+                    row=group//(k//128);tile=group%(k//128)
+                    if top:
+                        values[j]=T.cast(x[row//top,row%top,tile*128+lane*4+j],'float32')
+                    else:
+                        values[j]=T.cast(x[row,tile*128+lane*4+j],'float32')
+                    maximum=T.max(maximum,T.abs(values[j]))
+                for shift in T.unroll(5):
+                    maximum=T.max(maximum,T.shfl_down(maximum,16>>shift))
+                maximum=T.shfl_sync(maximum,0)
+                scale=T.max(maximum,T.float32(1e-12))/T.float32(448)
+                bits=T.call_extern('uint32','tensor_encode_e4m3x4',
+                    values[0]/scale,values[1]/scale,values[2]/scale,values[3]/scale)
+                words[group*32+lane]=bits
+                if lane==0:metadata[group]=scale
+        return out,scales
+    return compute

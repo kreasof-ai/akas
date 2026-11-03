@@ -678,6 +678,28 @@ def collect(campaign, history):
             <= state["created_at"]
         ):
             selected[key] = item["id"]
+    locked = state.get("baseline_lock")
+    if locked is not None:
+        if locked.get("schema") != "akas.baseline-lock.v1":
+            raise ValueError("unsupported baseline lock schema")
+        selected = {}
+        for runtime, entry in locked["runs"].items():
+            run_id = entry["run_id"]
+            contents = archive.read_file(history, "runs", run_id, "run.json")
+            if hashlib.sha256(contents).hexdigest() != entry["sha256"]:
+                raise ValueError("frozen baseline checksum mismatch: " + run_id)
+            candidate = record(history, run_id)
+            meta = candidate["metadata"]
+            shapes = {(r["case"]["batch"], r["case"]["prompt"], r["case"]["generated"])
+                      for r in candidate["results"]}
+            if (meta["runtime"] != runtime or shapes != expected_shapes
+                    or not candidate.get("completed_at")
+                    or candidate["completed_at"] > state["created_at"]):
+                raise ValueError("frozen baseline is incompatible with campaign: " + run_id)
+            for name, checksum in entry.get("artifact_checksums", {}).items():
+                if hashlib.sha256(archive.read_file(history, "runs", run_id, name)).hexdigest() != checksum:
+                    raise ValueError("frozen baseline artifact checksum mismatch: " + run_id + "/" + name)
+            selected[meta["model"], runtime, meta["provider"], meta["weight_format"], meta["mode"]] = run_id
     for model_id, model in state["models"].items():
         for runtime, provider, weight, mode in baseline_combinations(state, model):
             key = (model["model"], runtime, provider, weight, mode)
@@ -819,7 +841,7 @@ def render(data, out, history):
         "",
         f"Source: `{state['source'].get('revision')}`; measured source tree: `{state['source']['tree_sha256']}`.",
         "",
-        f"Qualified AKAS deployments: **{len(qualified)}/{len(akas)}**. Qualified baseline profiles: **{sum(p['qualifying_status'] == 'passed' for p in baselines)}/{len(baselines)}**.",
+        f"Qualified AKAS {'measurements' if data.get('measurement_verification') else 'deployments'}: **{len(qualified)}/{len(akas)}**. Qualified baseline profiles: **{sum(p['qualifying_status'] == 'passed' for p in baselines)}/{len(baselines)}**.",
         "",
         "- [Side-by-side tables for every requested shape](COMPARISON.md)",
         "- [All AKAS configurations and per-shape measurements](AKAS.md)",
@@ -1209,12 +1231,29 @@ def comparisons(data, out, history, notes):
         "",
         notes,
         "",
-        "Every shape is shown for prefill, decode and complete-burst output throughput. Phase columns display each runtime's reported timing boundary, labeled by its protocol. They do not calculate cross-protocol speedups. Each column links to its full profile and retained settings; failed profiles carry † even when a particular shape completed. Missing values are not replaced by zero.",
+        "Every shape is shown for prefill, decode and complete-burst output throughput. Phase columns display each runtime's reported timing boundary, labeled by its protocol. They do not calculate cross-protocol speedups. Each column links to its full profile and retained settings. † marks an incomplete correctness qualification or a failed correctness check; the reason is stated below. Timing samples are retained. Missing values are not replaced by zero.",
         "",
     ]
+    if data.get('qualification_notes'):
+        lines += ['Qualification notes:', '']
+        lines += ['- '+note for note in data['qualification_notes']]
+        lines.append('')
     profiles = data["profiles"]
     spec = data["campaign"]["specification"]
     requested = data["workload"]
+
+    def transport_label(profile):
+        run_id = profile.get('selected_run_id') or next(
+            (row.get('run_id') for row in profile['measurements'] if row.get('run_id')), None)
+        meta = data.get('evidence', {}).get(run_id, {}).get('metadata', {})
+        transport = str(meta.get('transport', '')).lower()
+        if 'http' in transport:
+            return 'HTTP/SSE'
+        if 'gpu' in transport and 'phase' in transport:
+            return 'CUDA events'
+        if meta.get('protocol') == 'client-stream-burst-v1':
+            return 'native engine token stream'
+        return 'reported transport'
     for model_id, model in data["campaign"]["models"].items():
         for weight in spec["formats"]:
             for mode in model["modes"]:
@@ -1247,11 +1286,7 @@ def comparisons(data, out, history, notes):
                     labels = []
                     for p in columns:
                         boundary = (
-                            (
-                                "HTTP"
-                                if p["kind"] == "akas" or p["runtime"] == "llama"
-                                else "native call"
-                            )
+                            transport_label(p)
                             if metric == "burst_output_tok_s"
                             else next(
                                 (
@@ -1260,7 +1295,7 @@ def comparisons(data, out, history, notes):
                                     if r.get("phase_protocol")
                                 ),
                                 "unmeasured",
-                            )
+                            ) + ' / ' + transport_label(p)
                         )
                         labels.append(
                             f"[{p['runtime']} {p['provider']} {p['cache_request']} / {boundary}]({'AKAS.md' if p['kind'] == 'akas' else 'BASELINES.md'}#{p['id']})"
@@ -1284,6 +1319,18 @@ def comparisons(data, out, history, notes):
                             cells.append(cell)
                         lines.append(f"| {b} | {prefix} | " + " | ".join(cells) + " |")
                     lines.append("")
+    if data.get('efficiency_estimates'):
+        efficiency = data['efficiency_estimates']
+        lines += ['## Utilization estimates and targets', '', efficiency['notes'], '',
+                  '| C | vLLM MFU / MBU | SGLang MFU / MBU | AKAS MFU / MBU |',
+                  '| ---: | ---: | ---: | ---: |']
+        for batch in requested['batches']:
+            cells = []
+            for runtime in ('vllm','sglang','akas'):
+                row = next((r for r in efficiency['rows'] if r['runtime']==runtime and r['concurrency']==batch), None)
+                cells.append(f"{row['prefill_mfu_percent']:.1f}% / {row['decode_mbu_percent']:.1f}%" if row else '—')
+            lines.append(f"| {batch} | " + ' | '.join(cells) + ' |')
+        lines += ['', efficiency['target_status'], '']
     if data.get("calibration"):
         pilot = data["calibration"]
         lines += ["## Native prefill tuning pilots", "",
@@ -1367,7 +1414,8 @@ def export(campaign, *, history="benchmarks", out=None):
     return destination
 
 
-def export_runs(run_ids, *, model_id, workload_id, history="benchmarks", out=None):
+def export_runs(run_ids, *, model_id, workload_id, history="benchmarks", out=None,
+                baseline_lock=None):
     """Render retained native measurements through the existing campaign exporter.
 
     Importing a run does not create a qualified deployment or mutate its evidence.
@@ -1407,8 +1455,12 @@ def export_runs(run_ids, *, model_id, workload_id, history="benchmarks", out=Non
                  updated_at=max(data.get("completed_at") or data["started_at"] for data in runs),
                  status="retained measurements", spent_seconds=0, entries=[],
                  retained_run_ids=[data["id"] for data in runs])
+    if baseline_lock is not None:
+        state["baseline_lock"] = (read(baseline_lock) if isinstance(baseline_lock, (str, Path))
+                                  else baseline_lock)
     state["identity"] = hashlib.sha256(json.dumps(dict(
-        runs=state["retained_run_ids"], specification=spec), sort_keys=True).encode()).hexdigest()
+        runs=state["retained_run_ids"], specification=spec,
+        **({"baseline_lock": state["baseline_lock"]} if baseline_lock is not None else {})), sort_keys=True).encode()).hexdigest()
     with tempfile.TemporaryDirectory() as directory:
         directory = Path(directory)
         for identity, fields in identity_map(state).items():
@@ -1433,8 +1485,10 @@ def export_runs(run_ids, *, model_id, workload_id, history="benchmarks", out=Non
         data["measurement_notes"] = (
             "Retained measurements; importing evidence does not qualify an AKAS deployment. "
             "All values are medians. Phase protocol labels describe the measured boundaries. "
-            "client-stream-burst-v1 measures concurrent native-engine token delivery: TTFT includes "
+            "client-stream-burst-v1 uses concurrent token-arrival timestamps: TTFT includes "
             "queueing and prefill rate is total prompt tokens divided by maximum TTFT. "
+            "native-gpu-prefill-ar127-v1 uses CUDA events around native prefill and autoregressive decode. "
+            "Column labels distinguish native engine delivery, CUDA events and HTTP/SSE transports. "
             "Decode counts the remaining output tokens after the first. Unqualified values retain †. "
             "Original run records and source snapshots are unchanged.")
         destination = Path(out) if out else report_directory(state, history)
@@ -1589,6 +1643,7 @@ def main():
     parser.add_argument("--workload", help="versioned workload ID or JSON path for --runs")
     parser.add_argument("--history", type=Path, default=Path("benchmarks"))
     parser.add_argument("--out", type=Path)
+    parser.add_argument("--baseline-lock", type=Path, help="freeze baseline IDs and verify their recorded checksums for --runs")
     args = parser.parse_args()
     if args.check:
         check(args.history)
@@ -1598,7 +1653,8 @@ def main():
         if not args.model or not args.workload:
             parser.error("--runs requires --model and --workload")
         destination = export_runs(args.runs, model_id=args.model, workload_id=args.workload,
-                                  history=args.history, out=args.out)
+                                  history=args.history, out=args.out,
+                                  baseline_lock=args.baseline_lock)
     elif args.render:
         destination = args.out or args.render.parent
         render(read(args.render), destination, args.history)

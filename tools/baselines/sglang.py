@@ -22,8 +22,8 @@ def run(config):
         disable_radix_cache=True,
         random_seed=17,
         log_level="info",
-        **config["runtime_options"],
     )
+    settings.update(config["runtime_options"])
     if config.get("optimized"):
         settings["cuda_graph_bs_decode"] = sorted({b for b, _ in config["shapes"]})
     if config.get("streaming"):
@@ -59,6 +59,9 @@ def run(config):
                     synthetic_prompts(config["vocab"], batch, prefix), generate, config["output_tokens"]))
 
             measurements(config, invoke, report)
+            if config.get("probe_prompts"):
+                from tools.baselines.common import reference_probes
+                engine.loop.run_until_complete(reference_probes(config, generate, report))
             return report
 
         def invoke(batch, prefix):

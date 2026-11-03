@@ -71,6 +71,94 @@ def seed(history, graphs, *, provider, target, checkpoint_sha256, hardware):
             origins.append(
                 dict(run_id=record["id"], phase=phase["phase"], entries=len(compatible))
             )
+        if not record["search"]:
+            from akas.optimization.context import source_root
+
+            report_roots = [Path(history) / "reports"]
+            repo_reports = source_root() / "benchmarks/reports"
+            if repo_reports not in report_roots:
+                report_roots.append(repo_reports)
+            schedule_paths = [
+                p
+                for r in report_roots
+                if r.is_dir()
+                for p in sorted(r.glob("*/SCHEDULES.json"), reverse=True)
+            ]
+            for schedule_path in schedule_paths:
+                try:
+                    published = json.loads(schedule_path.read_text())
+                except (OSError, ValueError):
+                    continue
+                for conf in published.get("configurations", {}).values():
+                    if (
+                        conf.get("run_id") != record["id"]
+                        or not conf.get("verification_run_id")
+                    ):
+                        continue
+                    ordered_phases = sorted(
+                        conf.get("phases", ()),
+                        key=lambda p: (
+                            0 if p.get("phase") == "decode" else 1,
+                            p.get("batch", 0),
+                        ),
+                    )
+                    for phase in ordered_phases:
+                        verification = phase.get("verification", {})
+                        verified_kernels = verification.get("kernels", ())
+                        if not verified_kernels or not all(
+                            k.get("status") == "passed" for k in verified_kernels
+                        ):
+                            continue
+                        verified_hashes = {
+                            k["key"]: k["sha256"] for k in verified_kernels
+                        }
+                        kernel_hashes = {
+                            k: v.get("sha256")
+                            for k, v in phase.get("kernels", {}).items()
+                        }
+                        if verified_hashes != kernel_hashes:
+                            raise ValueError(
+                                "historical schedule verification checksum mismatch"
+                            )
+                        compatible = []
+                        for rec in phase.get("kernels", {}).values():
+                            key = rec["kind"], identity(rec["parameters"])
+                            if key in entries or key not in required:
+                                continue
+                            contexts = required[key]
+                            try:
+                                for purpose, contract, parameters in contexts:
+                                    select(
+                                        rec["kind"],
+                                        parameters,
+                                        contract=contract,
+                                        phase=purpose,
+                                        provider=provider,
+                                        target=target,
+                                        preferred=rec["schedule"].get("implementation"),
+                                    )
+                            except ValueError:
+                                continue
+                            compatible.append(
+                                (
+                                    key,
+                                    dict(
+                                        operation=rec["kind"],
+                                        parameters=rec["parameters"],
+                                        schedule=rec["schedule"],
+                                    ),
+                                )
+                            )
+                        if compatible:
+                            entries.update(compatible)
+                            origins.append(
+                                dict(
+                                    run_id=record["id"],
+                                    verification_run_id=conf["verification_run_id"],
+                                    phase=phase["phase"],
+                                    entries=len(compatible),
+                                )
+                            )
     profile = (
         None
         if not entries

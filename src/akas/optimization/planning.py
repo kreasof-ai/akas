@@ -14,6 +14,13 @@ def hardware(provider, ordinal):
     import os
     import tensor
 
+    override = os.environ.get("AKAS_TARGET_DEVICE")
+    if override:
+        result = json.loads(override)
+        if provider == "cuda" and result.get("arch") == "sm_90":
+            result["arch"] = "sm_90a"
+        return result
+
     if provider == "webgpu" and "VK_ICD_FILENAMES" not in os.environ:
         root = Path(__file__).resolve().parents[3]
         icd = root / "build/baselines/nvidia-graphics/local_egl_icd.json"
@@ -30,6 +37,8 @@ def hardware(provider, ordinal):
 
     with tensor.Device(ordinal, provider=provider) as device:
         result = dict(device.info)
+    if provider == "cuda" and result.get("arch") == "sm_90":
+        result["arch"] = "sm_90a"
     try:
         rows = (
             subprocess.check_output(
@@ -116,7 +125,9 @@ def probe(context, provider):
 
     model = symbol(context["definition"])
     loaded = model.checkpoint_type(context["checkpoint"])
-    device = hardware(provider, context["device"])
+    device = dict(hardware(provider, context["device"]))
+    if provider == "cuda" and device.get("arch") == "sm_90":
+        device["arch"] = "sm_90a"
     data = context["workload"]
     capacity = max(data["batches"])
     limit = max(data["prefix_tokens"]) + data["output_tokens"]
@@ -254,6 +265,7 @@ def probe(context, provider):
 def recipes(context, probes):
     """Finite, ordered search; runtime choices are generated rather than requested."""
     capacity = max(context["workload"]["batches"])
+    max_prefix = max(context["workload"]["prefix_tokens"])
     plans = []
 
     def add(
@@ -268,20 +280,44 @@ def recipes(context, probes):
         model_options=None,
         deferred=False,
     ):
+        arch = (
+            "sm_90a"
+            if probe["provider"] == "cuda" and probe["device"].get("arch") == "sm_90"
+            else probe["device"]["arch"]
+        )
+        hopper = probe["provider"] == "cuda" and arch == "sm_90a"
+        default_chunk = (
+            max_prefix
+            if hopper and max_prefix in probe["chunks"]
+            else probe["chunks"][0]
+        )
+        default_group = min(capacity, 16 if hopper else 32)
+        default_policy = (
+            max(probe["policies"], key=len, default={}) if hopper else {}
+        )
+        selected_chunk = chunk or default_chunk
         recipe = dict(
             provider=probe["provider"],
-            target=probe["device"]["arch"],
-            chunk=chunk or probe["chunks"][0],
-            prefill_requests=group or min(capacity, 32),
+            target=arch,
+            chunk=selected_chunk,
+            prefill_requests=group or default_group,
             graphs=graphs,
             trials=trials,
-            policy=policy or {},
+            policy=default_policy if policy is None else policy,
             model_options=probe["model_options"]
             if model_options is None
             else model_options,
             window=window,
             deferred=deferred,
             head=probe["head"] if window else None,
+            **(
+                dict(
+                    prefill_token_budget=capacity * selected_chunk,
+                    decode_prefill_token_budget=capacity,
+                )
+                if hopper
+                else {}
+            ),
         )
         recipe["id"] = identity(recipe)[:16]
         if recipe not in plans:
@@ -295,7 +331,7 @@ def recipes(context, probes):
     for p in legal:
         for chunk in p["chunks"]:
             add(p, chunk=chunk)
-        for group in dict.fromkeys(min(capacity, n) for n in (1, 8, 64)):
+        for group in dict.fromkeys(min(capacity, n) for n in (1, 8, 16, 64)):
             add(p, group=group)
         for policy in p["policies"]:
             for chunk in p["chunks"]:
@@ -362,7 +398,9 @@ def worker_allowance(budget, remaining, jobs, *, reference, provider):
 def geometries(data, recipe):
     """Keep short prompts unpadded and match every speculative teacher frame."""
     batches = sorted({1, *data["batches"]})
-    groups = sorted({1, min(max(data["batches"]), recipe["prefill_requests"])})
+    groups = sorted(
+        {1, *(min(b, recipe["prefill_requests"]) for b in data["batches"])}
+    )
     chunk, window = recipe["chunk"], recipe["window"]
     prefills = sorted({chunk, *(min(chunk, p) for p in data["prefix_tokens"])} - {1})
     result = [(b, 1) for b in batches]

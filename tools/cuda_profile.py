@@ -199,6 +199,100 @@ def phase_profile(model, args):
             model.release(slot)
 
 
+def run_modal(args):
+    import subprocess
+    import modal
+
+    root = Path(__file__).resolve().parents[1]
+    tensor_root = root.parent / "tensor"
+    volume = modal.Volume.from_name(args.modal_volume)
+    image = (
+        modal.Image.from_registry(
+            "nvidia/cuda:13.0.2-devel-ubuntu24.04", add_python="3.12"
+        )
+        .apt_install("git", "g++", "curl", "libnuma1")
+        .env(
+            {
+                "HF_HOME": "/data/hf",
+                "CUDA_HOME": "/usr/local/cuda",
+                "OMP_NUM_THREADS": "4",
+                "OPENBLAS_NUM_THREADS": "1",
+                "MAX_JOBS": "4",
+                "PYTHONPATH": "/workspace/akas/src:/workspace/akas:/workspace/tensor/src",
+                "TENSOR_NVRTC_HOME": "/usr/local/cuda",
+                "TOKENIZERS_PARALLELISM": "false",
+            }
+        )
+        .uv_pip_install(
+            "numpy==2.5.3",
+            "tilelang==0.1.14",
+            "apache-tvm-ffi==0.1.12",
+            "torch",
+            "safetensors",
+            "huggingface-hub",
+            "aiohttp",
+            "regex",
+        )
+        .add_local_dir(root / "src", "/workspace/akas/src")
+        .add_local_dir(root / "tools", "/workspace/akas/tools")
+        .add_local_dir(tensor_root / "src", "/workspace/tensor/src")
+    )
+    app = modal.App("akas-cuda-profile")
+    cases_payload = json.loads(args.cases.read_text()) if args.cases else None
+
+    @app.function(
+        image=image,
+        gpu=args.modal_gpu,
+        volumes={"/data": volume},
+        timeout=600,
+        cpu=4,
+        memory=65536,
+        scaledown_window=2,
+        max_containers=1,
+        serialized=True,
+    )
+    def execute_remote():
+        cmd = [
+            "python",
+            "-u",
+            "-m",
+            "tools.cuda_profile",
+            "--checkpoint",
+            str(args.checkpoint),
+            "--program",
+            str(args.program),
+            "--batch",
+            str(args.batch),
+            "--chunk",
+            str(args.chunk),
+            "--position",
+            str(args.position),
+            "--samples",
+            str(args.samples),
+            "--out",
+            str(args.out),
+        ]
+        if args.definition:
+            cmd.extend(["--definition", args.definition])
+        if cases_payload is not None:
+            cases_file = Path("/tmp/profile-cases.json")
+            cases_file.write_text(json.dumps(cases_payload))
+            cmd.extend(["--cases", str(cases_file)])
+        if args.captured:
+            cmd.append("--captured")
+        if args.counter_range:
+            cmd.append("--counter-range")
+        for obs in args.observe:
+            cmd.extend(["--observe", obs])
+        proc = subprocess.run(cmd, cwd="/workspace/akas")
+        volume.commit()
+        if proc.returncode != 0:
+            raise SystemExit(proc.returncode)
+
+    with modal.enable_output(), app.run():
+        execute_remote.remote()
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--checkpoint", type=Path, required=True)
@@ -215,4 +309,10 @@ if __name__ == "__main__":
     modes.add_argument("--captured", action="store_true", help="attribute captured kernels using PyTorch's CUPTI profiler")
     modes.add_argument("--counter-range", action="store_true", help="mark a warm captured phase for ncu --profile-from-start off --graph-profiling graph")
     parser.add_argument("--out", type=Path, required=True)
-    profile(parser.parse_args())
+    parser.add_argument("--modal-gpu", default=None, help="run profile on a Modal GPU, e.g. H200")
+    parser.add_argument("--modal-volume", default="akas-h200-evidence", help="Modal volume mounted at /data")
+    parsed = parser.parse_args()
+    if parsed.modal_gpu:
+        run_modal(parsed)
+    else:
+        profile(parsed)

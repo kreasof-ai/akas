@@ -190,6 +190,10 @@ def search_policies(graph, commit, *, provider, target):
                     for choice in choices
                     if not choice.get("decoded_kv")
                 ]
+            if provider == "cuda" and target == "sm_90a":
+                choices.insert(
+                    0, {"decode_precision": "float16", "minimum_split_groups": 256}
+                )
             return choices
         return []
     if (
@@ -1013,6 +1017,8 @@ IMPLEMENTATIONS = (
         "reference",
         factory="rope",
         name="attention.reference",
+        semantic_keys=("r", "h", "d", "theta", "position_limit"),
+        space=(("rope_heads_per_block", (False, True)),),
     ),
     Implementation(
         "cache_write",
@@ -1209,6 +1215,7 @@ IMPLEMENTATIONS += (
             ("key_rows", (64, 128, 32)),
             ("stages", (2, 1, 3)),
             ("threads", (128, 256)),
+            ("min_blocks", (1, 2, 3, 4)),
         ),
         accepts=lambda p: (
             p.get("optimized", False)
@@ -1475,6 +1482,7 @@ IMPLEMENTATIONS += (
             ("key_rows", (64, 128)),
             ("stages", (2, 1, 3)),
             ("copy_complete_tiles", (False, True)),
+            ("min_blocks", (1, 2, 3, 4)),
         ),
         accepts=lambda p: (
             p.get("optimized", False)
@@ -1769,4 +1777,13 @@ IMPLEMENTATIONS += (
         factory="window_cache_tail",
         name="attention.cuda.window_tail",
     ),
+)
+
+
+from dataclasses import replace as _with_tma
+IMPLEMENTATIONS = tuple(
+    _with_tma(item, space=(*item.space, ("tma", (False, True))))
+    if item.provider == "cuda" and item.name == "attention.cuda.pipelined"
+    else item
+    for item in IMPLEMENTATIONS
 )

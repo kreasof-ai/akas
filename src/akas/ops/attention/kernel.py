@@ -440,7 +440,9 @@ def online_attention(p, read):
 
         @T.macro
         def attend_fast(q, kc, vc, ks, vs, out, positions, enabled):
-            with T.Kernel(h, r, threads=128) as (head, row):
+            with T.Kernel(h * r, threads=128) as flat_block:
+                head = flat_block % h
+                row = flat_block // h
                 tx = T.get_thread_binding()
                 lane, warp = (tx % 32, tx // 32)
                 length = T.if_then_else(
@@ -516,7 +518,9 @@ def online_attention(p, read):
 
     @T.macro
     def attend(q, kc, vc, ks, vs, out, positions, enabled):
-        with T.Kernel(h, r, threads=64) as (head, row):
+        with T.Kernel(h * r, threads=64) as flat_block:
+            head = flat_block % h
+            row = flat_block // h
             tx = T.get_thread_binding()
             scratch = T.alloc_shared((64,), "float32")
             probabilities = T.alloc_shared((64,), "float32")
@@ -626,7 +630,9 @@ def attention(spec: KernelSpec, schedule: Mapping[str, object]):
 
     @T.macro
     def attend(q, kc, vc, ks, vs, out, positions, enabled):
-        with T.Kernel(h, r, threads=64) as (head, row):
+        with T.Kernel(h * r, threads=64) as flat_block:
+            head = flat_block % h
+            row = flat_block // h
             tx = T.get_thread_binding()
             scratch = T.alloc_shared((64,), "float32")
             maximum = T.alloc_shared((1,), "float32")
@@ -741,7 +747,9 @@ def cache_write(spec: KernelSpec, schedule: Mapping[str, object]):
         Tensor(scale_shape, "float32"),
         Tensor(scale_shape, "float32"),
     ]:
-        with T.Kernel(kh, r, threads=128) as (head, row):
+        with T.Kernel(kh * r, threads=128) as flat_block:
+            head = flat_block % kh
+            row = flat_block // kh
             tx = T.get_thread_binding()
             if quantized:
                 encode(
@@ -772,42 +780,12 @@ def cache_write(spec: KernelSpec, schedule: Mapping[str, object]):
 
 
 def rope(spec: KernelSpec, schedule: Mapping[str, object]):
-    import math
-
-    p = {**spec.parameters, **schedule}
-    if p.get("position_limit", 0) > 8192 or p.get("provider") == "webgpu":
-        return precise_rope(spec, schedule)
-    import tilelang.language as T
-
-    r, d = (p["r"], p["d"])
-    if d != 64:
-        raise ValueError("portable reference attention requires 64-channel heads")
-    h, theta = (p["h"], p["theta"])
-
-    @kernel
-    def compute(
-        x: Tensor((r * h * d,), "float32"), positions: Tensor((r,), "int32")
-    ) -> Tensor((r, h * d), "float32"):
-        out = output((r, h * d), "float32", position=1)
-        with T.Kernel(h, r, threads=64) as (head, row):
-            tx = T.get_thread_binding()
-            half = tx % (d // 2)
-            angle = T.cast(positions[row], "float32") * T.exp(
-                -(math.log(theta) * 2 / d) * half
-            )
-            left = x[(row * h + head) * d + half]
-            right = x[(row * h + head) * d + half + d // 2]
-            out[row, head * d + tx] = T.if_then_else(
-                tx < d // 2,
-                left * T.cos(angle) - right * T.sin(angle),
-                left * T.sin(angle) + right * T.cos(angle),
-            )
-        return out
-
-    return compute
+    # Approximate frequency exponentiation exceeds the existing numerical
+    # tolerance even below 2048 positions. Reuse compensated phase generation.
+    return precise_rope(spec, schedule, force=True)
 
 
-def precise_rope(spec: KernelSpec, schedule: Mapping[str, object]):
+def precise_rope(spec: KernelSpec, schedule: Mapping[str, object], *, force=False):
     import math
     import struct
 
@@ -818,7 +796,7 @@ def precise_rope(spec: KernelSpec, schedule: Mapping[str, object]):
     if d != 64:
         raise ValueError("portable reference attention requires 64-channel heads")
     h, theta = (p["h"], p["theta"])
-    precise = p.get("position_limit", 0) > 8192 or p.get("provider") == "webgpu"
+    precise = force or p.get("position_limit", 0) > 8192 or p.get("provider") == "webgpu"
     fma = "fma" if p.get("provider") == "webgpu" else "fmaf"
 
     def single(value):
@@ -869,12 +847,56 @@ def precise_rope(spec: KernelSpec, schedule: Mapping[str, object]):
             (a_high * b_high - rounded) + a_high * b_low + a_low * b_high
         ) + a_low * b_low
 
+    if p.get("rope_heads_per_block", False):
+
+        @kernel
+        def compute(
+            x: Tensor((r * h * d,), "float32"), positions: Tensor((r,), "int32")
+        ) -> Tensor((r, h * d), "float32"):
+            out = output((r, h * d), "float32", position=1)
+            with T.Kernel(r, threads=256) as row:
+                tx = T.get_thread_binding()
+                ch = tx % d
+                head_lane = tx // d
+                half = ch % (d // 2)
+                position = T.cast(positions[row], "float32")
+                frequency = constant(half, high)
+                leading = position * frequency
+                trailing = T.call_extern(
+                    "float32", fma, position, frequency, -leading
+                ) + position * constant(half, low)
+                turns = T.cast(T.floor(leading / (2 * math.pi) + 0.5), "int32")
+                angle = T.call_extern(
+                    "float32",
+                    fma,
+                    -T.cast(turns, "float32"),
+                    T.float32(tau_high),
+                    leading,
+                ) + (trailing - T.cast(turns, "float32") * tau_low)
+                cosine = T.cos(angle)
+                sine = T.sin(angle)
+                for step in T.unroll(T.ceildiv(h, 4)):
+                    head = step * 4 + head_lane
+                    if head < h:
+                        left = x[(row * h + head) * d + half]
+                        right = x[(row * h + head) * d + half + d // 2]
+                        out[row, head * d + ch] = T.if_then_else(
+                            ch < d // 2,
+                            left * cosine - right * sine,
+                            left * sine + right * cosine,
+                        )
+            return out
+
+        return compute
+
     @kernel
     def compute(
         x: Tensor((r * h * d,), "float32"), positions: Tensor((r,), "int32")
     ) -> Tensor((r, h * d), "float32"):
         out = output((r, h * d), "float32", position=1)
-        with T.Kernel(h, r, threads=64) as (head, row):
+        with T.Kernel(h * r, threads=64) as flat_block:
+            head = flat_block % h
+            row = flat_block // h
             tx = T.get_thread_binding()
             half = tx % (d // 2)
             angle = T.alloc_var("float32")
@@ -1123,7 +1145,9 @@ def prepare_flat(spec: KernelSpec, schedule: Mapping[str, object]):
         Tensor((cap * kh * d,), "float16"),
     ]:
         qo = output((r * h * d,), "float32", position=5)
-        with T.Kernel(h, r, threads=64) as (head, row):
+        with T.Kernel(h * r, threads=64) as flat_block:
+            head = flat_block % h
+            row = flat_block // h
             square = T.alloc_fragment((d,), "float32")
             total = T.alloc_fragment((1,), "float32")
             norm = T.alloc_shared((d,), "float32")
@@ -1206,7 +1230,9 @@ def _normalization(p, query):
 
     @T.macro
     def normalize(x, w, out, pos, v=None, vc=None):
-        with T.Kernel(heads, r, threads=64) as (head, row):
+        with T.Kernel(heads * r, threads=64) as flat_block:
+            head = flat_block % heads
+            row = flat_block // heads
             square = T.alloc_fragment((d,), "float32")
             total = T.alloc_fragment((1,), "float32")
             norm = T.alloc_shared((d,), "float32")
@@ -1284,7 +1310,9 @@ def rotary_partial(spec, schedule):
         x: Tensor((r * h * d,), "float32"), positions: Tensor((r,), "int32")
     ) -> Tensor((r, h * d), "float32"):
         out = output((r, h * d), "float32", position=1)
-        with T.Kernel(h, r, threads=d) as (head, row):
+        with T.Kernel(h * r, threads=d) as flat_block:
+            head = flat_block % h
+            row = flat_block // h
             tx = T.get_thread_binding()
             if tx < rot:
                 half = tx % (rot // 2)
@@ -1329,7 +1357,9 @@ def window_cache(spec, schedule):
         positions: Tensor((r,), "int32"),
         enabled: Tensor((r,), "int32"),
     ) -> tuple[Tensor(shape, "float16"), Tensor(shape, "float16")]:
-        with T.Kernel(kh, r, threads=d) as (head, row):
+        with T.Kernel(kh * r, threads=d) as flat_block:
+            head = flat_block % kh
+            row = flat_block // kh
             tx = T.get_thread_binding()
             if enabled[row] != 0:
                 if p.get("provider") == "webgpu":
@@ -1438,7 +1468,9 @@ def rotary_table(spec, schedule):
         table: Tensor((cap, rot), "float32"),
     ) -> Tensor((r, h * d), "float32"):
         out = output((r, h * d), "float32", position=1)
-        with T.Kernel(h, r, threads=d) as (head, row):
+        with T.Kernel(h * r, threads=d) as flat_block:
+            head = flat_block % h
+            row = flat_block // h
             tx = T.get_thread_binding()
             position = T.min(T.max(positions[row], 0), cap - 1)
             if tx < rot:
@@ -1623,7 +1655,9 @@ def window_cache_tail(spec, schedule):
         positions: Tensor((r,), "int32"),
         enabled: Tensor((r,), "int32"),
     ) -> tuple[Tensor(shape, "float16"), Tensor(shape, "float16")]:
-        with T.Kernel(kh, r, threads=d) as (head, row):
+        with T.Kernel(kh * r, threads=d) as flat_block:
+            head = flat_block % kh
+            row = flat_block // kh
             channel = T.get_thread_binding()
             latest = T.alloc_var("bool")
             latest = True

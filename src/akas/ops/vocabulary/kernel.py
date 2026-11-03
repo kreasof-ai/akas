@@ -115,25 +115,28 @@ def argmax(spec: KernelSpec, schedule: Mapping[str, object]):
     from akas.kernels.reductions import tree_reduce
 
     r, c = (p["r"], p["c"])
-    maximum = tree_reduce(64, "max")
+    threads = p.get("threads", 64)
+    if threads not in (64, 128, 256, 512, 1024):
+        raise ValueError("invalid argmax thread count")
+    maximum = tree_reduce(threads, "max")
 
     @kernel
     def compute(
         x: Tensor((r * c,), "float32"), enabled: Tensor((r,), "int32")
     ) -> Tensor((r,), "int32"):
         out = output((r,), "int32", position=1)
-        with T.Kernel(r, threads=64) as row:
+        with T.Kernel(r, threads=threads) as row:
             tx = T.get_thread_binding()
-            scratch = T.alloc_shared((64,), "float32")
+            scratch = T.alloc_shared((threads,), "float32")
             best = T.alloc_var("float32")
             index = T.alloc_var("int32")
             best = -T.infinity("float32")
             index = c
-            for tile in T.serial(T.ceildiv(c, 64)):
-                if tile * 64 + tx < c:
-                    if x[row * c + tile * 64 + tx] > best:
-                        best = x[row * c + tile * 64 + tx]
-                        index = tile * 64 + tx
+            for tile in T.serial(T.ceildiv(c, threads)):
+                if tile * threads + tx < c:
+                    if x[row * c + tile * threads + tx] > best:
+                        best = x[row * c + tile * threads + tx]
+                        index = tile * threads + tx
             scratch[tx] = best
             T.sync_threads()
             maximum(scratch, tx)
@@ -164,7 +167,9 @@ def embedding(spec: KernelSpec, schedule: Mapping[str, object]):
         w: Tensor((v * c,), p.get("weight_dtype", "float32")),
     ) -> Tensor((r * c,), "float32"):
         out = output((r * c,), "float32")
-        with T.Kernel(T.ceildiv(c, 64), r, threads=64) as (block, row):
+        with T.Kernel(T.ceildiv(c, 64) * r, threads=64) as flat_block:
+            block = flat_block % T.ceildiv(c, 64)
+            row = flat_block // T.ceildiv(c, 64)
             tx = T.get_thread_binding()
             col = block * 64 + tx
             if col < c and tokens[row] >= start and (tokens[row] < start + v):

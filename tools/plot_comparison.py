@@ -86,8 +86,11 @@ def plot(report=None, output=None):
         axis.spines[["top", "right"]].set_visible(False)
         axis.spines[["bottom", "left"]].set_color("#cbd5e1")
         axis.tick_params(colors="#475569")
+    is_h200 = "NVIDIA H200" in json.dumps(data.get("evidence", {}))
+    gpu_label = "NVIDIA H200" if is_h200 else "NVIDIA L40S"
+    date_label = "November 3, 2026" if is_h200 else "November 1, 2026"
     fig.suptitle(
-        "LFM2.5-24B-A2B-FP8 on NVIDIA L40S",
+        f"LFM2.5-24B-A2B-FP8 on {gpu_label}",
         x=0.07,
         y=0.97,
         ha="left",
@@ -98,7 +101,7 @@ def plot(report=None, output=None):
     fig.text(
         0.07,
         0.895,
-        "Block-scaled FP8 weights  ·  CUDA  ·  2,048 prompt × 128 output tokens  ·  November 1, 2026",
+        f"Block-scaled FP8 weights  ·  CUDA  ·  2,048 prompt × 128 output tokens  ·  {date_label}",
         fontsize=11,
         color="#475569",
     )
