@@ -1,0 +1,5 @@
+# DSL implementation SHA256: 84484a2d4a43892ab2d94b9b08859e0a3ea4c0f1d9de31ea49b3ea275737352d
+from akas.kernels.definition import define
+
+def tensor_export():
+    return {"kernel": define({'contract': 'reference', 'kind': 'projection_partial', 'parameters': {'block_m': 16, 'columns': 32, 'input_dtype': 'float32', 'k': 11776, 'o': 2048, 'packed_copy': True, 'partitions': 2, 'r': 1, 'stages': 2, 'threads': 128}, 'phase': 'decode'}, {'block_m': 64, 'columns': 32, 'mma_dtype': 'float8_e4m3fn', 'mma_orientation': 'activation', 'packed_copy': True, 'stages': 2, 'threads': 128}, {'provider': 'cuda', 'target': 'sm_90a'}, {'axes': ['columns', 'block_m', 'threads', 'stages', 'packed_copy', 'mma_dtype', 'mma_orientation'], 'contract': 'reference', 'defaults': {}, 'factory': 'fp8_prequantized', 'identifier': 'linear.pipeline:reference', 'kind': 'projection_partial', 'module': 'akas.ops.linear.cuda', 'phase': 'forward', 'provider': 'cuda', 'semantic_keys': ['r', 'k', 'o', 'partitions'], 'targets': []})}
