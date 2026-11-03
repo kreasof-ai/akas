@@ -1,0 +1,118 @@
+{
+  "context": {
+    "checkpoint": "/__modal/volumes/vo-BTWOSmUfyDr0QTgpCtrjJc/checkpoint",
+    "definition": "akas.models.lfm2.model:LFM2MoE",
+    "workload": {
+      "schema": "akas.workload.v1",
+      "id": "concurrent-prefill-v1",
+      "description": "Concurrent autoregressive requests with medium prompts and 16-bit KV.",
+      "batches": [
+        1,
+        4,
+        16,
+        64,
+        256
+      ],
+      "prefix_tokens": [
+        2048
+      ],
+      "output_tokens": 128,
+      "kv_bits": 16,
+      "speculative_decoding": false,
+      "cached_prefix_tokens": 0,
+      "early_eos": false,
+      "sampling": {
+        "temperature": 0
+      },
+      "prefix_cache": false,
+      "cpu_offload": false,
+      "timing": "Prefill includes the first predicted token; decode measures the remaining 127 committed tokens. Streamed TTFT includes queueing and delivery.",
+      "metrics": [
+        "prefill_tokens_per_second",
+        "decode_tokens_per_second",
+        "ttft_seconds",
+        "inter_token_seconds",
+        "peak_vram_bytes"
+      ]
+    },
+    "backend": "cuda",
+    "device": 0,
+    "memory_bytes": null,
+    "ttft_ms": null,
+    "tpot_ms": null,
+    "kv_dtype": "float16",
+    "mode": "ar"
+  },
+  "identity": "5f2e7193791d568a9eb6dbbdc27b166b5963db8a9557bebce0d4c7471b305171",
+  "checkpoint_sha256": "dff2336439834c4ce4e2c6f0f7b6cd829987f7e9d57ec8074354e0b2cacb2830",
+  "history": "/__modal/volumes/vo-BTWOSmUfyDr0QTgpCtrjJc/standard-benchmarks",
+  "action": "candidate",
+  "recipe": {
+    "provider": "cuda",
+    "target": "sm_90a",
+    "chunk": 2048,
+    "prefill_requests": 16,
+    "graphs": true,
+    "trials": 1,
+    "policy": {
+      "attention": {
+        "decode_precision": "float16",
+        "minimum_split_groups": 256
+      },
+      "convolution": {
+        "fused_staging": true
+      },
+      "linear": {
+        "stage_inputs": true,
+        "floating_matmul": true,
+        "partitions": 8,
+        "minimum_split_groups": 128,
+        "partition_maximum_rows": 4,
+        "minimum_rows": 1,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "moe": {
+        "block_m": 32,
+        "fused_swiglu": true,
+        "max_block_m": 128,
+        "fused_quantize_minimum_rows": 9,
+        "intermediate_dtype": "bfloat16",
+        "activation_dtype": "bfloat16",
+        "partitions": 2,
+        "partition_maximum_rows": 1,
+        "packed": true,
+        "packed_minimum_rows": 2048
+      },
+      "normalization": {
+        "fused_residual": true,
+        "fused_staging": true
+      }
+    },
+    "model_options": {
+      "kv_dtype": "float16",
+      "optimized": true
+    },
+    "window": null,
+    "deferred": false,
+    "head": null,
+    "prefill_token_budget": 524288,
+    "decode_prefill_token_budget": 256,
+    "id": "1bda28071fd5e5de"
+  },
+  "device": {
+    "ordinal": 0,
+    "name": "NVIDIA H200",
+    "arch": "sm_90a",
+    "provider": "cuda",
+    "uuid": "GPU-056ec9c3-616f-ea39-ad79-3b58bec5a89b",
+    "free_bytes": 150098411520,
+    "total_bytes": 150754820096,
+    "driver": "610.57.04"
+  },
+  "cache_sources": [],
+  "supervisor_pid": 26
+}

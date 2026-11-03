@@ -1,5 +1,0 @@
-# DSL implementation SHA256: e7081974e997b4a4679ba1b4e6421fc87c92892aacb2f929b7069f4388847e23
-from akas.compilation.transforms.state import make_kernel
-
-def tensor_export():
-    return {"kernel": make_kernel('akas.kernels.definition', 'define', [{'contract': 'reference', 'kind': 'attention_partial', 'parameters': {'capacity': 2176, 'd': 64, 'decode_precision': 'float16', 'h': 32, 'kh': 8, 'kv_dtype': 'float16', 'optimized': True, 'provider': 'cuda', 'r': 1, 'splits': 16, 'unit_scales': True}, 'phase': 'decode'}, {'copy_complete_tiles': True, 'key_rows': 64, 'stages': 2}, {'provider': 'cuda', 'target': 'sm_90a'}, {'axes': ['key_rows', 'stages', 'copy_complete_tiles'], 'contract': 'reference', 'defaults': {'decode_precision': 'float16', 'key_rows': 64, 'stages': 2}, 'factory': 'mma_partial', 'identifier': 'attention.cuda.mma_decode', 'kind': 'attention_partial', 'module': 'akas.ops.attention.cuda', 'phase': 'forward', 'provider': 'cuda', 'semantic_keys': None, 'targets': []}], [1, 2, 3, 4, 6], 1, 256)}
