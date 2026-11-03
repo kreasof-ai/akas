@@ -1,0 +1,52 @@
+✓ Initialized. View run at https://modal.com/apps/akbar2habibullah/main/ap-oEiZJ9OvwMJVrAbWWzWisy
+✓ Created objects.
+├── ✓ Uploaded /home/sagemaker-user/akas/tools/h200_akas_optimize.py
+├── ✓ Uploaded /home/sagemaker-user/akas/tools
+├── ✓ Uploaded /home/sagemaker-user/tensor/src
+├── ✓ Uploaded /home/sagemaker-user/akas/src
+├── ✓ Created Function prefill_pilot.
+├── ✓ Created Function epilogue_experiment.
+├── ✓ Created Function kernel_tune.
+├── ✓ Created Function phase_compare.
+├── ✓ Created Function standard_candidate.
+└── ✓ Created Function counter_profile.
+
+==========
+== CUDA ==
+==========
+
+CUDA Version 13.0.2
+
+Container image Copyright (c) 2016-2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+
+This container image and its contents are governed by the NVIDIA Deep Learning Container License.
+By pulling and using the container, you accept the terms and conditions of this license:
+https://developer.nvidia.com/ngc/nvidia-deep-learning-container-license
+
+A copy of this license is made available in this container at /NGC-DL-CONTAINER-LICENSE for your convenience.
+
+STARTED 20261102212133108734-4a2dd18e
+WARMUP 1
+SAMPLE 1 0 57719.4330508681 300.88100612031036
+SAMPLE 1 1 57695.53497128703 301.62326970040834
+SAMPLE 1 2 57959.828744550185 301.19043622656227
+WARMUP 4
+SAMPLE 4 0 80714.0609017578 836.8189905487737
+SAMPLE 4 1 80733.92499053845 837.9077833892356
+SAMPLE 4 2 80825.4017899109 835.9235609643358
+WARMUP 16
+SAMPLE 16 0 84235.54153535559 2026.0260231995155
+SAMPLE 16 1 84352.08334084654 2024.4647438259406
+SAMPLE 16 2 84487.6996875018 2025.2058656894772
+WARMUP 64
+SAMPLE 64 0 82476.67731293407 5634.479929294866
+SAMPLE 64 1 82712.52134453919 5888.798297738549
+SAMPLE 64 2 82461.17734854447 5875.301325233816
+WARMUP 256
+SAMPLE 256 0 82084.87712066986 11943.20874787055
+SAMPLE 256 1 82229.64215457228 12290.545136151453
+SAMPLE 256 2 82193.51184329407 12320.308959819471
+RUN 20261102212133108734-4a2dd18e passed
+{"runtime": "akas", "run_id": "20261102212133108734-4a2dd18e", "returncode": 0, "elapsed_seconds": 102.73562275199998}
+Stopping app - local entrypoint completed.
+✓ App completed. View run at https://modal.com/apps/akbar2habibullah/main/ap-oEiZJ9OvwMJVrAbWWzWisy

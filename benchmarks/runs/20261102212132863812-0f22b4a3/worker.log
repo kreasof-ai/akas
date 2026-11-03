@@ -1,0 +1,44 @@
+✓ Initialized. View run at https://modal.com/apps/akbar2habibullah/main/ap-1vVX8vpwd3VL1HjUyG2iL9
+✓ Created objects.
+├── ✓ Uploaded /home/sagemaker-user/akas/tools/h200_akas_optimize.py
+├── ✓ Uploaded /home/sagemaker-user/akas/tools
+├── ✓ Uploaded /home/sagemaker-user/tensor/src
+├── ✓ Uploaded /home/sagemaker-user/akas/src
+├── ✓ Created Function prefill_pilot.
+├── ✓ Created Function epilogue_experiment.
+├── ✓ Created Function kernel_tune.
+├── ✓ Created Function phase_compare.
+└── ✓ Created Function counter_profile.
+
+==========
+== CUDA ==
+==========
+
+CUDA Version 13.0.2
+
+Container image Copyright (c) 2016-2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+
+This container image and its contents are governed by the NVIDIA Deep Learning Container License.
+By pulling and using the container, you accept the terms and conditions of this license:
+https://developer.nvidia.com/ngc/nvidia-deep-learning-container-license
+
+A copy of this license is made available in this container at /NGC-DL-CONTAINER-LICENSE for your convenience.
+
+PHASE COMPARE final-best 256 4 0 63698 9035 NRMS 0.0 agreement 1.0
+PHASE COMPARE final-best 256 4 1 74346 13286 NRMS 0.0 agreement 1.0
+PHASE COMPARE final-best 256 4 2 74257 13294 NRMS 0.0 agreement 1.0
+PHASE COMPARE optimized-v5 256 4 0 69985 10988 NRMS 0.0 agreement 1.0
+PHASE COMPARE optimized-v5 256 4 1 78114 13599 NRMS 0.0 agreement 1.0
+PHASE COMPARE optimized-v5 256 4 2 77921 13599 NRMS 0.0 agreement 1.0
+PHASE COMPARE optimized-v5 256 16 0 66513 13603 NRMS 0.0 agreement 1.0
+PHASE COMPARE optimized-v5 256 16 1 81977 13613 NRMS 0.0 agreement 1.0
+PHASE COMPARE optimized-v5 256 16 2 82093 13607 NRMS 0.0 agreement 1.0
+PHASE COMPARE separate-quant-candidate 256 4 0 65441 9209 NRMS 0.0 agreement 1.0
+PHASE COMPARE separate-quant-candidate 256 4 1 76312 12647 NRMS 0.0 agreement 1.0
+PHASE COMPARE separate-quant-candidate 256 4 2 76424 12672 NRMS 0.0 agreement 1.0
+PHASE COMPARE separate-quant-candidate 256 16 0 69451 12681 NRMS 0.0 agreement 1.0
+PHASE COMPARE separate-quant-candidate 256 16 1 80481 12664 NRMS 0.0 agreement 1.0
+PHASE COMPARE separate-quant-candidate 256 16 2 80524 12670 NRMS 0.0 agreement 1.0
+{"out": "/data/results/akas-phase-compare-1793653348670376528.json", "status": "passed"}
+Stopping app - local entrypoint completed.
+✓ App completed. View run at https://modal.com/apps/akbar2habibullah/main/ap-1vVX8vpwd3VL1HjUyG2iL9

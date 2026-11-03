@@ -1,0 +1,5047 @@
+{
+  "program_sha256": "3d79fccfbabdbe8318a2e8dfe4eb121040cee7c994b75ecd81357e8dbff9ff9f",
+  "groups": [
+    {
+      "id": "decode-b1-2d68a347d94f754ad493a903",
+      "phase": "decode",
+      "batch": 1,
+      "chunk": 1,
+      "key": "2d68a347d94f754ad493a903",
+      "kind": "quantize",
+      "parameters": {
+        "r": 1,
+        "k": 2048,
+        "input_dtype": "float32"
+      },
+      "baseline": {
+        "implementation": "fp8.cuda.warp_quantize",
+        "groups_per_block": 4
+      },
+      "baseline_seconds": 5.696000065654516e-06,
+      "candidates": [
+        {
+          "id": "c941e6f9fab4a441f24a",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 2
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 5.696000065654516e-06,
+          "samples": [
+            5.855999886989594e-06,
+            5.696000065654516e-06,
+            5.696000065654516e-06,
+            5.696000065654516e-06,
+            5.696000065654516e-06,
+            5.727999843657017e-06,
+            5.9199999086558815e-06
+          ]
+        },
+        {
+          "id": "df005c7fadc83027fcca",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 4
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 5.824000108987093e-06,
+          "samples": [
+            5.59999980032444e-06,
+            5.663999821990728e-06,
+            5.824000108987093e-06,
+            5.824000108987093e-06,
+            5.59999980032444e-06,
+            5.888000130653381e-06,
+            5.824000108987093e-06
+          ]
+        },
+        {
+          "id": "15b39d8f6808779faa80",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 8
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 5.632000043988228e-06,
+          "samples": [
+            5.855999886989594e-06,
+            5.59999980032444e-06,
+            5.59999980032444e-06,
+            5.632000043988228e-06,
+            5.855999886989594e-06,
+            5.59999980032444e-06,
+            5.727999843657017e-06
+          ]
+        }
+      ],
+      "winner": {
+        "id": "15b39d8f6808779faa80",
+        "schedule": {
+          "implementation": "fp8.cuda.warp_quantize",
+          "groups_per_block": 8
+        },
+        "normalized_rms": 0.0,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 5.632000043988228e-06,
+        "samples": [
+          5.855999886989594e-06,
+          5.59999980032444e-06,
+          5.59999980032444e-06,
+          5.632000043988228e-06,
+          5.855999886989594e-06,
+          5.59999980032444e-06,
+          5.727999843657017e-06
+        ]
+      }
+    },
+    {
+      "id": "decode-b1-418cf29501b0b3aaa381aa03",
+      "phase": "decode",
+      "batch": 1,
+      "chunk": 1,
+      "key": "418cf29501b0b3aaa381aa03",
+      "kind": "quantize",
+      "parameters": {
+        "r": 1,
+        "k": 11776,
+        "input_dtype": "float32"
+      },
+      "baseline": {
+        "implementation": "akas.quantization.activations.fp8:reference"
+      },
+      "baseline_seconds": 5.855999886989594e-06,
+      "candidates": [
+        {
+          "id": "6c7aef678ad2e1af801e",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 2
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 6.0479999519884585e-06,
+          "samples": [
+            6.016000173985958e-06,
+            6.0479999519884585e-06,
+            5.855999886989594e-06,
+            6.0479999519884585e-06,
+            5.824000108987093e-06,
+            6.271999794989824e-06,
+            6.0479999519884585e-06
+          ]
+        },
+        {
+          "id": "fc39bc4c11c904a32d7b",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 4
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 5.9199999086558815e-06,
+          "samples": [
+            6.144000217318535e-06,
+            5.727999843657017e-06,
+            5.727999843657017e-06,
+            5.9199999086558815e-06,
+            5.95200015231967e-06,
+            5.9199999086558815e-06,
+            5.696000065654516e-06
+          ]
+        },
+        {
+          "id": "eb891dcc854f1a426d2c",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 8
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 5.9199999086558815e-06,
+          "samples": [
+            5.9199999086558815e-06,
+            5.9199999086558815e-06,
+            5.9199999086558815e-06,
+            5.727999843657017e-06,
+            5.9199999086558815e-06,
+            5.9199999086558815e-06,
+            5.9199999086558815e-06
+          ]
+        }
+      ],
+      "winner": {
+        "id": "fc39bc4c11c904a32d7b",
+        "schedule": {
+          "implementation": "fp8.cuda.warp_quantize",
+          "groups_per_block": 4
+        },
+        "normalized_rms": 0.0,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 5.9199999086558815e-06,
+        "samples": [
+          6.144000217318535e-06,
+          5.727999843657017e-06,
+          5.727999843657017e-06,
+          5.9199999086558815e-06,
+          5.95200015231967e-06,
+          5.9199999086558815e-06,
+          5.696000065654516e-06
+        ]
+      }
+    },
+    {
+      "id": "decode-b1-b7d93efbca02e43cedb557de",
+      "phase": "decode",
+      "batch": 1,
+      "chunk": 1,
+      "key": "b7d93efbca02e43cedb557de",
+      "kind": "quantize",
+      "parameters": {
+        "r": 1,
+        "k": 1536,
+        "input_dtype": "bfloat16",
+        "top": 4
+      },
+      "baseline": {
+        "implementation": "akas.quantization.activations.fp8:reference"
+      },
+      "baseline_seconds": 5.9199999086558815e-06,
+      "candidates": [
+        {
+          "id": "53cb5199211353af21b4",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 2
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 6.0479999519884585e-06,
+          "samples": [
+            6.0479999519884585e-06,
+            6.0479999519884585e-06,
+            6.271999794989824e-06,
+            6.0479999519884585e-06,
+            6.111999973654747e-06,
+            6.080000195652246e-06,
+            6.0479999519884585e-06
+          ]
+        },
+        {
+          "id": "ec730eba925226097cfa",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 4
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 6.271999794989824e-06,
+          "samples": [
+            6.496000103652477e-06,
+            6.0479999519884585e-06,
+            6.271999794989824e-06,
+            6.46399985998869e-06,
+            6.624000146985054e-06,
+            6.080000195652246e-06,
+            6.0479999519884585e-06
+          ]
+        },
+        {
+          "id": "e0e49e4973eecf3b5fd8",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 8
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 6.0479999519884585e-06,
+          "samples": [
+            6.0479999519884585e-06,
+            6.0479999519884585e-06,
+            6.0479999519884585e-06,
+            6.271999794989824e-06,
+            6.0479999519884585e-06,
+            6.0479999519884585e-06,
+            6.240000016987324e-06
+          ]
+        }
+      ],
+      "winner": {
+        "id": "53cb5199211353af21b4",
+        "schedule": {
+          "implementation": "fp8.cuda.warp_quantize",
+          "groups_per_block": 2
+        },
+        "normalized_rms": 0.0,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 6.0479999519884585e-06,
+        "samples": [
+          6.0479999519884585e-06,
+          6.0479999519884585e-06,
+          6.271999794989824e-06,
+          6.0479999519884585e-06,
+          6.111999973654747e-06,
+          6.080000195652246e-06,
+          6.0479999519884585e-06
+        ]
+      }
+    },
+    {
+      "id": "decode-b4-7c9a4cc7d754366b3380fcec",
+      "phase": "decode",
+      "batch": 4,
+      "chunk": 1,
+      "key": "7c9a4cc7d754366b3380fcec",
+      "kind": "quantize",
+      "parameters": {
+        "r": 4,
+        "k": 2048,
+        "input_dtype": "float32"
+      },
+      "baseline": {
+        "implementation": "fp8.cuda.warp_quantize",
+        "groups_per_block": 8
+      },
+      "baseline_seconds": 5.760000087320804e-06,
+      "candidates": [
+        {
+          "id": "4c58cf63d91c6524bb1e",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 2
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 5.855999886989594e-06,
+          "samples": [
+            6.016000173985958e-06,
+            6.399999838322401e-06,
+            5.696000065654516e-06,
+            5.696000065654516e-06,
+            5.855999886989594e-06,
+            5.824000108987093e-06,
+            6.080000195652246e-06
+          ]
+        },
+        {
+          "id": "b23ade2719735425af32",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 4
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 5.855999886989594e-06,
+          "samples": [
+            5.696000065654516e-06,
+            5.98399993032217e-06,
+            5.663999821990728e-06,
+            5.888000130653381e-06,
+            5.855999886989594e-06,
+            5.855999886989594e-06,
+            6.0479999519884585e-06
+          ]
+        },
+        {
+          "id": "ab1a0f27dd2e90acdd44",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 8
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 5.696000065654516e-06,
+          "samples": [
+            5.696000065654516e-06,
+            5.824000108987093e-06,
+            5.472000222653151e-06,
+            5.663999821990728e-06,
+            5.696000065654516e-06,
+            5.663999821990728e-06,
+            5.855999886989594e-06
+          ]
+        }
+      ],
+      "winner": {
+        "id": "ab1a0f27dd2e90acdd44",
+        "schedule": {
+          "implementation": "fp8.cuda.warp_quantize",
+          "groups_per_block": 8
+        },
+        "normalized_rms": 0.0,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 5.696000065654516e-06,
+        "samples": [
+          5.696000065654516e-06,
+          5.824000108987093e-06,
+          5.472000222653151e-06,
+          5.663999821990728e-06,
+          5.696000065654516e-06,
+          5.663999821990728e-06,
+          5.855999886989594e-06
+        ]
+      }
+    },
+    {
+      "id": "decode-b4-5ec4c44737dabb7fa5690fd3",
+      "phase": "decode",
+      "batch": 4,
+      "chunk": 1,
+      "key": "5ec4c44737dabb7fa5690fd3",
+      "kind": "quantize",
+      "parameters": {
+        "r": 4,
+        "k": 11776,
+        "input_dtype": "float32"
+      },
+      "baseline": {
+        "implementation": "akas.quantization.activations.fp8:reference"
+      },
+      "baseline_seconds": 6.0479999519884585e-06,
+      "candidates": [
+        {
+          "id": "42412e4462d375a7d0f1",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 2
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 5.9199999086558815e-06,
+          "samples": [
+            6.240000016987324e-06,
+            5.888000130653381e-06,
+            6.080000195652246e-06,
+            5.9199999086558815e-06,
+            6.0479999519884585e-06,
+            5.9199999086558815e-06,
+            5.888000130653381e-06
+          ]
+        },
+        {
+          "id": "69ffe44bdd5ba770b585",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 4
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 5.888000130653381e-06,
+          "samples": [
+            5.888000130653381e-06,
+            6.016000173985958e-06,
+            5.888000130653381e-06,
+            6.304000038653612e-06,
+            5.888000130653381e-06,
+            5.888000130653381e-06,
+            5.888000130653381e-06
+          ]
+        },
+        {
+          "id": "1a8f7c94ad00ccb39281",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 8
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 5.888000130653381e-06,
+          "samples": [
+            6.080000195652246e-06,
+            5.98399993032217e-06,
+            5.727999843657017e-06,
+            5.760000087320804e-06,
+            5.888000130653381e-06,
+            6.080000195652246e-06,
+            5.888000130653381e-06
+          ]
+        }
+      ],
+      "winner": {
+        "id": "69ffe44bdd5ba770b585",
+        "schedule": {
+          "implementation": "fp8.cuda.warp_quantize",
+          "groups_per_block": 4
+        },
+        "normalized_rms": 0.0,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 5.888000130653381e-06,
+        "samples": [
+          5.888000130653381e-06,
+          6.016000173985958e-06,
+          5.888000130653381e-06,
+          6.304000038653612e-06,
+          5.888000130653381e-06,
+          5.888000130653381e-06,
+          5.888000130653381e-06
+        ]
+      }
+    },
+    {
+      "id": "decode-b4-700604ee7b2537e73e6dda58",
+      "phase": "decode",
+      "batch": 4,
+      "chunk": 1,
+      "key": "700604ee7b2537e73e6dda58",
+      "kind": "quantize",
+      "parameters": {
+        "r": 4,
+        "k": 1536,
+        "input_dtype": "bfloat16",
+        "top": 4
+      },
+      "baseline": {
+        "implementation": "akas.quantization.activations.fp8:reference"
+      },
+      "baseline_seconds": 5.855999886989594e-06,
+      "candidates": [
+        {
+          "id": "a4777bfe2fed867f1d38",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 2
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 6.3680000603199e-06,
+          "samples": [
+            6.560000125318766e-06,
+            6.5279998816549774e-06,
+            6.3680000603199e-06,
+            6.1759999953210356e-06,
+            6.3680000603199e-06,
+            6.0479999519884585e-06,
+            6.207999773323536e-06
+          ]
+        },
+        {
+          "id": "1f1447383c1750b19466",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 4
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 6.1759999953210356e-06,
+          "samples": [
+            6.1759999953210356e-06,
+            6.1759999953210356e-06,
+            6.207999773323536e-06,
+            6.399999838322401e-06,
+            6.144000217318535e-06,
+            6.46399985998869e-06,
+            6.1759999953210356e-06
+          ]
+        },
+        {
+          "id": "caff04a69ad4a26d3fb8",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 8
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 6.207999773323536e-06,
+          "samples": [
+            6.0479999519884585e-06,
+            6.240000016987324e-06,
+            6.84799998998642e-06,
+            6.207999773323536e-06,
+            6.207999773323536e-06,
+            6.0479999519884585e-06,
+            6.399999838322401e-06
+          ]
+        }
+      ],
+      "winner": {
+        "id": "1f1447383c1750b19466",
+        "schedule": {
+          "implementation": "fp8.cuda.warp_quantize",
+          "groups_per_block": 4
+        },
+        "normalized_rms": 0.0,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 6.1759999953210356e-06,
+        "samples": [
+          6.1759999953210356e-06,
+          6.1759999953210356e-06,
+          6.207999773323536e-06,
+          6.399999838322401e-06,
+          6.144000217318535e-06,
+          6.46399985998869e-06,
+          6.1759999953210356e-06
+        ]
+      }
+    },
+    {
+      "id": "decode-b16-19263f34929410016a4aacab",
+      "phase": "decode",
+      "batch": 16,
+      "chunk": 1,
+      "key": "19263f34929410016a4aacab",
+      "kind": "quantize",
+      "parameters": {
+        "r": 16,
+        "k": 2048,
+        "input_dtype": "float32"
+      },
+      "baseline": {
+        "implementation": "akas.quantization.activations.fp8:reference"
+      },
+      "baseline_seconds": 5.98399993032217e-06,
+      "candidates": [
+        {
+          "id": "e80d641214837b1aa747",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 2
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 5.95200015231967e-06,
+          "samples": [
+            5.824000108987093e-06,
+            5.95200015231967e-06,
+            5.95200015231967e-06,
+            5.791999865323305e-06,
+            6.111999973654747e-06,
+            5.9199999086558815e-06,
+            5.98399993032217e-06
+          ]
+        },
+        {
+          "id": "2462fe08364351e94603",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 4
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 5.791999865323305e-06,
+          "samples": [
+            6.144000217318535e-06,
+            5.791999865323305e-06,
+            5.791999865323305e-06,
+            5.663999821990728e-06,
+            5.824000108987093e-06,
+            5.791999865323305e-06,
+            5.98399993032217e-06
+          ]
+        },
+        {
+          "id": "e49b66b572ca5f15f791",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 8
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 5.824000108987093e-06,
+          "samples": [
+            5.95200015231967e-06,
+            5.791999865323305e-06,
+            5.791999865323305e-06,
+            5.791999865323305e-06,
+            5.824000108987093e-06,
+            5.98399993032217e-06,
+            5.95200015231967e-06
+          ]
+        }
+      ],
+      "winner": {
+        "id": "2462fe08364351e94603",
+        "schedule": {
+          "implementation": "fp8.cuda.warp_quantize",
+          "groups_per_block": 4
+        },
+        "normalized_rms": 0.0,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 5.791999865323305e-06,
+        "samples": [
+          6.144000217318535e-06,
+          5.791999865323305e-06,
+          5.791999865323305e-06,
+          5.663999821990728e-06,
+          5.824000108987093e-06,
+          5.791999865323305e-06,
+          5.98399993032217e-06
+        ]
+      }
+    },
+    {
+      "id": "decode-b16-978f03a93fdaf2bdad204191",
+      "phase": "decode",
+      "batch": 16,
+      "chunk": 1,
+      "key": "978f03a93fdaf2bdad204191",
+      "kind": "quantize",
+      "parameters": {
+        "r": 16,
+        "k": 11776,
+        "input_dtype": "float32"
+      },
+      "baseline": {
+        "implementation": "fp8.cuda.warp_quantize",
+        "groups_per_block": 8
+      },
+      "baseline_seconds": 6.1759999953210356e-06,
+      "candidates": [
+        {
+          "id": "99a2b1e07c71074050ab",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 2
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 6.1759999953210356e-06,
+          "samples": [
+            6.1759999953210356e-06,
+            6.1759999953210356e-06,
+            6.688000168651342e-06,
+            5.98399993032217e-06,
+            6.3680000603199e-06,
+            6.1759999953210356e-06,
+            5.95200015231967e-06
+          ]
+        },
+        {
+          "id": "48cb6307ff7eb43108c0",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 4
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 6.3680000603199e-06,
+          "samples": [
+            6.496000103652477e-06,
+            6.1759999953210356e-06,
+            6.496000103652477e-06,
+            6.496000103652477e-06,
+            6.3680000603199e-06,
+            6.207999773323536e-06,
+            6.335999816656113e-06
+          ]
+        },
+        {
+          "id": "513153207eec376bc8f4",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 8
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 6.144000217318535e-06,
+          "samples": [
+            6.111999973654747e-06,
+            6.46399985998869e-06,
+            6.496000103652477e-06,
+            6.144000217318535e-06,
+            5.95200015231967e-06,
+            6.111999973654747e-06,
+            6.304000038653612e-06
+          ]
+        }
+      ],
+      "winner": {
+        "id": "513153207eec376bc8f4",
+        "schedule": {
+          "implementation": "fp8.cuda.warp_quantize",
+          "groups_per_block": 8
+        },
+        "normalized_rms": 0.0,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 6.144000217318535e-06,
+        "samples": [
+          6.111999973654747e-06,
+          6.46399985998869e-06,
+          6.496000103652477e-06,
+          6.144000217318535e-06,
+          5.95200015231967e-06,
+          6.111999973654747e-06,
+          6.304000038653612e-06
+        ]
+      }
+    },
+    {
+      "id": "decode-b64-a38858293494db7c0992b752",
+      "phase": "decode",
+      "batch": 64,
+      "chunk": 1,
+      "key": "a38858293494db7c0992b752",
+      "kind": "quantize",
+      "parameters": {
+        "r": 64,
+        "k": 2048,
+        "input_dtype": "float32"
+      },
+      "baseline": {
+        "implementation": "fp8.cuda.warp_quantize",
+        "groups_per_block": 8
+      },
+      "baseline_seconds": 6.080000195652246e-06,
+      "candidates": [
+        {
+          "id": "21eae93a71bd6fba53ad",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 2
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 6.144000217318535e-06,
+          "samples": [
+            6.1759999953210356e-06,
+            6.111999973654747e-06,
+            6.111999973654747e-06,
+            6.144000217318535e-06,
+            6.144000217318535e-06,
+            6.335999816656113e-06,
+            6.111999973654747e-06
+          ]
+        },
+        {
+          "id": "69f2da60f0a0bcb7afb4",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 4
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 6.1759999953210356e-06,
+          "samples": [
+            6.111999973654747e-06,
+            6.1759999953210356e-06,
+            6.144000217318535e-06,
+            6.335999816656113e-06,
+            6.111999973654747e-06,
+            7.3919999413192275e-06,
+            6.335999816656113e-06
+          ]
+        },
+        {
+          "id": "eaf16a19c5d7b380b451",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 8
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 6.144000217318535e-06,
+          "samples": [
+            6.207999773323536e-06,
+            6.111999973654747e-06,
+            6.496000103652477e-06,
+            6.144000217318535e-06,
+            6.144000217318535e-06,
+            6.111999973654747e-06,
+            6.111999973654747e-06
+          ]
+        }
+      ],
+      "winner": {
+        "id": "21eae93a71bd6fba53ad",
+        "schedule": {
+          "implementation": "fp8.cuda.warp_quantize",
+          "groups_per_block": 2
+        },
+        "normalized_rms": 0.0,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 6.144000217318535e-06,
+        "samples": [
+          6.1759999953210356e-06,
+          6.111999973654747e-06,
+          6.111999973654747e-06,
+          6.144000217318535e-06,
+          6.144000217318535e-06,
+          6.335999816656113e-06,
+          6.111999973654747e-06
+        ]
+      }
+    },
+    {
+      "id": "decode-b64-1af86946a635eee487d8df48",
+      "phase": "decode",
+      "batch": 64,
+      "chunk": 1,
+      "key": "1af86946a635eee487d8df48",
+      "kind": "quantize",
+      "parameters": {
+        "r": 64,
+        "k": 11776,
+        "input_dtype": "float32"
+      },
+      "baseline": {
+        "implementation": "fp8.cuda.warp_quantize",
+        "groups_per_block": 8
+      },
+      "baseline_seconds": 7.23200011998415e-06,
+      "candidates": [
+        {
+          "id": "c7dad937977bc3a4994a",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 2
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 7.552000228315592e-06,
+          "samples": [
+            8.00000037997961e-06,
+            7.519999984651804e-06,
+            7.840000092983246e-06,
+            7.648000027984382e-06,
+            7.552000228315592e-06,
+            7.552000228315592e-06,
+            7.4880002066493035e-06
+          ]
+        },
+        {
+          "id": "ac9c07531cc42080780f",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 4
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 7.135999854654073e-06,
+          "samples": [
+            7.040000054985285e-06,
+            7.135999854654073e-06,
+            7.168000098317862e-06,
+            7.104000076651573e-06,
+            7.135999854654073e-06,
+            7.135999854654073e-06,
+            7.199999876320362e-06
+          ]
+        },
+        {
+          "id": "f5f1adc84d37f0e82195",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 8
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 7.135999854654073e-06,
+          "samples": [
+            7.104000076651573e-06,
+            8.287999778985978e-06,
+            6.943999789655209e-06,
+            7.168000098317862e-06,
+            7.135999854654073e-06,
+            7.135999854654073e-06,
+            7.135999854654073e-06
+          ]
+        }
+      ],
+      "winner": {
+        "id": "ac9c07531cc42080780f",
+        "schedule": {
+          "implementation": "fp8.cuda.warp_quantize",
+          "groups_per_block": 4
+        },
+        "normalized_rms": 0.0,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 7.135999854654073e-06,
+        "samples": [
+          7.040000054985285e-06,
+          7.135999854654073e-06,
+          7.168000098317862e-06,
+          7.104000076651573e-06,
+          7.135999854654073e-06,
+          7.135999854654073e-06,
+          7.199999876320362e-06
+        ]
+      }
+    },
+    {
+      "id": "decode-b256-b45b733a3ecebe8c1e3e30c8",
+      "phase": "decode",
+      "batch": 256,
+      "chunk": 1,
+      "key": "b45b733a3ecebe8c1e3e30c8",
+      "kind": "quantize",
+      "parameters": {
+        "r": 256,
+        "k": 2048,
+        "input_dtype": "float32"
+      },
+      "baseline": {
+        "implementation": "fp8.cuda.warp_quantize",
+        "groups_per_block": 8
+      },
+      "baseline_seconds": 6.7839999683201315e-06,
+      "candidates": [
+        {
+          "id": "7c5d381f3b39840f2cd5",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 2
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 7.040000054985285e-06,
+          "samples": [
+            7.168000098317862e-06,
+            7.519999984651804e-06,
+            6.943999789655209e-06,
+            7.3919999413192275e-06,
+            7.007999811321497e-06,
+            7.040000054985285e-06,
+            7.007999811321497e-06
+          ]
+        },
+        {
+          "id": "4129a6d16a43085723f5",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 4
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 6.688000168651342e-06,
+          "samples": [
+            6.7520001903176305e-06,
+            6.6559999249875545e-06,
+            6.7520001903176305e-06,
+            6.591999903321266e-06,
+            6.688000168651342e-06,
+            6.688000168651342e-06,
+            6.719999946653843e-06
+          ]
+        },
+        {
+          "id": "1ac9de5a442b44b490c5",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 8
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 6.6559999249875545e-06,
+          "samples": [
+            6.719999946653843e-06,
+            6.84799998998642e-06,
+            6.816000211983919e-06,
+            6.6559999249875545e-06,
+            6.624000146985054e-06,
+            6.496000103652477e-06,
+            6.496000103652477e-06
+          ]
+        }
+      ],
+      "winner": {
+        "id": "1ac9de5a442b44b490c5",
+        "schedule": {
+          "implementation": "fp8.cuda.warp_quantize",
+          "groups_per_block": 8
+        },
+        "normalized_rms": 0.0,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 6.6559999249875545e-06,
+        "samples": [
+          6.719999946653843e-06,
+          6.84799998998642e-06,
+          6.816000211983919e-06,
+          6.6559999249875545e-06,
+          6.624000146985054e-06,
+          6.496000103652477e-06,
+          6.496000103652477e-06
+        ]
+      }
+    },
+    {
+      "id": "decode-b256-bacffa21d94be0846e37bbc0",
+      "phase": "decode",
+      "batch": 256,
+      "chunk": 1,
+      "key": "bacffa21d94be0846e37bbc0",
+      "kind": "quantize",
+      "parameters": {
+        "r": 256,
+        "k": 11776,
+        "input_dtype": "float32"
+      },
+      "baseline": {
+        "implementation": "fp8.cuda.warp_quantize",
+        "groups_per_block": 4
+      },
+      "baseline_seconds": 1.0623999871313573e-05,
+      "candidates": [
+        {
+          "id": "e23ed33f988187216eb4",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 2
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 1.292799971997738e-05,
+          "samples": [
+            1.2992000207304955e-05,
+            1.292799971997738e-05,
+            1.2896000407636166e-05,
+            1.2896000407636166e-05,
+            1.2896000407636166e-05,
+            1.3024000450968743e-05,
+            1.3183999806642532e-05
+          ]
+        },
+        {
+          "id": "f7de517feb9a6a1b439d",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 4
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 1.056000031530857e-05,
+          "samples": [
+            1.056000031530857e-05,
+            1.0463999584317207e-05,
+            1.0751999914646148e-05,
+            1.0495999827980996e-05,
+            1.0623999871313573e-05,
+            1.0400000028312207e-05,
+            1.065600011497736e-05
+          ]
+        },
+        {
+          "id": "826274127c90088b9b2d",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 8
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 1.065600011497736e-05,
+          "samples": [
+            1.0591999627649784e-05,
+            1.0719999670982361e-05,
+            1.0688000358641148e-05,
+            1.0495999827980996e-05,
+            1.0623999871313573e-05,
+            1.065600011497736e-05,
+            1.0719999670982361e-05
+          ]
+        }
+      ],
+      "winner": {
+        "id": "f7de517feb9a6a1b439d",
+        "schedule": {
+          "implementation": "fp8.cuda.warp_quantize",
+          "groups_per_block": 4
+        },
+        "normalized_rms": 0.0,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 1.056000031530857e-05,
+        "samples": [
+          1.056000031530857e-05,
+          1.0463999584317207e-05,
+          1.0751999914646148e-05,
+          1.0495999827980996e-05,
+          1.0623999871313573e-05,
+          1.0400000028312207e-05,
+          1.065600011497736e-05
+        ]
+      }
+    },
+    {
+      "id": "prefill-b1-0c91f07d113a84f7b68f4a89",
+      "phase": "prefill",
+      "batch": 1,
+      "chunk": 2048,
+      "key": "0c91f07d113a84f7b68f4a89",
+      "kind": "quantize",
+      "parameters": {
+        "r": 2048,
+        "k": 2048,
+        "input_dtype": "float32"
+      },
+      "baseline": {
+        "implementation": "fp8.cuda.warp_quantize",
+        "groups_per_block": 4
+      },
+      "baseline_seconds": 1.228800043463707e-05,
+      "candidates": [
+        {
+          "id": "3fafdb9be6904cda7b79",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 2
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 1.5807999297976493e-05,
+          "samples": [
+            1.600000075995922e-05,
+            1.5776000916957854e-05,
+            1.583999954164028e-05,
+            1.5807999297976493e-05,
+            1.5807999297976493e-05,
+            1.587199978530407e-05,
+            1.5744000673294066e-05
+          ]
+        },
+        {
+          "id": "9ceb6ed28a4ebaf214fb",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 4
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 1.2319999746978283e-05,
+          "samples": [
+            1.2319999746978283e-05,
+            1.2351999990642071e-05,
+            1.2256000190973282e-05,
+            1.2160000391304492e-05,
+            1.2351999990642071e-05,
+            1.2256000190973282e-05,
+            1.2543999589979648e-05
+          ]
+        },
+        {
+          "id": "edd9499b9f657ed9bb98",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 8
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 1.2512000277638435e-05,
+          "samples": [
+            1.2351999990642071e-05,
+            1.2575999833643437e-05,
+            1.3663999736309052e-05,
+            1.2415999546647071e-05,
+            1.2512000277638435e-05,
+            1.360000018030405e-05,
+            1.2351999990642071e-05
+          ]
+        }
+      ],
+      "winner": {
+        "id": "9ceb6ed28a4ebaf214fb",
+        "schedule": {
+          "implementation": "fp8.cuda.warp_quantize",
+          "groups_per_block": 4
+        },
+        "normalized_rms": 0.0,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 1.2319999746978283e-05,
+        "samples": [
+          1.2319999746978283e-05,
+          1.2351999990642071e-05,
+          1.2256000190973282e-05,
+          1.2160000391304492e-05,
+          1.2351999990642071e-05,
+          1.2256000190973282e-05,
+          1.2543999589979648e-05
+        ]
+      }
+    },
+    {
+      "id": "prefill-b1-8c7753420689cf566577a4a3",
+      "phase": "prefill",
+      "batch": 1,
+      "chunk": 2048,
+      "key": "8c7753420689cf566577a4a3",
+      "kind": "quantize",
+      "parameters": {
+        "r": 2048,
+        "k": 11776,
+        "input_dtype": "float32"
+      },
+      "baseline": {
+        "implementation": "fp8.cuda.warp_quantize",
+        "groups_per_block": 4
+      },
+      "baseline_seconds": 3.872000053524971e-05,
+      "candidates": [
+        {
+          "id": "e06dd10e850f0445b0d5",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 2
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 6.252799928188324e-05,
+          "samples": [
+            6.272000074386597e-05,
+            6.252799928188324e-05,
+            6.246399879455566e-05,
+            6.31679967045784e-05,
+            6.243199855089187e-05,
+            6.246399879455566e-05,
+            6.278400123119355e-05
+          ]
+        },
+        {
+          "id": "178c191aa564f084a9bf",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 4
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 3.8623999804258345e-05,
+          "samples": [
+            3.865600004792213e-05,
+            3.8527999073266986e-05,
+            3.8527999073266986e-05,
+            3.8623999804258345e-05,
+            4.012800008058548e-05,
+            3.84959988296032e-05,
+            3.948799893260002e-05
+          ]
+        },
+        {
+          "id": "daee916ef413e9dd8150",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 8
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 3.939199820160866e-05,
+          "samples": [
+            3.920000046491623e-05,
+            4.067200049757958e-05,
+            3.939199820160866e-05,
+            4.009599983692169e-05,
+            3.9264000952243806e-05,
+            3.913599997758865e-05,
+            4.0863998234272e-05
+          ]
+        }
+      ],
+      "winner": {
+        "id": "178c191aa564f084a9bf",
+        "schedule": {
+          "implementation": "fp8.cuda.warp_quantize",
+          "groups_per_block": 4
+        },
+        "normalized_rms": 0.0,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 3.8623999804258345e-05,
+        "samples": [
+          3.865600004792213e-05,
+          3.8527999073266986e-05,
+          3.8527999073266986e-05,
+          3.8623999804258345e-05,
+          4.012800008058548e-05,
+          3.84959988296032e-05,
+          3.948799893260002e-05
+        ]
+      }
+    },
+    {
+      "id": "prefill-b4-f5d872d52e65632baba7ed33",
+      "phase": "prefill",
+      "batch": 4,
+      "chunk": 2048,
+      "key": "f5d872d52e65632baba7ed33",
+      "kind": "quantize",
+      "parameters": {
+        "r": 8192,
+        "k": 2048,
+        "input_dtype": "float32"
+      },
+      "baseline": {
+        "implementation": "fp8.cuda.warp_quantize",
+        "groups_per_block": 4
+      },
+      "baseline_seconds": 2.9408000409603118e-05,
+      "candidates": [
+        {
+          "id": "f6f4db5846df90e42e15",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 2
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 4.5536000281572345e-05,
+          "samples": [
+            4.6303998678922654e-05,
+            4.5536000281572345e-05,
+            4.5504000037908556e-05,
+            4.5600000768899915e-05,
+            4.540799930691719e-05,
+            4.524800181388855e-05,
+            4.623999819159508e-05
+          ]
+        },
+        {
+          "id": "61e54b724a438ceb7b16",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 4
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 3.0463999137282373e-05,
+          "samples": [
+            3.0656000599265096e-05,
+            2.9376000165939333e-05,
+            3.052799962460995e-05,
+            2.9472000896930694e-05,
+            3.0463999137282373e-05,
+            2.9311999678611756e-05,
+            3.049599938094616e-05
+          ]
+        },
+        {
+          "id": "4b2a709674a002e0b69d",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 8
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 2.985600009560585e-05,
+          "samples": [
+            2.9888000339269637e-05,
+            2.9888000339269637e-05,
+            2.9823999851942064e-05,
+            2.9888000339269637e-05,
+            2.9823999851942064e-05,
+            2.9759999364614487e-05,
+            2.985600009560585e-05
+          ]
+        }
+      ],
+      "winner": {
+        "id": "4b2a709674a002e0b69d",
+        "schedule": {
+          "implementation": "fp8.cuda.warp_quantize",
+          "groups_per_block": 8
+        },
+        "normalized_rms": 0.0,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 2.985600009560585e-05,
+        "samples": [
+          2.9888000339269637e-05,
+          2.9888000339269637e-05,
+          2.9823999851942064e-05,
+          2.9888000339269637e-05,
+          2.9823999851942064e-05,
+          2.9759999364614487e-05,
+          2.985600009560585e-05
+        ]
+      }
+    },
+    {
+      "id": "prefill-b4-407f5718418f929ef0e3f366",
+      "phase": "prefill",
+      "batch": 4,
+      "chunk": 2048,
+      "key": "407f5718418f929ef0e3f366",
+      "kind": "quantize",
+      "parameters": {
+        "r": 8192,
+        "k": 11776,
+        "input_dtype": "float32"
+      },
+      "baseline": {
+        "implementation": "fp8.cuda.warp_quantize",
+        "groups_per_block": 4
+      },
+      "baseline_seconds": 0.00013152000308036803,
+      "candidates": [
+        {
+          "id": "50b0e32e3faa714f7554",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 2
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 0.00023231999576091766,
+          "samples": [
+            0.00023235200345516206,
+            0.0002324800044298172,
+            0.00023216000199317933,
+            0.0002324800044298172,
+            0.00023231999576091766,
+            0.0002322240024805069,
+            0.00023206399381160735
+          ]
+        },
+        {
+          "id": "edaf26064444246a0f25",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 4
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 0.00013100799918174745,
+          "samples": [
+            0.00013244800269603728,
+            0.00013040000200271605,
+            0.0001311040073633194,
+            0.00013081599771976472,
+            0.00013100799918174745,
+            0.00013072000443935394,
+            0.0001313599944114685
+          ]
+        },
+        {
+          "id": "12c7a74b192fd62eae49",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 8
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 0.00013372799754142762,
+          "samples": [
+            0.00013356800377368927,
+            0.00013356800377368927,
+            0.00013548800349235535,
+            0.00013356800377368927,
+            0.0001351359933614731,
+            0.00013372799754142762,
+            0.00013411200046539306
+          ]
+        }
+      ],
+      "winner": {
+        "id": "edaf26064444246a0f25",
+        "schedule": {
+          "implementation": "fp8.cuda.warp_quantize",
+          "groups_per_block": 4
+        },
+        "normalized_rms": 0.0,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 0.00013100799918174745,
+        "samples": [
+          0.00013244800269603728,
+          0.00013040000200271605,
+          0.0001311040073633194,
+          0.00013081599771976472,
+          0.00013100799918174745,
+          0.00013072000443935394,
+          0.0001313599944114685
+        ]
+      }
+    },
+    {
+      "id": "prefill-b16-f70917abd94bdf2a0fc28fb0",
+      "phase": "prefill",
+      "batch": 16,
+      "chunk": 2048,
+      "key": "f70917abd94bdf2a0fc28fb0",
+      "kind": "quantize",
+      "parameters": {
+        "r": 32768,
+        "k": 2048,
+        "input_dtype": "float32"
+      },
+      "baseline": {
+        "groups_per_block": 4,
+        "implementation": "fp8.cuda.warp_quantize"
+      },
+      "baseline_seconds": 9.372799843549729e-05,
+      "candidates": [
+        {
+          "id": "637619e9c302044f915a",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 2
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 0.00016339200735092163,
+          "samples": [
+            0.000163455992937088,
+            0.00016342400014400483,
+            0.00016339200735092163,
+            0.0001632319986820221,
+            0.00016339200735092163,
+            0.00016335999965667725,
+            0.00016355200111865998
+          ]
+        },
+        {
+          "id": "c2f4d032de79a3e1d49f",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 4
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 9.375999867916108e-05,
+          "samples": [
+            9.388799965381622e-05,
+            9.398400038480758e-05,
+            9.375999867916108e-05,
+            9.356799721717835e-05,
+            9.363199770450592e-05,
+            9.212800115346908e-05,
+            9.408000111579895e-05
+          ]
+        },
+        {
+          "id": "e88f073002683404c388",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 8
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 9.600000083446503e-05,
+          "samples": [
+            9.644799679517747e-05,
+            9.600000083446503e-05,
+            9.616000205278397e-05,
+            9.567999839782714e-05,
+            9.497600048780441e-05,
+            9.619200229644776e-05,
+            9.590400010347366e-05
+          ]
+        }
+      ],
+      "winner": {
+        "id": "c2f4d032de79a3e1d49f",
+        "schedule": {
+          "implementation": "fp8.cuda.warp_quantize",
+          "groups_per_block": 4
+        },
+        "normalized_rms": 0.0,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 9.375999867916108e-05,
+        "samples": [
+          9.388799965381622e-05,
+          9.398400038480758e-05,
+          9.375999867916108e-05,
+          9.356799721717835e-05,
+          9.363199770450592e-05,
+          9.212800115346908e-05,
+          9.408000111579895e-05
+        ]
+      }
+    },
+    {
+      "id": "prefill-b16-63445b5b9cdca721ab23e8e3",
+      "phase": "prefill",
+      "batch": 16,
+      "chunk": 2048,
+      "key": "63445b5b9cdca721ab23e8e3",
+      "kind": "quantize",
+      "parameters": {
+        "r": 32768,
+        "k": 11776,
+        "input_dtype": "float32"
+      },
+      "baseline": {
+        "groups_per_block": 4,
+        "implementation": "fp8.cuda.warp_quantize"
+      },
+      "baseline_seconds": 0.0004995200037956238,
+      "candidates": [
+        {
+          "id": "f4e5cea40e88efa95601",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 2
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 0.0009115520119667053,
+          "samples": [
+            0.0009115520119667053,
+            0.0009116160273551941,
+            0.0009115520119667053,
+            0.0009114239811897277,
+            0.0009116160273551941,
+            0.0009114879965782165,
+            0.0009114879965782165
+          ]
+        },
+        {
+          "id": "c1dde8e6fa3f62d9af3f",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 4
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 0.0004993920028209686,
+          "samples": [
+            0.0004993920028209686,
+            0.0004989120066165924,
+            0.0004992319941520691,
+            0.000499455988407135,
+            0.0004997119903564453,
+            0.0004996800124645233,
+            0.0004978240132331848
+          ]
+        },
+        {
+          "id": "bc329700ab12cee7a93d",
+          "schedule": {
+            "implementation": "fp8.cuda.warp_quantize",
+            "groups_per_block": 8
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 0.0005101760029792786,
+          "samples": [
+            0.0005101760029792786,
+            0.000510208010673523,
+            0.0005101439952850342,
+            0.000509984016418457,
+            0.0005103679895401001,
+            0.0005098559856414795,
+            0.0005103679895401001
+          ]
+        }
+      ],
+      "winner": {
+        "id": "c1dde8e6fa3f62d9af3f",
+        "schedule": {
+          "implementation": "fp8.cuda.warp_quantize",
+          "groups_per_block": 4
+        },
+        "normalized_rms": 0.0,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 0.0004993920028209686,
+        "samples": [
+          0.0004993920028209686,
+          0.0004989120066165924,
+          0.0004992319941520691,
+          0.000499455988407135,
+          0.0004997119903564453,
+          0.0004996800124645233,
+          0.0004978240132331848
+        ]
+      }
+    },
+    {
+      "id": "decode-b1-ad0416e9f2be79df3fab89bf",
+      "phase": "decode",
+      "batch": 1,
+      "chunk": 1,
+      "key": "ad0416e9f2be79df3fab89bf",
+      "kind": "expert_pair_partial",
+      "parameters": {
+        "r": 1,
+        "rows": 1,
+        "top": 4,
+        "experts": 64,
+        "o": 1536,
+        "k": 2048,
+        "routed_input": false,
+        "partitions": 2,
+        "compact": true,
+        "tile_map": true,
+        "output_dtype": "float32",
+        "product_dtype": "bfloat16",
+        "activation_dtype": "bfloat16",
+        "input_dtype": "uint8",
+        "weight_format": "fp8",
+        "block_m": 32,
+        "max_block_m": 128
+      },
+      "baseline": {
+        "block_m": 16,
+        "columns": 32,
+        "threads": 128,
+        "stages": 2,
+        "mma_dtype": "float8_e4m3fn",
+        "activation_vector": 16,
+        "pair_layout": "wide",
+        "implementation": "moe.cuda.fp8-paired-partial:reference"
+      },
+      "baseline_seconds": 2.057600021362305e-05,
+      "candidates": [
+        {
+          "id": "f75d96c849b025c7612f",
+          "schedule": {
+            "block_m": 16,
+            "columns": 32,
+            "threads": 128,
+            "stages": 2,
+            "mma_dtype": "float8_e4m3fn",
+            "activation_vector": 16,
+            "pair_layout": "wide",
+            "implementation": "moe.cuda.fp8-paired-partial:reference",
+            "combined_scales": true
+          },
+          "normalized_rms": 5.859447682610153e-08,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 2.0800000056624414e-05,
+          "samples": [
+            2.0800000056624414e-05,
+            2.102399989962578e-05,
+            2.0735999569296837e-05,
+            2.0735999569296837e-05,
+            2.2048000246286393e-05,
+            2.102399989962578e-05,
+            2.054399996995926e-05
+          ]
+        },
+        {
+          "id": "d3fe2f7074857161700f",
+          "schedule": {
+            "block_m": 16,
+            "columns": 32,
+            "threads": 128,
+            "stages": 2,
+            "mma_dtype": "float8_e4m3fn",
+            "activation_vector": 16,
+            "pair_layout": "wide",
+            "implementation": "moe.cuda.fp8-paired-partial:reference",
+            "mma_orientation": "weight"
+          },
+          "normalized_rms": 0.00010347741044824943,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 1.9328000023961066e-05,
+          "samples": [
+            1.9648000597953797e-05,
+            1.9360000267624855e-05,
+            1.900799944996834e-05,
+            1.91040001809597e-05,
+            1.9328000023961066e-05,
+            1.945599913597107e-05,
+            1.9231999292969705e-05
+          ]
+        }
+      ],
+      "winner": {
+        "id": "d3fe2f7074857161700f",
+        "schedule": {
+          "block_m": 16,
+          "columns": 32,
+          "threads": 128,
+          "stages": 2,
+          "mma_dtype": "float8_e4m3fn",
+          "activation_vector": 16,
+          "pair_layout": "wide",
+          "implementation": "moe.cuda.fp8-paired-partial:reference",
+          "mma_orientation": "weight"
+        },
+        "normalized_rms": 0.00010347741044824943,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 1.9328000023961066e-05,
+        "samples": [
+          1.9648000597953797e-05,
+          1.9360000267624855e-05,
+          1.900799944996834e-05,
+          1.91040001809597e-05,
+          1.9328000023961066e-05,
+          1.945599913597107e-05,
+          1.9231999292969705e-05
+        ]
+      }
+    },
+    {
+      "id": "decode-b1-c045050980209c549429d8a3",
+      "phase": "decode",
+      "batch": 1,
+      "chunk": 1,
+      "key": "c045050980209c549429d8a3",
+      "kind": "expert_partial",
+      "parameters": {
+        "r": 1,
+        "rows": 1,
+        "top": 4,
+        "experts": 64,
+        "o": 2048,
+        "k": 1536,
+        "routed_input": true,
+        "partitions": 2,
+        "compact": true,
+        "tile_map": true,
+        "block_m": 32,
+        "max_block_m": 128,
+        "output_dtype": "float32"
+      },
+      "baseline": {
+        "block_m": 16,
+        "columns": 64,
+        "threads": 128,
+        "stages": 2,
+        "mma_dtype": "float8_e4m3fn",
+        "activation_vector": 16,
+        "implementation": "moe.cuda.fp8-bucketed:mapped"
+      },
+      "baseline_seconds": 1.6160000115633012e-05,
+      "candidates": [
+        {
+          "id": "3e0842928b0fbad2fcad",
+          "schedule": {
+            "block_m": 16,
+            "columns": 64,
+            "threads": 128,
+            "stages": 2,
+            "mma_dtype": "float8_e4m3fn",
+            "activation_vector": 16,
+            "implementation": "moe.cuda.fp8-bucketed:mapped",
+            "combined_scales": true
+          },
+          "normalized_rms": 5.929737412202485e-08,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 1.6192000359296797e-05,
+          "samples": [
+            1.6095999628305435e-05,
+            1.6416000202298163e-05,
+            1.644800044596195e-05,
+            1.6287999227643013e-05,
+            1.571200042963028e-05,
+            1.6192000359296797e-05,
+            1.5936000272631647e-05
+          ]
+        },
+        {
+          "id": "55cfbfd2173f37133fa8",
+          "schedule": {
+            "block_m": 16,
+            "columns": 64,
+            "threads": 128,
+            "stages": 2,
+            "mma_dtype": "float8_e4m3fn",
+            "activation_vector": 16,
+            "implementation": "moe.cuda.fp8-bucketed:mapped",
+            "mma_orientation": "weight"
+          },
+          "normalized_rms": 0.00015398746472783387,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 1.596800051629543e-05,
+          "samples": [
+            1.5807999297976493e-05,
+            1.6063999384641647e-05,
+            1.5744000673294066e-05,
+            1.596800051629543e-05,
+            1.692800037562847e-05,
+            1.5647999942302704e-05,
+            1.6063999384641647e-05
+          ]
+        }
+      ],
+      "winner": {
+        "id": "55cfbfd2173f37133fa8",
+        "schedule": {
+          "block_m": 16,
+          "columns": 64,
+          "threads": 128,
+          "stages": 2,
+          "mma_dtype": "float8_e4m3fn",
+          "activation_vector": 16,
+          "implementation": "moe.cuda.fp8-bucketed:mapped",
+          "mma_orientation": "weight"
+        },
+        "normalized_rms": 0.00015398746472783387,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 1.596800051629543e-05,
+        "samples": [
+          1.5807999297976493e-05,
+          1.6063999384641647e-05,
+          1.5744000673294066e-05,
+          1.596800051629543e-05,
+          1.692800037562847e-05,
+          1.5647999942302704e-05,
+          1.6063999384641647e-05
+        ]
+      }
+    },
+    {
+      "id": "decode-b4-ca5df359a09e468bcbefd14f",
+      "phase": "decode",
+      "batch": 4,
+      "chunk": 1,
+      "key": "ca5df359a09e468bcbefd14f",
+      "kind": "expert_swiglu",
+      "parameters": {
+        "r": 4,
+        "rows": 4,
+        "top": 4,
+        "experts": 64,
+        "o": 1536,
+        "k": 2048,
+        "routed_input": false,
+        "partitions": 1,
+        "compact": true,
+        "tile_map": true,
+        "output_dtype": "bfloat16",
+        "product_dtype": "bfloat16",
+        "activation_dtype": "bfloat16",
+        "input_dtype": "uint8",
+        "weight_format": "fp8",
+        "block_m": 32,
+        "max_block_m": 128
+      },
+      "baseline": {
+        "block_m": 16,
+        "columns": 32,
+        "threads": 128,
+        "stages": 2,
+        "mma_dtype": "float8_e4m3fn",
+        "activation_vector": 16,
+        "pair_layout": "wide",
+        "implementation": "moe.cuda.fp8-paired-swiglu:reference"
+      },
+      "baseline_seconds": 3.6671999841928484e-05,
+      "candidates": [
+        {
+          "id": "ad88ab92f4b7b03dd24d",
+          "schedule": {
+            "block_m": 16,
+            "columns": 32,
+            "threads": 128,
+            "stages": 2,
+            "mma_dtype": "float8_e4m3fn",
+            "activation_vector": 16,
+            "pair_layout": "wide",
+            "implementation": "moe.cuda.fp8-paired-swiglu:reference",
+            "combined_scales": true
+          },
+          "normalized_rms": 1.2229123740326031e-06,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 3.580800071358681e-05,
+          "samples": [
+            3.60959991812706e-05,
+            3.5487998276948926e-05,
+            3.500799834728241e-05,
+            3.632000088691711e-05,
+            3.532800078392029e-05,
+            3.683200106024742e-05,
+            3.580800071358681e-05
+          ]
+        },
+        {
+          "id": "8de57e8c051a74f3a95e",
+          "schedule": {
+            "block_m": 16,
+            "columns": 32,
+            "threads": 128,
+            "stages": 2,
+            "mma_dtype": "float8_e4m3fn",
+            "activation_vector": 16,
+            "pair_layout": "wide",
+            "implementation": "moe.cuda.fp8-paired-swiglu:reference",
+            "mma_orientation": "weight"
+          },
+          "normalized_rms": 0.001213624607771635,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 3.3824000507593154e-05,
+          "samples": [
+            3.3984001725912096e-05,
+            3.296000137925148e-05,
+            3.388800099492073e-05,
+            3.254399821162224e-05,
+            3.452799841761589e-05,
+            3.292800113558769e-05,
+            3.3824000507593154e-05
+          ]
+        }
+      ],
+      "winner": {
+        "id": "8de57e8c051a74f3a95e",
+        "schedule": {
+          "block_m": 16,
+          "columns": 32,
+          "threads": 128,
+          "stages": 2,
+          "mma_dtype": "float8_e4m3fn",
+          "activation_vector": 16,
+          "pair_layout": "wide",
+          "implementation": "moe.cuda.fp8-paired-swiglu:reference",
+          "mma_orientation": "weight"
+        },
+        "normalized_rms": 0.001213624607771635,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 3.3824000507593154e-05,
+        "samples": [
+          3.3984001725912096e-05,
+          3.296000137925148e-05,
+          3.388800099492073e-05,
+          3.254399821162224e-05,
+          3.452799841761589e-05,
+          3.292800113558769e-05,
+          3.3824000507593154e-05
+        ]
+      }
+    },
+    {
+      "id": "decode-b4-b737dc72f31999c718791d74",
+      "phase": "decode",
+      "batch": 4,
+      "chunk": 1,
+      "key": "b737dc72f31999c718791d74",
+      "kind": "expert_partial",
+      "parameters": {
+        "r": 4,
+        "rows": 4,
+        "top": 4,
+        "experts": 64,
+        "o": 2048,
+        "k": 1536,
+        "routed_input": true,
+        "partitions": 1,
+        "compact": true,
+        "tile_map": true,
+        "block_m": 32,
+        "max_block_m": 128,
+        "output_dtype": "bfloat16"
+      },
+      "baseline": {
+        "block_m": 16,
+        "columns": 64,
+        "threads": 128,
+        "stages": 2,
+        "activation_vector": 16,
+        "mma_dtype": "float8_e4m3fn",
+        "implementation": "moe.cuda.fp8-bucketed:mapped"
+      },
+      "baseline_seconds": 2.595200017094612e-05,
+      "candidates": [
+        {
+          "id": "ca17fc4291a8c5629cd4",
+          "schedule": {
+            "block_m": 16,
+            "columns": 64,
+            "threads": 128,
+            "stages": 2,
+            "activation_vector": 16,
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "moe.cuda.fp8-bucketed:mapped",
+            "combined_scales": true
+          },
+          "normalized_rms": 5.007980144000612e-05,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 2.5919999927282332e-05,
+          "samples": [
+            2.6208000257611275e-05,
+            2.595200017094612e-05,
+            2.5919999927282332e-05,
+            2.5183999910950662e-05,
+            2.6016000658273698e-05,
+            2.5056000798940658e-05,
+            2.582399919629097e-05
+          ]
+        },
+        {
+          "id": "95931ba1206684203d04",
+          "schedule": {
+            "block_m": 16,
+            "columns": 64,
+            "threads": 128,
+            "stages": 2,
+            "activation_vector": 16,
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "moe.cuda.fp8-bucketed:mapped",
+            "mma_orientation": "weight"
+          },
+          "normalized_rms": 0.0007084843819029629,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 2.4831999093294143e-05,
+          "samples": [
+            2.5439999997615813e-05,
+            2.4831999093294143e-05,
+            2.4480000138282777e-05,
+            2.4607999250292777e-05,
+            2.5312000885605812e-05,
+            2.454400062561035e-05,
+            2.5119999423623085e-05
+          ]
+        }
+      ],
+      "winner": {
+        "id": "95931ba1206684203d04",
+        "schedule": {
+          "block_m": 16,
+          "columns": 64,
+          "threads": 128,
+          "stages": 2,
+          "activation_vector": 16,
+          "mma_dtype": "float8_e4m3fn",
+          "implementation": "moe.cuda.fp8-bucketed:mapped",
+          "mma_orientation": "weight"
+        },
+        "normalized_rms": 0.0007084843819029629,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 2.4831999093294143e-05,
+        "samples": [
+          2.5439999997615813e-05,
+          2.4831999093294143e-05,
+          2.4480000138282777e-05,
+          2.4607999250292777e-05,
+          2.5312000885605812e-05,
+          2.454400062561035e-05,
+          2.5119999423623085e-05
+        ]
+      }
+    },
+    {
+      "id": "decode-b16-48b8c44c9362ec48520682ca",
+      "phase": "decode",
+      "batch": 16,
+      "chunk": 1,
+      "key": "48b8c44c9362ec48520682ca",
+      "kind": "fp8_expert_swiglu",
+      "parameters": {
+        "r": 16,
+        "rows": 16,
+        "top": 4,
+        "experts": 64,
+        "o": 1536,
+        "k": 2048,
+        "routed_input": false,
+        "partitions": 1,
+        "compact": true,
+        "tile_map": true,
+        "product_dtype": "bfloat16",
+        "activation_dtype": "bfloat16",
+        "block_m": 32,
+        "max_block_m": 128
+      },
+      "baseline": {
+        "block_m": 16,
+        "threads": 64,
+        "stages": 2,
+        "activation_vector": 16,
+        "pair_layout": "separate",
+        "mma_dtype": "float8_e4m3fn",
+        "implementation": "moe.cuda.fp8-swiglu:mapped",
+        "quantize_pair": true,
+        "reuse_partial": true,
+        "inplace_epilogue": true
+      },
+      "baseline_seconds": 7.40479975938797e-05,
+      "candidates": [
+        {
+          "id": "5e40fe530eb8ff22f5bf",
+          "schedule": {
+            "block_m": 16,
+            "threads": 64,
+            "stages": 2,
+            "activation_vector": 16,
+            "pair_layout": "separate",
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "moe.cuda.fp8-swiglu:mapped",
+            "quantize_pair": true,
+            "reuse_partial": true,
+            "inplace_epilogue": true,
+            "combined_scales": true
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 7.148800045251847e-05,
+          "samples": [
+            7.11359977722168e-05,
+            7.231999933719635e-05,
+            7.193599641323089e-05,
+            7.145600020885468e-05,
+            7.148800045251847e-05,
+            7.13919997215271e-05,
+            7.286400347948074e-05
+          ]
+        }
+      ],
+      "winner": {
+        "id": "5e40fe530eb8ff22f5bf",
+        "schedule": {
+          "block_m": 16,
+          "threads": 64,
+          "stages": 2,
+          "activation_vector": 16,
+          "pair_layout": "separate",
+          "mma_dtype": "float8_e4m3fn",
+          "implementation": "moe.cuda.fp8-swiglu:mapped",
+          "quantize_pair": true,
+          "reuse_partial": true,
+          "inplace_epilogue": true,
+          "combined_scales": true
+        },
+        "normalized_rms": 0.0,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 7.148800045251847e-05,
+        "samples": [
+          7.11359977722168e-05,
+          7.231999933719635e-05,
+          7.193599641323089e-05,
+          7.145600020885468e-05,
+          7.148800045251847e-05,
+          7.13919997215271e-05,
+          7.286400347948074e-05
+        ]
+      }
+    },
+    {
+      "id": "decode-b16-5e42478c0cd282dd0f4d5c39",
+      "phase": "decode",
+      "batch": 16,
+      "chunk": 1,
+      "key": "5e42478c0cd282dd0f4d5c39",
+      "kind": "expert_partial",
+      "parameters": {
+        "r": 16,
+        "rows": 16,
+        "top": 4,
+        "experts": 64,
+        "o": 2048,
+        "k": 1536,
+        "routed_input": true,
+        "partitions": 1,
+        "compact": true,
+        "tile_map": true,
+        "block_m": 32,
+        "max_block_m": 128,
+        "output_dtype": "bfloat16"
+      },
+      "baseline": {
+        "block_m": 16,
+        "columns": 128,
+        "threads": 128,
+        "stages": 2,
+        "activation_vector": 16,
+        "mma_dtype": "float8_e4m3fn",
+        "implementation": "moe.cuda.fp8-bucketed:mapped"
+      },
+      "baseline_seconds": 3.734400123357773e-05,
+      "candidates": [
+        {
+          "id": "db555e020bcbebf17bec",
+          "schedule": {
+            "block_m": 16,
+            "columns": 128,
+            "threads": 128,
+            "stages": 2,
+            "activation_vector": 16,
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "moe.cuda.fp8-bucketed:mapped",
+            "combined_scales": true
+          },
+          "normalized_rms": 3.8121075363051204e-07,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 3.606399893760681e-05,
+          "samples": [
+            3.574400022625923e-05,
+            3.6448001861572264e-05,
+            3.606399893760681e-05,
+            3.728000074625015e-05,
+            3.5487998276948926e-05,
+            3.577600046992302e-05,
+            3.718400001525879e-05
+          ]
+        },
+        {
+          "id": "b4c2850ec70ee22fc793",
+          "schedule": {
+            "block_m": 16,
+            "columns": 128,
+            "threads": 128,
+            "stages": 2,
+            "activation_vector": 16,
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "moe.cuda.fp8-bucketed:mapped",
+            "mma_orientation": "weight"
+          },
+          "normalized_rms": 0.0007648930186405778,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 3.561599925160408e-05,
+          "samples": [
+            3.55519987642765e-05,
+            3.7631999701261523e-05,
+            3.561599925160408e-05,
+            3.462399914860725e-05,
+            3.580800071358681e-05,
+            3.4976001828908924e-05,
+            3.6159999668598176e-05
+          ]
+        }
+      ],
+      "winner": {
+        "id": "b4c2850ec70ee22fc793",
+        "schedule": {
+          "block_m": 16,
+          "columns": 128,
+          "threads": 128,
+          "stages": 2,
+          "activation_vector": 16,
+          "mma_dtype": "float8_e4m3fn",
+          "implementation": "moe.cuda.fp8-bucketed:mapped",
+          "mma_orientation": "weight"
+        },
+        "normalized_rms": 0.0007648930186405778,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 3.561599925160408e-05,
+        "samples": [
+          3.55519987642765e-05,
+          3.7631999701261523e-05,
+          3.561599925160408e-05,
+          3.462399914860725e-05,
+          3.580800071358681e-05,
+          3.4976001828908924e-05,
+          3.6159999668598176e-05
+        ]
+      }
+    },
+    {
+      "id": "decode-b64-84ac3a42038b47e15273758a",
+      "phase": "decode",
+      "batch": 64,
+      "chunk": 1,
+      "key": "84ac3a42038b47e15273758a",
+      "kind": "fp8_expert_swiglu",
+      "parameters": {
+        "r": 64,
+        "rows": 64,
+        "top": 4,
+        "experts": 64,
+        "o": 1536,
+        "k": 2048,
+        "routed_input": false,
+        "partitions": 1,
+        "compact": true,
+        "tile_map": true,
+        "product_dtype": "bfloat16",
+        "activation_dtype": "bfloat16",
+        "block_m": 32,
+        "max_block_m": 128
+      },
+      "baseline": {
+        "block_m": 16,
+        "threads": 128,
+        "stages": 2,
+        "activation_vector": 16,
+        "pair_layout": "wide",
+        "mma_dtype": "float8_e4m3fn",
+        "implementation": "moe.cuda.fp8-swiglu:mapped"
+      },
+      "baseline_seconds": 0.0001252480000257492,
+      "candidates": [
+        {
+          "id": "96f6e2ce341737815a9f",
+          "schedule": {
+            "block_m": 16,
+            "threads": 128,
+            "stages": 2,
+            "activation_vector": 16,
+            "pair_layout": "wide",
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "moe.cuda.fp8-swiglu:mapped",
+            "combined_scales": true
+          },
+          "normalized_rms": 1.5807399904588237e-05,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 0.00011919999867677689,
+          "samples": [
+            0.00011884800344705582,
+            0.00011952000111341476,
+            0.00011868800222873687,
+            0.00011977600306272507,
+            0.00011987199634313583,
+            0.00011900799721479416,
+            0.00011919999867677689
+          ]
+        },
+        {
+          "id": "dd0f65333de176933b59",
+          "schedule": {
+            "block_m": 16,
+            "threads": 128,
+            "stages": 2,
+            "activation_vector": 16,
+            "pair_layout": "wide",
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "moe.cuda.fp8-swiglu:mapped",
+            "mma_orientation": "weight"
+          },
+          "normalized_rms": 0.0034947798121720552,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 0.00010950399935245514,
+          "samples": [
+            0.00010972800105810165,
+            0.00010831999778747559,
+            0.00010950399935245514,
+            0.00010915199667215347,
+            0.00011030399799346924,
+            0.00010806400328874588,
+            0.00011052799969911575
+          ]
+        },
+        {
+          "id": "d2ae8c364d678c0d3ac1",
+          "schedule": {
+            "block_m": 16,
+            "threads": 128,
+            "stages": 2,
+            "activation_vector": 16,
+            "pair_layout": "wide",
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "moe.cuda.fp8-swiglu:mapped",
+            "mma_orientation": "weight",
+            "reuse_partial": false,
+            "inplace_epilogue": false
+          },
+          "normalized_rms": 0.0034947798121720552,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 0.00010969600081443786,
+          "samples": [
+            0.00010992000252008438,
+            0.00010979200154542923,
+            0.00010838399827480316,
+            0.0001106560006737709,
+            0.00010969600081443786,
+            0.0001085439994931221,
+            0.00010918399691581726
+          ]
+        }
+      ],
+      "winner": {
+        "id": "dd0f65333de176933b59",
+        "schedule": {
+          "block_m": 16,
+          "threads": 128,
+          "stages": 2,
+          "activation_vector": 16,
+          "pair_layout": "wide",
+          "mma_dtype": "float8_e4m3fn",
+          "implementation": "moe.cuda.fp8-swiglu:mapped",
+          "mma_orientation": "weight"
+        },
+        "normalized_rms": 0.0034947798121720552,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 0.00010950399935245514,
+        "samples": [
+          0.00010972800105810165,
+          0.00010831999778747559,
+          0.00010950399935245514,
+          0.00010915199667215347,
+          0.00011030399799346924,
+          0.00010806400328874588,
+          0.00011052799969911575
+        ]
+      }
+    },
+    {
+      "id": "decode-b64-da40fb2ae194501493fb6d5b",
+      "phase": "decode",
+      "batch": 64,
+      "chunk": 1,
+      "key": "da40fb2ae194501493fb6d5b",
+      "kind": "expert_partial",
+      "parameters": {
+        "r": 64,
+        "rows": 64,
+        "top": 4,
+        "experts": 64,
+        "o": 2048,
+        "k": 1536,
+        "routed_input": true,
+        "partitions": 1,
+        "compact": true,
+        "tile_map": true,
+        "block_m": 32,
+        "max_block_m": 128,
+        "output_dtype": "bfloat16"
+      },
+      "baseline": {
+        "block_m": 16,
+        "columns": 128,
+        "threads": 128,
+        "stages": 2,
+        "activation_vector": 16,
+        "mma_dtype": "float8_e4m3fn",
+        "implementation": "moe.cuda.fp8-bucketed:mapped"
+      },
+      "baseline_seconds": 7.100799679756164e-05,
+      "candidates": [
+        {
+          "id": "a6433e7d5f4f0ecfb408",
+          "schedule": {
+            "block_m": 16,
+            "columns": 128,
+            "threads": 128,
+            "stages": 2,
+            "activation_vector": 16,
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "moe.cuda.fp8-bucketed:mapped",
+            "combined_scales": true
+          },
+          "normalized_rms": 2.2933452783036046e-05,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 6.880000233650208e-05,
+          "samples": [
+            6.921599805355071e-05,
+            6.880000233650208e-05,
+            6.947200000286102e-05,
+            6.950400024652481e-05,
+            6.723199784755707e-05,
+            6.735999882221223e-05,
+            6.838399916887283e-05
+          ]
+        },
+        {
+          "id": "80bea911b85752788b65",
+          "schedule": {
+            "block_m": 16,
+            "columns": 128,
+            "threads": 128,
+            "stages": 2,
+            "activation_vector": 16,
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "moe.cuda.fp8-bucketed:mapped",
+            "mma_orientation": "weight"
+          },
+          "normalized_rms": 0.0007544423569925129,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 5.8272000402212145e-05,
+          "samples": [
+            5.7119999080896376e-05,
+            5.8368001133203504e-05,
+            5.859199911355972e-05,
+            5.692800134420395e-05,
+            5.7631999254226684e-05,
+            5.8272000402212145e-05,
+            5.955199897289276e-05
+          ]
+        }
+      ],
+      "winner": {
+        "id": "80bea911b85752788b65",
+        "schedule": {
+          "block_m": 16,
+          "columns": 128,
+          "threads": 128,
+          "stages": 2,
+          "activation_vector": 16,
+          "mma_dtype": "float8_e4m3fn",
+          "implementation": "moe.cuda.fp8-bucketed:mapped",
+          "mma_orientation": "weight"
+        },
+        "normalized_rms": 0.0007544423569925129,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 5.8272000402212145e-05,
+        "samples": [
+          5.7119999080896376e-05,
+          5.8368001133203504e-05,
+          5.859199911355972e-05,
+          5.692800134420395e-05,
+          5.7631999254226684e-05,
+          5.8272000402212145e-05,
+          5.955199897289276e-05
+        ]
+      }
+    },
+    {
+      "id": "decode-b256-f5f74e760b82c7bc0030c371",
+      "phase": "decode",
+      "batch": 256,
+      "chunk": 1,
+      "key": "f5f74e760b82c7bc0030c371",
+      "kind": "fp8_expert_swiglu",
+      "parameters": {
+        "r": 256,
+        "rows": 256,
+        "top": 4,
+        "experts": 64,
+        "o": 1536,
+        "k": 2048,
+        "routed_input": false,
+        "partitions": 1,
+        "compact": true,
+        "tile_map": true,
+        "product_dtype": "bfloat16",
+        "activation_dtype": "bfloat16",
+        "block_m": 32,
+        "max_block_m": 128
+      },
+      "baseline": {
+        "block_m": 16,
+        "threads": 128,
+        "stages": 2,
+        "activation_vector": 16,
+        "pair_layout": "wide",
+        "mma_dtype": "float8_e4m3fn",
+        "implementation": "moe.cuda.fp8-swiglu:mapped"
+      },
+      "baseline_seconds": 0.00019785599410533904,
+      "candidates": [
+        {
+          "id": "5bd2b85769071fc9eef5",
+          "schedule": {
+            "block_m": 16,
+            "threads": 128,
+            "stages": 2,
+            "activation_vector": 16,
+            "pair_layout": "wide",
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "moe.cuda.fp8-swiglu:mapped",
+            "combined_scales": true
+          },
+          "normalized_rms": 0.00010440633923280984,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 0.00018729600310325622,
+          "samples": [
+            0.00018681600689888,
+            0.00018745599687099458,
+            0.00018486399948596956,
+            0.00018729600310325622,
+            0.00018694399297237396,
+            0.000187391996383667,
+            0.00018880000710487366
+          ]
+        },
+        {
+          "id": "b9815b9e4dd69d79d926",
+          "schedule": {
+            "block_m": 16,
+            "threads": 128,
+            "stages": 2,
+            "activation_vector": 16,
+            "pair_layout": "wide",
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "moe.cuda.fp8-swiglu:mapped",
+            "mma_orientation": "weight"
+          },
+          "normalized_rms": 0.003873002016916871,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 0.00017008000612258911,
+          "samples": [
+            0.00017059199512004853,
+            0.00017180800437927246,
+            0.00017008000612258911,
+            0.00017231999337673188,
+            0.00016972799599170686,
+            0.0001682880073785782,
+            0.0001679999977350235
+          ]
+        },
+        {
+          "id": "f8bb495bea455935034d",
+          "schedule": {
+            "block_m": 16,
+            "threads": 128,
+            "stages": 2,
+            "activation_vector": 16,
+            "pair_layout": "wide",
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "moe.cuda.fp8-swiglu:mapped",
+            "mma_orientation": "weight",
+            "reuse_partial": false,
+            "inplace_epilogue": false
+          },
+          "normalized_rms": 0.003873002016916871,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 0.0001699199974536896,
+          "samples": [
+            0.00017075200378894806,
+            0.0001717119961977005,
+            0.00016915200650691986,
+            0.00016764800250530242,
+            0.00017078399658203126,
+            0.0001690559983253479,
+            0.0001699199974536896
+          ]
+        }
+      ],
+      "winner": {
+        "id": "f8bb495bea455935034d",
+        "schedule": {
+          "block_m": 16,
+          "threads": 128,
+          "stages": 2,
+          "activation_vector": 16,
+          "pair_layout": "wide",
+          "mma_dtype": "float8_e4m3fn",
+          "implementation": "moe.cuda.fp8-swiglu:mapped",
+          "mma_orientation": "weight",
+          "reuse_partial": false,
+          "inplace_epilogue": false
+        },
+        "normalized_rms": 0.003873002016916871,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 0.0001699199974536896,
+        "samples": [
+          0.00017075200378894806,
+          0.0001717119961977005,
+          0.00016915200650691986,
+          0.00016764800250530242,
+          0.00017078399658203126,
+          0.0001690559983253479,
+          0.0001699199974536896
+        ]
+      }
+    },
+    {
+      "id": "decode-b256-99a60dd9ef54460bc3ee3022",
+      "phase": "decode",
+      "batch": 256,
+      "chunk": 1,
+      "key": "99a60dd9ef54460bc3ee3022",
+      "kind": "expert_partial",
+      "parameters": {
+        "r": 256,
+        "rows": 256,
+        "top": 4,
+        "experts": 64,
+        "o": 2048,
+        "k": 1536,
+        "routed_input": true,
+        "partitions": 1,
+        "compact": true,
+        "tile_map": true,
+        "block_m": 32,
+        "max_block_m": 128,
+        "output_dtype": "bfloat16"
+      },
+      "baseline": {
+        "block_m": 16,
+        "columns": 128,
+        "threads": 128,
+        "stages": 2,
+        "activation_vector": 16,
+        "mma_dtype": "float8_e4m3fn",
+        "implementation": "moe.cuda.fp8-bucketed:mapped",
+        "min_blocks": 4
+      },
+      "baseline_seconds": 8.921600133180619e-05,
+      "candidates": [
+        {
+          "id": "5565fe6de88be1fa49a5",
+          "schedule": {
+            "block_m": 16,
+            "columns": 128,
+            "threads": 128,
+            "stages": 2,
+            "activation_vector": 16,
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "moe.cuda.fp8-bucketed:mapped",
+            "min_blocks": 4,
+            "combined_scales": true
+          },
+          "normalized_rms": 1.3496809515345376e-05,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 8.729600161314011e-05,
+          "samples": [
+            8.819200098514557e-05,
+            8.553600311279297e-05,
+            8.681599795818328e-05,
+            8.848000317811965e-05,
+            8.665599673986435e-05,
+            8.844800293445588e-05,
+            8.729600161314011e-05
+          ]
+        },
+        {
+          "id": "f29e73eee564eb415a5c",
+          "schedule": {
+            "block_m": 16,
+            "columns": 128,
+            "threads": 128,
+            "stages": 2,
+            "activation_vector": 16,
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "moe.cuda.fp8-bucketed:mapped",
+            "min_blocks": 4,
+            "mma_orientation": "weight"
+          },
+          "normalized_rms": 0.0007584004779346287,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 7.043199986219406e-05,
+          "samples": [
+            7.065600156784058e-05,
+            7.084800302982331e-05,
+            7.007999718189239e-05,
+            6.98240026831627e-05,
+            7.084800302982331e-05,
+            7.043199986219406e-05,
+            6.988800317049027e-05
+          ]
+        }
+      ],
+      "winner": {
+        "id": "f29e73eee564eb415a5c",
+        "schedule": {
+          "block_m": 16,
+          "columns": 128,
+          "threads": 128,
+          "stages": 2,
+          "activation_vector": 16,
+          "mma_dtype": "float8_e4m3fn",
+          "implementation": "moe.cuda.fp8-bucketed:mapped",
+          "min_blocks": 4,
+          "mma_orientation": "weight"
+        },
+        "normalized_rms": 0.0007584004779346287,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 7.043199986219406e-05,
+        "samples": [
+          7.065600156784058e-05,
+          7.084800302982331e-05,
+          7.007999718189239e-05,
+          6.98240026831627e-05,
+          7.084800302982331e-05,
+          7.043199986219406e-05,
+          6.988800317049027e-05
+        ]
+      }
+    },
+    {
+      "id": "prefill-b4-2d339ee504a3023c4e071b12",
+      "phase": "prefill",
+      "batch": 4,
+      "chunk": 2048,
+      "key": "2d339ee504a3023c4e071b12",
+      "kind": "fp8_expert_swiglu",
+      "parameters": {
+        "r": 8192,
+        "rows": 8192,
+        "top": 4,
+        "experts": 64,
+        "o": 1536,
+        "k": 2048,
+        "routed_input": false,
+        "partitions": 1,
+        "compact": true,
+        "tile_map": true,
+        "product_dtype": "bfloat16",
+        "activation_dtype": "bfloat16",
+        "block_m": 32,
+        "max_block_m": 128,
+        "packed_input": true,
+        "packed_output": true
+      },
+      "baseline": {
+        "block_m": 64,
+        "threads": 128,
+        "stages": 2,
+        "pair_layout": "separate",
+        "activation_vector": 16,
+        "mma_dtype": "float8_e4m3fn",
+        "implementation": "moe.cuda.fp8-swiglu:mapped",
+        "quantize_pair": true
+      },
+      "baseline_seconds": 0.0009136319756507873,
+      "candidates": [
+        {
+          "id": "efaccb4c76eaed1294d6",
+          "schedule": {
+            "block_m": 64,
+            "threads": 128,
+            "stages": 2,
+            "pair_layout": "separate",
+            "activation_vector": 16,
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "moe.cuda.fp8-swiglu:mapped",
+            "quantize_pair": true,
+            "combined_scales": true
+          },
+          "normalized_rms": 0.00012475872063077986,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 0.0008640000224113464,
+          "samples": [
+            0.0008664960265159607,
+            0.0008644800186157226,
+            0.0008647360205650329,
+            0.0008609600067138672,
+            0.0008640000224113464,
+            0.0008595520257949829,
+            0.0008598080277442932
+          ]
+        }
+      ],
+      "winner": {
+        "id": "efaccb4c76eaed1294d6",
+        "schedule": {
+          "block_m": 64,
+          "threads": 128,
+          "stages": 2,
+          "pair_layout": "separate",
+          "activation_vector": 16,
+          "mma_dtype": "float8_e4m3fn",
+          "implementation": "moe.cuda.fp8-swiglu:mapped",
+          "quantize_pair": true,
+          "combined_scales": true
+        },
+        "normalized_rms": 0.00012475872063077986,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 0.0008640000224113464,
+        "samples": [
+          0.0008664960265159607,
+          0.0008644800186157226,
+          0.0008647360205650329,
+          0.0008609600067138672,
+          0.0008640000224113464,
+          0.0008595520257949829,
+          0.0008598080277442932
+        ]
+      }
+    },
+    {
+      "id": "prefill-b4-956a15110b81872735e85b0f",
+      "phase": "prefill",
+      "batch": 4,
+      "chunk": 2048,
+      "key": "956a15110b81872735e85b0f",
+      "kind": "expert_partial",
+      "parameters": {
+        "r": 8192,
+        "rows": 8192,
+        "top": 4,
+        "experts": 64,
+        "o": 2048,
+        "k": 1536,
+        "routed_input": true,
+        "partitions": 1,
+        "compact": true,
+        "tile_map": true,
+        "block_m": 32,
+        "max_block_m": 128,
+        "packed_input": true,
+        "output_dtype": "bfloat16"
+      },
+      "baseline": {
+        "block_m": 64,
+        "columns": 128,
+        "threads": 128,
+        "stages": 2,
+        "activation_vector": 16,
+        "mma_dtype": "float8_e4m3fn",
+        "implementation": "moe.cuda.fp8-bucketed:mapped",
+        "min_blocks": 3
+      },
+      "baseline_seconds": 0.00037619200348854064,
+      "candidates": [
+        {
+          "id": "f866e7e9a43f7ceb9fd6",
+          "schedule": {
+            "block_m": 64,
+            "columns": 128,
+            "threads": 128,
+            "stages": 2,
+            "activation_vector": 16,
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "moe.cuda.fp8-bucketed:mapped",
+            "min_blocks": 3,
+            "combined_scales": true
+          },
+          "normalized_rms": 1.2722232895612251e-05,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 0.00035545599460601806,
+          "samples": [
+            0.0003561600148677826,
+            0.00035491201281547544,
+            0.0003542079925537109,
+            0.0003547840118408203,
+            0.00036032000184059145,
+            0.0003555519878864288,
+            0.00035545599460601806
+          ]
+        }
+      ],
+      "winner": {
+        "id": "f866e7e9a43f7ceb9fd6",
+        "schedule": {
+          "block_m": 64,
+          "columns": 128,
+          "threads": 128,
+          "stages": 2,
+          "activation_vector": 16,
+          "mma_dtype": "float8_e4m3fn",
+          "implementation": "moe.cuda.fp8-bucketed:mapped",
+          "min_blocks": 3,
+          "combined_scales": true
+        },
+        "normalized_rms": 1.2722232895612251e-05,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 0.00035545599460601806,
+        "samples": [
+          0.0003561600148677826,
+          0.00035491201281547544,
+          0.0003542079925537109,
+          0.0003547840118408203,
+          0.00036032000184059145,
+          0.0003555519878864288,
+          0.00035545599460601806
+        ]
+      }
+    },
+    {
+      "id": "prefill-b16-08f6351ae264efbb6a45aa39",
+      "phase": "prefill",
+      "batch": 16,
+      "chunk": 2048,
+      "key": "08f6351ae264efbb6a45aa39",
+      "kind": "fp8_expert_swiglu",
+      "parameters": {
+        "r": 32768,
+        "rows": 32768,
+        "top": 4,
+        "experts": 64,
+        "o": 1536,
+        "k": 2048,
+        "routed_input": false,
+        "partitions": 1,
+        "compact": true,
+        "tile_map": true,
+        "product_dtype": "bfloat16",
+        "activation_dtype": "bfloat16",
+        "block_m": 32,
+        "max_block_m": 128,
+        "packed_input": true,
+        "packed_output": true
+      },
+      "baseline": {
+        "block_m": 64,
+        "threads": 128,
+        "stages": 2,
+        "pair_layout": "separate",
+        "activation_vector": 16,
+        "mma_dtype": "float8_e4m3fn",
+        "implementation": "moe.cuda.fp8-swiglu:mapped",
+        "quantize_pair": true
+      },
+      "baseline_seconds": 0.0033308160305023193,
+      "candidates": [
+        {
+          "id": "9399769363086fcbbfbe",
+          "schedule": {
+            "block_m": 64,
+            "threads": 128,
+            "stages": 2,
+            "pair_layout": "separate",
+            "activation_vector": 16,
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "moe.cuda.fp8-swiglu:mapped",
+            "quantize_pair": true,
+            "combined_scales": true
+          },
+          "normalized_rms": 8.648042421555147e-05,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 0.0031466879844665526,
+          "samples": [
+            0.0031440000534057617,
+            0.0031480000019073486,
+            0.0031389439105987548,
+            0.003147455930709839,
+            0.003145375967025757,
+            0.0031466879844665526,
+            0.0031488640308380126
+          ]
+        }
+      ],
+      "winner": {
+        "id": "9399769363086fcbbfbe",
+        "schedule": {
+          "block_m": 64,
+          "threads": 128,
+          "stages": 2,
+          "pair_layout": "separate",
+          "activation_vector": 16,
+          "mma_dtype": "float8_e4m3fn",
+          "implementation": "moe.cuda.fp8-swiglu:mapped",
+          "quantize_pair": true,
+          "combined_scales": true
+        },
+        "normalized_rms": 8.648042421555147e-05,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 0.0031466879844665526,
+        "samples": [
+          0.0031440000534057617,
+          0.0031480000019073486,
+          0.0031389439105987548,
+          0.003147455930709839,
+          0.003145375967025757,
+          0.0031466879844665526,
+          0.0031488640308380126
+        ]
+      }
+    },
+    {
+      "id": "prefill-b16-e338e948f5a6a81d0bfac4ca",
+      "phase": "prefill",
+      "batch": 16,
+      "chunk": 2048,
+      "key": "e338e948f5a6a81d0bfac4ca",
+      "kind": "expert_partial",
+      "parameters": {
+        "r": 32768,
+        "rows": 32768,
+        "top": 4,
+        "experts": 64,
+        "o": 2048,
+        "k": 1536,
+        "routed_input": true,
+        "partitions": 1,
+        "compact": true,
+        "tile_map": true,
+        "block_m": 32,
+        "max_block_m": 128,
+        "packed_input": true,
+        "output_dtype": "bfloat16"
+      },
+      "baseline": {
+        "block_m": 64,
+        "columns": 128,
+        "threads": 128,
+        "stages": 2,
+        "activation_vector": 16,
+        "mma_dtype": "float8_e4m3fn",
+        "implementation": "moe.cuda.fp8-bucketed:mapped"
+      },
+      "baseline_seconds": 0.0013624000549316406,
+      "candidates": [
+        {
+          "id": "eccdf2225cf84c74d597",
+          "schedule": {
+            "block_m": 64,
+            "columns": 128,
+            "threads": 128,
+            "stages": 2,
+            "activation_vector": 16,
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "moe.cuda.fp8-bucketed:mapped",
+            "combined_scales": true
+          },
+          "normalized_rms": 1.4663771253253799e-05,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 0.0012678719758987427,
+          "samples": [
+            0.0012678719758987427,
+            0.001268288016319275,
+            0.0012662080526351929,
+            0.0012659840583801269,
+            0.0012709120512008668,
+            0.0012696319818496704,
+            0.001265887975692749
+          ]
+        }
+      ],
+      "winner": {
+        "id": "eccdf2225cf84c74d597",
+        "schedule": {
+          "block_m": 64,
+          "columns": 128,
+          "threads": 128,
+          "stages": 2,
+          "activation_vector": 16,
+          "mma_dtype": "float8_e4m3fn",
+          "implementation": "moe.cuda.fp8-bucketed:mapped",
+          "combined_scales": true
+        },
+        "normalized_rms": 1.4663771253253799e-05,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 0.0012678719758987427,
+        "samples": [
+          0.0012678719758987427,
+          0.001268288016319275,
+          0.0012662080526351929,
+          0.0012659840583801269,
+          0.0012709120512008668,
+          0.0012696319818496704,
+          0.001265887975692749
+        ]
+      }
+    },
+    {
+      "id": "decode-b1-580b3155dd1e10c7f6d2e028",
+      "phase": "decode",
+      "batch": 1,
+      "chunk": 1,
+      "key": "580b3155dd1e10c7f6d2e028",
+      "kind": "projection_partial",
+      "parameters": {
+        "r": 1,
+        "k": 2048,
+        "o": 11776,
+        "input_dtype": "float32",
+        "partitions": 1,
+        "columns": 32,
+        "block_m": 16,
+        "threads": 128,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "baseline": {
+        "block_m": 64,
+        "columns": 128,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true,
+        "mma_dtype": "float8_e4m3fn",
+        "implementation": "linear.pipeline:reference"
+      },
+      "baseline_seconds": 1.9039999693632127e-05,
+      "candidates": [
+        {
+          "id": "9b5375e683ee25daa07f",
+          "schedule": {
+            "block_m": 64,
+            "columns": 128,
+            "threads": 128,
+            "stages": 2,
+            "packed_copy": true,
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "linear.pipeline:reference",
+            "mma_orientation": "weight"
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 1.9039999693632127e-05,
+          "samples": [
+            1.9999999552965164e-05,
+            1.9168000668287278e-05,
+            1.897599920630455e-05,
+            1.9039999693632127e-05,
+            1.8783999606966973e-05,
+            2.0511999726295472e-05,
+            1.9039999693632127e-05
+          ]
+        }
+      ],
+      "winner": {
+        "id": "9b5375e683ee25daa07f",
+        "schedule": {
+          "block_m": 64,
+          "columns": 128,
+          "threads": 128,
+          "stages": 2,
+          "packed_copy": true,
+          "mma_dtype": "float8_e4m3fn",
+          "implementation": "linear.pipeline:reference",
+          "mma_orientation": "weight"
+        },
+        "normalized_rms": 0.0,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 1.9039999693632127e-05,
+        "samples": [
+          1.9999999552965164e-05,
+          1.9168000668287278e-05,
+          1.897599920630455e-05,
+          1.9039999693632127e-05,
+          1.8783999606966973e-05,
+          2.0511999726295472e-05,
+          1.9039999693632127e-05
+        ]
+      }
+    },
+    {
+      "id": "decode-b1-fbfa3f5c33f8f332ba80a4b4",
+      "phase": "decode",
+      "batch": 1,
+      "chunk": 1,
+      "key": "fbfa3f5c33f8f332ba80a4b4",
+      "kind": "projection_partial",
+      "parameters": {
+        "r": 1,
+        "k": 11776,
+        "o": 2048,
+        "input_dtype": "float32",
+        "partitions": 2,
+        "columns": 32,
+        "block_m": 16,
+        "threads": 128,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "baseline": {
+        "block_m": 64,
+        "columns": 128,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true,
+        "mma_dtype": "float8_e4m3fn",
+        "implementation": "linear.pipeline:reference"
+      },
+      "baseline_seconds": 3.660799935460091e-05,
+      "candidates": [
+        {
+          "id": "3eda219742f579bbb9ab",
+          "schedule": {
+            "block_m": 64,
+            "columns": 128,
+            "threads": 128,
+            "stages": 2,
+            "packed_copy": true,
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "linear.pipeline:reference",
+            "mma_orientation": "weight"
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 3.587200120091438e-05,
+          "samples": [
+            3.660799935460091e-05,
+            3.58400009572506e-05,
+            3.5456001758575437e-05,
+            3.577600046992302e-05,
+            3.587200120091438e-05,
+            3.718400001525879e-05,
+            3.654399886727333e-05
+          ]
+        }
+      ],
+      "winner": {
+        "id": "3eda219742f579bbb9ab",
+        "schedule": {
+          "block_m": 64,
+          "columns": 128,
+          "threads": 128,
+          "stages": 2,
+          "packed_copy": true,
+          "mma_dtype": "float8_e4m3fn",
+          "implementation": "linear.pipeline:reference",
+          "mma_orientation": "weight"
+        },
+        "normalized_rms": 0.0,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 3.587200120091438e-05,
+        "samples": [
+          3.660799935460091e-05,
+          3.58400009572506e-05,
+          3.5456001758575437e-05,
+          3.577600046992302e-05,
+          3.587200120091438e-05,
+          3.718400001525879e-05,
+          3.654399886727333e-05
+        ]
+      }
+    },
+    {
+      "id": "decode-b1-cbd70f15303074c558d0739a",
+      "phase": "decode",
+      "batch": 1,
+      "chunk": 1,
+      "key": "cbd70f15303074c558d0739a",
+      "kind": "projection_partial",
+      "parameters": {
+        "r": 1,
+        "k": 2048,
+        "o": 2048,
+        "input_dtype": "float32",
+        "partitions": 2,
+        "columns": 32,
+        "block_m": 16,
+        "threads": 128,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "baseline": {
+        "block_m": 64,
+        "columns": 128,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true,
+        "mma_dtype": "float8_e4m3fn",
+        "implementation": "linear.pipeline:reference"
+      },
+      "baseline_seconds": 1.1264000087976456e-05,
+      "candidates": [
+        {
+          "id": "56c9450f43ddf29c4700",
+          "schedule": {
+            "block_m": 64,
+            "columns": 128,
+            "threads": 128,
+            "stages": 2,
+            "packed_copy": true,
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "linear.pipeline:reference",
+            "mma_orientation": "weight"
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 1.0847999714314937e-05,
+          "samples": [
+            1.0879999957978725e-05,
+            1.0847999714314937e-05,
+            1.0751999914646148e-05,
+            1.0944000445306302e-05,
+            1.0912000201642514e-05,
+            1.0719999670982361e-05,
+            1.0751999914646148e-05
+          ]
+        }
+      ],
+      "winner": {
+        "id": "56c9450f43ddf29c4700",
+        "schedule": {
+          "block_m": 64,
+          "columns": 128,
+          "threads": 128,
+          "stages": 2,
+          "packed_copy": true,
+          "mma_dtype": "float8_e4m3fn",
+          "implementation": "linear.pipeline:reference",
+          "mma_orientation": "weight"
+        },
+        "normalized_rms": 0.0,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 1.0847999714314937e-05,
+        "samples": [
+          1.0879999957978725e-05,
+          1.0847999714314937e-05,
+          1.0751999914646148e-05,
+          1.0944000445306302e-05,
+          1.0912000201642514e-05,
+          1.0719999670982361e-05,
+          1.0751999914646148e-05
+        ]
+      }
+    },
+    {
+      "id": "decode-b1-de57ab4f3628c01d2e1e524b",
+      "phase": "decode",
+      "batch": 1,
+      "chunk": 1,
+      "key": "de57ab4f3628c01d2e1e524b",
+      "kind": "projection_partial",
+      "parameters": {
+        "r": 1,
+        "k": 2048,
+        "o": 512,
+        "input_dtype": "float32",
+        "partitions": 8,
+        "columns": 32,
+        "block_m": 16,
+        "threads": 128,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "baseline": {
+        "block_m": 64,
+        "columns": 128,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true,
+        "mma_dtype": "float8_e4m3fn",
+        "implementation": "linear.pipeline:reference"
+      },
+      "baseline_seconds": 7.040000054985285e-06,
+      "candidates": [
+        {
+          "id": "7f5c0cdb293528364e7b",
+          "schedule": {
+            "block_m": 64,
+            "columns": 128,
+            "threads": 128,
+            "stages": 2,
+            "packed_copy": true,
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "linear.pipeline:reference",
+            "mma_orientation": "weight"
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 6.591999903321266e-06,
+          "samples": [
+            6.591999903321266e-06,
+            6.5279998816549774e-06,
+            6.560000125318766e-06,
+            6.719999946653843e-06,
+            6.7520001903176305e-06,
+            6.560000125318766e-06,
+            6.7520001903176305e-06
+          ]
+        }
+      ],
+      "winner": {
+        "id": "7f5c0cdb293528364e7b",
+        "schedule": {
+          "block_m": 64,
+          "columns": 128,
+          "threads": 128,
+          "stages": 2,
+          "packed_copy": true,
+          "mma_dtype": "float8_e4m3fn",
+          "implementation": "linear.pipeline:reference",
+          "mma_orientation": "weight"
+        },
+        "normalized_rms": 0.0,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 6.591999903321266e-06,
+        "samples": [
+          6.591999903321266e-06,
+          6.5279998816549774e-06,
+          6.560000125318766e-06,
+          6.719999946653843e-06,
+          6.7520001903176305e-06,
+          6.560000125318766e-06,
+          6.7520001903176305e-06
+        ]
+      }
+    },
+    {
+      "id": "decode-b4-d780bfaa6fce4fd2556b6643",
+      "phase": "decode",
+      "batch": 4,
+      "chunk": 1,
+      "key": "d780bfaa6fce4fd2556b6643",
+      "kind": "projection_partial",
+      "parameters": {
+        "r": 4,
+        "k": 2048,
+        "o": 11776,
+        "input_dtype": "float32",
+        "partitions": 2,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "baseline": {
+        "block_m": 16,
+        "columns": 64,
+        "threads": 128,
+        "stages": 1,
+        "packed_copy": true,
+        "mma_dtype": "float8_e4m3fn",
+        "implementation": "linear.pipeline:reference"
+      },
+      "baseline_seconds": 1.692800037562847e-05,
+      "candidates": [
+        {
+          "id": "254d8d2ffc3293bbb330",
+          "schedule": {
+            "block_m": 16,
+            "columns": 64,
+            "threads": 128,
+            "stages": 1,
+            "packed_copy": true,
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "linear.pipeline:reference",
+            "mma_orientation": "weight"
+          },
+          "normalized_rms": 9.330883767688647e-05,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 1.6767999157309533e-05,
+          "samples": [
+            1.6672000288963317e-05,
+            1.7983999103307723e-05,
+            1.6767999157309533e-05,
+            1.651199907064438e-05,
+            1.664000004529953e-05,
+            1.6767999157309533e-05,
+            1.683199964463711e-05
+          ]
+        }
+      ],
+      "winner": {
+        "id": "254d8d2ffc3293bbb330",
+        "schedule": {
+          "block_m": 16,
+          "columns": 64,
+          "threads": 128,
+          "stages": 1,
+          "packed_copy": true,
+          "mma_dtype": "float8_e4m3fn",
+          "implementation": "linear.pipeline:reference",
+          "mma_orientation": "weight"
+        },
+        "normalized_rms": 9.330883767688647e-05,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 1.6767999157309533e-05,
+        "samples": [
+          1.6672000288963317e-05,
+          1.7983999103307723e-05,
+          1.6767999157309533e-05,
+          1.651199907064438e-05,
+          1.664000004529953e-05,
+          1.6767999157309533e-05,
+          1.683199964463711e-05
+        ]
+      }
+    },
+    {
+      "id": "decode-b4-105e17d9abf578d4ae9d33c3",
+      "phase": "decode",
+      "batch": 4,
+      "chunk": 1,
+      "key": "105e17d9abf578d4ae9d33c3",
+      "kind": "projection_partial",
+      "parameters": {
+        "r": 4,
+        "k": 11776,
+        "o": 2048,
+        "input_dtype": "float32",
+        "partitions": 4,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "baseline": {
+        "block_m": 16,
+        "columns": 64,
+        "threads": 128,
+        "stages": 1,
+        "packed_copy": true,
+        "mma_dtype": "float8_e4m3fn",
+        "implementation": "linear.pipeline:reference"
+      },
+      "baseline_seconds": 2.768000029027462e-05,
+      "candidates": [
+        {
+          "id": "c6fa287a4906b580a170",
+          "schedule": {
+            "block_m": 16,
+            "columns": 64,
+            "threads": 128,
+            "stages": 1,
+            "packed_copy": true,
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "linear.pipeline:reference",
+            "mma_orientation": "weight"
+          },
+          "normalized_rms": 0.0001435096637578681,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 2.7615999802947046e-05,
+          "samples": [
+            2.7327999472618103e-05,
+            2.7456000447273254e-05,
+            2.7871999889612196e-05,
+            2.7712000533938408e-05,
+            2.7295999228954315e-05,
+            2.8095999732613562e-05,
+            2.7615999802947046e-05
+          ]
+        }
+      ],
+      "winner": {
+        "id": "c6fa287a4906b580a170",
+        "schedule": {
+          "block_m": 16,
+          "columns": 64,
+          "threads": 128,
+          "stages": 1,
+          "packed_copy": true,
+          "mma_dtype": "float8_e4m3fn",
+          "implementation": "linear.pipeline:reference",
+          "mma_orientation": "weight"
+        },
+        "normalized_rms": 0.0001435096637578681,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 2.7615999802947046e-05,
+        "samples": [
+          2.7327999472618103e-05,
+          2.7456000447273254e-05,
+          2.7871999889612196e-05,
+          2.7712000533938408e-05,
+          2.7295999228954315e-05,
+          2.8095999732613562e-05,
+          2.7615999802947046e-05
+        ]
+      }
+    },
+    {
+      "id": "decode-b4-f51f73c2843e75769e75e25f",
+      "phase": "decode",
+      "batch": 4,
+      "chunk": 1,
+      "key": "f51f73c2843e75769e75e25f",
+      "kind": "projection_partial",
+      "parameters": {
+        "r": 4,
+        "k": 2048,
+        "o": 2048,
+        "input_dtype": "float32",
+        "partitions": 8,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "baseline": {
+        "block_m": 16,
+        "columns": 64,
+        "threads": 128,
+        "stages": 1,
+        "packed_copy": true,
+        "mma_dtype": "float8_e4m3fn",
+        "implementation": "linear.pipeline:reference"
+      },
+      "baseline_seconds": 8.1599997356534e-06,
+      "candidates": [
+        {
+          "id": "2b1fa34165d67b7ee939",
+          "schedule": {
+            "block_m": 16,
+            "columns": 64,
+            "threads": 128,
+            "stages": 1,
+            "packed_copy": true,
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "linear.pipeline:reference",
+            "mma_orientation": "weight"
+          },
+          "normalized_rms": 0.000219160268898122,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 8.1599997356534e-06,
+          "samples": [
+            8.1599997356534e-06,
+            8.096000179648399e-06,
+            8.063999935984612e-06,
+            8.287999778985978e-06,
+            8.25599953532219e-06,
+            8.1599997356534e-06,
+            8.1599997356534e-06
+          ]
+        }
+      ],
+      "winner": {
+        "id": "2b1fa34165d67b7ee939",
+        "schedule": {
+          "block_m": 16,
+          "columns": 64,
+          "threads": 128,
+          "stages": 1,
+          "packed_copy": true,
+          "mma_dtype": "float8_e4m3fn",
+          "implementation": "linear.pipeline:reference",
+          "mma_orientation": "weight"
+        },
+        "normalized_rms": 0.000219160268898122,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 8.1599997356534e-06,
+        "samples": [
+          8.1599997356534e-06,
+          8.096000179648399e-06,
+          8.063999935984612e-06,
+          8.287999778985978e-06,
+          8.25599953532219e-06,
+          8.1599997356534e-06,
+          8.1599997356534e-06
+        ]
+      }
+    },
+    {
+      "id": "decode-b4-d1f2a102b3d36822994154da",
+      "phase": "decode",
+      "batch": 4,
+      "chunk": 1,
+      "key": "d1f2a102b3d36822994154da",
+      "kind": "projection_partial",
+      "parameters": {
+        "r": 4,
+        "k": 2048,
+        "o": 512,
+        "input_dtype": "float32",
+        "partitions": 8,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "baseline": {
+        "block_m": 16,
+        "columns": 64,
+        "threads": 128,
+        "stages": 1,
+        "packed_copy": true,
+        "mma_dtype": "float8_e4m3fn",
+        "implementation": "linear.pipeline:reference"
+      },
+      "baseline_seconds": 7.23200011998415e-06,
+      "candidates": [
+        {
+          "id": "21d9dea86604291d9530",
+          "schedule": {
+            "block_m": 16,
+            "columns": 64,
+            "threads": 128,
+            "stages": 1,
+            "packed_copy": true,
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "linear.pipeline:reference",
+            "mma_orientation": "weight"
+          },
+          "normalized_rms": 0.00025679200189188123,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 7.23200011998415e-06,
+          "samples": [
+            7.23200011998415e-06,
+            7.23200011998415e-06,
+            7.199999876320362e-06,
+            7.040000054985285e-06,
+            8.096000179648399e-06,
+            7.424000184983015e-06,
+            7.071999832987786e-06
+          ]
+        }
+      ],
+      "winner": {
+        "id": "21d9dea86604291d9530",
+        "schedule": {
+          "block_m": 16,
+          "columns": 64,
+          "threads": 128,
+          "stages": 1,
+          "packed_copy": true,
+          "mma_dtype": "float8_e4m3fn",
+          "implementation": "linear.pipeline:reference",
+          "mma_orientation": "weight"
+        },
+        "normalized_rms": 0.00025679200189188123,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 7.23200011998415e-06,
+        "samples": [
+          7.23200011998415e-06,
+          7.23200011998415e-06,
+          7.199999876320362e-06,
+          7.040000054985285e-06,
+          8.096000179648399e-06,
+          7.424000184983015e-06,
+          7.071999832987786e-06
+        ]
+      }
+    },
+    {
+      "id": "decode-b16-3199ca432c77e3e00b73b6c0",
+      "phase": "decode",
+      "batch": 16,
+      "chunk": 1,
+      "key": "3199ca432c77e3e00b73b6c0",
+      "kind": "projection_partial",
+      "parameters": {
+        "r": 16,
+        "k": 2048,
+        "o": 11776,
+        "input_dtype": "float32",
+        "partitions": 1,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "baseline": {
+        "block_m": 64,
+        "columns": 128,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true,
+        "mma_dtype": "float8_e4m3fn",
+        "implementation": "linear.pipeline:reference"
+      },
+      "baseline_seconds": 1.9680000841617586e-05,
+      "candidates": [
+        {
+          "id": "944fcc68153ecedada12",
+          "schedule": {
+            "block_m": 64,
+            "columns": 128,
+            "threads": 128,
+            "stages": 2,
+            "packed_copy": true,
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "linear.pipeline:reference",
+            "mma_orientation": "weight"
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 1.948799937963486e-05,
+          "samples": [
+            1.9551999866962432e-05,
+            1.9231999292969705e-05,
+            2.0959999412298203e-05,
+            1.9071999937295912e-05,
+            1.9295999780297278e-05,
+            1.948799937963486e-05,
+            1.9680000841617586e-05
+          ]
+        }
+      ],
+      "winner": {
+        "id": "944fcc68153ecedada12",
+        "schedule": {
+          "block_m": 64,
+          "columns": 128,
+          "threads": 128,
+          "stages": 2,
+          "packed_copy": true,
+          "mma_dtype": "float8_e4m3fn",
+          "implementation": "linear.pipeline:reference",
+          "mma_orientation": "weight"
+        },
+        "normalized_rms": 0.0,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 1.948799937963486e-05,
+        "samples": [
+          1.9551999866962432e-05,
+          1.9231999292969705e-05,
+          2.0959999412298203e-05,
+          1.9071999937295912e-05,
+          1.9295999780297278e-05,
+          1.948799937963486e-05,
+          1.9680000841617586e-05
+        ]
+      }
+    },
+    {
+      "id": "decode-b16-2d16b61ab1605842d13c661a",
+      "phase": "decode",
+      "batch": 16,
+      "chunk": 1,
+      "key": "2d16b61ab1605842d13c661a",
+      "kind": "projection_partial",
+      "parameters": {
+        "r": 16,
+        "k": 11776,
+        "o": 2048,
+        "input_dtype": "float32",
+        "partitions": 1,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "baseline": {
+        "block_m": 64,
+        "columns": 128,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true,
+        "mma_dtype": "float8_e4m3fn",
+        "implementation": "linear.pipeline:reference"
+      },
+      "baseline_seconds": 7.580800354480744e-05,
+      "candidates": [
+        {
+          "id": "a1fa2d80c8c3f1ae4c90",
+          "schedule": {
+            "block_m": 64,
+            "columns": 128,
+            "threads": 128,
+            "stages": 2,
+            "packed_copy": true,
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "linear.pipeline:reference",
+            "mma_orientation": "weight"
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 6.84479996562004e-05,
+          "samples": [
+            6.867200136184692e-05,
+            6.854400038719177e-05,
+            6.854400038719177e-05,
+            6.84479996562004e-05,
+            6.835199892520904e-05,
+            6.803199648857117e-05,
+            6.777600198984146e-05
+          ]
+        }
+      ],
+      "winner": {
+        "id": "a1fa2d80c8c3f1ae4c90",
+        "schedule": {
+          "block_m": 64,
+          "columns": 128,
+          "threads": 128,
+          "stages": 2,
+          "packed_copy": true,
+          "mma_dtype": "float8_e4m3fn",
+          "implementation": "linear.pipeline:reference",
+          "mma_orientation": "weight"
+        },
+        "normalized_rms": 0.0,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 6.84479996562004e-05,
+        "samples": [
+          6.867200136184692e-05,
+          6.854400038719177e-05,
+          6.854400038719177e-05,
+          6.84479996562004e-05,
+          6.835199892520904e-05,
+          6.803199648857117e-05,
+          6.777600198984146e-05
+        ]
+      }
+    },
+    {
+      "id": "decode-b16-386bc82b9e6093dfdb5bbb34",
+      "phase": "decode",
+      "batch": 16,
+      "chunk": 1,
+      "key": "386bc82b9e6093dfdb5bbb34",
+      "kind": "projection_partial",
+      "parameters": {
+        "r": 16,
+        "k": 2048,
+        "o": 2048,
+        "input_dtype": "float32",
+        "partitions": 1,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "baseline": {
+        "block_m": 64,
+        "columns": 128,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true,
+        "mma_dtype": "float8_e4m3fn",
+        "implementation": "linear.pipeline:reference"
+      },
+      "baseline_seconds": 1.6383999958634378e-05,
+      "candidates": [
+        {
+          "id": "f6484e9d2756cd0dfc6a",
+          "schedule": {
+            "block_m": 64,
+            "columns": 128,
+            "threads": 128,
+            "stages": 2,
+            "packed_copy": true,
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "linear.pipeline:reference",
+            "mma_orientation": "weight"
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 1.5231999568641186e-05,
+          "samples": [
+            1.5263999812304975e-05,
+            1.5584000386297702e-05,
+            1.5104000456631184e-05,
+            1.5231999568641186e-05,
+            1.5039999969303607e-05,
+            1.5072000212967396e-05,
+            1.5263999812304975e-05
+          ]
+        }
+      ],
+      "winner": {
+        "id": "f6484e9d2756cd0dfc6a",
+        "schedule": {
+          "block_m": 64,
+          "columns": 128,
+          "threads": 128,
+          "stages": 2,
+          "packed_copy": true,
+          "mma_dtype": "float8_e4m3fn",
+          "implementation": "linear.pipeline:reference",
+          "mma_orientation": "weight"
+        },
+        "normalized_rms": 0.0,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 1.5231999568641186e-05,
+        "samples": [
+          1.5263999812304975e-05,
+          1.5584000386297702e-05,
+          1.5104000456631184e-05,
+          1.5231999568641186e-05,
+          1.5039999969303607e-05,
+          1.5072000212967396e-05,
+          1.5263999812304975e-05
+        ]
+      }
+    },
+    {
+      "id": "decode-b16-f5156b9678a8da2df9f83736",
+      "phase": "decode",
+      "batch": 16,
+      "chunk": 1,
+      "key": "f5156b9678a8da2df9f83736",
+      "kind": "projection_partial",
+      "parameters": {
+        "r": 16,
+        "k": 2048,
+        "o": 512,
+        "input_dtype": "float32",
+        "partitions": 1,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "baseline": {
+        "block_m": 64,
+        "columns": 128,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true,
+        "mma_dtype": "float8_e4m3fn",
+        "implementation": "linear.pipeline:reference"
+      },
+      "baseline_seconds": 1.644800044596195e-05,
+      "candidates": [
+        {
+          "id": "46b534b43b7db18923d2",
+          "schedule": {
+            "block_m": 64,
+            "columns": 128,
+            "threads": 128,
+            "stages": 2,
+            "packed_copy": true,
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "linear.pipeline:reference",
+            "mma_orientation": "weight"
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 1.4655999839305878e-05,
+          "samples": [
+            1.4655999839305878e-05,
+            1.4816000126302242e-05,
+            1.4783999882638455e-05,
+            1.4431999996304512e-05,
+            1.44640002399683e-05,
+            1.5647999942302704e-05,
+            1.4655999839305878e-05
+          ]
+        }
+      ],
+      "winner": {
+        "id": "46b534b43b7db18923d2",
+        "schedule": {
+          "block_m": 64,
+          "columns": 128,
+          "threads": 128,
+          "stages": 2,
+          "packed_copy": true,
+          "mma_dtype": "float8_e4m3fn",
+          "implementation": "linear.pipeline:reference",
+          "mma_orientation": "weight"
+        },
+        "normalized_rms": 0.0,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 1.4655999839305878e-05,
+        "samples": [
+          1.4655999839305878e-05,
+          1.4816000126302242e-05,
+          1.4783999882638455e-05,
+          1.4431999996304512e-05,
+          1.44640002399683e-05,
+          1.5647999942302704e-05,
+          1.4655999839305878e-05
+        ]
+      }
+    },
+    {
+      "id": "decode-b64-7e2de8b417f2797bb2d4977c",
+      "phase": "decode",
+      "batch": 64,
+      "chunk": 1,
+      "key": "7e2de8b417f2797bb2d4977c",
+      "kind": "projection_partial",
+      "parameters": {
+        "r": 64,
+        "k": 2048,
+        "o": 11776,
+        "input_dtype": "float32",
+        "partitions": 1,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "baseline": {
+        "block_m": 64,
+        "columns": 128,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true,
+        "mma_dtype": "float8_e4m3fn",
+        "implementation": "linear.pipeline:reference"
+      },
+      "baseline_seconds": 1.9936000928282736e-05,
+      "candidates": [
+        {
+          "id": "c4dc5b1b28714044a665",
+          "schedule": {
+            "block_m": 64,
+            "columns": 128,
+            "threads": 128,
+            "stages": 2,
+            "packed_copy": true,
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "linear.pipeline:reference",
+            "mma_orientation": "weight"
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 1.948799937963486e-05,
+          "samples": [
+            2.006400004029274e-05,
+            1.9392000511288643e-05,
+            1.9263999536633493e-05,
+            1.948799937963486e-05,
+            1.961600035429001e-05,
+            1.942400075495243e-05,
+            1.9680000841617586e-05
+          ]
+        }
+      ],
+      "winner": {
+        "id": "c4dc5b1b28714044a665",
+        "schedule": {
+          "block_m": 64,
+          "columns": 128,
+          "threads": 128,
+          "stages": 2,
+          "packed_copy": true,
+          "mma_dtype": "float8_e4m3fn",
+          "implementation": "linear.pipeline:reference",
+          "mma_orientation": "weight"
+        },
+        "normalized_rms": 0.0,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 1.948799937963486e-05,
+        "samples": [
+          2.006400004029274e-05,
+          1.9392000511288643e-05,
+          1.9263999536633493e-05,
+          1.948799937963486e-05,
+          1.961600035429001e-05,
+          1.942400075495243e-05,
+          1.9680000841617586e-05
+        ]
+      }
+    },
+    {
+      "id": "decode-b64-4e2ca0ababb92cd41b4f9927",
+      "phase": "decode",
+      "batch": 64,
+      "chunk": 1,
+      "key": "4e2ca0ababb92cd41b4f9927",
+      "kind": "projection_partial",
+      "parameters": {
+        "r": 64,
+        "k": 11776,
+        "o": 2048,
+        "input_dtype": "float32",
+        "partitions": 1,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "baseline": {
+        "block_m": 64,
+        "columns": 128,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true,
+        "mma_dtype": "float8_e4m3fn",
+        "implementation": "linear.pipeline:reference"
+      },
+      "baseline_seconds": 5.955199897289276e-05,
+      "candidates": [
+        {
+          "id": "b6aec5d72968573042e6",
+          "schedule": {
+            "block_m": 64,
+            "columns": 128,
+            "threads": 128,
+            "stages": 2,
+            "packed_copy": true,
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "linear.pipeline:reference",
+            "mma_orientation": "weight"
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 5.910399928689003e-05,
+          "samples": [
+            5.872000008821488e-05,
+            5.89120015501976e-05,
+            6.0256000608205794e-05,
+            5.958399921655655e-05,
+            5.910399928689003e-05,
+            5.888000130653381e-05,
+            5.910399928689003e-05
+          ]
+        }
+      ],
+      "winner": {
+        "id": "b6aec5d72968573042e6",
+        "schedule": {
+          "block_m": 64,
+          "columns": 128,
+          "threads": 128,
+          "stages": 2,
+          "packed_copy": true,
+          "mma_dtype": "float8_e4m3fn",
+          "implementation": "linear.pipeline:reference",
+          "mma_orientation": "weight"
+        },
+        "normalized_rms": 0.0,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 5.910399928689003e-05,
+        "samples": [
+          5.872000008821488e-05,
+          5.89120015501976e-05,
+          6.0256000608205794e-05,
+          5.958399921655655e-05,
+          5.910399928689003e-05,
+          5.888000130653381e-05,
+          5.910399928689003e-05
+        ]
+      }
+    },
+    {
+      "id": "decode-b64-34c681ef4ffa7c00f66c01de",
+      "phase": "decode",
+      "batch": 64,
+      "chunk": 1,
+      "key": "34c681ef4ffa7c00f66c01de",
+      "kind": "projection_partial",
+      "parameters": {
+        "r": 64,
+        "k": 2048,
+        "o": 2048,
+        "input_dtype": "float32",
+        "partitions": 1,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "baseline": {
+        "block_m": 64,
+        "columns": 128,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true,
+        "mma_dtype": "float8_e4m3fn",
+        "implementation": "linear.pipeline:reference"
+      },
+      "baseline_seconds": 1.5744000673294066e-05,
+      "candidates": [
+        {
+          "id": "fb15097a4acf8dc17bd8",
+          "schedule": {
+            "block_m": 64,
+            "columns": 128,
+            "threads": 128,
+            "stages": 2,
+            "packed_copy": true,
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "linear.pipeline:reference",
+            "mma_orientation": "weight"
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 1.571200042963028e-05,
+          "samples": [
+            1.548799965530634e-05,
+            1.571200042963028e-05,
+            1.651199907064438e-05,
+            1.5584000386297702e-05,
+            1.5744000673294066e-05,
+            1.5584000386297702e-05,
+            1.5776000916957854e-05
+          ]
+        }
+      ],
+      "winner": {
+        "id": "fb15097a4acf8dc17bd8",
+        "schedule": {
+          "block_m": 64,
+          "columns": 128,
+          "threads": 128,
+          "stages": 2,
+          "packed_copy": true,
+          "mma_dtype": "float8_e4m3fn",
+          "implementation": "linear.pipeline:reference",
+          "mma_orientation": "weight"
+        },
+        "normalized_rms": 0.0,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 1.571200042963028e-05,
+        "samples": [
+          1.548799965530634e-05,
+          1.571200042963028e-05,
+          1.651199907064438e-05,
+          1.5584000386297702e-05,
+          1.5744000673294066e-05,
+          1.5584000386297702e-05,
+          1.5776000916957854e-05
+        ]
+      }
+    },
+    {
+      "id": "decode-b64-9fa43121493ad554c0c71b18",
+      "phase": "decode",
+      "batch": 64,
+      "chunk": 1,
+      "key": "9fa43121493ad554c0c71b18",
+      "kind": "projection_partial",
+      "parameters": {
+        "r": 64,
+        "k": 2048,
+        "o": 512,
+        "input_dtype": "float32",
+        "partitions": 1,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "baseline": {
+        "block_m": 64,
+        "columns": 128,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true,
+        "mma_dtype": "float8_e4m3fn",
+        "implementation": "linear.pipeline:reference"
+      },
+      "baseline_seconds": 1.5104000456631184e-05,
+      "candidates": [
+        {
+          "id": "0aed2feeeda5b8577e5a",
+          "schedule": {
+            "block_m": 64,
+            "columns": 128,
+            "threads": 128,
+            "stages": 2,
+            "packed_copy": true,
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "linear.pipeline:reference",
+            "mma_orientation": "weight"
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 1.5072000212967396e-05,
+          "samples": [
+            1.484800036996603e-05,
+            1.5039999969303607e-05,
+            1.5328000299632548e-05,
+            1.5072000212967396e-05,
+            1.4879999682307244e-05,
+            1.5231999568641186e-05,
+            1.5104000456631184e-05
+          ]
+        }
+      ],
+      "winner": {
+        "id": "0aed2feeeda5b8577e5a",
+        "schedule": {
+          "block_m": 64,
+          "columns": 128,
+          "threads": 128,
+          "stages": 2,
+          "packed_copy": true,
+          "mma_dtype": "float8_e4m3fn",
+          "implementation": "linear.pipeline:reference",
+          "mma_orientation": "weight"
+        },
+        "normalized_rms": 0.0,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 1.5072000212967396e-05,
+        "samples": [
+          1.484800036996603e-05,
+          1.5039999969303607e-05,
+          1.5328000299632548e-05,
+          1.5072000212967396e-05,
+          1.4879999682307244e-05,
+          1.5231999568641186e-05,
+          1.5104000456631184e-05
+        ]
+      }
+    },
+    {
+      "id": "decode-b256-aca788fc61034ec068d5560d",
+      "phase": "decode",
+      "batch": 256,
+      "chunk": 1,
+      "key": "aca788fc61034ec068d5560d",
+      "kind": "projection_partial",
+      "parameters": {
+        "r": 256,
+        "k": 2048,
+        "o": 11776,
+        "input_dtype": "float32",
+        "partitions": 1,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "baseline": {
+        "block_m": 64,
+        "columns": 128,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true,
+        "mma_dtype": "float8_e4m3fn",
+        "implementation": "linear.pipeline:reference"
+      },
+      "baseline_seconds": 3.6416001617908476e-05,
+      "candidates": [
+        {
+          "id": "c0a7c693b0c7cc018358",
+          "schedule": {
+            "block_m": 64,
+            "columns": 128,
+            "threads": 128,
+            "stages": 2,
+            "packed_copy": true,
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "linear.pipeline:reference",
+            "mma_orientation": "weight"
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 3.395200148224831e-05,
+          "samples": [
+            3.4015998244285585e-05,
+            3.436800092458725e-05,
+            3.193600103259086e-05,
+            3.4304000437259674e-05,
+            3.395200148224831e-05,
+            3.376000002026558e-05,
+            3.388800099492073e-05
+          ]
+        }
+      ],
+      "winner": {
+        "id": "c0a7c693b0c7cc018358",
+        "schedule": {
+          "block_m": 64,
+          "columns": 128,
+          "threads": 128,
+          "stages": 2,
+          "packed_copy": true,
+          "mma_dtype": "float8_e4m3fn",
+          "implementation": "linear.pipeline:reference",
+          "mma_orientation": "weight"
+        },
+        "normalized_rms": 0.0,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 3.395200148224831e-05,
+        "samples": [
+          3.4015998244285585e-05,
+          3.436800092458725e-05,
+          3.193600103259086e-05,
+          3.4304000437259674e-05,
+          3.395200148224831e-05,
+          3.376000002026558e-05,
+          3.388800099492073e-05
+        ]
+      }
+    },
+    {
+      "id": "decode-b256-0b295746a0356f2f038ef36d",
+      "phase": "decode",
+      "batch": 256,
+      "chunk": 1,
+      "key": "0b295746a0356f2f038ef36d",
+      "kind": "projection_partial",
+      "parameters": {
+        "r": 256,
+        "k": 11776,
+        "o": 2048,
+        "input_dtype": "float32",
+        "partitions": 1,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "baseline": {
+        "block_m": 64,
+        "columns": 128,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true,
+        "mma_dtype": "float8_e4m3fn",
+        "implementation": "linear.pipeline:reference"
+      },
+      "baseline_seconds": 5.907199904322624e-05,
+      "candidates": [
+        {
+          "id": "fe79f14b3d57bbd99697",
+          "schedule": {
+            "block_m": 64,
+            "columns": 128,
+            "threads": 128,
+            "stages": 2,
+            "packed_copy": true,
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "linear.pipeline:reference",
+            "mma_orientation": "weight"
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 5.7631999254226684e-05,
+          "samples": [
+            5.7599999010562895e-05,
+            5.7631999254226684e-05,
+            5.8816000819206235e-05,
+            5.872000008821488e-05,
+            5.744000151753426e-05,
+            5.753599852323532e-05,
+            5.89120015501976e-05
+          ]
+        }
+      ],
+      "winner": {
+        "id": "fe79f14b3d57bbd99697",
+        "schedule": {
+          "block_m": 64,
+          "columns": 128,
+          "threads": 128,
+          "stages": 2,
+          "packed_copy": true,
+          "mma_dtype": "float8_e4m3fn",
+          "implementation": "linear.pipeline:reference",
+          "mma_orientation": "weight"
+        },
+        "normalized_rms": 0.0,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 5.7631999254226684e-05,
+        "samples": [
+          5.7599999010562895e-05,
+          5.7631999254226684e-05,
+          5.8816000819206235e-05,
+          5.872000008821488e-05,
+          5.744000151753426e-05,
+          5.753599852323532e-05,
+          5.89120015501976e-05
+        ]
+      }
+    },
+    {
+      "id": "decode-b256-354e931498985ca6c81901b3",
+      "phase": "decode",
+      "batch": 256,
+      "chunk": 1,
+      "key": "354e931498985ca6c81901b3",
+      "kind": "projection_partial",
+      "parameters": {
+        "r": 256,
+        "k": 2048,
+        "o": 2048,
+        "input_dtype": "float32",
+        "partitions": 1,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "baseline": {
+        "block_m": 64,
+        "columns": 128,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true,
+        "mma_dtype": "float8_e4m3fn",
+        "implementation": "linear.pipeline:reference"
+      },
+      "baseline_seconds": 1.5744000673294066e-05,
+      "candidates": [
+        {
+          "id": "c923ae42cc25933e9f4b",
+          "schedule": {
+            "block_m": 64,
+            "columns": 128,
+            "threads": 128,
+            "stages": 2,
+            "packed_copy": true,
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "linear.pipeline:reference",
+            "mma_orientation": "weight"
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 1.5776000916957854e-05,
+          "samples": [
+            1.5552000142633914e-05,
+            1.696000061929226e-05,
+            1.5584000386297702e-05,
+            1.596800051629543e-05,
+            1.5776000916957854e-05,
+            1.5807999297976493e-05,
+            1.5647999942302704e-05
+          ]
+        }
+      ],
+      "winner": {
+        "id": "c923ae42cc25933e9f4b",
+        "schedule": {
+          "block_m": 64,
+          "columns": 128,
+          "threads": 128,
+          "stages": 2,
+          "packed_copy": true,
+          "mma_dtype": "float8_e4m3fn",
+          "implementation": "linear.pipeline:reference",
+          "mma_orientation": "weight"
+        },
+        "normalized_rms": 0.0,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 1.5776000916957854e-05,
+        "samples": [
+          1.5552000142633914e-05,
+          1.696000061929226e-05,
+          1.5584000386297702e-05,
+          1.596800051629543e-05,
+          1.5776000916957854e-05,
+          1.5807999297976493e-05,
+          1.5647999942302704e-05
+        ]
+      }
+    },
+    {
+      "id": "decode-b256-b58c2386f6f35759f900b56a",
+      "phase": "decode",
+      "batch": 256,
+      "chunk": 1,
+      "key": "b58c2386f6f35759f900b56a",
+      "kind": "projection_partial",
+      "parameters": {
+        "r": 256,
+        "k": 2048,
+        "o": 512,
+        "input_dtype": "float32",
+        "partitions": 1,
+        "columns": 128,
+        "block_m": 32,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true
+      },
+      "baseline": {
+        "block_m": 64,
+        "columns": 128,
+        "threads": 256,
+        "stages": 2,
+        "packed_copy": true,
+        "mma_dtype": "float8_e4m3fn",
+        "implementation": "linear.pipeline:reference"
+      },
+      "baseline_seconds": 1.5456000342965127e-05,
+      "candidates": [
+        {
+          "id": "79735c0148f286c59c0c",
+          "schedule": {
+            "block_m": 64,
+            "columns": 128,
+            "threads": 128,
+            "stages": 2,
+            "packed_copy": true,
+            "mma_dtype": "float8_e4m3fn",
+            "implementation": "linear.pipeline:reference",
+            "mma_orientation": "weight"
+          },
+          "normalized_rms": 0.0,
+          "correct": true,
+          "compiler_options": {},
+          "seconds": 1.535999961197376e-05,
+          "samples": [
+            1.548799965530634e-05,
+            1.548799965530634e-05,
+            1.535999961197376e-05,
+            1.5231999568641186e-05,
+            1.5615999698638916e-05,
+            1.5200000256299973e-05,
+            1.5296000055968763e-05
+          ]
+        }
+      ],
+      "winner": {
+        "id": "79735c0148f286c59c0c",
+        "schedule": {
+          "block_m": 64,
+          "columns": 128,
+          "threads": 128,
+          "stages": 2,
+          "packed_copy": true,
+          "mma_dtype": "float8_e4m3fn",
+          "implementation": "linear.pipeline:reference",
+          "mma_orientation": "weight"
+        },
+        "normalized_rms": 0.0,
+        "correct": true,
+        "compiler_options": {},
+        "seconds": 1.535999961197376e-05,
+        "samples": [
+          1.548799965530634e-05,
+          1.548799965530634e-05,
+          1.535999961197376e-05,
+          1.5231999568641186e-05,
+          1.5615999698638916e-05,
+          1.5200000256299973e-05,
+          1.5296000055968763e-05
+        ]
+      }
+    }
+  ],
+  "device": {
+    "ordinal": 0,
+    "name": "NVIDIA H200",
+    "arch": "sm_90",
+    "provider": "cuda"
+  }
+}
