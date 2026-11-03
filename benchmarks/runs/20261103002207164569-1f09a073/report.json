@@ -1,0 +1,31 @@
+{
+  "metadata": {
+    "runtime": "akas",
+    "purpose": "existing-program-verification",
+    "model": "LiquidAI/LFM2.5-24B-A2B-FP8",
+    "provider": "cuda",
+    "target": "sm_90a",
+    "weight_format": "fp8",
+    "kv_dtype": "float16",
+    "mode": "ar",
+    "protocol": "verification-only-v1",
+    "verified_run_id": "20261102230421074409-17a02c7a",
+    "program": "builtin-measured-225932",
+    "program_sha256": "17a04c41579da4c2c24224a22af9774fc39ae3817f8a9cd3beb6414fc504e9ab",
+    "checkpoint_sha256": "dff2336439834c4ce4e2c6f0f7b6cd829987f7e9d57ec8074354e0b2cacb2830",
+    "tuning": false,
+    "compilation": false,
+    "acceptance": "Unchanged operation-owned references and comparators; existing model evaluator checks complete measured greedy outputs, slot reuse and finite diagnostics; retained independent BOS/chat first-token checks.",
+    "device": {
+      "ordinal": 0,
+      "name": "NVIDIA H200",
+      "arch": "sm_90",
+      "provider": "cuda"
+    },
+    "error": "AssertionError: \nNot equal to tolerance rtol=0.0002, atol=2e-05\n\nMismatched elements: 25 / 4194304 (0.000596%)\nFirst 5 mismatches are at indices:\n [497282]: -0.008658475242555141 (ACTUAL), -0.00863603688776493 (DESIRED)\n [514721]: -0.0005178417777642608 (ACTUAL), -0.0004911966389045119 (DESIRED)\n [994082]: -0.003135132370516658 (ACTUAL), -0.003155994229018688 (DESIRED)\n [1031841]: -0.010291856713593006 (ACTUAL), -0.01031541172415018 (DESIRED)\n [1256834]: 0.005120544694364071 (ACTUAL), 0.005094644147902727 (DESIRED)\nMax absolute difference among violations: 4.1106716e-05\nMax relative difference among violations: 0.05424536\n ACTUAL: array([-0.137442,  0.061838, -0.054706, ..., -0.007558, -0.341488,\n        0.138699], shape=(4194304,), dtype=float32)\n DESIRED: array([-0.137442,  0.061838, -0.054706, ..., -0.007558, -0.341488,\n        0.138699], shape=(4194304,), dtype=float32)",
+    "traceback": "Traceback (most recent call last):\n  File \"/root/verify_existing_program.py\", line 88, in verify\n    for start in range(0,a.size,4194304):np.testing.assert_allclose(a[start:start+4194304],e[start:start+4194304],rtol=case.rtol,atol=case.atol,equal_nan=False)\n                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/numpy/testing/_private/utils.py\", line 1780, in assert_allclose\n    assert_array_compare(compare, actual, desired, err_msg=str(err_msg),\n  File \"/usr/local/lib/python3.12/site-packages/numpy/testing/_private/utils.py\", line 988, in assert_array_compare\n    raise AssertionError(msg)\nAssertionError: \nNot equal to tolerance rtol=0.0002, atol=2e-05\n\nMismatched elements: 25 / 4194304 (0.000596%)\nFirst 5 mismatches are at indices:\n [497282]: -0.008658475242555141 (ACTUAL), -0.00863603688776493 (DESIRED)\n [514721]: -0.0005178417777642608 (ACTUAL), -0.0004911966389045119 (DESIRED)\n [994082]: -0.003135132370516658 (ACTUAL), -0.003155994229018688 (DESIRED)\n [1031841]: -0.010291856713593006 (ACTUAL), -0.01031541172415018 (DESIRED)\n [1256834]: 0.005120544694364071 (ACTUAL), 0.005094644147902727 (DESIRED)\nMax absolute difference among violations: 4.1106716e-05\nMax relative difference among violations: 0.05424536\n ACTUAL: array([-0.137442,  0.061838, -0.054706, ..., -0.007558, -0.341488,\n        0.138699], shape=(4194304,), dtype=float32)\n DESIRED: array([-0.137442,  0.061838, -0.054706, ..., -0.007558, -0.341488,\n        0.138699], shape=(4194304,), dtype=float32)\n",
+    "qualification_status": "failed",
+    "elapsed_seconds": 283.971503905
+  },
+  "results": []
+}
