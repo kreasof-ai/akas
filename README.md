@@ -1,16 +1,26 @@
 <p align="center">
-  <img src="logo/logo-black.svg#gh-light-mode-only" alt="Tensor" width="420">
-  <img src="logo/logo-white.svg#gh-dark-mode-only" alt="Tensor" width="420">
+  <img src="logo/logo-black.svg#gh-light-mode-only" alt="AKAS" width="420">
+  <img src="logo/logo-white.svg#gh-dark-mode-only" alt="AKAS" width="420">
 </p>
 
 <h1 align="center">Compiler-first model inference.</h1>
+
+<p align="center">
+  <a href="https://deepwiki.com/kreasof-ai/akas"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="MIT License"></a>
+  <a href="https://kreasof.my.id/projects/tensor"><img alt="Documentation" src="https://img.shields.io/website/http/kreasof.my.id/projects/akas.svg?down_color=red&down_message=offline&up_message=online"></a>
+</p>
+
 
 <p align="center">
   Compose models in pure Python, fuse a whole model at compile time. <br> 
   Serve AOT-compiled .tbin programs without PyTorch or TileLang at runtime.
 </p>
 
----
+<p align="center">
+  <code>Model Graph</code> → <code>Graph Compiler</code> → <code>akas optimize</code> → <code>akas serve</code>
+</p>
+
 
 AKAS is an inference engine built on [Tensor](https://github.com/kreasof-ai/tensor).
 It owns model definitions, checkpoint loading, request scheduling, persistent state,
