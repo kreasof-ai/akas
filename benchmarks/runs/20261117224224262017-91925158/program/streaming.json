@@ -1,0 +1,128 @@
+{
+  "schema": "akas.zonos3-streaming.v1",
+  "provider": "cuda",
+  "pool": 256,
+  "context": 512,
+  "prefill_chunk": 64,
+  "phases": {
+    "prefill": {
+      "1": {
+        "slots": 1,
+        "chunk": 64,
+        "directory": "lm-pre-s1-c64",
+        "sha256": "c13cfc190a5fe5167f0fef19658e7ccd98f79ef9671d8c54ca7e467682265d7f"
+      },
+      "4": {
+        "slots": 4,
+        "chunk": 64,
+        "directory": "lm-pre-s4-c64",
+        "sha256": "e1fe820036b71074de3dabd05aa97032fb43aaa06b4450086ceaa4325fb755c8"
+      },
+      "16": {
+        "slots": 16,
+        "chunk": 64,
+        "directory": "lm-pre-s16-c64",
+        "sha256": "cffb6681fbf95818981a0759f89f2dcc39d6351d4a92f5a47e6f72f5041fd4d6"
+      }
+    },
+    "decode": {
+      "1": {
+        "slots": 1,
+        "chunk": 1,
+        "directory": "lm-dec-s1",
+        "sha256": "56968dc683297051610d324474b52c58fcc98267ffdb0b15c4af8c78aaf96d03"
+      },
+      "4": {
+        "slots": 4,
+        "chunk": 1,
+        "directory": "lm-dec-s4",
+        "sha256": "ff6ceaba1b412c487aa9596818c8c508578a7739a7419bd86d7facb37a5e103e"
+      },
+      "16": {
+        "slots": 16,
+        "chunk": 1,
+        "directory": "lm-dec-s16",
+        "sha256": "591a1048ddace7b8b894f9fc2de6a0b42f8a0dec68cb21e49fa9c0322e17d85d"
+      },
+      "64": {
+        "slots": 64,
+        "chunk": 1,
+        "directory": "lm-dec-s64",
+        "sha256": "64f1485adea13a1c08f22c4204e87484cb2262ffbb9032ce66091727f8ac14f1"
+      },
+      "256": {
+        "slots": 256,
+        "chunk": 1,
+        "directory": "lm-dec-s256",
+        "sha256": "c6034f9f9b687fb914f27922525e79ac9669a8c36d17e81e96370283d4796c9d"
+      }
+    },
+    "codec": {
+      "1": {
+        "1": {
+          "slots": 1,
+          "frames": 1,
+          "directory": "codec-s1-f1",
+          "sha256": "1fb322136711d3181346b7acc94242a826970c8315e285fc2132987b51ab302b"
+        },
+        "4": {
+          "slots": 4,
+          "frames": 1,
+          "directory": "codec-s4-f1",
+          "sha256": "c0a421bc6fc127f00b3d19e7532fc59dedd868fa417d8d5fda9ca42a544da86a"
+        },
+        "16": {
+          "slots": 16,
+          "frames": 1,
+          "directory": "codec-s16-f1",
+          "sha256": "b08d630127786322977278b1d6675f2c560aad85bd59e096cab64a94ec9114bc"
+        }
+      },
+      "4": {
+        "1": {
+          "slots": 1,
+          "frames": 4,
+          "directory": "codec-s1-f4",
+          "sha256": "94cedb60000751a8f06870d0d872b77f02a74d0da332b392bdf49a28ee412957"
+        },
+        "4": {
+          "slots": 4,
+          "frames": 4,
+          "directory": "codec-s4-f4",
+          "sha256": "f01277ed116d431bd2683179c47f636b621362b96e5e1e0d265868d0845ce6cb"
+        },
+        "16": {
+          "slots": 16,
+          "frames": 4,
+          "directory": "codec-s16-f4",
+          "sha256": "4a8c8923c3d46a31d42aa6cbcabe1a9d3466cdef0aea8a751b081e6ff886d1dc"
+        }
+      },
+      "15": {
+        "1": {
+          "slots": 1,
+          "frames": 15,
+          "directory": "codec-s1-f15",
+          "sha256": "8d7ef39eff75d241e3b92da0c28fd4d1f6a8cbdcc01189248bfeae20f7b8811c"
+        },
+        "4": {
+          "slots": 4,
+          "frames": 15,
+          "directory": "codec-s4-f15",
+          "sha256": "5a7e3e9687d19539e643b95960c1646157f8dd3d30342933d2c4ccbdfbce2d55"
+        },
+        "16": {
+          "slots": 16,
+          "frames": 15,
+          "directory": "codec-s16-f15",
+          "sha256": "1ae7ee460a327de2dc7148e90702ed683b05be69c98adccd4c890004c49893c8"
+        }
+      }
+    },
+    "reset": {
+      "slots": 16,
+      "directory": "reset",
+      "sha256": "4e02f465b93f916435bad6d23e7868a9c05e3f4602ac2d142b3a8c1ee1279ad5"
+    }
+  }
+}

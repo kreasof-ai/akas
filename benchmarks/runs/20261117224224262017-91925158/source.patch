@@ -1,0 +1,2481 @@
+diff --git a/src/akas/benchmarking/history.py b/src/akas/benchmarking/history.py
+index ddab98b6..5c3243e1 100644
+--- a/src/akas/benchmarking/history.py
++++ b/src/akas/benchmarking/history.py
+@@ -79,7 +79,7 @@ def source_identity(root):
+         if not name or name.startswith("benchmarks/") or ".ipynb_checkpoints" in name:
+             continue
+         if revision is not None and not (
+-            name.startswith(("src/", "tools/", "tests/", "examples/"))
++            name.startswith(("src/", "tools/", "tests/", "examples/", "model/", "servers/"))
+             or name in ("pyproject.toml", "uv.lock", "MANIFEST.in")
+             or ("/" not in name and name.endswith(".py"))
+         ):
+@@ -103,7 +103,7 @@ def source_identity(root):
+ def shapes(report):
+     """Keep total-output and legacy additional-decode accounting distinguishable."""
+     protocol = report["metadata"].get("protocol")
+-    if protocol == "client-speech-pcm-v1":
++    if protocol in ("client-speech-pcm-v1", "client-speech-pcm-stream-v1"):
+         return []
+     result = []
+     for row in report["results"]:
+@@ -387,7 +387,10 @@ class Recorder:
+         self.record["workload"] = dict(
+             id="standard-v1" if standard else "custom", shapes=observed
+         )
+-        if report["metadata"].get("protocol") == "client-speech-pcm-v1":
++        if report["metadata"].get("protocol") in (
++            "client-speech-pcm-v1",
++            "client-speech-pcm-stream-v1",
++        ):
+             self.record["workload"].update(report["metadata"]["speech_workload"])
+         if standard:
+             self.record["workload"]["definition"] = STANDARD
+diff --git a/src/akas/models/zonos3/config.py b/src/akas/models/zonos3/config.py
+index 5dac054f..9abe9842 100644
+--- a/src/akas/models/zonos3/config.py
++++ b/src/akas/models/zonos3/config.py
+@@ -72,6 +72,8 @@ class Zonos3MiniConfig:
+     experts_per_row: int
+     expert_width: int
+     latent_width: int
++    condition_buckets: tuple[int, ...] = ()
++    router_norm: bool = False
+ 
+     codebooks = 10
+     codes = 4096
+@@ -151,3 +153,63 @@ class Zonos3MiniConfig:
+         ):
+             raise ValueError("unsupported ZONOS3 attention or expert geometry")
+         return config
++
++    @classmethod
++    def from_zonos3(cls, metadata):
++        """Parse native ZONOS3-Mini params.json model geometry."""
++        model = metadata.get("model", metadata) if isinstance(metadata, dict) else None
++        if not isinstance(model, dict) or model.get("model_type") != "zonos2":
++            raise ValueError("requires native ZONOS3 model parameters")
++        layers = model.get("n_layers")
++        pattern = model.get("attention_pattern")
++        if type(layers) is not int or layers < 1 or pattern != "gdn3_global1":
++            raise ValueError("unsupported ZONOS3 layer schedule")
++        recurrent = tuple((i + 1) % 4 != 0 for i in range(layers))
++        width = int(model["dim"])
++        head_dim = int(model["head_dim"])
++        heads = int(model["n_heads"])
++        kv_heads = int(model["n_kv_heads"])
++        multiple = int(model.get("multiple_of", 64))
++        moe_multiple = int(model.get("moe_multiple_of", 64))
++        dense_raw = int(width * float(model["ffn_dim_multiplier"]))
++        dense_width = multiple * ((dense_raw + multiple - 1) // multiple)
++        expert_raw = int(width * float(model["moe_ffn_dim_multiplier"]))
++        expert_width = moe_multiple * ((expert_raw + moe_multiple - 1) // moe_multiple)
++        latent_width = int(round(width * float(model["moe_alpha"])))
++        spec = model.get("text_tokenizer_spec") or {}
++        text_vocab = int(model["text_vocab"])
++        if spec.get("kind") != "superbpe" or text_vocab != int(spec.get("vocab_size", 0)) + int(spec.get("offset", 0)):
++            raise ValueError("unsupported ZONOS3 text tokenizer specification")
++        buckets = tuple(int(n) for n in model.get("condition_bucket_counts", ()))
++        if int(model.get("condition_count", 0)) != len(buckets):
++            raise ValueError("inconsistent ZONOS3 condition bucket counts")
++        if (
++            int(model["n_codebooks"]) != cls.codebooks
++            or int(model["codebook_size"]) != cls.codes
++            or model.get("residual_type") != "full_attnres"
++            or model.get("moe_router_type") != "linear"
++            or bool(model.get("moe_router_use_eda", False))
++        ):
++            raise ValueError("unsupported ZONOS3 codebook, residual or router configuration")
++        return cls(
++            width=width,
++            vocab=text_vocab + 1 + int(model.get("text_extra_tokens", 0)),
++            max_context=int(model["max_seqlen"]),
++            recurrent=recurrent,
++            epsilon=float(model["norm_eps"]),
++            heads=heads,
++            kv_heads=kv_heads,
++            head_dim=head_dim,
++            rope_theta=float(model["rope_theta"]),
++            conv_width=4,
++            delta_heads=4,
++            delta_dim=128,
++            dense_layers=int(model.get("moe_start_from_layer", 1)),
++            dense_width=dense_width,
++            experts=int(model["moe_n_experts"]),
++            experts_per_row=int(model["moe_router_topk"]),
++            expert_width=expert_width,
++            latent_width=latent_width,
++            condition_buckets=buckets,
++            router_norm=True,
++        )
+diff --git a/src/akas/models/zonos3/model.py b/src/akas/models/zonos3/model.py
+index 3478e3d4..59a53722 100644
+--- a/src/akas/models/zonos3/model.py
++++ b/src/akas/models/zonos3/model.py
+@@ -68,26 +68,52 @@ def compose(checkpoint, *, phase, rows=1, provider="webgpu", context=1024):
+     return graph
+ 
+ 
+-def compose_backbone(checkpoint, *, rows, context, provider):
++def compose_backbone(
++    checkpoint,
++    *,
++    rows=None,
++    slots=None,
++    chunk=None,
++    pool=None,
++    context=1024,
++    provider="webgpu",
++    include_head=False,
++    embed_frames=False,
++    sample=False,
++):
+     from akas.ops.gdn.definition import gated_delta
+     from akas.ops.linear.definition import project
+     from akas.ops.moe.definition import routed_moe
+     from akas.quantization.weights import Weight
+ 
+     c = checkpoint.config
++    if slots is None:
++        if type(rows) is not int or rows < 1:
++            raise ValueError("ZONOS3 backbone requires positive row counts")
++        slots, chunk, pool = 1, rows, 1 if pool is None else pool
++    else:
++        chunk = 1 if chunk is None else chunk
++        pool = slots if pool is None else pool
++        if any(type(v) is not int or v < 1 for v in (slots, chunk, pool)) or slots > pool:
++            raise ValueError("invalid ZONOS3 multi-slot backbone geometry")
++        rows = slots * chunk
+     if (
+-        provider != "webgpu"
++        provider not in ("cuda", "webgpu")
+         or type(context) is not int
+-        or not 1 <= rows <= context <= c.max_context
++        or not 1 <= chunk <= context <= c.max_context
+     ):
+-        raise ValueError("ZONOS3 backbone requires WebGPU and a valid request context")
++        raise ValueError("ZONOS3 backbone requires CUDA or WebGPU and a valid request context")
+     if c.conv_width != 4 or c.delta_dim % 32:
+         raise ValueError("unsupported ZONOS3 recurrent geometry")
++    if sample and not include_head:
++        raise ValueError("ZONOS3 codebook sampling requires include_head=True")
+     g = Graph(contract="reference")
+-    x = g.buffer("embedding", (rows, c.width), "float32", role="input")
++    x = g.buffer(
++        "embedding", (rows, c.width), "float32", role="scratch" if embed_frames else "input"
++    )
+     positions = g.buffer("positions", (rows,), "int32", role="input")
+-    lengths = g.buffer("lengths", (1,), "int32", role="input")
+-    mapping = g.buffer("mapping", (1,), "int32", role="input")
++    lengths = g.buffer("lengths", (slots,), "int32", role="input")
++    mapping = g.buffer("mapping", (slots,), "int32", role="input")
+     active = g.buffer("active", (rows,), "int32", role="input")
+     rotary = g.buffer("rope", (context, c.head_dim), "float32", role="weight")
+     unit = g.buffer("unit.weight", (c.width,), "float32", role="weight")
+@@ -100,8 +126,28 @@ def compose_backbone(checkpoint, *, rows, context, provider):
+             checkpoint.graph_weight(g, name, provider=provider)
+         return g.buffers[name]
+ 
+-    def encoded(names, shape):
+-        tensors = checkpoint.backbone.tensors
++    if embed_frames:
++        cond_rows = sum(b + 1 for b in c.condition_buckets)
++        frames = g.buffer("frames", (rows, c.codebooks + 1), "int32", role="input")
++        g(
++            "zonos3_frame_embed",
++            dict(
++                r=rows,
++                c=c.width,
++                codebooks=c.codebooks,
++                code_vocab=c.code_vocab,
++                text_vocab=c.vocab,
++                cond_rows=cond_rows,
++            ),
++            frames,
++            weight("a.gen.code.out_embd.bf16"),
++            weight(TOKEN_EMBEDDING),
++            weight("cond_embd.weight").view((cond_rows, c.width)),
++            x,
++        )
++
++    def encoded(names, shape, *, store=None):
++        tensors = (checkpoint.backbone if store is None else store).tensors
+         return Weight(
+             shape,
+             tuple(weight(name) for name in names),
+@@ -153,14 +199,17 @@ def compose_backbone(checkpoint, *, rows, context, provider):
+             "ssm_alpha.weight",
+             "ssm_beta.weight",
+         )
++        input_names = (
++            (prefix + "input.weight",)
++            if (prefix + "input.weight") in checkpoint.backbone.tensors
++            else tuple(prefix + name for name in joined)
++        )
+         conv = g.view(
+             prefix + "conv", weight(prefix + "ssm_conv1d.weight"), (channels, 1, 4)
+         )
+         log_decay = g.buffer(prefix + "ssm_a_log", (heads,), "float32", role="weight")
+         w = {
+-            prefix + "input.weight": encoded(
+-                tuple(prefix + name for name in joined), shape
+-            ),
++            prefix + "input.weight": encoded(input_names, shape),
+             prefix + "conv1d.weight": conv,
+             prefix + "dt_bias": weight(prefix + "ssm_dt.bias"),
+             prefix + "A_log": log_decay,
+@@ -178,14 +227,14 @@ def compose_backbone(checkpoint, *, rows, context, provider):
+             key_dim=d,
+             epsilon=c.epsilon,
+         )
+-        state = g.buffer(prefix + "delta", (1, heads, d, d), "float32", role="state")
++        state = g.buffer(prefix + "delta", (pool, heads, d, d), "float32", role="state")
+         history = g.buffer(
+-            prefix + "conv_state", (1, channels, 3), "float32", role="state"
++            prefix + "conv_state", (pool, channels, 3), "float32", role="state"
+         )
+         controls = dict(
+             mapping=mapping,
+             lengths=lengths,
+-            parameters=dict(slots=1, chunk=rows, pool=1, dtype="float32"),
++            parameters=dict(slots=slots, chunk=chunk, pool=pool, dtype="float32"),
+         )
+         return gated_delta(
+             g,
+@@ -224,12 +273,12 @@ def compose_backbone(checkpoint, *, rows, context, provider):
+                 out,
+             )
+         v = linear(x, prefix + "attn_v.weight", prefix + "v")
+-        shape = (1, kh, context, d)
++        shape = (pool, kh, context, d)
+         kc, vc = (
+             g.buffer(prefix + name, shape, "float16", role="state")
+             for name in ("kc", "vc")
+         )
+-        params = dict(r=rows, h=h, kh=kh, d=d, capacity=context, chunk=rows, window=0)
++        params = dict(r=rows, h=h, kh=kh, d=d, capacity=context, chunk=chunk, window=0)
+         g("window_cache", params, k, v, kc, vc, positions, active)
+         attended = g.buffer(prefix + "attended", (rows * h * d,), "float32")
+         g("causal_grouped", params, q, kc, vc, positions, active, attended)
+@@ -258,7 +307,8 @@ def compose_backbone(checkpoint, *, rows, context, provider):
+                 inner.view(flat),
+             )
+             return linear(inner, prefix + "ffn_down.weight", prefix + "dense")
+-        route_input = norm(x, unit, prefix + "route_norm")
++        route_scale = weight(prefix + "ffn_route_norm.weight") if c.router_norm else unit
++        route_input = norm(x, route_scale, prefix + "route_norm")
+         logits = linear(route_input, prefix + "ffn_gate_inp.weight", prefix + "logits")
+         latent = linear(x, prefix + "ffn_latent_down.weight", prefix + "latent")
+         names = {
+@@ -306,7 +356,67 @@ def compose_backbone(checkpoint, *, rows, context, provider):
+     routed = residual(
+         current, sources - 1, "output_route", weight("output_res_score.weight")
+     )
+-    norm(routed, weight("output_norm.weight"), "hidden", role="output")
++    hidden = norm(
++        routed,
++        weight("output_norm.weight"),
++        "hidden",
++        role="scratch" if include_head else "output",
++    )
++    if include_head:
++        head_in = hidden
++        if chunk > 1:
++            head_in = g.buffer("head_hidden", (slots, c.width), "float32")
++            g(
++                "last_rows",
++                dict(slots=slots, chunk=chunk, pool=pool, c=c.width, dtype="float32"),
++                hidden,
++                lengths,
++                head_in,
++            )
++        logits = project(
++            g,
++            head_in,
++            encoded(
++                (CODEBOOK_HEAD,),
++                (c.codebooks * c.code_vocab, c.width),
++                store=checkpoint.projector,
++            ),
++            width=c.width,
++            name="logits",
++            role="output",
++        )
++        if sample:
++            history = g.buffer(
++                "sample_history", (pool, 96, c.codebooks), "int32", role="state"
++            )
++            steps = g.buffer("sample_steps", (slots,), "int32", role="input")
++            temps = g.buffer("temperatures", (slots,), "float32", role="input")
++            unifs = g.buffer("uniforms", (slots, c.codebooks), "float32", role="input")
++            sampled = g.buffer(
++                "sampled_frames", (slots, c.codebooks + 1), "int32", role="output"
++            )
++            g(
++                "codebook_sample",
++                dict(
++                    slots=slots,
++                    codebooks=c.codebooks,
++                    vocab=c.code_vocab,
++                    window=96,
++                    rep_codebooks=6,
++                    top_k=80,
++                    top_p=0.69,
++                    penalty=2.4,
++                    softcap=c.logit_softcap,
++                    silence_frames=c.codebooks,
++                    text_pad=c.vocab - 1,
++                ),
++                logits.view((slots, c.codebooks * c.code_vocab)),
++                history,
++                steps,
++                temps,
++                unifs,
++                sampled,
++            )
+     return g
+ 
+ 
+diff --git a/src/akas/models/zonos3/weights.py b/src/akas/models/zonos3/weights.py
+index a460d896..5fbc7a56 100644
+--- a/src/akas/models/zonos3/weights.py
++++ b/src/akas/models/zonos3/weights.py
+@@ -91,8 +91,593 @@ def _validate(gguf, expected):
+             raise ValueError(f"incompatible ZONOS3 tensor: {name}")
+ 
+ 
++class _NativeTensorInfo:
++    __slots__ = ("shape", "type", "encoding", "nbytes")
++
++    def __init__(self, shape, kind, encoding, nbytes):
++        self.shape = tuple(shape)
++        self.type = kind
++        self.encoding = encoding
++        self.nbytes = int(nbytes)
++
++
++class _NativeTensorStore:
++    """Expose native PyTorch BF16/F32 tensors through the GGUF source contract."""
++
++    def __init__(self, arrays, metadata=None):
++        self._arrays = arrays
++        self.metadata = metadata or {}
++        self.tensors = {}
++        for name, (raw, shape, kind) in arrays.items():
++            encoding = "BF16" if kind == 30 else "F32"
++            self.tensors[name] = _NativeTensorInfo(shape, kind, encoding, raw.nbytes)
++
++    def packed(self, name):
++        return self._arrays[name][0]
++
++    def discard(self, name):
++        return None
++
++    def array(self, name, dtype=None):
++        import numpy as np
++        from tensor.runtime.dtypes import decode_bfloat16
++
++        raw, shape, kind = self._arrays[name]
++        if kind == 30:
++            values = decode_bfloat16(raw.view(np.uint16)).reshape(shape)
++        else:
++            values = raw.view(np.float32).reshape(shape)
++        return values.astype(dtype, copy=False) if dtype is not None else values
++
++    def row(self, name, index):
++        import numpy as np
++        from tensor.runtime.dtypes import decode_bfloat16
++
++        raw, shape, kind = self._arrays[name]
++        cols = shape[-1]
++        if kind == 30:
++            words = raw.view(np.uint16).reshape(-1, cols)[index]
++            return decode_bfloat16(words)
++        return raw.view(np.float32).reshape(-1, cols)[index].copy()
++
++
++def _wn_matrix(state, prefix):
++    import torch
++
++    g = state[prefix + ".weight_g"].float()
++    v = state[prefix + ".weight_v"].float()
++    norm = torch.linalg.vector_norm(v, dim=(1, 2), keepdim=True).clamp_min(1e-12)
++    return (g * (v / norm)).squeeze(-1)
++
++
++class NativeZonos3MiniCheckpoint:
++    """Native BF16 ZONOS3-Mini LM directory paired with the FP32 keep2_plain codec."""
++
++    storage_format = "bf16"
++
++    def __init__(self, directory, codec=None):
++        import hashlib
++        import json
++        import os
++        from pathlib import Path
++
++        import numpy as np
++        import torch
++
++        self.directory = Path(directory).resolve()
++        if not self.directory.is_dir():
++            raise ValueError(f"native ZONOS3 checkpoint directory not found: {directory}")
++        params_raw = json.loads((self.directory / "params.json").read_text())
++        self.params = params = params_raw["model"]
++        self.config = c = Zonos3MiniConfig.from_zonos3(params_raw)
++
++        spec = dict(params["text_tokenizer_spec"])
++        tok_path = self.directory / spec["path"]
++        tok_bytes = tok_path.read_bytes()
++        if hashlib.sha256(tok_bytes).hexdigest() != spec["sha256"]:
++            raise ValueError("ZONOS3 SuperBPE tokenizer SHA-256 mismatch")
++        self._tokenizer_path = tok_path
++        self._tokenizer_offset = int(spec["offset"])
++        self._bos = int(spec["bos"])
++        self._eos = int(spec["eos"])
++        self.audio_pad_id = int(params["audio_pad_id"])
++        self.text_vocab = int(params["text_vocab"])
++
++        codec_path = Path(codec or os.environ.get("ZONOS3_COMPACT_CODEC", "")).expanduser()
++        if not codec_path.is_file():
++            raise ValueError(
++                "native ZONOS3 requires the keep2_plain compact codec checkpoint path"
++            )
++        self.codec_path = codec_path.resolve()
++
++        weight_file = self.directory / "model.pth"
++        if not weight_file.is_file():
++            raise ValueError(f"missing ZONOS3 consolidated weights: {weight_file}")
++        lm_raw = torch.load(weight_file, map_location="cpu", weights_only=False, mmap=True)
++        state = lm_raw["model"] if isinstance(lm_raw, dict) and "model" in lm_raw else lm_raw
++
++        def bf16_entry(tensor, expected_shape=None):
++            t = tensor.detach().to(torch.bfloat16).contiguous()
++            if expected_shape is not None and tuple(t.shape) != tuple(expected_shape):
++                raise ValueError(f"unexpected BF16 tensor shape {tuple(t.shape)} != {expected_shape}")
++            raw = np.frombuffer(t.view(torch.uint8).numpy().tobytes(), dtype=np.uint8)
++            return (raw, tuple(t.shape), 30)
++
++        def f32_entry(tensor, expected_shape=None):
++            t = tensor.detach().to(torch.float32).contiguous()
++            if expected_shape is not None and tuple(t.shape) != tuple(expected_shape):
++                raise ValueError(f"unexpected F32 tensor shape {tuple(t.shape)} != {expected_shape}")
++            raw = np.frombuffer(t.numpy().tobytes(), dtype=np.uint8)
++            return (raw, tuple(t.shape), 0)
++
++        queries = state["block_attnres_queries"]
++        if tuple(queries.shape) != (2 * len(c.recurrent) + 1, c.width):
++            raise ValueError("incompatible ZONOS3 block_attnres_queries shape")
++
++        backbone = {
++            TOKEN_EMBEDDING: bf16_entry(
++                state[f"multi_embedder.embedders.{c.codebooks}.weight"],
++                (c.vocab, c.width),
++            ),
++            "output_norm.weight": f32_entry(state["out_norm.weight"], (c.width,)),
++            "output_res_score.weight": f32_entry(queries[-1], (c.width,)),
++        }
++        self.condition_tables = tuple(
++            state[f"condition_embeddings.{i}.weight"].detach().float().numpy().copy()
++            for i in range(len(c.condition_buckets))
++        )
++        cond_cat = torch.cat(
++            [
++                state[f"condition_embeddings.{i}.weight"].float()
++                for i in range(len(c.condition_buckets))
++            ],
++            dim=0,
++        )
++        backbone["cond_embd.weight"] = f32_entry(
++            cond_cat, (sum(b + 1 for b in c.condition_buckets), c.width)
++        )
++        self.audio_embedders = np.concatenate(
++            [
++                state[f"multi_embedder.embedders.{i}.weight"].detach().float().numpy()
++                for i in range(c.codebooks)
++            ],
++            axis=0,
++        ).copy()
++        self.text_embedder = (
++            state[f"multi_embedder.embedders.{c.codebooks}.weight"]
++            .detach()
++            .float()
++            .numpy()
++            .copy()
++        )
++        if "speaker_projection.weight" in state:
++            self.speaker_weight = (
++                state["speaker_projection.weight"].detach().float().numpy().copy()
++            )
++            self.speaker_bias = (
++                state["speaker_projection.bias"].detach().float().numpy().copy()
++            )
++        else:
++            self.speaker_weight = self.speaker_bias = None
++
++        for idx, recurrent in enumerate(c.recurrent):
++            p = f"blk.{idx}."
++            src = f"layers.{idx}."
++            backbone[p + "attn_norm.weight"] = f32_entry(
++                state[src + "attention_norm.weight"], (c.width,)
++            )
++            backbone[p + "ffn_norm.weight"] = f32_entry(
++                state[src + "ffn_norm.weight"], (c.width,)
++            )
++            backbone[p + "attn_res_score.weight"] = f32_entry(
++                queries[2 * idx], (c.width,)
++            )
++            backbone[p + "ffn_res_score.weight"] = f32_entry(
++                queries[2 * idx + 1], (c.width,)
++            )
++            if recurrent:
++                delta = c.delta_width
++                in_proj = state[src + "attention.in_proj.weight"]
++                if tuple(in_proj.shape) != (3 * delta + delta + 2 * c.delta_heads, c.width):
++                    raise ValueError(f"unexpected GDN in_proj shape at layer {idx}")
++                qkv_w, gate_w, alpha_w, beta_w = in_proj.split(
++                    [3 * delta, delta, c.delta_heads, c.delta_heads], dim=0
++                )
++                backbone[p + "input.weight"] = bf16_entry(in_proj)
++                backbone[p + "attn_qkv.weight"] = bf16_entry(qkv_w, (3 * delta, c.width))
++                backbone[p + "attn_gate.weight"] = bf16_entry(gate_w, (delta, c.width))
++                backbone[p + "ssm_alpha.weight"] = bf16_entry(
++                    alpha_w, (c.delta_heads, c.width)
++                )
++                backbone[p + "ssm_beta.weight"] = bf16_entry(
++                    beta_w, (c.delta_heads, c.width)
++                )
++                backbone[p + "ssm_conv1d.weight"] = f32_entry(
++                    state[src + "attention.conv.weight"].squeeze(1),
++                    (3 * delta, c.conv_width),
++                )
++                backbone[p + "ssm_dt.bias"] = f32_entry(
++                    state[src + "attention.dt_bias"], (c.delta_heads,)
++                )
++                backbone[p + "ssm_a_log"] = f32_entry(
++                    state[src + "attention.A_log"], (c.delta_heads,)
++                )
++                backbone[p + "ssm_norm.weight"] = f32_entry(
++                    state[src + "attention.out_weight"], (c.delta_dim,)
++                )
++                backbone[p + "ssm_out.weight"] = bf16_entry(
++                    state[src + "attention.wo.weight"], (c.width, delta)
++                )
++            else:
++                q_dim, kv_dim = c.heads * c.head_dim, c.kv_heads * c.head_dim
++                wkv = state[src + "attention.wkv.weight"]
++                if tuple(wkv.shape) != (2, kv_dim, c.width):
++                    raise ValueError(f"unexpected attention wkv shape at layer {idx}")
++                temp = (
++                    state[src + "attention.temp"]
++                    .detach()
++                    .float()
++                    .abs()
++                    .reshape(c.heads, 1)
++                    .expand(c.heads, c.head_dim)
++                )
++                backbone[p + "attn_q.weight"] = bf16_entry(
++                    state[src + "attention.wq.weight"], (q_dim, c.width)
++                )
++                backbone[p + "attn_k.weight"] = bf16_entry(wkv[0], (kv_dim, c.width))
++                backbone[p + "attn_v.weight"] = bf16_entry(wkv[1], (kv_dim, c.width))
++                backbone[p + "attn_q_norm.weight"] = f32_entry(
++                    temp, (c.heads, c.head_dim)
++                )
++                backbone[p + "attn_gate.weight"] = bf16_entry(
++                    state[src + "attention.gater.weight"], (c.heads, c.width)
++                )
++                backbone[p + "attn_output.weight"] = bf16_entry(
++                    state[src + "attention.wo.weight"], (c.width, q_dim)
++                )
++            if idx < c.dense_layers:
++                w_in = state[src + "feed_forward.w_in.weight"]
++                if tuple(w_in.shape) != (2, c.dense_width, c.width):
++                    raise ValueError(f"unexpected dense w_in shape at layer {idx}")
++                backbone[p + "ffn_up.weight"] = bf16_entry(
++                    w_in[0], (c.dense_width, c.width)
++                )
++                backbone[p + "ffn_gate.weight"] = bf16_entry(
++                    w_in[1], (c.dense_width, c.width)
++                )
++                backbone[p + "ffn_down.weight"] = bf16_entry(
++                    state[src + "feed_forward.w_out.weight"], (c.width, c.dense_width)
++                )
++            else:
++                gate_up = state[src + "feed_forward.experts.gate_up_proj"]
++                if tuple(gate_up.shape) != (c.experts, 2 * c.expert_width, c.latent_width):
++                    raise ValueError(f"unexpected expert gate_up_proj shape at layer {idx}")
++                backbone[p + "ffn_route_norm.weight"] = f32_entry(
++                    state[src + "feed_forward.router.rmsnorm_eda.weight"], (c.width,)
++                )
++                backbone[p + "ffn_gate_inp.weight"] = bf16_entry(
++                    state[src + "feed_forward.router.router_linear.weight"],
++                    (c.experts, c.width),
++                )
++                backbone[p + "exp_probs_b.bias"] = f32_entry(
++                    -state[src + "feed_forward.router.balancing_biases"].float(),
++                    (c.experts,),
++                )
++                backbone[p + "ffn_latent_down.weight"] = bf16_entry(
++                    state[src + "feed_forward.latent_down.weight"],
++                    (c.latent_width, c.width),
++                )
++                backbone[p + "ffn_latent_up.weight"] = bf16_entry(
++                    state[src + "feed_forward.latent_up.weight"],
++                    (c.width, c.latent_width),
++                )
++                backbone[p + "ffn_gate_exps.weight"] = bf16_entry(
++                    gate_up[:, : c.expert_width, :],
++                    (c.experts, c.expert_width, c.latent_width),
++                )
++                backbone[p + "ffn_up_exps.weight"] = bf16_entry(
++                    gate_up[:, c.expert_width :, :],
++                    (c.experts, c.expert_width, c.latent_width),
++                )
++                backbone[p + "ffn_down_exps.weight"] = bf16_entry(
++                    state[src + "feed_forward.experts.down_proj"],
++                    (c.experts, c.latent_width, c.expert_width),
++                )
++
++        codec_blob = torch.load(
++            self.codec_path, map_location="cpu", weights_only=False, mmap=True
++        )
++        if (
++            codec_blob.get("format") != "zonos3-istft-codec-v1"
++            or codec_blob.get("decoder") != "keep2_plain"
++        ):
++            raise ValueError("requires the keep2_plain zonos3-istft-codec-v1 checkpoint")
++        self.codec_config = codec_blob["config"]
++        cs = codec_blob["state_dict"]
++
++        code_shape = (c.codebooks * c.code_vocab, c.width)
++        embed_cat = torch.cat(
++            [state[f"multi_embedder.embedders.{i}.weight"] for i in range(c.codebooks)],
++            dim=0,
++        )
++        projector = {
++            CODEBOOK_HEAD: bf16_entry(state["multi_output.weight"], code_shape),
++            CODEBOOK_EMBEDDING: f32_entry(embed_cat, code_shape),
++            "a.gen.code.out_embd.bf16": bf16_entry(embed_cat, code_shape),
++        }
++        sem_cb = cs["quantizer.semantic_quantizer.quantizers.0.codebook.weight"].float()
++        sem_proj = _wn_matrix(cs, "quantizer.semantic_quantizer.quantizers.0.out_proj")
++        projector["a.gen.wav.sem.table"] = f32_entry(sem_cb @ sem_proj.T, (c.codes, 768))
++        projector["a.gen.wav.sem.bias"] = f32_entry(
++            cs["quantizer.semantic_quantizer.quantizers.0.out_proj.bias"], (768,)
++        )
++        for b in range(4):
++            src = f"semantic_head.{b}."
++            dst = f"a.gen.wav.sem.{b}."
++            projector[dst + "dw.weight"] = f32_entry(cs[src + "dwconv.weight"])
++            projector[dst + "dw.bias"] = f32_entry(cs[src + "dwconv.bias"])
++            projector[dst + "norm.weight"] = f32_entry(cs[src + "norm.weight"])
++            projector[dst + "norm.bias"] = f32_entry(cs[src + "norm.bias"])
++            projector[dst + "pw1.weight"] = f32_entry(cs[src + "pwconv1.weight"])
++            projector[dst + "pw1.bias"] = f32_entry(cs[src + "pwconv1.bias"])
++            projector[dst + "pw2.weight"] = f32_entry(cs[src + "pwconv2.weight"])
++            projector[dst + "pw2.bias"] = f32_entry(cs[src + "pwconv2.bias"])
++        projector["a.gen.wav.sem.out.weight"] = f32_entry(
++            _wn_matrix(cs, "semantic_head.4"), (1024, 768)
++        )
++        projector["a.gen.wav.sem.out.bias"] = f32_entry(
++            cs["semantic_head.4.bias"], (1024,)
++        )
++        res_tables, res_biases = [], []
++        for q_idx in range(c.codebooks - 1):
++            q_src = f"quantizer.quantizer.quantizers.{q_idx}"
++            q_cb = cs[q_src + ".codebook.weight"].float()
++            q_proj = _wn_matrix(cs, q_src + ".out_proj")
++            res_tables.append(q_cb @ q_proj.T)
++            res_biases.append(cs[q_src + ".out_proj.bias"].float())
++        projector["a.gen.wav.res.table"] = f32_entry(
++            torch.stack(res_tables, dim=0), (c.codebooks - 1, c.codes, 1024)
++        )
++        projector["a.gen.wav.res.bias"] = f32_entry(
++            torch.stack(res_biases, dim=0), (c.codebooks - 1, 1024)
++        )
++        for stage in range(5):
++            src_stage = f"stages.{2 * stage}."
++            dst_stage = f"a.gen.wav.stage.{stage}."
++            projector[dst_stage + "in.weight"] = f32_entry(cs[src_stage + "input_proj.weight"])
++            for blk in range(2):
++                sb = f"{src_stage}layers.{blk}."
++                db = f"{dst_stage}blk.{blk}."
++                projector[db + "norm1.weight"] = f32_entry(cs[sb + "norm1.weight"])
++                projector[db + "norm1.bias"] = f32_entry(cs[sb + "norm1.bias"])
++                projector[db + "qkv.weight"] = f32_entry(cs[sb + "qkv.weight"])
++                projector[db + "wo.weight"] = f32_entry(cs[sb + "attention_out.weight"])
++                projector[db + "attn_scale"] = f32_entry(cs[sb + "attention_scale"])
++                projector[db + "norm2.weight"] = f32_entry(cs[sb + "norm2.weight"])
++                projector[db + "norm2.bias"] = f32_entry(cs[sb + "norm2.bias"])
++                projector[db + "ffn1.weight"] = f32_entry(cs[sb + "ffn.0.weight"])
++                projector[db + "ffn2.weight"] = f32_entry(cs[sb + "ffn.3.weight"])
++                projector[db + "ffn_scale"] = f32_entry(cs[sb + "ffn_scale"])
++            if stage < 4:
++                projector[dst_stage + "out.weight"] = f32_entry(
++                    cs[src_stage + "output_proj.weight"]
++                )
++        for b in range(8):
++            src = f"head.blocks.{b}."
++            dst = f"a.gen.wav.head.{b}."
++            projector[dst + "dw.weight"] = f32_entry(cs[src + "dwconv.weight"])
++            projector[dst + "dw.bias"] = f32_entry(cs[src + "dwconv.bias"])
++            projector[dst + "norm.weight"] = f32_entry(cs[src + "norm.weight"])
++            projector[dst + "norm.bias"] = f32_entry(cs[src + "norm.bias"])
++            projector[dst + "pw1.weight"] = f32_entry(cs[src + "pwconv1.weight"])
++            projector[dst + "pw1.bias"] = f32_entry(cs[src + "pwconv1.bias"])
++            projector[dst + "pw2.weight"] = f32_entry(cs[src + "pwconv2.weight"])
++            projector[dst + "pw2.bias"] = f32_entry(cs[src + "pwconv2.bias"])
++        projector["a.gen.wav.head.norm.weight"] = f32_entry(cs["head.norm.weight"])
++        projector["a.gen.wav.head.norm.bias"] = f32_entry(cs["head.norm.bias"])
++        projector["a.gen.wav.head.out.weight"] = f32_entry(
++            torch.cat([cs["head.outs.0.weight"], cs["head.outs.1.weight"]], dim=0)
++        )
++        projector["a.gen.wav.head.out.bias"] = f32_entry(
++            torch.cat([cs["head.outs.0.bias"], cs["head.outs.1.bias"]], dim=0)
++        )
++        projector["a.gen.wav.mixer.weight"] = f32_entry(cs["head.mixer.weight"][0], (2, 127))
++        projector["a.gen.wav.resample.weight"] = f32_entry(
++            cs["to_external.kernel"][:, 0, :], (735, 770)
++        )
++        for idx, (n_fft, env_div) in enumerate(((736, 1.5), (2208, 4.5))):
++            bins = n_fft // 2 + 1
++            win = (0.5 - 0.5 * np.cos(2.0 * np.pi * np.arange(n_fft) / n_fft)) / env_div
++            t_grid = np.arange(n_fft, dtype=np.float64)[:, None]
++            k_grid = np.arange(bins, dtype=np.float64)[None, :]
++            scale = np.full((1, bins), 2.0 / n_fft, dtype=np.float64)
++            scale[0, 0] = 1.0 / n_fft
++            scale[0, -1] = 1.0 / n_fft
++            re_b = win[:, None] * scale * np.cos(2.0 * np.pi * t_grid * k_grid / n_fft)
++            im_b = -win[:, None] * scale * np.sin(2.0 * np.pi * t_grid * k_grid / n_fft)
++            im_b[:, 0] = 0.0
++            im_b[:, -1] = 0.0
++            basis = torch.from_numpy(
++                np.concatenate((re_b, im_b), axis=1).astype(np.float32)
++            )
++            projector[f"a.gen.wav.fourier{idx}.weight"] = f32_entry(
++                basis, (n_fft, 2 * bins)
++            )
++        rope_pos = np.arange(8192, dtype=np.float64)[:, None]
++        rope_ang = rope_pos * (10000.0 ** (-np.arange(0, 64, 2, dtype=np.float64) / 64.0))
++        codec_rope = torch.from_numpy(
++            np.concatenate((np.cos(rope_ang), np.sin(rope_ang)), axis=1).astype(np.float32)
++        )
++        projector["codec_rope.weight"] = f32_entry(codec_rope, (8192, 64))
++
++        self.backbone = _NativeTensorStore(backbone)
++        self.projector = _NativeTensorStore(
++            projector, metadata={"clip.gen.audio.model_variant": "keep2_plain"}
++        )
++
++    def source(self, name):
++        return self.backbone if name in self.backbone.tensors else self.projector
++
++    @cached_property
++    def tokenizer(self):
++        from akas.text.tokenizer import Tokenizer
++
++        return Tokenizer.from_file(self._tokenizer_path)
++
++    def text_token_ids(self, text):
++        if not isinstance(text, str) or not text.strip():
++            raise ValueError("ZONOS3 speech input is empty")
++        raw = self.tokenizer.encode(text, add_bos=False)
++        return [self._bos, *(t + self._tokenizer_offset for t in raw), self._eos]
++
++    def prompt_frames(self, text, *, silence_frames=3, condition_buckets=None):
++        """Build the exact [condition_rows | text_rows | silence_rows] (N, 11) int32 prompt."""
++        import numpy as np
++
++        from akas.models.zonos3.model import SILENCE
++
++        c = self.config
++        cond_vals = (
++            tuple(c.condition_buckets)
++            if condition_buckets is None
++            else tuple(int(v) for v in condition_buckets)
++        )
++        if len(cond_vals) != len(c.condition_buckets):
++            raise ValueError("invalid ZONOS3 condition bucket count")
++        for idx, val in enumerate(cond_vals):
++            if not 0 <= val <= c.condition_buckets[idx]:
++                raise ValueError(f"out-of-range condition bucket {val} at row {idx}")
++        text_ids = self.text_token_ids(text)
++        cond_rows = np.full((len(cond_vals), c.codebooks + 1), self.audio_pad_id, dtype="int32")
++        cond_rows[:, c.codebooks] = self.text_vocab
++        txt_rows = np.full((len(text_ids), c.codebooks + 1), self.audio_pad_id, dtype="int32")
++        txt_rows[:, c.codebooks] = np.asarray(text_ids, dtype="int32")
++        sil_rows = np.full((silence_frames, c.codebooks + 1), self.audio_pad_id, dtype="int32")
++        sil_rows[:, c.codebooks] = self.text_vocab
++        for r in range(silence_frames):
++            limit = min(r + 1, c.codebooks)
++            sil_rows[r, :limit] = SILENCE[:limit]
++        return np.concatenate((cond_rows, txt_rows, sil_rows), axis=0), cond_vals
++
++    def prompt_encoded_frames(self, text, *, silence_frames=3, condition_buckets=None):
++        """Return (N, 11) int32 frames with negative condition-row markers for zonos3_frame_embed."""
++        frames, cond_vals = self.prompt_frames(
++            text, silence_frames=silence_frames, condition_buckets=condition_buckets
++        )
++        encoded = frames.copy()
++        offset = 0
++        for i, val in enumerate(cond_vals):
++            encoded[i, self.config.codebooks] = -(1 + offset + int(val))
++            offset += self.config.condition_buckets[i] + 1
++        return encoded, cond_vals
++
++    def embed_frames(self, frames, *, condition_values=None, condition_start=0):
++        """Compute exact pre-emb_norm embeddings matching Zonos3ForCausalLM.embed."""
++        import numpy as np
++
++        c = self.config
++        arr = np.asarray(frames, dtype="int32")
++        if arr.ndim == 1:
++            arr = arr[None, :]
++        offsets = np.arange(c.codebooks, dtype="int32") * c.code_vocab
++        audio_ids = arr[:, : c.codebooks] + offsets[None, :]
++        audio_sum = self.audio_embedders[audio_ids].sum(axis=1, dtype="float32")
++        if arr.shape[1] > c.codebooks:
++            text_emb = self.text_embedder[arr[:, c.codebooks]]
++            out = (audio_sum + text_emb).astype("float32")
++        else:
++            out = (audio_sum + self.text_embedder[self.text_vocab]).astype("float32")
++        if condition_values is not None:
++            for i, bucket in enumerate(condition_values):
++                out[condition_start + i] = self.condition_tables[i][bucket]
++        return out
++
++    def graph_weight(self, graph, name, *, provider):
++        from akas.quantization.weights.ggml.definition import weight_storage
++
++        info = self.source(name).tensors[name]
++        count, dtype = weight_storage(
++            info.type, prod(info.shape), packed_words=provider == "webgpu"
++        )
++        return graph.buffer(name, (count,), dtype, role="weight")
++
++    def upload(self, device, names, *, context=None):
++        import numpy as np
++
++        from akas.checkpoints.upload import upload_packed
++
++        names = tuple(names)
++        regular = [
++            name
++            for name in names
++            if name not in ("rope", "unit.weight", "head_unit.weight", "codec_unit.weight")
++        ]
++        weights = {}
++        with ExitStack() as cleanup:
++            for source in (self.backbone, self.projector):
++                tensors = {
++                    name: source.tensors[name]
++                    for name in regular
++                    if self.source(name) is source
++                }
++                if tensors:
++                    loaded = upload_packed(
++                        device,
++                        SimpleNamespace(
++                            tensors=tensors,
++                            packed=source.packed,
++                            discard=source.discard,
++                        ),
++                    )
++                    for value in loaded.values():
++                        cleanup.callback(value.release)
++                    weights.update(loaded)
++            for name in names:
++                if name in weights:
++                    continue
++                if name == "unit.weight":
++                    value = np.ones(self.config.width, dtype="float32")
++                elif name == "head_unit.weight":
++                    value = np.ones(self.config.head_dim, dtype="float32")
++                elif name == "codec_unit.weight":
++                    value = np.ones(64, dtype="float32")
++                elif name == "rope":
++                    c = self.config
++                    if type(context) is not int or not 1 <= context <= c.max_context:
++                        raise ValueError("ZONOS3 rotary upload requires a valid context")
++                    frequency = c.rope_theta ** (
++                        -np.arange(0, c.head_dim, 2) / c.head_dim
++                    )
++                    angle = np.arange(context)[:, None] * frequency
++                    value = np.concatenate(
++                        (np.cos(angle), np.sin(angle)), axis=1
++                    ).astype("float32")
++                else:
++                    raise ValueError(f"unknown ZONOS3 weight buffer: {name}")
++                weights[name] = device.from_numpy(value)
++                cleanup.callback(weights[name].release)
++            cleanup.pop_all()
++        return weights
++
++    def inventory(self):
++        return {
++            label: dict(Counter(info.encoding for info in source.tensors.values()))
++            for label, source in (
++                ("backbone", self.backbone),
++                ("projector", self.projector),
++            )
++        }
++
++
+ class Zonos3MiniCheckpoint:
+-    """The matched GGUF pair for the ZONOS3-Mini Q8_0 speech model."""
++    """The matched GGUF pair or native BF16 directory for ZONOS3-Mini."""
++
++    def __new__(cls, backbone, projector=None):
++        from pathlib import Path
++
++        if Path(backbone).is_dir():
++            return NativeZonos3MiniCheckpoint(backbone, projector)
++        return super().__new__(cls)
+ 
+     def __init__(self, backbone, projector):
+         self.backbone = GGUF(backbone)
+diff --git a/src/akas/ops/attention/definition.py b/src/akas/ops/attention/definition.py
+index 16bd9b13..e80ac46e 100644
+--- a/src/akas/ops/attention/definition.py
++++ b/src/akas/ops/attention/definition.py
+@@ -1711,14 +1711,15 @@ IMPLEMENTATIONS += tuple(
+     )
+     for provider in ("cuda", "webgpu")
+ )
+-IMPLEMENTATIONS += (
++IMPLEMENTATIONS += tuple(
+     Implementation(
+         "causal_grouped",
+         "akas.ops.attention.kernel",
+         "reference",
+-        provider="webgpu",
++        provider=provider,
+         factory="causal_grouped",
+-    ),
++    )
++    for provider in ("cuda", "webgpu")
+ )
+ IMPLEMENTATIONS += (
+     Implementation(
+diff --git a/src/akas/ops/convolution/README.md b/src/akas/ops/convolution/README.md
+index 8d175a66..ae6cf5d8 100644
+--- a/src/akas/ops/convolution/README.md
++++ b/src/akas/ops/convolution/README.md
+@@ -62,6 +62,6 @@ tests](../../../../tests/test_lfm2_reference.py).
+ 
+ ## ZONOS3 and ZAC
+ 
+-The causal depthwise FIR uses a zero-padded input prefix and one bias per channel. CUDA and WebGPU share the full-utterance body used by ZAC.
++The causal depthwise FIR uses a zero-padded input prefix and one bias per channel for full-utterance decoding, while `causal_depthwise_state` carries `(taps - 1)` per-channel history across multi-slot prefix-stream chunks. Streaming multi-resolution ZAC synthesis decomposes into `istft_polar` (log-magnitude/phase to real/imaginary spectrum), Fourier-Hann basis projections, `istft_ola` and `istft_mix_commit` (two-branch overlap-add and 127-tap FIR mixer with persistent overlap/mixer state), and `sinc_resample_limit` + `sinc_resample_commit` (44,160 -> 44,100 Hz sinc resampling, headroom gain, soft-knee limiter, and 322-sample resampler tail commit). CUDA and WebGPU share the portable computations.
+ 
+ Return to the [operation index](../README.md).
+diff --git a/src/akas/ops/convolution/definition.py b/src/akas/ops/convolution/definition.py
+index e37ed781..a946730f 100644
+--- a/src/akas/ops/convolution/definition.py
++++ b/src/akas/ops/convolution/definition.py
+@@ -165,3 +165,46 @@ IMPLEMENTATIONS += tuple(
+     )
+     for provider in ("cuda", "webgpu")
+ )
++
++from akas.ops.convolution.validation import (
++    causal_depthwise_state_validation,
++    istft_stream_validation,
++)
++
++OUTPUT_ARGUMENTS["reference"].update(
++    {
++        "causal_depthwise_state": OutputABI((3, -1), ("state", "out")),
++        "istft_polar": OutputABI((-2, -1), ("spec0", "spec1")),
++        "istft_ola": OutputABI((-2, -1), ("cat0", "cat1")),
++        "istft_mix_commit": OutputABI((3, -1), ("state", "mid")),
++        "sinc_resample_limit": OutputABI((-1,), ("pcm",)),
++        "sinc_resample_commit": OutputABI((1,), ("rs_state",)),
++    }
++)
++VALIDATIONS["causal_depthwise_state"] = causal_depthwise_state_validation
++for _istft_kind in (
++    "istft_polar",
++    "istft_ola",
++    "istft_mix_commit",
++    "sinc_resample_limit",
++    "sinc_resample_commit",
++):
++    VALIDATIONS[_istft_kind] = istft_stream_validation
++IMPLEMENTATIONS += tuple(
++    Implementation(
++        kind,
++        "akas.ops.convolution.kernel",
++        "reference",
++        provider=provider,
++        factory=kind,
++    )
++    for provider in ("cuda", "webgpu")
++    for kind in (
++        "causal_depthwise_state",
++        "istft_polar",
++        "istft_ola",
++        "istft_mix_commit",
++        "sinc_resample_limit",
++        "sinc_resample_commit",
++    )
++)
+diff --git a/src/akas/ops/convolution/kernel.py b/src/akas/ops/convolution/kernel.py
+index 19b12b8a..bc6c4865 100644
+--- a/src/akas/ops/convolution/kernel.py
++++ b/src/akas/ops/convolution/kernel.py
+@@ -214,3 +214,319 @@ def causal_depthwise(spec, schedule):
+         return out
+ 
+     return compute
++
++
++def causal_depthwise_state(spec, schedule):
++    """Stateful channelwise causal FIR across multi-slot streaming chunks."""
++    import tilelang.language as T
++
++    p = {**spec.parameters, **schedule}
++    slots, chunk, width, taps = (p[k] for k in ("slots", "chunk", "c", "taps"))
++    rows = slots * chunk
++    hist_len = taps - 1
++
++    @kernel
++    def compute(
++        x: Tensor((rows, width), "float32"),
++        w: Tensor((width, taps), "float32"),
++        bias: Tensor((width,), "float32"),
++        state: Tensor((slots, hist_len, width), "float32"),
++        lengths: Tensor((slots,), "int32"),
++    ) -> tuple[
++        Tensor((slots, hist_len, width), "float32"),
++        Tensor((rows, width), "float32"),
++    ]:
++        out = output((rows, width), "float32")
++        with T.Kernel(slots, T.ceildiv(width, 128), threads=128) as (slot, tile):
++            live = lengths[slot]
++            for lane in T.Parallel(128):
++                col = tile * 128 + lane
++                if col < width:
++                    hist = T.alloc_local((hist_len,), "float32")
++                    taps_w = T.alloc_local((taps,), "float32")
++                    b = T.alloc_var("float32")
++                    b = bias[col]
++                    for k in T.unroll(hist_len):
++                        hist[k] = state[slot, k, col]
++                    for k in T.unroll(taps):
++                        taps_w[k] = w[col, k]
++                    for step in T.serial(chunk):
++                        row = slot * chunk + step
++                        if step < live:
++                            cur = T.alloc_var("float32")
++                            acc = T.alloc_var("float32")
++                            cur = x[row, col]
++                            acc = b + cur * taps_w[taps - 1]
++                            for k in T.unroll(hist_len):
++                                acc += hist[k] * taps_w[k]
++                            out[row, col] = acc
++                            for k in T.unroll(hist_len - 1):
++                                hist[k] = hist[k + 1]
++                            hist[hist_len - 1] = cur
++                        else:
++                            out[row, col] = 0
++                    for k in T.unroll(hist_len):
++                        state[slot, k, col] = hist[k]
++        return state, out
++
++    return compute
++
++
++def istft_polar(spec, schedule):
++    """Convert two-branch log-magnitude/phase spectra into real/imag vectors."""
++    import tilelang.language as T
++
++    p = {**spec.parameters, **schedule}
++    rows = p["r"]
++    n0, n1 = p.get("n0", 736), p.get("n1", 2208)
++    b0, b1 = n0 // 2 + 1, n1 // 2 + 1
++    w0, w1 = 2 * b0, 2 * b1
++    total = w0 + w1
++    max_log = p.get("max_log_mag", 4.605170185988092)
++
++    @kernel
++    def compute(
++        spectrum: Tensor((rows, total), "float32"),
++    ) -> tuple[Tensor((rows, w0), "float32"), Tensor((rows, w1), "float32")]:
++        spec0 = output((rows, w0), "float32")
++        spec1 = output((rows, w1), "float32")
++        with T.Kernel(rows, T.ceildiv(b1, 128), threads=128) as (row, tile):
++            for lane in T.Parallel(128):
++                j = tile * 128 + lane
++                if j < b0:
++                    mag0 = T.exp(T.min(spectrum[row, j], T.float32(max_log)))
++                    ph0 = spectrum[row, b0 + j]
++                    spec0[row, j] = mag0 * T.cos(ph0)
++                    spec0[row, b0 + j] = T.if_then_else(
++                        (j == 0) | (j == b0 - 1), 0.0, mag0 * T.sin(ph0)
++                    )
++                if j < b1:
++                    mag1 = T.exp(T.min(spectrum[row, w0 + j], T.float32(max_log)))
++                    ph1 = spectrum[row, w0 + b1 + j]
++                    spec1[row, j] = mag1 * T.cos(ph1)
++                    spec1[row, b1 + j] = T.if_then_else(
++                        (j == 0) | (j == b1 - 1), 0.0, mag1 * T.sin(ph1)
++                    )
++        return spec0, spec1
++
++    return compute
++
++
++def istft_ola(spec, schedule):
++    """Materialize continuous overlap-added mixer inputs without mutating state."""
++    import tilelang.language as T
++
++    p = {**spec.parameters, **schedule}
++    slots, frames = p["slots"], p["frames"]
++    cols = frames * 16
++    hop, n0, n1 = 184, 736, 2208
++    t0, t1, m0_len, m1_len = n0 - hop, n1 - hop, 862, 126
++    state_width = t0 + t1 + m0_len + m1_len
++    span = cols * hop
++
++    @kernel
++    def compute(
++        fr0: Tensor((slots * cols, n0), "float32"),
++        fr1: Tensor((slots * cols, n1), "float32"),
++        state: Tensor((slots, state_width), "float32"),
++        lengths: Tensor((slots,), "int32"),
++    ) -> tuple[
++        Tensor((slots, m0_len + span + t0), "float32"),
++        Tensor((slots, m1_len + span + t1), "float32"),
++    ]:
++        cat0 = output((slots, m0_len + span + t0), "float32")
++        cat1 = output((slots, m1_len + span + t1), "float32")
++        with T.Kernel(slots, T.ceildiv(m0_len + span + t1, 256), threads=256) as (
++            slot,
++            blk,
++        ):
++            live_cols = lengths[slot] * 16
++            for lane in T.Parallel(256):
++                idx = blk * 256 + lane
++                if idx < m0_len + span + t0:
++                    if idx < m0_len:
++                        cat0[slot, idx] = state[slot, t0 + t1 + idx]
++                    else:
++                        s0 = idx - m0_len
++                        v0 = T.alloc_var("float32")
++                        v0 = T.if_then_else(s0 < t0, state[slot, s0], 0.0)
++                        c0 = T.max(0, (s0 - n0 + hop) // hop)
++                        for m in T.unroll(4):
++                            c = c0 + m
++                            off = s0 - c * hop
++                            if (c >= 0) & (c < live_cols) & (off >= 0) & (off < n0):
++                                v0 += fr0[slot * cols + c, off]
++                        cat0[slot, idx] = v0
++                if idx < m1_len + span + t1:
++                    if idx < m1_len:
++                        cat1[slot, idx] = state[slot, t0 + t1 + m0_len + idx]
++                    else:
++                        s1 = idx - m1_len
++                        v1 = T.alloc_var("float32")
++                        v1 = T.if_then_else(s1 < t1, state[slot, t0 + s1], 0.0)
++                        c1 = T.max(0, (s1 - n1 + hop) // hop)
++                        for m in T.unroll(12):
++                            c = c1 + m
++                            off = s1 - c * hop
++                            if (c >= 0) & (c < live_cols) & (off >= 0) & (off < n1):
++                                v1 += fr1[slot * cols + c, off]
++                        cat1[slot, idx] = v1
++        return cat0, cat1
++
++    return compute
++
++
++def istft_mix_commit(spec, schedule):
++    """Apply the 127-tap two-branch FIR mixer and commit updated overlap/mixer state."""
++    import tilelang.language as T
++
++    p = {**spec.parameters, **schedule}
++    slots, frames = p["slots"], p["frames"]
++    cols = frames * 16
++    hop, n0, n1 = 184, 736, 2208
++    t0, t1, m0_len, m1_len, fir_k = n0 - hop, n1 - hop, 862, 126, 127
++    state_width = t0 + t1 + m0_len + m1_len
++    span = cols * hop
++
++    @kernel
++    def compute(
++        cat0: Tensor((slots, m0_len + span + t0), "float32"),
++        cat1: Tensor((slots, m1_len + span + t1), "float32"),
++        mixer: Tensor((2, fir_k), "float32"),
++        state: Tensor((slots, state_width), "float32"),
++        lengths: Tensor((slots,), "int32"),
++    ) -> tuple[
++        Tensor((slots, state_width), "float32"),
++        Tensor((slots, span), "float32"),
++    ]:
++        mid = output((slots, span), "float32")
++        with T.Kernel(
++            slots, T.ceildiv(T.max(span, state_width), 256), threads=256
++        ) as (slot, blk):
++            live_span = lengths[slot] * 16 * hop
++            sh0 = T.alloc_shared((256 + fir_k,), "float32")
++            sh1 = T.alloc_shared((256 + fir_k,), "float32")
++            mw0 = T.alloc_shared((fir_k,), "float32")
++            mw1 = T.alloc_shared((fir_k,), "float32")
++            tx = T.get_thread_binding()
++            if tx < fir_k:
++                mw0[tx] = mixer[0, tx]
++                mw1[tx] = mixer[1, tx]
++            base = blk * 256
++            for step in T.unroll(2):
++                pos = tx + step * 256
++                if pos < 256 + fir_k - 1:
++                    g = base + pos
++                    sh0[pos] = T.if_then_else(g < m0_len + span, cat0[slot, g], 0.0)
++                    sh1[pos] = T.if_then_else(g < m1_len + span, cat1[slot, g], 0.0)
++            T.sync_threads()
++            idx = base + tx
++            if idx < span:
++                if idx < live_span:
++                    acc = T.alloc_var("float32")
++                    acc = 0.0
++                    for k in T.unroll(fir_k):
++                        acc += mw0[k] * sh0[tx + k] + mw1[k] * sh1[tx + k]
++                    mid[slot, idx] = acc
++                else:
++                    mid[slot, idx] = 0.0
++            if (lengths[slot] > 0) & (idx < state_width):
++                if idx < t0:
++                    state[slot, idx] = cat0[slot, m0_len + live_span + idx]
++                elif idx < t0 + t1:
++                    state[slot, idx] = cat1[slot, m1_len + live_span + (idx - t0)]
++                elif idx < t0 + t1 + m0_len:
++                    state[slot, idx] = cat0[slot, live_span + (idx - t0 - t1)]
++                else:
++                    state[slot, idx] = cat1[slot, live_span + (idx - t0 - t1 - m0_len)]
++        return state, mid
++
++    return compute
++
++
++def sinc_resample_limit(spec, schedule):
++    """Resample 44160->44100 Hz (736->735), apply headroom gain + soft limiter, and update buffer."""
++    import tilelang.language as T
++
++    p = {**spec.parameters, **schedule}
++    slots, frames = p["slots"], p["frames"]
++    blocks = frames * 4
++    orig, new, kl, buf_len = 736, 735, 770, 322
++    in_span = blocks * orig
++    out_span = blocks * new
++    gain = p.get("gain", 0.70794578)
++    knee = p.get("knee", 0.8912509381337456)
++
++    @kernel
++    def compute(
++        mid: Tensor((slots, in_span), "float32"),
++        filt: Tensor((new, kl), "float32"),
++        rs_state: Tensor((slots, buf_len), "float32"),
++        lengths: Tensor((slots,), "int32"),
++    ) -> Tensor((slots, out_span), "float32"):
++        pcm = output((slots, out_span), "float32")
++        with T.Kernel(T.ceildiv(new, 64), slots * blocks, threads=64) as (
++            out_tile,
++            sb,
++        ):
++            slot = sb // blocks
++            blk = sb % blocks
++            live_blocks = lengths[slot] * 4
++            tx = T.get_thread_binding()
++            win = T.alloc_shared((kl,), "float32")
++            for step in T.serial(T.ceildiv(kl, 64)):
++                j = step * 64 + tx
++                if j < kl:
++                    src = blk * orig + j
++                    win[j] = T.if_then_else(
++                        src < buf_len,
++                        rs_state[slot, src],
++                        mid[slot, T.min(src - buf_len, in_span - 1)],
++                    )
++            T.sync_threads()
++            o_idx = out_tile * 64 + tx
++            if o_idx < new:
++                if blk < live_blocks:
++                    acc = T.alloc_var("float32")
++                    acc = 0.0
++                    for j in T.serial(kl):
++                        acc += win[j] * filt[o_idx, j]
++                    val = T.alloc_var("float32")
++                    val = acc * T.float32(gain)
++                    mag = T.abs(val)
++                    if mag > T.float32(knee):
++                        width = T.float32(1.0 - knee)
++                        lim = T.float32(knee) + width * T.tanh((mag - T.float32(knee)) / width)
++                        val = T.if_then_else(val >= 0.0, lim, -lim)
++                    pcm[slot, blk * new + o_idx] = val
++                else:
++                    pcm[slot, blk * new + o_idx] = 0.0
++        return pcm
++
++    return compute
++
++
++def sinc_resample_commit(spec, schedule):
++    """Commit the trailing 322 samples of each active slot into rs_state."""
++    import tilelang.language as T
++
++    p = {**spec.parameters, **schedule}
++    slots, frames = p["slots"], p["frames"]
++    in_span = frames * 4 * 736
++    buf_len = 322
++
++    @kernel
++    def compute(
++        mid: Tensor((slots, in_span), "float32"),
++        rs_state: Tensor((slots, buf_len), "float32"),
++        lengths: Tensor((slots,), "int32"),
++    ) -> Tensor((slots, buf_len), "float32"):
++        with T.Kernel(slots, T.ceildiv(buf_len, 128), threads=128) as (slot, blk):
++            live_span = lengths[slot] * 4 * 736
++            for lane in T.Parallel(128):
++                idx = blk * 128 + lane
++                if (lengths[slot] > 0) & (idx < buf_len):
++                    rs_state[slot, idx] = mid[slot, live_span - buf_len + idx]
++        return rs_state
++
++    return compute
+diff --git a/src/akas/ops/convolution/validation.py b/src/akas/ops/convolution/validation.py
+index 44171107..31455e10 100644
+--- a/src/akas/ops/convolution/validation.py
++++ b/src/akas/ops/convolution/validation.py
+@@ -86,3 +86,128 @@ def causal_depthwise_validation(kind, p, signature):
+     windows = np.lib.stride_tricks.sliding_window_view(padded, p["taps"], axis=0)
+     out = np.einsum("rct,ct->rc", windows, values["w"]) + values["bias"]
+     return ValidationCase(values, {**values, "out": out.astype("float32")})
++
++
++def causal_depthwise_state_validation(kind, p, signature):
++    import numpy as np
++    from akas.kernels.contracts import ValidationCase, sample_arguments
++
++    values = sample_arguments(signature)
++    slots, chunk, width, taps = (p[k] for k in ("slots", "chunk", "c", "taps"))
++    values["lengths"][:] = chunk
++    if slots > 1:
++        values["lengths"][-1] = max(0, chunk - 1)
++    if slots > 2:
++        values["lengths"][0] = 0
++    expected = {k: v.copy() for k, v in values.items()}
++    x = values["x"].reshape(slots, chunk, width).astype("float64")
++    w = values["w"].astype("float64")
++    bias = values["bias"].astype("float64")
++    out = np.zeros((slots, chunk, width), dtype="float32")
++    for s in range(slots):
++        live = int(values["lengths"][s])
++        hist = values["state"][s].astype("float64").copy()
++        for step in range(chunk):
++            if step < live:
++                cur = x[s, step]
++                acc = bias + cur * w[:, -1] + np.sum(hist * w[:, :-1].T, axis=0)
++                out[s, step] = acc.astype("float32")
++                hist[:-1] = hist[1:]
++                hist[-1] = cur
++        expected["state"][s] = hist.astype("float32")
++    expected["out"] = out.reshape(slots * chunk, width)
++    return ValidationCase(values, expected)
++
++
++def istft_stream_validation(kind, p, signature):
++    import numpy as np
++    from akas.kernels.contracts import ValidationCase, sample_arguments
++
++    values = sample_arguments(signature)
++    expected = {k: v.copy() for k, v in values.items()}
++    if kind == "istft_polar":
++        n0, n1 = p.get("n0", 736), p.get("n1", 2208)
++        b0, b1 = n0 // 2 + 1, n1 // 2 + 1
++        max_log = p.get("max_log_mag", 4.605170185988092)
++        s = values["spectrum"].astype("float64")
++        for idx, (offset, bins, name) in enumerate(((0, b0, "spec0"), (2 * b0, b1, "spec1"))):
++            mag = np.exp(np.minimum(s[:, offset : offset + bins], max_log))
++            ph = s[:, offset + bins : offset + 2 * bins]
++            im = mag * np.sin(ph)
++            im[:, 0] = 0.0
++            im[:, -1] = 0.0
++            expected[name] = np.concatenate((mag * np.cos(ph), im), axis=1).astype("float32")
++        return ValidationCase(values, expected)
++
++    slots, frames = p["slots"], p["frames"]
++    values["lengths"][:] = frames
++    if slots > 1:
++        values["lengths"][-1] = max(0, frames - 1)
++    expected["lengths"] = values["lengths"].copy()
++    cols = frames * 16
++    hop, n0, n1 = 184, 736, 2208
++    t0, t1, m0_len, m1_len, fir_k = n0 - hop, n1 - hop, 862, 126, 127
++    span = cols * hop
++    if kind == "istft_ola":
++        fr0 = values["fr0"].reshape(slots, cols, n0).astype("float64")
++        fr1 = values["fr1"].reshape(slots, cols, n1).astype("float64")
++        cat0 = np.zeros((slots, m0_len + span + t0), dtype="float64")
++        cat1 = np.zeros((slots, m1_len + span + t1), dtype="float64")
++        for s in range(slots):
++            live_c = int(values["lengths"][s]) * 16
++            st = values["state"][s].astype("float64")
++            cat0[s, :m0_len] = st[t0 + t1 : t0 + t1 + m0_len]
++            cat0[s, m0_len : m0_len + t0] = st[:t0]
++            for c in range(live_c):
++                cat0[s, m0_len + c * hop : m0_len + c * hop + n0] += fr0[s, c]
++            cat1[s, :m1_len] = st[t0 + t1 + m0_len :]
++            cat1[s, m1_len : m1_len + t1] = st[t0 : t0 + t1]
++            for c in range(live_c):
++                cat1[s, m1_len + c * hop : m1_len + c * hop + n1] += fr1[s, c]
++        expected["cat0"] = cat0.astype("float32")
++        expected["cat1"] = cat1.astype("float32")
++        return ValidationCase(values, expected)
++    if kind == "istft_mix_commit":
++        cat0 = values["cat0"].astype("float64")
++        cat1 = values["cat1"].astype("float64")
++        mixer = values["mixer"].astype("float64")
++        mid = np.zeros((slots, span), dtype="float32")
++        for s in range(slots):
++            live_span = int(values["lengths"][s]) * 16 * hop
++            if live_span > 0:
++                w0 = np.lib.stride_tricks.sliding_window_view(cat0[s, : live_span + fir_k - 1], fir_k)
++                w1 = np.lib.stride_tricks.sliding_window_view(cat1[s, : live_span + fir_k - 1], fir_k)
++                mid[s, :live_span] = (w0 @ mixer[0] + w1 @ mixer[1]).astype("float32")
++                expected["state"][s, :t0] = cat0[s, m0_len + live_span : m0_len + live_span + t0]
++                expected["state"][s, t0 : t0 + t1] = cat1[s, m1_len + live_span : m1_len + live_span + t1]
++                expected["state"][s, t0 + t1 : t0 + t1 + m0_len] = cat0[s, live_span : live_span + m0_len]
++                expected["state"][s, t0 + t1 + m0_len :] = cat1[s, live_span : live_span + m1_len]
++        expected["mid"] = mid
++        return ValidationCase(values, expected)
++    if kind == "sinc_resample_limit":
++        gain = p.get("gain", 0.70794578)
++        knee = p.get("knee", 0.8912509381337456)
++        filt = values["filt"].astype("float64")
++        pcm = np.zeros_like(values["pcm"])
++        for s in range(slots):
++            live_b = int(values["lengths"][s]) * 4
++            if live_b > 0:
++                cat = np.concatenate((values["rs_state"][s], values["mid"][s])).astype("float64")
++                win = np.lib.stride_tricks.sliding_window_view(cat, 770)[::736][:live_b]
++                raw = (win @ filt.T).reshape(-1).astype("float32") * np.float32(gain)
++                over = np.abs(raw) > np.float32(knee)
++                if over.any():
++                    w = np.float32(1.0 - knee)
++                    raw[over] = np.sign(raw[over]) * (
++                        np.float32(knee) + w * np.tanh((np.abs(raw[over]) - np.float32(knee)) / w)
++                    )
++                pcm[s, : live_b * 735] = raw
++        expected["pcm"] = pcm
++        return ValidationCase(values, expected)
++    if kind == "sinc_resample_commit":
++        for s in range(slots):
++            live_span = int(values["lengths"][s]) * 4 * 736
++            if live_span > 0:
++                expected["rs_state"][s] = values["mid"][s, live_span - 322 : live_span]
++        return ValidationCase(values, expected, rtol=0, atol=0)
++    raise ValueError(f"Unknown streaming iSTFT operation: {kind}")
+diff --git a/src/akas/ops/sequence/definition.py b/src/akas/ops/sequence/definition.py
+index d1c3d81b..400ef903 100644
+--- a/src/akas/ops/sequence/definition.py
++++ b/src/akas/ops/sequence/definition.py
+@@ -15,6 +15,7 @@ OUTPUT_ARGUMENTS = {
+         "chunk_controls": (2, 3),
+         "advance": (0,),
+         "next_tokens": (1,),
++        "last_rows": OutputABI((-1,), ("out",)),
+     }
+ }
+ for _contract in ("bf16", "block-fp8"):
+@@ -328,3 +329,16 @@ IMPLEMENTATIONS += tuple(
+     )
+     for provider in ("cuda", "webgpu")
+ )
++
++IMPLEMENTATIONS += tuple(
++    Implementation(
++        "last_rows",
++        "akas.ops.sequence.kernel",
++        "reference",
++        provider=provider,
++        defaults=(("dtype", "float32"),),
++        factory="mapped_last_rows",
++        name="sequence.last_rows",
++    )
++    for provider in ("cuda", "webgpu")
++)
+diff --git a/src/akas/ops/vocabulary/README.md b/src/akas/ops/vocabulary/README.md
+index caf915b7..b22098a1 100644
+--- a/src/akas/ops/vocabulary/README.md
++++ b/src/akas/ops/vocabulary/README.md
+@@ -76,6 +76,6 @@ tests](../../../../tests/test_device_feedback.py).
+ 
+ ## ZONOS3 and ZAC
+ 
+-Codebook residual lookup adds offset codebook rows and per-codebook biases to the semantic embedding. CUDA and WebGPU share the F32 lookup body.
++Codebook residual lookup adds offset codebook rows and per-codebook biases to the semantic embedding (`codebook_residual` for complete frames and `codebook_residual_masked` when negative IDs mark omitted early-decode residual codebooks). For native BF16 ZONOS3 serving, `zonos3_frame_embed` sums multi-codebook and text BF16 embeddings on device with negative-sentinel condition-row overrides, and `codebook_sample` performs softcapped, repetition-penalized top-k/top-p sampling with cold-start delay padding across active slots. CUDA and WebGPU share these portable bodies.
+ 
+ Return to the [operation index](../README.md).
+diff --git a/src/akas/ops/vocabulary/definition.py b/src/akas/ops/vocabulary/definition.py
+index f31c0968..7813297a 100644
+--- a/src/akas/ops/vocabulary/definition.py
++++ b/src/akas/ops/vocabulary/definition.py
+@@ -344,3 +344,35 @@ IMPLEMENTATIONS += tuple(
+     )
+     for provider in ("cuda", "webgpu")
+ )
++
++from akas.ops.vocabulary.validation import (
++    codebook_residual_masked_validation,
++    codebook_sample_validation,
++    zonos3_frame_embed_validation,
++)
++
++OUTPUT_ARGUMENTS["reference"].update(
++    {
++        "codebook_residual_masked": OutputABI((-1,), ("out",)),
++        "zonos3_frame_embed": OutputABI((-1,), ("out",)),
++        "codebook_sample": OutputABI((1, -1), ("history", "out")),
++    }
++)
++VALIDATIONS["codebook_residual_masked"] = codebook_residual_masked_validation
++VALIDATIONS["zonos3_frame_embed"] = zonos3_frame_embed_validation
++VALIDATIONS["codebook_sample"] = codebook_sample_validation
++IMPLEMENTATIONS += tuple(
++    Implementation(
++        kind,
++        "akas.ops.vocabulary.kernel",
++        "reference",
++        provider=provider,
++        factory=kind,
++    )
++    for provider in ("cuda", "webgpu")
++    for kind in (
++        "codebook_residual_masked",
++        "zonos3_frame_embed",
++        "codebook_sample",
++    )
++)
+diff --git a/src/akas/ops/vocabulary/kernel.py b/src/akas/ops/vocabulary/kernel.py
+index e0c24b0f..94e78280 100644
+--- a/src/akas/ops/vocabulary/kernel.py
++++ b/src/akas/ops/vocabulary/kernel.py
+@@ -421,3 +421,255 @@ def codebook_residual(spec, schedule):
+         return out
+ 
+     return compute
++
++
++def codebook_residual_masked(spec, schedule):
++    """Add offset audio codebook lookups while skipping negative missing codes."""
++    import tilelang.language as T
++
++    p = {**spec.parameters, **schedule}
++    rows, width, groups, vocab = (p[key] for key in ("r", "c", "groups", "vocab"))
++
++    @kernel
++    def compute(
++        x: Tensor((rows, width), "float32"),
++        ids: Tensor((rows, groups), "int32"),
++        table: Tensor((groups * vocab * width,), "float32"),
++        bias: Tensor((groups * width,), "float32"),
++    ) -> Tensor((rows, width), "float32"):
++        out = output((rows, width), "float32")
++        with T.Kernel(rows, T.ceildiv(width, 128), threads=128) as (row, tile):
++            for lane in T.Parallel(128):
++                column = tile * 128 + lane
++                if column < width:
++                    value = T.alloc_var("float32")
++                    value = x[row, column]
++                    for group in T.unroll(groups):
++                        code = ids[row, group]
++                        if (code >= 0) & (code < vocab):
++                            index = code + group * vocab
++                            value += (
++                                table[index * width + column]
++                                + bias[group * width + column]
++                            )
++                    out[row, column] = value
++        return out
++
++    return compute
++
++
++def zonos3_frame_embed(spec, schedule):
++    """Sum BF16 multi-codebook + text embeddings on device with condition-row overrides."""
++    import tilelang.language as T
++
++    p = {**spec.parameters, **schedule}
++    rows, width, codebooks, code_vocab, text_vocab, cond_rows = (
++        p[k]
++        for k in ("r", "c", "codebooks", "code_vocab", "text_vocab", "cond_rows")
++    )
++    cols = codebooks + 1
++    audio_bytes = codebooks * code_vocab * width * 2
++    text_bytes = text_vocab * width * 2
++
++    @T.macro
++    def load_bf16(buf, elem_idx):
++        lo = T.cast(buf[elem_idx * 2], "uint32")
++        hi = T.cast(buf[elem_idx * 2 + 1], "uint32")
++        return T.reinterpret("float32", (lo | (hi << 8)) << 16)
++
++    @kernel
++    def compute(
++        frames: Tensor((rows, cols), "int32"),
++        audio_w: Tensor((audio_bytes,), "uint8"),
++        text_w: Tensor((text_bytes,), "uint8"),
++        cond_w: Tensor((cond_rows, width), "float32"),
++    ) -> Tensor((rows, width), "float32"):
++        out = output((rows, width), "float32")
++        with T.Kernel(rows, T.ceildiv(width, 128), threads=128) as (row, tile):
++            c0 = frames[row, 0]
++            t_id = frames[row, codebooks]
++            for lane in T.Parallel(128):
++                col = tile * 128 + lane
++                if col < width:
++                    if c0 < 0:
++                        out[row, col] = 0.0
++                    elif t_id < 0:
++                        cond_idx = T.min(T.max(-1 - t_id, 0), cond_rows - 1)
++                        out[row, col] = cond_w[cond_idx, col]
++                    else:
++                        acc = T.alloc_var("float32")
++                        acc = load_bf16(
++                            text_w,
++                            T.min(t_id, text_vocab - 1) * width + col,
++                        )
++                        for cb in T.unroll(codebooks):
++                            aid = cb * code_vocab + T.min(
++                                T.max(frames[row, cb], 0), code_vocab - 1
++                            )
++                            acc += load_bf16(audio_w, aid * width + col)
++                        out[row, col] = acc
++        return out
++
++    return compute
++
++
++def codebook_sample(spec, schedule):
++    """Sample delayed multi-codebook rows with softcap, repetition penalty, top-k and top-p."""
++    import tilelang.language as T
++
++    p = {**spec.parameters, **schedule}
++    slots = p["slots"]
++    codebooks = p.get("codebooks", 10)
++    vocab = p.get("vocab", 4098)
++    eoa = vocab - 2
++    pad = vocab - 1
++    window = p.get("window", 96)
++    rep_cbs = p.get("rep_codebooks", 6)
++    top_k = p.get("top_k", 80)
++    top_p = p.get("top_p", 0.69)
++    penalty = p.get("penalty", 2.4)
++    softcap = p.get("softcap", 15.0)
++    silence = p.get("silence_frames", 3)
++    text_pad = p.get("text_pad", 8196)
++    threads = 128
++    per_thread = (eoa + 1 + threads - 1) // threads
++
++    @kernel
++    def compute(
++        projection: Tensor((slots, codebooks * vocab), "float32"),
++        history: Tensor((slots, window, codebooks), "int32"),
++        steps: Tensor((slots,), "int32"),
++        temperatures: Tensor((slots,), "float32"),
++        uniforms: Tensor((slots, codebooks), "float32"),
++    ) -> tuple[
++        Tensor((slots, window, codebooks), "int32"),
++        Tensor((slots, codebooks + 1), "int32"),
++    ]:
++        out = output((slots, codebooks + 1), "int32")
++        with T.Kernel(codebooks, slots, threads=threads) as (cb, slot):
++            tx = T.get_thread_binding()
++            step = steps[slot]
++            hist_sh = T.alloc_shared((window,), "int32")
++            sh_val = T.alloc_shared((threads,), "float32")
++            sh_idx = T.alloc_shared((threads,), "int32")
++            top_vals = T.alloc_shared((top_k,), "float32")
++            top_ids = T.alloc_shared((top_k,), "int32")
++            probs = T.alloc_local((top_k,), "float32")
++            vals = T.alloc_local((per_thread,), "float32")
++
++            if step >= 0:
++                if tx < window:
++                    hist_sh[tx] = history[slot, tx, cb]
++                T.sync_threads()
++
++                for m in T.serial(per_thread):
++                    tok = m * threads + tx
++                    if tok <= eoa:
++                        raw = projection[slot, cb * vocab + tok]
++                        v = T.alloc_var("float32")
++                        v = T.float32(softcap) * T.tanh(raw / T.float32(softcap))
++                        if (cb < rep_cbs) & (tok < eoa):
++                            seen = T.alloc_var("int32")
++                            seen = 0
++                            for w_idx in T.serial(window):
++                                if (w_idx < step) & (hist_sh[w_idx] == tok):
++                                    seen = 1
++                            if seen != 0:
++                                v = T.if_then_else(
++                                    v > 0.0,
++                                    v / T.float32(penalty),
++                                    v * T.float32(penalty),
++                                )
++                        vals[m] = v
++                    else:
++                        vals[m] = T.float32(-1e30)
++
++                for rank in T.serial(top_k):
++                    best_v = T.alloc_var("float32")
++                    best_m = T.alloc_var("int32")
++                    best_i = T.alloc_var("int32")
++                    best_v = T.float32(-1e30)
++                    best_m = 0
++                    best_i = vocab
++                    for m in T.serial(per_thread):
++                        tok = m * threads + tx
++                        if (tok <= eoa) & (
++                            (vals[m] > best_v)
++                            | ((vals[m] == best_v) & (tok < best_i))
++                        ):
++                            best_v = vals[m]
++                            best_m = m
++                            best_i = tok
++                    sh_val[tx] = best_v
++                    sh_idx[tx] = best_i
++                    T.sync_threads()
++                    for stride_exp in T.unroll(7):
++                        stride = 64 >> stride_exp
++                        if tx < stride:
++                            other_v = sh_val[tx + stride]
++                            other_i = sh_idx[tx + stride]
++                            if (other_v > sh_val[tx]) | (
++                                (other_v == sh_val[tx]) & (other_i < sh_idx[tx])
++                            ):
++                                sh_val[tx] = other_v
++                                sh_idx[tx] = other_i
++                        T.sync_threads()
++                    win_id = sh_idx[0]
++                    if tx == 0:
++                        top_vals[rank] = sh_val[0]
++                        top_ids[rank] = win_id
++                    if best_i == win_id:
++                        vals[best_m] = T.float32(-1e30)
++                    T.sync_threads()
++
++                if tx == 0:
++                    temp = temperatures[slot]
++                    chosen_tok = T.alloc_var("int32")
++                    if temp <= 0.0:
++                        chosen_tok = top_ids[0]
++                    else:
++                        peak = top_vals[0] / temp
++                        sum_w = T.alloc_var("float32")
++                        sum_w = 0.0
++                        for r in T.serial(top_k):
++                            w_r = T.exp(top_vals[r] / temp - peak)
++                            probs[r] = w_r
++                            sum_w += w_r
++                        cum = T.alloc_var("float32")
++                        kept_sum = T.alloc_var("float32")
++                        cum = 0.0
++                        kept_sum = 0.0
++                        for r in T.serial(top_k):
++                            w_r = probs[r]
++                            if cum > T.float32(top_p) * sum_w:
++                                probs[r] = 0.0
++                            else:
++                                kept_sum += w_r
++                            cum += w_r
++                        target = uniforms[slot, cb] * kept_sum
++                        cdf = T.alloc_var("float32")
++                        picked = T.alloc_var("int32")
++                        cdf = 0.0
++                        picked = -1
++                        for r in T.serial(top_k):
++                            cdf += probs[r]
++                            if (picked < 0) & (target < cdf):
++                                picked = top_ids[r]
++                        if picked < 0:
++                            picked = top_ids[0]
++                        chosen_tok = picked
++                    delayed_tok = T.if_then_else(
++                        cb > silence + step, pad, chosen_tok
++                    )
++                    out[slot, cb] = delayed_tok
++                    history[slot, step % window, cb] = delayed_tok
++                    if cb == 0:
++                        out[slot, codebooks] = text_pad
++            else:
++                if tx == 0:
++                    out[slot, cb] = pad
++                    if cb == 0:
++                        out[slot, codebooks] = text_pad
++        return history, out
++
++    return compute
+diff --git a/src/akas/ops/vocabulary/validation.py b/src/akas/ops/vocabulary/validation.py
+index 1d3ba614..a3fbcda0 100644
+--- a/src/akas/ops/vocabulary/validation.py
++++ b/src/akas/ops/vocabulary/validation.py
+@@ -156,3 +156,129 @@ def codebook_residual_validation(kind, p, signature):
+     residual = table[np.arange(groups), values["ids"]].astype("float64") + biases
+     out = values["x"] + residual.sum(axis=1)
+     return ValidationCase(values, {**values, "out": out.astype("float32")})
++
++
++def codebook_residual_masked_validation(kind, p, signature):
++    import numpy as np
++    from akas.kernels.contracts import ValidationCase, sample_arguments
++
++    values = sample_arguments(signature)
++    groups, vocab, width = (p[key] for key in ("groups", "vocab", "c"))
++    ids = np.arange(values["ids"].size, dtype="int32").reshape(values["ids"].shape) % vocab
++    if ids.size > 1:
++        ids.reshape(-1)[::3] = -1
++    values["ids"][:] = ids
++    table = values["table"].reshape(groups, vocab, width).astype("float64")
++    biases = values["bias"].reshape(groups, width).astype("float64")
++    out = values["x"].astype("float64").copy()
++    for r in range(ids.shape[0]):
++        for g in range(groups):
++            code = int(ids[r, g])
++            if 0 <= code < vocab:
++                out[r] += table[g, code] + biases[g]
++    return ValidationCase(values, {**values, "out": out.astype("float32")})
++
++
++def zonos3_frame_embed_validation(kind, p, signature):
++    import numpy as np
++    from tensor.runtime.dtypes import decode_bfloat16, encode_bfloat16
++    from akas.kernels.contracts import ValidationCase, sample_arguments
++
++    values = sample_arguments(signature)
++    rows, width, codebooks, code_vocab, text_vocab, cond_rows = (
++        p[k]
++        for k in ("r", "c", "codebooks", "code_vocab", "text_vocab", "cond_rows")
++    )
++    rng = np.random.default_rng(71)
++    audio_f = rng.standard_normal((codebooks * code_vocab, width)).astype("float32") * 0.25
++    text_f = rng.standard_normal((text_vocab, width)).astype("float32") * 0.25
++    values["audio_w"][:] = encode_bfloat16(audio_f).view("uint8").reshape(-1)
++    values["text_w"][:] = encode_bfloat16(text_f).view("uint8").reshape(-1)
++    audio_dec = decode_bfloat16(values["audio_w"].view("uint16")).reshape(
++        codebooks, code_vocab, width
++    )
++    text_dec = decode_bfloat16(values["text_w"].view("uint16")).reshape(text_vocab, width)
++    frames = rng.integers(0, min(code_vocab, 64), size=(rows, codebooks + 1), dtype="int32")
++    frames[:, codebooks] = rng.integers(0, min(text_vocab, 64), size=(rows,), dtype="int32")
++    if rows > 1:
++        frames[0, codebooks] = -1
++    if rows > 2:
++        frames[-1, 0] = -1
++    values["frames"][:] = frames
++    out = np.zeros((rows, width), dtype="float32")
++    for r in range(rows):
++        if frames[r, 0] < 0:
++            out[r] = 0.0
++        elif frames[r, codebooks] < 0:
++            out[r] = values["cond_w"][min(max(-1 - int(frames[r, codebooks]), 0), cond_rows - 1)]
++        else:
++            acc = text_dec[int(frames[r, codebooks])].astype("float64")
++            for cb in range(codebooks):
++                acc = acc + audio_dec[cb, int(frames[r, cb])].astype("float64")
++            out[r] = acc.astype("float32")
++    return ValidationCase(values, {**values, "out": out})
++
++
++def codebook_sample_validation(kind, p, signature):
++    import numpy as np
++    from akas.kernels.contracts import ValidationCase, sample_arguments
++
++    values = sample_arguments(signature)
++    slots = p["slots"]
++    codebooks = p.get("codebooks", 10)
++    vocab = p.get("vocab", 4098)
++    eoa, pad = vocab - 2, vocab - 1
++    window = p.get("window", 96)
++    rep_cbs = p.get("rep_codebooks", 6)
++    top_k = p.get("top_k", 80)
++    top_p = p.get("top_p", 0.69)
++    penalty = p.get("penalty", 2.4)
++    softcap = p.get("softcap", 15.0)
++    silence = p.get("silence_frames", 3)
++    text_pad = p.get("text_pad", 8196)
++
++    rng = np.random.default_rng(91)
++    # Distinct well-separated logits so float32 vs float64 boundary ties cannot flip discrete picks
++    base_logits = rng.standard_normal((slots, codebooks, vocab)).astype("float32") * 3.0
++    values["projection"][:] = base_logits.reshape(slots, codebooks * vocab)
++    values["history"][:] = rng.integers(0, min(eoa, 128), size=(slots, window, codebooks), dtype="int32")
++    values["steps"][:] = np.arange(slots, dtype="int32") * 37
++    if slots > 1:
++        values["steps"][-1] = -1
++    values["temperatures"][:] = 0.75
++    if slots > 2:
++        values["temperatures"][0] = 0.0
++    values["uniforms"][:] = np.linspace(0.11, 0.89, slots * codebooks, dtype="float32").reshape(slots, codebooks)
++
++    expected = {k: v.copy() for k, v in values.items()}
++    out = np.full((slots, codebooks + 1), pad, dtype="int32")
++    out[:, codebooks] = text_pad
++    for s in range(slots):
++        step = int(values["steps"][s])
++        if step < 0:
++            continue
++        temp = float(values["temperatures"][s])
++        for cb in range(codebooks):
++            raw = values["projection"][s, cb * vocab : (cb + 1) * vocab].astype("float64")[: eoa + 1]
++            v = softcap * np.tanh(raw / softcap)
++            if cb < rep_cbs and step > 0:
++                used = np.unique(values["history"][s, : min(step, window), cb])
++                used = used[(used >= 0) & (used < eoa)]
++                v[used] = np.where(v[used] > 0, v[used] / penalty, v[used] * penalty)
++            order = np.argsort(-v, kind="stable")[:top_k]
++            if temp <= 0.0:
++                chosen = int(order[0])
++            else:
++                tv = v[order] / temp
++                w = np.exp(tv - tv[0])
++                before = np.cumsum(w) - w
++                w[before > top_p * w.sum()] = 0.0
++                cdf = np.cumsum(w)
++                u = float(values["uniforms"][s, cb]) * cdf[-1]
++                idx = int(np.searchsorted(cdf, u, side="right"))
++                chosen = int(order[min(idx, len(order) - 1)])
++            tok = pad if cb > silence + step else chosen
++            out[s, cb] = tok
++            expected["history"][s, step % window, cb] = tok
++    expected["out"] = out
++    return ValidationCase(values, expected, rtol=0, atol=0)
+diff --git a/src/akas/serving/speech.py b/src/akas/serving/speech.py
+index 222333e0..2dae8a62 100644
+--- a/src/akas/serving/speech.py
++++ b/src/akas/serving/speech.py
+@@ -86,9 +86,106 @@ def create_app(factory):
+             },
+         )
+ 
++    async def speech_stream(request):
++        if not hasattr(service, "engine"):
++            raise web.HTTPNotImplemented(
++                text="streaming speech requires a streaming service"
++            )
++        try:
++            payload = await request.json()
++        except (ValueError, UnicodeError) as error:
++            raise web.HTTPBadRequest(text="requires a JSON object") from error
++        if not isinstance(payload, dict):
++            raise web.HTTPBadRequest(text="requires a JSON object")
++        text = payload.get("input") or payload.get("text")
++        if not isinstance(text, str) or not text.strip():
++            raise web.HTTPBadRequest(text="input must be a non-empty string")
++        fmt = payload.get("response_format", payload.get("format", "pcm"))
++        if fmt != "pcm":
++            raise web.HTTPBadRequest(
++                text="streaming /v1/audio/speech requires pcm format"
++            )
++        decoder = payload.get("decoder") or "keep2_plain"
++        if decoder != "keep2_plain":
++            raise web.HTTPBadRequest(text=f"unsupported decoder: {decoder}")
++        stream_decode = payload.get("stream_decode") or "prefix"
++        if stream_decode not in ("prefix", "whole"):
++            raise web.HTTPBadRequest(text=f"unsupported stream_decode: {stream_decode}")
++        seed = payload.get("seed")
++        scope = payload.get("stream_codebooks_scope", "first")
++        if scope not in ("first", "all"):
++            raise web.HTTPBadRequest(text="invalid stream_codebooks_scope")
++
++        loop = asyncio.get_running_loop()
++        queue = asyncio.Queue()
++
++        def on_chunk(data):
++            loop.call_soon_threadsafe(queue.put_nowait, ("chunk", data))
++
++        def on_done():
++            loop.call_soon_threadsafe(queue.put_nowait, ("done", None))
++
++        def on_error(msg):
++            loop.call_soon_threadsafe(queue.put_nowait, ("error", msg))
++
++        try:
++            job = service.engine.submit(
++                text,
++                seed=1000 if seed is None else seed,
++                temperature=payload.get("temperature", 0.75),
++                max_tokens=payload.get("max_tokens", 384),
++                stream_decode=stream_decode,
++                stream_codebooks=payload.get("stream_codebooks", 1),
++                first_only=scope == "first",
++                on_chunk=on_chunk,
++                on_done=on_done,
++                on_error=on_error,
++            )
++        except (ValueError, TypeError, OverflowError) as error:
++            raise web.HTTPBadRequest(text=str(error)) from error
++        response = None
++        sample_rate = int(service.metadata.get("sample_rate_hz", 44100))
++        headers = {
++            "Content-Type": "audio/pcm",
++            "X-Audio-Sample-Rate": str(sample_rate),
++            "X-Audio-Channels": "1",
++            "X-Audio-Format": "float32",
++            "X-Seed": str(job.seed),
++            "X-Decoder": decoder,
++        }
++        try:
++            while True:
++                kind, item = await queue.get()
++                if kind == "error":
++                    if response is None:
++                        raise web.HTTPBadRequest(text=str(item))
++                    break
++                if kind == "chunk" and item:
++                    if response is None:
++                        response = web.StreamResponse(status=200, headers=headers)
++                        await response.prepare(request)
++                    await response.write(item)
++                elif kind == "done":
++                    if response is None:
++                        response = web.StreamResponse(status=200, headers=headers)
++                        await response.prepare(request)
++                    await response.write_eof()
++                    return response
++        except asyncio.CancelledError:
++            job.cancelled.set()
++            raise
++        finally:
++            job.cancelled.set()
++        return response
++
+     app = web.Application(client_max_size=1024**2)
+     app.cleanup_ctx.append(lifecycle)
+     app.add_routes(
+-        [web.get("/health", health), web.get("/props", props), web.post("/tts", tts)]
++        [
++            web.get("/health", health),
++            web.get("/props", props),
++            web.post("/tts", tts),
++            web.post("/v1/audio/speech", speech_stream),
++        ]
+     )
+     return app
+diff --git a/tests/support/zonos3_reference.py b/tests/support/zonos3_reference.py
+index 785b28b1..da552370 100644
+--- a/tests/support/zonos3_reference.py
++++ b/tests/support/zonos3_reference.py
+@@ -56,7 +56,12 @@ def reference(checkpoint, embeddings):
+         )
+         k = k / np.sqrt(np.sum(k**2, axis=-1, keepdims=True) + 1e-6)
+         alpha = affine(x, prefix + "ssm_alpha.weight") + get("ssm_dt.bias")
+-        decay = np.exp(np.logaddexp(0, alpha) * get("ssm_a"))
++        a_factor = (
++            -np.exp(get("ssm_a_log"))
++            if (prefix + "ssm_a_log") in weights.tensors
++            else get("ssm_a")
++        )
++        decay = np.exp(np.logaddexp(0, alpha) * a_factor)
+         beta = 1 / (1 + np.exp(-affine(x, prefix + "ssm_beta.weight")))
+         memory = np.zeros((c.delta_heads, c.delta_dim, c.delta_dim), "float64")
+         out = []
+@@ -101,7 +106,10 @@ def reference(checkpoint, embeddings):
+             gate = affine(x, prefix + "ffn_gate.weight")
+             up = affine(x, prefix + "ffn_up.weight")
+             return affine(_silu(gate) * up, prefix + "ffn_down.weight")
+-        raw = affine(_rms(x, c.epsilon), prefix + "ffn_gate_inp.weight")
++        route_scale = (
++            floating(prefix + "ffn_route_norm.weight") if c.router_norm else 1
++        )
++        raw = affine(_rms(x, c.epsilon, route_scale), prefix + "ffn_gate_inp.weight")
+         selected = np.argsort(-(raw + floating(prefix + "exp_probs_b.bias")), axis=-1)
+         selected = selected[:, : c.experts_per_row]
+         probabilities = _softmax(np.take_along_axis(raw, selected, axis=-1))
+diff --git a/tests/test_benchmark_history.py b/tests/test_benchmark_history.py
+index 048e0018..42c55555 100644
+--- a/tests/test_benchmark_history.py
++++ b/tests/test_benchmark_history.py
+@@ -113,7 +113,7 @@ def test_changed_sources_invalidate_run_and_legacy_accounting_stays_separate(
+ def test_speech_records_preserve_utterances_without_token_shapes(tmp_path, source):
+     from akas.benchmarking.workload import load
+ 
+-    workload = load("speech-demo-v1")
++    workload = load("speech-concurrent-v1")
+     speech_report = report(workload["protocol"])
+     metadata = speech_report["metadata"]
+     metadata["speech_workload"] = dict(id=workload["id"], definition=workload)
+@@ -212,10 +212,16 @@ def test_dependency_working_sources_are_retained_and_checked(tmp_path, source, c
+     dependency = tmp_path / "compiler"
+     dependency.mkdir()
+     (dependency / "lowering.py").write_text("x = 1\n")
++    (dependency / "model").mkdir()
++    (dependency / "model" / "codec.py").write_text("codec = True\n")
++    (dependency / "servers").mkdir()
++    (dependency / "servers" / "scheduler.py").write_text("slots = True\n")
+     run = Recorder(tmp_path / "history", report()["metadata"], source_root=source,
+                    dependency_sources={"compiler": dependency})
+     with tarfile.open(run.directory / "dependencies/compiler/source.tar.gz") as archive:
+         assert archive.extractfile("lowering.py").read() == b"x = 1\n"
++        assert archive.extractfile("model/codec.py").read() == b"codec = True\n"
++        assert archive.extractfile("servers/scheduler.py").read() == b"slots = True\n"
+     if changed:
+         (dependency / "lowering.py").write_text("x = 2\n")
+     record = run.update(report(), final=True)
+diff --git a/tests/test_campaign_report.py b/tests/test_campaign_report.py
+index f99dae6d..1cce784d 100644
+--- a/tests/test_campaign_report.py
++++ b/tests/test_campaign_report.py
+@@ -12,6 +12,54 @@ from akas.benchmarking.history import digest, write
+ from tools.campaign_report import check, export, read, render, speculative_baselines, validate
+ 
+ 
++def test_native_stream_baseline_export_preserves_dependency_provenance(tmp_path):
++    from tools.campaign_report import NATIVE_STREAM_SCHEMA, export_native_stream_baseline
++    from akas.benchmarking.workload import load
++
++    workload = load("speech-concurrent-v1")
++    prompt = workload["utterances"][0]["text"]
++    metadata = dict(
++        protocol="client-speech-pcm-stream-v1",
++        speech_workload=dict(id=workload["id"], definition=workload),
++        runtime="zonos3-sgl",
++        provider="cuda",
++        weight_format="bf16",
++    )
++    result = dict(
++        status="ok",
++        case=dict(id="delivery", text=prompt, concurrency=1, requests=1),
++        concurrency=1,
++        completed=1,
++        requests=1,
++        failed=0,
++        wall_s=0.7,
++        audio_seconds_per_second=15.5,
++        gpu_memory_peak=dict(memory_used_mib=4944),
++        results=[dict(ok=True)],
++    )
++    directory = tmp_path / "benchmarks/runs/native"
++    write(directory / "report.json", dict(metadata=metadata, results=[result]))
++    write(
++        directory / "run.json",
++        dict(
++            id="native",
++            status="passed",
++            started_at="2026-01-01T00:00:00Z",
++            completed_at="2026-01-01T00:01:00Z",
++            source=dict(revision="upstream"),
++            metadata=metadata,
++            results=[result],
++            artifacts=[dict(path="report.json", sha256=digest(directory / "report.json"))],
++        ),
++    )
++    out = export_native_stream_baseline(["native"], tmp_path / "benchmarks", None)
++    data = read(out / "report.json")
++    assert data["schema"] == NATIVE_STREAM_SCHEMA
++    assert data["measurements"][0]["run_id"] == "native"
++    assert "source.tar.gz" in (out / "README.md").read_text()
++    assert "matrix used the original assets" in (out / "README.md").read_text()
++
++
+ def test_streamed_native_measurements_preserve_latency_and_failed_qualification():
+     from tools.campaign_report import measurement
+ 
+diff --git a/tools/benchmark_archive.py b/tools/benchmark_archive.py
+index 6590d967..80467a0f 100644
+--- a/tools/benchmark_archive.py
++++ b/tools/benchmark_archive.py
+@@ -41,6 +41,15 @@ def stored_size(files):
+ 
+ 
+ def report_summary(data):
++    if data.get("schema") == "akas.native-stream-baseline-report.v1":
++        state = data["campaign"]
++        return dict(
++            started_at=state["created_at"],
++            workload=data["workload"]["id"],
++            revision="native-dependency-snapshots",
++            akas="0/0",
++            baseline=f"{len(data['measurements'])}/{len(data['measurements'])}",
++        )
+     profiles = data["profiles"]
+     counts = {}
+     for kind in ("akas", "baseline"):
+diff --git a/tools/campaign_report.py b/tools/campaign_report.py
+index f5f98420..8019f19f 100644
+--- a/tools/campaign_report.py
++++ b/tools/campaign_report.py
+@@ -21,6 +21,7 @@ from akas.optimization.context import workload
+ 
+ SCHEMA = "akas.campaign-report.v1"
+ SPEECH_SCHEMA = "akas.speech-report.v1"
++NATIVE_STREAM_SCHEMA = "akas.native-stream-baseline-report.v1"
+ SPEECH_FILES = frozenset((
+     "README.md", "COMPARISON.md", "AKAS.md", "BASELINES.md",
+     "measurements.csv", "campaign.json", "report.json",
+@@ -827,6 +828,8 @@ def table_rows(profiles):
+ 
+ 
+ def render(data, out, history):
++    if data.get("schema") == NATIVE_STREAM_SCHEMA:
++        return render_native_stream_baseline(data, Path(out).resolve(), Path(history).resolve())
+     if data.get("schema") == SPEECH_SCHEMA:
+         return render_speech(data, Path(out).resolve(), Path(history).resolve())
+     validate(data)
+@@ -1392,7 +1395,7 @@ def index(history):
+     lines = [
+         "# Campaign reports",
+         "",
+-        "Each report contains the full requested matrix, all available AKAS and baseline measurements, failed or unsupported rows, runtime settings, source provenance and selected kernel schedules. Archived reports and runs are pinned by commit in [the artifact catalog](../archive.json).",
++        "Each report contains the full requested matrix, all available AKAS and baseline measurements, failed or unsupported rows, runtime settings, source provenance and selected kernel schedules. Archived reports and runs are pinned by commit in [the artifact catalog](../archive.json). Native streaming baseline reports contain native diagnostics only.",
+         "",
+         "| Started UTC | Workload | Source | Qualified AKAS | Qualified baselines | Report |",
+         "| --- | --- | --- | ---: | ---: | --- |",
+@@ -1421,6 +1424,230 @@ def export(campaign, *, history="benchmarks", out=None):
+     return destination
+ 
+ 
++def export_native_stream_baseline(run_ids, history, out):
++    """Render native BF16 streaming diagnostics and their archived source dependencies."""
++    runs = [record(history, run_id) for run_id in run_ids]
++    if any(data is None or data["status"] != "passed" for data in runs):
++        raise ValueError("native stream baseline requires sealed, passed runs")
++    measurements = sorted(
++        ({**row, "run_id": data["id"]} for data in runs for row in data["results"]),
++        key=lambda row: (row["case"]["concurrency"], row["case"]["id"]),
++    )
++    if not measurements:
++        raise ValueError("native stream baseline has no measurements")
++    for data in runs:
++        meta = data["metadata"]
++        if (
++            meta.get("protocol") != "client-speech-pcm-stream-v1"
++            or meta.get("weight_format") != "bf16"
++        ):
++            raise ValueError("invalid native stream baseline metadata: " + data["id"])
++        workload = meta["speech_workload"]["definition"]
++        if workload["request"]["max_tokens"] != 384 or workload["request"]["stream_decode"] != "prefix":
++            raise ValueError("native stream baseline protocol differs")
++        for row in data["results"]:
++            if (
++                row["case"]["concurrency"] != row["requests"]
++                or row["completed"] != row["requests"]
++                or row["failed"]
++                or len(row["results"]) != row["requests"]
++                or not all(item["ok"] for item in row["results"])
++            ):
++                raise ValueError("invalid native stream baseline measurement: " + data["id"])
++    identity = hashlib.sha256("\n".join(run_ids).encode()).hexdigest()
++    state = dict(
++        identity=identity,
++        created_at=min(data["started_at"] for data in runs),
++        updated_at=max(data["completed_at"] for data in runs),
++        run_ids=list(run_ids),
++        codec_qualification_run=None,
++        codec_qualification=None,
++        compact_integration_run=None,
++        source_provenance_run=None,
++    )
++    data = dict(
++        schema=NATIVE_STREAM_SCHEMA,
++        generated_at=datetime.now(timezone.utc).isoformat(),
++        campaign=state,
++        workload=runs[0]["metadata"]["speech_workload"]["definition"],
++        measurements=measurements,
++        evidence={data["id"]: metadata_for(data) for data in runs},
++    )
++    destination = Path(out) if out else report_directory(state, history)
++    render_native_stream_baseline(data, destination, history)
++    return destination
++
++
++def attach_native_stream_codec(report, qualification_run_id, compact_run_id, history):
++    """Link packaging/integration evidence without rewriting the original baseline matrix."""
++    data = read(Path(report) / "report.json")
++    if data.get("schema") != NATIVE_STREAM_SCHEMA:
++        raise ValueError("not a native stream baseline report")
++    qualification = record(history, qualification_run_id)
++    integration = record(history, compact_run_id)
++    if not qualification or qualification["status"] != "passed" or not integration or integration["status"] != "passed":
++        raise ValueError("compact codec evidence must be sealed and passed")
++    if not qualification["metadata"].get("checks") or not all(
++        check["bitwise"] for check in qualification["metadata"]["checks"]
++    ):
++        raise ValueError("compact codec requires bitwise qualification")
++    if not all(row["status"] == "ok" for row in integration["results"]):
++        raise ValueError("compact integration has failed requests")
++    data["campaign"]["codec_qualification_run"] = qualification_run_id
++    data["campaign"]["compact_integration_run"] = compact_run_id
++    data["campaign"]["codec_qualification"] = qualification["metadata"]["compact_codec"]
++    data["evidence"][qualification_run_id] = metadata_for(qualification)
++    data["evidence"][compact_run_id] = metadata_for(integration)
++    provenance_id = data["campaign"].get("source_provenance_run")
++    if provenance_id:
++        data["evidence"][provenance_id] = metadata_for(record(history, provenance_id))
++    render_native_stream_baseline(data, Path(report).resolve(), Path(history).resolve())
++
++
++def attach_native_stream_provenance(report, provenance_run_id, history):
++    """Link the actual baseline source without changing the original measurements."""
++    data = read(Path(report) / "report.json")
++    if data.get("schema") != NATIVE_STREAM_SCHEMA:
++        raise ValueError("not a native stream baseline report")
++    provenance = record(history, provenance_run_id)
++    if not provenance or provenance["status"] != "passed":
++        raise ValueError("baseline source provenance must be sealed and passed")
++    data["campaign"]["source_provenance_run"] = provenance_run_id
++    data["evidence"][provenance_run_id] = metadata_for(provenance)
++    render_native_stream_baseline(data, Path(report).resolve(), Path(history).resolve())
++
++
++def render_native_stream_baseline(data, out, history):
++    if data.get("schema") != NATIVE_STREAM_SCHEMA:
++        raise ValueError("invalid native stream baseline schema")
++    out.mkdir(parents=True, exist_ok=True)
++    state = data["campaign"]
++    measurements = sorted(data["measurements"], key=lambda row: row["case"]["concurrency"])
++    workload = data["workload"]
++    prompt = workload["utterances"][0]["text"]
++    if len(prompt.encode()) != 177 or len(prompt.split()) != 30:
++        raise ValueError("native stream baseline input differs")
++    if any(row["case"]["text"] != prompt for row in measurements):
++        raise ValueError("native stream baseline prompt differs between runs")
++    qualification_id = state.get("codec_qualification_run")
++    integration_id = state.get("compact_integration_run")
++    lines = [
++        "# Native BF16 streaming baseline",
++        "",
++        "These are Zyphra native CUDA **baseline diagnostics**, not qualified AKAS measurements. "
++        "The GGUF/llama.cpp path is not part of this comparison.",
++        "",
++        f"Model: **{measurements[0]['case'].get('model', 'Zyphra/ZONOS3-Mini')}**; weights: **BF16 LM** with the FP32 "
++        "`keep2_plain` codec. Fixed English input: **30 words / 177 UTF-8 bytes**. "
++        "Each request uses **50 prompt frames** (47 model-input frames + 3 silence-prefill frames), "
++        "up to **384 generated tokens** within a **512-frame** limit.",
++        "",
++        "Flat admission up to the requested request limit; no request-class bucketing. Prefix streaming is enabled. "
++        "The scheduler fix prevents request-slot recycling while earlier decodes remain active. "
++        "C64 had the highest measured audio throughput; C256 is a successful capacity result, not a latency target.",
++        "",
++        "| Concurrency | Valid audio | Wall time (s) | Audio seconds/s | Peak GPU (GiB) | Evidence |",
++        "| ---: | ---: | ---: | ---: | ---: | --- |",
++    ]
++    for row in measurements:
++        peak = row["gpu_memory_peak"]["memory_used_mib"] / 1024
++        lines.append(
++            f"| {row['concurrency']} | {row['completed']}/{row['requests']} | {row['wall_s']:.2f} | "
++            f"{row['audio_seconds_per_second']:.2f} | {peak:.2f} | {evidence_link(row['run_id'], out, history)} |"
++        )
++    lines += [
++        "",
++        "## Source and weight packaging",
++        "",
++        "For the native baseline, the full training generator can be replaced by a **compact, dtype-preserving "
++        "codec checkpoint** with identical output. The matrix used the original assets; the separately qualified "
++        "compact package is linked below. The LM remains BF16; no weights are quantized for size. "
++        "The local scheduler and loading changes "
++        "are retained in each run's **`dependencies/<dependency>/source.tar.gz`** artifact. "
++        "Inspect the linked run's `run.json` and dependency snapshot for the exact source used; do not use a mutable "
++        "checkout as provenance.",
++        "",
++    ]
++    if qualification_id:
++        codec = state["codec_qualification"]
++        lines += [
++            f"Codec packaging: **{codec['bytes'] / 1e9:.3f} GB**, replacing **8.48 GB** of full generator + override "
++            f"assets. With the 1.772 GB BF16 LM, the required native model data is approximately **2.35 GB** "
++            "instead of **10.25 GB**.",
++            "",
++            f"Bitwise codec qualification: {evidence_link(qualification_id, out, history, name='qualification.json', label='1-, 7-, and 32-frame identical-output checks')}. "
++            f"Compact C1/C16 HTTP integration: {evidence_link(integration_id, out, history)}.",
++            "",
++            "The compact checkpoint remains a local build artifact; it is intentionally not uploaded to external storage. "
++            "Its size, format and SHA-256 are retained in the qualification record.",
++            "",
++        ]
++    else:
++        lines += [
++            "The original baseline matrix used the full native codec assets. A separately qualified compact-codec "
++            "package may be linked here after validation.",
++            "",
++        ]
++    if state.get("source_provenance_run"):
++        lines += [
++            "Exact baseline source bundle: "
++            + evidence_link(
++                state["source_provenance_run"],
++                out,
++                history,
++                name="dependencies/zonos3/source.tar.gz",
++                label="dependencies/zonos3/source.tar.gz",
++            )
++            + ". This supplemental bundle includes `model/` and `servers/` and is the authoritative source for "
++            "the compact codec loader and safe slot-lifecycle scheduler change.",
++            "",
++        ]
++    lines += [
++        "Run artifacts, source snapshots, exact dependency revisions, per-request audio hashes and server logs are "
++        "retained under the normal benchmark archive. These measurements establish native baseline functionality "
++        "and capacity; they do not claim AKAS BF16 correctness or qualified speedups.",
++        "",
++    ]
++    text(out / "README.md", "\n".join(lines))
++    text(
++        out / "COMPARISON.md",
++        "# Native baseline concurrency comparison\n\n"
++        + "\n".join(line for line in lines if line.startswith("| ") or line.startswith("# Native")),
++    )
++    text(
++        out / "AKAS.md",
++        "# AKAS status\n\nNo AKAS BF16 implementation has been measured in this baseline report. "
++        "The matrix contains native Zyphra CUDA diagnostics only.\n",
++    )
++    text(
++        out / "BASELINES.md",
++        "# Native baseline provenance\n\n"
++        "Each linked run retains its exact source and dependency snapshots under "
++        "`dependencies/<dependency>/source.tar.gz`, plus per-request audio hashes and server logs. "
++        "Use those artifacts, not the mutable checkout, when inspecting the baseline source.\n",
++    )
++    csv_file(
++        out / "measurements.csv",
++        measurements,
++        (
++            "run_id",
++            "concurrency",
++            "requests",
++            "completed",
++            "failed",
++            "wall_s",
++            "throughput_qps",
++            "audio_seconds_per_second",
++            "gpu_memory_initial",
++            "gpu_memory_peak",
++        ),
++    )
++    write(out / "report.json", data)
++    write(out / "campaign.json", state)
++    index(history)
++    return out
++
++
+ def export_speech(native, model, workload_id, history, out, baseline_lock=None):
+     from akas.benchmarking.workload import load
+ 
+@@ -2042,7 +2269,11 @@ def check(history="benchmarks"):
+             if not folder.is_dir() or not (folder / "report.json").is_file():
+                 raise ValueError(f"Unexpected report entry: {folder}")
+             data = read(folder / "report.json")
+-            expected_files = (SPEECH_FILES if data.get("schema") == SPEECH_SCHEMA else REPORT_FILES) | (
++            expected_files = (
++                SPEECH_FILES
++                if data.get("schema") in (SPEECH_SCHEMA, NATIVE_STREAM_SCHEMA)
++                else REPORT_FILES
++            ) | (
+                 {"PARITY.json"} if "performance_acceptance" in data else set()
+             )
+             if {

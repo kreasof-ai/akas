@@ -1,0 +1,1210 @@
+{
+  "schema": "akas.forward.v1",
+  "target": "sm_89",
+  "provider": "cuda",
+  "forward": {
+    "contract": "state",
+    "phase": "reset",
+    "buffers": [
+      {
+        "name": "mapping",
+        "shape": [
+          16
+        ],
+        "dtype": "int32",
+        "role": "input"
+      },
+      {
+        "name": "a.gen.wav.head.0.state",
+        "shape": [
+          256,
+          6,
+          768
+        ],
+        "dtype": "float32",
+        "role": "state"
+      },
+      {
+        "name": "a.gen.wav.head.0.state.rows",
+        "shape": [
+          256,
+          4608
+        ],
+        "dtype": "float32",
+        "role": "state",
+        "alias_of": "a.gen.wav.head.0.state"
+      },
+      {
+        "name": "a.gen.wav.head.1.state",
+        "shape": [
+          256,
+          6,
+          768
+        ],
+        "dtype": "float32",
+        "role": "state"
+      },
+      {
+        "name": "a.gen.wav.head.1.state.rows",
+        "shape": [
+          256,
+          4608
+        ],
+        "dtype": "float32",
+        "role": "state",
+        "alias_of": "a.gen.wav.head.1.state"
+      },
+      {
+        "name": "a.gen.wav.head.2.state",
+        "shape": [
+          256,
+          6,
+          768
+        ],
+        "dtype": "float32",
+        "role": "state"
+      },
+      {
+        "name": "a.gen.wav.head.2.state.rows",
+        "shape": [
+          256,
+          4608
+        ],
+        "dtype": "float32",
+        "role": "state",
+        "alias_of": "a.gen.wav.head.2.state"
+      },
+      {
+        "name": "a.gen.wav.head.3.state",
+        "shape": [
+          256,
+          6,
+          768
+        ],
+        "dtype": "float32",
+        "role": "state"
+      },
+      {
+        "name": "a.gen.wav.head.3.state.rows",
+        "shape": [
+          256,
+          4608
+        ],
+        "dtype": "float32",
+        "role": "state",
+        "alias_of": "a.gen.wav.head.3.state"
+      },
+      {
+        "name": "a.gen.wav.head.4.state",
+        "shape": [
+          256,
+          6,
+          768
+        ],
+        "dtype": "float32",
+        "role": "state"
+      },
+      {
+        "name": "a.gen.wav.head.4.state.rows",
+        "shape": [
+          256,
+          4608
+        ],
+        "dtype": "float32",
+        "role": "state",
+        "alias_of": "a.gen.wav.head.4.state"
+      },
+      {
+        "name": "a.gen.wav.head.5.state",
+        "shape": [
+          256,
+          6,
+          768
+        ],
+        "dtype": "float32",
+        "role": "state"
+      },
+      {
+        "name": "a.gen.wav.head.5.state.rows",
+        "shape": [
+          256,
+          4608
+        ],
+        "dtype": "float32",
+        "role": "state",
+        "alias_of": "a.gen.wav.head.5.state"
+      },
+      {
+        "name": "a.gen.wav.head.6.state",
+        "shape": [
+          256,
+          6,
+          768
+        ],
+        "dtype": "float32",
+        "role": "state"
+      },
+      {
+        "name": "a.gen.wav.head.6.state.rows",
+        "shape": [
+          256,
+          4608
+        ],
+        "dtype": "float32",
+        "role": "state",
+        "alias_of": "a.gen.wav.head.6.state"
+      },
+      {
+        "name": "a.gen.wav.head.7.state",
+        "shape": [
+          256,
+          6,
+          768
+        ],
+        "dtype": "float32",
+        "role": "state"
+      },
+      {
+        "name": "a.gen.wav.head.7.state.rows",
+        "shape": [
+          256,
+          4608
+        ],
+        "dtype": "float32",
+        "role": "state",
+        "alias_of": "a.gen.wav.head.7.state"
+      },
+      {
+        "name": "a.gen.wav.sem.0.state",
+        "shape": [
+          256,
+          6,
+          768
+        ],
+        "dtype": "float32",
+        "role": "state"
+      },
+      {
+        "name": "a.gen.wav.sem.0.state.rows",
+        "shape": [
+          256,
+          4608
+        ],
+        "dtype": "float32",
+        "role": "state",
+        "alias_of": "a.gen.wav.sem.0.state"
+      },
+      {
+        "name": "a.gen.wav.sem.1.state",
+        "shape": [
+          256,
+          6,
+          768
+        ],
+        "dtype": "float32",
+        "role": "state"
+      },
+      {
+        "name": "a.gen.wav.sem.1.state.rows",
+        "shape": [
+          256,
+          4608
+        ],
+        "dtype": "float32",
+        "role": "state",
+        "alias_of": "a.gen.wav.sem.1.state"
+      },
+      {
+        "name": "a.gen.wav.sem.2.state",
+        "shape": [
+          256,
+          6,
+          768
+        ],
+        "dtype": "float32",
+        "role": "state"
+      },
+      {
+        "name": "a.gen.wav.sem.2.state.rows",
+        "shape": [
+          256,
+          4608
+        ],
+        "dtype": "float32",
+        "role": "state",
+        "alias_of": "a.gen.wav.sem.2.state"
+      },
+      {
+        "name": "a.gen.wav.sem.3.state",
+        "shape": [
+          256,
+          6,
+          768
+        ],
+        "dtype": "float32",
+        "role": "state"
+      },
+      {
+        "name": "a.gen.wav.sem.3.state.rows",
+        "shape": [
+          256,
+          4608
+        ],
+        "dtype": "float32",
+        "role": "state",
+        "alias_of": "a.gen.wav.sem.3.state"
+      },
+      {
+        "name": "blk.0.conv_state",
+        "shape": [
+          256,
+          1536,
+          3
+        ],
+        "dtype": "float32",
+        "role": "state"
+      },
+      {
+        "name": "blk.0.conv_state.rows",
+        "shape": [
+          256,
+          4608
+        ],
+        "dtype": "float32",
+        "role": "state",
+        "alias_of": "blk.0.conv_state"
+      },
+      {
+        "name": "blk.0.delta",
+        "shape": [
+          256,
+          4,
+          128,
+          128
+        ],
+        "dtype": "float32",
+        "role": "state"
+      },
+      {
+        "name": "blk.0.delta.rows",
+        "shape": [
+          256,
+          65536
+        ],
+        "dtype": "float32",
+        "role": "state",
+        "alias_of": "blk.0.delta"
+      },
+      {
+        "name": "blk.1.conv_state",
+        "shape": [
+          256,
+          1536,
+          3
+        ],
+        "dtype": "float32",
+        "role": "state"
+      },
+      {
+        "name": "blk.1.conv_state.rows",
+        "shape": [
+          256,
+          4608
+        ],
+        "dtype": "float32",
+        "role": "state",
+        "alias_of": "blk.1.conv_state"
+      },
+      {
+        "name": "blk.1.delta",
+        "shape": [
+          256,
+          4,
+          128,
+          128
+        ],
+        "dtype": "float32",
+        "role": "state"
+      },
+      {
+        "name": "blk.1.delta.rows",
+        "shape": [
+          256,
+          65536
+        ],
+        "dtype": "float32",
+        "role": "state",
+        "alias_of": "blk.1.delta"
+      },
+      {
+        "name": "blk.10.conv_state",
+        "shape": [
+          256,
+          1536,
+          3
+        ],
+        "dtype": "float32",
+        "role": "state"
+      },
+      {
+        "name": "blk.10.conv_state.rows",
+        "shape": [
+          256,
+          4608
+        ],
+        "dtype": "float32",
+        "role": "state",
+        "alias_of": "blk.10.conv_state"
+      },
+      {
+        "name": "blk.10.delta",
+        "shape": [
+          256,
+          4,
+          128,
+          128
+        ],
+        "dtype": "float32",
+        "role": "state"
+      },
+      {
+        "name": "blk.10.delta.rows",
+        "shape": [
+          256,
+          65536
+        ],
+        "dtype": "float32",
+        "role": "state",
+        "alias_of": "blk.10.delta"
+      },
+      {
+        "name": "blk.2.conv_state",
+        "shape": [
+          256,
+          1536,
+          3
+        ],
+        "dtype": "float32",
+        "role": "state"
+      },
+      {
+        "name": "blk.2.conv_state.rows",
+        "shape": [
+          256,
+          4608
+        ],
+        "dtype": "float32",
+        "role": "state",
+        "alias_of": "blk.2.conv_state"
+      },
+      {
+        "name": "blk.2.delta",
+        "shape": [
+          256,
+          4,
+          128,
+          128
+        ],
+        "dtype": "float32",
+        "role": "state"
+      },
+      {
+        "name": "blk.2.delta.rows",
+        "shape": [
+          256,
+          65536
+        ],
+        "dtype": "float32",
+        "role": "state",
+        "alias_of": "blk.2.delta"
+      },
+      {
+        "name": "blk.4.conv_state",
+        "shape": [
+          256,
+          1536,
+          3
+        ],
+        "dtype": "float32",
+        "role": "state"
+      },
+      {
+        "name": "blk.4.conv_state.rows",
+        "shape": [
+          256,
+          4608
+        ],
+        "dtype": "float32",
+        "role": "state",
+        "alias_of": "blk.4.conv_state"
+      },
+      {
+        "name": "blk.4.delta",
+        "shape": [
+          256,
+          4,
+          128,
+          128
+        ],
+        "dtype": "float32",
+        "role": "state"
+      },
+      {
+        "name": "blk.4.delta.rows",
+        "shape": [
+          256,
+          65536
+        ],
+        "dtype": "float32",
+        "role": "state",
+        "alias_of": "blk.4.delta"
+      },
+      {
+        "name": "blk.5.conv_state",
+        "shape": [
+          256,
+          1536,
+          3
+        ],
+        "dtype": "float32",
+        "role": "state"
+      },
+      {
+        "name": "blk.5.conv_state.rows",
+        "shape": [
+          256,
+          4608
+        ],
+        "dtype": "float32",
+        "role": "state",
+        "alias_of": "blk.5.conv_state"
+      },
+      {
+        "name": "blk.5.delta",
+        "shape": [
+          256,
+          4,
+          128,
+          128
+        ],
+        "dtype": "float32",
+        "role": "state"
+      },
+      {
+        "name": "blk.5.delta.rows",
+        "shape": [
+          256,
+          65536
+        ],
+        "dtype": "float32",
+        "role": "state",
+        "alias_of": "blk.5.delta"
+      },
+      {
+        "name": "blk.6.conv_state",
+        "shape": [
+          256,
+          1536,
+          3
+        ],
+        "dtype": "float32",
+        "role": "state"
+      },
+      {
+        "name": "blk.6.conv_state.rows",
+        "shape": [
+          256,
+          4608
+        ],
+        "dtype": "float32",
+        "role": "state",
+        "alias_of": "blk.6.conv_state"
+      },
+      {
+        "name": "blk.6.delta",
+        "shape": [
+          256,
+          4,
+          128,
+          128
+        ],
+        "dtype": "float32",
+        "role": "state"
+      },
+      {
+        "name": "blk.6.delta.rows",
+        "shape": [
+          256,
+          65536
+        ],
+        "dtype": "float32",
+        "role": "state",
+        "alias_of": "blk.6.delta"
+      },
+      {
+        "name": "blk.8.conv_state",
+        "shape": [
+          256,
+          1536,
+          3
+        ],
+        "dtype": "float32",
+        "role": "state"
+      },
+      {
+        "name": "blk.8.conv_state.rows",
+        "shape": [
+          256,
+          4608
+        ],
+        "dtype": "float32",
+        "role": "state",
+        "alias_of": "blk.8.conv_state"
+      },
+      {
+        "name": "blk.8.delta",
+        "shape": [
+          256,
+          4,
+          128,
+          128
+        ],
+        "dtype": "float32",
+        "role": "state"
+      },
+      {
+        "name": "blk.8.delta.rows",
+        "shape": [
+          256,
+          65536
+        ],
+        "dtype": "float32",
+        "role": "state",
+        "alias_of": "blk.8.delta"
+      },
+      {
+        "name": "blk.9.conv_state",
+        "shape": [
+          256,
+          1536,
+          3
+        ],
+        "dtype": "float32",
+        "role": "state"
+      },
+      {
+        "name": "blk.9.conv_state.rows",
+        "shape": [
+          256,
+          4608
+        ],
+        "dtype": "float32",
+        "role": "state",
+        "alias_of": "blk.9.conv_state"
+      },
+      {
+        "name": "blk.9.delta",
+        "shape": [
+          256,
+          4,
+          128,
+          128
+        ],
+        "dtype": "float32",
+        "role": "state"
+      },
+      {
+        "name": "blk.9.delta.rows",
+        "shape": [
+          256,
+          65536
+        ],
+        "dtype": "float32",
+        "role": "state",
+        "alias_of": "blk.9.delta"
+      },
+      {
+        "name": "istft_ola_state",
+        "shape": [
+          256,
+          3564
+        ],
+        "dtype": "float32",
+        "role": "state"
+      },
+      {
+        "name": "istft_ola_state.rows",
+        "shape": [
+          256,
+          3564
+        ],
+        "dtype": "float32",
+        "role": "state",
+        "alias_of": "istft_ola_state"
+      },
+      {
+        "name": "istft_rs_state",
+        "shape": [
+          256,
+          322
+        ],
+        "dtype": "float32",
+        "role": "state"
+      },
+      {
+        "name": "istft_rs_state.rows",
+        "shape": [
+          256,
+          322
+        ],
+        "dtype": "float32",
+        "role": "state",
+        "alias_of": "istft_rs_state"
+      }
+    ],
+    "calls": [
+      {
+        "kind": "clear_rows",
+        "parameters": {
+          "rows": 16,
+          "pool": 256,
+          "width": 4608,
+          "dtype": "float32"
+        },
+        "arguments": [
+          "mapping",
+          "a.gen.wav.head.0.state.rows"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "clear_rows",
+        "parameters": {
+          "rows": 16,
+          "pool": 256,
+          "width": 4608,
+          "dtype": "float32"
+        },
+        "arguments": [
+          "mapping",
+          "a.gen.wav.head.1.state.rows"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "clear_rows",
+        "parameters": {
+          "rows": 16,
+          "pool": 256,
+          "width": 4608,
+          "dtype": "float32"
+        },
+        "arguments": [
+          "mapping",
+          "a.gen.wav.head.2.state.rows"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "clear_rows",
+        "parameters": {
+          "rows": 16,
+          "pool": 256,
+          "width": 4608,
+          "dtype": "float32"
+        },
+        "arguments": [
+          "mapping",
+          "a.gen.wav.head.3.state.rows"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "clear_rows",
+        "parameters": {
+          "rows": 16,
+          "pool": 256,
+          "width": 4608,
+          "dtype": "float32"
+        },
+        "arguments": [
+          "mapping",
+          "a.gen.wav.head.4.state.rows"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "clear_rows",
+        "parameters": {
+          "rows": 16,
+          "pool": 256,
+          "width": 4608,
+          "dtype": "float32"
+        },
+        "arguments": [
+          "mapping",
+          "a.gen.wav.head.5.state.rows"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "clear_rows",
+        "parameters": {
+          "rows": 16,
+          "pool": 256,
+          "width": 4608,
+          "dtype": "float32"
+        },
+        "arguments": [
+          "mapping",
+          "a.gen.wav.head.6.state.rows"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "clear_rows",
+        "parameters": {
+          "rows": 16,
+          "pool": 256,
+          "width": 4608,
+          "dtype": "float32"
+        },
+        "arguments": [
+          "mapping",
+          "a.gen.wav.head.7.state.rows"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "clear_rows",
+        "parameters": {
+          "rows": 16,
+          "pool": 256,
+          "width": 4608,
+          "dtype": "float32"
+        },
+        "arguments": [
+          "mapping",
+          "a.gen.wav.sem.0.state.rows"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "clear_rows",
+        "parameters": {
+          "rows": 16,
+          "pool": 256,
+          "width": 4608,
+          "dtype": "float32"
+        },
+        "arguments": [
+          "mapping",
+          "a.gen.wav.sem.1.state.rows"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "clear_rows",
+        "parameters": {
+          "rows": 16,
+          "pool": 256,
+          "width": 4608,
+          "dtype": "float32"
+        },
+        "arguments": [
+          "mapping",
+          "a.gen.wav.sem.2.state.rows"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "clear_rows",
+        "parameters": {
+          "rows": 16,
+          "pool": 256,
+          "width": 4608,
+          "dtype": "float32"
+        },
+        "arguments": [
+          "mapping",
+          "a.gen.wav.sem.3.state.rows"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "clear_rows",
+        "parameters": {
+          "rows": 16,
+          "pool": 256,
+          "width": 4608,
+          "dtype": "float32"
+        },
+        "arguments": [
+          "mapping",
+          "blk.0.conv_state.rows"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "clear_rows",
+        "parameters": {
+          "rows": 16,
+          "pool": 256,
+          "width": 65536,
+          "dtype": "float32"
+        },
+        "arguments": [
+          "mapping",
+          "blk.0.delta.rows"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "clear_rows",
+        "parameters": {
+          "rows": 16,
+          "pool": 256,
+          "width": 4608,
+          "dtype": "float32"
+        },
+        "arguments": [
+          "mapping",
+          "blk.1.conv_state.rows"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "clear_rows",
+        "parameters": {
+          "rows": 16,
+          "pool": 256,
+          "width": 65536,
+          "dtype": "float32"
+        },
+        "arguments": [
+          "mapping",
+          "blk.1.delta.rows"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "clear_rows",
+        "parameters": {
+          "rows": 16,
+          "pool": 256,
+          "width": 4608,
+          "dtype": "float32"
+        },
+        "arguments": [
+          "mapping",
+          "blk.10.conv_state.rows"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "clear_rows",
+        "parameters": {
+          "rows": 16,
+          "pool": 256,
+          "width": 65536,
+          "dtype": "float32"
+        },
+        "arguments": [
+          "mapping",
+          "blk.10.delta.rows"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "clear_rows",
+        "parameters": {
+          "rows": 16,
+          "pool": 256,
+          "width": 4608,
+          "dtype": "float32"
+        },
+        "arguments": [
+          "mapping",
+          "blk.2.conv_state.rows"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "clear_rows",
+        "parameters": {
+          "rows": 16,
+          "pool": 256,
+          "width": 65536,
+          "dtype": "float32"
+        },
+        "arguments": [
+          "mapping",
+          "blk.2.delta.rows"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "clear_rows",
+        "parameters": {
+          "rows": 16,
+          "pool": 256,
+          "width": 4608,
+          "dtype": "float32"
+        },
+        "arguments": [
+          "mapping",
+          "blk.4.conv_state.rows"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "clear_rows",
+        "parameters": {
+          "rows": 16,
+          "pool": 256,
+          "width": 65536,
+          "dtype": "float32"
+        },
+        "arguments": [
+          "mapping",
+          "blk.4.delta.rows"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "clear_rows",
+        "parameters": {
+          "rows": 16,
+          "pool": 256,
+          "width": 4608,
+          "dtype": "float32"
+        },
+        "arguments": [
+          "mapping",
+          "blk.5.conv_state.rows"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "clear_rows",
+        "parameters": {
+          "rows": 16,
+          "pool": 256,
+          "width": 65536,
+          "dtype": "float32"
+        },
+        "arguments": [
+          "mapping",
+          "blk.5.delta.rows"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "clear_rows",
+        "parameters": {
+          "rows": 16,
+          "pool": 256,
+          "width": 4608,
+          "dtype": "float32"
+        },
+        "arguments": [
+          "mapping",
+          "blk.6.conv_state.rows"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "clear_rows",
+        "parameters": {
+          "rows": 16,
+          "pool": 256,
+          "width": 65536,
+          "dtype": "float32"
+        },
+        "arguments": [
+          "mapping",
+          "blk.6.delta.rows"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "clear_rows",
+        "parameters": {
+          "rows": 16,
+          "pool": 256,
+          "width": 4608,
+          "dtype": "float32"
+        },
+        "arguments": [
+          "mapping",
+          "blk.8.conv_state.rows"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "clear_rows",
+        "parameters": {
+          "rows": 16,
+          "pool": 256,
+          "width": 65536,
+          "dtype": "float32"
+        },
+        "arguments": [
+          "mapping",
+          "blk.8.delta.rows"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "clear_rows",
+        "parameters": {
+          "rows": 16,
+          "pool": 256,
+          "width": 4608,
+          "dtype": "float32"
+        },
+        "arguments": [
+          "mapping",
+          "blk.9.conv_state.rows"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "clear_rows",
+        "parameters": {
+          "rows": 16,
+          "pool": 256,
+          "width": 65536,
+          "dtype": "float32"
+        },
+        "arguments": [
+          "mapping",
+          "blk.9.delta.rows"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "clear_rows",
+        "parameters": {
+          "rows": 16,
+          "pool": 256,
+          "width": 3564,
+          "dtype": "float32"
+        },
+        "arguments": [
+          "mapping",
+          "istft_ola_state.rows"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "clear_rows",
+        "parameters": {
+          "rows": 16,
+          "pool": 256,
+          "width": 322,
+          "dtype": "float32"
+        },
+        "arguments": [
+          "mapping",
+          "istft_rs_state.rows"
+        ],
+        "bindings": {},
+        "label": null
+      }
+    ]
+  },
+  "allocations": [],
+  "tuning": {
+    "status": "explicitly disabled"
+  },
+  "kernels": {
+    "a1b2f6514dee3c9bd976f12b": {
+      "kind": "clear_rows",
+      "parameters": {
+        "rows": 16,
+        "pool": 256,
+        "width": 4608,
+        "dtype": "float32"
+      },
+      "sha256": "a63f291ab67248a64af70e5b283f2c27525cd124a187528c01244d506e95b987",
+      "path": "reset/kernels/a1b2f6514dee3c9bd976f12b.tbin",
+      "schedule": {
+        "implementation": "indexing.rows"
+      }
+    },
+    "aa1496afd486ab51c78b69b9": {
+      "kind": "clear_rows",
+      "parameters": {
+        "rows": 16,
+        "pool": 256,
+        "width": 65536,
+        "dtype": "float32"
+      },
+      "sha256": "30d3afc889ded038a4159d70b452adc101c769ae1dfc172579e6d612cdfe9b0d",
+      "path": "reset/kernels/aa1496afd486ab51c78b69b9.tbin",
+      "schedule": {
+        "implementation": "indexing.rows"
+      }
+    },
+    "7a42e90bfd9c1963108145b8": {
+      "kind": "clear_rows",
+      "parameters": {
+        "rows": 16,
+        "pool": 256,
+        "width": 3564,
+        "dtype": "float32"
+      },
+      "sha256": "91c663646102258f4467a63c553bea1dc90bae9680a5840f07ebbe640f3c050a",
+      "path": "reset/kernels/7a42e90bfd9c1963108145b8.tbin",
+      "schedule": {
+        "implementation": "indexing.rows"
+      }
+    },
+    "016106bf0a269aa045fcb688": {
+      "kind": "clear_rows",
+      "parameters": {
+        "rows": 16,
+        "pool": 256,
+        "width": 322,
+        "dtype": "float32"
+      },
+      "sha256": "c0ce1bfa9cd7cf97bc3c33f03f24600129f3dd376dcd47c531bb6b3330baaffc",
+      "path": "reset/kernels/016106bf0a269aa045fcb688.tbin",
+      "schedule": {
+        "implementation": "indexing.rows"
+      }
+    }
+  }
+}
