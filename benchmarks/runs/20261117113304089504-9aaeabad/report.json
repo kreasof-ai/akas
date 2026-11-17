@@ -1,0 +1,83 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "runtime": "akas",
+    "mode": "tts",
+    "purpose": "speech-prefill-capacity-timing",
+    "model": "Zyphra/ZONOS3-Mini",
+    "provider": "webgpu",
+    "weight_format": "q8_0",
+    "protocol": "zonos3-prefill-capacity-timing-v1",
+    "checkpoint_sha256": "60568efc88e2f9231f4f5c061e246421f575986642d72ab9ae68f77d6cf76be4",
+    "projector": {
+      "path": "D:\\Workspace\\kreasof-ai\\github\\akas\\build\\checkpoints\\zonos3-mini\\mmproj-ZONOS3-Mini-F32.gguf",
+      "sha256": "aeeb92325b4b6927bef656390b78e1246148065f947d8b59c2663557a809414d",
+      "source": {
+        "repo": "ggml-org/ZONOS3-Mini-GGUF",
+        "revision": "2e7bc4126a2343787298e1a297a3d1c4a13165aa",
+        "file": "mmproj-ZONOS3-Mini-F32.gguf"
+      }
+    },
+    "model_definition_sha256": "e84617ab992c8bac2d4301f39f61a85b5d18002f397628a4359ac01e80591035",
+    "checks": [],
+    "device": {
+      "ordinal": 0,
+      "provider": "webgpu",
+      "arch": "webgpu-portable-v1",
+      "name": "AMD Radeon RX 6700 XT",
+      "adapter": {
+        "vendor": "AMD proprietary driver",
+        "architecture": "",
+        "device": "AMD Radeon RX 6700 XT",
+        "description": "26.6.2 (AMD proprietary shader compiler)",
+        "stackgroup_min_size": 4,
+        "stackgroup_max_size": 128,
+        "vendor_id": 4098,
+        "device_id": 29663,
+        "adapter_type": "DiscreteGPU",
+        "backend_type": "Vulkan"
+      },
+      "features": [
+        "shader-f16",
+        "subgroup"
+      ],
+      "limits": {
+        "max-bind-groups": 8,
+        "max-bind-groups-plus-vertex-buffers": 0,
+        "max-bindings-per-bind-group": 1000,
+        "max-buffer-size": 1073741824,
+        "max-color-attachment-bytes-per-sample": 0,
+        "max-color-attachments": 0,
+        "max-compute-invocations-per-workgroup": 1024,
+        "max-compute-workgroup-size-x": 1024,
+        "max-compute-workgroup-size-y": 1024,
+        "max-compute-workgroup-size-z": 1024,
+        "max-compute-workgroup-storage-size": 32768,
+        "max-compute-workgroups-per-dimension": 65535,
+        "max-dynamic-storage-buffers-per-pipeline-layout": 8,
+        "max-dynamic-uniform-buffers-per-pipeline-layout": 8,
+        "max-inter-stage-shader-variables": 0,
+        "max-non-sampler-bindings": 1000000,
+        "max-push-constant-size": 256,
+        "max-sampled-textures-per-shader-stage": 16,
+        "max-samplers-per-shader-stage": 16,
+        "max-storage-buffer-binding-size": 1073741824,
+        "max-storage-buffers-per-shader-stage": 32,
+        "max-storage-textures-per-shader-stage": 4,
+        "max-texture-array-layers": 8192,
+        "max-texture-dimension-1d": 16384,
+        "max-texture-dimension-2d": 16384,
+        "max-texture-dimension-3d": 8192,
+        "max-uniform-buffer-binding-size": 2147483647,
+        "max-uniform-buffers-per-shader-stage": 12,
+        "max-vertex-attributes": 64,
+        "max-vertex-buffer-array-stride": 16383,
+        "max-vertex-buffers": 16,
+        "min-storage-buffer-offset-alignment": 32,
+        "min-uniform-buffer-offset-alignment": 32
+      },
+      "adapter_storage_buffers_reported": 4294967295
+    }
+  },
+  "results": []
+}

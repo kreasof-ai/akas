@@ -1,0 +1,2930 @@
+diff --git a/src/akas/artifacts/read.py b/src/akas/artifacts/read.py
+index 32560bc..9ce3c9d 100644
+--- a/src/akas/artifacts/read.py
++++ b/src/akas/artifacts/read.py
+@@ -1,6 +1,7 @@
+ """Validated loading of compiled program kernels."""
+ 
+ import hashlib
++import json
+ from pathlib import Path
+ 
+ def artifact_path(directory, record):
+@@ -55,6 +56,39 @@ def artifacts(records):
+                 yield row[role]
+ 
+ 
++def read_forward(path):
++    """Load the metadata for one compiled graph."""
++    manifest = json.loads(Path(path).read_text(encoding="utf-8"))
++    if manifest.get("schema") != "akas.forward.v1":
++        raise ValueError("unsupported forward bundle")
++    return manifest
++
++
++def read_forward_set(directory, filename, *, schema, provider):
++    manifest = json.loads((Path(directory) / filename).read_text(encoding="utf-8"))
++    return validate_forward_set(directory, manifest, schema=schema, provider=provider)
++
++
++def validate_forward_set(directory, manifest, *, schema, provider):
++    """Resolve every indexed phase before publishing or executing the set."""
++    if manifest.get("schema") != schema or manifest.get("provider") != provider:
++        raise ValueError("incompatible forward index schema or provider")
++    records = manifest.get("phases")
++    if not isinstance(records, dict) or not records:
++        raise ValueError("forward index has an empty phase set")
++    phases = {}
++    for name, rows in records.items():
++        if not isinstance(rows, dict) or not rows:
++            raise ValueError(f"forward index has no rows for {name}")
++        phases[name] = {}
++        for size, record in rows.items():
++            if not size.isascii() or not size.isdecimal() or size.startswith("0"):
++                raise ValueError("invalid forward phase row count")
++            phase = read_forward(artifact_path(directory, record))
++            if phase.get("provider") != provider:
++                raise ValueError("forward phase provider differs from its index")
++            phases[name][int(size)] = phase
++    return phases
+ 
+ 
+ def read_program(directory):
+diff --git a/src/akas/benchmarking/history.py b/src/akas/benchmarking/history.py
+index 38f6346..ddab98b 100644
+--- a/src/akas/benchmarking/history.py
++++ b/src/akas/benchmarking/history.py
+@@ -103,6 +103,8 @@ def source_identity(root):
+ def shapes(report):
+     """Keep total-output and legacy additional-decode accounting distinguishable."""
+     protocol = report["metadata"].get("protocol")
++    if protocol == "client-speech-pcm-v1":
++        return []
+     result = []
+     for row in report["results"]:
+         case = row["case"]
+@@ -385,6 +387,8 @@ class Recorder:
+         self.record["workload"] = dict(
+             id="standard-v1" if standard else "custom", shapes=observed
+         )
++        if report["metadata"].get("protocol") == "client-speech-pcm-v1":
++            self.record["workload"].update(report["metadata"]["speech_workload"])
+         if standard:
+             self.record["workload"]["definition"] = STANDARD
+             self.record["workload"]["sha256"] = STANDARD_SHA256
+@@ -523,7 +527,7 @@ def rebuild_index(root):
+     write(root / "index.json", dict(schema="akas.benchmark-index.v1", runs=entries), compact_entries=True)
+     guide = root.parent / "docs/benchmarking.md"
+     guide_link = (
+-        os.path.relpath(guide, root)
++        Path(os.path.relpath(guide, root)).as_posix()
+         if guide.is_file()
+         else "https://github.com/kreasof-ai/akas/blob/main/docs/benchmarking.md"
+     )
+diff --git a/src/akas/benchmarking/workload.py b/src/akas/benchmarking/workload.py
+index 144f890..acd4525 100644
+--- a/src/akas/benchmarking/workload.py
++++ b/src/akas/benchmarking/workload.py
+@@ -10,13 +10,13 @@ def load(value):
+     """Read a packaged workload by ID or a user-supplied JSON path."""
+     path = Path(value)
+     if path.is_file():
+-        return json.loads(path.read_text())
++        return json.loads(path.read_text(encoding="utf-8"))
+     if path.name != str(value) or path.suffix:
+         raise ValueError(f"workload file does not exist: {value}")
+     resource = files("akas.benchmarking").joinpath(f"workloads/{value}.json")
+     if not resource.is_file():
+         raise ValueError(f"unknown workload: {value}")
+-    return json.loads(resource.read_text())
++    return json.loads(resource.read_text(encoding="utf-8"))
+ 
+ 
+ _encoded = (
+diff --git a/src/akas/cli.py b/src/akas/cli.py
+index 76a69c8..f64eb26 100644
+--- a/src/akas/cli.py
++++ b/src/akas/cli.py
+@@ -63,6 +63,7 @@ def main():
+     )
+     serve.add_argument("--host", default="127.0.0.1")
+     serve.add_argument("--port", type=int, default=8103)
++    serve.add_argument("--speech", action="store_true", help="serve complete PCM utterances")
+     serve.set_defaults(run=_serve)
+     from akas.compilation import PROFILES
+ 
+@@ -176,9 +177,16 @@ def _settings(value):
+ 
+ def _serve(args):
+     from aiohttp import web
+-    from akas.serving import create_app
++
++    speech = getattr(args, "speech", False)
++    if speech:
++        from akas.serving.speech import create_app
++    else:
++        from akas.serving import create_app
+ 
+     if getattr(args, "deployment", None) is not None:
++        if speech:
++            raise ValueError("speech serving requires a speech service factory")
+         if args.config:
+             raise ValueError(
+                 "a deployment already contains its selected inference settings"
+diff --git a/src/akas/compilation/README.md b/src/akas/compilation/README.md
+index fe85214..528525c 100644
+--- a/src/akas/compilation/README.md
++++ b/src/akas/compilation/README.md
+@@ -18,6 +18,13 @@ graph = compose(Config(width=256), rows=4)
+ produce(graph, "build/residual", provider="cuda", target="sm_89")
+ ```
+ 
++For a model that runs several forwards directly, the declaration supplies
++`forward_phases()` with program metadata and `(name, rows, graph)` entries, and
++`forward_index` with the index filename and schema. `compile_forwards()` uses the
++same `plan()` and `build()` path for each entry and publishes the validated index
++last. The `speech` profile is the CLI entry for the
++[ZONOS3-Mini forward set](../models/zonos3/README.md).
++
+ The compiler selects compatible operation implementations and applies graph
+ optimizations. Operation registrations and rewrite rules live in each operation's
+ `definition.py`; discovery lives in `akas.kernels.registry`. See the
+diff --git a/src/akas/compilation/__init__.py b/src/akas/compilation/__init__.py
+index 9c5f23e..da7cad5 100644
+--- a/src/akas/compilation/__init__.py
++++ b/src/akas/compilation/__init__.py
+@@ -6,6 +6,7 @@ PROFILES = {
+     "program": ("akas.compilation.compile", "compile_program"),
+     "reference": ("akas.compilation.compile", "compile_program"),
+     "floating": ("akas.compilation.compile", "compile_program"),
++    "speech": ("akas.compilation.compile", "compile_forwards"),
+ }
+ 
+ 
+@@ -21,7 +22,9 @@ def compile_checkpoint(
+     """Load with a supplied definition; reusable profiles never name a model family."""
+     module, factory = PROFILES[profile]
+     loaded = definition.checkpoint_type(checkpoint, **(checkpoint_options or {}))
+-    if profile in ("program", "reference", "floating"):
++    if profile == "speech":
++        options["definition"] = definition
++    else:
+         options["definition"] = definition.compose
+         if getattr(definition, "model_defaults", None):
+             options["model_options"] = {
+diff --git a/src/akas/compilation/compile.py b/src/akas/compilation/compile.py
+index 80a475b..afa5f8f 100644
+--- a/src/akas/compilation/compile.py
++++ b/src/akas/compilation/compile.py
+@@ -1,9 +1,10 @@
+ """One graph compilation and program publication coordinator."""
+ 
+ from pathlib import Path
++from uuid import uuid4
+ 
+ from akas.artifacts.schema import Bundle
+-from akas.artifacts.write import publish
++from akas.artifacts.write import checksum, publish
+ from akas.compilation.emit import compile_kernel
+ from akas.compilation.selection import kernels as assemble
+ 
+@@ -146,6 +147,54 @@ def produce(forward, out, *, search=True, search_settings=None, device=None, **o
+     )
+ 
+ 
++def compile_forwards(
++    checkpoint,
++    out,
++    *,
++    definition,
++    provider="webgpu",
++    device=None,
++    search_settings=None,
++    **model_options,
++):
++    """Build a model-declared set of forwards with an atomic, versioned index."""
++    from contextlib import nullcontext
++
++    from akas.artifacts.read import validate_forward_set
++
++    filename, schema = definition.forward_index
++    metadata, graphs = definition.forward_phases(
++        checkpoint, provider=provider, **model_options
++    )
++    scope = nullcontext(device)
++    if device is None and provider == "webgpu":
++        from akas.tensor.device import vulkan_device
++
++        scope = vulkan_device()
++    folder = Path(out)
++    version = uuid4().hex
++    phases = {}
++    with scope as adapter:
++        for name, rows, graph in graphs:
++            if not name.isidentifier() or type(rows) is not int or rows < 1:
++                raise ValueError("invalid forward phase identity")
++            records = phases.setdefault(name, {})
++            if str(rows) in records:
++                raise ValueError(f"duplicate forward phase: {name} at {rows} rows")
++            phase_directory = f"phases/{version}/{name}-{rows}"
++            path = f"{phase_directory}/forward.json"
++            print(f"Compiling {name} with {rows} rows", flush=True)
++            bundle = plan(graph, filename=path, provider=provider)
++            bundle.source_directory = f"{phase_directory}/sources"
++            bundle.artifact_directory = f"{phase_directory}/kernels"
++            build(bundle, folder, device=adapter, search_settings=search_settings)
++            records[str(rows)] = {"path": path, "sha256": checksum(folder / path)}
++    manifest = dict(metadata, schema=schema, provider=provider, phases=phases)
++    validate_forward_set(folder, manifest, schema=schema, provider=provider)
++    publish(folder / filename, manifest)
++    return manifest
++
++
+ def compile_model(
+     checkpoint,
+     out,
+diff --git a/src/akas/execution/forward.py b/src/akas/execution/forward.py
+index 82b0d5f..f715333 100644
+--- a/src/akas/execution/forward.py
++++ b/src/akas/execution/forward.py
+@@ -1,8 +1,7 @@
+ """Compiler-free loading and ownership for composed forward bundles."""
+ 
+-import json
+ from pathlib import Path
+-from akas.artifacts.read import load_kernels
++from akas.artifacts.read import load_kernels, read_forward
+ from akas.graph import Graph
+ from akas.execution.plan import bind_graph
+ from akas.execution.workspace import release
+@@ -12,20 +11,23 @@ from akas.execution.workspace import Workspace
+ class Forward:
+     def __init__(
+         self, directory, device, buffers, *, filename="forward.json", graphs=False,
+-        scratch_pool=None, kernel_cache=None,
++        scratch_pool=None, kernel_cache=None, manifest=None, allocate_io=False,
+     ):
+         self.device, self.closed = device, False
+         self.owns_kernels = kernel_cache is None
+         self.owned, self.kernels, self.graph = [], {}, None
+         self.workspace = None
+-        manifest = json.loads((Path(directory) / filename).read_text())
++        if manifest is None:
++            manifest = read_forward(Path(directory) / filename)
+         if manifest.get("schema") != "akas.forward.v1":
+             raise ValueError("unsupported forward bundle")
+         self.definition = Graph.from_metadata(manifest["forward"])
+         self.buffers = dict(buffers)
+         try:
+-            self.workspace = Workspace(self.definition, device, buffers, manifest.get("allocations"),
+-                                       scratch_pool=scratch_pool)
++            self.workspace = Workspace(
++                self.definition, device, buffers, manifest.get("allocations"),
++                scratch_pool=scratch_pool, allocate_io=allocate_io,
++            )
+             self.buffers = self.workspace.buffers
+             self.owned = self.workspace.owned
+             self.kernels = load_kernels(
+diff --git a/src/akas/execution/workspace.py b/src/akas/execution/workspace.py
+index 5673658..b7a3deb 100644
+--- a/src/akas/execution/workspace.py
++++ b/src/akas/execution/workspace.py
+@@ -80,7 +80,9 @@ class ScratchPool:
+ 
+ 
+ class Workspace:
+-    def __init__(self, graph, device, supplied, allocations, *, scratch_pool=None):
++    def __init__(
++        self, graph, device, supplied, allocations, *, scratch_pool=None, allocate_io=False
++    ):
+         self.device, self.buffers = device, dict(supplied)
+         self.owned, self.views, self.closed = [], [], False
+         if set(supplied) - set(graph.buffers):
+@@ -120,6 +122,9 @@ class Workspace:
+                          else device.empty(spec.shape,spec.dtype))
+                 self.owned.append(value)
+                 self.buffers.update((name,value) for name in names)
++            owned_roles = ("scratch", "state", "journal")
++            if allocate_io:
++                owned_roles += ("input", "output")
+             for name,spec in graph.buffers.items():
+                 if spec.alias_of is not None:
+                     if name in supplied:
+@@ -128,7 +133,7 @@ class Workspace:
+                     self.views.append(value)
+                     self.buffers[name] = value
+                 elif name not in self.buffers:
+-                    if spec.role not in ("scratch","state","journal"):
++                    if spec.role not in owned_roles:
+                         raise ValueError(f"missing supplied buffer: {name}")
+                     if spec.role == "state":
+                         value = device.zeros(spec.shape, spec.dtype)
+diff --git a/src/akas/models/README.md b/src/akas/models/README.md
+index bf5819f..e863ae7 100644
+--- a/src/akas/models/README.md
++++ b/src/akas/models/README.md
+@@ -1,6 +1,7 @@
+ # Model definitions
+ 
+-Every family exposes one public composition function in `model.py`:
++Every family exposes one public composition function in `model.py`. For token
++programs, it takes the standard request geometry.
+ 
+ ```python
+ def compose(
+@@ -163,3 +164,10 @@ native dynamic W8A8 arithmetic is not implemented.
+ and block-scaled FP8 safetensors or packed GGUF. The [LFM3 guide](lfm3/README.md)
+ covers seven-tap convolution, sandwich norms, sliding attention, full-head
+ partial RoPE, execution precision and the single-user Q4_0 llama.cpp comparison.
++
++## ZONOS3-Mini
++
++`from akas.models.zonos3 import Zonos3MiniSynthesis` selects the speech model
++with a Q8_0 backbone and F32 `keep2_plain` ZAC projector. The
++[ZONOS3-Mini guide](zonos3/README.md) covers compilation, predefined voices,
++and the llama.cpp Vulkan comparison.
+diff --git a/src/akas/ops/activation/README.md b/src/akas/ops/activation/README.md
+index a562186..16a6201 100644
+--- a/src/akas/ops/activation/README.md
++++ b/src/akas/ops/activation/README.md
+@@ -53,4 +53,8 @@ Check packed versus separate inputs, expert rows, nonmultiple widths and explici
+ rounding. Use [activation parity tests](../../../../tests/test_activation_parity.py) and
+ the independent recipe; adding a registration does not prove a new dtype compiles.
+ 
++## ZONOS3 and ZAC
++
++The F32 column-bias and GELU operations share a CUDA and WebGPU body. The GELU kernel uses an erf polynomial on both backends and is checked against a host erf.
++
+ Return to the [operation index](../README.md).
+diff --git a/src/akas/ops/activation/definition.py b/src/akas/ops/activation/definition.py
+index 5b74eab..4d87b7c 100644
+--- a/src/akas/ops/activation/definition.py
++++ b/src/akas/ops/activation/definition.py
+@@ -2,6 +2,7 @@
+ 
+ from akas.kernels.contracts import OutputABI
+ from akas.ops.activation.validation import validation, sigmoid_bias_validation
++from akas.ops.activation.validation import column_activation_validation
+ from akas.kernels.contracts import Implementation
+ 
+ ROW_INDEPENDENT = ("swiglu",)
+@@ -14,6 +15,9 @@ for _contract in ("reference", "packed", "packed-baseline", "bf16", "block-fp8")
+         }
+     )
+ VALIDATIONS = {name: validation for name in ("swiglu", "swiglu_experts")}
++for _kind in ("column_bias", "gelu", "gelu_bias"):
++    OUTPUT_ARGUMENTS["reference"][_kind] = OutputABI((-1,), ("out",))
++    VALIDATIONS[_kind] = column_activation_validation
+ IMPLEMENTATIONS = (
+     Implementation(
+         "swiglu",
+@@ -125,6 +129,17 @@ IMPLEMENTATIONS = (
+         name="activation.kernel",
+     ),
+ )
++IMPLEMENTATIONS += tuple(
++    Implementation(
++        kind,
++        "akas.ops.activation.kernel",
++        "reference",
++        provider=provider,
++        factory="column_activation",
++    )
++    for provider in ("cuda", "webgpu")
++    for kind in ("column_bias", "gelu", "gelu_bias")
++)
+ 
+ IMPLEMENTATIONS += tuple(
+     Implementation(
+diff --git a/src/akas/ops/activation/kernel.py b/src/akas/ops/activation/kernel.py
+index 698be3c..ec3c48c 100644
+--- a/src/akas/ops/activation/kernel.py
++++ b/src/akas/ops/activation/kernel.py
+@@ -244,3 +244,51 @@ def head_gate_half(spec, schedule):
+         return out
+ 
+     return compute
++
++
++def column_activation(spec, schedule):
++    import tilelang.language as T
++
++    p = {**spec.parameters, **schedule}
++    r, c = (p[key] for key in ("r", "c"))
++    gelu = spec.kind != "column_bias"
++
++    @T.macro
++    def activate(value):
++        x = value * T.float32(0.7071067811865476)
++        t = 1 / (1 + T.float32(0.3275911) * T.abs(x))
++        poly = (
++            ((T.float32(1.061405429) * t - 1.453152027) * t + 1.421413741) * t
++            - 0.284496736
++        ) * t + 0.254829592
++        erf = 1 - poly * t * T.exp(-x * x)
++        return 0.5 * value * (1 + T.if_then_else(x < 0, -erf, erf))
++
++    if spec.kind == "gelu":
++
++        @kernel
++        def compute(x: Tensor((r, c), "float32")) -> Tensor((r, c), "float32"):
++            out = output((r, c), "float32")
++            with T.Kernel(r, T.ceildiv(c, 128), threads=128) as (row, tile):
++                for lane in T.Parallel(128):
++                    col = tile * 128 + lane
++                    if col < c:
++                        out[row, col] = activate(x[row, col])
++            return out
++
++        return compute
++
++    @kernel
++    def compute(x: Tensor((r, c), "float32"), bias: Tensor((c,), "float32")) -> Tensor(
++        (r, c), "float32"
++    ):
++        out = output((r, c), "float32")
++        with T.Kernel(r, T.ceildiv(c, 128), threads=128) as (row, tile):
++            for lane in T.Parallel(128):
++                col = tile * 128 + lane
++                if col < c:
++                    value = x[row, col] + bias[col]
++                    out[row, col] = activate(value) if gelu else value
++        return out
++
++    return compute
+diff --git a/src/akas/ops/activation/validation.py b/src/akas/ops/activation/validation.py
+index 24e9bf5..d5ca28c 100644
+--- a/src/akas/ops/activation/validation.py
++++ b/src/akas/ops/activation/validation.py
+@@ -96,3 +96,16 @@ def gated_validation(kind, p, signature):
+         expected["out"] = expected["out"].astype("float16")
+         return ValidationCase(values, expected, rtol=0.002, atol=0.002)
+     return ValidationCase(values, expected, rtol=2e-5, atol=2e-6)
++
++
++def column_activation_validation(kind, p, signature):
++    import math
++    import numpy as np
++    from akas.kernels.contracts import ValidationCase, sample_arguments
++
++    values = sample_arguments(signature)
++    x = values["x"].astype("float64") + values.get("bias", 0)
++    if kind != "column_bias":
++        erf = np.frompyfunc(math.erf, 1, 1)
++        x *= 0.5 * (1 + erf(x / math.sqrt(2)).astype("float64"))
++    return ValidationCase(values, {**values, "out": x.astype("float32")})
+diff --git a/src/akas/ops/attention/README.md b/src/akas/ops/attention/README.md
+index ad8865d..a147ce5 100644
+--- a/src/akas/ops/attention/README.md
++++ b/src/akas/ops/attention/README.md
+@@ -175,4 +175,8 @@ defined. Padding rows are not borrowed state and need not preserve old buffer
+ contents. Qualification compares live output rows numerically and checks all
+ inputs and KV state in full.
+ 
++## ZONOS3 and ZAC
++
++Adjacent-pair rotary with optional per-head RMS normalization supports the ZONOS3 backbone and ZAC. The WebGPU grouped causal kernel covers its 32-channel attention heads with a bounded native F16 cache.
++
+ Return to the [operation index](../README.md).
+diff --git a/src/akas/ops/attention/definition.py b/src/akas/ops/attention/definition.py
+index 1dbaa31..16bd9b1 100644
+--- a/src/akas/ops/attention/definition.py
++++ b/src/akas/ops/attention/definition.py
+@@ -1692,6 +1692,34 @@ IMPLEMENTATIONS += (
+ 
+ OUTPUT_ARGUMENTS["reference"]["rotary_compact"] = OutputABI((1,), ("out",))
+ VALIDATIONS["rotary_compact"] = rotary_compact_validation
++from akas.ops.attention.validation import (
++    causal_grouped_validation,
++    head_rms_rotary_validation,
++)
++
++OUTPUT_ARGUMENTS["reference"]["head_rms_rotary"] = OutputABI((-1,), ("out",))
++VALIDATIONS["head_rms_rotary"] = head_rms_rotary_validation
++OUTPUT_ARGUMENTS["reference"]["causal_grouped"] = OutputABI((-1,), ("out",))
++VALIDATIONS["causal_grouped"] = causal_grouped_validation
++IMPLEMENTATIONS += tuple(
++    Implementation(
++        "head_rms_rotary",
++        "akas.ops.attention.kernel",
++        "reference",
++        provider=provider,
++        factory="head_rms_rotary",
++    )
++    for provider in ("cuda", "webgpu")
++)
++IMPLEMENTATIONS += (
++    Implementation(
++        "causal_grouped",
++        "akas.ops.attention.kernel",
++        "reference",
++        provider="webgpu",
++        factory="causal_grouped",
++    ),
++)
+ IMPLEMENTATIONS += (
+     Implementation(
+         "rotary_compact",
+@@ -1731,6 +1759,7 @@ IMPLEMENTATIONS += tuple(
+     )
+     for kind, module, factory in (
+         ("window_cache", "kernel", "window_cache"),
++        ("qkv_split", "kernel", "qkv_split"),
+         ("window_merge", "webgpu", "window_merge"),
+         ("rotary_compact", "kernel", "rotary_compact"),
+         ("window_attention", "webgpu", "window_prefill"),
+diff --git a/src/akas/ops/attention/kernel.py b/src/akas/ops/attention/kernel.py
+index 066e59a..5c65d12 100644
+--- a/src/akas/ops/attention/kernel.py
++++ b/src/akas/ops/attention/kernel.py
+@@ -1673,3 +1673,106 @@ def window_cache_tail(spec, schedule):
+         return kc, vc
+ 
+     return compute
++def head_rms_rotary(spec, schedule):
++    """Scale and rotate adjacent coordinate pairs with optional RMS normalization."""
++    import tilelang.language as T
++
++    p = {**spec.parameters, **schedule}
++    r, h, d, cap, scale_heads = (
++        p[k] for k in ("r", "h", "d", "capacity", "scale_heads")
++    )
++    normalize, eps = p.get("normalize", True), p.get("eps", 1e-6)
++
++    @kernel
++    def compute(
++        x: Tensor((r, h * d), "float32"),
++        scale: Tensor((scale_heads * d,), "float32"),
++        table: Tensor((cap, d), "float32"),
++        positions: Tensor((r,), "int32"),
++    ) -> Tensor((r, h * d), "float32"):
++        out = output((r, h * d), "float32")
++        with T.Kernel(r, h, threads=64) as (row, head):
++            total = T.alloc_fragment((1,), "float32")
++            if normalize:
++                squares = T.alloc_fragment((d,), "float32")
++                for j in T.Parallel(d):
++                    value = x[row, head * d + j]
++                    squares[j] = value * value
++                T.reduce_sum(squares, total)
++            for j in T.Parallel(d // 2):
++                position = positions[row]
++                a = T.alloc_var("float32")
++                b = T.alloc_var("float32")
++                a = x[row, head * d + 2 * j] * scale[(head % scale_heads) * d + 2 * j]
++                b = (
++                    x[row, head * d + 2 * j + 1]
++                    * scale[(head % scale_heads) * d + 2 * j + 1]
++                )
++                if normalize:
++                    a *= T.rsqrt(total[0] / d + eps)
++                    b *= T.rsqrt(total[0] / d + eps)
++                cosine = table[position, j]
++                sine = table[position, j + d // 2]
++                out[row, head * d + 2 * j] = a * cosine - b * sine
++                out[row, head * d + 2 * j + 1] = a * sine + b * cosine
++        return out
++
++    return compute
++
++
++def causal_grouped(spec, schedule):
++    """Reference grouped-query attention for short native F16 caches."""
++    import tilelang.language as T
++
++    p = {**spec.parameters, **schedule}
++    r, h, kh, d, cap, chunk = (
++        p[key] for key in ("r", "h", "kh", "d", "capacity", "chunk")
++    )
++    cache = (r // chunk, kh, cap, d)
++
++    @kernel
++    def compute(
++        q: Tensor((r, h * d), "float32"),
++        kc: Tensor(cache, "float16"),
++        vc: Tensor(cache, "float16"),
++        positions: Tensor((r,), "int32"),
++        enabled: Tensor((r,), "int32"),
++    ) -> Tensor((r * h * d,), "float32"):
++        out = output((r * h * d,), "float32")
++        with T.Kernel(r, h, threads=128) as (row, head):
++            slot, kv = row // chunk, head // (h // kh)
++            scores = T.alloc_fragment((cap,), "float32")
++            probs = T.alloc_fragment((cap,), "float32")
++            weights = T.alloc_shared((cap,), "float32")
++            maximum = T.alloc_fragment((1,), "float32")
++            denominator = T.alloc_fragment((1,), "float32")
++            for i in T.Parallel(cap):
++                dot = T.alloc_var("float32")
++                dot = 0
++                if i <= positions[row]:
++                    for j in T.serial(d):
++                        dot += q[row, head * d + j] * T.cast(
++                            kc[slot, kv, i, j], "float32"
++                        )
++                    scores[i] = dot * d ** (-0.5)
++                else:
++                    scores[i] = T.float32(-1e30)
++            T.reduce_max(scores, maximum)
++            for i in T.Parallel(cap):
++                probs[i] = T.if_then_else(
++                    i <= positions[row], T.exp(scores[i] - maximum[0]), 0
++                )
++            T.reduce_sum(probs, denominator)
++            for i in T.Parallel(cap):
++                weights[i] = probs[i] / T.max(denominator[0], T.float32(1e-20))
++            T.sync_threads()
++            for j in T.Parallel(d):
++                total = T.alloc_var("float32")
++                total = 0
++                if enabled[row] != 0:
++                    for i in T.serial(positions[row] + 1):
++                        total += weights[i] * T.cast(vc[slot, kv, i, j], "float32")
++                out[row * h * d + head * d + j] = total
++        return out
++
++    return compute
+diff --git a/src/akas/ops/attention/validation.py b/src/akas/ops/attention/validation.py
+index 7d3f8ca..e6b8bc0 100644
+--- a/src/akas/ops/attention/validation.py
++++ b/src/akas/ops/attention/validation.py
+@@ -1505,3 +1505,49 @@ def projected_gate_validation(kind, p, signature):
+         raw = v["w"].view("uint8").reshape(-1)
+         raw[:] = repack_host(raw)
+     return ValidationCase(v, expected, rtol=0.002, atol=2e-5)
++
++
++def head_rms_rotary_validation(kind, p, signature):
++    import numpy as np
++    from akas.kernels.contracts import ValidationCase, sample_arguments
++
++    values = sample_arguments(signature)
++    r, h, d = (p[key] for key in ("r", "h", "d"))
++    values["positions"][:] = np.arange(r) % p["capacity"]
++    x = values["x"].reshape(r, h, d).astype("float64")
++    if p.get("normalize", True):
++        x /= np.sqrt(np.mean(x * x, axis=-1, keepdims=True) + p.get("eps", 1e-6))
++    scales = values["scale"].reshape(p["scale_heads"], d)
++    x *= scales[np.arange(h) % p["scale_heads"]]
++    table = values["table"][values["positions"]]
++    real, imag = x[..., 0::2], x[..., 1::2]
++    rotation = table[:, None, : d // 2] + 1j * table[:, None, d // 2 :]
++    rotated = (real + 1j * imag) * rotation
++    out = np.stack((rotated.real, rotated.imag), axis=-1).reshape(r, h * d)
++    return ValidationCase(values, {**values, "out": out.astype("float32")})
++
++
++def causal_grouped_validation(kind, p, signature):
++    import numpy as np
++    from akas.kernels.contracts import ValidationCase, sample_arguments
++
++    values = sample_arguments(signature)
++    r, h, kh, d, cap, chunk = (
++        p[key] for key in ("r", "h", "kh", "d", "capacity", "chunk")
++    )
++    values["positions"][:] = np.arange(r) % cap
++    values["enabled"][:] = 1
++    if r > 1:
++        values["enabled"][-1] = 0
++    q = values["q"].reshape(r, h, d).astype("float64")
++    kc, vc = (values[name].astype("float64") for name in ("kc", "vc"))
++    out = np.zeros_like(q)
++    for row, position in enumerate(values["positions"]):
++        if values["enabled"][row]:
++            keys = np.repeat(kc[row // chunk, :, : position + 1], h // kh, axis=0)
++            vals = np.repeat(vc[row // chunk, :, : position + 1], h // kh, axis=0)
++            scores = np.einsum("hd,htd->ht", q[row], keys) * d ** (-0.5)
++            probabilities = np.exp(scores - scores.max(axis=-1, keepdims=True))
++            probabilities /= probabilities.sum(axis=-1, keepdims=True)
++            out[row] = np.einsum("ht,htd->hd", probabilities, vals)
++    return ValidationCase(values, {**values, "out": out.astype("float32").reshape(-1)})
+diff --git a/src/akas/ops/convolution/README.md b/src/akas/ops/convolution/README.md
+index f18c049..8d175a6 100644
+--- a/src/akas/ops/convolution/README.md
++++ b/src/akas/ops/convolution/README.md
+@@ -60,4 +60,8 @@ enabled prefixes and channel tails. See [state prefill
+ tests](../../../../tests/test_state_prefill.py) and [LFM reference
+ tests](../../../../tests/test_lfm2_reference.py).
+ 
++## ZONOS3 and ZAC
++
++The causal depthwise FIR uses a zero-padded input prefix and one bias per channel. CUDA and WebGPU share the full-utterance body used by ZAC.
++
+ Return to the [operation index](../README.md).
+diff --git a/src/akas/ops/convolution/definition.py b/src/akas/ops/convolution/definition.py
+index b803345..e37ed78 100644
+--- a/src/akas/ops/convolution/definition.py
++++ b/src/akas/ops/convolution/definition.py
+@@ -147,3 +147,21 @@ def commit_histories(graph, commit):
+             journal=commit.buffers[fields["journal"]],
+             accepted=commit.buffers[fields["enabled"]],
+         )
++
++
++from akas.ops.convolution.validation import causal_depthwise_validation
++
++OUTPUT_ARGUMENTS.setdefault("reference", {})["causal_depthwise"] = OutputABI(
++    (-1,), ("out",)
++)
++VALIDATIONS["causal_depthwise"] = causal_depthwise_validation
++IMPLEMENTATIONS += tuple(
++    Implementation(
++        "causal_depthwise",
++        "akas.ops.convolution.kernel",
++        "reference",
++        provider=provider,
++        factory="causal_depthwise",
++    )
++    for provider in ("cuda", "webgpu")
++)
+diff --git a/src/akas/ops/convolution/kernel.py b/src/akas/ops/convolution/kernel.py
+index 57f1cfa..19b12b8 100644
+--- a/src/akas/ops/convolution/kernel.py
++++ b/src/akas/ops/convolution/kernel.py
+@@ -184,3 +184,33 @@ def commit(spec: KernelSpec, schedule: Mapping[str, object]):
+         return state
+ 
+     return compute
++
++
++def causal_depthwise(spec, schedule):
++    """Finite channelwise FIR over one left-padded sequence."""
++    import tilelang.language as T
++
++    p = {**spec.parameters, **schedule}
++    rows, width, taps = (p[key] for key in ("r", "c", "taps"))
++
++    @kernel
++    def compute(
++        x: Tensor((rows, width), "float32"),
++        w: Tensor((width, taps), "float32"),
++        bias: Tensor((width,), "float32"),
++    ) -> Tensor((rows, width), "float32"):
++        out = output((rows, width), "float32")
++        with T.Kernel(rows, T.ceildiv(width, 128), threads=128) as (row, tile):
++            for lane in T.Parallel(128):
++                column = tile * 128 + lane
++                if column < width:
++                    value = T.alloc_var("float32")
++                    value = bias[column]
++                    for j in T.unroll(taps):
++                        step = row + j - taps + 1
++                        if step >= 0:
++                            value += x[step, column] * w[column, j]
++                    out[row, column] = value
++        return out
++
++    return compute
+diff --git a/src/akas/ops/convolution/validation.py b/src/akas/ops/convolution/validation.py
+index 4d3755f..4417110 100644
+--- a/src/akas/ops/convolution/validation.py
++++ b/src/akas/ops/convolution/validation.py
+@@ -75,3 +75,14 @@ def verification_validation(kind, p, signature):
+                 out[row, token] = 0
+             expected["journal"][row, token] = history
+     return ValidationCase(values, expected)
++
++
++def causal_depthwise_validation(kind, p, signature):
++    import numpy as np
++    from akas.kernels.contracts import ValidationCase, sample_arguments
++
++    values = sample_arguments(signature)
++    padded = np.pad(values["x"].astype("float64"), ((p["taps"] - 1, 0), (0, 0)))
++    windows = np.lib.stride_tricks.sliding_window_view(padded, p["taps"], axis=0)
++    out = np.einsum("rct,ct->rc", windows, values["w"]) + values["bias"]
++    return ValidationCase(values, {**values, "out": out.astype("float32")})
+diff --git a/src/akas/ops/gdn/README.md b/src/akas/ops/gdn/README.md
+index b7eaa56..edd00f8 100644
+--- a/src/akas/ops/gdn/README.md
++++ b/src/akas/ops/gdn/README.md
+@@ -62,4 +62,8 @@ tests](../../../../tests/test_qwen_recompute.py) and [state
+ tests](../../../../tests/test_state_prefill.py). Measure the full state plan, including
+ recovery.
+ 
++## ZONOS3 and ZAC
++
++The reference contract binds the mapped convolution, preparation, scan and normalization with F32 activations and recurrent state. This path covers the ZONOS3 Gated DeltaNet layers.
++
+ Return to the [operation index](../README.md).
+diff --git a/src/akas/ops/gdn/definition.py b/src/akas/ops/gdn/definition.py
+index 0a6eacc..ab6a815 100644
+--- a/src/akas/ops/gdn/definition.py
++++ b/src/akas/ops/gdn/definition.py
+@@ -487,6 +487,7 @@ OUTPUT_ARGUMENTS = {
+         "restore": OutputABI((1,), ("state",)),
+     },
+ }
++OUTPUT_ARGUMENTS["reference"] = OUTPUT_ARGUMENTS["bf16"]
+ IMPLEMENTATIONS = (
+     Implementation(
+         "conv_commit",
+@@ -754,3 +755,25 @@ IMPLEMENTATIONS = (
+         name="gdn.cuda.bf16_batch",
+     ),
+ )
++
++IMPLEMENTATIONS += tuple(
++    Implementation(
++        kind,
++        "akas.ops.gdn.kernel",
++        "reference",
++        provider=provider,
++        defaults=(("dtype", "float32"),)
++        + (
++            (("webgpu_tile", 8),) if kind == "gdn_scan" and provider == "webgpu" else ()
++        ),
++        factory=factory,
++        name=f"gdn.{provider}.reference",
++    )
++    for provider in ("cuda", "webgpu")
++    for kind, factory in (
++        ("gdn_conv", "mapped_conv_f16"),
++        ("gdn_prepare", "mapped_prepare_f16"),
++        ("gdn_norm", "mapped_norm_f16"),
++        ("gdn_scan", "mapped_scan"),
++    )
++)
+diff --git a/src/akas/ops/gdn/validation.py b/src/akas/ops/gdn/validation.py
+index 5851eee..5226253 100644
+--- a/src/akas/ops/gdn/validation.py
++++ b/src/akas/ops/gdn/validation.py
+@@ -100,6 +100,8 @@ def validation(kind, p, signature):
+     )
+ 
+     def rounded(x):
++        if p.get("dtype") == "float32":
++            return np.asarray(x, dtype="float32")
+         if f16:
+             return np.asarray(x, dtype="float16").astype("float32")
+         return decode_bfloat16(encode_bfloat16(x))
+diff --git a/src/akas/ops/indexing/README.md b/src/akas/ops/indexing/README.md
+index 63c10fd..d3b6e9d 100644
+--- a/src/akas/ops/indexing/README.md
++++ b/src/akas/ops/indexing/README.md
+@@ -57,4 +57,8 @@ unselected rows. See [state mapping tests](../../../../tests/test_state_mapping.
+ [draft primitive tests](../../../../tests/test_draft_primitives.py) check immutable
+ gathers, column replacement and concatenation on CUDA and WebGPU.
+ 
++## ZONOS3 and ZAC
++
++The row interleave operation moves adjacent channel groups into consecutive time rows in the ZAC upsampler. CUDA and WebGPU share its copy layout.
++
+ Return to the [operation index](../README.md).
+diff --git a/src/akas/ops/indexing/definition.py b/src/akas/ops/indexing/definition.py
+index f81849c..75798fe 100644
+--- a/src/akas/ops/indexing/definition.py
++++ b/src/akas/ops/indexing/definition.py
+@@ -1,6 +1,6 @@
+ """Contracts and implementation choices for indexing."""
+ 
+-from akas.kernels.contracts import Implementation
++from akas.kernels.contracts import Implementation, OutputABI
+ from akas.ops.indexing.validation import validation, feature_validation
+ 
+ OUTPUT_ARGUMENTS = {}
+@@ -47,3 +47,19 @@ IMPLEMENTATIONS += tuple(
+     for provider in ("cuda", "webgpu")
+     for kind in ("select_token", "concatenate", "replace_token")
+ )
++from akas.ops.indexing.validation import interleave_validation
++
++OUTPUT_ARGUMENTS.setdefault("reference", {})["interleave_rows"] = OutputABI(
++    (-1,), ("out",)
++)
++VALIDATIONS["interleave_rows"] = interleave_validation
++IMPLEMENTATIONS += tuple(
++    Implementation(
++        "interleave_rows",
++        "akas.ops.indexing.kernel",
++        "reference",
++        provider=provider,
++        factory="interleave_rows",
++    )
++    for provider in ("cuda", "webgpu")
++)
+diff --git a/src/akas/ops/indexing/kernel.py b/src/akas/ops/indexing/kernel.py
+index 1ac6db1..a578697 100644
+--- a/src/akas/ops/indexing/kernel.py
++++ b/src/akas/ops/indexing/kernel.py
+@@ -110,3 +110,31 @@ def replace_token(spec, schedule):
+         return out
+ 
+     return compute
++
++
++def interleave_rows(spec, schedule):
++    """Move channel groups into consecutive rows while preserving order."""
++    import tilelang.language as T
++
++    p = {**spec.parameters, **schedule}
++    rows, width, factor = (p[key] for key in ("r", "c", "factor"))
++    if width % factor:
++        raise ValueError("interleaved channels must divide evenly into rows")
++    channels = width // factor
++
++    @kernel
++    def compute(x: Tensor((rows, width), "float32")) -> Tensor(
++        (rows * factor, channels), "float32"
++    ):
++        out = output((rows * factor, channels), "float32")
++        with T.Kernel(rows * factor, T.ceildiv(channels, 128), threads=128) as (
++            row,
++            tile,
++        ):
++            for lane in T.Parallel(128):
++                column = tile * 128 + lane
++                if column < channels:
++                    out[row, column] = x[row // factor, column * factor + row % factor]
++        return out
++
++    return compute
+diff --git a/src/akas/ops/indexing/validation.py b/src/akas/ops/indexing/validation.py
+index 3cb9924..4497d20 100644
+--- a/src/akas/ops/indexing/validation.py
++++ b/src/akas/ops/indexing/validation.py
+@@ -45,3 +45,14 @@ def feature_validation(kind, p, signature):
+     else:
+         raise ValueError("unknown feature indexing operation")
+     return ValidationCase(values, expected, rtol=0, atol=0)
++
++
++def interleave_validation(kind, p, signature):
++    from akas.kernels.contracts import ValidationCase, sample_arguments
++
++    values = sample_arguments(signature)
++    r, c, factor = (p[key] for key in ("r", "c", "factor"))
++    out = values["x"].reshape(r, c // factor, factor).transpose(0, 2, 1)
++    return ValidationCase(
++        values, {**values, "out": out.reshape(r * factor, c // factor)}
++    )
+diff --git a/src/akas/ops/linear/README.md b/src/akas/ops/linear/README.md
+index 8283345..4e20992 100644
+--- a/src/akas/ops/linear/README.md
++++ b/src/akas/ops/linear/README.md
+@@ -75,6 +75,10 @@ tests](../../../../tests/test_qwen_kernels.py) and [WebGPU
+ tests](../../../../tests/test_webgpu_model_lowering.py). Benchmark complete
+ conversion/projection/merge plans.
+ 
++## ZONOS3 and ZAC
++
++The WebGPU `tiled_f32` choice uses Tensor's outer-product schedule with F32 shared storage and accumulation for wide ZAC projections. The opt-in Q8_0 subgroup decode retains the shared GEMV's F16 input/weight rounding, serial per-lane accumulation and five-step F32 reduction order while replacing shared reduction barriers with subgroup shuffles. The exact 128-thread candidate covers four independent output columns per workgroup and retains a fallback for smaller hardware subgroups; the default shared GEMV remains available.
++
+ Return to the [operation index](../README.md).
+ 
+ 
+diff --git a/src/akas/ops/linear/definition.py b/src/akas/ops/linear/definition.py
+index 2541dd7..b0168d4 100644
+--- a/src/akas/ops/linear/definition.py
++++ b/src/akas/ops/linear/definition.py
+@@ -1876,3 +1876,51 @@ IMPLEMENTATIONS = tuple(
+     else item
+     for item in IMPLEMENTATIONS
+ )
++IMPLEMENTATIONS += (
++    Implementation(
++        "linear",
++        "akas.ops.linear.webgpu",
++        "reference",
++        provider="webgpu",
++        priority=50,
++        factory="tiled_f32",
++        accepts=lambda p: p.get("tiled_f32", False),
++        space=(
++            ("tile_k", (16, 32)),
++            ("unroll", (4, 8)),
++            ("dot_width", (1, 2, 4)),
++            (
++                "tile_geometry",
++                (
++                    (32, 64, 4, 4),
++                    (64, 64, 4, 4),
++                    (32, 64, 2, 4),
++                    (64, 64, 8, 8),
++                    (32, 64, 4, 8),
++                ),
++            ),
++        ),
++    ),
++    Implementation(
++        "quantized_projection",
++        "akas.ops.linear.webgpu",
++        "*",
++        provider="webgpu",
++        priority=9,
++        factory="subgroup_q8_projection",
++        name="linear.webgpu.q8-subgroup",
++        accepts=lambda p: (
++            p["r"] == 1
++            and p.get("input_dtype") == "float32"
++            and p["k"] % 128 == 0
++            and all(
++                part["format"] == "ggml"
++                and part["options"]["encoding"] == 8
++                and not part.get("row_order")
++                and not part.get("column_order")
++                for part in p["weight_parts"]
++            )
++        ),
++        space=(("threads", (128,)),),
++    ),
++)
+diff --git a/src/akas/ops/linear/webgpu.py b/src/akas/ops/linear/webgpu.py
+index a2271c4..f1f6ee5 100644
+--- a/src/akas/ops/linear/webgpu.py
++++ b/src/akas/ops/linear/webgpu.py
+@@ -1005,3 +1005,188 @@ def projection(spec, schedule):
+ 
+ 
+ from .kernel import column_projection as column_projection
++
++
++def subgroup_q8_projection(spec, schedule):
++    """Retain Q8 GEMV accumulation order with subgroup reductions."""
++    import tilelang.language as T
++    from akas.quantization.weights import bind_parts
++
++    p = {**spec.parameters, **schedule}
++    rows, depth, columns = (p[key] for key in ("r", "k", "o"))
++    parts = p["weight_parts"]
++    if (
++        rows != 1
++        or depth % 128
++        or any(
++            part["format"] != "ggml"
++            or part["options"]["encoding"] != 8
++            or part.get("row_order")
++            or part.get("column_order")
++            for part in parts
++        )
++    ):
++        raise ValueError("subgroup Q8 projection requires ordered 128-deep Q8_0 pieces")
++    right = bind_parts(parts, depth, provider="webgpu")
++    buffers = right.storage.buffers
++    lanes = p.get("lanes", 32)
++    threads = p.get("threads", 128)
++    if lanes != 32 or threads != 128:
++        raise ValueError(
++            "subgroup Q8 projection requires four 32-lane reduction groups"
++        )
++    outputs = threads // lanes
++
++    @T.macro
++    def gemv(x, w, out):
++        with T.Kernel(T.ceildiv(columns, outputs), threads=threads) as block:
++            tx = T.get_thread_binding()
++            group, lane = tx // lanes, tx % lanes
++            source = T.alloc_shared((128,), "float16")
++            scratch = T.alloc_shared((threads,), "float32")
++            accum = T.alloc_var("float32")
++            accum = 0
++            for tile in T.serial(depth // 128):
++                source[tx] = T.if_then_else(
++                    tile * 128 + tx < depth, x[0, tile * 128 + tx], 0
++                )
++                T.sync_threads()
++                if block * outputs + group < columns:
++                    for step in T.unroll(4):
++                        channel = tile * 128 + step * lanes + lane
++                        value = T.cast(
++                            right.read(w, block * outputs + group, channel), "float16"
++                        )
++                        accum = accum + T.cast(
++                            source[step * lanes + lane], "float32"
++                        ) * T.cast(value, "float32")
++                T.sync_threads()
++            scratch[tx] = accum
++            T.sync_threads()
++            if T.call_extern("uint32", "tensor_subgroup_size") == 32:
++                for step in T.unroll(5):
++                    accum = scratch[tx] + T.call_extern(
++                        "float32",
++                        "subgroupShuffleXor",
++                        scratch[tx],
++                        T.uint32(16 >> step),
++                    )
++                    scratch[tx] = accum
++                    T.sync_threads()
++            else:
++                for step in T.unroll(5):
++                    if lane < (16 >> step):
++                        scratch[tx] = scratch[tx] + scratch[tx + (16 >> step)]
++                    T.sync_threads()
++            if lane == 0 and block * outputs + group < columns:
++                out[0, block * outputs + group] = scratch[tx]
++
++    if len(buffers) == 1:
++        w0 = buffers[0]
++
++        @kernel
++        def compute(
++            x: Tensor((rows, depth), "float32"), w: Tensor(w0.shape, w0.dtype)
++        ) -> Tensor((rows, columns), "float32"):
++            out = output((rows, columns), "float32")
++            gemv(x, (w,), out)
++            return out
++
++    elif len(buffers) == 2:
++        w0, w1 = buffers
++
++        @kernel
++        def compute(
++            x: Tensor((rows, depth), "float32"),
++            w: Tensor(w0.shape, w0.dtype),
++            weight1: Tensor(w1.shape, w1.dtype),
++        ) -> Tensor((rows, columns), "float32"):
++            out = output((rows, columns), "float32")
++            gemv(x, (w, weight1), out)
++            return out
++
++    elif len(buffers) == 3:
++        w0, w1, w2 = buffers
++
++        @kernel
++        def compute(
++            x: Tensor((rows, depth), "float32"),
++            w: Tensor(w0.shape, w0.dtype),
++            weight1: Tensor(w1.shape, w1.dtype),
++            weight2: Tensor(w2.shape, w2.dtype),
++        ) -> Tensor((rows, columns), "float32"):
++            out = output((rows, columns), "float32")
++            gemv(x, (w, weight1, weight2), out)
++            return out
++
++    else:
++        w0, w1, w2, w3 = buffers
++
++        @kernel
++        def compute(
++            x: Tensor((rows, depth), "float32"),
++            w: Tensor(w0.shape, w0.dtype),
++            weight1: Tensor(w1.shape, w1.dtype),
++            weight2: Tensor(w2.shape, w2.dtype),
++            weight3: Tensor(w3.shape, w3.dtype),
++        ) -> Tensor((rows, columns), "float32"):
++            out = output((rows, columns), "float32")
++            gemv(x, (w, weight1, weight2, weight3), out)
++            return out
++
++    return compute
++
++
++def tiled_f32(spec, schedule):
++    """Cooperative FP32 projections without the mixed-precision staging path."""
++    import tilelang.language as T
++    from akas.ops.linear.kernel import _epilogue
++    from tensor.compiler.webgpu.schedules.outer_product import outer_product_matmul
++
++    p = {**spec.parameters, **schedule}
++    r, k, o = (p[key] for key in ("r", "k", "o"))
++    tile_m, tile_n, micro_m, micro_n = p.get(
++        "tile_geometry", (32, 64, 4, 4)
++    )
++    if (tile_m // micro_m) * (tile_n // micro_n) not in (64, 128, 256):
++        raise ValueError("invalid F32 outer-product ownership")
++    threads = (tile_m // micro_m) * (tile_n // micro_n)
++
++    @T.macro
++    def lhs(value):
++        return value
++
++    @T.macro
++    def rhs(w, row, col):
++        return w[row * k + col]
++
++    algorithm = outer_product_matmul(
++        r,
++        k,
++        o,
++        lhs,
++        rhs,
++        _epilogue(),
++        tile_m=tile_m,
++        tile_n=tile_n,
++        tile_k=p.get("tile_k", 16),
++        micro_m=micro_m,
++        micro_n=micro_n,
++        threads=threads,
++        lhs_pad=1,
++        rhs_pad=1,
++        dtype="float32",
++        dot_width=p.get("dot_width", 1),
++        unroll=p.get("unroll", 4),
++    )
++
++    @kernel
++    def compute(
++        x: Tensor((r * k,), "float32"),
++        w: Tensor((o * k,), "float32"),
++    ) -> Tensor((r * o,), "float32"):
++        out = output((r * o,), "float32")
++        algorithm(x, w, out)
++        return out
++
++    return compute
+diff --git a/src/akas/ops/moe/README.md b/src/akas/ops/moe/README.md
+index 3fa852f..f7a96f6 100644
+--- a/src/akas/ops/moe/README.md
++++ b/src/akas/ops/moe/README.md
+@@ -172,4 +172,8 @@ tests](../../../../tests/test_native_pipeline_policy.py) and [Hopper
+ tests](../../../../tests/test_qwen_hopper.py). Benchmark routing plus expert work plus
+ combination.
+ 
++## ZONOS3 and ZAC
++
++Biased softmax routing selects experts from logits plus bias and normalizes the original logits of the selected experts. It shares the routed projection and combination operations with the sigmoid variant.
++
+ Return to the [operation index](../README.md).
+diff --git a/src/akas/ops/moe/definition.py b/src/akas/ops/moe/definition.py
+index 47d8e3d..7d93603 100644
+--- a/src/akas/ops/moe/definition.py
++++ b/src/akas/ops/moe/definition.py
+@@ -39,14 +39,17 @@ def routed_moe(
+     scale=1.0,
+     normalize=True,
+     provider="cuda",
++    router="biased_router",
+ ):
+-    """Sigmoid/bias routing over encoded experts without a shared branch."""
++    """Biased routing over encoded experts without a shared branch."""
++    if router not in ("biased_router", "biased_softmax_router"):
++        raise ValueError("unknown routed expert scoring")
+     rows, width = x.shape
+     experts, hidden, _ = weights["gate"].shape
+     ids = graph.buffer(prefix + "ids", (rows, top), "int32")
+     probability = graph.buffer(prefix + "probability", (rows, top), "float32")
+     graph(
+-        "biased_router",
++        router,
+         dict(r=rows, experts=experts, top=top, scale=scale, normalize=normalize),
+         logits,
+         bias,
+@@ -2425,6 +2428,23 @@ OUTPUT_ARGUMENTS["reference"]["expert_pack"] = OutputABI(
+     (-3, -2, -1), ("packed", "packed_scales", "expert_offsets")
+ )
+ VALIDATIONS["expert_pack"] = pack_validation
++
++from akas.ops.moe.validation import biased_softmax_validation
++
++OUTPUT_ARGUMENTS["reference"]["biased_softmax_router"] = OutputABI(
++    (2, 3), ("ids", "weights")
++)
++VALIDATIONS["biased_softmax_router"] = biased_softmax_validation
++IMPLEMENTATIONS += tuple(
++    Implementation(
++        "biased_softmax_router",
++        "akas.ops.moe.kernel",
++        "reference",
++        provider=provider,
++        factory="biased_softmax_router",
++    )
++    for provider in ("cuda", "webgpu")
++)
+ IMPLEMENTATIONS += (
+     Implementation(
+         "expert_pack",
+diff --git a/src/akas/ops/moe/kernel.py b/src/akas/ops/moe/kernel.py
+index 5f39b43..d721324 100644
+--- a/src/akas/ops/moe/kernel.py
++++ b/src/akas/ops/moe/kernel.py
+@@ -438,3 +438,59 @@ def _packed_float_experts(spec, schedule, *, provider):
+         return out
+ 
+     return compute
++def biased_softmax_router(spec, schedule):
++    """Select using biased logits and normalize the selected unbiased logits."""
++    import tilelang.language as T
++    from akas.kernels.kernel import Tensor, kernel, output
++
++    p = {**spec.parameters, **schedule}
++    rows, experts, top = (p[name] for name in ("r", "experts", "top"))
++
++    @kernel
++    def compute(
++        logits: Tensor((rows, experts), "float32"), bias: Tensor((experts,), "float32")
++    ) -> tuple[Tensor((rows, top), "int32"), Tensor((rows, top), "float32")]:
++        ids = output((rows, top), "int32")
++        weights = output((rows, top), "float32")
++        with T.Kernel(rows, threads=128) as row:
++            scores = T.alloc_fragment((experts,), "float32")
++            candidates = T.alloc_fragment((experts,), "float32")
++            maximum = T.alloc_fragment((1,), "float32")
++            winner = T.alloc_fragment((1,), "float32")
++            chosen = T.alloc_shared((top,), "float32")
++            peak = T.alloc_shared((1,), "float32")
++            for i in T.Parallel(experts):
++                scores[i] = logits[row, i] + bias[i]
++            for rank in T.serial(top):
++                T.reduce_max(scores, maximum, dim=0)
++                for i in T.Parallel(experts):
++                    candidates[i] = T.if_then_else(
++                        scores[i] == maximum[0],
++                        -T.cast(i, "float32"),
++                        -T.cast(experts, "float32"),
++                    )
++                T.reduce_max(candidates, winner, dim=0)
++                for i in T.Parallel(1):
++                    index = T.cast(-winner[0], "int32")
++                    ids[row, rank] = index
++                    chosen[rank] = logits[row, index]
++                T.sync_threads()
++                for i in T.Parallel(experts):
++                    if i == T.cast(-winner[0], "int32"):
++                        scores[i] = -T.infinity("float32")
++            for i in T.Parallel(1):
++                peak[0] = chosen[0]
++                for rank in T.serial(1, top):
++                    peak[0] = T.max(peak[0], chosen[rank])
++            T.sync_threads()
++            for rank in T.Parallel(top):
++                total = T.alloc_var("float32")
++                total = 0
++                for i in T.serial(top):
++                    total += T.exp(chosen[i] - peak[0])
++                weights[row, rank] = (
++                    p.get("scale", 1.0) * T.exp(chosen[rank] - peak[0]) / total
++                )
++        return ids, weights
++
++    return compute
+diff --git a/src/akas/ops/moe/validation.py b/src/akas/ops/moe/validation.py
+index 7c0881a..b848b95 100644
+--- a/src/akas/ops/moe/validation.py
++++ b/src/akas/ops/moe/validation.py
+@@ -703,3 +703,26 @@ def packed_validation(kind, p, signature):
+                     row, rank = divmod(int(route), top)
+                     expected[name][begin + local] = old[row, rank]
+     return ValidationCase(values, expected, rtol=baseline.rtol, atol=baseline.atol)
++
++
++def biased_softmax_validation(kind, p, signature):
++    import numpy as np
++    from akas.kernels.contracts import ValidationCase, sample_arguments
++
++    values = sample_arguments(signature)
++    logits, bias = values["logits"], values["bias"]
++    # Force a tied row to qualify the lower-ID selection rule.
++    logits[0, 1] = logits[0, 0]
++    bias[1] = bias[0]
++    indices = np.argsort(-(logits + bias), axis=1, kind="stable")[:, : p["top"]]
++    selected = np.take_along_axis(logits.astype("float64"), indices, axis=1)
++    probabilities = np.exp(selected - selected.max(axis=1, keepdims=True))
++    probabilities *= p.get("scale", 1.0) / probabilities.sum(axis=1, keepdims=True)
++    return ValidationCase(
++        values,
++        {
++            **values,
++            "ids": indices.astype("int32"),
++            "weights": probabilities.astype("float32"),
++        },
++    )
+diff --git a/src/akas/ops/normalization/README.md b/src/akas/ops/normalization/README.md
+index 293be13..5ac4558 100644
+--- a/src/akas/ops/normalization/README.md
++++ b/src/akas/ops/normalization/README.md
+@@ -62,4 +62,8 @@ behavior, tails and intentional rounding. Use [normalization parity
+ tests](../../../../tests/test_normalization_parity.py) and [operation write
+ tests](../../../../tests/test_operation_writes.py).
+ 
++## ZONOS3 and ZAC
++
++Affine layer normalization uses mean and centered variance in F32 with separate scale and bias weights on CUDA and WebGPU. ZAC uses this path.
++
+ Return to the [operation index](../README.md).
+diff --git a/src/akas/ops/normalization/definition.py b/src/akas/ops/normalization/definition.py
+index b7b7202..8feed39 100644
+--- a/src/akas/ops/normalization/definition.py
++++ b/src/akas/ops/normalization/definition.py
+@@ -4,6 +4,7 @@ from akas.kernels.contracts import OutputABI
+ from dataclasses import replace
+ from akas.kernels.contracts import Implementation
+ from akas.ops.normalization.validation import VALIDATIONS as VALIDATIONS
++from akas.ops.normalization.validation import layer_norm_validation
+ 
+ 
+ def rms_norm(
+@@ -172,8 +173,11 @@ def search_policies(graph, commit, *, provider, target):
+ 
+ 
+ ROW_INDEPENDENT = ("rms",)
++ROW_INDEPENDENT += ("affine_layer_norm",)
+ REWRITES = (fuse_residual_normalization,)
+ OUTPUT_ARGUMENTS = {"reference": {"rms": (-1,), "add_rms": (2, -1)}}
++OUTPUT_ARGUMENTS["reference"]["affine_layer_norm"] = OutputABI((-1,), ("out",))
++VALIDATIONS["affine_layer_norm"] = layer_norm_validation
+ for _contract in ("reference", "packed", "packed-baseline", "bf16", "block-fp8"):
+     OUTPUT_ARGUMENTS.setdefault(_contract, {}).update(
+         {"rms": OutputABI((-1,), ("out",))}
+@@ -459,6 +463,16 @@ IMPLEMENTATIONS += tuple(
+     )
+     for kind in ("rms", "add_rms")
+ )
++IMPLEMENTATIONS += tuple(
++    Implementation(
++        "affine_layer_norm",
++        "akas.ops.normalization.kernel",
++        "reference",
++        provider=provider,
++        factory="affine_layer_norm",
++    )
++    for provider in ("cuda", "webgpu")
++)
+ 
+ OUTPUT_ARGUMENTS["reference"]["post_add_rms"] = OutputABI((-2, -1), ("hidden", "out"))
+ IMPLEMENTATIONS += (
+diff --git a/src/akas/ops/normalization/kernel.py b/src/akas/ops/normalization/kernel.py
+index 5c5ec18..ce3204c 100644
+--- a/src/akas/ops/normalization/kernel.py
++++ b/src/akas/ops/normalization/kernel.py
+@@ -467,3 +467,37 @@ def _serial(p):
+         return out
+ 
+     return compute
++
++
++def affine_layer_norm(spec, schedule):
++    import tilelang.language as T
++
++    p = {**spec.parameters, **schedule}
++    r, c, eps = (p[key] for key in ("r", "c", "eps"))
++
++    @kernel
++    def compute(
++        x: Tensor((r, c), "float32"),
++        scale: Tensor((c,), "float32"),
++        bias: Tensor((c,), "float32"),
++    ) -> Tensor((r, c), "float32"):
++        out = output((r, c), "float32")
++        with T.Kernel(r, threads=128) as row:
++            values = T.alloc_fragment((c,), "float32")
++            squared = T.alloc_fragment((c,), "float32")
++            sum_x = T.alloc_fragment((1,), "float32")
++            sum_sq = T.alloc_fragment((1,), "float32")
++            for j in T.Parallel(c):
++                values[j] = x[row, j]
++            T.reduce_sum(values, sum_x)
++            for j in T.Parallel(c):
++                centered = values[j] - sum_x[0] / c
++                squared[j] = centered * centered
++            T.reduce_sum(squared, sum_sq)
++            for j in T.Parallel(c):
++                out[row, j] = (values[j] - sum_x[0] / c) * T.rsqrt(
++                    sum_sq[0] / c + eps
++                ) * scale[j] + bias[j]
++        return out
++
++    return compute
+diff --git a/src/akas/ops/normalization/validation.py b/src/akas/ops/normalization/validation.py
+index f91754f..4d19974 100644
+--- a/src/akas/ops/normalization/validation.py
++++ b/src/akas/ops/normalization/validation.py
+@@ -81,3 +81,17 @@ def post_add_rms_validation(kind, p, signature):
+ 
+ 
+ VALIDATIONS["post_add_rms"] = post_add_rms_validation
++
++
++def layer_norm_validation(kind, p, signature):
++    import numpy as np
++    from akas.kernels.contracts import ValidationCase, sample_arguments
++
++    values = sample_arguments(signature)
++    centered = values["x"].astype("float64")
++    centered -= centered.mean(axis=-1, keepdims=True)
++    normalized = centered / np.sqrt(
++        np.mean(centered**2, axis=-1, keepdims=True) + p["eps"]
++    )
++    out = normalized * values["scale"] + values["bias"]
++    return ValidationCase(values, {**values, "out": out.astype("float32")})
+diff --git a/src/akas/ops/residual/README.md b/src/akas/ops/residual/README.md
+index 704bb8e..fbf4281 100644
+--- a/src/akas/ops/residual/README.md
++++ b/src/akas/ops/residual/README.md
+@@ -52,4 +52,8 @@ walkthrough](../../../../docs/operations.md#add-a-shared-operation)
+ builds on this format; [operation write
+ tests](../../../../tests/test_operation_writes.py) cover graph-visible effects.
+ 
++## ZONOS3 and ZAC
++
++Attention over a residual bank appends one source, scores the valid prefix with an RMS-normalized dot product and blends the raw rows. The append is explicit in the output ABI. CUDA and WebGPU also share the scaled residual addition used by ZAC.
++
+ Return to the [operation index](../README.md).
+diff --git a/src/akas/ops/residual/definition.py b/src/akas/ops/residual/definition.py
+index dca8082..d041567 100644
+--- a/src/akas/ops/residual/definition.py
++++ b/src/akas/ops/residual/definition.py
+@@ -3,6 +3,8 @@
+ from akas.kernels.contracts import OutputABI
+ from akas.kernels.contracts import Implementation
+ from akas.ops.residual.validation import validation
++from akas.ops.residual.validation import bank_validation
++from akas.ops.residual.validation import scaled_residual_validation
+ 
+ 
+ OUTPUT_ARGUMENTS = {"reference": {"add": (-1,)}}
+@@ -11,6 +13,10 @@ for _contract in ("reference", "packed", "packed-baseline", "bf16", "block-fp8")
+         {"add": OutputABI((-1,), ("out",))}
+     )
+ VALIDATIONS = {"add": validation}
++OUTPUT_ARGUMENTS["*"] = {"attention_residual": OutputABI((0, -1), ("bank", "out"))}
++VALIDATIONS["attention_residual"] = bank_validation
++OUTPUT_ARGUMENTS["*"]["scaled_residual"] = OutputABI((-1,), ("out",))
++VALIDATIONS["scaled_residual"] = scaled_residual_validation
+ IMPLEMENTATIONS = (
+     Implementation(
+         "add",
+@@ -52,3 +58,16 @@ IMPLEMENTATIONS = (
+         name="residual.kernel",
+     ),
+ )
++
++IMPLEMENTATIONS += tuple(
++    Implementation(
++        kind,
++        "akas.ops.residual.kernel",
++        "*",
++        provider=provider,
++        factory=kind,
++    )
++    for provider in ("cuda", "webgpu")
++    for kind in ("attention_residual", "scaled_residual")
++)
++
+diff --git a/src/akas/ops/residual/kernel.py b/src/akas/ops/residual/kernel.py
+index def40db..9cba618 100644
+--- a/src/akas/ops/residual/kernel.py
++++ b/src/akas/ops/residual/kernel.py
+@@ -34,3 +34,102 @@ def add(spec: KernelSpec, schedule: Mapping[str, object]):
+         return out
+ 
+     return compute
++
++
++def attention_residual(spec, schedule):
++    """Append one source and attend over the valid prefix of a residual bank."""
++    import tilelang.language as T
++    from akas.kernels.reductions import tree_reduce
++
++    p = {**spec.parameters, **schedule}
++    rows, width, capacity, index, epsilon = (
++        p[key] for key in ("r", "c", "capacity", "index", "eps")
++    )
++    threads = 128
++    reduce = tree_reduce(threads)
++
++    @kernel
++    def compute(
++        bank: Tensor((capacity, rows, width), "float32"),
++        source: Tensor((rows, width), "float32"),
++        query: Tensor((width,), "float32"),
++    ) -> tuple[
++        Tensor((capacity, rows, width), "float32"), Tensor((rows, width), "float32")
++    ]:
++        out = output((rows, width), "float32")
++        with T.Kernel(rows, threads=threads) as row:
++            lane = T.get_thread_binding()
++            scores = T.alloc_shared((index + 1,), "float32")
++            norm = T.alloc_shared((threads,), "float32")
++            score = T.alloc_shared((threads,), "float32")
++            peak = T.alloc_shared((1,), "float32")
++            denominator = T.alloc_shared((1,), "float32")
++            for stripe in T.serial(T.ceildiv(width, threads)):
++                column = stripe * threads + lane
++                if column < width:
++                    bank[index, row, column] = source[row, column]
++            T.sync_threads()
++            for i in T.serial(index + 1):
++                sum_sq = T.alloc_var("float32")
++                dot = T.alloc_var("float32")
++                sum_sq = 0
++                dot = 0
++                for stripe in T.serial(T.ceildiv(width, threads)):
++                    column = stripe * threads + lane
++                    if column < width:
++                        entry = bank[i, row, column]
++                        sum_sq += entry * entry
++                        dot += entry * query[column]
++                norm[lane] = sum_sq
++                score[lane] = dot
++                T.sync_threads()
++                reduce(norm, lane)
++                reduce(score, lane)
++                if lane == 0:
++                    scores[i] = score[0] * T.rsqrt(norm[0] / width + epsilon)
++                T.sync_threads()
++            if lane == 0:
++                peak[0] = scores[0]
++                for i in T.serial(1, index + 1):
++                    peak[0] = T.max(peak[0], scores[i])
++                denominator[0] = 0
++                for i in T.serial(index + 1):
++                    scores[i] = T.exp(scores[i] - peak[0])
++                    denominator[0] += scores[i]
++            T.sync_threads()
++            for stripe in T.serial(T.ceildiv(width, threads)):
++                column = stripe * threads + lane
++                if column < width:
++                    total = T.alloc_var("float32")
++                    total = 0
++                    for i in T.serial(index + 1):
++                        total += bank[i, row, column] * (scores[i] / denominator[0])
++                    out[row, column] = total
++        return bank, out
++
++    return compute
++
++
++def scaled_residual(spec, schedule):
++    import tilelang.language as T
++
++    p = {**spec.parameters, **schedule}
++    rows, width = p["r"], p["c"]
++
++    @kernel
++    def compute(
++        residual: Tensor((rows, width), "float32"),
++        mixed: Tensor((rows, width), "float32"),
++        scale: Tensor((width,), "float32"),
++    ) -> Tensor((rows, width), "float32"):
++        out = output((rows, width), "float32")
++        with T.Kernel(rows, T.ceildiv(width, 128), threads=128) as (row, tile):
++            for lane in T.Parallel(128):
++                column = tile * 128 + lane
++                if column < width:
++                    out[row, column] = (
++                        residual[row, column] + mixed[row, column] * scale[column]
++                    )
++        return out
++
++    return compute
+diff --git a/src/akas/ops/residual/validation.py b/src/akas/ops/residual/validation.py
+index 36022eb..78ab56d 100644
+--- a/src/akas/ops/residual/validation.py
++++ b/src/akas/ops/residual/validation.py
+@@ -17,3 +17,32 @@ def validation(kind, p, signature):
+         result = result.astype("float16")
+     expected["out"][:] = result
+     return ValidationCase(values, expected, rtol=1e-06, atol=1e-07)
++
++
++def bank_validation(kind, p, signature):
++    import numpy as np
++
++    from akas.kernels.contracts import ValidationCase, sample_arguments
++
++    values = sample_arguments(signature)
++    index = p["index"]
++    bank = values["bank"].copy()
++    bank[index] = values["source"]
++    prefix = bank[: index + 1].astype("float64")
++    inverse_rms = 1 / np.sqrt(np.mean(prefix**2, axis=-1) + p["eps"])
++    scores = (prefix @ values["query"].astype("float64")) * inverse_rms
++    weights = np.exp(scores - np.max(scores, axis=0, keepdims=True))
++    weights /= weights.sum(axis=0, keepdims=True)
++    out = np.einsum("ir,irc->rc", weights, prefix).astype("float32")
++    return ValidationCase(values, {**values, "bank": bank, "out": out})
++
++
++def scaled_residual_validation(kind, p, signature):
++    from akas.kernels.contracts import ValidationCase, sample_arguments
++
++    values = sample_arguments(signature)
++    out = (
++        values["residual"].astype("float64")
++        + values["mixed"].astype("float64") * values["scale"]
++    )
++    return ValidationCase(values, {**values, "out": out.astype("float32")})
+diff --git a/src/akas/ops/vocabulary/README.md b/src/akas/ops/vocabulary/README.md
+index 7575ee6..caf915b 100644
+--- a/src/akas/ops/vocabulary/README.md
++++ b/src/akas/ops/vocabulary/README.md
+@@ -74,4 +74,8 @@ inactive requests, position updates and fused versus materialized head outputs.
+ tests](../../../../tests/test_qwen_kernels.py) and [device feedback
+ tests](../../../../tests/test_device_feedback.py).
+ 
++## ZONOS3 and ZAC
++
++Codebook residual lookup adds offset codebook rows and per-codebook biases to the semantic embedding. CUDA and WebGPU share the F32 lookup body.
++
+ Return to the [operation index](../README.md).
+diff --git a/src/akas/ops/vocabulary/definition.py b/src/akas/ops/vocabulary/definition.py
+index e517040..f31c096 100644
+--- a/src/akas/ops/vocabulary/definition.py
++++ b/src/akas/ops/vocabulary/definition.py
+@@ -330,3 +330,17 @@ IMPLEMENTATIONS = tuple(
+     else item
+     for item in IMPLEMENTATIONS
+ )
++from akas.ops.vocabulary.validation import codebook_residual_validation
++
++OUTPUT_ARGUMENTS["reference"]["codebook_residual"] = OutputABI((-1,), ("out",))
++VALIDATIONS["codebook_residual"] = codebook_residual_validation
++IMPLEMENTATIONS += tuple(
++    Implementation(
++        "codebook_residual",
++        "akas.ops.vocabulary.kernel",
++        "reference",
++        provider=provider,
++        factory="codebook_residual",
++    )
++    for provider in ("cuda", "webgpu")
++)
+diff --git a/src/akas/ops/vocabulary/kernel.py b/src/akas/ops/vocabulary/kernel.py
+index be82534..e0c24b0 100644
+--- a/src/akas/ops/vocabulary/kernel.py
++++ b/src/akas/ops/vocabulary/kernel.py
+@@ -389,3 +389,35 @@ def argmax_merge(spec, schedule):
+         return out
+ 
+     return compute
++
++
++def codebook_residual(spec, schedule):
++    """Add a group of offset audio codebook lookups and their channel biases."""
++    import tilelang.language as T
++
++    p = {**spec.parameters, **schedule}
++    rows, width, groups, vocab = (p[key] for key in ("r", "c", "groups", "vocab"))
++
++    @kernel
++    def compute(
++        x: Tensor((rows, width), "float32"),
++        ids: Tensor((rows, groups), "int32"),
++        table: Tensor((groups * vocab * width,), "float32"),
++        bias: Tensor((groups * width,), "float32"),
++    ) -> Tensor((rows, width), "float32"):
++        out = output((rows, width), "float32")
++        with T.Kernel(rows, T.ceildiv(width, 128), threads=128) as (row, tile):
++            for lane in T.Parallel(128):
++                column = tile * 128 + lane
++                if column < width:
++                    value = T.alloc_var("float32")
++                    value = x[row, column]
++                    for group in T.unroll(groups):
++                        index = ids[row, group] + group * vocab
++                        value += (
++                            table[index * width + column] + bias[group * width + column]
++                        )
++                    out[row, column] = value
++        return out
++
++    return compute
+diff --git a/src/akas/ops/vocabulary/validation.py b/src/akas/ops/vocabulary/validation.py
+index 0439bf4..1d3ba61 100644
+--- a/src/akas/ops/vocabulary/validation.py
++++ b/src/akas/ops/vocabulary/validation.py
+@@ -140,3 +140,19 @@ def parallel_argmax_validation(kind, p, signature):
+         active = values["enabled"] != 0
+         expected["out"][active] = indices[active]
+     return ValidationCase(values, expected, rtol=0, atol=0)
++
++
++def codebook_residual_validation(kind, p, signature):
++    import numpy as np
++    from akas.kernels.contracts import ValidationCase, sample_arguments
++
++    values = sample_arguments(signature)
++    groups, vocab, width = (p[key] for key in ("groups", "vocab", "c"))
++    values["ids"][:] = (
++        np.arange(values["ids"].size).reshape(values["ids"].shape) % vocab
++    )
++    table = values["table"].reshape(groups, vocab, width)
++    biases = values["bias"].reshape(groups, width)
++    residual = table[np.arange(groups), values["ids"]].astype("float64") + biases
++    out = values["x"] + residual.sum(axis=1)
++    return ValidationCase(values, {**values, "out": out.astype("float32")})
+diff --git a/src/akas/text/profiles.json b/src/akas/text/profiles.json
+index 2f24a1d..172bb76 100644
+--- a/src/akas/text/profiles.json
++++ b/src/akas/text/profiles.json
+@@ -20,6 +20,10 @@
+       "normalization": "NFC",
+       "add_bos": false
+     },
++    "zonos3": {
++      "model": "gpt2",
++      "pattern": "\\p{N}{1,3}| ?[^\\s\\p{L}\\p{N}]{2,}[\\r\\n/]*| +(?!\\S)"
++    },
+     "spark2_5": {
+       "model": "gpt2",
+       "pattern": "\\p{N}{1,3}",
+diff --git a/tests/test_baseline_formats.py b/tests/test_baseline_formats.py
+index 7ee1043..2cc1db9 100644
+--- a/tests/test_baseline_formats.py
++++ b/tests/test_baseline_formats.py
+@@ -18,3 +18,8 @@ def test_existing_defaults_and_incompatible_native_encodings():
+     assert select_weight_format(model, "llama") == "q4_k_m"
+     with pytest.raises(ValueError, match="safetensors"):
+         select_weight_format(model, "sglang", "q4_k_m")
++
++
++def test_speech_default_uses_declared_q8_weights():
++    model = {"modes": ["tts"], "weights": {"q8_0": {}}}
++    assert select_weight_format(model, "llama") == "q8_0"
+diff --git a/tests/test_benchmark_history.py b/tests/test_benchmark_history.py
+index 9953b4c..048e001 100644
+--- a/tests/test_benchmark_history.py
++++ b/tests/test_benchmark_history.py
+@@ -110,6 +110,23 @@ def test_changed_sources_invalidate_run_and_legacy_accounting_stays_separate(
+     assert record["workload"]["id"] == "custom"
+ 
+ 
++def test_speech_records_preserve_utterances_without_token_shapes(tmp_path, source):
++    from akas.benchmarking.workload import load
++
++    workload = load("speech-demo-v1")
++    speech_report = report(workload["protocol"])
++    metadata = speech_report["metadata"]
++    metadata["speech_workload"] = dict(id=workload["id"], definition=workload)
++    speech_report["results"] = [
++        dict(status="ok", case=utterance) for utterance in workload["utterances"]
++    ]
++    run = Recorder(tmp_path / "history", metadata, source_root=source)
++    record = run.update(speech_report, final=True)
++    assert record["status"] == "passed"
++    assert record["workload"] == dict(id=workload["id"], definition=workload, shapes=[])
++    assert [row["case"] for row in record["results"]] == workload["utterances"]
++
++
+ def program(root):
+     profile = dict(
+         schema="tensor.schedule-profile.v1",
+diff --git a/tests/test_forward.py b/tests/test_forward.py
+index 5e14206..fc6ebe1 100644
+--- a/tests/test_forward.py
++++ b/tests/test_forward.py
+@@ -3,6 +3,7 @@
+ from dataclasses import replace
+ import json
+ import os
++from pathlib import Path
+ from types import SimpleNamespace
+ import numpy as np
+ import pytest
+@@ -39,6 +40,64 @@ def test_calls_derive_unique_kernel_requirements():
+     assert len(compile_plan(forward).kernels) == 2
+ 
+ 
++def test_compile_forward_set_uses_declared_phases_and_keeps_last_valid_index(
++    tmp_path, monkeypatch
++):
++    from akas.artifacts.read import read_forward_set
++    from akas.artifacts.write import publish
++    from akas.compilation import compile_checkpoint
++    from akas.compilation import compile as compiler
++
++    class Definition:
++        checkpoint_type = Path
++        forward_index = ("example.json", "example.forward-set.v1")
++
++        @staticmethod
++        def forward_phases(checkpoint, *, provider, frames):
++            return {"checkpoint": checkpoint.name}, [
++                ("transform", frames, compose(Config(), rows=frames)),
++                ("project", 1, compose(Config(), rows=1)),
++            ]
++
++    def build(bundle, directory, **options):
++        assert (
++            bundle.artifact_directory
++            == (Path(bundle.filename).parent / "kernels").as_posix()
++        )
++        publish(directory / bundle.filename, bundle.manifest)
++
++    monkeypatch.setattr(compiler, "build", build)
++    filename, schema = Definition.forward_index
++    program = compile_checkpoint(
++        Definition, "checkpoint", tmp_path, profile="speech", provider="cuda", frames=3
++    )
++    assert program["checkpoint"] == "checkpoint"
++    phases = read_forward_set(tmp_path, filename, schema=schema, provider="cuda")
++    assert {name: tuple(rows) for name, rows in phases.items()} == {
++        "transform": (3,),
++        "project": (1,),
++    }
++    published = (tmp_path / filename).read_bytes()
++
++    def fail(bundle, directory, **options):
++        raise ValueError("build failure")
++
++    monkeypatch.setattr(compiler, "build", fail)
++    with pytest.raises(ValueError, match="build failure"):
++        compile_checkpoint(
++            Definition,
++            "checkpoint",
++            tmp_path,
++            profile="speech",
++            provider="cuda",
++            frames=7,
++        )
++    assert (tmp_path / filename).read_bytes() == published
++    (tmp_path / program["phases"]["transform"]["3"]["path"]).write_text("{}")
++    with pytest.raises(ValueError, match="checksum"):
++        read_forward_set(tmp_path, filename, schema=schema, provider="cuda")
++
++
+ def test_named_bindings_follow_compiled_argument_order(monkeypatch):
+     forward = Graph(contract="test")
+     a = forward.buffer("a", (1,), "float32", role="input")
+@@ -333,7 +392,10 @@ def test_beam_winner_builds_and_runs_on_representative_cuda_batches(tmp_path):
+             w.release()
+ 
+ 
+-def test_forward_failure_releases_only_owned_buffers(tmp_path, monkeypatch):
++@pytest.mark.parametrize("allocate_io", [False, True])
++def test_forward_failure_releases_only_owned_buffers(
++    tmp_path, monkeypatch, allocate_io
++):
+     from akas.execution.forward import Forward
+ 
+     forward = compose(Config())
+@@ -359,7 +421,7 @@ def test_forward_failure_releases_only_owned_buffers(tmp_path, monkeypatch):
+     supplied = {
+         name: Buffer(spec.shape, spec.dtype)
+         for name, spec in forward.buffers.items()
+-        if spec.role != "scratch"
++        if spec.role != "scratch" and (not allocate_io or spec.role != "output")
+     }
+ 
+     def fail(*args, **kwargs):
+@@ -367,8 +429,9 @@ def test_forward_failure_releases_only_owned_buffers(tmp_path, monkeypatch):
+ 
+     monkeypatch.setattr("akas.execution.forward.load_kernels", fail)
+     with pytest.raises(ValueError, match="bad artifact"):
+-        Forward(tmp_path, Device(), supplied)
+-    assert len(allocated) == 1 and allocated[0].released
++        Forward(tmp_path, Device(), supplied, allocate_io=allocate_io)
++    assert len(allocated) == (2 if allocate_io else 1)
++    assert all(value.released for value in allocated)
+     assert not any((value.released for value in supplied.values()))
+ 
+ 
+diff --git a/tools/baselines/README.md b/tools/baselines/README.md
+index 653ee57..04245ba 100644
+--- a/tools/baselines/README.md
++++ b/tools/baselines/README.md
+@@ -53,6 +53,54 @@ safetensors checkpoint with llama.cpp `--outtype f16 --no-mtp`; a vision project
+ is not the text model. The other GGUF variants reference their pinned repositories.
+ Use identical resulting bytes when measuring AKAS and llama.cpp.
+ 
++## Speech synthesis demo
++
++The [ZONOS3-Mini declaration](../../benchmarks/models/zonos3-mini.json) pins
++the Q8_0 backbone, F32 audio projector, and llama.cpp b12424 revision.
++Place both GGUF files at their declared paths and extract the
++[Windows Vulkan release](https://github.com/ggml-org/llama.cpp/releases/tag/b12424)
++under `build/baselines/llama-b12424-vulkan`. Supply `--binary` to use a build
++from the same revision elsewhere.
++
++```sh
++uv run --no-sync python -m tools.baselines llama zonos3-mini --format q8_0 --provider vulkan
++```
++
++Compile AKAS with the [ZONOS3-Mini speech profile](../../src/akas/models/zonos3/README.md).
++Use the retained llama.cpp Vulkan run ID when measuring AKAS. The launcher
++checks the reference report checksum, hardware, checkpoint pair, and workload.
++
++```sh
++uv run --no-sync python -m tools.baselines akas zonos3-mini --format q8_0 --provider vulkan \
++  --bundle build/zonos3-mini/speech --reference-run LLAMA_RUN_ID
++```
++
++Use `--workload speech-multilingual-v1` on both commands to run six
++FLORES-200 prompts in each of the 43 model-card languages. Set a deadline
++for the full matrix with `--seconds` and include a 384-frame codec phase
++in the AKAS bundle so its capacity covers the request frame limit.
++Export the measured run and its frozen reference with
++`python -m tools.campaign_report --runs AKAS_RUN_ID --model zonos3-mini --workload speech-multilingual-v1`.
++
++`speech-language-voices-v1` keeps the same six prompts for each of the 10
++languages with a shipped preset. It explicitly pins a matching voice per
++language on both runtimes. Use its own frozen llama.cpp run when comparing it.
++
++Select `--provider cpu` on the llama.cpp command for a CPU control.
++
++[`speech-demo-v1`](../../src/akas/benchmarking/workloads/speech-demo-v1.json)
++uses two English utterances, a fixed seed and the same predefined voice on both
++backends. Each utterance gets one warmup and three measured requests. Timing
++starts at the localhost request and ends when the client has read all PCM16
++samples. It includes text conditioning, audio generation, codec decoding and
++delivery. The real-time factor is elapsed seconds divided by returned audio
++seconds. Model loading and WAV writing are outside this interval.
++
++The run retains the workload, the server log and a WAV per measured repeat
++under `benchmarks/runs/<run-id>/`. The comparison reports both wall latency
++and the ratio of real-time factors. Seeded sampling can produce different clip
++durations across runtimes.
++
+ ## Measure the complete workload
+ 
+ Add `--optimized` to enable graph execution for the native engines, provision the
+diff --git a/tools/baselines/__main__.py b/tools/baselines/__main__.py
+index 050f016..d949548 100644
+--- a/tools/baselines/__main__.py
++++ b/tools/baselines/__main__.py
+@@ -30,6 +30,8 @@ def select_weight_format(model, runtime, requested=None):
+     """Select declared checkpoint bytes independently from execution dtype."""
+     if requested is not None:
+         selected = requested
++    elif runtime == "llama" and model.get("modes") == ["tts"]:
++        selected = "q8_0"
+     elif runtime == "llama":
+         selected = "q4_k_m"
+     elif "bf16" in model["weights"]:
+@@ -48,12 +50,15 @@ def select_weight_format(model, runtime, requested=None):
+ 
+ def main():
+     parser = argparse.ArgumentParser(description=__doc__)
+-    parser.add_argument("runtime", choices=("vllm", "sglang", "llama"))
++    parser.add_argument("runtime", choices=("vllm", "sglang", "llama", "akas"))
+     parser.add_argument("model", help="ID or alias from benchmarks/models")
+     parser.add_argument("--models", type=Path, default=Path("benchmarks/models"))
+     parser.add_argument("--mtp", action="store_true")
+-    parser.add_argument("--provider", choices=("cuda", "vulkan"), default="cuda")
+-    parser.add_argument("--format", choices=("bf16", "fp8", "f16", "q4_0", "q4_k_m"))
++    parser.add_argument("--provider", choices=("cpu", "cuda", "vulkan"), default="cuda")
++    parser.add_argument("--format", choices=("bf16", "fp8", "f16", "q4_0", "q4_k_m", "q8_0"))
++    parser.add_argument("--binary", type=Path, help="override the speech server executable")
++    parser.add_argument("--bundle", type=Path, help="compiled AKAS speech bundle")
++    parser.add_argument("--reference-run", help="frozen llama.cpp Vulkan speech run")
+     parser.add_argument("--history", type=Path, default=Path("benchmarks"))
+     parser.add_argument("--seconds", type=int, default=600)
+     parser.add_argument(
+@@ -71,7 +76,7 @@ def main():
+     if (
+         args.seconds <= 0
+         or (args.repeats is not None and args.repeats < 1)
+-        or (args.runtime != "llama" and args.provider != "cuda")
++        or (args.runtime in ("vllm", "sglang") and args.provider != "cuda")
+     ):
+         parser.error("a positive deadline and compatible provider are required")
+     if args.runtime == "llama" and args.mtp:
+@@ -79,6 +84,29 @@ def main():
+     if args.streaming and args.runtime == "llama":
+         parser.error("streamed native timing currently supports vLLM and SGLang")
+     definition_path, model = model_definition(args.models, args.model)
++    speech = model.get("runtime_options", {}).get("llama", {}).get("speech")
++    if speech and args.runtime in ("llama", "akas"):
++        if args.mtp or args.optimized or args.streaming or args.provider == "cuda":
++            parser.error("the speech probe supports CPU or Vulkan and its own workload")
++        if args.runtime == "akas" and (
++            args.provider != "vulkan" or args.bundle is None or args.binary is not None
++        ):
++            parser.error("AKAS speech requires Vulkan and --bundle")
++        if args.runtime == "llama" and (args.bundle is not None or args.reference_run):
++            parser.error("--bundle and --reference-run apply to AKAS speech")
++        from tools.baselines.speech import run
++
++        weight_format = select_weight_format(model, "llama", args.format)
++        record = run(args, definition_path, model, speech, weight_format)
++        print(record["id"], record["status"], flush=True)
++        if record["status"] != "passed":
++            raise SystemExit(1)
++        return
++    if (
++        args.runtime == "akas" or args.provider == "cpu" or args.binary is not None
++        or args.bundle is not None or args.reference_run
++    ):
++        parser.error("the selected backend or options require a speech model")
+     mode = "mtp" if args.mtp else "ar"
+     if mode not in model["modes"]:
+         parser.error("the model definition does not declare this generation mode")
+diff --git a/tools/campaign_report.py b/tools/campaign_report.py
+index 0c723ef..f5f9842 100644
+--- a/tools/campaign_report.py
++++ b/tools/campaign_report.py
+@@ -20,6 +20,11 @@ from akas.benchmarking.workload import prompt_digest
+ from akas.optimization.context import workload
+ 
+ SCHEMA = "akas.campaign-report.v1"
++SPEECH_SCHEMA = "akas.speech-report.v1"
++SPEECH_FILES = frozenset((
++    "README.md", "COMPARISON.md", "AKAS.md", "BASELINES.md",
++    "measurements.csv", "campaign.json", "report.json",
++))
+ REPORT_FILES = frozenset(
+     (
+         "README.md",
+@@ -781,12 +786,12 @@ def clean(value):
+     return str(value or "").replace("|", "\\|").replace("\n", " ").strip()
+ 
+ 
+-def evidence_link(run_id, out, history):
++def evidence_link(run_id, out, history, *, name="run.json", label=None):
+     if not run_id:
+         return "—"
+-    path = (archive.link(history, "runs", run_id, "run.json") or
+-            Path(os.path.relpath(Path(history) / "runs" / run_id / "run.json", out)).as_posix())
+-    return f"[{run_id}]({path})"
++    path = (archive.link(history, "runs", run_id, name) or
++            Path(os.path.relpath(Path(history) / "runs" / run_id / name, out)).as_posix())
++    return f"[{label or run_id}]({path})"
+ 
+ 
+ def csv_file(path, rows, fields):
+@@ -822,6 +827,8 @@ def table_rows(profiles):
+ 
+ 
+ def render(data, out, history):
++    if data.get("schema") == SPEECH_SCHEMA:
++        return render_speech(data, Path(out).resolve(), Path(history).resolve())
+     validate(data)
+     out = Path(out).resolve()
+     history = Path(history).resolve()
+@@ -1414,6 +1421,443 @@ def export(campaign, *, history="benchmarks", out=None):
+     return destination
+ 
+ 
++def export_speech(native, model, workload_id, history, out, baseline_lock=None):
++    from akas.benchmarking.workload import load
++
++    metadata = native["metadata"]
++    workload = load(workload_id)
++    if (
++        metadata["model"] != model["model"]
++        or metadata["speech_workload"]["definition"] != workload
++        or not native["completed_at"]
++        or native["status"] == "invalidated"
++    ):
++        raise ValueError(
++            "the retained speech run does not match the requested workload"
++        )
++    reference = metadata.get("reference")
++    vulkan = record(history, reference["run_id"]) if reference else None
++    if reference and vulkan is None:
++        raise ValueError("the frozen speech baseline is unavailable")
++    cpu = None
++    if baseline_lock is not None:
++        if (
++            not vulkan
++            or baseline_lock.get("schema") != "akas.baseline-lock.v1"
++            or set(baseline_lock["runs"]) != {"llama"}
++        ):
++            raise ValueError(
++                "a supplemental speech lock must name one llama.cpp CPU run"
++            )
++        entry = baseline_lock["runs"]["llama"]
++        run_id = entry["run_id"]
++        for name, checksum in {
++            "run.json": entry["sha256"],
++            **entry.get("artifact_checksums", {}),
++        }.items():
++            if (
++                hashlib.sha256(
++                    archive.read_file(history, "runs", run_id, name)
++                ).hexdigest()
++                != checksum
++            ):
++                raise ValueError(f"frozen speech CPU checksum differs: {run_id}/{name}")
++        cpu = record(history, run_id)
++        cpu_meta = cpu["metadata"]
++        gpu_meta = vulkan["metadata"]
++        matched = (
++            "runtime",
++            "binary_sha256",
++            "runtime_revision",
++            "runtime_files",
++            "model",
++            "protocol",
++            "speech_workload",
++            "weight_format",
++            "checkpoint_sha256",
++            "voice",
++            "sample_rate_hz",
++            "warmup",
++            "repeats",
++        )
++        if (
++            not cpu["completed_at"]
++            or cpu["status"] not in ("passed", "failed")
++            or cpu_meta["provider"] != "cpu"
++            or any(cpu_meta[key] != gpu_meta[key] for key in matched)
++            or cpu_meta["projector"]["sha256"] != gpu_meta["projector"]["sha256"]
++            or [row["case"] for row in cpu["results"]] != workload["utterances"]
++        ):
++            raise ValueError(
++                "the frozen CPU run does not match the Vulkan speech workload"
++            )
++    profiles = []
++    for run in (native, vulkan, cpu):
++        if run is None:
++            continue
++        kind = "akas" if run is native else "baseline"
++        evidence = json.loads(
++            archive.read_file(history, "runs", run["id"], "report.json")
++        )
++        meta = evidence["metadata"]
++        if meta != run["metadata"] or evidence["results"] != run["results"]:
++            raise ValueError("speech run record differs from its sealed report")
++        checksum = next(
++            item["sha256"] for item in run["artifacts"] if item["path"] == "report.json"
++        )
++        if run is vulkan and checksum != reference["report_sha256"]:
++            raise ValueError("the frozen speech baseline checksum differs")
++        profiles.append(
++            dict(
++                id="llama-cpu" if run is cpu else meta["runtime"],
++                kind=kind,
++                status=run["status"],
++                qualifying_status="unqualified",
++                metadata=meta,
++                source=run["source"],
++                run_id=run["id"],
++                report_sha256=checksum,
++                measurements=evidence["results"],
++            )
++        )
++    state = dict(
++        source=native["source"],
++        created_at=native["started_at"],
++        updated_at=native["completed_at"],
++        status=native["status"],
++        runs={profile["run_id"]: profile["report_sha256"] for profile in profiles},
++    )
++    if cpu is not None:
++        state.update(
++            updated_at=max(state["updated_at"], cpu["completed_at"]),
++            baseline_lock=baseline_lock,
++        )
++    state["identity"] = hashlib.sha256(
++        json.dumps(state, sort_keys=True).encode()
++    ).hexdigest()
++    data = dict(
++        schema=SPEECH_SCHEMA, campaign=state, workload=workload, profiles=profiles
++    )
++    destination = Path(out) if out else report_directory(state, history)
++    render(data, destination, history)
++    return destination
++
++
++def render_speech(data, out, history):
++    state, workload, profiles = data["campaign"], data["workload"], data["profiles"]
++    protocol = "client-speech-pcm-v1"
++    if workload.get("protocol") != protocol or [p["kind"] for p in profiles] not in (
++        ["akas"],
++        ["akas", "baseline"],
++        ["akas", "baseline", "baseline"],
++    ):
++        raise ValueError("invalid speech report protocol or profiles")
++    utterances = workload["utterances"]
++    cases = {item["id"]: item for item in utterances}
++    default_lang = workload["request"].get("lang")
++    languages = workload.get("languages") or {default_lang: dict(name=default_lang)}
++    if len(cases) != len(utterances) or set(languages) != {
++        item.get("lang", default_lang) for item in utterances
++    }:
++        raise ValueError("invalid speech case or language coverage")
++    nav = "[Overview](README.md) · [Comparison](COMPARISON.md) · [AKAS](AKAS.md) · [Baselines](BASELINES.md) · [Measurements](measurements.csv)"
++    explicit_voices = any("voice" in item for item in utterances)
++    has_cpu = any(profile["id"] == "llama-cpu" for profile in profiles)
++    runtime_count = "All runtimes" if has_cpu else "Both runtimes"
++    voice_note = (
++        f"{runtime_count} used the same case-specific presets. "
++        if explicit_voices
++        else f"{runtime_count} used one fixed voice for all languages. "
++    )
++    notes = (
++        "Timings cover one warm localhost request through receipt of complete PCM16. "
++        "Wall time and real-time factor (RTF, wall time divided by audio duration) are per-utterance medians. "
++        "Comparison ratios use geometric means of matched successful utterances. "
++        "Pass counts cover request completion, format and non-silent audio. AKAS also reports end of speech. "
++        "WAV byte determinism is assessed within each runtime. "
++        + voice_note
++        + "Intelligibility, pronunciation and MOS were outside the measurement scope."
++    )
++    overview = [
++        "# Speech benchmark report",
++        "",
++        nav,
++        "",
++        f"Workload `{workload['id']}` covers **{len(languages)} languages**, **{len(cases)} utterances** "
++        f"and {workload['repeats']} measured requests per utterance after {workload['warmup']} warmup.",
++        "",
++        f"Protocol `{protocol}`. UTC {state['created_at']} to {state['updated_at']}.",
++        "",
++        notes,
++        "",
++    ]
++    if "corpus" in workload:
++        corpus = workload["corpus"]
++        overview.extend(
++            [
++                f"Language coverage follows the [model card]({workload['language_source']}). "
++                f"Prompts are from [{corpus['name']}]({corpus['url']}), "
++                f"licensed [{corpus['license']}]({corpus['license_url']}). {corpus['selection']}",
++                "",
++            ]
++        )
++    if explicit_voices:
++        overview.extend(
++            [
++                "| Language | Preset voice |",
++                "| --- | --- |",
++            ]
++        )
++        for lang, info in languages.items():
++            voices = {
++                item.get("voice", profiles[0]["metadata"]["voice"])
++                for item in utterances
++                if item.get("lang", default_lang) == lang
++            }
++            overview.append(
++                f"| {info['name']} (`{lang}`) | {', '.join(sorted(voices))} |"
++            )
++        overview.append("")
++    overview.extend(
++        [
++            "| Runtime | Device | Successful cases | Deterministic cases | Run |",
++            "| --- | --- | ---: | ---: | --- |",
++        ]
++    )
++    measurements = {}
++    samples = []
++    baseline_sections = []
++    for profile in profiles:
++        meta = profile["metadata"]
++        if (
++            meta["speech_workload"]["definition"] != workload
++            or meta["protocol"] != protocol
++        ):
++            raise ValueError("speech profile metadata differs from the workload")
++        rows = profile["measurements"]
++        by_id = {row["case"]["id"]: row for row in rows}
++        if len(by_id) != len(rows) or any(
++            cases.get(row["case"]["id"]) != row["case"] for row in rows
++        ):
++            raise ValueError("undeclared or duplicate speech measurements")
++        runtime = profile["id"]
++        measurements[runtime] = by_id
++        count = sum(r["status"] == "ok" for r in rows)
++        stable = sum(
++            r.get("correctness", {}).get("deterministic_pcm", False) for r in rows
++        )
++        link = evidence_link(profile["run_id"], out, history)
++        overview.append(
++            f"| {runtime} ({meta['provider']}) | {clean(meta['device']['name'])} | "
++            f"{count}/{len(cases)} | {stable}/{len(cases)} | {link} |"
++        )
++        lines = [
++            f"# {runtime} speech measurements",
++            "",
++            nav,
++            "",
++            notes,
++            "",
++            f"Model {meta['model']} · {meta['weight_format']} · {meta['sample_rate_hz']:,} Hz · "
++            + (
++                "case-specific voices are listed in the overview."
++                if explicit_voices
++                else f"voice `{meta['voice']}`."
++            ),
++            f"Run {link} · report SHA-256 `{profile['report_sha256']}`.",
++            f"Checkpoint SHA-256 `{meta['checkpoint_sha256']}`. Projector SHA-256 `{meta['projector']['sha256']}`.",
++        ]
++        if meta.get("program_sha256"):
++            lines.append(f"Compiled program SHA-256 `{meta['program_sha256']}`.")
++        if meta.get("compiled_codec_frames"):
++            lines.append(
++                f"Compiled codec frame capacities: {', '.join(map(str, meta['compiled_codec_frames']))}."
++            )
++        if meta.get("runtime_version"):
++            lines.append(f"Runtime version `{clean(meta['runtime_version'])}`.")
++        lines.extend(
++            [
++                "",
++                "| Language | Case | Tier | Status | Repeats | Wall ms | Audio s | RTF | PCM repeatable | Example | Error |",
++                "| --- | --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- | --- |",
++            ]
++        )
++        for item in utterances:
++            case_id = item["id"]
++            lang = item.get("lang", default_lang)
++            row = by_id.get(case_id, {})
++            summary = row.get("summary", {})
++            reps = row.get("samples", ())
++            status = row.get("status", "not measured")
++            repeatable = row.get("correctness", {}).get("deterministic_pcm")
++            wall = summary.get("wall_seconds")
++            audio = summary.get("audio_seconds")
++            rtf = summary.get("real_time_factor")
++            wav = (
++                evidence_link(
++                    profile["run_id"], out, history, name=reps[0]["wav"], label="WAV"
++                )
++                if reps
++                else "—"
++            )
++            lines.append(
++                f"| {lang} | {case_id} | {item['tier']} | {status} | {len(reps)} | "
++                f"{f'{wall * 1000:.1f}' if wall is not None else '—'} | "
++                f"{f'{audio:.3f}' if audio is not None else '—'} | "
++                f"{f'{rtf:.3f}' if rtf is not None else '—'} | "
++                f"{'—' if repeatable is None else 'yes' if repeatable else 'no'} | "
++                f"{wav} | {clean(row.get('error'))} |"
++            )
++            for repeat, sample in enumerate(reps or ({},), 1):
++                samples.append(
++                    dict(
++                        runtime=runtime,
++                        provider=meta["provider"],
++                        run_id=profile["run_id"],
++                        language=lang,
++                        case_id=case_id,
++                        tier=item["tier"],
++                        source_row=item.get("source_row"),
++                        text=item["text"],
++                        status=status,
++                        error=row.get("error"),
++                        **(
++                            {"voice": item.get("voice", meta["voice"])}
++                            if explicit_voices
++                            else {}
++                        ),
++                        **({"repeat": repeat, **sample} if sample else {}),
++                    )
++                )
++        if profile["kind"] == "akas":
++            text(out / "AKAS.md", "\n".join(lines))
++        else:
++            baseline_sections.append("\n".join(lines))
++    text(
++        out / "BASELINES.md",
++        "\n\n---\n\n".join(baseline_sections)
++        if baseline_sections
++        else f"# Speech baselines\n\n{nav}\n\nNo frozen baseline was retained.",
++    )
++    comparison = [
++        "# Speech benchmark comparison",
++        "",
++        nav,
++        "",
++        notes,
++        "",
++        "| Language | Cases | AKAS passed | Baseline passed | Paired | Wall wins | Wall speedup | Audio throughput speedup |",
++        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
++    ]
++    native, baseline = (measurements.get(name, {}) for name in ("akas", "llama"))
++    for lang, name in [
++        *[(code, row["name"]) for code, row in languages.items()],
++        (None, "All languages"),
++    ]:
++        ids = [
++            key
++            for key, item in cases.items()
++            if lang is None or item.get("lang", default_lang) == lang
++        ]
++        good = [
++            {k for k in ids if rows.get(k, {}).get("status") == "ok"}
++            for rows in (native, baseline)
++        ]
++        paired = sorted(good[0] & good[1])
++        wall, rtf = (
++            [
++                baseline[k]["summary"][metric] / native[k]["summary"][metric]
++                for k in paired
++            ]
++            for metric in ("wall_seconds", "real_time_factor")
++        )
++        label = f"{name} (`{lang}`)" if lang else f"**{name}**"
++        ratios = [
++            f"{statistics.geometric_mean(values):.3f}×" if values else "—"
++            for values in (wall, rtf)
++        ]
++        comparison.append(
++            f"| {label} | {len(ids)} | {len(good[0])} | {len(good[1])} | {len(paired)} | "
++            f"{sum(value > 1 for value in wall)} | {ratios[0]} | {ratios[1]} |"
++        )
++    if has_cpu:
++        cpu = measurements["llama-cpu"]
++        comparison.extend(
++            [
++                "",
++                "## Relative to llama.cpp CPU",
++                "",
++                "All three runtimes must complete a prompt for it to enter the ratios. "
++                "Wall speedup is CPU wall time divided by the corresponding GPU wall time.",
++                "",
++                "| Language | Cases | CPU passed | Matched on all three | AKAS wall speedup | llama.cpp Vulkan wall speedup |",
++                "| --- | ---: | ---: | ---: | ---: | ---: |",
++            ]
++        )
++        for lang, name in [
++            *[(key, row["name"]) for key, row in languages.items()],
++            (None, "All languages"),
++        ]:
++            ids = [
++                key
++                for key, item in cases.items()
++                if lang is None or item.get("lang", default_lang) == lang
++            ]
++            cpu_good = [key for key in ids if cpu.get(key, {}).get("status") == "ok"]
++            paired = [
++                key
++                for key in cpu_good
++                if native.get(key, {}).get("status")
++                == baseline.get(key, {}).get("status")
++                == "ok"
++            ]
++            ratios = []
++            for rows in (native, baseline):
++                values = [
++                    cpu[key]["summary"]["wall_seconds"]
++                    / rows[key]["summary"]["wall_seconds"]
++                    for key in paired
++                ]
++                ratios.append(
++                    f"{statistics.geometric_mean(values):.3f}×" if values else "—"
++                )
++            comparison.append(
++                f"| {name} | {len(ids)} | {len(cpu_good)} | {len(paired)} | {ratios[0]} | {ratios[1]} |"
++            )
++    text(out / "README.md", "\n".join(overview))
++    text(out / "COMPARISON.md", "\n".join(comparison))
++    csv_file(
++        out / "measurements.csv",
++        samples,
++        (
++            "runtime",
++            "provider",
++            "run_id",
++            "language",
++            *(("voice",) if explicit_voices else ()),
++            "case_id",
++            "tier",
++            "source_row",
++            "text",
++            "status",
++            "error",
++            "repeat",
++            "wall_seconds",
++            "audio_seconds",
++            "real_time_factor",
++            "samples",
++            "peak_pcm16",
++            "audio_frames",
++            "terminated",
++            "wav",
++            "wav_sha256",
++        ),
++    )
++    write(out / "campaign.json", state)
++    write(out / "report.json", data)
++    index(history)
++
++
+ def export_runs(run_ids, *, model_id, workload_id, history="benchmarks", out=None,
+                 baseline_lock=None):
+     """Render retained native measurements through the existing campaign exporter.
+@@ -1424,12 +1868,17 @@ def export_runs(run_ids, *, model_id, workload_id, history="benchmarks", out=Non
+     history = Path(history).resolve()
+     root = Path(__file__).resolve().parents[1]
+     model = read(root / "benchmarks/models" / (model_id + ".json"))
+-    requested = workload(workload_id)
+     runs = [record(history, identity) for identity in run_ids]
+     if not runs or any(data is None for data in runs):
+         raise ValueError("retained native runs must exist")
+     if any(data["metadata"].get("runtime") != "akas" for data in runs):
+         raise ValueError("--runs accepts native AKAS records; baselines use normal selection")
++    if any(run["metadata"].get("protocol") == "client-speech-pcm-v1" for run in runs):
++        if len(runs) != 1:
++            raise ValueError("speech export accepts one AKAS run with its frozen reference")
++        lock = read(baseline_lock) if isinstance(baseline_lock, (str, Path)) else baseline_lock
++        return export_speech(runs[0], model, workload_id, history, out, lock)
++    requested = workload(workload_id)
+     runs.sort(key=lambda data: data["started_at"])
+     formats = set()
+     for data in runs:
+@@ -1593,7 +2042,7 @@ def check(history="benchmarks"):
+             if not folder.is_dir() or not (folder / "report.json").is_file():
+                 raise ValueError(f"Unexpected report entry: {folder}")
+             data = read(folder / "report.json")
+-            expected_files = REPORT_FILES | (
++            expected_files = (SPEECH_FILES if data.get("schema") == SPEECH_SCHEMA else REPORT_FILES) | (
+                 {"PARITY.json"} if "performance_acceptance" in data else set()
+             )
+             if {
+diff --git a/tools/context_sweep.py b/tools/context_sweep.py
+index 096508e..d712f60 100644
+--- a/tools/context_sweep.py
++++ b/tools/context_sweep.py
+@@ -6,7 +6,6 @@ Keep the shared token manifest, raw responses and qualified schedules in history
+ """
+ 
+ import argparse
+-from contextlib import contextmanager
+ from datetime import datetime
+ import hashlib
+ import json
+@@ -19,32 +18,13 @@ import urllib.request
+ 
+ from akas.benchmarking.history import Recorder, digest, utc, write
+ from akas.benchmarking.workload import prompt_digest
++from akas.tensor.device import vulkan_device
+ 
+ 
+ PREFIXES = [32, 512, 2048, 8192, 16384, 32768, 65536, 130944]
+ CHECKPOINT_SHA256 = "e1a61bf937bc60726e18626e97f7ee9bfd2574d95744c2ed909de98b78006fbe"
+ 
+ 
+-@contextmanager
+-def vulkan_device():
+-    import tensor
+-
+-    device = tensor.Device(provider="webgpu", max_buffer_size=1024**3)
+-    if device.info["adapter"]["backend_type"] != "Vulkan":
+-        raise ValueError("select a hardware Vulkan adapter (WGPU_BACKEND_TYPE=Vulkan)")
+-    if device.info["adapter"]["adapter_type"] == "CPU":
+-        raise ValueError("software Vulkan is not a GPU measurement")
+-    # AMD's Windows driver reports UINT32_MAX here. In wgpu's device request,
+-    # that value means UNDEFINED and silently requests the default eight slots.
+-    # Request a finite subset instead; cache_write needs more than eight slots.
+-    limit = device._adapter.limits["max-storage-buffers-per-shader-stage"]
+-    if limit == 0xFFFFFFFF:
+-        device._adapter._limits["max-storage-buffers-per-shader-stage"] = 32
+-    with device:
+-        device.info["adapter_storage_buffers_reported"] = limit
+-        yield device
+-
+-
+ def inputs(args):
+     data = json.loads(args.prompts.read_text(encoding="utf-8"))
+     cases = {row["prefix_tokens"]: row for row in data["cases"]}
+diff --git a/tools/plot_comparison.py b/tools/plot_comparison.py
+index 6ca318e..84d40c2 100644
+--- a/tools/plot_comparison.py
++++ b/tools/plot_comparison.py
+@@ -1,11 +1,13 @@
+-"""Render the README LFM2.5-24B-A2B-FP8 multi-batch benchmark figure.
++"""Render README benchmark figures from retained campaign or speech reports.
+ 
+ Run: python -m tools.plot_comparison REPORT_JSON OUTPUT_SVG
+ """
+ 
+ import argparse
++from datetime import datetime
+ import json
+ from pathlib import Path
++from statistics import median, quantiles
+ 
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+@@ -20,10 +22,196 @@ def _load_report(report):
+         return json.loads(path.read_text(encoding="utf-8"))
+     from akas.benchmarking import archive
+ 
+-    raw = archive.read_file(ROOT / "benchmarks", "reports", DEFAULT_REPORT_ID, "report.json")
++    raw = archive.read_file(
++        ROOT / "benchmarks", "reports", DEFAULT_REPORT_ID, "report.json"
++    )
+     return json.loads(raw)
+ 
+ 
++def _style_axis(axis):
++    axis.set_ylim(bottom=0)
++    axis.grid(axis="y", color="#e2e8f0", linewidth=0.8)
++    axis.set_axisbelow(True)
++    axis.spines[["top", "right"]].set_visible(False)
++    axis.spines[["bottom", "left"]].set_color("#cbd5e1")
++    axis.tick_params(colors="#475569")
++
++
++def _save(figure, output):
++    output = Path(output)
++    output.parent.mkdir(parents=True, exist_ok=True)
++    for extension in (".svg", ".png"):
++        figure.savefig(
++            output.with_suffix(extension),
++            dpi=160,
++            facecolor="white",
++            metadata={"Date": None} if extension == ".svg" else None,
++        )
++    return output.with_suffix(".svg")
++
++
++def _plot_speech(data, plt, output):
++    from matplotlib.ticker import StrMethodFormatter
++
++    profiles = {profile["id"]: profile for profile in data["profiles"]}
++    series = [
++        ("akas", "AKAS · WebGPU/Vulkan", "#2563eb", "o", "-"),
++        ("llama", "llama.cpp · Vulkan", "#ea580c", "s", "--"),
++    ]
++    has_cpu = "llama-cpu" in profiles
++    if has_cpu:
++        series.append(("llama-cpu", "llama.cpp · CPU", "#0d9488", "^", ":"))
++    successful = {
++        runtime: {
++            row["case"]["id"]: row
++            for row in profiles[runtime]["measurements"]
++            if row["status"] == "ok"
++        }
++        for runtime, *_ in series
++    }
++    shared = set.intersection(*(set(rows) for rows in successful.values()))
++    cases = successful["akas"]
++    tiers = ("short", "medium", "long")
++    positions = range(len(tiers))
++    grouped = [
++        sorted(case_id for case_id in shared if cases[case_id]["case"]["tier"] == tier)
++        for tier in tiers
++    ]
++    if any(not group for group in grouped):
++        raise ValueError(
++            "speech plot requires matched measurements in every length tier"
++        )
++    panels = [
++        ("wall_seconds", "Request latency", "Wall seconds", "{x:,.1f}"),
++        (
++            "real_time_factor",
++            "Real-time factor",
++            "Wall seconds / audio second",
++            "{x:.2f}",
++        ),
++    ]
++    if has_cpu:
++        panels.append(
++            (
++                "speedup",
++                "Wall speedup vs CPU",
++                "CPU wall time / GPU wall time",
++                "{x:g}×",
++            )
++        )
++    fig, axes = plt.subplots(
++        1, len(panels), figsize=(16 if has_cpu else 13, 6.2), sharex=True
++    )
++
++    def point(runtime, key, case_id):
++        row = successful[runtime][case_id]["summary"]
++        if key == "speedup":
++            return (
++                successful["llama-cpu"][case_id]["summary"]["wall_seconds"]
++                / row["wall_seconds"]
++            )
++        return row[key]
++
++    for axis, (key, title, unit, tick_format) in zip(axes, panels, strict=True):
++        for runtime, label, color, marker, style in series:
++            if runtime == "llama-cpu" and key == "speedup":
++                axis.axhline(1, color=color, linestyle=style, linewidth=1.5)
++                continue
++            values = [
++                [point(runtime, key, case_id) for case_id in group] for group in grouped
++            ]
++            centers = [median(group) for group in values]
++            quartiles = [quantiles(group, n=4, method="inclusive") for group in values]
++            axis.errorbar(
++                positions,
++                centers,
++                yerr=[
++                    [center - q[0] for center, q in zip(centers, quartiles)],
++                    [q[2] - center for center, q in zip(centers, quartiles)],
++                ],
++                label=label,
++                color=color,
++                marker=marker,
++                linestyle=style,
++                linewidth=2.2,
++                markersize=5,
++                capsize=3,
++            )
++        axis.set_title(title, loc="left", fontsize=14, fontweight="bold", pad=12)
++        axis.set_xticks(positions, [tier.title() for tier in tiers])
++        axis.set_xlim(-0.2, len(tiers) - 0.8)
++        axis.set_xlabel("Prompt length tier", labelpad=10)
++        axis.set_ylabel(unit)
++        axis.yaxis.set_major_formatter(StrMethodFormatter(tick_format))
++        axis.grid(axis="x", color="#e2e8f0", linewidth=0.8)
++        _style_axis(axis)
++
++    metadata = profiles["akas"]["metadata"]
++    model = metadata["model"].rsplit("/", 1)[-1]
++    device = metadata["device"]["name"]
++    title = f"{model} on {device}"
++    hardware = "Vulkan"
++    if has_cpu:
++        title = f"{model} speech synthesis"
++        cpu_name = profiles["llama-cpu"]["metadata"]["device"]["name"]
++        hardware = f"{device} (Vulkan)  ·  {cpu_name} (CPU)"
++    workload = data["workload"]
++    languages = len(
++        {
++            item.get("lang", workload["request"].get("lang"))
++            for item in workload["utterances"]
++        }
++    )
++    started = datetime.fromisoformat(data["campaign"]["created_at"])
++    date = f"{started:%B} {started.day}, {started.year}"
++    fig.suptitle(
++        title,
++        x=0.07,
++        y=0.97,
++        ha="left",
++        fontsize=23,
++        fontweight="bold",
++        color="#0f172a",
++    )
++    fig.text(
++        0.07,
++        0.895,
++        f"{metadata['weight_format'].upper()} weights  ·  {hardware}  ·  {languages} languages  ·  {date}",
++        fontsize=11,
++        color="#475569",
++    )
++    handles, labels = axes[0].get_legend_handles_labels()
++    fig.legend(
++        handles,
++        labels,
++        loc="lower left",
++        bbox_to_anchor=(0.06, 0.15),
++        ncol=len(series),
++        frameon=False,
++        columnspacing=2.5,
++    )
++    direction = (
++        "Lower is better for latency and RTF. Higher is better for speedup."
++        if has_cpu
++        else "Lower is better on both panels."
++    )
++    fig.text(
++        0.07,
++        0.045,
++        f"{direction} Points are tier medians with interquartile ranges across {len(shared)} matched prompts.\n"
++        f"Each prompt contributes the median of {metadata['repeats']} measured requests after {metadata['warmup']} warmup. "
++        "Timings end at receipt of complete PCM16.",
++        fontsize=9,
++        color="#475569",
++        linespacing=1.5,
++    )
++    fig.subplots_adjust(left=0.07, right=0.98, top=0.78, bottom=0.31, wspace=0.22)
++    try:
++        return _save(fig, output)
++    finally:
++        plt.close(fig)
++
++
+ def plot(report=None, output=None):
+     import matplotlib
+ 
+@@ -32,14 +220,20 @@ def plot(report=None, output=None):
+     from matplotlib.ticker import StrMethodFormatter
+ 
+     data = _load_report(report)
++    speech = data.get("schema") == "akas.speech-report.v1"
+     plt.rcParams.update(
+         {
+             "font.family": "DejaVu Sans",
+             "font.size": 11,
+             "svg.fonttype": "path",
+-            "svg.hashsalt": "akas-lfm25-fp8-showcase",
++            "svg.hashsalt": "akas-speech-showcase"
++            if speech
++            else "akas-lfm25-fp8-showcase",
+         }
+     )
++    output = output or ROOT / "build/throughput.svg"
++    if speech:
++        return _plot_speech(data, plt, output)
+     fig, axes = plt.subplots(1, 2, figsize=(13, 6.2))
+     series = (
+         ("akas", "AKAS · FP16 KV", "#2563eb", "o", "-"),
+@@ -77,15 +271,10 @@ def plot(report=None, output=None):
+         axis.set_title(title, loc="left", fontsize=14, fontweight="bold", pad=12)
+         axis.set_xscale("log", base=2)
+         axis.set_xticks([1, 4, 16, 64, 256], ["1", "4", "16", "64", "256"])
+-        axis.set_ylim(bottom=0)
+         axis.set_xlabel("Concurrent requests (log scale)", labelpad=10)
+         axis.set_ylabel("Tokens / second")
+         axis.yaxis.set_major_formatter(StrMethodFormatter("{x:,.0f}"))
+-        axis.grid(axis="y", color="#e2e8f0", linewidth=0.8)
+-        axis.set_axisbelow(True)
+-        axis.spines[["top", "right"]].set_visible(False)
+-        axis.spines[["bottom", "left"]].set_color("#cbd5e1")
+-        axis.tick_params(colors="#475569")
++        _style_axis(axis)
+     is_h200 = "NVIDIA H200" in json.dumps(data.get("evidence", {}))
+     gpu_label = "NVIDIA H200" if is_h200 else "NVIDIA L40S"
+     date_label = "November 3, 2026" if is_h200 else "November 1, 2026"
+@@ -126,18 +315,10 @@ def plot(report=None, output=None):
+         linespacing=1.5,
+     )
+     fig.subplots_adjust(left=0.07, right=0.98, top=0.78, bottom=0.31, wspace=0.22)
+-    output = Path(output) if output is not None else ROOT / "build/throughput.svg"
+-    output.parent.mkdir(parents=True, exist_ok=True)
+-    for extension in (".svg", ".png"):
+-        target = output.with_suffix(extension)
+-        fig.savefig(
+-            target,
+-            dpi=160,
+-            facecolor="white",
+-            metadata={"Date": None} if extension == ".svg" else None,
+-        )
+-    plt.close(fig)
+-    return output.with_suffix(".svg")
++    try:
++        return _save(fig, output)
++    finally:
++        plt.close(fig)
+ 
+ 
+ def main():

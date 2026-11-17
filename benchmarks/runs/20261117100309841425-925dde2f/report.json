@@ -1,0 +1,54 @@
+{
+  "metadata": {
+    "runtime": "akas",
+    "mode": "tts",
+    "purpose": "speech-roofline-diagnostic",
+    "model": "Zyphra/ZONOS3-Mini",
+    "provider": "webgpu",
+    "weight_format": "q8_0",
+    "protocol": "zonos3-speech-phase-diagnostic-v1",
+    "timing": "wall clock around existing synthesis methods; nested GPU reads synchronize; not an isolated kernel protocol",
+    "theoretical_peak_bandwidth_gb_s": 384,
+    "minimum_decode_weight_bytes_per_step": 236185232,
+    "checkpoint_sha256": "60568efc88e2f9231f4f5c061e246421f575986642d72ab9ae68f77d6cf76be4",
+    "projector": {
+      "path": "D:\\Workspace\\kreasof-ai\\github\\akas\\build\\checkpoints\\zonos3-mini\\mmproj-ZONOS3-Mini-F32.gguf",
+      "sha256": "aeeb92325b4b6927bef656390b78e1246148065f947d8b59c2663557a809414d",
+      "source": {
+        "repo": "ggml-org/ZONOS3-Mini-GGUF",
+        "revision": "2e7bc4126a2343787298e1a297a3d1c4a13165aa",
+        "file": "mmproj-ZONOS3-Mini-F32.gguf"
+      }
+    },
+    "workload": {
+      "schema": "akas.speech-workload.v1",
+      "id": "speech-demo-v1",
+      "protocol": "client-speech-pcm-v1",
+      "warmup": 1,
+      "repeats": 3,
+      "request": {
+        "lang": "en",
+        "seed": 17,
+        "temperature": 0.75,
+        "n_predict": 384,
+        "stream": false,
+        "response_format": "pcm16"
+      },
+      "utterances": [
+        {
+          "id": "hello",
+          "text": "Hello world."
+        },
+        {
+          "id": "lighthouse",
+          "text": "The old lighthouse keeper climbed the spiral stairs every evening."
+        }
+      ]
+    },
+    "model_definition_sha256": "e84617ab992c8bac2d4301f39f61a85b5d18002f397628a4359ac01e80591035",
+    "bundle_program_sha256": "d699af0398d274bfa72738600bcbaa50ad0859a627cbc4915bfac24684408184",
+    "checks": [],
+    "error": "Recorder process terminated before completing or sealing this run; archived as interrupted evidence."
+  },
+  "results": []
+}

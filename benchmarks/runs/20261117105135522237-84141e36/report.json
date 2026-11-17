@@ -1,0 +1,971 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "runtime": "akas",
+    "mode": "tts",
+    "purpose": "speech-decode-candidate-qualification",
+    "model": "Zyphra/ZONOS3-Mini",
+    "provider": "webgpu",
+    "weight_format": "q8_0",
+    "protocol": "akas.forward-tuning.v1",
+    "checkpoint_sha256": "60568efc88e2f9231f4f5c061e246421f575986642d72ab9ae68f77d6cf76be4",
+    "projector": {
+      "path": "D:\\Workspace\\kreasof-ai\\github\\akas\\build\\checkpoints\\zonos3-mini\\mmproj-ZONOS3-Mini-F32.gguf",
+      "sha256": "aeeb92325b4b6927bef656390b78e1246148065f947d8b59c2663557a809414d",
+      "source": {
+        "repo": "ggml-org/ZONOS3-Mini-GGUF",
+        "revision": "2e7bc4126a2343787298e1a297a3d1c4a13165aa",
+        "file": "mmproj-ZONOS3-Mini-F32.gguf"
+      }
+    },
+    "model_definition_sha256": "e84617ab992c8bac2d4301f39f61a85b5d18002f397628a4359ac01e80591035",
+    "search": {
+      "budget": 8,
+      "width": 4,
+      "warmup": 1,
+      "samples": 5,
+      "repeats": 5
+    },
+    "checks": [
+      {
+        "operation": "rms",
+        "parameters": {
+          "r": 1,
+          "c": 1024,
+          "eps": 9.999999747378752e-06
+        },
+        "implementation": "normalization.webgpu.parallel-subgroup",
+        "schedule": {
+          "sg": false
+        },
+        "median_seconds": 0.00027619999891612677,
+        "bitwise": false
+      },
+      {
+        "operation": "attention_residual",
+        "parameters": {
+          "r": 1,
+          "c": 1024,
+          "capacity": 23,
+          "index": 0,
+          "eps": 9.999999747378752e-06
+        },
+        "implementation": "akas.ops.residual.kernel:attention_residual",
+        "schedule": {},
+        "median_seconds": 0.0003286599967395887,
+        "bitwise": false
+      },
+      {
+        "operation": "quantized_projection",
+        "parameters": {
+          "r": 1,
+          "k": 1024,
+          "o": 2056,
+          "input_dtype": "float32",
+          "weight_parts": [
+            {
+              "format": "ggml",
+              "rows": 1536,
+              "options": {
+                "encoding": 8
+              }
+            },
+            {
+              "format": "ggml",
+              "rows": 512,
+              "options": {
+                "encoding": 8
+              }
+            },
+            {
+              "format": "ggml",
+              "rows": 4,
+              "options": {
+                "encoding": 8
+              }
+            },
+            {
+              "format": "ggml",
+              "rows": 4,
+              "options": {
+                "encoding": 8
+              }
+            }
+          ]
+        },
+        "implementation": "akas.ops.linear.webgpu:projection:decode",
+        "schedule": {},
+        "median_seconds": 0.00032782000198494643,
+        "bitwise": false
+      },
+      {
+        "operation": "gdn_conv",
+        "parameters": {
+          "slots": 1,
+          "chunk": 1,
+          "pool": 1,
+          "dtype": "float32",
+          "channels": 1536,
+          "projection": 2056
+        },
+        "implementation": "gdn.webgpu.reference",
+        "schedule": {},
+        "median_seconds": 0.00025869999662972985,
+        "bitwise": false
+      },
+      {
+        "operation": "gdn_prepare",
+        "parameters": {
+          "slots": 1,
+          "chunk": 1,
+          "pool": 1,
+          "dtype": "float32",
+          "heads": 4,
+          "key_heads": 4,
+          "d": 128,
+          "channels": 1536,
+          "projection": 2056
+        },
+        "implementation": "gdn.webgpu.reference",
+        "schedule": {},
+        "median_seconds": 0.00036386000574566423,
+        "bitwise": false
+      },
+      {
+        "operation": "gdn_scan",
+        "parameters": {
+          "slots": 1,
+          "chunk": 1,
+          "pool": 1,
+          "dtype": "float32",
+          "heads": 4,
+          "d": 128,
+          "tile": 32
+        },
+        "implementation": "gdn.webgpu.reference",
+        "schedule": {},
+        "median_seconds": 0.0003919199982192367,
+        "bitwise": false
+      },
+      {
+        "operation": "gdn_norm",
+        "parameters": {
+          "slots": 1,
+          "chunk": 1,
+          "pool": 1,
+          "dtype": "float32",
+          "heads": 4,
+          "d": 128,
+          "channels": 1536,
+          "projection": 2056,
+          "eps": 9.999999747378752e-06
+        },
+        "implementation": "gdn.webgpu.reference",
+        "schedule": {},
+        "median_seconds": 0.00028187999851070344,
+        "bitwise": false
+      },
+      {
+        "operation": "quantized_projection",
+        "parameters": {
+          "r": 1,
+          "k": 512,
+          "o": 1024,
+          "input_dtype": "float32",
+          "weight_parts": [
+            {
+              "format": "ggml",
+              "rows": 1024,
+              "options": {
+                "encoding": 8
+              }
+            }
+          ]
+        },
+        "implementation": "akas.ops.linear.webgpu:projection:decode",
+        "schedule": {},
+        "median_seconds": 0.00028626000275835397,
+        "bitwise": false
+      },
+      {
+        "operation": "attention_residual",
+        "parameters": {
+          "r": 1,
+          "c": 1024,
+          "capacity": 23,
+          "index": 1,
+          "eps": 9.999999747378752e-06
+        },
+        "implementation": "akas.ops.residual.kernel:attention_residual",
+        "schedule": {},
+        "median_seconds": 0.00034604000102262945,
+        "bitwise": false
+      },
+      {
+        "operation": "quantized_projection",
+        "parameters": {
+          "r": 1,
+          "k": 1024,
+          "o": 2048,
+          "input_dtype": "float32",
+          "weight_parts": [
+            {
+              "format": "ggml",
+              "rows": 2048,
+              "options": {
+                "encoding": 8
+              }
+            }
+          ]
+        },
+        "implementation": "akas.ops.linear.webgpu:projection:decode",
+        "schedule": {},
+        "median_seconds": 0.0003471599949989468,
+        "bitwise": false
+      },
+      {
+        "operation": "swiglu",
+        "parameters": {
+          "r": 1,
+          "c": 2048
+        },
+        "implementation": "activation.kernel",
+        "schedule": {},
+        "median_seconds": 0.00028917999588884413,
+        "bitwise": false
+      },
+      {
+        "operation": "quantized_projection",
+        "parameters": {
+          "r": 1,
+          "k": 2048,
+          "o": 1024,
+          "input_dtype": "float32",
+          "weight_parts": [
+            {
+              "format": "ggml",
+              "rows": 1024,
+              "options": {
+                "encoding": 8
+              }
+            }
+          ]
+        },
+        "implementation": "akas.ops.linear.webgpu:projection:decode",
+        "schedule": {},
+        "median_seconds": 0.00036368000146467236,
+        "bitwise": false
+      },
+      {
+        "operation": "attention_residual",
+        "parameters": {
+          "r": 1,
+          "c": 1024,
+          "capacity": 23,
+          "index": 2,
+          "eps": 9.999999747378752e-06
+        },
+        "implementation": "akas.ops.residual.kernel:attention_residual",
+        "schedule": {},
+        "median_seconds": 0.0003303400008007884,
+        "bitwise": false
+      },
+      {
+        "operation": "attention_residual",
+        "parameters": {
+          "r": 1,
+          "c": 1024,
+          "capacity": 23,
+          "index": 3,
+          "eps": 9.999999747378752e-06
+        },
+        "implementation": "residual.webgpu.batched-scores",
+        "schedule": {
+          "groups": 4
+        },
+        "median_seconds": 0.0003462200023932382,
+        "bitwise": false
+      },
+      {
+        "operation": "quantized_projection",
+        "parameters": {
+          "r": 1,
+          "k": 1024,
+          "o": 64,
+          "input_dtype": "float32",
+          "weight_parts": [
+            {
+              "format": "ggml",
+              "rows": 64,
+              "options": {
+                "encoding": 0
+              }
+            }
+          ]
+        },
+        "implementation": "akas.ops.linear.webgpu:projection:decode",
+        "schedule": {},
+        "median_seconds": 0.00028147999837528913,
+        "bitwise": false
+      },
+      {
+        "operation": "quantized_projection",
+        "parameters": {
+          "r": 1,
+          "k": 1024,
+          "o": 256,
+          "input_dtype": "float32",
+          "weight_parts": [
+            {
+              "format": "ggml",
+              "rows": 256,
+              "options": {
+                "encoding": 8
+              }
+            }
+          ]
+        },
+        "implementation": "akas.ops.linear.webgpu:projection:decode",
+        "schedule": {},
+        "median_seconds": 0.00028384000179357825,
+        "bitwise": false
+      },
+      {
+        "operation": "biased_softmax_router",
+        "parameters": {
+          "r": 1,
+          "experts": 64,
+          "top": 2,
+          "scale": 1.0,
+          "normalize": true
+        },
+        "implementation": "akas.ops.moe.kernel:biased_softmax_router",
+        "schedule": {},
+        "median_seconds": 0.00035987999581266195,
+        "bitwise": false
+      },
+      {
+        "operation": "quantized_routes",
+        "parameters": {
+          "r": 1,
+          "experts": 64,
+          "top": 2
+        },
+        "implementation": "akas.ops.moe.kernel:quantized_routes",
+        "schedule": {},
+        "median_seconds": 0.00027390000177547337,
+        "bitwise": false
+      },
+      {
+        "operation": "quantized_experts",
+        "parameters": {
+          "r": 1,
+          "top": 2,
+          "experts": 64,
+          "o": 1536,
+          "k": 256,
+          "input_dtype": "float32",
+          "round_inputs": false,
+          "tile_map": false,
+          "routed_input": false,
+          "weight_parts": [
+            {
+              "format": "ggml",
+              "rows": 98304,
+              "options": {
+                "encoding": 8
+              }
+            }
+          ]
+        },
+        "implementation": "akas.ops.moe.webgpu:warp_experts",
+        "schedule": {},
+        "median_seconds": 0.00030985999619588257,
+        "bitwise": false
+      },
+      {
+        "operation": "swiglu_experts",
+        "parameters": {
+          "r": 1,
+          "c": 1536,
+          "top": 2,
+          "expert_rows": true,
+          "input_dtype": "float32",
+          "output_dtype": "float32"
+        },
+        "implementation": "akas.ops.activation.kernel:swiglu_experts",
+        "schedule": {},
+        "median_seconds": 0.00025522000214550644,
+        "bitwise": false
+      },
+      {
+        "operation": "quantized_experts",
+        "parameters": {
+          "r": 1,
+          "top": 2,
+          "experts": 64,
+          "o": 256,
+          "k": 1536,
+          "input_dtype": "float32",
+          "round_inputs": false,
+          "tile_map": false,
+          "routed_input": true,
+          "weight_parts": [
+            {
+              "format": "ggml",
+              "rows": 16384,
+              "options": {
+                "encoding": 8
+              }
+            }
+          ]
+        },
+        "implementation": "akas.ops.moe.webgpu:warp_experts",
+        "schedule": {},
+        "median_seconds": 0.00033509999921079727,
+        "bitwise": false
+      },
+      {
+        "operation": "routed_combine",
+        "parameters": {
+          "r": 1,
+          "top": 2,
+          "c": 256
+        },
+        "implementation": "akas.ops.moe.kernel:routed_combine",
+        "schedule": {},
+        "median_seconds": 0.0002674399962415919,
+        "bitwise": false
+      },
+      {
+        "operation": "quantized_projection",
+        "parameters": {
+          "r": 1,
+          "k": 256,
+          "o": 1024,
+          "input_dtype": "float32",
+          "weight_parts": [
+            {
+              "format": "ggml",
+              "rows": 1024,
+              "options": {
+                "encoding": 8
+              }
+            }
+          ]
+        },
+        "implementation": "linear.webgpu.q8-subgroup",
+        "schedule": {
+          "threads": 128
+        },
+        "median_seconds": 0.0002772200008621439,
+        "bitwise": false
+      },
+      {
+        "operation": "attention_residual",
+        "parameters": {
+          "r": 1,
+          "c": 1024,
+          "capacity": 23,
+          "index": 4,
+          "eps": 9.999999747378752e-06
+        },
+        "implementation": "akas.ops.residual.kernel:attention_residual",
+        "schedule": {},
+        "median_seconds": 0.00036490000202320515,
+        "bitwise": false
+      },
+      {
+        "operation": "attention_residual",
+        "parameters": {
+          "r": 1,
+          "c": 1024,
+          "capacity": 23,
+          "index": 5,
+          "eps": 9.999999747378752e-06
+        },
+        "implementation": "residual.webgpu.batched-scores",
+        "schedule": {
+          "groups": 2
+        },
+        "median_seconds": 0.00037183999957051127,
+        "bitwise": false
+      },
+      {
+        "operation": "attention_residual",
+        "parameters": {
+          "r": 1,
+          "c": 1024,
+          "capacity": 23,
+          "index": 6,
+          "eps": 9.999999747378752e-06
+        },
+        "implementation": "residual.webgpu.batched-scores",
+        "schedule": {
+          "groups": 4
+        },
+        "median_seconds": 0.00038579999818466604,
+        "bitwise": false
+      },
+      {
+        "operation": "quantized_projection",
+        "parameters": {
+          "r": 1,
+          "k": 1024,
+          "o": 512,
+          "input_dtype": "float32",
+          "weight_parts": [
+            {
+              "format": "ggml",
+              "rows": 512,
+              "options": {
+                "encoding": 8
+              }
+            }
+          ]
+        },
+        "implementation": "akas.ops.linear.webgpu:projection:decode",
+        "schedule": {},
+        "median_seconds": 0.0003111800004262477,
+        "bitwise": false
+      },
+      {
+        "operation": "head_rms_rotary",
+        "parameters": {
+          "r": 1,
+          "h": 16,
+          "d": 32,
+          "capacity": 1024,
+          "scale_heads": 16,
+          "eps": 1e-06
+        },
+        "implementation": "akas.ops.attention.kernel:head_rms_rotary",
+        "schedule": {},
+        "median_seconds": 0.0002912199968704954,
+        "bitwise": false
+      },
+      {
+        "operation": "quantized_projection",
+        "parameters": {
+          "r": 1,
+          "k": 1024,
+          "o": 128,
+          "input_dtype": "float32",
+          "weight_parts": [
+            {
+              "format": "ggml",
+              "rows": 128,
+              "options": {
+                "encoding": 8
+              }
+            }
+          ]
+        },
+        "implementation": "linear.webgpu.q8-subgroup",
+        "schedule": {
+          "threads": 128
+        },
+        "median_seconds": 0.0003238599980250001,
+        "bitwise": false
+      },
+      {
+        "operation": "head_rms_rotary",
+        "parameters": {
+          "r": 1,
+          "h": 4,
+          "d": 32,
+          "capacity": 1024,
+          "scale_heads": 1,
+          "eps": 1e-06
+        },
+        "implementation": "akas.ops.attention.kernel:head_rms_rotary",
+        "schedule": {},
+        "median_seconds": 0.0003147600014926866,
+        "bitwise": false
+      },
+      {
+        "operation": "window_cache",
+        "parameters": {
+          "r": 1,
+          "h": 16,
+          "kh": 4,
+          "d": 32,
+          "capacity": 1024,
+          "chunk": 1,
+          "window": 0
+        },
+        "implementation": "attention.webgpu.window_cache",
+        "schedule": {},
+        "median_seconds": 0.000376180000603199,
+        "bitwise": false
+      },
+      {
+        "operation": "causal_grouped",
+        "parameters": {
+          "r": 1,
+          "h": 16,
+          "kh": 4,
+          "d": 32,
+          "capacity": 1024,
+          "chunk": 1,
+          "window": 0
+        },
+        "implementation": "akas.ops.attention.kernel:causal_grouped",
+        "schedule": {},
+        "median_seconds": 0.000890739998430945,
+        "bitwise": false
+      },
+      {
+        "operation": "quantized_projection",
+        "parameters": {
+          "r": 1,
+          "k": 1024,
+          "o": 16,
+          "input_dtype": "float32",
+          "weight_parts": [
+            {
+              "format": "ggml",
+              "rows": 16,
+              "options": {
+                "encoding": 8
+              }
+            }
+          ]
+        },
+        "implementation": "linear.webgpu.q8-subgroup",
+        "schedule": {
+          "threads": 128
+        },
+        "median_seconds": 0.00030942000157665463,
+        "bitwise": false
+      },
+      {
+        "operation": "head_gate",
+        "parameters": {
+          "r": 1,
+          "h": 16,
+          "d": 32
+        },
+        "implementation": "activation.webgpu.head_gate",
+        "schedule": {},
+        "median_seconds": 0.0002667800028575584,
+        "bitwise": false
+      },
+      {
+        "operation": "attention_residual",
+        "parameters": {
+          "r": 1,
+          "c": 1024,
+          "capacity": 23,
+          "index": 7,
+          "eps": 9.999999747378752e-06
+        },
+        "implementation": "residual.webgpu.batched-scores",
+        "schedule": {
+          "groups": 4
+        },
+        "median_seconds": 0.0003593200002796948,
+        "bitwise": false
+      },
+      {
+        "operation": "attention_residual",
+        "parameters": {
+          "r": 1,
+          "c": 1024,
+          "capacity": 23,
+          "index": 8,
+          "eps": 9.999999747378752e-06
+        },
+        "implementation": "residual.webgpu.batched-scores",
+        "schedule": {
+          "groups": 4
+        },
+        "median_seconds": 0.0003845399973215535,
+        "bitwise": false
+      },
+      {
+        "operation": "attention_residual",
+        "parameters": {
+          "r": 1,
+          "c": 1024,
+          "capacity": 23,
+          "index": 9,
+          "eps": 9.999999747378752e-06
+        },
+        "implementation": "residual.webgpu.batched-scores",
+        "schedule": {
+          "groups": 2
+        },
+        "median_seconds": 0.00042953999945893884,
+        "bitwise": false
+      },
+      {
+        "operation": "attention_residual",
+        "parameters": {
+          "r": 1,
+          "c": 1024,
+          "capacity": 23,
+          "index": 10,
+          "eps": 9.999999747378752e-06
+        },
+        "implementation": "residual.webgpu.batched-scores",
+        "schedule": {
+          "groups": 4
+        },
+        "median_seconds": 0.0004232399980537593,
+        "bitwise": false
+      },
+      {
+        "operation": "attention_residual",
+        "parameters": {
+          "r": 1,
+          "c": 1024,
+          "capacity": 23,
+          "index": 11,
+          "eps": 9.999999747378752e-06
+        },
+        "implementation": "residual.webgpu.batched-scores",
+        "schedule": {
+          "groups": 4
+        },
+        "median_seconds": 0.00040778000256977973,
+        "bitwise": false
+      },
+      {
+        "operation": "attention_residual",
+        "parameters": {
+          "r": 1,
+          "c": 1024,
+          "capacity": 23,
+          "index": 12,
+          "eps": 9.999999747378752e-06
+        },
+        "implementation": "residual.webgpu.batched-scores",
+        "schedule": {
+          "groups": 4
+        },
+        "median_seconds": 0.0004394799965666607,
+        "bitwise": false
+      },
+      {
+        "operation": "attention_residual",
+        "parameters": {
+          "r": 1,
+          "c": 1024,
+          "capacity": 23,
+          "index": 13,
+          "eps": 9.999999747378752e-06
+        },
+        "implementation": "residual.webgpu.batched-scores",
+        "schedule": {
+          "groups": 4
+        },
+        "median_seconds": 0.0004289000004064292,
+        "bitwise": false
+      },
+      {
+        "operation": "attention_residual",
+        "parameters": {
+          "r": 1,
+          "c": 1024,
+          "capacity": 23,
+          "index": 14,
+          "eps": 9.999999747378752e-06
+        },
+        "implementation": "residual.webgpu.batched-scores",
+        "schedule": {
+          "groups": 4
+        },
+        "median_seconds": 0.0004381600010674447,
+        "bitwise": false
+      },
+      {
+        "operation": "attention_residual",
+        "parameters": {
+          "r": 1,
+          "c": 1024,
+          "capacity": 23,
+          "index": 15,
+          "eps": 9.999999747378752e-06
+        },
+        "implementation": "residual.webgpu.batched-scores",
+        "schedule": {
+          "groups": 4
+        },
+        "median_seconds": 0.0004394199961097911,
+        "bitwise": false
+      },
+      {
+        "operation": "attention_residual",
+        "parameters": {
+          "r": 1,
+          "c": 1024,
+          "capacity": 23,
+          "index": 16,
+          "eps": 9.999999747378752e-06
+        },
+        "implementation": "residual.webgpu.batched-scores",
+        "schedule": {
+          "groups": 4
+        },
+        "median_seconds": 0.0005006599996704609,
+        "bitwise": false
+      },
+      {
+        "operation": "attention_residual",
+        "parameters": {
+          "r": 1,
+          "c": 1024,
+          "capacity": 23,
+          "index": 17,
+          "eps": 9.999999747378752e-06
+        },
+        "implementation": "residual.webgpu.batched-scores",
+        "schedule": {
+          "groups": 2
+        },
+        "median_seconds": 0.0005105999996885657,
+        "bitwise": false
+      },
+      {
+        "operation": "attention_residual",
+        "parameters": {
+          "r": 1,
+          "c": 1024,
+          "capacity": 23,
+          "index": 18,
+          "eps": 9.999999747378752e-06
+        },
+        "implementation": "residual.webgpu.batched-scores",
+        "schedule": {
+          "groups": 4
+        },
+        "median_seconds": 0.0005107199947815388,
+        "bitwise": false
+      },
+      {
+        "operation": "attention_residual",
+        "parameters": {
+          "r": 1,
+          "c": 1024,
+          "capacity": 23,
+          "index": 19,
+          "eps": 9.999999747378752e-06
+        },
+        "implementation": "residual.webgpu.batched-scores",
+        "schedule": {
+          "groups": 4
+        },
+        "median_seconds": 0.00047902000369504094,
+        "bitwise": false
+      },
+      {
+        "operation": "attention_residual",
+        "parameters": {
+          "r": 1,
+          "c": 1024,
+          "capacity": 23,
+          "index": 20,
+          "eps": 9.999999747378752e-06
+        },
+        "implementation": "residual.webgpu.batched-scores",
+        "schedule": {
+          "groups": 4
+        },
+        "median_seconds": 0.0005381799972383305,
+        "bitwise": false
+      },
+      {
+        "operation": "attention_residual",
+        "parameters": {
+          "r": 1,
+          "c": 1024,
+          "capacity": 23,
+          "index": 21,
+          "eps": 9.999999747378752e-06
+        },
+        "implementation": "residual.webgpu.batched-scores",
+        "schedule": {
+          "groups": 2
+        },
+        "median_seconds": 0.0005727000010665506,
+        "bitwise": false
+      },
+      {
+        "operation": "attention_residual",
+        "parameters": {
+          "r": 1,
+          "c": 1024,
+          "capacity": 23,
+          "index": 22,
+          "eps": 9.999999747378752e-06
+        },
+        "implementation": "residual.webgpu.batched-scores",
+        "schedule": {
+          "groups": 4
+        },
+        "median_seconds": 0.0005690400023013354,
+        "bitwise": false
+      }
+    ],
+    "device": {
+      "ordinal": 0,
+      "provider": "webgpu",
+      "arch": "webgpu-portable-v1",
+      "name": "AMD Radeon RX 6700 XT",
+      "adapter": {
+        "vendor": "AMD proprietary driver",
+        "architecture": "",
+        "device": "AMD Radeon RX 6700 XT",
+        "description": "26.6.2 (AMD proprietary shader compiler)",
+        "stackgroup_min_size": 4,
+        "stackgroup_max_size": 128,
+        "vendor_id": 4098,
+        "device_id": 29663,
+        "adapter_type": "DiscreteGPU",
+        "backend_type": "Vulkan"
+      },
+      "features": [
+        "shader-f16",
+        "subgroup"
+      ],
+      "limits": {
+        "max-bind-groups": 8,
+        "max-bind-groups-plus-vertex-buffers": 0,
+        "max-bindings-per-bind-group": 1000,
+        "max-buffer-size": 1073741824,
+        "max-color-attachment-bytes-per-sample": 0,
+        "max-color-attachments": 0,
+        "max-compute-invocations-per-workgroup": 1024,
+        "max-compute-workgroup-size-x": 1024,
+        "max-compute-workgroup-size-y": 1024,
+        "max-compute-workgroup-size-z": 1024,
+        "max-compute-workgroup-storage-size": 32768,
+        "max-compute-workgroups-per-dimension": 65535,
+        "max-dynamic-storage-buffers-per-pipeline-layout": 8,
+        "max-dynamic-uniform-buffers-per-pipeline-layout": 8,
+        "max-inter-stage-shader-variables": 0,
+        "max-non-sampler-bindings": 1000000,
+        "max-push-constant-size": 256,
+        "max-sampled-textures-per-shader-stage": 16,
+        "max-samplers-per-shader-stage": 16,
+        "max-storage-buffer-binding-size": 1073741824,
+        "max-storage-buffers-per-shader-stage": 32,
+        "max-storage-textures-per-shader-stage": 4,
+        "max-texture-array-layers": 8192,
+        "max-texture-dimension-1d": 16384,
+        "max-texture-dimension-2d": 16384,
+        "max-texture-dimension-3d": 8192,
+        "max-uniform-buffer-binding-size": 2147483647,
+        "max-uniform-buffers-per-shader-stage": 12,
+        "max-vertex-attributes": 64,
+        "max-vertex-buffer-array-stride": 16383,
+        "max-vertex-buffers": 16,
+        "min-storage-buffer-offset-alignment": 32,
+        "min-uniform-buffer-offset-alignment": 32
+      },
+      "adapter_storage_buffers_reported": 4294967295
+    }
+  },
+  "results": []
+}

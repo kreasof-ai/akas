@@ -1,0 +1,434 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "runtime": "akas",
+    "mode": "tts",
+    "purpose": "speech-prefill256-candidate",
+    "model": "Zyphra/ZONOS3-Mini",
+    "provider": "webgpu",
+    "weight_format": "q8_0",
+    "protocol": "zonos3-speech-candidate-v1",
+    "timing": "interleaved direct synthesis; not client-speech-pcm-v1",
+    "checkpoint_sha256": "60568efc88e2f9231f4f5c061e246421f575986642d72ab9ae68f77d6cf76be4",
+    "projector": {
+      "path": "D:\\Workspace\\kreasof-ai\\github\\akas\\build\\checkpoints\\zonos3-mini\\mmproj-ZONOS3-Mini-F32.gguf",
+      "sha256": "aeeb92325b4b6927bef656390b78e1246148065f947d8b59c2663557a809414d",
+      "source": {
+        "repo": "ggml-org/ZONOS3-Mini-GGUF",
+        "revision": "2e7bc4126a2343787298e1a297a3d1c4a13165aa",
+        "file": "mmproj-ZONOS3-Mini-F32.gguf"
+      }
+    },
+    "model_definition_sha256": "e84617ab992c8bac2d4301f39f61a85b5d18002f397628a4359ac01e80591035",
+    "checks": [
+      {
+        "utterance": "hello",
+        "bitwise": true,
+        "pcm_sha256": "708c1455ae35795a6f0bf0862b46af72717571b0cb61d491c29bdfd4d778779a",
+        "repeats": 9
+      }
+    ],
+    "device": {
+      "ordinal": 0,
+      "provider": "webgpu",
+      "arch": "webgpu-portable-v1",
+      "name": "AMD Radeon RX 6700 XT",
+      "adapter": {
+        "vendor": "AMD proprietary driver",
+        "architecture": "",
+        "device": "AMD Radeon RX 6700 XT",
+        "description": "26.6.2 (AMD proprietary shader compiler)",
+        "stackgroup_min_size": 4,
+        "stackgroup_max_size": 128,
+        "vendor_id": 4098,
+        "device_id": 29663,
+        "adapter_type": "DiscreteGPU",
+        "backend_type": "Vulkan"
+      },
+      "features": [
+        "shader-f16",
+        "subgroup"
+      ],
+      "limits": {
+        "max-bind-groups": 8,
+        "max-bind-groups-plus-vertex-buffers": 0,
+        "max-bindings-per-bind-group": 1000,
+        "max-buffer-size": 1073741824,
+        "max-color-attachment-bytes-per-sample": 0,
+        "max-color-attachments": 0,
+        "max-compute-invocations-per-workgroup": 1024,
+        "max-compute-workgroup-size-x": 1024,
+        "max-compute-workgroup-size-y": 1024,
+        "max-compute-workgroup-size-z": 1024,
+        "max-compute-workgroup-storage-size": 32768,
+        "max-compute-workgroups-per-dimension": 65535,
+        "max-dynamic-storage-buffers-per-pipeline-layout": 8,
+        "max-dynamic-uniform-buffers-per-pipeline-layout": 8,
+        "max-inter-stage-shader-variables": 0,
+        "max-non-sampler-bindings": 1000000,
+        "max-push-constant-size": 256,
+        "max-sampled-textures-per-shader-stage": 16,
+        "max-samplers-per-shader-stage": 16,
+        "max-storage-buffer-binding-size": 1073741824,
+        "max-storage-buffers-per-shader-stage": 32,
+        "max-storage-textures-per-shader-stage": 4,
+        "max-texture-array-layers": 8192,
+        "max-texture-dimension-1d": 16384,
+        "max-texture-dimension-2d": 16384,
+        "max-texture-dimension-3d": 8192,
+        "max-uniform-buffer-binding-size": 2147483647,
+        "max-uniform-buffers-per-shader-stage": 12,
+        "max-vertex-attributes": 64,
+        "max-vertex-buffer-array-stride": 16383,
+        "max-vertex-buffers": 16,
+        "min-storage-buffer-offset-alignment": 32,
+        "min-uniform-buffer-offset-alignment": 32
+      },
+      "adapter_storage_buffers_reported": 4294967295
+    }
+  },
+  "results": [
+    {
+      "case": {
+        "id": "hello",
+        "batch": 1,
+        "prompt": 12,
+        "generated": 27,
+        "cached_prefix_tokens": 0
+      },
+      "variant": "baseline",
+      "repeat": 0,
+      "wall_seconds": 0.6447010999982012,
+      "generation_seconds": 0.5390997999929823,
+      "codec_waveform_seconds": 0.10560130000521895,
+      "frames": 19,
+      "terminated": true,
+      "pcm_sha256": "708c1455ae35795a6f0bf0862b46af72717571b0cb61d491c29bdfd4d778779a",
+      "status": "ok"
+    },
+    {
+      "case": {
+        "id": "hello",
+        "batch": 1,
+        "prompt": 12,
+        "generated": 27,
+        "cached_prefix_tokens": 0
+      },
+      "variant": "candidate",
+      "repeat": 0,
+      "wall_seconds": 0.4523747000057483,
+      "generation_seconds": 0.35196929999801796,
+      "codec_waveform_seconds": 0.10040540000773035,
+      "frames": 19,
+      "terminated": true,
+      "pcm_sha256": "708c1455ae35795a6f0bf0862b46af72717571b0cb61d491c29bdfd4d778779a",
+      "status": "ok"
+    },
+    {
+      "case": {
+        "id": "hello",
+        "batch": 1,
+        "prompt": 12,
+        "generated": 27,
+        "cached_prefix_tokens": 0
+      },
+      "variant": "baseline",
+      "repeat": 1,
+      "wall_seconds": 0.5256366999965394,
+      "generation_seconds": 0.42521589998796117,
+      "codec_waveform_seconds": 0.10042080000857823,
+      "frames": 19,
+      "terminated": true,
+      "pcm_sha256": "708c1455ae35795a6f0bf0862b46af72717571b0cb61d491c29bdfd4d778779a",
+      "status": "ok"
+    },
+    {
+      "case": {
+        "id": "hello",
+        "batch": 1,
+        "prompt": 12,
+        "generated": 27,
+        "cached_prefix_tokens": 0
+      },
+      "variant": "candidate",
+      "repeat": 1,
+      "wall_seconds": 0.453804200005834,
+      "generation_seconds": 0.35233310000330675,
+      "codec_waveform_seconds": 0.10147110000252724,
+      "frames": 19,
+      "terminated": true,
+      "pcm_sha256": "708c1455ae35795a6f0bf0862b46af72717571b0cb61d491c29bdfd4d778779a",
+      "status": "ok"
+    },
+    {
+      "case": {
+        "id": "hello",
+        "batch": 1,
+        "prompt": 12,
+        "generated": 27,
+        "cached_prefix_tokens": 0
+      },
+      "variant": "baseline",
+      "repeat": 2,
+      "wall_seconds": 0.519045199995162,
+      "generation_seconds": 0.4215395999926841,
+      "codec_waveform_seconds": 0.09750560000247788,
+      "frames": 19,
+      "terminated": true,
+      "pcm_sha256": "708c1455ae35795a6f0bf0862b46af72717571b0cb61d491c29bdfd4d778779a",
+      "status": "ok"
+    },
+    {
+      "case": {
+        "id": "hello",
+        "batch": 1,
+        "prompt": 12,
+        "generated": 27,
+        "cached_prefix_tokens": 0
+      },
+      "variant": "candidate",
+      "repeat": 2,
+      "wall_seconds": 0.4509072000073502,
+      "generation_seconds": 0.3523505000048317,
+      "codec_waveform_seconds": 0.09855670000251848,
+      "frames": 19,
+      "terminated": true,
+      "pcm_sha256": "708c1455ae35795a6f0bf0862b46af72717571b0cb61d491c29bdfd4d778779a",
+      "status": "ok"
+    },
+    {
+      "case": {
+        "id": "hello",
+        "batch": 1,
+        "prompt": 12,
+        "generated": 27,
+        "cached_prefix_tokens": 0
+      },
+      "variant": "baseline",
+      "repeat": 3,
+      "wall_seconds": 0.5208619999903021,
+      "generation_seconds": 0.42258649998984765,
+      "codec_waveform_seconds": 0.09827550000045449,
+      "frames": 19,
+      "terminated": true,
+      "pcm_sha256": "708c1455ae35795a6f0bf0862b46af72717571b0cb61d491c29bdfd4d778779a",
+      "status": "ok"
+    },
+    {
+      "case": {
+        "id": "hello",
+        "batch": 1,
+        "prompt": 12,
+        "generated": 27,
+        "cached_prefix_tokens": 0
+      },
+      "variant": "candidate",
+      "repeat": 3,
+      "wall_seconds": 0.44840759999351576,
+      "generation_seconds": 0.3493665999994846,
+      "codec_waveform_seconds": 0.09904099999403115,
+      "frames": 19,
+      "terminated": true,
+      "pcm_sha256": "708c1455ae35795a6f0bf0862b46af72717571b0cb61d491c29bdfd4d778779a",
+      "status": "ok"
+    },
+    {
+      "case": {
+        "id": "hello",
+        "batch": 1,
+        "prompt": 12,
+        "generated": 27,
+        "cached_prefix_tokens": 0
+      },
+      "variant": "baseline",
+      "repeat": 4,
+      "wall_seconds": 0.5191039000055753,
+      "generation_seconds": 0.4213101000059396,
+      "codec_waveform_seconds": 0.09779379999963567,
+      "frames": 19,
+      "terminated": true,
+      "pcm_sha256": "708c1455ae35795a6f0bf0862b46af72717571b0cb61d491c29bdfd4d778779a",
+      "status": "ok"
+    },
+    {
+      "case": {
+        "id": "hello",
+        "batch": 1,
+        "prompt": 12,
+        "generated": 27,
+        "cached_prefix_tokens": 0
+      },
+      "variant": "candidate",
+      "repeat": 4,
+      "wall_seconds": 0.4532408000086434,
+      "generation_seconds": 0.3561578000080772,
+      "codec_waveform_seconds": 0.09708300000056624,
+      "frames": 19,
+      "terminated": true,
+      "pcm_sha256": "708c1455ae35795a6f0bf0862b46af72717571b0cb61d491c29bdfd4d778779a",
+      "status": "ok"
+    },
+    {
+      "case": {
+        "id": "hello",
+        "batch": 1,
+        "prompt": 12,
+        "generated": 27,
+        "cached_prefix_tokens": 0
+      },
+      "variant": "baseline",
+      "repeat": 5,
+      "wall_seconds": 0.5282664000114892,
+      "generation_seconds": 0.42867750000732485,
+      "codec_waveform_seconds": 0.09958890000416432,
+      "frames": 19,
+      "terminated": true,
+      "pcm_sha256": "708c1455ae35795a6f0bf0862b46af72717571b0cb61d491c29bdfd4d778779a",
+      "status": "ok"
+    },
+    {
+      "case": {
+        "id": "hello",
+        "batch": 1,
+        "prompt": 12,
+        "generated": 27,
+        "cached_prefix_tokens": 0
+      },
+      "variant": "candidate",
+      "repeat": 5,
+      "wall_seconds": 0.45344150000892114,
+      "generation_seconds": 0.35265300000901334,
+      "codec_waveform_seconds": 0.1007884999999078,
+      "frames": 19,
+      "terminated": true,
+      "pcm_sha256": "708c1455ae35795a6f0bf0862b46af72717571b0cb61d491c29bdfd4d778779a",
+      "status": "ok"
+    },
+    {
+      "case": {
+        "id": "hello",
+        "batch": 1,
+        "prompt": 12,
+        "generated": 27,
+        "cached_prefix_tokens": 0
+      },
+      "variant": "baseline",
+      "repeat": 6,
+      "wall_seconds": 0.5305627000052482,
+      "generation_seconds": 0.42834189999848604,
+      "codec_waveform_seconds": 0.10222080000676215,
+      "frames": 19,
+      "terminated": true,
+      "pcm_sha256": "708c1455ae35795a6f0bf0862b46af72717571b0cb61d491c29bdfd4d778779a",
+      "status": "ok"
+    },
+    {
+      "case": {
+        "id": "hello",
+        "batch": 1,
+        "prompt": 12,
+        "generated": 27,
+        "cached_prefix_tokens": 0
+      },
+      "variant": "candidate",
+      "repeat": 6,
+      "wall_seconds": 0.44212100000004284,
+      "generation_seconds": 0.3457027999975253,
+      "codec_waveform_seconds": 0.09641820000251755,
+      "frames": 19,
+      "terminated": true,
+      "pcm_sha256": "708c1455ae35795a6f0bf0862b46af72717571b0cb61d491c29bdfd4d778779a",
+      "status": "ok"
+    },
+    {
+      "case": {
+        "id": "hello",
+        "batch": 1,
+        "prompt": 12,
+        "generated": 27,
+        "cached_prefix_tokens": 0
+      },
+      "variant": "baseline",
+      "repeat": 7,
+      "wall_seconds": 0.5260330000019167,
+      "generation_seconds": 0.42811369999253657,
+      "codec_waveform_seconds": 0.0979193000093801,
+      "frames": 19,
+      "terminated": true,
+      "pcm_sha256": "708c1455ae35795a6f0bf0862b46af72717571b0cb61d491c29bdfd4d778779a",
+      "status": "ok"
+    },
+    {
+      "case": {
+        "id": "hello",
+        "batch": 1,
+        "prompt": 12,
+        "generated": 27,
+        "cached_prefix_tokens": 0
+      },
+      "variant": "candidate",
+      "repeat": 7,
+      "wall_seconds": 0.4531793999922229,
+      "generation_seconds": 0.35416499999701045,
+      "codec_waveform_seconds": 0.09901439999521244,
+      "frames": 19,
+      "terminated": true,
+      "pcm_sha256": "708c1455ae35795a6f0bf0862b46af72717571b0cb61d491c29bdfd4d778779a",
+      "status": "ok"
+    },
+    {
+      "case": {
+        "id": "hello",
+        "batch": 1,
+        "prompt": 12,
+        "generated": 27,
+        "cached_prefix_tokens": 0
+      },
+      "variant": "baseline",
+      "repeat": 8,
+      "wall_seconds": 0.5213335000007646,
+      "generation_seconds": 0.4238216999947326,
+      "codec_waveform_seconds": 0.09751180000603199,
+      "frames": 19,
+      "terminated": true,
+      "pcm_sha256": "708c1455ae35795a6f0bf0862b46af72717571b0cb61d491c29bdfd4d778779a",
+      "status": "ok"
+    },
+    {
+      "case": {
+        "id": "hello",
+        "batch": 1,
+        "prompt": 12,
+        "generated": 27,
+        "cached_prefix_tokens": 0
+      },
+      "variant": "candidate",
+      "repeat": 8,
+      "wall_seconds": 0.47202390000165906,
+      "generation_seconds": 0.37182749999919906,
+      "codec_waveform_seconds": 0.10019640000246,
+      "frames": 19,
+      "terminated": true,
+      "pcm_sha256": "708c1455ae35795a6f0bf0862b46af72717571b0cb61d491c29bdfd4d778779a",
+      "status": "ok"
+    },
+    {
+      "case": {
+        "id": "lighthouse",
+        "batch": 1,
+        "prompt": 66,
+        "generated": 70,
+        "cached_prefix_tokens": 0
+      },
+      "variant": "baseline",
+      "repeat": 0,
+      "wall_seconds": 1.10761310000089,
+      "generation_seconds": 0.888886700005969,
+      "codec_waveform_seconds": 0.21872639999492094,
+      "frames": 62,
+      "terminated": true,
+      "pcm_sha256": "101ec94d2b0e6c87b2f848ab2112dc37051207706e6dc7ee3066bbbe29e7b561",
+      "status": "ok"
+    }
+  ]
+}
