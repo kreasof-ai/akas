@@ -1,0 +1,124 @@
+{
+  "schema": "akas.native-stream-comparison-report.v1",
+  "campaign": {
+    "identity": "2426baf919b1b1d7d10fd1c0f147dae3798c96766d1b9128f77611e2d56da8e4",
+    "created_at": "2026-11-17T22:44:39.048177Z",
+    "updated_at": "2026-11-17T23:10:17.648916Z",
+    "akas_run": "20261117224439048177-b767426d",
+    "native_report": "20261117T160518Z-59b3379b9d08",
+    "correctness_run": "20261117224224262017-91925158",
+    "figure_run": "20261117231016345646-b1f74c89",
+    "source": {
+      "revision": "a3f3cc4a9cbdafe266de7187cd2bbb645826370d",
+      "tree_sha256": "81af70357f17278c5cc69cd6463a3f9563f8cbb725b7e37d9c35099e30d35b5a"
+    }
+  },
+  "workload": {
+    "schema": "akas.speech-workload.v1",
+    "id": "speech-concurrent-v1",
+    "protocol": "client-speech-pcm-stream-v1",
+    "warmup": 0,
+    "repeats": 1,
+    "request": {
+      "language": "en_us",
+      "temperature": null,
+      "topk": null,
+      "top_p": null,
+      "min_p": null,
+      "repetition_penalty": null,
+      "max_tokens": 384,
+      "stream": true,
+      "stream_decode": "prefix",
+      "response_format": "pcm",
+      "sample_rate_hz": 44100,
+      "channels": 1,
+      "sample_format": "float32",
+      "decoder": "keep2_plain"
+    },
+    "utterances": [
+      {
+        "id": "delivery",
+        "text": "Your order has been confirmed and will arrive tomorrow between nine and noon. You can change the delivery address, contact the courier, or track your package online at any time."
+      }
+    ]
+  },
+  "measurements": [
+    {
+      "concurrency": 1,
+      "akas_completed": 1,
+      "akas_wall_s": 0.4073400369961746,
+      "akas_audio_s_per_s": 28.80476326328689,
+      "akas_ttfa_p50_ms": 42.59749999619089,
+      "akas_peak_gpu_gib": 10.3740234375,
+      "native_completed": 1,
+      "native_wall_s": 0.6995682870001474,
+      "native_audio_s_per_s": 15.533389475478579,
+      "native_ttfa_p50_ms": 150.33511700130475,
+      "native_peak_gpu_gib": 4.828125,
+      "throughput_speedup": 1.854377198792244
+    },
+    {
+      "concurrency": 4,
+      "akas_completed": 4,
+      "akas_wall_s": 0.8368121300009079,
+      "akas_audio_s_per_s": 52.10249521592463,
+      "akas_ttfa_p50_ms": 20.23851650301367,
+      "akas_peak_gpu_gib": 10.3740234375,
+      "native_completed": 4,
+      "native_wall_s": 1.0614643749995594,
+      "native_audio_s_per_s": 42.457069429848154,
+      "native_ttfa_p50_ms": 60.49183949926373,
+      "native_peak_gpu_gib": 4.79296875,
+      "throughput_speedup": 1.2271806772253468
+    },
+    {
+      "concurrency": 16,
+      "akas_completed": 16,
+      "akas_wall_s": 2.58985174800182,
+      "akas_audio_s_per_s": 68.72980283034909,
+      "akas_ttfa_p50_ms": 50.55320349856629,
+      "akas_peak_gpu_gib": 10.3740234375,
+      "native_completed": 16,
+      "native_wall_s": 3.596231710000211,
+      "native_audio_s_per_s": 47.809303514907064,
+      "native_ttfa_p50_ms": 721.6913620004561,
+      "native_peak_gpu_gib": 5.142578125,
+      "throughput_speedup": 1.4375821812363143
+    },
+    {
+      "concurrency": 64,
+      "akas_completed": 64,
+      "akas_wall_s": 6.167256322994945,
+      "akas_audio_s_per_s": 115.59975716837377,
+      "akas_ttfa_p50_ms": 286.6779849973682,
+      "akas_peak_gpu_gib": 10.3740234375,
+      "native_completed": 64,
+      "native_wall_s": 10.44870230199922,
+      "native_audio_s_per_s": 68.12329219713787,
+      "native_ttfa_p50_ms": 1708.1655875008437,
+      "native_peak_gpu_gib": 6.48828125,
+      "throughput_speedup": 1.6969197089572041
+    },
+    {
+      "concurrency": 256,
+      "akas_completed": 256,
+      "akas_wall_s": 20.145642212002713,
+      "akas_audio_s_per_s": 142.11179287337916,
+      "akas_ttfa_p50_ms": 911.161293501209,
+      "akas_peak_gpu_gib": 10.3740234375,
+      "native_completed": 256,
+      "native_wall_s": 163.57538978900084,
+      "native_audio_s_per_s": 17.345722586956793,
+      "native_ttfa_p50_ms": 79025.84012949956,
+      "native_peak_gpu_gib": 7.478515625,
+      "throughput_speedup": 8.19290128508344
+    }
+  ],
+  "correctness": {
+    "codec_checks": 34,
+    "max_rms": 0.00015236376708884357,
+    "max_abs": 0.006794417276978493,
+    "replays": 682
+  },
+  "program_sha256": "02489ec2dbafff47cca1cf8aff9ad9959e57a5fd0ddf3f549813e9c12338c183"
+}
