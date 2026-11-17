@@ -1,0 +1,3625 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "protocol": "client-speech-pcm-v1",
+    "speech_workload": {
+      "id": "speech-multilingual-v1",
+      "definition": {
+        "schema": "akas.speech-workload.v1",
+        "id": "speech-multilingual-v1",
+        "protocol": "client-speech-pcm-v1",
+        "warmup": 1,
+        "repeats": 2,
+        "request": {
+          "seed": 17,
+          "temperature": 0.75,
+          "n_predict": 384,
+          "stream": false,
+          "response_format": "pcm16"
+        },
+        "language_source": "https://huggingface.co/Zyphra/ZONOS3-Mini#languages",
+        "corpus": {
+          "name": "FLORES-200 devtest",
+          "url": "https://github.com/facebookresearch/flores/tree/main/flores200",
+          "download_url": "https://dl.fbaipublicfiles.com/nllb/flores200_dataset.tar.gz",
+          "archive_sha256": "b8b0b76783024b85797e5cc75064eb83fc5288b41e9654dabc7be6ae944011f6",
+          "license": "CC BY-SA 4.0",
+          "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+          "split": "devtest",
+          "selection": "Six aligned one-based rows, two per length tier by English character count. Rows use translated text as distributed and exclude digits across the selected languages."
+        },
+        "languages": {
+          "en": {
+            "name": "English",
+            "locale": "eng_Latn"
+          },
+          "fr": {
+            "name": "French",
+            "locale": "fra_Latn"
+          },
+          "es": {
+            "name": "Spanish",
+            "locale": "spa_Latn"
+          },
+          "de": {
+            "name": "German",
+            "locale": "deu_Latn"
+          },
+          "it": {
+            "name": "Italian",
+            "locale": "ita_Latn"
+          },
+          "pt": {
+            "name": "Portuguese",
+            "locale": "por_Latn"
+          },
+          "nl": {
+            "name": "Dutch",
+            "locale": "nld_Latn"
+          },
+          "el": {
+            "name": "Greek",
+            "locale": "ell_Grek"
+          },
+          "sv": {
+            "name": "Swedish",
+            "locale": "swe_Latn"
+          },
+          "da": {
+            "name": "Danish",
+            "locale": "dan_Latn"
+          },
+          "nb": {
+            "name": "Norwegian Bokm\u00e5l",
+            "locale": "nob_Latn"
+          },
+          "fi": {
+            "name": "Finnish",
+            "locale": "fin_Latn"
+          },
+          "pl": {
+            "name": "Polish",
+            "locale": "pol_Latn"
+          },
+          "cs": {
+            "name": "Czech",
+            "locale": "ces_Latn"
+          },
+          "sk": {
+            "name": "Slovak",
+            "locale": "slk_Latn"
+          },
+          "hu": {
+            "name": "Hungarian",
+            "locale": "hun_Latn"
+          },
+          "ro": {
+            "name": "Romanian",
+            "locale": "ron_Latn"
+          },
+          "bg": {
+            "name": "Bulgarian",
+            "locale": "bul_Cyrl"
+          },
+          "ru": {
+            "name": "Russian",
+            "locale": "rus_Cyrl"
+          },
+          "uk": {
+            "name": "Ukrainian",
+            "locale": "ukr_Cyrl"
+          },
+          "tr": {
+            "name": "Turkish",
+            "locale": "tur_Latn"
+          },
+          "ar": {
+            "name": "Arabic",
+            "locale": "arb_Arab"
+          },
+          "he": {
+            "name": "Hebrew",
+            "locale": "heb_Hebr"
+          },
+          "ka": {
+            "name": "Georgian",
+            "locale": "kat_Geor"
+          },
+          "zh": {
+            "name": "Mandarin Chinese",
+            "locale": "zho_Hans"
+          },
+          "ja": {
+            "name": "Japanese",
+            "locale": "jpn_Jpan"
+          },
+          "ko": {
+            "name": "Korean",
+            "locale": "kor_Hang"
+          },
+          "vi": {
+            "name": "Vietnamese",
+            "locale": "vie_Latn"
+          },
+          "id": {
+            "name": "Indonesian",
+            "locale": "ind_Latn"
+          },
+          "ms": {
+            "name": "Malay",
+            "locale": "zsm_Latn"
+          },
+          "th": {
+            "name": "Thai",
+            "locale": "tha_Thai"
+          },
+          "tl": {
+            "name": "Tagalog",
+            "locale": "tgl_Latn"
+          },
+          "hi": {
+            "name": "Hindi",
+            "locale": "hin_Deva"
+          },
+          "bn": {
+            "name": "Bengali",
+            "locale": "ben_Beng"
+          },
+          "ta": {
+            "name": "Tamil",
+            "locale": "tam_Taml"
+          },
+          "te": {
+            "name": "Telugu",
+            "locale": "tel_Telu"
+          },
+          "mr": {
+            "name": "Marathi",
+            "locale": "mar_Deva"
+          },
+          "gu": {
+            "name": "Gujarati",
+            "locale": "guj_Gujr"
+          },
+          "kn": {
+            "name": "Kannada",
+            "locale": "kan_Knda"
+          },
+          "ml": {
+            "name": "Malayalam",
+            "locale": "mal_Mlym"
+          },
+          "pa": {
+            "name": "Punjabi",
+            "locale": "pan_Guru"
+          },
+          "or": {
+            "name": "Odia",
+            "locale": "ory_Orya"
+          },
+          "ur": {
+            "name": "Urdu",
+            "locale": "urd_Arab"
+          }
+        },
+        "utterances": [
+          {
+            "id": "en-0007",
+            "lang": "en",
+            "tier": "short",
+            "source_row": 7,
+            "text": "He built a WiFi door bell, he said."
+          },
+          {
+            "id": "en-0320",
+            "lang": "en",
+            "tier": "short",
+            "source_row": 320,
+            "text": "Fellow wrestlers also paid tribute to Luna."
+          },
+          {
+            "id": "en-0942",
+            "lang": "en",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "The major religion in Moldova is Orthodox Christian."
+          },
+          {
+            "id": "en-0030",
+            "lang": "en",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "The find also grants insight into the evolution of feathers in birds."
+          },
+          {
+            "id": "en-0082",
+            "lang": "en",
+            "tier": "long",
+            "source_row": 82,
+            "text": "The National Hurricane Center (NHC) says that at this point Jerry poses no threat to land."
+          },
+          {
+            "id": "en-0977",
+            "lang": "en",
+            "tier": "long",
+            "source_row": 977,
+            "text": "The main letters to watch out for are c and g, since their pronunciation varies based on the following vowel."
+          },
+          {
+            "id": "fr-0007",
+            "lang": "fr",
+            "tier": "short",
+            "source_row": 7,
+            "text": "Il dit avoir con\u00e7u une sonnette de porte Wi-Fi."
+          },
+          {
+            "id": "fr-0320",
+            "lang": "fr",
+            "tier": "short",
+            "source_row": 320,
+            "text": "Les autres lutteurs ont \u00e9galement rendu hommage \u00e0 Luna."
+          },
+          {
+            "id": "fr-0942",
+            "lang": "fr",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "La principale religion en Moldavie est le christianisme orthodoxe."
+          },
+          {
+            "id": "fr-0030",
+            "lang": "fr",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "Cette d\u00e9couverte permet \u00e9galement de mieux comprendre l'\u00e9volution des plumes chez les oiseaux."
+          },
+          {
+            "id": "fr-0082",
+            "lang": "fr",
+            "tier": "long",
+            "source_row": 82,
+            "text": "Le National Hurricane Center (NHC) affirme qu'\u00e0 ce stade, Jerry ne repr\u00e9sente aucune menace pour les terres."
+          },
+          {
+            "id": "fr-0977",
+            "lang": "fr",
+            "tier": "long",
+            "source_row": 977,
+            "text": "Les principales lettres \u00e0 surveiller sont le c et le g, car leur prononciation varie en fonction de la voyelle suivante."
+          },
+          {
+            "id": "es-0007",
+            "lang": "es",
+            "tier": "short",
+            "source_row": 7,
+            "text": "\u00c9l dijo que construy\u00f3 un timbre wifi."
+          },
+          {
+            "id": "es-0320",
+            "lang": "es",
+            "tier": "short",
+            "source_row": 320,
+            "text": "Los luchadores compa\u00f1eros de Luna tambi\u00e9n le rindieron homenaje."
+          },
+          {
+            "id": "es-0942",
+            "lang": "es",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "El cristianismo ortodoxo es la religi\u00f3n mayoritaria en Moldavia. "
+          },
+          {
+            "id": "es-0030",
+            "lang": "es",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "Asimismo, el hallazgo permite comprender mejor la evoluci\u00f3n de las plumas de las aves."
+          },
+          {
+            "id": "es-0082",
+            "lang": "es",
+            "tier": "long",
+            "source_row": 82,
+            "text": "El Centro Nacional de Huracanes (CNH) declar\u00f3 que por ahora est\u00e1 previsto que Jerry toque el suelo."
+          },
+          {
+            "id": "es-0977",
+            "lang": "es",
+            "tier": "long",
+            "source_row": 977,
+            "text": "La c y la g son las letras con las que se debe estar m\u00e1s atentos, dado que se pronuncian de diferente forma dependiendo de la vocal que les sigue."
+          },
+          {
+            "id": "de-0007",
+            "lang": "de",
+            "tier": "short",
+            "source_row": 7,
+            "text": "Er sagte, dass er eine WLAN-T\u00fcrklingel gebaut habe."
+          },
+          {
+            "id": "de-0320",
+            "lang": "de",
+            "tier": "short",
+            "source_row": 320,
+            "text": "Ringer-Kollegen zollten Luna ebenfalls Tribut."
+          },
+          {
+            "id": "de-0942",
+            "lang": "de",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "Die wichtigste Religion in Moldawien ist die christlich-orthodoxe."
+          },
+          {
+            "id": "de-0030",
+            "lang": "de",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "Der Fund gew\u00e4hrt auch Einblicke in die Evolution von Federn bei V\u00f6geln."
+          },
+          {
+            "id": "de-0082",
+            "lang": "de",
+            "tier": "long",
+            "source_row": 82,
+            "text": "Das National Hurricane Center (NHC) sagt, dass Jerry zu diesem Zeitpunkt keine Gefahr f\u00fcr die Landung darstellt."
+          },
+          {
+            "id": "de-0977",
+            "lang": "de",
+            "tier": "long",
+            "source_row": 977,
+            "text": "Die wichtigsten Buchstaben, auf die man achten muss, sind c und g, da ihre Aussprache je nach Folgevokal variiert."
+          },
+          {
+            "id": "it-0007",
+            "lang": "it",
+            "tier": "short",
+            "source_row": 7,
+            "text": "Ha detto di aver costruito un campanello Wi-Fi."
+          },
+          {
+            "id": "it-0320",
+            "lang": "it",
+            "tier": "short",
+            "source_row": 320,
+            "text": "Anche i suoi compagni di wrestling hanno voluto rendere omaggio a Luna."
+          },
+          {
+            "id": "it-0942",
+            "lang": "it",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "La religione predominante in Moldavia \u00e8 quella cristiano-ortodossa."
+          },
+          {
+            "id": "it-0030",
+            "lang": "it",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "La scoperta permette inoltre di ottenere informazioni dettagliate in merito all'evoluzione delle piume degli uccelli."
+          },
+          {
+            "id": "it-0082",
+            "lang": "it",
+            "tier": "long",
+            "source_row": 82,
+            "text": "Secondo il National Hurricane Center (NHC), Jerry a questo punto non costituisce una minaccia per la terraferma."
+          },
+          {
+            "id": "it-0977",
+            "lang": "it",
+            "tier": "long",
+            "source_row": 977,
+            "text": "Le lettere principali a cui fare attenzione sono la c e la g, dal momento che la loro pronuncia cambia in base alla vocale che segue."
+          },
+          {
+            "id": "pt-0007",
+            "lang": "pt",
+            "tier": "short",
+            "source_row": 7,
+            "text": "Ele montou uma campainha sem fio, disse."
+          },
+          {
+            "id": "pt-0320",
+            "lang": "pt",
+            "tier": "short",
+            "source_row": 320,
+            "text": "Outros lutadores tamb\u00e9m prestaram homenagem a Luna."
+          },
+          {
+            "id": "pt-0942",
+            "lang": "pt",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "A religi\u00e3o principal na Mold\u00e1via \u00e9 o cristianismo ortodoxo. "
+          },
+          {
+            "id": "pt-0030",
+            "lang": "pt",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "A descoberta tamb\u00e9m concede pistas sobre a evolu\u00e7\u00e3o das penas nas aves."
+          },
+          {
+            "id": "pt-0082",
+            "lang": "pt",
+            "tier": "long",
+            "source_row": 82,
+            "text": "O Centro Nacional de Furac\u00f5es (NHC) diz que, neste momento, Jerry n\u00e3o causa amea\u00e7as \u00e0 terra."
+          },
+          {
+            "id": "pt-0977",
+            "lang": "pt",
+            "tier": "long",
+            "source_row": 977,
+            "text": "As principais letras a serem observadas s\u00e3o o C e G, pois sua pron\u00fancia varia de acordo com a vogal a seguir."
+          },
+          {
+            "id": "nl-0007",
+            "lang": "nl",
+            "tier": "short",
+            "source_row": 7,
+            "text": "Hij zei dat hij daarop een wifi-deurbel maakte."
+          },
+          {
+            "id": "nl-0320",
+            "lang": "nl",
+            "tier": "short",
+            "source_row": 320,
+            "text": "Ook medeworstelaars brachten hulde aan Luna."
+          },
+          {
+            "id": "nl-0942",
+            "lang": "nl",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "Orthodox-christelijk is de voornaamste godsdienst in Moldavi\u00eb."
+          },
+          {
+            "id": "nl-0030",
+            "lang": "nl",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "De vondst geeft ook inzicht in de evolutie van veren bij vogels."
+          },
+          {
+            "id": "nl-0082",
+            "lang": "nl",
+            "tier": "long",
+            "source_row": 82,
+            "text": "Volgens de NHC (National Hurricane Center) levert Jerry momenteel geen gevaar voor het vasteland op."
+          },
+          {
+            "id": "nl-0977",
+            "lang": "nl",
+            "tier": "long",
+            "source_row": 977,
+            "text": "Je moet het meeste letten op de c en de g. De uitspraak daarvan is namelijk afhankelijk van de klinker die erna volgt."
+          },
+          {
+            "id": "el-0007",
+            "lang": "el",
+            "tier": "short",
+            "source_row": 7,
+            "text": "\u0395\u03af\u03c0\u03b5 \u03cc\u03c4\u03b9 \u03ad\u03c6\u03c4\u03b9\u03b1\u03be\u03b5 \u03ad\u03bd\u03b1 \u03ba\u03bf\u03c5\u03b4\u03bf\u03cd\u03bd\u03b9 \u03bc\u03b5 Wi-Fi."
+          },
+          {
+            "id": "el-0320",
+            "lang": "el",
+            "tier": "short",
+            "source_row": 320,
+            "text": "\u039f\u03b9 \u03c3\u03c5\u03bd-\u03c0\u03b1\u03bb\u03b1\u03b9\u03c3\u03c4\u03ad\u03c2 \u03b1\u03c0\u03ad\u03c4\u03b9\u03c3\u03b1\u03bd \u03c6\u03cc\u03c1\u03bf \u03c4\u03b9\u03bc\u03ae\u03c2 \u03c3\u03c4\u03b7 \u039b\u03bf\u03cd\u03bd\u03b1. "
+          },
+          {
+            "id": "el-0942",
+            "lang": "el",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "\u0397 \u03ba\u03c5\u03c1\u03af\u03b1\u03c1\u03c7\u03b7 \u03b8\u03c1\u03b7\u03c3\u03ba\u03b5\u03af\u03b1 \u03c4\u03b7\u03c2 \u039c\u03bf\u03bb\u03b4\u03b1\u03b2\u03af\u03b1\u03c2 \u03b5\u03af\u03bd\u03b1\u03b9 \u03bf \u03bf\u03c1\u03b8\u03cc\u03b4\u03bf\u03be\u03bf\u03c2 \u03c7\u03c1\u03b9\u03c3\u03c4\u03b9\u03b1\u03bd\u03b9\u03c3\u03bc\u03cc\u03c2. "
+          },
+          {
+            "id": "el-0030",
+            "lang": "el",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "\u03a4\u03bf \u03b5\u03cd\u03c1\u03b7\u03bc\u03b1 \u03c0\u03b1\u03c1\u03ad\u03c7\u03b5\u03b9 \u03b5\u03c0\u03af\u03c3\u03b7\u03c2 \u03c0\u03bb\u03b7\u03c1\u03bf\u03c6\u03bf\u03c1\u03af\u03b5\u03c2 \u03b3\u03b9\u03b1 \u03c4\u03b7\u03bd \u03b5\u03be\u03ad\u03bb\u03b9\u03be\u03b7 \u03c4\u03bf\u03c5 \u03c6\u03c4\u03b5\u03c1\u03ce\u03bc\u03b1\u03c4\u03bf\u03c2 \u03c3\u03c4\u03b1 \u03c0\u03c4\u03b7\u03bd\u03ac. "
+          },
+          {
+            "id": "el-0082",
+            "lang": "el",
+            "tier": "long",
+            "source_row": 82,
+            "text": "\u03a4\u03bf \u0395\u03b8\u03bd\u03b9\u03ba\u03cc \u039a\u03ad\u03bd\u03c4\u03c1\u03bf \u03a4\u03c5\u03c6\u03ce\u03bd\u03c9\u03bd \u03c4\u03c9\u03bd \u0397\u03a0\u0391 (NHC) \u03b1\u03bd\u03b1\u03c6\u03ad\u03c1\u03b5\u03b9 \u03c0\u03c9\u03c2 \u03bf \u03a4\u03b6\u03ad\u03c1\u03b9 \u03c3\u03b5 \u03b1\u03c5\u03c4\u03cc \u03c4\u03bf \u03c3\u03b7\u03bc\u03b5\u03af\u03bf \u03b4\u03b5\u03bd \u03b1\u03c0\u03b5\u03b9\u03bb\u03b5\u03af \u03c4\u03b7\u03bd \u03be\u03b7\u03c1\u03ac."
+          },
+          {
+            "id": "el-0977",
+            "lang": "el",
+            "tier": "long",
+            "source_row": 977,
+            "text": "\u03a4\u03b1 \u03b2\u03b1\u03c3\u03b9\u03ba\u03ac \u03b3\u03c1\u03ac\u03bc\u03bc\u03b1\u03c4\u03b1 \u03c0\u03bf\u03c5 \u03b1\u03c0\u03b1\u03b9\u03c4\u03bf\u03cd\u03bd \u03c4\u03b7\u03bd \u03c0\u03c1\u03bf\u03c3\u03bf\u03c7\u03ae \u03c3\u03b1\u03c2, \u03b5\u03af\u03bd\u03b1\u03b9 \u03c4\u03bf c \u03ba\u03b1\u03b9 \u03c4\u03bf g, \u03ba\u03b1\u03b8\u03ce\u03c2 \u03b7 \u03c0\u03c1\u03bf\u03c6\u03bf\u03c1\u03ac \u03c4\u03bf\u03c5\u03c2 \u03c0\u03bf\u03b9\u03ba\u03af\u03bb\u03bb\u03b5\u03b9 \u03b1\u03bd\u03ac\u03bb\u03bf\u03b3\u03b1 \u03bc\u03b5 \u03c4\u03bf \u03c6\u03c9\u03bd\u03ae\u03b5\u03bd \u03c0\u03bf\u03c5 \u03b1\u03ba\u03bf\u03bb\u03bf\u03c5\u03b8\u03b5\u03af. "
+          },
+          {
+            "id": "sv-0007",
+            "lang": "sv",
+            "tier": "short",
+            "source_row": 7,
+            "text": "Han ber\u00e4ttade att han hade byggt en wifi-d\u00f6rrklocka."
+          },
+          {
+            "id": "sv-0320",
+            "lang": "sv",
+            "tier": "short",
+            "source_row": 320,
+            "text": "Brottarkollegor hyllade ocks\u00e5 Luna."
+          },
+          {
+            "id": "sv-0942",
+            "lang": "sv",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "Den st\u00f6rsta religionen i Moldavien \u00e4r ortodox kristendom."
+          },
+          {
+            "id": "sv-0030",
+            "lang": "sv",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "Fyndet ger ocks\u00e5 inblick i utvecklingen av fj\u00e4drar hos f\u00e5glar."
+          },
+          {
+            "id": "sv-0082",
+            "lang": "sv",
+            "tier": "long",
+            "source_row": 82,
+            "text": "The National Hurricane Center (NHC) meddelar att Jerry inte utg\u00f6r n\u00e5got hot mot land vid denna tidpunkt."
+          },
+          {
+            "id": "sv-0977",
+            "lang": "sv",
+            "tier": "long",
+            "source_row": 977,
+            "text": "Bokst\u00e4verna att se upp med \u00e4r c och g, eftersom deras uttal varierar p\u00e5 grundval av f\u00f6ljande vokal."
+          },
+          {
+            "id": "da-0007",
+            "lang": "da",
+            "tier": "short",
+            "source_row": 7,
+            "text": "Han fortalte, at han byggede en WiFi-d\u00f8rklokke. "
+          },
+          {
+            "id": "da-0320",
+            "lang": "da",
+            "tier": "short",
+            "source_row": 320,
+            "text": "Andre brydere hyldede ogs\u00e5 Luna.  "
+          },
+          {
+            "id": "da-0942",
+            "lang": "da",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "Den st\u00f8rste religion i Moldova, er ortodoks kristendom."
+          },
+          {
+            "id": "da-0030",
+            "lang": "da",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "Fundet giver ogs\u00e5 indsigt i udviklingen af fjer hos fugle. "
+          },
+          {
+            "id": "da-0082",
+            "lang": "da",
+            "tier": "long",
+            "source_row": 82,
+            "text": "Amerikas nationale orkancenter (p\u00e5 engelsk, \"National Hurricane Center\", forkortet som NHC) mener, at orkanen Jerry ikke udg\u00f8r nogen trussel mod land p\u00e5 dette tidspunkt."
+          },
+          {
+            "id": "da-0977",
+            "lang": "da",
+            "tier": "long",
+            "source_row": 977,
+            "text": "De vigtigste bogstaver at holde \u00f8je med, er c og g, da deres udtale varierer afh\u00e6ngigt af den efterst\u00e5ende vokal. "
+          },
+          {
+            "id": "nb-0007",
+            "lang": "nb",
+            "tier": "short",
+            "source_row": 7,
+            "text": "Han laget en ringeklokke som er koblet til tr\u00e5dl\u00f8st nett, fortalte han."
+          },
+          {
+            "id": "nb-0320",
+            "lang": "nb",
+            "tier": "short",
+            "source_row": 320,
+            "text": "Andre brytere gav ogs\u00e5 en hyllest til Luna."
+          },
+          {
+            "id": "nb-0942",
+            "lang": "nb",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "Hovedreligionen i Moldova er ortodoks kristendom."
+          },
+          {
+            "id": "nb-0030",
+            "lang": "nb",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "Oppdagelsen gir i tillegg innsikt i utviklingen for fj\u00e6r hos fugler."
+          },
+          {
+            "id": "nb-0082",
+            "lang": "nb",
+            "tier": "long",
+            "source_row": 82,
+            "text": "If\u00f8lge NHC (National Hurricane Center) er ikke Jerry lenger noen trussel mot land."
+          },
+          {
+            "id": "nb-0977",
+            "lang": "nb",
+            "tier": "long",
+            "source_row": 977,
+            "text": "Hovedbokstavene man m\u00e5 v\u00e6re obs p\u00e5 er c og g, siden deres uttale er forskjellig basert p\u00e5 den f\u00f8lgende vokalen."
+          },
+          {
+            "id": "fi-0007",
+            "lang": "fi",
+            "tier": "short",
+            "source_row": 7,
+            "text": "H\u00e4n sanoi rakentaneensa Wi-Fi-ovikellon."
+          },
+          {
+            "id": "fi-0320",
+            "lang": "fi",
+            "tier": "short",
+            "source_row": 320,
+            "text": "Muut painijat osoittivat my\u00f6s kunnioitusta Lunalle."
+          },
+          {
+            "id": "fi-0942",
+            "lang": "fi",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "Moldovan p\u00e4\u00e4uskonto on ortodoksinen kristinusko."
+          },
+          {
+            "id": "fi-0030",
+            "lang": "fi",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "Lis\u00e4ksi l\u00f6yt\u00f6 auttaa ymm\u00e4rt\u00e4m\u00e4\u00e4n lintujen sulkien evoluutiota."
+          },
+          {
+            "id": "fi-0082",
+            "lang": "fi",
+            "tier": "long",
+            "source_row": 82,
+            "text": "Kansallinen hurrikaanikeskus NHC toteaa, ettei Jerry aiheuta t\u00e4ss\u00e4 vaiheessa vaaraa maalla."
+          },
+          {
+            "id": "fi-0977",
+            "lang": "fi",
+            "tier": "long",
+            "source_row": 977,
+            "text": "Kirjaimiin C ja G on syyt\u00e4 kiinnitt\u00e4\u00e4 eniten huomiota, sill\u00e4 niiden \u00e4\u00e4nt\u00e4minen riippuu seuraavasta vokaalista."
+          },
+          {
+            "id": "pl-0007",
+            "lang": "pl",
+            "tier": "short",
+            "source_row": 7,
+            "text": "Stwierdzi\u0142, \u017ce skonstruowa\u0142 dzwonek do drzwi na Wi-Fi."
+          },
+          {
+            "id": "pl-0320",
+            "lang": "pl",
+            "tier": "short",
+            "source_row": 320,
+            "text": "Tak\u017ce zapa\u015bnicy z\u0142o\u017cyli ho\u0142d Lunie."
+          },
+          {
+            "id": "pl-0942",
+            "lang": "pl",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "Prawos\u0142awie jest w Mo\u0142dawii religi\u0105 dominuj\u0105c\u0105."
+          },
+          {
+            "id": "pl-0030",
+            "lang": "pl",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "Odkrycie to rzuca tak\u017ce \u015bwiat\u0142o na ewolucj\u0119 pi\u00f3r u ptak\u00f3w."
+          },
+          {
+            "id": "pl-0082",
+            "lang": "pl",
+            "tier": "long",
+            "source_row": 82,
+            "text": "Narodowe Centrum ds. Huragan\u00f3w (NHC) utrzymuje, \u017ce wed\u0142ug stanu na dzi\u015b huragan Jerry nie jest gro\u017any dla obszar\u00f3w l\u0105dowych."
+          },
+          {
+            "id": "pl-0977",
+            "lang": "pl",
+            "tier": "long",
+            "source_row": 977,
+            "text": "Szczeg\u00f3ln\u0105 uwag\u0119 nale\u017cy zwraca\u0107 na litery \u201ec\u201d i \u201eg\u201d, gdy\u017c wymawia si\u0119 je inaczej w zale\u017cno\u015bci od samog\u0142oski, jaka po nich wyst\u0119puje."
+          },
+          {
+            "id": "cs-0007",
+            "lang": "cs",
+            "tier": "short",
+            "source_row": 7,
+            "text": "Uvedl, \u017ee vytvo\u0159il dve\u0159n\u00ed zvonek p\u0159es WiFi."
+          },
+          {
+            "id": "cs-0320",
+            "lang": "cs",
+            "tier": "short",
+            "source_row": 320,
+            "text": "Kolegov\u00e9 wrestle\u0159i tak\u00e9 vzdali Lun\u011b hold."
+          },
+          {
+            "id": "cs-0942",
+            "lang": "cs",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "Hlavn\u00edm n\u00e1bo\u017eenstv\u00edm Moldavska je ortodoxn\u00ed k\u0159es\u0165anstv\u00ed."
+          },
+          {
+            "id": "cs-0030",
+            "lang": "cs",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "Objev tak\u00e9 poskytuje n\u00e1hled do problematiky v\u00fdvoje pe\u0159\u00ed u pt\u00e1k\u016f."
+          },
+          {
+            "id": "cs-0082",
+            "lang": "cs",
+            "tier": "long",
+            "source_row": 82,
+            "text": "N\u00e1rodn\u00ed centrum pro hurik\u00e1ny (NHC) tvrd\u00ed, \u017ee v tuto chv\u00edli Jerry nep\u0159edstavuje \u017e\u00e1dnou hrozbu pro pevninu."
+          },
+          {
+            "id": "cs-0977",
+            "lang": "cs",
+            "tier": "long",
+            "source_row": 977,
+            "text": "Hlavn\u00ed p\u00edsmena, na kter\u00e9 je nutn\u00e9 d\u00e1t si pozor, jsou C a G, proto\u017ee jejich v\u00fdslovnost se li\u0161\u00ed podle samohl\u00e1sky, kter\u00e1 po nich n\u00e1sleduje."
+          },
+          {
+            "id": "sk-0007",
+            "lang": "sk",
+            "tier": "short",
+            "source_row": 7,
+            "text": "Vytvoril pod\u013ea neho WiFi zvon\u010dek na dvere."
+          },
+          {
+            "id": "sk-0320",
+            "lang": "sk",
+            "tier": "short",
+            "source_row": 320,
+            "text": "Spolubojovn\u00edci taktie\u017e vzdali \u00factu Lune."
+          },
+          {
+            "id": "sk-0942",
+            "lang": "sk",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "Hlavn\u00fdm n\u00e1bo\u017eenstvom v Moldavsku je pravosl\u00e1vne kres\u0165anstvo."
+          },
+          {
+            "id": "sk-0030",
+            "lang": "sk",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "N\u00e1lez takisto poskytuje detailn\u00fd poh\u013ead na v\u00fdvoj peria vt\u00e1kov."
+          },
+          {
+            "id": "sk-0082",
+            "lang": "sk",
+            "tier": "long",
+            "source_row": 82,
+            "text": "N\u00e1rodn\u00e9 centrum pre hurik\u00e1ny (NHC) hl\u00e1si, \u017ee Jerry v tomto momente nepredstavuje \u017eiadnu hrozbu pre krajinu."
+          },
+          {
+            "id": "sk-0977",
+            "lang": "sk",
+            "tier": "long",
+            "source_row": 977,
+            "text": "Najd\u00f4le\u017eitej\u0161ie p\u00edsmen\u00e1, na ktor\u00e9 si treba d\u00e1va\u0165 pozor, s\u00fa c a g, preto\u017ee ich v\u00fdslovnos\u0165 sa l\u00ed\u0161i v z\u00e1vislosti od nasleduj\u00facej samohl\u00e1sky."
+          },
+          {
+            "id": "hu-0007",
+            "lang": "hu",
+            "tier": "short",
+            "source_row": 7,
+            "text": "Megold\u00e1sk\u00e9nt k\u00e9sz\u00edtett egy wifis kapucseng\u0151t."
+          },
+          {
+            "id": "hu-0320",
+            "lang": "hu",
+            "tier": "short",
+            "source_row": 320,
+            "text": "A t\u00f6bbi birk\u00f3z\u00f3 szint\u00e9n tisztelgett Luna el\u0151tt."
+          },
+          {
+            "id": "hu-0942",
+            "lang": "hu",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "Moldov\u00e1ban az ortodox kereszt\u00e9nys\u00e9g a f\u0151 vall\u00e1s."
+          },
+          {
+            "id": "hu-0030",
+            "lang": "hu",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "A felfedez\u00e9s betekint\u00e9st ny\u00fajthat a madarak tollazat\u00e1nak evol\u00faci\u00f3j\u00e1ba is."
+          },
+          {
+            "id": "hu-0082",
+            "lang": "hu",
+            "tier": "long",
+            "source_row": 82,
+            "text": "A Nemzeti Hurrik\u00e1nk\u00f6zpont (NHC) szerint, ezen a ponton a Jerry nem jelent fenyeget\u00e9st a sz\u00e1razf\u00f6ldre."
+          },
+          {
+            "id": "hu-0977",
+            "lang": "hu",
+            "tier": "long",
+            "source_row": 977,
+            "text": "A f\u0151 bet\u0171k, melyekre oda kell figyelni a c \u00e9s a g, mivel ezeknek a kiejt\u00e9se az \u0151ket k\u00f6vet\u0151 mag\u00e1nhangz\u00f3t\u00f3l f\u00fcgg."
+          },
+          {
+            "id": "ro-0007",
+            "lang": "ro",
+            "tier": "short",
+            "source_row": 7,
+            "text": "A construit o sonerie de u\u0219\u0103 WiFi, a spus el."
+          },
+          {
+            "id": "ro-0320",
+            "lang": "ro",
+            "tier": "short",
+            "source_row": 320,
+            "text": "Confra\u021bii wrestleri i-au adus \u0219i ei un omagiu Lunei."
+          },
+          {
+            "id": "ro-0942",
+            "lang": "ro",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "Religia dominant\u0103 a Moldovei este cre\u0219tin-ortodoxismul."
+          },
+          {
+            "id": "ro-0030",
+            "lang": "ro",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "Descoperirea ofer\u0103 \u0219i o perspectiv\u0103 asupra modului \u00een care au evoluat penele p\u0103s\u0103rilor."
+          },
+          {
+            "id": "ro-0082",
+            "lang": "ro",
+            "tier": "long",
+            "source_row": 82,
+            "text": "Centrul Na\u021bional pentru Uragane (NHC) a declarat c\u0103 deocamdat\u0103 Jerry nu constituie o amenin\u021bare pentru uscat. "
+          },
+          {
+            "id": "ro-0977",
+            "lang": "ro",
+            "tier": "long",
+            "source_row": 977,
+            "text": "Literele la care trebuie s\u0103 fi\u021bi mai aten\u021bi sunt c \u0219i g, deoarece pronun\u021bia lor variaz\u0103 \u00een func\u021bie de vocala de dup\u0103 ele."
+          },
+          {
+            "id": "bg-0007",
+            "lang": "bg",
+            "tier": "short",
+            "source_row": 7,
+            "text": "\u0422\u043e\u0439 \u043a\u0430\u0437\u0430, \u0447\u0435 \u0435 \u0441\u044a\u0437\u0434\u0430\u043b WiFi \u0437\u0432\u044a\u043d\u0435\u0446."
+          },
+          {
+            "id": "bg-0320",
+            "lang": "bg",
+            "tier": "short",
+            "source_row": 320,
+            "text": "\u0411\u0435 \u043e\u0442\u0434\u0430\u0434\u0435\u043d\u0430 \u043f\u043e\u0447\u0438\u0442 \u043d\u0430 \u041b\u0443\u043d\u0430 \u0438 \u043e\u0442 \u043a\u043e\u043b\u0435\u0433\u0438 \u0431\u043e\u0440\u0446\u0438."
+          },
+          {
+            "id": "bg-0942",
+            "lang": "bg",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "\u041f\u0440\u0430\u0432\u043e\u0441\u043b\u0430\u0432\u043d\u043e\u0442\u043e \u0445\u0440\u0438\u0441\u0442\u0438\u044f\u043d\u0441\u0442\u0432\u043e \u0435 \u043e\u0441\u043d\u043e\u0432\u043d\u0430\u0442\u0430 \u0440\u0435\u043b\u0438\u0433\u0438\u044f \u0432 \u041c\u043e\u043b\u0434\u043e\u0432\u0430."
+          },
+          {
+            "id": "bg-0030",
+            "lang": "bg",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "\u041d\u0430\u0445\u043e\u0434\u043a\u0430\u0442\u0430 \u0441\u044a\u0449\u043e \u0442\u0430\u043a\u0430 \u0434\u0430\u0432\u0430 \u0432\u044a\u0437\u043c\u043e\u0436\u043d\u043e\u0441\u0442 \u0434\u0430 \u0441\u0435 \u0432\u043d\u0438\u043a\u043d\u0435 \u0432 \u0435\u0432\u043e\u043b\u044e\u0446\u0438\u044f\u0442\u0430 \u043d\u0430 \u043f\u0442\u0438\u0447\u0438\u0442\u0435 \u043f\u0435\u0440\u0430."
+          },
+          {
+            "id": "bg-0082",
+            "lang": "bg",
+            "tier": "long",
+            "source_row": 82,
+            "text": "\u041e\u0442 \u043d\u0430\u0446\u0438\u043e\u043d\u0430\u043b\u043d\u0438\u044f\u0442 \u0446\u0435\u043d\u0442\u044a\u0440 \u0437\u0430 \u0443\u0440\u0430\u0433\u0430\u043d\u0438 (NHC) \u0441\u044a\u043e\u0431\u0449\u0438\u0445\u0430, \u0447\u0435 \u0443\u0440\u0430\u0433\u0430\u043d\u044a\u0442 \u0414\u0436\u0435\u0440\u0438 \u043d\u0435 \u043f\u0440\u0435\u0434\u0441\u0442\u0430\u0432\u043b\u044f\u0432\u0430 \u0437\u0430\u043f\u043b\u0430\u0445\u0430 \u0437\u0430 \u0441\u0443\u0448\u0430\u0442\u0430."
+          },
+          {
+            "id": "bg-0977",
+            "lang": "bg",
+            "tier": "long",
+            "source_row": 977,
+            "text": "\u041e\u0441\u043d\u043e\u0432\u043d\u0438\u0442\u0435 \u0431\u0443\u043a\u0432\u0438, \u0437\u0430 \u043a\u043e\u0438\u0442\u043e \u0442\u0440\u044f\u0431\u0432\u0430 \u0434\u0430 \u0441\u0435 \u0432\u043d\u0438\u043c\u0430\u0432\u0430, \u0441\u0430 \u201ec\u201c \u0438 \u201eg\u201c, \u0442\u044a\u0439 \u043a\u0430\u0442\u043e \u0442\u044f\u0445\u043d\u043e\u0442\u043e \u043f\u0440\u043e\u0438\u0437\u043d\u0430\u0441\u044f\u043d\u0435 \u0432\u0430\u0440\u0438\u0440\u0430 \u0432\u044a\u0437 \u043e\u0441\u043d\u043e\u0432\u0430 \u043d\u0430 \u0441\u043b\u0435\u0434\u0432\u0430\u0449\u0430\u0442\u0430 \u0433\u043b\u0430\u0441\u043d\u0430."
+          },
+          {
+            "id": "ru-0007",
+            "lang": "ru",
+            "tier": "short",
+            "source_row": 7,
+            "text": "\u041e\u043d \u0441\u043a\u0430\u0437\u0430\u043b, \u0447\u0442\u043e \u0441\u043e\u0437\u0434\u0430\u043b \u0434\u0432\u0435\u0440\u043d\u043e\u0439 \u0437\u0432\u043e\u043d\u043e\u043a, \u0440\u0430\u0431\u043e\u0442\u0430\u044e\u0449\u0438\u0439 \u043e\u0442 WiFi."
+          },
+          {
+            "id": "ru-0320",
+            "lang": "ru",
+            "tier": "short",
+            "source_row": 320,
+            "text": "\u041a\u043e\u043b\u043b\u0435\u0433\u0438-\u0440\u0435\u0441\u0442\u043b\u0435\u0440\u044b \u0442\u043e\u0436\u0435 \u043e\u0442\u0434\u0430\u043b\u0438 \u041b\u0443\u043d\u0435 \u0434\u0430\u043d\u044c \u0443\u0432\u0430\u0436\u0435\u043d\u0438\u044f."
+          },
+          {
+            "id": "ru-0942",
+            "lang": "ru",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "\u041e\u0441\u043d\u043e\u0432\u043d\u043e\u0439 \u0440\u0435\u043b\u0438\u0433\u0438\u0435\u0439 \u0432 \u041c\u043e\u043b\u0434\u0430\u0432\u0438\u0438 \u044f\u0432\u043b\u044f\u0435\u0442\u0441\u044f \u043f\u0440\u0430\u0432\u043e\u0441\u043b\u0430\u0432\u043d\u043e\u0435 \u0445\u0440\u0438\u0441\u0442\u0438\u0430\u043d\u0441\u0442\u0432\u043e."
+          },
+          {
+            "id": "ru-0030",
+            "lang": "ru",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "\u041d\u0430\u0445\u043e\u0434\u043a\u0430 \u0442\u0430\u043a\u0436\u0435 \u043f\u043e\u0437\u0432\u043e\u043b\u044f\u0435\u0442 \u043e\u0437\u043d\u0430\u043a\u043e\u043c\u0438\u0442\u044c\u0441\u044f \u0441 \u044d\u0432\u043e\u043b\u044e\u0446\u0438\u0435\u0439 \u043f\u0435\u0440\u044c\u0435\u0432 \u0443 \u043f\u0442\u0438\u0446."
+          },
+          {
+            "id": "ru-0082",
+            "lang": "ru",
+            "tier": "long",
+            "source_row": 82,
+            "text": "\u0421\u043e\u0433\u043b\u0430\u0441\u043d\u043e \u041d\u0430\u0446\u0438\u043e\u043d\u0430\u043b\u044c\u043d\u043e\u043c\u0443 \u0443\u0440\u0430\u0433\u0430\u043d\u043d\u043e\u043c\u0443 \u0446\u0435\u043d\u0442\u0440\u0443, \u043d\u0430 \u0434\u0430\u043d\u043d\u044b\u0439 \u043c\u043e\u043c\u0435\u043d\u0442 \u0414\u0436\u0435\u0440\u0440\u0438 \u043d\u0435 \u043f\u0440\u0435\u0434\u0441\u0442\u0430\u0432\u043b\u044f\u0435\u0442 \u043d\u0438\u043a\u0430\u043a\u043e\u0439 \u0443\u0433\u0440\u043e\u0437\u044b \u043d\u0430 \u0441\u0443\u0448\u0435."
+          },
+          {
+            "id": "ru-0977",
+            "lang": "ru",
+            "tier": "long",
+            "source_row": 977,
+            "text": "\u0421\u043b\u0435\u0434\u0443\u0435\u0442 \u0431\u044b\u0442\u044c \u043e\u0441\u043e\u0431\u0435\u043d\u043d\u043e \u0432\u043d\u0438\u043c\u0430\u0442\u0435\u043b\u044c\u043d\u044b\u043c \u0441 \u0431\u0443\u043a\u0432\u0430\u043c\u0438 c \u0438 g, \u0442\u0430\u043a \u043a\u0430\u043a \u0438\u0445 \u043f\u0440\u043e\u0438\u0437\u043d\u043e\u0448\u0435\u043d\u0438\u0435 \u043c\u0435\u043d\u044f\u0435\u0442\u0441\u044f \u0432 \u0437\u0430\u0432\u0438\u0441\u0438\u043c\u043e\u0441\u0442\u0438 \u043e\u0442 \u043f\u043e\u0441\u043b\u0435\u0434\u0443\u044e\u0449\u0435\u0439 \u0433\u043b\u0430\u0441\u043d\u043e\u0439."
+          },
+          {
+            "id": "uk-0007",
+            "lang": "uk",
+            "tier": "short",
+            "source_row": 7,
+            "text": "\u0412\u0456\u043d \u0441\u043a\u0430\u0437\u0430\u0432, \u0449\u043e \u0441\u0442\u0432\u043e\u0440\u0438\u0432 \u0434\u0437\u0432\u0456\u043d\u043e\u043a \u0443 \u0434\u0432\u0435\u0440\u0456 \u0437 \u0432\u0430\u0439-\u0444\u0430\u0439."
+          },
+          {
+            "id": "uk-0320",
+            "lang": "uk",
+            "tier": "short",
+            "source_row": 320,
+            "text": "\u0411\u0456\u0439\u0446\u0456-\u043a\u043e\u043b\u0435\u0433\u0438 \u0442\u0430\u043a\u043e\u0436 \u0432\u0456\u0434\u0434\u0430\u043b\u0438 \u0448\u0430\u043d\u0443 \u041b\u0443\u043d\u0456."
+          },
+          {
+            "id": "uk-0942",
+            "lang": "uk",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "\u0413\u043e\u043b\u043e\u0432\u043d\u0430 \u0440\u0435\u043b\u0456\u0433\u0456\u044f \u041c\u043e\u043b\u0434\u043e\u0432\u0438 \u2014 \u043f\u0440\u0430\u0432\u043e\u0441\u043b\u0430\u0432\u043d\u0435 \u0445\u0440\u0438\u0441\u0442\u0438\u044f\u043d\u0441\u0442\u0432\u043e."
+          },
+          {
+            "id": "uk-0030",
+            "lang": "uk",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "\u0412\u0456\u0434\u043a\u0440\u0438\u0442\u0442\u044f \u0442\u0430\u043a \u0441\u0430\u043c\u043e \u043d\u0430\u0434\u0430\u0454 \u0440\u043e\u0437\u0443\u043c\u0456\u043d\u043d\u044f \u0435\u0432\u043e\u043b\u044e\u0446\u0456\u0457 \u043f\u0456\u0440'\u044f \u0443 \u043f\u0442\u0430\u0445\u0456\u0432."
+          },
+          {
+            "id": "uk-0082",
+            "lang": "uk",
+            "tier": "long",
+            "source_row": 82,
+            "text": "\u041d\u0430\u0446\u0456\u043e\u043d\u0430\u043b\u044c\u043d\u0438\u0439 \u0443\u0440\u0430\u0433\u0430\u043d\u043d\u0438\u0439 \u0446\u0435\u043d\u0442\u0440 (NHC) \u043f\u043e\u0432\u0456\u0434\u043e\u043c\u043b\u044f\u0454, \u0449\u043e \u043d\u0430 \u0446\u0435\u0439 \u0447\u0430\u0441 \u0414\u0436\u0435\u0440\u0440\u0456 \u043d\u0435 \u0441\u0442\u0430\u043d\u043e\u0432\u0438\u0442\u044c \u0437\u0430\u0433\u0440\u043e\u0437\u0438 \u0434\u043b\u044f \u0441\u0443\u0448\u0456. "
+          },
+          {
+            "id": "uk-0977",
+            "lang": "uk",
+            "tier": "long",
+            "source_row": 977,
+            "text": "\u041e\u0441\u043d\u043e\u0432\u043d\u0456 \u043b\u0456\u0442\u0435\u0440\u0438, \u043d\u0430 \u044f\u043a\u0456 \u0442\u0440\u0435\u0431\u0430 \u0437\u0432\u0435\u0440\u043d\u0443\u0442\u0438 \u0443\u0432\u0430\u0433\u0443, \u0446\u0435 \u0441 \u0442\u0430 g, \u043e\u0441\u043a\u0456\u043b\u044c\u043a\u0438 \u0457\u0445\u043d\u044f \u0432\u0438\u043c\u043e\u0432\u0430 \u0432\u0456\u0434\u0440\u0456\u0437\u043d\u044f\u0454\u0442\u044c\u0441\u044f \u0432 \u0437\u0430\u043b\u0435\u0436\u043d\u043e\u0441\u0442\u0456 \u0432\u0456\u0434 \u043d\u0430\u0441\u0442\u0443\u043f\u043d\u0438\u0445 \u0433\u043e\u043b\u043e\u0441\u043d\u0438\u0445."
+          },
+          {
+            "id": "tr-0007",
+            "lang": "tr",
+            "tier": "short",
+            "source_row": 7,
+            "text": "WiFi ile \u00e7al\u0131\u015fan bir kap\u0131 zili yapt\u0131\u011f\u0131n\u0131 s\u00f6yledi."
+          },
+          {
+            "id": "tr-0320",
+            "lang": "tr",
+            "tier": "short",
+            "source_row": 320,
+            "text": "G\u00fcre\u015f\u00e7i arkada\u015flar\u0131 da Luna'ya sayg\u0131lar\u0131n\u0131 sundular."
+          },
+          {
+            "id": "tr-0942",
+            "lang": "tr",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "Moldova'daki temel inan\u00e7 Ortodoks Hristiyanl\u0131\u011f\u0131d\u0131r."
+          },
+          {
+            "id": "tr-0030",
+            "lang": "tr",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "Ke\u015fif ayn\u0131 zamanda ku\u015flardaki t\u00fcylerin evrimi konusunda fikirler veriyor."
+          },
+          {
+            "id": "tr-0082",
+            "lang": "tr",
+            "tier": "long",
+            "source_row": 82,
+            "text": "Ulusal Kas\u0131rga Merkezi (NHC), Jerry'nin bu noktada kara i\u00e7in herhangi bir tehdit te\u015fkil etmedi\u011fini s\u00f6yl\u00fcyor."
+          },
+          {
+            "id": "tr-0977",
+            "lang": "tr",
+            "tier": "long",
+            "source_row": 977,
+            "text": "Telaffuzlar\u0131, sonras\u0131nda gelen sesli harfe g\u00f6re de\u011fi\u015fiklik g\u00f6sterdi\u011fi i\u00e7in dikkat edilmesi gereken temel harfler c ve g'dir."
+          },
+          {
+            "id": "ar-0007",
+            "lang": "ar",
+            "tier": "short",
+            "source_row": 7,
+            "text": "\u0642\u0627\u0644 \u0625\u0646\u0647 \u0635\u0646\u0639 \u062c\u0631\u0633 \u0628\u0627\u0628 \u064a\u0639\u0645\u0644 \u0628\u062a\u0642\u0646\u064a\u0629 \u0648\u0627\u064a \u0641\u0627\u064a."
+          },
+          {
+            "id": "ar-0320",
+            "lang": "ar",
+            "tier": "short",
+            "source_row": 320,
+            "text": "\u0643\u0645\u0627 \u0623\u062b\u0646\u0649 \u0627\u0644\u0632\u0645\u0644\u0627\u0621 \u0627\u0644\u0645\u0635\u0627\u0631\u0639\u0648\u0646 \u0639\u0644\u0649 \u0644\u0648\u0646\u0627."
+          },
+          {
+            "id": "ar-0942",
+            "lang": "ar",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "\u0627\u0644\u062f\u064a\u0627\u0646\u0629 \u0627\u0644\u0631\u0626\u064a\u0633\u064a\u0629 \u0641\u064a \"\u0645\u0648\u0644\u062f\u0648\u0641\u0627\" \u0647\u064a \u0627\u0644\u0645\u0633\u064a\u062d\u064a\u0629 \u0627\u0644\u0623\u0631\u062b\u0648\u0630\u0643\u0633\u064a\u0629."
+          },
+          {
+            "id": "ar-0030",
+            "lang": "ar",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "\u064a\u0645\u0646\u062d \u0627\u0644\u0627\u0643\u062a\u0634\u0627\u0641 \u0623\u064a\u0636\u0627\u064b \u0646\u0638\u0631\u0629 \u0639\u0644\u0649 \u062a\u0637\u0648\u0631 \u0627\u0644\u0631\u064a\u0634 \u0641\u064a \u0627\u0644\u0637\u064a\u0648\u0631."
+          },
+          {
+            "id": "ar-0082",
+            "lang": "ar",
+            "tier": "long",
+            "source_row": 82,
+            "text": "\u064a\u0642\u0648\u0644 \u0627\u0644\u0645\u0631\u0643\u0632 \u0627\u0644\u0648\u0637\u0646\u064a \u0644\u0644\u0623\u0639\u0627\u0635\u064a\u0631 (\u0627\u0644\u0645\u0631\u0643\u0632 \u0627\u0644\u0648\u0637\u0646\u064a \u0644\u0644\u0623\u0639\u0627\u0635\u064a\u0631) \u0648\u0625\u0646\u0647 \u0641\u064a \u0647\u0630\u0647 \u0627\u0644\u0645\u0631\u062d\u0644\u0629 \u0644\u0627 \u064a\u0634\u0643\u0644 \u0625\u0639\u0635\u0627\u0631 \"\u062c\u064a\u0631\u064a\" \u0623\u064a \u062a\u0647\u062f\u064a\u062f \u0644\u0644\u0623\u0631\u0636."
+          },
+          {
+            "id": "ar-0977",
+            "lang": "ar",
+            "tier": "long",
+            "source_row": 977,
+            "text": "\u0627\u0644\u0623\u062d\u0631\u0641 \u0627\u0644\u0631\u0626\u064a\u0633\u064a\u0629 \u0627\u0644\u062a\u064a \u064a\u062c\u0628 \u0623\u0646 \u0646\u062a\u0631\u0642\u0628 \u0644\u0647\u0627 \u0647\u064a c \u0648 g\u060c \u0644\u0623\u0646 \u0644\u0641\u0638\u0647\u0645\u0627 \u064a\u062e\u062a\u0644\u0641 \u0639\u0644\u0649 \u0623\u0633\u0627\u0633 \u0627\u0644\u0639\u0644\u0629 \u0627\u0644\u062a\u0627\u0644\u064a\u0629."
+          },
+          {
+            "id": "he-0007",
+            "lang": "he",
+            "tier": "short",
+            "source_row": 7,
+            "text": "\u05d4\u05d5\u05d0 \u05d1\u05e0\u05d4 \u05e4\u05e2\u05de\u05d5\u05df WiFi  \u05dc\u05d3\u05dc\u05ea, \u05db\u05da \u05d0\u05de\u05e8."
+          },
+          {
+            "id": "he-0320",
+            "lang": "he",
+            "tier": "short",
+            "source_row": 320,
+            "text": "\u05d2\u05dd \u05de\u05ea\u05d0\u05d1\u05e7\u05d9\u05dd \u05e2\u05de\u05d9\u05ea\u05d9\u05dd \u05d7\u05dc\u05e7\u05d5 \u05dc\u05dc\u05d5\u05e0\u05d4 \u05db\u05d1\u05d5\u05d3."
+          },
+          {
+            "id": "he-0942",
+            "lang": "he",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "\u05d4\u05d3\u05ea \u05d4\u05e9\u05dc\u05d8\u05ea \u05d1\u05de\u05d5\u05dc\u05d3\u05d5\u05d1\u05d4 \u05d4\u05d9\u05d0 \u05e0\u05e6\u05e8\u05d5\u05ea \u05d0\u05d5\u05e8\u05ea\u05d5\u05d3\u05d5\u05e7\u05e1\u05d9\u05ea."
+          },
+          {
+            "id": "he-0030",
+            "lang": "he",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "\u05d4\u05de\u05de\u05e6\u05d0 \u05d2\u05dd \u05e0\u05d5\u05ea\u05df \u05ea\u05d5\u05d1\u05e0\u05d5\u05ea \u05d1\u05e0\u05d5\u05d2\u05e2 \u05dc\u05d0\u05d1\u05d5\u05dc\u05d5\u05e6\u05d9\u05d4 \u05e9\u05dc \u05e0\u05d5\u05e6\u05d5\u05ea \u05d0\u05e6\u05dc \u05e6\u05d9\u05e4\u05d5\u05e8\u05d9\u05dd."
+          },
+          {
+            "id": "he-0082",
+            "lang": "he",
+            "tier": "long",
+            "source_row": 82,
+            "text": "\u05de\u05e8\u05db\u05d6 \u05d4\u05d4\u05d5\u05e8\u05d9\u05e7\u05e0\u05d9\u05dd \u05d4\u05dc\u05d0\u05d5\u05de\u05d9 (NHC) \u05de\u05d5\u05e1\u05e8 \u05db\u05d9 \u05d1\u05e9\u05dc\u05d1 \u05d6\u05d4 \u05d2'\u05e8\u05d9 \u05dc\u05d0 \u05de\u05d4\u05d5\u05d5\u05d4 \u05e1\u05db\u05e0\u05d4 \u05d1\u05d9\u05d1\u05e9\u05d4."
+          },
+          {
+            "id": "he-0977",
+            "lang": "he",
+            "tier": "long",
+            "source_row": 977,
+            "text": "\u05d4\u05d0\u05d5\u05ea\u05d9\u05d5\u05ea \u05d4\u05e2\u05d9\u05e7\u05e8\u05d9\u05d5\u05ea \u05e9\u05d9\u05e9 \u05dc\u05e9\u05d9\u05dd \u05d0\u05dc\u05d9\u05d4\u05df \u05dc\u05d1 \u05d4\u05df c \u05d5-g, \u05db\u05d9\u05d5\u05d5\u05df \u05e9\u05d4\u05d2\u05d9\u05d9\u05ea\u05df \u05de\u05e9\u05ea\u05e0\u05d4 \u05d1\u05d4\u05ea\u05d0\u05dd \u05dc\u05ea\u05e0\u05d5\u05e2\u05d4 \u05e9\u05d1\u05d0\u05d4 \u05d0\u05d7\u05e8\u05d9\u05d4\u05df."
+          },
+          {
+            "id": "ka-0007",
+            "lang": "ka",
+            "tier": "short",
+            "source_row": 7,
+            "text": "\u10db\u10d8\u10e1\u10d8 \u10d7\u10e5\u10db\u10d8\u10d7 \u10db\u10d0\u10dc WiFi-\u10e1\u10d7\u10d0\u10dc \u10d3\u10d0\u10d9\u10d0\u10d5\u10e8\u10d8\u10e0\u10d4\u10d1\u10e3\u10da\u10d8 \u10d9\u10d0\u10e0\u10d8\u10e1 \u10d6\u10d0\u10e0\u10d8 \u10e8\u10d4\u10e5\u10db\u10dc\u10d0."
+          },
+          {
+            "id": "ka-0320",
+            "lang": "ka",
+            "tier": "short",
+            "source_row": 320,
+            "text": "\u10da\u10e3\u10dc\u10d0\u10e1 \u10de\u10d0\u10e2\u10d8\u10d5\u10d8 \u10db\u10d4\u10d2\u10dd\u10d1\u10d0\u10e0\u10db\u10d0 \u10db\u10dd\u10ed\u10d8\u10d3\u10d0\u10d5\u10d4\u10d4\u10d1\u10db\u10d0\u10ea \u10db\u10d8\u10d0\u10d2\u10d4\u10e1."
+          },
+          {
+            "id": "ka-0942",
+            "lang": "ka",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "\u10db\u10dd\u10da\u10d3\u10dd\u10d5\u10d0\u10e8\u10d8 \u10db\u10d7\u10d0\u10d5\u10d0\u10e0\u10d8 \u10e1\u10d0\u10e0\u10ec\u10db\u10e3\u10dc\u10dd\u10d4\u10d1\u10d0 \u10db\u10d0\u10e0\u10d7\u10da\u10db\u10d0\u10d3\u10d8\u10d3\u10d4\u10d1\u10d4\u10da\u10d8 \u10e5\u10e0\u10d8\u10e1\u10e2\u10d8\u10d0\u10dc\u10dd\u10d1\u10d0\u10d0."
+          },
+          {
+            "id": "ka-0030",
+            "lang": "ka",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "\u10d0\u10e6\u10db\u10dd\u10e9\u10d4\u10dc\u10d0 \u10d0\u10e1\u10d4\u10d5\u10d4 \u10e1\u10d0\u10e8\u10e3\u10d0\u10da\u10d4\u10d1\u10d0\u10e1 \u10d8\u10eb\u10da\u10d4\u10d5\u10d0 \u10d9\u10d0\u10e0\u10d2\u10d0\u10d3 \u10e8\u10d4\u10d5\u10d8\u10e1\u10ec\u10d0\u10d5\u10da\u10dd\u10d7 \u10e4\u10e0\u10d8\u10dc\u10d5\u10d4\u10da\u10d4\u10d1\u10e8\u10d8 \u10d1\u10e3\u10db\u10d1\u10e3\u10da\u10d8\u10e1 \u10d4\u10d5\u10dd\u10da\u10e3\u10ea\u10d8\u10d0."
+          },
+          {
+            "id": "ka-0082",
+            "lang": "ka",
+            "tier": "long",
+            "source_row": 82,
+            "text": "\u10d0\u10e8\u10e8-\u10d8\u10e1 \u10e5\u10d0\u10e0\u10d8\u10e8\u10ee\u10da\u10d4\u10d1\u10d8\u10e1 \u10d4\u10e0\u10dd\u10d5\u10dc\u10e3\u10da\u10d8 \u10ea\u10d4\u10dc\u10e2\u10e0\u10d8\u10e1 (NHC) \u10d2\u10d0\u10dc\u10ea\u10ee\u10d0\u10d3\u10d4\u10d1\u10d8\u10d7, \u10d0\u10db \u10d3\u10e0\u10dd\u10d8\u10e1\u10d7\u10d5\u10d8\u10e1 \u10e5\u10d0\u10e0\u10d8\u10e8\u10ee\u10d0\u10da\u10d8 \u10ef\u10d4\u10e0\u10d8 \u10ee\u10db\u10d4\u10da\u10d4\u10d7\u10d8\u10e1\u10d7\u10d5\u10d8\u10e1 \u10e1\u10d0\u10e4\u10e0\u10d7\u10ee\u10d4\u10e1 \u10d0\u10e0 \u10ec\u10d0\u10e0\u10db\u10dd\u10d0\u10d3\u10d2\u10d4\u10dc\u10e1."
+          },
+          {
+            "id": "ka-0977",
+            "lang": "ka",
+            "tier": "long",
+            "source_row": 977,
+            "text": "\u10eb\u10d8\u10e0\u10d8\u10d7\u10d0\u10d3\u10d8 \u10d0\u10e1\u10dd\u10d4\u10d1\u10d8, \u10e0\u10dd\u10db\u10d4\u10da\u10e1\u10d0\u10ea \u10e3\u10dc\u10d3\u10d0 \u10db\u10d8\u10d0\u10e5\u10ea\u10d8\u10dd\u10d7 \u10e7\u10e3\u10e0\u10d0\u10d3\u10e6\u10d4\u10d1\u10d0 \u10d0\u10e0\u10d8\u10e1 c \u10d3\u10d0 g, \u10e0\u10d0\u10d3\u10d2\u10d0\u10dc \u10db\u10d8\u10e1 \u10e8\u10d4\u10db\u10d3\u10d4\u10d2 \u10db\u10d3\u10d2\u10d0\u10e0\u10d8 \u10ee\u10db\u10dd\u10d5\u10d0\u10dc\u10d8\u10d3\u10d0\u10dc \u10d2\u10d0\u10db\u10dd\u10db\u10d3\u10d8\u10dc\u10d0\u10e0\u10d4 \u10db\u10d0\u10d7\u10d8 \u10d2\u10d0\u10db\u10dd\u10d7\u10e5\u10db\u10d0 \u10d8\u10ea\u10d5\u10da\u10d4\u10d1\u10d0."
+          },
+          {
+            "id": "zh-0007",
+            "lang": "zh",
+            "tier": "short",
+            "source_row": 7,
+            "text": "\u4ed6\u79f0\uff0c\u4ed6\u5236\u4f5c\u4e86\u4e00\u4e2a WiFi \u95e8\u94c3\u3002"
+          },
+          {
+            "id": "zh-0320",
+            "lang": "zh",
+            "tier": "short",
+            "source_row": 320,
+            "text": "\u5176\u4ed6\u6454\u8de4\u9009\u624b\u4e5f\u7eb7\u7eb7\u60bc\u5ff5\u9732\u5a1c (Luna) \u3002"
+          },
+          {
+            "id": "zh-0942",
+            "lang": "zh",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "\u6469\u5c14\u591a\u74e6 (Moldova) \u7684\u4e3b\u8981\u5b97\u6559\u662f\u4e1c\u6b63\u6559\u3002"
+          },
+          {
+            "id": "zh-0030",
+            "lang": "zh",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "\u8fd9\u4e00\u53d1\u73b0\u4e5f\u6709\u52a9\u4e8e\u6df1\u5165\u4e86\u89e3\u9e1f\u7c7b\u7fbd\u6bdb\u7684\u8fdb\u5316\u3002"
+          },
+          {
+            "id": "zh-0082",
+            "lang": "zh",
+            "tier": "long",
+            "source_row": 82,
+            "text": "\u56fd\u5bb6\u98d3\u98ce\u4e2d\u5fc3 (NHC) \u8868\u793a\uff0c\u76ee\u524d\u201c\u6770\u745e\u201d\u5bf9\u9646\u5730\u6ca1\u6709\u5a01\u80c1\u3002"
+          },
+          {
+            "id": "zh-0977",
+            "lang": "zh",
+            "tier": "long",
+            "source_row": 977,
+            "text": "\u9700\u8981\u6ce8\u610f\u7684\u4e3b\u8981\u5b57\u6bcd\u662f c \u548c g\uff0c\u56e0\u4e3a\u5b83\u4eec\u7684\u53d1\u97f3\u662f\u6839\u636e\u4ee5\u4e0b\u5143\u97f3\u53d8\u5316\u7684\u3002"
+          },
+          {
+            "id": "ja-0007",
+            "lang": "ja",
+            "tier": "short",
+            "source_row": 7,
+            "text": "\u5f7c\u306fWi-Fi\u3067\u9cf4\u308b\u30c9\u30a2\u30d9\u30eb\u3092\u4f5c\u3063\u305f\u305d\u3046\u3067\u3059\u3002"
+          },
+          {
+            "id": "ja-0320",
+            "lang": "ja",
+            "tier": "short",
+            "source_row": 320,
+            "text": "\u4ef2\u9593\u306e\u30ec\u30b9\u30e9\u30fc\u305f\u3061\u3082\u30eb\u30ca\u306b\u656c\u610f\u3092\u8868\u3057\u307e\u3057\u305f\u3002"
+          },
+          {
+            "id": "ja-0942",
+            "lang": "ja",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "\u30e2\u30eb\u30c9\u30d0\u306e\u4e3b\u306a\u5b97\u6559\u306f\u6b63\u7d71\u6d3e\u30ad\u30ea\u30b9\u30c8\u6559\u3067\u3059\u3002"
+          },
+          {
+            "id": "ja-0030",
+            "lang": "ja",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "\u3053\u306e\u767a\u898b\u306f\u307e\u305f\u3001\u9ce5\u985e\u306e\u7fbd\u6bdb\u306e\u9032\u5316\u306b\u3064\u3044\u3066\u63a2\u308b\u305f\u3081\u306e\u624b\u304c\u304b\u308a\u3068\u306a\u308b\u3082\u306e\u3067\u3057\u305f\u3002"
+          },
+          {
+            "id": "ja-0082",
+            "lang": "ja",
+            "tier": "long",
+            "source_row": 82,
+            "text": "\u56fd\u7acb\u30cf\u30ea\u30b1\u30fc\u30f3\u30bb\u30f3\u30bf\u30fc (NHC) \u306b\u3088\u308c\u3070\u3001\u73fe\u6642\u70b9\u3067\u30b8\u30a7\u30ea\u30fc\u306f\u4e0a\u9678\u306e\u5371\u967a\u6027\u306f\u306a\u3044\u3068\u306e\u3053\u3068\u3067\u3059\u3002"
+          },
+          {
+            "id": "ja-0977",
+            "lang": "ja",
+            "tier": "long",
+            "source_row": 977,
+            "text": "\u767a\u97f3\u306f\u6b21\u306b\u6765\u308b\u6bcd\u97f3\u306b\u57fa\u3065\u3044\u3066\u5909\u5316\u3059\u308b\u305f\u3081\u3001\u6ce8\u610f\u3059\u308b\u3079\u304d\u4e3b\u306a\u6587\u5b57\u306fc\u3068g\u306b\u306a\u308a\u307e\u3059\u3002"
+          },
+          {
+            "id": "ko-0007",
+            "lang": "ko",
+            "tier": "short",
+            "source_row": 7,
+            "text": "\uadf8\ub294 \ubb34\uc120 \ub3c4\uc5b4\ubca8(Wi-Fi doorbell)\uc744 \ub9cc\ub4e4\uc5c8\ub2e4\uace0 \ub9d0\ud588\ub2e4."
+          },
+          {
+            "id": "ko-0320",
+            "lang": "ko",
+            "tier": "short",
+            "source_row": 320,
+            "text": "\ub2e4\ub978 \ub3d9\ub8cc \ub808\uc2ac\ub9c1 \uc120\uc218\ub4e4\ub3c4 \ub8e8\ub098\uc5d0\uac8c \uacbd\uc758\ub97c \ud45c\ud588\uc2b5\ub2c8\ub2e4."
+          },
+          {
+            "id": "ko-0942",
+            "lang": "ko",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "\ubab0\ub3c4\ubc14\uc758 \uc8fc\uc694 \uc885\uad50\ub294 \ub3d9\ubc29\uc815\uad50\uc785\ub2c8\ub2e4."
+          },
+          {
+            "id": "ko-0030",
+            "lang": "ko",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "\uadf8\ub7ec\ud55c \ubc1c\uacac\uc740 \ub610\ud55c \uc870\ub958\uc5d0 \uc788\uc5b4\uc11c \uae43\ud138\uc758 \uc9c4\ud654\uc5d0 \ub300\ud55c \ud1b5\ucc30\uc744 \uc81c\uacf5\ud55c\ub2e4."
+          },
+          {
+            "id": "ko-0082",
+            "lang": "ko",
+            "tier": "long",
+            "source_row": 82,
+            "text": "\ubbf8\uad6d \uad6d\ub9bd \ud5c8\ub9ac\ucf00\uc778 \uc13c\ud130 (NHC)\uc5d0 \uc758\ud558\uba74, \ud0dc\ud48d \uc81c\ub9ac\ub294 \ub354 \uc774\uc0c1 \uc704\ud611\uc774 \ub418\uc9c0 \uc54a\ub294\ub2e4."
+          },
+          {
+            "id": "ko-0977",
+            "lang": "ko",
+            "tier": "long",
+            "source_row": 977,
+            "text": "\uc8fc\uc758\ud574\uc57c \ud560 \uc8fc\uc694 \ubb38\uc790\ub294 c\uc640 g\uc778\ub370, \uc774\ub294 \ubc1c\uc74c\uc774 \ub4a4\uc5d0 \uc624\ub294 \ubaa8\uc74c\uc5d0 \ub530\ub77c \ub2e4\uc591\ud558\uac8c \ubcc0\ud558\uae30 \ub54c\ubb38\uc774\ub2e4."
+          },
+          {
+            "id": "vi-0007",
+            "lang": "vi",
+            "tier": "short",
+            "source_row": 7,
+            "text": "\u00d4ng \u0111\u00e3 l\u1eafp m\u00f4t chu\u00f4ng c\u1eeda WiFi, \u00f4ng cho bi\u1ebft."
+          },
+          {
+            "id": "vi-0320",
+            "lang": "vi",
+            "tier": "short",
+            "source_row": 320,
+            "text": "C\u00e1c \u0111\u00f4 v\u1eadt kh\u00e1c c\u0169ng th\u1ec3 hi\u1ec7n s\u1ef1 tri \u00e2n v\u1edbi Luna."
+          },
+          {
+            "id": "vi-0942",
+            "lang": "vi",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "T\u00f4n gi\u00e1o ch\u00ednh \u1edf Moldova l\u00e0 Ch\u00ednh th\u1ed1ng gi\u00e1o."
+          },
+          {
+            "id": "vi-0030",
+            "lang": "vi",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "Ph\u00e1t hi\u1ec7n n\u00e0y c\u0169ng mang \u0111\u1ebfn m\u1ed9t c\u00e1i nh\u00ecn s\u00e2u s\u1eafc cho s\u1ef1 ti\u1ebfn h\u00f3a \u0111\u1ed1i v\u1edbi l\u00f4ng v\u0169 c\u1ee7a c\u00e1c lo\u00e0i chim."
+          },
+          {
+            "id": "vi-0082",
+            "lang": "vi",
+            "tier": "long",
+            "source_row": 82,
+            "text": "Trung t\u00e2m B\u00e3o Qu\u1ed1c gia (NHC) cho bi\u1ebft t\u1ea1i th\u1eddi \u0111i\u1ec3m n\u00e0y c\u01a1n b\u00e3o Jerry kh\u00f4ng cho th\u1ea5y kh\u1ea3 n\u0103ng \u0111e d\u1ecda t\u1edbi \u0111\u1ea5t li\u1ec1n."
+          },
+          {
+            "id": "vi-0977",
+            "lang": "vi",
+            "tier": "long",
+            "source_row": 977,
+            "text": "Nh\u1eefng k\u00fd t\u1ef1 ch\u00ednh c\u1ea7n ph\u1ea3i c\u1ea9n th\u1eadn l\u00e0 ch\u1eef c v\u00e0 ch\u1eef g, v\u00ec c\u00e1ch ph\u00e1t \u00e2m c\u1ee7a ch\u00fang thay \u0111\u1ed5i t\u00f9y theo nguy\u00ean \u00e2m k\u1ebf ti\u1ebfp."
+          },
+          {
+            "id": "id-0007",
+            "lang": "id",
+            "tier": "short",
+            "source_row": 7,
+            "text": "Ia melakukan pembuatan bel pintu dengan teknologi WiFi, katanya. "
+          },
+          {
+            "id": "id-0320",
+            "lang": "id",
+            "tier": "short",
+            "source_row": 320,
+            "text": "Rekan-rekan pegulat pun memberikan penghormatan kepada Luna."
+          },
+          {
+            "id": "id-0942",
+            "lang": "id",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "Agama utama di Moldova adalah Kristen Ortodoks."
+          },
+          {
+            "id": "id-0030",
+            "lang": "id",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "Penemuan ini juga memberikan wawasan tentang evolusi bulu pada burung."
+          },
+          {
+            "id": "id-0082",
+            "lang": "id",
+            "tier": "long",
+            "source_row": 82,
+            "text": "Pusat Badai Nasional (NHC) menyatakan bahwa saat ini Badai Jerry tidak mengancam daratan."
+          },
+          {
+            "id": "id-0977",
+            "lang": "id",
+            "tier": "long",
+            "source_row": 977,
+            "text": "Huruf utama yang perlu diperhatikan adalah c dan g, karena pengucapannya bervariasi sesuai vokal berikut."
+          },
+          {
+            "id": "ms-0007",
+            "lang": "ms",
+            "tier": "short",
+            "source_row": 7,
+            "text": "Dia menghasilkan loceng pintu WiFi, katanya."
+          },
+          {
+            "id": "ms-0320",
+            "lang": "ms",
+            "tier": "short",
+            "source_row": 320,
+            "text": "Ahli gusti lain juga memberi penghormatan kepada Luna."
+          },
+          {
+            "id": "ms-0942",
+            "lang": "ms",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "Agama utama di Moldova ialah Kristian Ortodoks."
+          },
+          {
+            "id": "ms-0030",
+            "lang": "ms",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "Kajian juga memberi wawasan tentang evolusi bulu pelepah pada burung."
+          },
+          {
+            "id": "ms-0082",
+            "lang": "ms",
+            "tier": "long",
+            "source_row": 82,
+            "text": "Pusat Taufan Nasional (NHC) mengatakan pada masa kini Jerry tidak memberi ancaman kepada darat."
+          },
+          {
+            "id": "ms-0977",
+            "lang": "ms",
+            "tier": "long",
+            "source_row": 977,
+            "text": "Huruf-huruf utama yang perlu diperhatikan adalah c dan g, disebabkan sebutannya yang berbeza berdasarkan huruf vokal yang mengikutinya."
+          },
+          {
+            "id": "th-0007",
+            "lang": "th",
+            "tier": "short",
+            "source_row": 7,
+            "text": "\u0e40\u0e02\u0e32\u0e1a\u0e2d\u0e01\u0e27\u0e48\u0e32\u0e44\u0e14\u0e49\u0e2a\u0e23\u0e49\u0e32\u0e07\u0e01\u0e23\u0e34\u0e48\u0e07\u0e1b\u0e23\u0e30\u0e15\u0e39 WiFi \u0e02\u0e36\u0e49\u0e19\u0e21\u0e32"
+          },
+          {
+            "id": "th-0320",
+            "lang": "th",
+            "tier": "short",
+            "source_row": 320,
+            "text": "\u0e1a\u0e23\u0e23\u0e14\u0e32\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e19\u0e19\u0e31\u0e01\u0e21\u0e27\u0e22\u0e1b\u0e25\u0e49\u0e33\u0e22\u0e31\u0e07\u0e41\u0e2a\u0e14\u0e07\u0e04\u0e27\u0e32\u0e21\u0e0a\u0e37\u0e48\u0e19\u0e0a\u0e21\u0e2a\u0e23\u0e23\u0e40\u0e2a\u0e23\u0e34\u0e0d\u0e25\u0e39\u0e19\u0e48\u0e32\u0e2d\u0e35\u0e01\u0e14\u0e49\u0e27\u0e22"
+          },
+          {
+            "id": "th-0942",
+            "lang": "th",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "\u0e1b\u0e23\u0e30\u0e0a\u0e32\u0e01\u0e23\u0e43\u0e19\u0e1b\u0e23\u0e30\u0e40\u0e17\u0e28\u0e21\u0e2d\u0e25\u0e42\u0e14\u0e27\u0e32\u0e2a\u0e48\u0e27\u0e19\u0e43\u0e2b\u0e0d\u0e48\u0e40\u0e1b\u0e47\u0e19\u0e1c\u0e39\u0e49\u0e19\u0e31\u0e1a\u0e16\u0e37\u0e2d\u0e28\u0e32\u0e2a\u0e19\u0e32\u0e04\u0e23\u0e34\u0e2a\u0e15\u0e4c\u0e19\u0e34\u0e01\u0e32\u0e22\u0e2d\u0e2d\u0e23\u0e4c\u0e42\u0e18\u0e14\u0e47\u0e2d\u0e01\u0e0b\u0e4c "
+          },
+          {
+            "id": "th-0030",
+            "lang": "th",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "\u0e01\u0e32\u0e23\u0e04\u0e49\u0e19\u0e1e\u0e1a\u0e40\u0e01\u0e35\u0e48\u0e22\u0e27\u0e01\u0e31\u0e1a\u0e40\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e14\u0e31\u0e07\u0e01\u0e25\u0e48\u0e32\u0e27\u0e22\u0e31\u0e07\u0e0a\u0e48\u0e27\u0e22\u0e43\u0e2b\u0e49\u0e40\u0e2b\u0e47\u0e19\u0e27\u0e34\u0e27\u0e31\u0e12\u0e19\u0e32\u0e01\u0e32\u0e23\u0e02\u0e2d\u0e07\u0e02\u0e19\u0e19\u0e01\u0e43\u0e19\u0e40\u0e0a\u0e34\u0e07\u0e25\u0e36\u0e01\u0e2d\u0e35\u0e01\u0e14\u0e49\u0e27\u0e22"
+          },
+          {
+            "id": "th-0082",
+            "lang": "th",
+            "tier": "long",
+            "source_row": 82,
+            "text": "\u0e28\u0e39\u0e19\u0e22\u0e4c\u0e40\u0e2e\u0e2d\u0e23\u0e4c\u0e23\u0e34\u0e40\u0e04\u0e19\u0e41\u0e2b\u0e48\u0e07\u0e0a\u0e32\u0e15\u0e34 (NHC) \u0e41\u0e16\u0e25\u0e07\u0e27\u0e48\u0e32 \u0e13 \u0e02\u0e13\u0e30\u0e19\u0e35\u0e49\u0e40\u0e08\u0e2d\u0e23\u0e4c\u0e23\u0e35\u0e48\u0e44\u0e21\u0e48\u0e21\u0e35\u0e27\u0e35\u0e48\u0e41\u0e27\u0e27\u0e27\u0e48\u0e32\u0e08\u0e30\u0e40\u0e1b\u0e47\u0e19\u0e20\u0e31\u0e22\u0e04\u0e38\u0e01\u0e04\u0e32\u0e21\u0e15\u0e48\u0e2d\u0e41\u0e1c\u0e48\u0e19\u0e14\u0e34\u0e19"
+          },
+          {
+            "id": "th-0977",
+            "lang": "th",
+            "tier": "long",
+            "source_row": 977,
+            "text": "\u0e15\u0e31\u0e27\u0e1e\u0e22\u0e31\u0e0d\u0e0a\u0e19\u0e30\u0e2b\u0e25\u0e31\u0e01\u0e17\u0e35\u0e48\u0e15\u0e49\u0e2d\u0e07\u0e23\u0e30\u0e27\u0e31\u0e07\u0e43\u0e2b\u0e49\u0e14\u0e35\u0e04\u0e37\u0e2d c \u0e41\u0e25\u0e30 g \u0e40\u0e19\u0e37\u0e48\u0e2d\u0e07\u0e08\u0e32\u0e01\u0e27\u0e34\u0e18\u0e35\u0e01\u0e32\u0e23\u0e2d\u0e2d\u0e01\u0e40\u0e2a\u0e35\u0e22\u0e07\u0e08\u0e30\u0e41\u0e15\u0e01\u0e15\u0e48\u0e32\u0e07\u0e01\u0e31\u0e19\u0e2d\u0e2d\u0e01\u0e44\u0e1b\u0e15\u0e32\u0e21\u0e23\u0e39\u0e1b\u0e2a\u0e23\u0e30\u0e17\u0e35\u0e48\u0e15\u0e32\u0e21\u0e21\u0e32"
+          },
+          {
+            "id": "tl-0007",
+            "lang": "tl",
+            "tier": "short",
+            "source_row": 7,
+            "text": "Gumawa siya ng WiFi na timbre para sa pintuan, sabi niya."
+          },
+          {
+            "id": "tl-0320",
+            "lang": "tl",
+            "tier": "short",
+            "source_row": 320,
+            "text": "Pinarangalan din ng mga katulad niyang mambubuno si Luna."
+          },
+          {
+            "id": "tl-0942",
+            "lang": "tl",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "Ang pangunahing relihiyon sa Moldova ay Kristiyanong Ortodokso."
+          },
+          {
+            "id": "tl-0030",
+            "lang": "tl",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "Ang natuklasan ay nagbigay din ng pananaw sa ebolusyon ng mga balahibo sa mga ibon. "
+          },
+          {
+            "id": "tl-0082",
+            "lang": "tl",
+            "tier": "long",
+            "source_row": 82,
+            "text": "Sinabi ng Pambansang Sentro Para sa Mga Bagyo (NHC) na sa puntong ito ay walang pagbabantang panganib sa lupa ang Jerry. "
+          },
+          {
+            "id": "tl-0977",
+            "lang": "tl",
+            "tier": "long",
+            "source_row": 977,
+            "text": "Ang mga pinakaimportanteng letra na dapat bigyan ng pansin ay ang c at g, dahil ang pagbigkas sa mga ito ay nagbabago-bago depende sa kasunod na patinig."
+          },
+          {
+            "id": "hi-0007",
+            "lang": "hi",
+            "tier": "short",
+            "source_row": 7,
+            "text": "\u0909\u0928\u094d\u0939\u094b\u0902\u0928\u0947 (\u091c\u0947\u092e\u0940 \u0938\u093f\u092e\u093f\u0928\u0949\u092b\u093c) \u0915\u0939\u093e, \u0915\u093f \u0909\u0928\u094d\u0939\u094b\u0902\u0928\u0947 \u090f\u0915 \u0935\u093e\u0908\u092b\u093c\u093e\u0908 \u0921\u094b\u0930 \u092c\u0947\u0932 \u092c\u0928\u093e\u0908 \u0939\u0948."
+          },
+          {
+            "id": "hi-0320",
+            "lang": "hi",
+            "tier": "short",
+            "source_row": 320,
+            "text": "\u0932\u0942\u0928\u093e \u0915\u094b \u0938\u093e\u0925\u0940 \u092a\u0939\u0932\u0935\u093e\u0928\u094b\u0902 \u0928\u0947 \u092d\u0940 \u0936\u094d\u0930\u0926\u094d\u0927\u093e\u0902\u091c\u0932\u093f \u0926\u0940."
+          },
+          {
+            "id": "hi-0942",
+            "lang": "hi",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "\u092e\u094b\u0932\u094d\u0926\u094b\u0935\u093e \u092e\u0947\u0902 \u092a\u094d\u0930\u092e\u0941\u0916 \u0927\u0930\u094d\u092e \u0930\u0942\u0922\u093c\u093f\u0935\u093e\u0926\u0940 \u0908\u0938\u093e\u0908 \u0927\u0930\u094d\u092e \u0939\u0948\u0964"
+          },
+          {
+            "id": "hi-0030",
+            "lang": "hi",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "\u092f\u0939 \u0916\u094b\u091c \u092a\u0915\u094d\u0937\u093f\u092f\u094b\u0902 \u092e\u0947\u0902 \u092a\u0902\u0916\u094b\u0902 \u0915\u0947 \u0935\u093f\u0915\u093e\u0938 \u0915\u0940 \u092a\u0942\u0930\u0940 \u091c\u093e\u0928\u0915\u093e\u0930\u0940 \u092d\u0940 \u092a\u094d\u0930\u0926\u093e\u0928 \u0915\u0930\u0924\u0940 \u0939\u0948."
+          },
+          {
+            "id": "hi-0082",
+            "lang": "hi",
+            "tier": "long",
+            "source_row": 82,
+            "text": "\u0930\u093e\u0937\u094d\u091f\u094d\u0930\u0940\u092f \u0924\u0942\u095e\u093e\u0928 \u0915\u0947\u0902\u0926\u094d\u0930 (\u090f\u0928\u090f\u091a\u0938\u0940) \u0915\u093e \u0915\u0939\u0928\u093e \u0939\u0948 \u0915\u093f \u0907\u0938 \u0938\u092e\u092f \u091c\u0948\u0930\u0940 \u0915\u093e \u095b\u092e\u0940\u0928 \u0915\u094b \u0915\u094b\u0908 \u0916\u0924\u0930\u093e \u0928\u0939\u0940\u0902 \u0939\u0948\u0964"
+          },
+          {
+            "id": "hi-0977",
+            "lang": "hi",
+            "tier": "long",
+            "source_row": 977,
+            "text": "\u0927\u094d\u092f\u093e\u0928 \u0930\u0916\u0928\u0947 \u0935\u093e\u0932\u0947 \u092e\u0941\u0916\u094d\u092f \u0935\u0930\u094d\u0923 c \u0914\u0930 g \u0939\u0948, \u091a\u0942\u0901\u0915\u093f \u0909\u0928\u0915\u093e \u0909\u091a\u094d\u091a\u093e\u0930\u0923 \u0928\u093f\u092e\u094d\u0928 \u0938\u094d\u0935\u0930 \u0915\u0947 \u0906\u0927\u093e\u0930 \u092a\u0930 \u092d\u093f\u0928\u094d\u0928 \u0939\u094b\u0924\u093e \u0939\u0948."
+          },
+          {
+            "id": "bn-0007",
+            "lang": "bn",
+            "tier": "short",
+            "source_row": 7,
+            "text": "\u09a4\u09bf\u09a8\u09bf \u099c\u09be\u09a8\u09be\u09a8 \u09af\u09c7 \u09a4\u09bf\u09a8\u09bf \u098f\u0995\u099f\u09bf \u0993\u09af\u09bc\u09be\u0987-\u09ab\u09be\u0987 \u09a1\u09cb\u09b0 \u09ac\u09c7\u09b2 \u09a4\u09c8\u09b0\u09bf \u0995\u09b0\u09c7\u099b\u09bf\u09b2\u09c7\u09a8\u0964"
+          },
+          {
+            "id": "bn-0320",
+            "lang": "bn",
+            "tier": "short",
+            "source_row": 320,
+            "text": "\u09b8\u09b9\u0995\u09b0\u09cd\u09ae\u09c0 \u0995\u09c1\u09b8\u09cd\u09a4\u09bf\u0997\u09c0\u09b0\u09b0\u09be \u098f\u09ae\u09a8\u0995\u09bf \u09b2\u09c1\u09a8\u09be\u0995\u09c7 \u09b6\u09cd\u09b0\u09a6\u09cd\u09a7\u09be \u099c\u09be\u09a8\u09bf\u09df\u09c7\u099b\u09bf\u09b2\u0964"
+          },
+          {
+            "id": "bn-0942",
+            "lang": "bn",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "\u09ae\u09cb\u09b2\u09a1\u09cb\u09ad\u09be\u09b0 \u09aa\u09cd\u09b0\u09a7\u09be\u09a8 \u09a7\u09b0\u09cd\u09ae \u09b9\u09b2 \u0997\u09cb\u0981\u09a1\u09bc\u09be \u0996\u09cd\u09b0\u09bf\u09b8\u09cd\u099f\u09be\u09a8\u0964"
+          },
+          {
+            "id": "bn-0030",
+            "lang": "bn",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "\u0985\u09a8\u09c1\u09b8\u09a8\u09cd\u09a7\u09be\u09a8\u099f\u09bf \u09aa\u09be\u0996\u09bf\u09b0 \u09aa\u09be\u09b2\u0995\u09c7\u09b0 \u09ac\u09bf\u09ac\u09b0\u09cd\u09a4\u09a8\u09c7\u09b0  \u09ac\u09bf\u09b7\u09af\u09bc\u09c7\u0993 \u09aa\u09b0\u09bf\u099c\u09cd\u099e\u09be\u09a8 \u09a6\u09c7\u09af\u09bc"
+          },
+          {
+            "id": "bn-0082",
+            "lang": "bn",
+            "tier": "long",
+            "source_row": 82,
+            "text": "\u09a8\u09cd\u09af\u09be\u09b6\u09a8\u09be\u09b2 \u09b9\u09cd\u09af\u09be\u09b0\u09bf\u0995\u09c7\u09a8 \u09b8\u09c7\u09a8\u09cd\u099f\u09be\u09b0 (NHC) \u09ac\u09b2\u099b\u09c7 \u09af\u09c7 \u099c\u09c7\u09b0\u09bf \u09a8\u09bf\u09df\u09c7 \u098f\u0987 \u09ae\u09c1\u09b9\u09c2\u09b0\u09cd\u09a4\u09c7 \u09ad\u09c2\u09ad\u09be\u0997\u09c7 \u0995\u09cb\u09a8 \u09b8\u09a4\u09b0\u09cd\u0995\u09a4\u09be \u09a8\u09c7\u0987\u0964"
+          },
+          {
+            "id": "bn-0977",
+            "lang": "bn",
+            "tier": "long",
+            "source_row": 977,
+            "text": "\u09a8\u099c\u09b0 \u09b0\u09be\u0996\u09be\u09b0 \u09ae\u09a4 \u09aa\u09cd\u09b0\u09a7\u09be\u09a8 \u0985\u0995\u09cd\u09b7\u09b0\u0997\u09c1\u09b2\u09bf \u09b9\u09b2\u09cb c \u098f\u09ac\u0982 g \u09af\u09c7\u09b9\u09c7\u09a4\u09c1 \u09a4\u09be\u09a6\u09c7\u09b0 \u0989\u099a\u09cd\u099a\u09be\u09b0\u09a3 \u09a8\u09c0\u099a\u09c7\u09b0 \u09b8\u09cd\u09ac\u09b0\u09ac\u09b0\u09cd\u09a3\u09c7\u09b0 \u0989\u09aa\u09b0 \u09ad\u09bf\u09a4\u09cd\u09a4\u09bf \u0995\u09b0\u09c7 \u09aa\u09b0\u09bf\u09ac\u09b0\u09cd\u09a4\u09bf\u09a4 \u09b9\u09af\u09bc\u0964"
+          },
+          {
+            "id": "ta-0007",
+            "lang": "ta",
+            "tier": "short",
+            "source_row": 7,
+            "text": "\u0b85\u0bb5\u0bb0\u0bcd, \u0ba4\u0bbe\u0ba9\u0bcd \u0bb5\u0bc8\u0b83\u0baa\u0bc8 \u0b95\u0ba4\u0bb5\u0bc1 \u0b85\u0bb1\u0bbf\u0bb5\u0bbf\u0baa\u0bcd\u0baa\u0bc1 \u0bae\u0ba3\u0bbf\u0baf\u0bc8 \u0b89\u0bb0\u0bc1\u0bb5\u0bbe\u0b95\u0bcd\u0b95\u0bbf\u0baf\u0ba4\u0bbe\u0b95\u0b95\u0bcd \u0b95\u0bc2\u0bb1\u0bbf\u0ba9\u0bbe\u0bb0\u0bcd."
+          },
+          {
+            "id": "ta-0320",
+            "lang": "ta",
+            "tier": "short",
+            "source_row": 320,
+            "text": "\u0bb2\u0bc2\u0ba9\u0bbe\u0bb5\u0bc1\u0b95\u0bcd\u0b95\u0bc1\u0b9a\u0bcd \u0b9a\u0b95 \u0bae\u0bb2\u0bcd\u0baf\u0bc1\u0ba4\u0bcd\u0ba4 \u0bb5\u0bc0\u0bb0\u0bb0\u0bcd\u0b95\u0bb3\u0bc1\u0bae\u0bcd \u0b85\u0b9e\u0bcd\u0b9a\u0bb2\u0bbf \u0b9a\u0bc6\u0bb2\u0bc1\u0ba4\u0bcd\u0ba4\u0bbf\u0ba9\u0bb0\u0bcd."
+          },
+          {
+            "id": "ta-0942",
+            "lang": "ta",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "\u0bae\u0bcb\u0bb2\u0bcd\u0b9f\u0bcb\u0bb5\u0bbe\u0bb5\u0bbf\u0bb2\u0bcd \u0b89\u0bb3\u0bcd\u0bb3 \u0bae\u0bc1\u0b95\u0bcd\u0b95\u0bbf\u0baf \u0bae\u0ba4\u0bae\u0bcd \u0b86\u0bb0\u0bcd\u0ba4\u0b9f\u0bbe\u0b95\u0bcd\u0bb8\u0bcd \u0b95\u0bbf\u0bb1\u0bbf\u0bb8\u0bcd\u0ba4\u0bc1\u0bb5 \u0bae\u0ba4\u0bae\u0bcd."
+          },
+          {
+            "id": "ta-0030",
+            "lang": "ta",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "\u0b95\u0ba3\u0bcd\u0b9f\u0bc1\u0baa\u0bbf\u0b9f\u0bbf\u0baa\u0bcd\u0baa\u0bbe\u0ba9\u0ba4\u0bc1 \u0baa\u0bb1\u0bb5\u0bc8\u0b95\u0bb3\u0bbf\u0bb2\u0bcd \u0b87\u0bb1\u0b95\u0bc1\u0b95\u0bb3\u0bbf\u0ba9\u0bcd \u0baa\u0bb0\u0bbf\u0ba3\u0bbe\u0bae \u0bb5\u0bb3\u0bb0\u0bcd\u0b9a\u0bcd\u0b9a\u0bbf\u0baf\u0bc8\u0baa\u0bcd \u0baa\u0bb1\u0bcd\u0bb1\u0bbf\u0baf \u0ba8\u0bc1\u0ba3\u0bcd\u0ba3\u0bb1\u0bbf\u0bb5\u0bc8 \u0bb5\u0bb4\u0b99\u0bcd\u0b95\u0bc1\u0b95\u0bbf\u0bb1\u0ba4\u0bc1."
+          },
+          {
+            "id": "ta-0082",
+            "lang": "ta",
+            "tier": "long",
+            "source_row": 82,
+            "text": "\u0ba4\u0bc7\u0b9a\u0bbf\u0baf \u0b9a\u0bc2\u0bb1\u0bbe\u0bb5\u0bb3\u0bbf \u0bae\u0bc8\u0baf\u0bae\u0bcd (NHC) \u0b87\u0ba8\u0bcd\u0ba4 \u0ba8\u0bc7\u0bb0\u0ba4\u0bcd\u0ba4\u0bbf\u0bb2\u0bcd \u0b9c\u0bc6\u0bb0\u0bcd\u0bb0\u0bbf \u0b86\u0bb2\u0bcd \u0b8e\u0ba8\u0bcd\u0ba4 \u0b85\u0b9a\u0bcd\u0b9a\u0bc1\u0bb1\u0bc1\u0ba4\u0bcd\u0ba4\u0bb2\u0bc1\u0bae\u0bcd \u0b87\u0bb2\u0bcd\u0bb2\u0bc8 \u0b8e\u0ba9\u0bcd\u0bb1\u0bc1 \u0b95\u0bc2\u0bb1\u0bc1\u0b95\u0bbf\u0bb1\u0ba4\u0bc1."
+          },
+          {
+            "id": "ta-0977",
+            "lang": "ta",
+            "tier": "long",
+            "source_row": 977,
+            "text": "c \u0bae\u0bb1\u0bcd\u0bb1\u0bc1\u0bae\u0bcd g \u0b86\u0b95\u0bbf\u0baf \u0b8e\u0bb4\u0bc1\u0ba4\u0bcd\u0ba4\u0bc1\u0b95\u0bcd\u0b95\u0bb3\u0bcd \u0b95\u0bb5\u0ba9\u0bbf\u0b95\u0bcd\u0b95 \u0bb5\u0bc7\u0ba3\u0bcd\u0b9f\u0bbf\u0baf \u0bae\u0bc1\u0b95\u0bcd\u0b95\u0bbf\u0baf \u0b8e\u0bb4\u0bc1\u0ba4\u0bcd\u0ba4\u0bc1\u0b95\u0bcd\u0b95\u0bb3\u0bcd, \u0b85\u0bb5\u0bb1\u0bcd\u0bb1\u0bbf\u0ba9\u0bcd \u0b89\u0b9a\u0bcd\u0b9a\u0bb0\u0bbf\u0baa\u0bcd\u0baa\u0bc1, \u0baa\u0bbf\u0ba9\u0bcd\u0bb5\u0bb0\u0bc1\u0bae\u0bcd \u0bb5\u0bb5\u0bcd\u0bb5\u0bb2\u0bc8\u0baa\u0bcd \u0baa\u0bca\u0bb1\u0bc1\u0ba4\u0bcd\u0ba4\u0bc1 \u0bae\u0bbe\u0bb1\u0bc1\u0baa\u0b9f\u0bc1\u0b95\u0bbf\u0ba9\u0bcd\u0bb1\u0ba9."
+          },
+          {
+            "id": "te-0007",
+            "lang": "te",
+            "tier": "short",
+            "source_row": 7,
+            "text": "\u0c05\u0c24\u0c28\u0c41 WiFi \u0c21\u0c4b\u0c30\u0c4d \u0c2c\u0c46\u0c32\u0c4d \u0c28\u0c3f\u0c30\u0c4d\u0c2e\u0c3f\u0c02\u0c1a\u0c3e\u0c21\u0c41. \u0c05\u0c28\u0c3f \u0c1a\u0c46\u0c2a\u0c4d\u0c2a\u0c3e\u0c21\u0c41."
+          },
+          {
+            "id": "te-0320",
+            "lang": "te",
+            "tier": "short",
+            "source_row": 320,
+            "text": "\u0c24\u0c4b\u0c1f\u0c3f \u0c2e\u0c32\u0c4d\u0c32 \u0c2f\u0c41\u0c26\u0c4d\u0c27\u0c15\u0c3e\u0c30\u0c41\u0c32\u0c41 \u0c15\u0c42\u0c21\u0c3e \u0c32\u0c42\u0c28\u0c3e\u0c15\u0c41 \u0c28\u0c3f\u0c35\u0c3e\u0c33\u0c41\u0c32\u0c41 \u0c05\u0c30\u0c4d\u0c2a\u0c3f\u0c02\u0c1a\u0c3e\u0c30\u0c41."
+          },
+          {
+            "id": "te-0942",
+            "lang": "te",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "\u0c06\u0c30\u0c4d\u0c25\u0c4b\u0c21\u0c3e\u0c15\u0c4d\u0c38\u0c4d  \u0c15\u0c4d\u0c30\u0c3f\u0c38\u0c4d\u0c1f\u0c3f\u0c2f\u0c28\u0c4d \u0c2e\u0c4b\u0c32\u0c4d\u0c21\u0c4b\u0c35\u0c3e\u0c32\u0c4b \u0c2a\u0c4d\u0c30\u0c27\u0c3e\u0c28 \u0c2e\u0c24\u0c02\u0c17\u0c3e \u0c09\u0c02\u0c26\u0c3f."
+          },
+          {
+            "id": "te-0030",
+            "lang": "te",
+            "tier": "medium",
+            "source_row": 30,
+            "text": " \u0c36\u0c4b\u0c27\u0c28 \u0c15\u0c42\u0c21\u0c3e \u0c2a\u0c15\u0c4d\u0c37\u0c41\u0c32\u0c32\u0c4b \u0c08\u0c15\u0c32 \u0c2f\u0c4a\u0c15\u0c4d\u0c15 \u0c2a\u0c30\u0c3f\u0c23\u0c3e\u0c2e\u0c02\u0c2a\u0c48  \u0c32\u0c4b\u0c24\u0c41\u0c17\u0c3e \u0c24\u0c46\u0c32\u0c41\u0c38\u0c41\u0c15\u0c4b\u0c35\u0c21\u0c3e\u0c28\u0c3f\u0c15\u0c3f  \u0c35\u0c40\u0c32\u0c41 \u0c15\u0c32\u0c4d\u0c2a\u0c3f\u0c38\u0c4d\u0c24\u0c41\u0c02\u0c26\u0c3f. "
+          },
+          {
+            "id": "te-0082",
+            "lang": "te",
+            "tier": "long",
+            "source_row": 82,
+            "text": "\u0c08 \u0c38\u0c2e\u0c2f\u0c02\u0c32\u0c4b \u0c1c\u0c46\u0c30\u0c4d\u0c30\u0c40 \u0c35\u0c32\u0c4d\u0c32 \u0c2d\u0c42\u0c2e\u0c3f\u0c15\u0c3f \u0c0e\u0c1f\u0c41\u0c35\u0c02\u0c1f\u0c3f \u0c2e\u0c41\u0c2a\u0c4d\u0c2a\u0c41 \u0c32\u0c47\u0c26\u0c28\u0c3f \u0c28\u0c47\u0c37\u0c28\u0c32\u0c4d \u0c39\u0c30\u0c3f\u0c15\u0c47\u0c28\u0c4d \u0c38\u0c46\u0c02\u0c1f\u0c30\u0c4d (\u0c0e\u0c28\u0c4d\u200c\u0c39\u0c46\u0c1a\u0c4d\u200c\u0c38\u0c3f) \u0c2a\u0c47\u0c30\u0c4d\u0c15\u0c4a\u0c02\u0c26\u0c3f."
+          },
+          {
+            "id": "te-0977",
+            "lang": "te",
+            "tier": "long",
+            "source_row": 977,
+            "text": "\u0c2a\u0c4d\u0c30\u0c27\u0c3e\u0c28\u0c02\u0c17\u0c3e \u0c26\u0c43\u0c37\u0c4d\u0c1f\u0c3f \u0c38\u0c3e\u0c30\u0c3f\u0c02\u0c1a\u0c3e\u0c32\u0c4d\u0c38\u0c3f\u0c28 \u0c05\u0c15\u0c4d\u0c37\u0c30\u0c3e\u0c32\u0c41 c \u0c2e\u0c30\u0c3f\u0c2f\u0c41 g. \u0c0e\u0c02\u0c26\u0c41\u0c15\u0c02\u0c1f\u0c47, \u0c35\u0c3e\u0c1f\u0c3f \u0c2f\u0c4a\u0c15\u0c4d\u0c15 \u0c09\u0c1a\u0c4d\u0c1b\u0c3e\u0c30\u0c23, \u0c24\u0c30\u0c4d\u0c35\u0c3e\u0c24 \u0c35\u0c1a\u0c4d\u0c1a\u0c47 \u0c35\u0c4a\u0c35\u0c46\u0c32\u0c4d \u0c2e\u0c40\u0c26 \u0c06\u0c27\u0c3e\u0c30\u0c2a\u0c21\u0c3f \u0c09\u0c02\u0c1f\u0c41\u0c02\u0c26\u0c3f."
+          },
+          {
+            "id": "mr-0007",
+            "lang": "mr",
+            "tier": "short",
+            "source_row": 7,
+            "text": "\u0924\u0947 \u092e\u094d\u0939\u0923\u093e\u0932\u0947 \u0915\u0940, \u0924\u094d\u092f\u093e\u0902\u0928\u0940 WiFi \u0921\u094b\u0905\u0930 \u092c\u0947\u0932 \u092c\u0928\u0935\u0932\u0940 \u0906\u0939\u0947."
+          },
+          {
+            "id": "mr-0320",
+            "lang": "mr",
+            "tier": "short",
+            "source_row": 320,
+            "text": "\u0938\u0939 \u0915\u0941\u0938\u094d\u0924\u0940\u0917\u093f\u0930\u093e\u0902\u0928\u0940 \u0926\u0947\u0916\u0940\u0932 \u0932\u0941\u0928\u093e \u092f\u093e\u0902\u0928\u093e \u0936\u094d\u0930\u0926\u094d\u0927\u093e\u0902\u091c\u0932\u0940 \u0935\u093e\u0939\u093f\u0932\u0940."
+          },
+          {
+            "id": "mr-0942",
+            "lang": "mr",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "\u092e\u094b\u0932\u094d\u0926\u094b\u0935\u094d\u0939\u093e \u092e\u0927\u0940\u0932 \u092a\u094d\u0930\u092e\u0941\u0916 \u0927\u0930\u094d\u092e \u0911\u0930\u094d\u0925\u094b\u0921\u0949\u0915\u094d\u0938 \u0916\u094d\u0930\u093f\u0936\u094d\u091a\u0928 \u0906\u0939\u0947."
+          },
+          {
+            "id": "mr-0030",
+            "lang": "mr",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "\u0936\u094b\u0927 \u092a\u0915\u094d\u0937\u093e\u091a\u094d\u092f\u093e \u092a\u093f\u0938\u093e\u0902\u091a\u094d\u092f\u093e \u0909\u0924\u094d\u0915\u094d\u0930\u093e\u0902\u0924\u0940\u092c\u093e\u092c\u0924\u0939\u0940 \u092e\u093e\u0939\u093f\u0924\u0940 \u0926\u0947\u0924\u094b."
+          },
+          {
+            "id": "mr-0082",
+            "lang": "mr",
+            "tier": "long",
+            "source_row": 82,
+            "text": "\u0928\u0945\u0936\u0928\u0932 \u0939\u0930\u093f\u0915\u0947\u0928 \u0938\u0947\u0902\u091f\u0930 (NHC) \u091a\u0947 \u0905\u0938\u0947 \u092e\u094d\u0939\u0923\u0923\u0947 \u0906\u0939\u0947 \u0915\u0940, \u092f\u093e \u0915\u094d\u0937\u0923\u0940 \u091c\u0947\u0930\u0940\u091a\u093e \u091c\u092e\u093f\u0928\u0940\u0932\u093e \u0915\u094b\u0923\u0924\u094d\u092f\u093e\u0939\u0940 \u092a\u094d\u0930\u0915\u093e\u0930\u091a\u093e \u0927\u094b\u0915\u093e \u0928\u093e\u0939\u0940."
+          },
+          {
+            "id": "mr-0977",
+            "lang": "mr",
+            "tier": "long",
+            "source_row": 977,
+            "text": "\u0932\u0915\u094d\u0937 \u0920\u0947\u0935\u0923\u094d\u092f\u093e\u0938\u093e\u0930\u0916\u0940 \u092e\u0941\u0916\u094d\u092f \u0905\u0915\u094d\u0937\u0930\u0947 \u0938\u0940 \u0906\u0923\u093f \u091c\u0940 \u0906\u0939\u0947\u0924, \u0915\u093e\u0930\u0923 \u0924\u094d\u092f\u093e\u0902\u091a\u0947 \u0909\u091a\u094d\u091a\u093e\u0930 \u092a\u0941\u0922\u0940\u0932 \u0938\u094d\u0935\u0930\u093e\u0928\u0941\u0938\u093e\u0930 \u0935\u0947\u0917\u0935\u0947\u0917\u0933\u0947 \u0905\u0938\u0942 \u0936\u0915\u0924\u093e\u0924."
+          },
+          {
+            "id": "gu-0007",
+            "lang": "gu",
+            "tier": "short",
+            "source_row": 7,
+            "text": "\u0aa4\u0ac7\u0aae\u0aa3\u0ac7 \u0ab5\u0abe\u0a88\u0aab\u0abe\u0a88\u0aa1\u0acb\u0ab0 \u0aac\u0ac7\u0ab2 \u0aac\u0aa8\u0abe\u0ab5\u0acd\u0aaf\u0acb \u0ab9\u0aa4\u0acb, \u0a8f\u0aae \u0aa4\u0ac7\u0aae\u0aa3\u0ac7 \u0a95\u0ab9\u0acd\u0aaf\u0ac1\u0a82 \u0ab9\u0aa4\u0ac1\u0a82."
+          },
+          {
+            "id": "gu-0320",
+            "lang": "gu",
+            "tier": "short",
+            "source_row": 320,
+            "text": "\u0ab8\u0abe\u0aa5\u0ac0 \u0a95\u0ac1\u0ab8\u0acd\u0aa4\u0ac0\u0aac\u0abe\u0a9c\u0acb\u0a8f \u0aaa\u0aa3 \u0ab2\u0ac1\u0aa8\u0abe\u0aa8\u0ac7 \u0ab6\u0acd\u0ab0\u0aa6\u0acd\u0aa7\u0abe\u0a82\u0a9c\u0ab2\u0abf \u0a86\u0aaa\u0ac0 \u0ab9\u0aa4\u0ac0."
+          },
+          {
+            "id": "gu-0942",
+            "lang": "gu",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "\u0aae\u0acb\u0ab2\u0acd\u0aa1\u0acb\u0ab5\u0abe\u0aae\u0abe\u0a82 \u0aae\u0ac1\u0a96\u0acd\u0aaf \u0aa7\u0ab0\u0acd\u0aae \u0ab0\u0ac2\u0aa2\u0abf\u0a9a\u0ac1\u0ab8\u0acd\u0aa4 \u0a96\u0acd\u0ab0\u0abf\u0ab8\u0acd\u0aa4\u0ac0\u0aa7\u0ab0\u0acd\u0aae \u0a9b\u0ac7."
+          },
+          {
+            "id": "gu-0030",
+            "lang": "gu",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "\u0a86 \u0ab6\u0acb\u0aa7 \u0aaa\u0a95\u0acd\u0ab7\u0ac0\u0a93\u0aa8\u0abe \u0aaa\u0ac0\u0a9b\u0abe\u0aa8\u0ac0 \u0a89\u0aa4\u0acd\u0a95\u0acd\u0ab0\u0abe\u0a82\u0aa4\u0abf \u0aa8\u0ac0 \u0a97\u0ac2\u0aa2 \u0ab8\u0aae\u0a9c\u0aa3 \u0aaa\u0aa3 \u0a86\u0aaa\u0ac7 \u0a9b\u0ac7."
+          },
+          {
+            "id": "gu-0082",
+            "lang": "gu",
+            "tier": "long",
+            "source_row": 82,
+            "text": "\u0aa8\u0ac7\u0ab6\u0aa8\u0ab2 \u0ab9\u0ab0\u0abf\u0a95\u0ac7\u0aa8 \u0ab8\u0ac7\u0aa8\u0acd\u0a9f\u0ab0 (NHC) \u0a9c\u0aa3\u0abe\u0ab5\u0ac7 \u0a9b\u0ac7 \u0a95\u0ac7 \u0a86 \u0ab8\u0aae\u0aaf\u0ac7 \u0a9c\u0ac7\u0ab0\u0ac0 \u0a9c\u0aae\u0ac0\u0aa8 \u0aaa\u0ab0 \u0a95\u0acb\u0a88 \u0a96\u0aa4\u0ab0\u0abe\u0ab0\u0ac2\u0aaa \u0aa8\u0aa5\u0ac0."
+          },
+          {
+            "id": "gu-0977",
+            "lang": "gu",
+            "tier": "long",
+            "source_row": 977,
+            "text": "\u0aa7\u0acd\u0aaf\u0abe\u0aa8 \u0ab0\u0abe\u0a96\u0ab5\u0abe \u0aae\u0abe\u0a9f\u0ac7\u0aa8\u0abe \u0aae\u0ac1\u0a96\u0acd\u0aaf \u0a85\u0a95\u0acd\u0ab7\u0ab0\u0acb \u0ab8\u0ac0 \u0a85\u0aa8\u0ac7 \u0a9c\u0ac0 \u0a9b\u0ac7, \u0a95\u0abe\u0ab0\u0aa3 \u0a95\u0ac7 \u0aa4\u0ac7\u0aae\u0aa8\u0abe \u0a89\u0a9a\u0acd\u0a9a\u0abe\u0ab0\u0aa3 \u0aaa\u0abe\u0a9b\u0ab3\u0aa8\u0abe \u0ab8\u0acd\u0ab5\u0ab0\u0aa8\u0abe \u0a86\u0aa7\u0abe\u0ab0\u0ac7 \u0aac\u0aa6\u0ab2\u0abe\u0aaf \u0a9b\u0ac7."
+          },
+          {
+            "id": "kn-0007",
+            "lang": "kn",
+            "tier": "short",
+            "source_row": 7,
+            "text": "\u0c85\u0cb5\u0cb0\u0cc1 \u0cb5\u0cc8\u0cab\u0cc8 \u0ca1\u0ccb\u0cb0\u0ccd \u0cac\u0cc6\u0cb2\u0ccd \u0ca4\u0caf\u0cbe\u0cb0\u0cbf\u0cb8\u0cbf\u0ca6\u0ccd\u0ca6\u0cbe\u0cb0\u0cc6 \u0c8e\u0c82\u0ca6\u0cc1 \u0c85\u0cb5\u0cb0\u0cc1 \u0cb9\u0cc7\u0cb3\u0cbf\u0ca6\u0cb0\u0cc1."
+          },
+          {
+            "id": "kn-0320",
+            "lang": "kn",
+            "tier": "short",
+            "source_row": 320,
+            "text": "\u0cb8\u0cb9 \u0c95\u0cc1\u0cb8\u0ccd\u0ca4\u0cbf\u0caa\u0c9f\u0cc1\u0c97\u0cb3\u0cc1 \u0cb8\u0cb9 \u0cb2\u0cc2\u0ca8\u0cbe \u0c85\u0cb5\u0cb0\u0cbf\u0c97\u0cc6 \u0c97\u0ccc\u0cb0\u0cb5 \u0cb8\u0cb2\u0ccd\u0cb2\u0cbf\u0cb8\u0cbf\u0ca6\u0cb0\u0cc1."
+          },
+          {
+            "id": "kn-0942",
+            "lang": "kn",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "\u0cae\u0cca\u0cb2\u0ccd\u0ca1\u0cca\u0cb5\u0cbe\u0ca6\u0cb2\u0ccd\u0cb2\u0cbf\u0ca8 \u0cae\u0cc1\u0c96\u0ccd\u0caf \u0ca7\u0cb0\u0ccd\u0cae \u0c86\u0cb0\u0ccd\u0ca5\u0cca\u0ca1\u0cbe\u0c95\u0ccd\u0cb8\u0ccd \u0c95\u0ccd\u0cb0\u0cbf\u0cb6\u0ccd\u0c9a\u0cbf\u0caf\u0ca8\u0ccd \u0c86\u0c97\u0cbf\u0ca6\u0cc6."
+          },
+          {
+            "id": "kn-0030",
+            "lang": "kn",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "\u0c86\u0cb5\u0cbf\u0cb7\u0ccd\u0c95\u0cbe\u0cb0\u0cb5\u0cc1 \u0caa\u0c95\u0ccd\u0cb7\u0cbf \u0c97\u0cb0\u0cbf\u0c97\u0cb3 \u0cb5\u0cbf\u0c95\u0cbe\u0cb8\u0ca6 \u0c92\u0cb3\u0ca8\u0ccb\u0c9f\u0cb5\u0ca8\u0ccd\u0ca8\u0cc1 \u0cb8\u0cb9 \u0ca8\u0cc0\u0ca1\u0cc1\u0ca4\u0ccd\u0ca4\u0ca6\u0cc6."
+          },
+          {
+            "id": "kn-0082",
+            "lang": "kn",
+            "tier": "long",
+            "source_row": 82,
+            "text": "\u0c88 \u0cb8\u0cae\u0caf\u0ca6\u0cb2\u0ccd\u0cb2\u0cbf \u0c9c\u0cc6\u0cb0\u0ccd\u0cb0\u0cbf \u0c9a\u0c82\u0ca1\u0cae\u0cbe\u0cb0\u0cc1\u0ca4\u0ca6\u0cbf\u0c82\u0ca6 \u0cad\u0cc2\u0cae\u0cbf\u0c97\u0cc6 \u0caf\u0cbe\u0cb5\u0cc1\u0ca6\u0cc7 \u0c86\u0ca4\u0c82\u0c95\u0cb5\u0cbf\u0cb2\u0ccd\u0cb2 \u0c8e\u0c82\u0ca6\u0cc1 \u0cb0\u0cbe\u0cb7\u0ccd\u0c9f\u0ccd\u0cb0\u0cc0\u0caf \u0c9a\u0c82\u0ca1\u0cae\u0cbe\u0cb0\u0cc1\u0ca4 \u0c95\u0cc7\u0c82\u0ca6\u0ccd\u0cb0 (NHC) \u0cb9\u0cc7\u0cb3\u0cc1\u0ca4\u0ccd\u0ca4\u0ca6\u0cc6."
+          },
+          {
+            "id": "kn-0977",
+            "lang": "kn",
+            "tier": "long",
+            "source_row": 977,
+            "text": "\u0c97\u0cae\u0ca8\u0cbf\u0cb8\u0cac\u0cc7\u0c95\u0cbe\u0ca6 \u0cae\u0cc1\u0c96\u0ccd\u0caf \u0c85\u0c95\u0ccd\u0cb7\u0cb0\u0c97\u0cb3\u0cc1 c \u0cae\u0ca4\u0ccd\u0ca4\u0cc1 g, \u0c8f\u0c95\u0cc6\u0c82\u0ca6\u0cb0\u0cc6 \u0c85\u0cb5\u0cc1\u0c97\u0cb3 \u0c89\u0c9a\u0ccd\u0c9a\u0cbe\u0cb0\u0ca3\u0cc6\u0caf\u0cc1 \u0c88 \u0cb8\u0ccd\u0cb5\u0cb0\u0cb5\u0ca8\u0ccd\u0ca8\u0cc1 \u0c86\u0ca7\u0cb0\u0cbf\u0cb8\u0cbf \u0cac\u0ca6\u0cb2\u0cbe\u0c97\u0cc1\u0ca4\u0ccd\u0ca4\u0ca6\u0cc6."
+          },
+          {
+            "id": "ml-0007",
+            "lang": "ml",
+            "tier": "short",
+            "source_row": 7,
+            "text": "\u0d05\u0d26\u0d4d\u0d26\u0d47\u0d39\u0d02 \u0d12\u0d30\u0d41 WiFi \u0d21\u0d4b\u0d7c \u0d2c\u0d46\u0d7d \u0d09\u0d23\u0d4d\u0d1f\u0d3e\u0d15\u0d4d\u0d15\u0d3f\u0d2f\u0d46\u0d28\u0d4d\u0d28\u0d4d \u0d05\u0d35\u0d7b \u0d2a\u0d31\u0d1e\u0d4d\u0d1e\u0d41."
+          },
+          {
+            "id": "ml-0320",
+            "lang": "ml",
+            "tier": "short",
+            "source_row": 320,
+            "text": "\u0d38\u0d39 \u0d17\u0d41\u0d38\u0d4d\u0d24\u0d3f\u0d15\u0d4d\u0d15\u0d3e\u0d30\u0d41\u0d02 \u0d32\u0d42\u0d23\u0d2f\u0d4d\u0d15\u0d4d\u0d15\u0d4d \u0d06\u0d26\u0d30\u0d3e\u0d1e\u0d4d\u0d1c\u0d32\u0d3f\u0d15\u0d7e \u0d05\u0d7c\u0d2a\u0d4d\u0d2a\u0d3f\u0d1a\u0d4d\u0d1a\u0d41."
+          },
+          {
+            "id": "ml-0942",
+            "lang": "ml",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "\u0d2e\u0d4b\u0d7d\u0d26\u0d4b\u0d35\u0d2f\u0d3f\u0d32\u0d46 \u0d2a\u0d4d\u0d30\u0d27\u0d3e\u0d28 \u0d2e\u0d24\u0d02 \u0d13\u0d7c\u0d24\u0d4d\u0d24\u0d21\u0d4b\u0d15\u0d4d\u0d38\u0d4d \u0d15\u0d4d\u0d30\u0d3f\u0d38\u0d4d\u0d24\u0d4d\u0d2f\u0d28\u0d3e\u0d23\u0d4d."
+          },
+          {
+            "id": "ml-0030",
+            "lang": "ml",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "\u0d08 \u0d15\u0d23\u0d4d\u0d1f\u0d41\u0d2a\u0d3f\u0d1f\u0d3f\u0d24\u0d4d\u0d24\u0d02 \u0d2a\u0d15\u0d4d\u0d37\u0d3f\u0d15\u0d33\u0d3f\u0d32\u0d46 \u0d24\u0d42\u0d35\u0d32\u0d41\u0d15\u0d33\u0d41\u0d1f\u0d46 \u0d09\u0d7d\u0d2d\u0d35\u0d24\u0d4d\u0d24\u0d3f\u0d32\u0d47\u0d15\u0d4d\u0d15\u0d4d \u0d35\u0d46\u0d33\u0d3f\u0d1a\u0d4d\u0d1a\u0d02 \u0d35\u0d40\u0d36\u0d3f."
+          },
+          {
+            "id": "ml-0082",
+            "lang": "ml",
+            "tier": "long",
+            "source_row": 82,
+            "text": "\u0d1c\u0d46\u0d31\u0d3f \u0d28\u0d3f\u0d32\u0d35\u0d3f\u0d7d \u0d15\u0d30\u0d2f\u0d4d\u0d15\u0d4d\u0d15\u0d4d \u0d12\u0d30\u0d41 \u0d2d\u0d40\u0d37\u0d23\u0d3f\u0d2f\u0d41\u0d02 \u0d09\u0d23\u0d4d\u0d1f\u0d3e\u0d15\u0d4d\u0d15\u0d41\u0d28\u0d4d\u0d28\u0d3f\u0d32\u0d4d\u0d32\u0d46\u0d28\u0d4d\u0d28\u0d4d \u0d26\u0d47\u0d36\u0d40\u0d2f \u0d1a\u0d41\u0d34\u0d32\u0d3f\u0d15\u0d4d\u0d15\u0d3e\u0d31\u0d4d\u0d31\u0d4d \u0d15\u0d47\u0d28\u0d4d\u0d26\u0d4d\u0d30\u0d02 (\u0d0e\u0d7b\u200c\u0d0e\u0d1a\u0d4d\u0d1a\u0d4d\u200c\u0d38\u0d3f) \u0d2a\u0d31\u0d2f\u0d41\u0d28\u0d4d\u0d28\u0d41."
+          },
+          {
+            "id": "ml-0977",
+            "lang": "ml",
+            "tier": "long",
+            "source_row": 977,
+            "text": "\u0d28\u0d3f\u0d30\u0d40\u0d15\u0d4d\u0d37\u0d3f\u0d15\u0d4d\u0d15\u0d47\u0d23\u0d4d\u0d1f \u0d05\u0d15\u0d4d\u0d37\u0d30\u0d19\u0d4d\u0d19\u0d7e \u0d38\u0d3f, \u0d1c\u0d3f \u0d0e\u0d28\u0d4d\u0d28\u0d3f\u0d35\u0d2f\u0d3e\u0d23\u0d4d, \u0d15\u0d3e\u0d30\u0d23\u0d02 \u0d05\u0d35\u0d2f\u0d41\u0d1f\u0d46 \u0d09\u0d1a\u0d4d\u0d1a\u0d3e\u0d30\u0d23\u0d02 \u0d05\u0d24\u0d4d \u0d15\u0d34\u0d3f\u0d1e\u0d4d\u0d1e\u0d4d \u0d35\u0d30\u0d41\u0d28\u0d4d\u0d28 \u0d38\u0d4d\u0d35\u0d30\u0d3e\u0d15\u0d4d\u0d37\u0d30\u0d24\u0d4d\u0d24\u0d3f\u0d28\u0d46 \u0d05\u0d1f\u0d3f\u0d38\u0d4d\u0d25\u0d3e\u0d28\u0d2e\u0d3e\u0d15\u0d4d\u0d15\u0d3f\u0d2f\u0d3e\u0d23\u0d4d."
+          },
+          {
+            "id": "pa-0007",
+            "lang": "pa",
+            "tier": "short",
+            "source_row": 7,
+            "text": "\u0a09\u0a38\u0a28\u0a47 \u0a15\u0a3f\u0a39\u0a3e, \u0a09\u0a38\u0a28\u0a47 \u0a07\u0a71\u0a15 \u0a35\u0a3e\u0a08-\u0a2b\u0a3e\u0a08 \u0a21\u0a4b\u0a30 \u0a2c\u0a48\u0a71\u0a32 \u0a2c\u0a23\u0a3e\u0a08 \u0a39\u0a48\u0964"
+          },
+          {
+            "id": "pa-0320",
+            "lang": "pa",
+            "tier": "short",
+            "source_row": 320,
+            "text": "\u0a38\u0a3e\u0a25\u0a40 \u0a2a\u0a39\u0a3f\u0a32\u0a35\u0a3e\u0a28\u0a3e\u0a02 \u0a28\u0a47 \u0a35\u0a40 \u0a32\u0a41\u0a28\u0a3e \u0a28\u0a42\u0a70 \u0a36\u0a30\u0a27\u0a3e\u0a02\u0a1c\u0a32\u0a40 \u0a2d\u0a47\u0a1f \u0a15\u0a40\u0a24\u0a40\u0964"
+          },
+          {
+            "id": "pa-0942",
+            "lang": "pa",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "\u0a2e\u0a4b\u0a32\u0a26\u0a4b\u0a35\u0a3e \u0a26\u0a3e \u0a35\u0a71\u0a21\u0a3e \u0a27\u0a30\u0a2e \u0a15\u0a71\u0a1f\u0a5c \u0a08\u0a38\u0a3e\u0a08 \u0a27\u0a30\u0a2e \u0a39\u0a48\u0964"
+          },
+          {
+            "id": "pa-0030",
+            "lang": "pa",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "\u0a07\u0a39 \u0a1c\u0a3e\u0a23\u0a15\u0a3e\u0a30\u0a40 \u0a2a\u0a70\u0a1b\u0a40\u0a06\u0a02 \u0a26\u0a47 \u0a16\u0a70\u0a2d\u0a3e\u0a02 \u0a2c\u0a3e\u0a30\u0a47 \u0a35\u0a40 \u0a38\u0a42\u0a1d \u0a2a\u0a4d\u0a30\u0a26\u0a3e\u0a28 \u0a15\u0a30\u0a26\u0a40 \u0a39\u0a48\u0964"
+          },
+          {
+            "id": "pa-0082",
+            "lang": "pa",
+            "tier": "long",
+            "source_row": 82,
+            "text": "\u0a28\u0a48\u0a36\u0a28\u0a32 \u0a39\u0a30\u0a40\u0a15\u0a47\u0a28 \u0a38\u0a48\u0a02\u0a1f\u0a30 (\u0a10\u0a28.\u0a10\u0a1a.\u0a38\u0a40.) \u0a26\u0a3e \u0a15\u0a39\u0a3f\u0a23\u0a3e \u0a39\u0a48 \u0a15\u0a3f \u0a07\u0a38 \u0a38\u0a2e\u0a47\u0a02 \u0a1c\u0a48\u0a30\u0a40 \u0a24\u0a4b\u0a02 \u0a38\u0a3e\u0a28\u0a42\u0a70 \u0a07\u0a38 \u0a16\u0a47\u0a24\u0a30 \u0a35\u0a3f\u0a71\u0a1a \u0a15\u0a4b\u0a08 \u0a16\u0a24\u0a30\u0a3e \u0a28\u0a39\u0a40\u0a02 \u0a39\u0a48\u0964"
+          },
+          {
+            "id": "pa-0977",
+            "lang": "pa",
+            "tier": "long",
+            "source_row": 977,
+            "text": "\u0a2e\u0a41\u0a71\u0a16 \u0a05\u0a71\u0a16\u0a30 \u0a38\u0a40 \u0a05\u0a24\u0a47 \u0a1c\u0a40 \u0a26\u0a47\u0a16\u0a23 \u0a32\u0a08 \u0a39\u0a41\u0a70\u0a26\u0a47 \u0a39\u0a28, \u0a15\u0a3f\u0a09\u0a02\u0a15\u0a3f \u0a07\u0a39\u0a28\u0a3e\u0a02 \u0a26\u0a3e \u0a09\u0a1a\u0a3e\u0a30\u0a28 \u0a39\u0a47\u0a20\u0a3e\u0a02 \u0a26\u0a3f\u0a71\u0a24\u0a47 \u0a38\u0a35\u0a30-\u0a05\u0a71\u0a16\u0a30\u0a3e\u0a02 \u0a26\u0a47 \u0a06\u0a27\u0a3e\u0a30 '\u0a24\u0a47 \u0a35\u0a71\u0a16-\u0a35\u0a71\u0a16 \u0a39\u0a41\u0a70\u0a26\u0a3e \u0a39\u0a48\u0964"
+          },
+          {
+            "id": "or-0007",
+            "lang": "or",
+            "tier": "short",
+            "source_row": 7,
+            "text": "\u0b38\u0b47 \u0b71\u0b3e\u0b07\u0b2b\u0b3e\u0b07 \u0b21\u0b4b\u0b30\u0b4d \u0b2c\u0b47\u0b32\u0b4d \u0b28\u0b3f\u0b30\u0b4d\u0b2e\u0b3e\u0b23 \u0b15\u0b30\u0b3f\u0b25\u0b3f\u0b2c\u0b3e \u0b15\u0b39\u0b3f\u0b1b\u0b28\u0b4d\u0b24\u0b3f\u0964"
+          },
+          {
+            "id": "or-0320",
+            "lang": "or",
+            "tier": "short",
+            "source_row": 320,
+            "text": "\u0b38\u0b3e\u0b25\u0b40 \u0b15\u0b41\u0b38\u0b4d\u0b24\u0b3f\u0b2f\u0b4b\u0b26\u0b4d\u0b27\u0b3e\u0b2e\u0b3e\u0b28\u0b47 \u0b2e\u0b27\u0b4d\u0b5f \u0b32\u0b41\u0b28\u0b3e\u0b19\u0b4d\u0b15\u0b41 \u0b36\u0b4d\u0b30\u0b26\u0b4d\u0b27\u0b3e\u0b1e\u0b4d\u0b1c\u0b33\u0b3f \u0b05\u0b30\u0b4d\u0b2a\u0b23 \u0b15\u0b30\u0b3f\u0b25\u0b3f\u0b32\u0b47\u0964"
+          },
+          {
+            "id": "or-0942",
+            "lang": "or",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "\u0b30\u0b15\u0b4d\u0b37\u0b23\u0b36\u0b40\u0b33 \u0b16\u0b4d\u0b30\u0b40\u0b37\u0b4d\u0b1f\u0b3f\u0b06\u0b28 \u0b27\u0b30\u0b4d\u0b2e, \u0b2e\u0b4b\u0b32\u0b21\u0b4b\u0b2d\u0b3e\u0b30 \u0b2e\u0b41\u0b16\u0b4d\u0b5f \u0b27\u0b30\u0b4d\u0b2e \u0b05\u0b1f\u0b47\u0964"
+          },
+          {
+            "id": "or-0030",
+            "lang": "or",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "\u0b0f\u0b39\u0b3f \u0b06\u0b2c\u0b3f\u0b37\u0b4d\u0b15\u0b3e\u0b30 \u0b2a\u0b15\u0b4d\u0b37\u0b40\u0b2e\u0b3e\u0b28\u0b19\u0b4d\u0b15 \u0b36\u0b30\u0b40\u0b30\u0b30\u0b47 \u0b2a\u0b30\u0b30 \u0b15\u0b4d\u0b30\u0b2e\u0b2c\u0b3f\u0b15\u0b3e\u0b36 \u0b2c\u0b3f\u0b37\u0b5f\u0b30\u0b47 \u0b2e\u0b27\u0b4d\u0b5f \u0b05\u0b28\u0b4d\u0b24\u0b30\u0b4d\u0b26\u0b43\u0b37\u0b4d\u0b1f\u0b3f \u0b2a\u0b4d\u0b30\u0b26\u0b3e\u0b28 \u0b15\u0b30\u0b47\u0964"
+          },
+          {
+            "id": "or-0082",
+            "lang": "or",
+            "tier": "long",
+            "source_row": 82,
+            "text": "\u0b1c\u0b3e\u0b24\u0b40\u0b5f \u0b18\u0b42\u0b30\u0b4d\u0b23\u0b4d\u0b23\u0b3f\u0b2c\u0b33\u0b5f \u0b15\u0b47\u0b28\u0b4d\u0b26\u0b4d\u0b30 (NHC) \u0b15\u0b39\u0b3f\u0b1b\u0b3f \u0b2f\u0b47, \u0b0f\u0b39\u0b3f \u0b38\u0b2e\u0b5f\u0b30\u0b47 \u0b1c\u0b47\u0b30\u0b40 \u0b05\u0b2c\u0b24\u0b30\u0b23 \u0b15\u0b32\u0b47 \u0b15\u0b4c\u0b23\u0b38\u0b3f \u0b2c\u0b3f\u0b2a\u0b26 \u0b28\u0b3e\u0b39\u0b3f\u0b01\u0964"
+          },
+          {
+            "id": "or-0977",
+            "lang": "or",
+            "tier": "long",
+            "source_row": 977,
+            "text": "\u0b27\u0b4d\u0b5f\u0b3e\u0b28 \u0b26\u0b47\u0b2c\u0b3e \u0b2a\u0b3e\u0b07\u0b01 \u0b2e\u0b41\u0b16\u0b4d\u0b5f \u0b05\u0b15\u0b4d\u0b37\u0b30\u0b17\u0b41\u0b21\u0b3c\u0b3f\u0b15 \u0b39\u0b47\u0b09\u0b1b\u0b3f c \u0b0f\u0b2c\u0b02 g, \u0b2f\u0b47\u0b39\u0b47\u0b24\u0b41 \u0b38\u0b47\u0b2e\u0b3e\u0b28\u0b19\u0b4d\u0b15\u0b30 \u0b09\u0b1a\u0b4d\u0b1a\u0b3e\u0b30\u0b23 \u0b28\u0b3f\u0b2e\u0b4d\u0b28 \u0b38\u0b4d\u0b35\u0b30 \u0b09\u0b2a\u0b30\u0b47 \u0b06\u0b27\u0b3e\u0b30 \u0b15\u0b30\u0b3f \u0b2d\u0b3f\u0b28\u0b4d\u0b28 \u0b39\u0b4b\u0b07\u0b25\u0b3e\u0b0f\u0964"
+          },
+          {
+            "id": "ur-0007",
+            "lang": "ur",
+            "tier": "short",
+            "source_row": 7,
+            "text": "\u0627\u0633 \u0646\u06d2 \u06a9\u06c1\u0627 \u06a9\u06c1 \u0627\u0633 \u0646\u06d2 \u0627\u06cc\u06a9 \u0648\u0627\u0626\u06cc \u0641\u0627\u0626\u06cc \u0688\u0648\u0631 \u0628\u06cc\u0644 \u0627\u062e\u062a\u0631\u0627\u0639 \u06a9\u06cc\u0627 \u06c1\u06d2\u06d4"
+          },
+          {
+            "id": "ur-0320",
+            "lang": "ur",
+            "tier": "short",
+            "source_row": 320,
+            "text": "\u0633\u0627\u062a\u06be\u06cc \u067e\u06c1\u0644\u0648\u0627\u0646\u0648\u06ba \u0646\u06d2 \u0628\u06be\u06cc \u0644\u0648\u0646\u0627 \u06a9\u0648 \u062e\u0631\u0627\u062c\u0650 \u0639\u0642\u06cc\u062f\u062a \u067e\u06cc\u0634 \u06a9\u06cc\u0627\u06d4"
+          },
+          {
+            "id": "ur-0942",
+            "lang": "ur",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "\u0645\u0648\u0644\u0688\u0648\u0627 \u06a9\u0627 \u0633\u0628 \u0633\u06d2 \u0628\u0691\u0627 \u0645\u0630\u06c1\u0628 \u06a9\u0679\u0631 \u0639\u06cc\u0633\u0627\u0626\u06cc\u062a \u06c1\u06d2\u06d4"
+          },
+          {
+            "id": "ur-0030",
+            "lang": "ur",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "\u06cc\u06c1 \u062a\u062d\u0642\u06cc\u0642 \u067e\u0631\u0646\u062f\u0648\u06ba \u0645\u06cc\u06ba \u067e\u0631\u0648\u06ba \u06a9\u06d2 \u0627\u0631\u062a\u0642\u0627\u0621 \u06a9\u0627 \u0627\u062f\u0631\u0627\u06a9 \u0628\u06be\u06cc \u0641\u0631\u0627\u06c1\u0645 \u06a9\u0631\u062a\u06cc \u06c1\u06d2\u06d4"
+          },
+          {
+            "id": "ur-0082",
+            "lang": "ur",
+            "tier": "long",
+            "source_row": 82,
+            "text": "\u0646\u06cc\u0634\u0646\u0644 \u06c1\u0631\u06cc\u06a9\u06cc\u0646 \u0633\u06cc\u0646\u0679\u0631 (\u0627\u06cc\u0646 \u0627\u06cc\u0686 \u0633\u06cc) \u06a9\u06c1\u062a\u0627 \u06c1\u06d2 \u06a9\u06c1 \u0627\u0633 \u0645\u0648\u0642\u0639 \u067e\u0631 \u062c\u06cc\u0631\u06cc\u060c \u0632\u0645\u06cc\u0646 \u06a9\u06d2 \u0644\u06cc\u06d2 \u06a9\u0633\u06cc \u062e\u0637\u0631\u06d2 \u06a9\u0627 \u0628\u0627\u0639\u062b \u0646\u06c1\u06cc\u06ba\u06d4"
+          },
+          {
+            "id": "ur-0977",
+            "lang": "ur",
+            "tier": "long",
+            "source_row": 977,
+            "text": "\u0648\u06c1 \u062e\u0627\u0635 \u062d\u0631\u0648\u0641 \u062c\u0646 \u067e\u0631 \u062f\u06be\u06cc\u0627\u0646 \u0631\u06a9\u06be\u0646\u0627 \u0686\u0627\u06c1\u0626\u06d2 \u0648\u06c1 \u0633\u06cc \u0627\u0648\u0631 \u062c\u06cc \u06c1\u06cc\u06ba \u062d\u0627\u0644\u0627\u0646\u06a9\u06c1 \u0627\u0646 \u06a9\u0627 \u062a\u0644\u0651\u0641\u0638 \u0645\u0646\u062f\u0631\u062c\u06c1 \u0630\u06cc\u0644 \u062d\u0631\u0648\u0641 \u0639\u0644\u062a \u06a9\u06cc \u0628\u0646\u06cc\u0627\u062f \u067e\u0631 \u062a\u0628\u062f\u06cc\u0644 \u06c1\u0648\u062a\u0627 \u06c1\u06d2\u06d4"
+          }
+        ]
+      }
+    },
+    "runtime": "akas",
+    "provider": "webgpu",
+    "model": "Zyphra/ZONOS3-Mini",
+    "mode": "tts",
+    "purpose": "speech-demo",
+    "weight_format": "q8_0",
+    "checkpoint": "D:\\Workspace\\kreasof-ai\\github\\akas\\build\\checkpoints\\zonos3-mini\\ZONOS3-Mini-Q8_0.gguf",
+    "checkpoint_sha256": "60568efc88e2f9231f4f5c061e246421f575986642d72ab9ae68f77d6cf76be4",
+    "checkpoint_source": {
+      "repo": "ggml-org/ZONOS3-Mini-GGUF",
+      "revision": "2e7bc4126a2343787298e1a297a3d1c4a13165aa",
+      "file": "ZONOS3-Mini-Q8_0.gguf"
+    },
+    "projector": {
+      "path": "D:\\Workspace\\kreasof-ai\\github\\akas\\build\\checkpoints\\zonos3-mini\\mmproj-ZONOS3-Mini-F32.gguf",
+      "sha256": "aeeb92325b4b6927bef656390b78e1246148065f947d8b59c2663557a809414d",
+      "source": {
+        "repo": "ggml-org/ZONOS3-Mini-GGUF",
+        "revision": "2e7bc4126a2343787298e1a297a3d1c4a13165aa",
+        "file": "mmproj-ZONOS3-Mini-F32.gguf"
+      }
+    },
+    "model_definition_sha256": "e84617ab992c8bac2d4301f39f61a85b5d18002f397628a4359ac01e80591035",
+    "device": {
+      "ordinal": 0,
+      "provider": "webgpu",
+      "arch": "webgpu-portable-v1",
+      "name": "AMD Radeon RX 6700 XT",
+      "adapter": {
+        "vendor": "AMD proprietary driver",
+        "architecture": "",
+        "device": "AMD Radeon RX 6700 XT",
+        "description": "26.6.2 (AMD proprietary shader compiler)",
+        "stackgroup_min_size": 4,
+        "stackgroup_max_size": 128,
+        "vendor_id": 4098,
+        "device_id": 29663,
+        "adapter_type": "DiscreteGPU",
+        "backend_type": "Vulkan"
+      },
+      "features": [
+        "shader-f16",
+        "subgroup"
+      ],
+      "limits": {
+        "max-bind-groups": 8,
+        "max-bind-groups-plus-vertex-buffers": 0,
+        "max-bindings-per-bind-group": 1000,
+        "max-buffer-size": 1073741824,
+        "max-color-attachment-bytes-per-sample": 0,
+        "max-color-attachments": 0,
+        "max-compute-invocations-per-workgroup": 1024,
+        "max-compute-workgroup-size-x": 1024,
+        "max-compute-workgroup-size-y": 1024,
+        "max-compute-workgroup-size-z": 1024,
+        "max-compute-workgroup-storage-size": 32768,
+        "max-compute-workgroups-per-dimension": 65535,
+        "max-dynamic-storage-buffers-per-pipeline-layout": 8,
+        "max-dynamic-uniform-buffers-per-pipeline-layout": 8,
+        "max-inter-stage-shader-variables": 0,
+        "max-non-sampler-bindings": 1000000,
+        "max-push-constant-size": 256,
+        "max-sampled-textures-per-shader-stage": 16,
+        "max-samplers-per-shader-stage": 16,
+        "max-storage-buffer-binding-size": 1073741824,
+        "max-storage-buffers-per-shader-stage": 32,
+        "max-storage-textures-per-shader-stage": 4,
+        "max-texture-array-layers": 8192,
+        "max-texture-dimension-1d": 16384,
+        "max-texture-dimension-2d": 16384,
+        "max-texture-dimension-3d": 8192,
+        "max-uniform-buffer-binding-size": 2147483647,
+        "max-uniform-buffers-per-shader-stage": 12,
+        "max-vertex-attributes": 64,
+        "max-vertex-buffer-array-stride": 16383,
+        "max-vertex-buffers": 16,
+        "min-storage-buffer-offset-alignment": 32,
+        "min-uniform-buffer-offset-alignment": 32
+      },
+      "adapter_storage_buffers_reported": 4294967295,
+      "prepared_encoding": "native",
+      "prepared_submission": "native"
+    },
+    "voice": "Savannah_en-American_F_1",
+    "sample_rate_hz": 44100,
+    "warmup": 1,
+    "repeats": 2,
+    "configuration": [
+      "D:\\Workspace\\kreasof-ai\\github\\akas\\.venv\\Scripts\\python.exe",
+      "-u",
+      "-m",
+      "akas.cli",
+      "serve",
+      "--speech",
+      "--factory",
+      "akas.models.zonos3.model:service",
+      "--config",
+      "{\"checkpoint\": \"D:\\\\Workspace\\\\kreasof-ai\\\\github\\\\akas\\\\build\\\\checkpoints\\\\zonos3-mini\\\\ZONOS3-Mini-Q8_0.gguf\", \"projector\": \"D:\\\\Workspace\\\\kreasof-ai\\\\github\\\\akas\\\\build\\\\checkpoints\\\\zonos3-mini\\\\mmproj-ZONOS3-Mini-F32.gguf\", \"bundle\": \"D:\\\\Workspace\\\\kreasof-ai\\\\github\\\\akas\\\\build\\\\zonos3-mini\\\\speech-final\"}",
+      "--host",
+      "127.0.0.1",
+      "--port",
+      "54515"
+    ],
+    "deadline_seconds": 600,
+    "environment": {
+      "WGPU_BACKEND_TYPE": "Vulkan"
+    },
+    "runtime_revision": "9ce5ef8870fce8bd1bd59034ef9c78ff666ec858",
+    "program_sha256": "206ccd11064c0c41be53c98e9e2d33ebecdc9b19869841f138473e5fa255ea6f",
+    "default_voices": {
+      "en": "Savannah_en-American_F_1",
+      "fr": "Gaspard_fr_M_1",
+      "de": "Liesel_de_F_1",
+      "hi": "Ananya_hi_F_1",
+      "it": "Ginevra_it_F_1",
+      "ko": "Minjun_ko_M_1",
+      "zh": "Haoran_zh-energetic_M_1",
+      "pt": "Leonor_pt_F_1",
+      "es": "Rodrigo_es_M_1",
+      "te": "Chaitanya_te_M_1"
+    },
+    "fallback_voice": "Savannah_en-American_F_1",
+    "compiled_codec_frames": [
+      16,
+      32,
+      64,
+      128,
+      256,
+      384
+    ],
+    "reference": {
+      "run_id": "20261117064415142124-939fec36",
+      "report_sha256": "3e63c17a391a45ba47a3aca8d9efefb07f55294825c4dfdab397207567ef7a53"
+    },
+    "error": "PermissionError: [WinError 5] Access is denied: 'D:\\\\Workspace\\\\kreasof-ai\\\\github\\\\akas\\\\benchmarks\\\\runs\\\\20261117115909993578-f7f2f01e\\\\run.json.0f9a0020d6cd4c1aa9644f42f23ab68a.tmp' -> 'D:\\\\Workspace\\\\kreasof-ai\\\\github\\\\akas\\\\benchmarks\\\\runs\\\\20261117115909993578-f7f2f01e\\\\run.json'"
+  },
+  "results": [
+    {
+      "case": {
+        "id": "en-0007",
+        "lang": "en",
+        "tier": "short",
+        "source_row": 7,
+        "text": "He built a WiFi door bell, he said."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 120540,
+          "audio_seconds": 2.7333333333333334,
+          "peak_pcm16": 9728,
+          "terminated": true,
+          "audio_frames": 41,
+          "wall_seconds": 0.6940033999999287,
+          "real_time_factor": 0.25390368292680315,
+          "wav": "audio/01-01.wav",
+          "repeat": 1,
+          "wav_sha256": "73cca047213657588dae8453a1395a1b78e553e48e9e760c796c484af372c3e5"
+        },
+        {
+          "samples": 120540,
+          "audio_seconds": 2.7333333333333334,
+          "peak_pcm16": 9728,
+          "terminated": true,
+          "audio_frames": 41,
+          "wall_seconds": 0.7043139000015799,
+          "real_time_factor": 0.25767581707374876,
+          "wav": "audio/01-02.wav",
+          "repeat": 2,
+          "wav_sha256": "73cca047213657588dae8453a1395a1b78e553e48e9e760c796c484af372c3e5"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.6991586500007543,
+        "audio_seconds": 2.7333333333333334,
+        "real_time_factor": 0.25578975000027593
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      }
+    },
+    {
+      "case": {
+        "id": "en-0320",
+        "lang": "en",
+        "tier": "short",
+        "source_row": 320,
+        "text": "Fellow wrestlers also paid tribute to Luna."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 114660,
+          "audio_seconds": 2.6,
+          "peak_pcm16": 9006,
+          "terminated": true,
+          "audio_frames": 39,
+          "wall_seconds": 0.6471584999962943,
+          "real_time_factor": 0.2489071153831901,
+          "wav": "audio/02-01.wav",
+          "repeat": 1,
+          "wav_sha256": "8cbb5d5679e4072a88c0b9e8087c3f2d55a3ee6c10f72d1270a0576c7c03965e"
+        },
+        {
+          "samples": 114660,
+          "audio_seconds": 2.6,
+          "peak_pcm16": 9006,
+          "terminated": true,
+          "audio_frames": 39,
+          "wall_seconds": 0.6444362000038382,
+          "real_time_factor": 0.24786007692455314,
+          "wav": "audio/02-02.wav",
+          "repeat": 2,
+          "wav_sha256": "8cbb5d5679e4072a88c0b9e8087c3f2d55a3ee6c10f72d1270a0576c7c03965e"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.6457973500000662,
+        "audio_seconds": 2.6,
+        "real_time_factor": 0.24838359615387162
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      }
+    },
+    {
+      "case": {
+        "id": "en-0942",
+        "lang": "en",
+        "tier": "medium",
+        "source_row": 942,
+        "text": "The major religion in Moldova is Orthodox Christian."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 149940,
+          "audio_seconds": 3.4,
+          "peak_pcm16": 10642,
+          "terminated": true,
+          "audio_frames": 51,
+          "wall_seconds": 0.77152510000451,
+          "real_time_factor": 0.22691914706015,
+          "wav": "audio/03-01.wav",
+          "repeat": 1,
+          "wav_sha256": "7eabeba0dccd1689738e4780fef342998d10eaf3d189cd7fa89f546b0789f7c4"
+        },
+        {
+          "samples": 149940,
+          "audio_seconds": 3.4,
+          "peak_pcm16": 10642,
+          "terminated": true,
+          "audio_frames": 51,
+          "wall_seconds": 0.7490126000047894,
+          "real_time_factor": 0.22029782353082042,
+          "wav": "audio/03-02.wav",
+          "repeat": 2,
+          "wav_sha256": "7eabeba0dccd1689738e4780fef342998d10eaf3d189cd7fa89f546b0789f7c4"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.7602688500046497,
+        "audio_seconds": 3.4,
+        "real_time_factor": 0.22360848529548522
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      }
+    },
+    {
+      "case": {
+        "id": "en-0030",
+        "lang": "en",
+        "tier": "medium",
+        "source_row": 30,
+        "text": "The find also grants insight into the evolution of feathers in birds."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 194040,
+          "audio_seconds": 4.4,
+          "peak_pcm16": 9076,
+          "terminated": true,
+          "audio_frames": 66,
+          "wall_seconds": 1.0019478000031086,
+          "real_time_factor": 0.22771540909161556,
+          "wav": "audio/04-01.wav",
+          "repeat": 1,
+          "wav_sha256": "d97aa00815d945ccbdb9a9bb333257ea8cc79f312e6c7ffdc798bf48396018ba"
+        },
+        {
+          "samples": 194040,
+          "audio_seconds": 4.4,
+          "peak_pcm16": 9076,
+          "terminated": true,
+          "audio_frames": 66,
+          "wall_seconds": 0.9878278999967733,
+          "real_time_factor": 0.22450634090835755,
+          "wav": "audio/04-02.wav",
+          "repeat": 2,
+          "wav_sha256": "d97aa00815d945ccbdb9a9bb333257ea8cc79f312e6c7ffdc798bf48396018ba"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.994887849999941,
+        "audio_seconds": 4.4,
+        "real_time_factor": 0.22611087499998656
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      }
+    },
+    {
+      "case": {
+        "id": "en-0082",
+        "lang": "en",
+        "tier": "long",
+        "source_row": 82,
+        "text": "The National Hurricane Center (NHC) says that at this point Jerry poses no threat to land."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 252840,
+          "audio_seconds": 5.733333333333333,
+          "peak_pcm16": 10986,
+          "terminated": true,
+          "audio_frames": 86,
+          "wall_seconds": 1.1189216000057058,
+          "real_time_factor": 0.1951607441870417,
+          "wav": "audio/05-01.wav",
+          "repeat": 1,
+          "wav_sha256": "63e8e4f2fb2aa1adda67d862bc4df150928414e7eb319d5720fe8d3bd98d979f"
+        },
+        {
+          "samples": 252840,
+          "audio_seconds": 5.733333333333333,
+          "peak_pcm16": 10986,
+          "terminated": true,
+          "audio_frames": 86,
+          "wall_seconds": 1.1312116000044625,
+          "real_time_factor": 0.19730434883798764,
+          "wav": "audio/05-02.wav",
+          "repeat": 2,
+          "wav_sha256": "63e8e4f2fb2aa1adda67d862bc4df150928414e7eb319d5720fe8d3bd98d979f"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.1250666000050842,
+        "audio_seconds": 5.733333333333333,
+        "real_time_factor": 0.19623254651251468
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      }
+    },
+    {
+      "case": {
+        "id": "en-0977",
+        "lang": "en",
+        "tier": "long",
+        "source_row": 977,
+        "text": "The main letters to watch out for are c and g, since their pronunciation varies based on the following vowel."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 279300,
+          "audio_seconds": 6.333333333333333,
+          "peak_pcm16": 9638,
+          "terminated": true,
+          "audio_frames": 95,
+          "wall_seconds": 1.2846549000096275,
+          "real_time_factor": 0.2028402473699412,
+          "wav": "audio/06-01.wav",
+          "repeat": 1,
+          "wav_sha256": "3105387ef6acf0915138be69f58e53cf17419fa1fe56af072f6e6c3f4b563ccf"
+        },
+        {
+          "samples": 279300,
+          "audio_seconds": 6.333333333333333,
+          "peak_pcm16": 9638,
+          "terminated": true,
+          "audio_frames": 95,
+          "wall_seconds": 1.2219598999945447,
+          "real_time_factor": 0.19294103684124392,
+          "wav": "audio/06-02.wav",
+          "repeat": 2,
+          "wav_sha256": "3105387ef6acf0915138be69f58e53cf17419fa1fe56af072f6e6c3f4b563ccf"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.253307400002086,
+        "audio_seconds": 6.333333333333333,
+        "real_time_factor": 0.19789064210559254
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      }
+    },
+    {
+      "case": {
+        "id": "fr-0007",
+        "lang": "fr",
+        "tier": "short",
+        "source_row": 7,
+        "text": "Il dit avoir con\u00e7u une sonnette de porte Wi-Fi."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 152880,
+          "audio_seconds": 3.466666666666667,
+          "peak_pcm16": 8086,
+          "terminated": true,
+          "audio_frames": 52,
+          "wall_seconds": 0.7865612000023248,
+          "real_time_factor": 0.22689265384682444,
+          "wav": "audio/07-01.wav",
+          "repeat": 1,
+          "wav_sha256": "b93ffeaaa9dd860beb156d3a2986888abb89f329f9b9fb6d6f26b591b7a7696d"
+        },
+        {
+          "samples": 152880,
+          "audio_seconds": 3.466666666666667,
+          "peak_pcm16": 8086,
+          "terminated": true,
+          "audio_frames": 52,
+          "wall_seconds": 0.8002023000008194,
+          "real_time_factor": 0.2308275865386979,
+          "wav": "audio/07-02.wav",
+          "repeat": 2,
+          "wav_sha256": "b93ffeaaa9dd860beb156d3a2986888abb89f329f9b9fb6d6f26b591b7a7696d"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.7933817500015721,
+        "audio_seconds": 3.466666666666667,
+        "real_time_factor": 0.22886012019276117
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      }
+    },
+    {
+      "case": {
+        "id": "fr-0320",
+        "lang": "fr",
+        "tier": "short",
+        "source_row": 320,
+        "text": "Les autres lutteurs ont \u00e9galement rendu hommage \u00e0 Luna."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 70560,
+          "audio_seconds": 1.6,
+          "peak_pcm16": 6404,
+          "terminated": true,
+          "audio_frames": 24,
+          "wall_seconds": 0.5418572999915341,
+          "real_time_factor": 0.3386608124947088,
+          "wav": "audio/08-01.wav",
+          "repeat": 1,
+          "wav_sha256": "9b15daa4e8580d8c522b1fff052ff9fc6f1b470b895b8cdd3d6473d8a52ed9bd"
+        },
+        {
+          "samples": 70560,
+          "audio_seconds": 1.6,
+          "peak_pcm16": 6404,
+          "terminated": true,
+          "audio_frames": 24,
+          "wall_seconds": 0.5497240999975475,
+          "real_time_factor": 0.34357756249846716,
+          "wav": "audio/08-02.wav",
+          "repeat": 2,
+          "wav_sha256": "9b15daa4e8580d8c522b1fff052ff9fc6f1b470b895b8cdd3d6473d8a52ed9bd"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.5457906999945408,
+        "audio_seconds": 1.6,
+        "real_time_factor": 0.341119187496588
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      }
+    },
+    {
+      "case": {
+        "id": "fr-0942",
+        "lang": "fr",
+        "tier": "medium",
+        "source_row": 942,
+        "text": "La principale religion en Moldavie est le christianisme orthodoxe."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 194040,
+          "audio_seconds": 4.4,
+          "peak_pcm16": 7331,
+          "terminated": true,
+          "audio_frames": 66,
+          "wall_seconds": 0.9787357000022894,
+          "real_time_factor": 0.2224399318187021,
+          "wav": "audio/09-01.wav",
+          "repeat": 1,
+          "wav_sha256": "d122bfbbc21e1989e6b1538f6097a1d15e2ee4874e2f1bf5c533cfaa104ec7d2"
+        },
+        {
+          "samples": 194040,
+          "audio_seconds": 4.4,
+          "peak_pcm16": 7331,
+          "terminated": true,
+          "audio_frames": 66,
+          "wall_seconds": 0.96545979999064,
+          "real_time_factor": 0.21942268181605454,
+          "wav": "audio/09-02.wav",
+          "repeat": 2,
+          "wav_sha256": "d122bfbbc21e1989e6b1538f6097a1d15e2ee4874e2f1bf5c533cfaa104ec7d2"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.9720977499964647,
+        "audio_seconds": 4.4,
+        "real_time_factor": 0.22093130681737833
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      }
+    },
+    {
+      "case": {
+        "id": "fr-0030",
+        "lang": "fr",
+        "tier": "medium",
+        "source_row": 30,
+        "text": "Cette d\u00e9couverte permet \u00e9galement de mieux comprendre l'\u00e9volution des plumes chez les oiseaux."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 294000,
+          "audio_seconds": 6.666666666666667,
+          "peak_pcm16": 8470,
+          "terminated": true,
+          "audio_frames": 100,
+          "wall_seconds": 1.308964099996956,
+          "real_time_factor": 0.1963446149995434,
+          "wav": "audio/10-01.wav",
+          "repeat": 1,
+          "wav_sha256": "3a5a05eb4aacf6c346fd5baaa9d7ee298b050a90424c01048562c8d302ee7b95"
+        },
+        {
+          "samples": 294000,
+          "audio_seconds": 6.666666666666667,
+          "peak_pcm16": 8470,
+          "terminated": true,
+          "audio_frames": 100,
+          "wall_seconds": 1.3187677999958396,
+          "real_time_factor": 0.19781516999937593,
+          "wav": "audio/10-02.wav",
+          "repeat": 2,
+          "wav_sha256": "3a5a05eb4aacf6c346fd5baaa9d7ee298b050a90424c01048562c8d302ee7b95"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.3138659499963978,
+        "audio_seconds": 6.666666666666667,
+        "real_time_factor": 0.19707989249945967
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      }
+    },
+    {
+      "case": {
+        "id": "fr-0082",
+        "lang": "fr",
+        "tier": "long",
+        "source_row": 82,
+        "text": "Le National Hurricane Center (NHC) affirme qu'\u00e0 ce stade, Jerry ne repr\u00e9sente aucune menace pour les terres."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 361620,
+          "audio_seconds": 8.2,
+          "peak_pcm16": 13007,
+          "terminated": true,
+          "audio_frames": 123,
+          "wall_seconds": 1.6086252000095556,
+          "real_time_factor": 0.1961738048792141,
+          "wav": "audio/11-01.wav",
+          "repeat": 1,
+          "wav_sha256": "5cba88be3d01521bccf618aa14875e6aaf203542d5390cec3181013c8f635950"
+        },
+        {
+          "samples": 361620,
+          "audio_seconds": 8.2,
+          "peak_pcm16": 13007,
+          "terminated": true,
+          "audio_frames": 123,
+          "wall_seconds": 1.6628518999932567,
+          "real_time_factor": 0.20278681707234839,
+          "wav": "audio/11-02.wav",
+          "repeat": 2,
+          "wav_sha256": "5cba88be3d01521bccf618aa14875e6aaf203542d5390cec3181013c8f635950"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.635738550001406,
+        "audio_seconds": 8.2,
+        "real_time_factor": 0.19948031097578123
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      }
+    },
+    {
+      "case": {
+        "id": "fr-0977",
+        "lang": "fr",
+        "tier": "long",
+        "source_row": 977,
+        "text": "Les principales lettres \u00e0 surveiller sont le c et le g, car leur prononciation varie en fonction de la voyelle suivante."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 199920,
+          "audio_seconds": 4.533333333333333,
+          "peak_pcm16": 8720,
+          "terminated": true,
+          "audio_frames": 68,
+          "wall_seconds": 1.023955399999977,
+          "real_time_factor": 0.2258725147058773,
+          "wav": "audio/12-01.wav",
+          "repeat": 1,
+          "wav_sha256": "03417694b90b4e97b359e521ff07e8b7ee1cb0dd7e34f776cbb199901f49e34a"
+        },
+        {
+          "samples": 199920,
+          "audio_seconds": 4.533333333333333,
+          "peak_pcm16": 8720,
+          "terminated": true,
+          "audio_frames": 68,
+          "wall_seconds": 1.0718484000099124,
+          "real_time_factor": 0.2364371470610101,
+          "wav": "audio/12-02.wav",
+          "repeat": 2,
+          "wav_sha256": "03417694b90b4e97b359e521ff07e8b7ee1cb0dd7e34f776cbb199901f49e34a"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.0479019000049448,
+        "audio_seconds": 4.533333333333333,
+        "real_time_factor": 0.23115483088344368
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      }
+    },
+    {
+      "case": {
+        "id": "es-0007",
+        "lang": "es",
+        "tier": "short",
+        "source_row": 7,
+        "text": "\u00c9l dijo que construy\u00f3 un timbre wifi."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 135240,
+          "audio_seconds": 3.066666666666667,
+          "peak_pcm16": 4638,
+          "terminated": true,
+          "audio_frames": 46,
+          "wall_seconds": 0.7634264000080293,
+          "real_time_factor": 0.24894339130696605,
+          "wav": "audio/13-01.wav",
+          "repeat": 1,
+          "wav_sha256": "9f94a4cf4a520c69e749e14fb5e09379d6a71741b4ce0bc2c9559f90cd206451"
+        },
+        {
+          "samples": 135240,
+          "audio_seconds": 3.066666666666667,
+          "peak_pcm16": 4638,
+          "terminated": true,
+          "audio_frames": 46,
+          "wall_seconds": 0.7512670999858528,
+          "real_time_factor": 0.2449784021692998,
+          "wav": "audio/13-02.wav",
+          "repeat": 2,
+          "wav_sha256": "9f94a4cf4a520c69e749e14fb5e09379d6a71741b4ce0bc2c9559f90cd206451"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.7573467499969411,
+        "audio_seconds": 3.066666666666667,
+        "real_time_factor": 0.24696089673813293
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      }
+    },
+    {
+      "case": {
+        "id": "es-0320",
+        "lang": "es",
+        "tier": "short",
+        "source_row": 320,
+        "text": "Los luchadores compa\u00f1eros de Luna tambi\u00e9n le rindieron homenaje."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 194040,
+          "audio_seconds": 4.4,
+          "peak_pcm16": 6565,
+          "terminated": true,
+          "audio_frames": 66,
+          "wall_seconds": 1.0021539000008488,
+          "real_time_factor": 0.2277622500001929,
+          "wav": "audio/14-01.wav",
+          "repeat": 1,
+          "wav_sha256": "1d08248cdbbbbec93f45ebcf27ff246d4876406078def11067757a04000a4ace"
+        },
+        {
+          "samples": 194040,
+          "audio_seconds": 4.4,
+          "peak_pcm16": 6565,
+          "terminated": true,
+          "audio_frames": 66,
+          "wall_seconds": 1.0510096999933012,
+          "real_time_factor": 0.23886584090756843,
+          "wav": "audio/14-02.wav",
+          "repeat": 2,
+          "wav_sha256": "1d08248cdbbbbec93f45ebcf27ff246d4876406078def11067757a04000a4ace"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.026581799997075,
+        "audio_seconds": 4.4,
+        "real_time_factor": 0.23331404545388068
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      }
+    },
+    {
+      "case": {
+        "id": "es-0942",
+        "lang": "es",
+        "tier": "medium",
+        "source_row": 942,
+        "text": "El cristianismo ortodoxo es la religi\u00f3n mayoritaria en Moldavia. "
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 223440,
+          "audio_seconds": 5.066666666666666,
+          "peak_pcm16": 6936,
+          "terminated": true,
+          "audio_frames": 76,
+          "wall_seconds": 1.1321930999984033,
+          "real_time_factor": 0.22345916447336908,
+          "wav": "audio/15-01.wav",
+          "repeat": 1,
+          "wav_sha256": "21ca539f2dcbc01dee0804dee2300fd91da33d63c9c9d76447c95570fb36041d"
+        },
+        {
+          "samples": 223440,
+          "audio_seconds": 5.066666666666666,
+          "peak_pcm16": 6936,
+          "terminated": true,
+          "audio_frames": 76,
+          "wall_seconds": 1.1168459999898914,
+          "real_time_factor": 0.22043013157695227,
+          "wav": "audio/15-02.wav",
+          "repeat": 2,
+          "wav_sha256": "21ca539f2dcbc01dee0804dee2300fd91da33d63c9c9d76447c95570fb36041d"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.1245195499941474,
+        "audio_seconds": 5.066666666666666,
+        "real_time_factor": 0.22194464802516067
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      }
+    },
+    {
+      "case": {
+        "id": "es-0030",
+        "lang": "es",
+        "tier": "medium",
+        "source_row": 30,
+        "text": "Asimismo, el hallazgo permite comprender mejor la evoluci\u00f3n de las plumas de las aves."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 238140,
+          "audio_seconds": 5.4,
+          "peak_pcm16": 17131,
+          "terminated": true,
+          "audio_frames": 81,
+          "wall_seconds": 1.1638974000088638,
+          "real_time_factor": 0.21553655555719697,
+          "wav": "audio/16-01.wav",
+          "repeat": 1,
+          "wav_sha256": "d02def6b84d009d0e80c2daf2b73c9a9d377ad2255477fea17cd0051a1c1bc0d"
+        },
+        {
+          "samples": 238140,
+          "audio_seconds": 5.4,
+          "peak_pcm16": 17131,
+          "terminated": true,
+          "audio_frames": 81,
+          "wall_seconds": 1.167041300010169,
+          "real_time_factor": 0.21611875926114238,
+          "wav": "audio/16-02.wav",
+          "repeat": 2,
+          "wav_sha256": "d02def6b84d009d0e80c2daf2b73c9a9d377ad2255477fea17cd0051a1c1bc0d"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.1654693500095163,
+        "audio_seconds": 5.4,
+        "real_time_factor": 0.21582765740916968
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      }
+    },
+    {
+      "case": {
+        "id": "es-0082",
+        "lang": "es",
+        "tier": "long",
+        "source_row": 82,
+        "text": "El Centro Nacional de Huracanes (CNH) declar\u00f3 que por ahora est\u00e1 previsto que Jerry toque el suelo."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 302820,
+          "audio_seconds": 6.866666666666666,
+          "peak_pcm16": 4282,
+          "terminated": true,
+          "audio_frames": 103,
+          "wall_seconds": 1.4448325999983354,
+          "real_time_factor": 0.2104125145628644,
+          "wav": "audio/17-01.wav",
+          "repeat": 1,
+          "wav_sha256": "e0d343b12f3ce93c7632dee0e14f1d84557f9ddc420e4142ad409ddbe59d74a3"
+        },
+        {
+          "samples": 302820,
+          "audio_seconds": 6.866666666666666,
+          "peak_pcm16": 4282,
+          "terminated": true,
+          "audio_frames": 103,
+          "wall_seconds": 1.4316876999946544,
+          "real_time_factor": 0.2084982087370856,
+          "wav": "audio/17-02.wav",
+          "repeat": 2,
+          "wav_sha256": "e0d343b12f3ce93c7632dee0e14f1d84557f9ddc420e4142ad409ddbe59d74a3"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.4382601499964949,
+        "audio_seconds": 6.866666666666666,
+        "real_time_factor": 0.209455361649975
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      }
+    },
+    {
+      "case": {
+        "id": "es-0977",
+        "lang": "es",
+        "tier": "long",
+        "source_row": 977,
+        "text": "La c y la g son las letras con las que se debe estar m\u00e1s atentos, dado que se pronuncian de diferente forma dependiendo de la vocal que les sigue."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 211680,
+          "audio_seconds": 4.8,
+          "peak_pcm16": 9655,
+          "terminated": true,
+          "audio_frames": 72,
+          "wall_seconds": 1.1379139999917243,
+          "real_time_factor": 0.23706541666494257,
+          "wav": "audio/18-01.wav",
+          "repeat": 1,
+          "wav_sha256": "cabe8c2e8275919bca2a9a45beaa4e838010a5b1009a5b8348ba1d3155fbb093"
+        },
+        {
+          "samples": 211680,
+          "audio_seconds": 4.8,
+          "peak_pcm16": 9655,
+          "terminated": true,
+          "audio_frames": 72,
+          "wall_seconds": 1.146700100012822,
+          "real_time_factor": 0.23889585416933795,
+          "wav": "audio/18-02.wav",
+          "repeat": 2,
+          "wav_sha256": "cabe8c2e8275919bca2a9a45beaa4e838010a5b1009a5b8348ba1d3155fbb093"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.1423070500022732,
+        "audio_seconds": 4.8,
+        "real_time_factor": 0.23798063541714026
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      }
+    },
+    {
+      "case": {
+        "id": "de-0007",
+        "lang": "de",
+        "tier": "short",
+        "source_row": 7,
+        "text": "Er sagte, dass er eine WLAN-T\u00fcrklingel gebaut habe."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 155820,
+          "audio_seconds": 3.533333333333333,
+          "peak_pcm16": 7310,
+          "terminated": true,
+          "audio_frames": 53,
+          "wall_seconds": 0.8743602000031387,
+          "real_time_factor": 0.24746043396315248,
+          "wav": "audio/19-01.wav",
+          "repeat": 1,
+          "wav_sha256": "160f84a36e13268f5ba29296d21a6d52bdc3e358de3abcce93f6723807045e37"
+        },
+        {
+          "samples": 155820,
+          "audio_seconds": 3.533333333333333,
+          "peak_pcm16": 7310,
+          "terminated": true,
+          "audio_frames": 53,
+          "wall_seconds": 0.8804711999982828,
+          "real_time_factor": 0.24918996226366497,
+          "wav": "audio/19-02.wav",
+          "repeat": 2,
+          "wav_sha256": "160f84a36e13268f5ba29296d21a6d52bdc3e358de3abcce93f6723807045e37"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.8774157000007108,
+        "audio_seconds": 3.533333333333333,
+        "real_time_factor": 0.24832519811340872
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      }
+    },
+    {
+      "case": {
+        "id": "de-0320",
+        "lang": "de",
+        "tier": "short",
+        "source_row": 320,
+        "text": "Ringer-Kollegen zollten Luna ebenfalls Tribut."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 149940,
+          "audio_seconds": 3.4,
+          "peak_pcm16": 9466,
+          "terminated": true,
+          "audio_frames": 51,
+          "wall_seconds": 0.8627867000031983,
+          "real_time_factor": 0.25376079411858776,
+          "wav": "audio/20-01.wav",
+          "repeat": 1,
+          "wav_sha256": "e7aca371ff27543423100f21d95c1a5ed115783a088b1ebf7f3c73002e5c3e0b"
+        },
+        {
+          "samples": 149940,
+          "audio_seconds": 3.4,
+          "peak_pcm16": 9466,
+          "terminated": true,
+          "audio_frames": 51,
+          "wall_seconds": 0.8635432000010042,
+          "real_time_factor": 0.2539832941179424,
+          "wav": "audio/20-02.wav",
+          "repeat": 2,
+          "wav_sha256": "e7aca371ff27543423100f21d95c1a5ed115783a088b1ebf7f3c73002e5c3e0b"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.8631649500021012,
+        "audio_seconds": 3.4,
+        "real_time_factor": 0.2538720441182651
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      }
+    },
+    {
+      "case": {
+        "id": "de-0942",
+        "lang": "de",
+        "tier": "medium",
+        "source_row": 942,
+        "text": "Die wichtigste Religion in Moldawien ist die christlich-orthodoxe."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 188160,
+          "audio_seconds": 4.266666666666667,
+          "peak_pcm16": 7687,
+          "terminated": true,
+          "audio_frames": 64,
+          "wall_seconds": 1.0739373999967938,
+          "real_time_factor": 0.25170407812424855,
+          "wav": "audio/21-01.wav",
+          "repeat": 1,
+          "wav_sha256": "75901590e270c558fd1113aad671d04a480c9bc6416ce4b6b4755dcd5fadd2ba"
+        },
+        {
+          "samples": 188160,
+          "audio_seconds": 4.266666666666667,
+          "peak_pcm16": 7687,
+          "terminated": true,
+          "audio_frames": 64,
+          "wall_seconds": 1.1891650999896228,
+          "real_time_factor": 0.27871057031006785,
+          "wav": "audio/21-02.wav",
+          "repeat": 2,
+          "wav_sha256": "75901590e270c558fd1113aad671d04a480c9bc6416ce4b6b4755dcd5fadd2ba"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.1315512499932083,
+        "audio_seconds": 4.266666666666667,
+        "real_time_factor": 0.2652073242171582
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      }
+    },
+    {
+      "case": {
+        "id": "de-0030",
+        "lang": "de",
+        "tier": "medium",
+        "source_row": 30,
+        "text": "Der Fund gew\u00e4hrt auch Einblicke in die Evolution von Federn bei V\u00f6geln."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 205800,
+          "audio_seconds": 4.666666666666667,
+          "peak_pcm16": 7822,
+          "terminated": true,
+          "audio_frames": 70,
+          "wall_seconds": 1.1723095999914221,
+          "real_time_factor": 0.2512091999981619,
+          "wav": "audio/22-01.wav",
+          "repeat": 1,
+          "wav_sha256": "682b8d7c17e9e08124d20253f78d9e8e2d5154553f695ebdb43f2eee57a983b1"
+        },
+        {
+          "samples": 205800,
+          "audio_seconds": 4.666666666666667,
+          "peak_pcm16": 7822,
+          "terminated": true,
+          "audio_frames": 70,
+          "wall_seconds": 1.1444117999926675,
+          "real_time_factor": 0.24523109999842874,
+          "wav": "audio/22-02.wav",
+          "repeat": 2,
+          "wav_sha256": "682b8d7c17e9e08124d20253f78d9e8e2d5154553f695ebdb43f2eee57a983b1"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.1583606999920448,
+        "audio_seconds": 4.666666666666667,
+        "real_time_factor": 0.2482201499982953
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      }
+    },
+    {
+      "case": {
+        "id": "de-0082",
+        "lang": "de",
+        "tier": "long",
+        "source_row": 82,
+        "text": "Das National Hurricane Center (NHC) sagt, dass Jerry zu diesem Zeitpunkt keine Gefahr f\u00fcr die Landung darstellt."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 352800,
+          "audio_seconds": 8.0,
+          "peak_pcm16": 7011,
+          "terminated": true,
+          "audio_frames": 120,
+          "wall_seconds": 1.8135153000039281,
+          "real_time_factor": 0.22668941250049102,
+          "wav": "audio/23-01.wav",
+          "repeat": 1,
+          "wav_sha256": "892ac9c254930d2a1250a10e61f6553a1be748992b27f9111cb9c807cc41dfc0"
+        },
+        {
+          "samples": 352800,
+          "audio_seconds": 8.0,
+          "peak_pcm16": 7011,
+          "terminated": true,
+          "audio_frames": 120,
+          "wall_seconds": 1.7336192999937339,
+          "real_time_factor": 0.21670241249921673,
+          "wav": "audio/23-02.wav",
+          "repeat": 2,
+          "wav_sha256": "892ac9c254930d2a1250a10e61f6553a1be748992b27f9111cb9c807cc41dfc0"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.773567299998831,
+        "audio_seconds": 8.0,
+        "real_time_factor": 0.22169591249985388
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      }
+    },
+    {
+      "case": {
+        "id": "de-0977",
+        "lang": "de",
+        "tier": "long",
+        "source_row": 977,
+        "text": "Die wichtigsten Buchstaben, auf die man achten muss, sind c und g, da ihre Aussprache je nach Folgevokal variiert."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 317520,
+          "audio_seconds": 7.2,
+          "peak_pcm16": 6189,
+          "terminated": true,
+          "audio_frames": 108,
+          "wall_seconds": 1.6415072999952827,
+          "real_time_factor": 0.22798712499934481,
+          "wav": "audio/24-01.wav",
+          "repeat": 1,
+          "wav_sha256": "c41703ba3e31bbd49de0f67aa12276dfb8a8c8bc3be0bb7ee608160e49068d45"
+        },
+        {
+          "samples": 317520,
+          "audio_seconds": 7.2,
+          "peak_pcm16": 6189,
+          "terminated": true,
+          "audio_frames": 108,
+          "wall_seconds": 1.6728903000039281,
+          "real_time_factor": 0.23234587500054557,
+          "wav": "audio/24-02.wav",
+          "repeat": 2,
+          "wav_sha256": "c41703ba3e31bbd49de0f67aa12276dfb8a8c8bc3be0bb7ee608160e49068d45"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.6571987999996054,
+        "audio_seconds": 7.2,
+        "real_time_factor": 0.2301664999999452
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      }
+    },
+    {
+      "case": {
+        "id": "it-0007",
+        "lang": "it",
+        "tier": "short",
+        "source_row": 7,
+        "text": "Ha detto di aver costruito un campanello Wi-Fi."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 176400,
+          "audio_seconds": 4.0,
+          "peak_pcm16": 5456,
+          "terminated": true,
+          "audio_frames": 60,
+          "wall_seconds": 1.0263984999910463,
+          "real_time_factor": 0.25659962499776157,
+          "wav": "audio/25-01.wav",
+          "repeat": 1,
+          "wav_sha256": "2c8713e8dfe093efbfe72c3bf9e2e235e9ba9684e09c11af49b85e4e550b7e22"
+        },
+        {
+          "samples": 176400,
+          "audio_seconds": 4.0,
+          "peak_pcm16": 5456,
+          "terminated": true,
+          "audio_frames": 60,
+          "wall_seconds": 0.9474889999983134,
+          "real_time_factor": 0.23687224999957834,
+          "wav": "audio/25-02.wav",
+          "repeat": 2,
+          "wav_sha256": "2c8713e8dfe093efbfe72c3bf9e2e235e9ba9684e09c11af49b85e4e550b7e22"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.9869437499946798,
+        "audio_seconds": 4.0,
+        "real_time_factor": 0.24673593749866995
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      }
+    },
+    {
+      "case": {
+        "id": "it-0320",
+        "lang": "it",
+        "tier": "short",
+        "source_row": 320,
+        "text": "Anche i suoi compagni di wrestling hanno voluto rendere omaggio a Luna."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 211680,
+          "audio_seconds": 4.8,
+          "peak_pcm16": 9080,
+          "terminated": true,
+          "audio_frames": 72,
+          "wall_seconds": 1.0085733000014443,
+          "real_time_factor": 0.2101194375003009,
+          "wav": "audio/26-01.wav",
+          "repeat": 1,
+          "wav_sha256": "effea2eaa42ba05a7b43db4d77791e63f53feb8b0149d2574f706d92e92cc830"
+        },
+        {
+          "samples": 211680,
+          "audio_seconds": 4.8,
+          "peak_pcm16": 9080,
+          "terminated": true,
+          "audio_frames": 72,
+          "wall_seconds": 0.9910118999978295,
+          "real_time_factor": 0.2064608124995478,
+          "wav": "audio/26-02.wav",
+          "repeat": 2,
+          "wav_sha256": "effea2eaa42ba05a7b43db4d77791e63f53feb8b0149d2574f706d92e92cc830"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.9997925999996369,
+        "audio_seconds": 4.8,
+        "real_time_factor": 0.20829012499992436
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      }
+    },
+    {
+      "case": {
+        "id": "it-0942",
+        "lang": "it",
+        "tier": "medium",
+        "source_row": 942,
+        "text": "La religione predominante in Moldavia \u00e8 quella cristiano-ortodossa."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 211680,
+          "audio_seconds": 4.8,
+          "peak_pcm16": 6273,
+          "terminated": true,
+          "audio_frames": 72,
+          "wall_seconds": 1.0481280999956653,
+          "real_time_factor": 0.21836002083243028,
+          "wav": "audio/27-01.wav",
+          "repeat": 1,
+          "wav_sha256": "af604908af692d619e59c058e3fa5e8835ada81f58cbfe5f7d7723ad5323d3f7"
+        },
+        {
+          "samples": 211680,
+          "audio_seconds": 4.8,
+          "peak_pcm16": 6273,
+          "terminated": true,
+          "audio_frames": 72,
+          "wall_seconds": 1.0891560999880312,
+          "real_time_factor": 0.22690752083083984,
+          "wav": "audio/27-02.wav",
+          "repeat": 2,
+          "wav_sha256": "af604908af692d619e59c058e3fa5e8835ada81f58cbfe5f7d7723ad5323d3f7"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.0686420999918482,
+        "audio_seconds": 4.8,
+        "real_time_factor": 0.22263377083163505
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      }
+    },
+    {
+      "case": {
+        "id": "it-0030",
+        "lang": "it",
+        "tier": "medium",
+        "source_row": 30,
+        "text": "La scoperta permette inoltre di ottenere informazioni dettagliate in merito all'evoluzione delle piume degli uccelli."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 341040,
+          "audio_seconds": 7.733333333333333,
+          "peak_pcm16": 8413,
+          "terminated": true,
+          "audio_frames": 116,
+          "wall_seconds": 1.481191700004274,
+          "real_time_factor": 0.1915334094833113,
+          "wav": "audio/28-01.wav",
+          "repeat": 1,
+          "wav_sha256": "e6ac06cea6a3f2773a797e6634c027bdb1bea1fe5d95a0c080b5be43ae81e0ff"
+        },
+        {
+          "samples": 341040,
+          "audio_seconds": 7.733333333333333,
+          "peak_pcm16": 8413,
+          "terminated": true,
+          "audio_frames": 116,
+          "wall_seconds": 1.3927391000033822,
+          "real_time_factor": 0.1800955732762994,
+          "wav": "audio/28-02.wav",
+          "repeat": 2,
+          "wav_sha256": "e6ac06cea6a3f2773a797e6634c027bdb1bea1fe5d95a0c080b5be43ae81e0ff"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.436965400003828,
+        "audio_seconds": 7.733333333333333,
+        "real_time_factor": 0.18581449137980535
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      }
+    },
+    {
+      "case": {
+        "id": "it-0082",
+        "lang": "it",
+        "tier": "long",
+        "source_row": 82,
+        "text": "Secondo il National Hurricane Center (NHC), Jerry a questo punto non costituisce una minaccia per la terraferma."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 349860,
+          "audio_seconds": 7.933333333333334,
+          "peak_pcm16": 7060,
+          "terminated": true,
+          "audio_frames": 119,
+          "wall_seconds": 1.443930100009311,
+          "real_time_factor": 0.18200799579949298,
+          "wav": "audio/29-01.wav",
+          "repeat": 1,
+          "wav_sha256": "5b6df7ccb2d79a3629c143e04b59137ef19d1550a25d4ea5cdd77240228ce13e"
+        },
+        {
+          "samples": 349860,
+          "audio_seconds": 7.933333333333334,
+          "peak_pcm16": 7060,
+          "terminated": true,
+          "audio_frames": 119,
+          "wall_seconds": 1.533351699996274,
+          "real_time_factor": 0.1932796260499505,
+          "wav": "audio/29-02.wav",
+          "repeat": 2,
+          "wav_sha256": "5b6df7ccb2d79a3629c143e04b59137ef19d1550a25d4ea5cdd77240228ce13e"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.4886409000027925,
+        "audio_seconds": 7.933333333333334,
+        "real_time_factor": 0.18764381092472174
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      }
+    },
+    {
+      "case": {
+        "id": "it-0977",
+        "lang": "it",
+        "tier": "long",
+        "source_row": 977,
+        "text": "Le lettere principali a cui fare attenzione sono la c e la g, dal momento che la loro pronuncia cambia in base alla vocale che segue."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 382200,
+          "audio_seconds": 8.666666666666666,
+          "peak_pcm16": 11576,
+          "terminated": true,
+          "audio_frames": 130,
+          "wall_seconds": 1.7419574999948964,
+          "real_time_factor": 0.20099509615325728,
+          "wav": "audio/30-01.wav",
+          "repeat": 1,
+          "wav_sha256": "2bbdea2a13b2b09c57364f5a18f2d6550af360b646d441502b9533ac82ae4b70"
+        },
+        {
+          "samples": 382200,
+          "audio_seconds": 8.666666666666666,
+          "peak_pcm16": 11576,
+          "terminated": true,
+          "audio_frames": 130,
+          "wall_seconds": 1.7178748000005726,
+          "real_time_factor": 0.19821632307698916,
+          "wav": "audio/30-02.wav",
+          "repeat": 2,
+          "wav_sha256": "2bbdea2a13b2b09c57364f5a18f2d6550af360b646d441502b9533ac82ae4b70"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.7299161499977345,
+        "audio_seconds": 8.666666666666666,
+        "real_time_factor": 0.19960570961512322
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      }
+    },
+    {
+      "case": {
+        "id": "pt-0007",
+        "lang": "pt",
+        "tier": "short",
+        "source_row": 7,
+        "text": "Ele montou uma campainha sem fio, disse."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 149940,
+          "audio_seconds": 3.4,
+          "peak_pcm16": 9379,
+          "terminated": true,
+          "audio_frames": 51,
+          "wall_seconds": 0.8030061000026762,
+          "real_time_factor": 0.2361782647066695,
+          "wav": "audio/31-01.wav",
+          "repeat": 1,
+          "wav_sha256": "2a611afb3b48b948da0acbfb28bf2e65758fd03f6bc390c2875b383996a391c5"
+        },
+        {
+          "samples": 149940,
+          "audio_seconds": 3.4,
+          "peak_pcm16": 9379,
+          "terminated": true,
+          "audio_frames": 51,
+          "wall_seconds": 0.8049544999958016,
+          "real_time_factor": 0.23675132352817696,
+          "wav": "audio/31-02.wav",
+          "repeat": 2,
+          "wav_sha256": "2a611afb3b48b948da0acbfb28bf2e65758fd03f6bc390c2875b383996a391c5"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.8039802999992389,
+        "audio_seconds": 3.4,
+        "real_time_factor": 0.23646479411742322
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      }
+    },
+    {
+      "case": {
+        "id": "pt-0320",
+        "lang": "pt",
+        "tier": "short",
+        "source_row": 320,
+        "text": "Outros lutadores tamb\u00e9m prestaram homenagem a Luna."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 149940,
+          "audio_seconds": 3.4,
+          "peak_pcm16": 6890,
+          "terminated": true,
+          "audio_frames": 51,
+          "wall_seconds": 0.7858222999930149,
+          "real_time_factor": 0.2311242058802985,
+          "wav": "audio/32-01.wav",
+          "repeat": 1,
+          "wav_sha256": "251b5d9968b98a4831bdc8f8b86c68bffff2f97b419cd01e97ffd5ec77130f1b"
+        },
+        {
+          "samples": 149940,
+          "audio_seconds": 3.4,
+          "peak_pcm16": 6890,
+          "terminated": true,
+          "audio_frames": 51,
+          "wall_seconds": 0.7603037000080803,
+          "real_time_factor": 0.22361873529649423,
+          "wav": "audio/32-02.wav",
+          "repeat": 2,
+          "wav_sha256": "251b5d9968b98a4831bdc8f8b86c68bffff2f97b419cd01e97ffd5ec77130f1b"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.7730630000005476,
+        "audio_seconds": 3.4,
+        "real_time_factor": 0.22737147058839635
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      }
+    }
+  ]
+}
