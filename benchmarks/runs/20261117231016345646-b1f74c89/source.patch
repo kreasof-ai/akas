@@ -1,0 +1,27 @@
+diff --git a/tools/plot_comparison.py b/tools/plot_comparison.py
+index f817db78..3c4af8df 100644
+--- a/tools/plot_comparison.py
++++ b/tools/plot_comparison.py
+@@ -263,7 +263,7 @@ def _plot_native_stream(data, baseline, plt, output):
+     positions = range(len(points))
+     fig, axes = plt.subplots(1, 3, figsize=(16, 6.2), sharex=True)
+     panels = (
+-        ("Burst completion time", "Wall seconds (log scale)", "{x:g}"),
++        ("Burst completion time", "Wall seconds", "{x:g}"),
+         ("Audio throughput", "Audio seconds / wall second", "{x:g}"),
+         ("Throughput speedup vs Zyphra", "AKAS / Zyphra native", "{x:g}×"),
+     )
+@@ -276,11 +276,9 @@ def _plot_native_stream(data, baseline, plt, output):
+         axis.yaxis.set_major_formatter(StrMethodFormatter(ticks))
+         axis.grid(axis="x", color="#e2e8f0", linewidth=0.8)
+         _style_axis(axis)
+-    axes[0].set_yscale("log")
+-    axes[0].yaxis.set_major_formatter(StrMethodFormatter("{x:g}"))
+     axes[0].set_ylim(
+-        0.25 * min(row["wall_s"] for _, a, n in points for row in (a, n)),
+-        2 * max(row["wall_s"] for _, a, n in points for row in (a, n)),
++        0,
++        1.15 * max(row["wall_s"] for _, a, n in points for row in (a, n)),
+     )
+     axes[1].set_ylim(
+         0,
