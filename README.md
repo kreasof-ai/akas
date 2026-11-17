@@ -36,7 +36,7 @@ Both servers streamed 44.1 kHz float32 PCM over HTTP for the same fixed
 Each row is one request burst; throughput is total generated audio duration
 divided by client wall time.
 
-![ZONOS3-Mini on L40S: burst completion time, audio throughput, and throughput speedup relative to Zyphra's native CUDA runtime at matched concurrency.](https://raw.githubusercontent.com/kreasof-ai/akas/e645f9653992ce14080f95994964b412fda6b7fe/benchmarks/runs/20261117225229028356-dbb5f541/figures/throughput.svg)
+![ZONOS3-Mini on L40S: burst completion time on a linear scale, audio throughput, and throughput speedup relative to Zyphra's native CUDA runtime at matched concurrency.](https://raw.githubusercontent.com/kreasof-ai/akas/45bc9c006efd1a00dfb76df133ab3b1dfb348e5a/benchmarks/runs/20261117231016345646-b1f74c89/figures/throughput.svg)
 
 <details>
 <summary>Audio throughput, relative speedup, and median time to first audio</summary>
