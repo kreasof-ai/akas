@@ -1,11 +1,11 @@
 {
   "schema": "akas.benchmark-run.v1",
-  "id": "20261117231016345646-b1f74c89",
-  "started_at": "2026-11-17T23:10:16.345646Z",
-  "completed_at": "2026-11-17T23:10:17.648916Z",
+  "id": "20261117231458075664-bc9db56b",
+  "started_at": "2026-11-17T23:14:58.075664Z",
+  "completed_at": "2026-11-17T23:15:33.741398Z",
   "status": "passed",
   "source": {
-    "revision": "1f240d01711c7b04d3d7bcdc2363158ec0f29c73",
+    "revision": "f5cdde58d13c8daffbec7cb1ac64c4375239035a",
     "dirty": true,
     "tree_sha256": "0aa07a597eabae2772ceb3aa9e77ef9caf04b99ec301e83deb1b11220e9673f4",
     "files": {
@@ -558,49 +558,178 @@
       "tools/vulkan_tune.py": "1cb88f27de4078b5c84da62e9d5089f00d0e1cabeae1c1208477772037f04c19",
       "uv.lock": "bbde4f9ad7b3577d28a9ac20ecd6b04d26ffb055733070391992c187e914e041"
     },
-    "captured_at": "2026-11-17T23:10:16.345646Z",
+    "captured_at": "2026-11-17T23:14:58.075664Z",
     "changed_during_run": false
   },
   "metadata": {
-    "protocol": "derived-benchmark-figure-v1",
-    "purpose": "streaming-speech-showcase-figure",
-    "model": "Zyphra/ZONOS3-Mini",
-    "runtime": "akas",
+    "purpose": "kernel-qualification",
+    "protocol": "prior-kernel-bitwise-v1",
     "provider": "cuda",
-    "weight_format": "bf16",
-    "device": {
-      "name": "NVIDIA L40S",
-      "memory_total_mib": 46068
-    },
-    "matplotlib": "3.11.2",
-    "burst_time_axis": "linear",
-    "inputs": {
-      "akas": {
-        "kind": "runs",
-        "id": "20261117224439048177-b767426d",
-        "path": "report.json",
-        "sha256": "1cf5dbcebcac7e940f3052df4f8b804a17b42c70b9d97d61d4491ffa0c66a113"
+    "target": "sm_89",
+    "predecessor": "401c34a8013439a5ed95e03b7538a4fb85f51f8d",
+    "checks": [
+      {
+        "module": "akas.ops.vocabulary.kernel",
+        "factory": "argmax",
+        "parameters": {
+          "r": 5,
+          "c": 64
+        },
+        "bitwise": true,
+        "old_tbin": "a708519ba938c1e1c0e3be25200b8845c5972d0c7359a3a6628fe5e00137e339",
+        "new_tbin": "ab467f940b0b7e4d5e90c4b956a991047e3bd439df649569979811546471e77b"
       },
-      "native": {
-        "kind": "reports",
-        "id": "20261117T160518Z-59b3379b9d08",
-        "path": "report.json",
-        "sha256": "9e44531d7cdbfa57bef3a6f8dfc56e267335e3086a0e6457f4a45527b23a3663"
+      {
+        "module": "akas.ops.vocabulary.kernel",
+        "factory": "argmax",
+        "parameters": {
+          "r": 5,
+          "c": 513
+        },
+        "bitwise": true,
+        "old_tbin": "50bd4c192dd960047f67f563052a571ff39e219a30ea0fcf8ee6c07dad199672",
+        "new_tbin": "d743242711c9008438d4c301be41b6b09c00aa81b05bd28fd5e4ec969915da2d"
       },
-      "correctness": {
-        "kind": "runs",
-        "id": "20261117224224262017-91925158",
-        "path": "report.json",
-        "sha256": "86ec1d914ce66a4e26a7da5d962ff32c18370194f720be2c7e65e0a70fbf2187"
+      {
+        "module": "akas.ops.vocabulary.kernel",
+        "factory": "argmax",
+        "parameters": {
+          "r": 5,
+          "c": 8197
+        },
+        "bitwise": true,
+        "old_tbin": "2d4faa36fe67058b2211cdbe3ceba4db34c6a2aa01897333f0deba474692a648",
+        "new_tbin": "07a8c45be9b4e003c428f032328e5a4b636c3903f8c5adb24dbbd2a13e94bb30"
+      },
+      {
+        "module": "akas.ops.vocabulary.kernel",
+        "factory": "argmax",
+        "parameters": {
+          "r": 5,
+          "c": 40980
+        },
+        "bitwise": true,
+        "old_tbin": "57270449bf661b8daf0dcb7ba22a36c97c58ba449addd668360144419df93011",
+        "new_tbin": "b1dbab6d80929af20d2cb484cf154906994a433592ef14e2dc66c7526b6a895d"
+      },
+      {
+        "module": "akas.ops.vocabulary.kernel",
+        "factory": "embedding",
+        "parameters": {
+          "r": 1,
+          "c": 64,
+          "v": 43,
+          "start": 16
+        },
+        "bitwise": true,
+        "old_tbin": "4df9be88f15e5d3b6039817b252a779b17c7953184dc99576dabfdf5caf23a11",
+        "new_tbin": "161398d300ba68b4cc60f2e4bd1d7834c5e12b2041a88d09dad8988b027bedaa"
+      },
+      {
+        "module": "akas.ops.vocabulary.kernel",
+        "factory": "embedding",
+        "parameters": {
+          "r": 7,
+          "c": 192,
+          "v": 43,
+          "start": 16
+        },
+        "bitwise": true,
+        "old_tbin": "6274f99c387b502368fc6eb48934dca3e0746c7afd04a649d6993c32f3b1b7dc",
+        "new_tbin": "374bc5c647e1bc0c0bc45afabd3e8bbcb1b1f3821cd7d02a21301dd8e8d5e336"
+      },
+      {
+        "module": "akas.ops.vocabulary.kernel",
+        "factory": "embedding",
+        "parameters": {
+          "r": 64,
+          "c": 257,
+          "v": 43,
+          "start": 16
+        },
+        "bitwise": true,
+        "old_tbin": "4e90ff8553ca40e9810b6c7953081b6273cc6140ad74c94db88b8a8696f23c5e",
+        "new_tbin": "6eb61a4cb77b536dbf2038f50fa9fda28d8452a0d6195f76dd19bec854f6d810"
+      },
+      {
+        "module": "akas.ops.vocabulary.kernel",
+        "factory": "embedding",
+        "parameters": {
+          "r": 128,
+          "c": 1024,
+          "v": 43,
+          "start": 16
+        },
+        "bitwise": true,
+        "old_tbin": "a2a824a96ffe13aafa91f97ec7337614ce38204d130fd98a09c494066091cd50",
+        "new_tbin": "50b66c089d647406f7d7b08ca198a1fe97f5531aeaeba30508332d6327fdd669"
+      },
+      {
+        "module": "akas.ops.attention.cuda",
+        "factory": "floating",
+        "parameters": {
+          "r": 32,
+          "h": 4,
+          "kh": 2,
+          "d": 64,
+          "capacity": 32,
+          "chunk": 16,
+          "kv_dtype": "float16",
+          "unit_scales": true
+        },
+        "bitwise": true,
+        "old_tbin": "931e6059b48de293eb7ff1b8298c150f7dca2f764ef113a98bdedd76ec14dd8a",
+        "new_tbin": "bc7939944921ea8e781a51c947ec20bd92197b62c191b63c968a70d1cad16278"
+      },
+      {
+        "module": "akas.ops.attention.cuda",
+        "factory": "floating",
+        "parameters": {
+          "r": 64,
+          "h": 4,
+          "kh": 2,
+          "d": 64,
+          "capacity": 64,
+          "chunk": 32,
+          "kv_dtype": "float16",
+          "unit_scales": true
+        },
+        "bitwise": true,
+        "old_tbin": "9d5baec78c94953cf0e091185a3f5437720c4e580395e9738fcb211e1a2db926",
+        "new_tbin": "e0aa457938d23380e081d9c7e2247de39fe56ae801812ec6b832f150a1003603"
+      },
+      {
+        "module": "akas.ops.attention.cuda",
+        "factory": "floating",
+        "parameters": {
+          "r": 128,
+          "h": 4,
+          "kh": 2,
+          "d": 64,
+          "capacity": 128,
+          "chunk": 64,
+          "kv_dtype": "float16",
+          "unit_scales": true
+        },
+        "bitwise": true,
+        "old_tbin": "11374b72f3c369248cf4d33655d90b45d5fda97e5d1983eeddfe369e09e12ce4",
+        "new_tbin": "11dda83f249976f4e5d159172e57b4c781f730c063a06f56a85889da342861df"
       }
+    ],
+    "device": {
+      "ordinal": 0,
+      "name": "NVIDIA L40S",
+      "arch": "sm_89",
+      "provider": "cuda"
     }
   },
   "change": {
-    "kind": "artifact",
-    "description": "Render burst completion time on a linear axis from the original sealed measurements",
-    "parent_run": "20261117225229028356-dbb5f541"
+    "kind": "qualification",
+    "description": "Replay prior default vocabulary and floating attention CUDA kernels against the current arithmetic",
+    "parent_run": null
   },
   "dependencies": {
+    "akas": "0.1.0",
     "cycler": "0.12.1",
     "iniconfig": "2.3.1",
     "ml_dtypes": "0.6.0",
@@ -616,7 +745,6 @@
     "pytest": "9.1.1",
     "ruff": "0.17.0",
     "regex": "2026.9.29",
-    "akas": "0.1.0",
     "aiohappyeyeballs": "2.7.1",
     "aiosignal": "1.4.0",
     "attrs": "26.1.0",
@@ -708,28 +836,28 @@
   "artifacts": [
     {
       "path": "source.tar.gz",
-      "sha256": "02ddee07d805a6d784519e5c6d6dacc2ddf43bdf549024ba56a0c0216d857150",
+      "sha256": "d6cde4badd46f081dbc39af0c1a5a1e6866b03e43f37e77e85d808991c937461",
       "bytes": 1088742
     },
     {
-      "path": "source.patch",
-      "sha256": "84e448118e9f0e48ffeb34c8aa56902fd904f1775ac1177e42e355c4f7c30c57",
-      "bytes": 1274
+      "path": "probe.py",
+      "sha256": "65cbd41cc81f2dfb48bb0fd0e156396cee495a42beb87d995d1022e55cead648",
+      "bytes": 5153
     },
     {
-      "path": "figures/throughput.svg",
-      "sha256": "ed09ed44d7fe9c1b7b45c3dae6666c0f0b3fe8a762dc947dc8f4b4029fb87d8e",
-      "bytes": 113194
+      "path": "predecessor/src/akas/ops/vocabulary/kernel.py",
+      "sha256": "9816a54a63c383971ab8e80a84a4a8e015d69f4ebb2b514855fa61fabf309dff",
+      "bytes": 13782
     },
     {
-      "path": "figures/throughput.png",
-      "sha256": "64d855773833a0bcba56dd6989f818c6c52f7357e83e1fb85e53563ca21a34e5",
-      "bytes": 195735
+      "path": "predecessor/src/akas/ops/attention/cuda.py",
+      "sha256": "4842e72f80521188a4cf5abb1e6308159f72ffd2ba39a3c6ee64199ee917b578",
+      "bytes": 178264
     },
     {
       "path": "report.json",
-      "sha256": "cf1d5bd5c9b77394bc3146ed292af4fc2b13c51623188a768c10c5639a487d74",
-      "bytes": 1097
+      "sha256": "9243f77273e79bf13f37a8811f1e4daf8e18b414d19b5b956dfd51b7d7fbcb41",
+      "bytes": 5067
     }
   ],
   "dependency_sources": {}

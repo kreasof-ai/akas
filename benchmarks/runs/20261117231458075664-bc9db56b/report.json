@@ -1,0 +1,166 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "purpose": "kernel-qualification",
+    "protocol": "prior-kernel-bitwise-v1",
+    "provider": "cuda",
+    "target": "sm_89",
+    "predecessor": "401c34a8013439a5ed95e03b7538a4fb85f51f8d",
+    "checks": [
+      {
+        "module": "akas.ops.vocabulary.kernel",
+        "factory": "argmax",
+        "parameters": {
+          "r": 5,
+          "c": 64
+        },
+        "bitwise": true,
+        "old_tbin": "a708519ba938c1e1c0e3be25200b8845c5972d0c7359a3a6628fe5e00137e339",
+        "new_tbin": "ab467f940b0b7e4d5e90c4b956a991047e3bd439df649569979811546471e77b"
+      },
+      {
+        "module": "akas.ops.vocabulary.kernel",
+        "factory": "argmax",
+        "parameters": {
+          "r": 5,
+          "c": 513
+        },
+        "bitwise": true,
+        "old_tbin": "50bd4c192dd960047f67f563052a571ff39e219a30ea0fcf8ee6c07dad199672",
+        "new_tbin": "d743242711c9008438d4c301be41b6b09c00aa81b05bd28fd5e4ec969915da2d"
+      },
+      {
+        "module": "akas.ops.vocabulary.kernel",
+        "factory": "argmax",
+        "parameters": {
+          "r": 5,
+          "c": 8197
+        },
+        "bitwise": true,
+        "old_tbin": "2d4faa36fe67058b2211cdbe3ceba4db34c6a2aa01897333f0deba474692a648",
+        "new_tbin": "07a8c45be9b4e003c428f032328e5a4b636c3903f8c5adb24dbbd2a13e94bb30"
+      },
+      {
+        "module": "akas.ops.vocabulary.kernel",
+        "factory": "argmax",
+        "parameters": {
+          "r": 5,
+          "c": 40980
+        },
+        "bitwise": true,
+        "old_tbin": "57270449bf661b8daf0dcb7ba22a36c97c58ba449addd668360144419df93011",
+        "new_tbin": "b1dbab6d80929af20d2cb484cf154906994a433592ef14e2dc66c7526b6a895d"
+      },
+      {
+        "module": "akas.ops.vocabulary.kernel",
+        "factory": "embedding",
+        "parameters": {
+          "r": 1,
+          "c": 64,
+          "v": 43,
+          "start": 16
+        },
+        "bitwise": true,
+        "old_tbin": "4df9be88f15e5d3b6039817b252a779b17c7953184dc99576dabfdf5caf23a11",
+        "new_tbin": "161398d300ba68b4cc60f2e4bd1d7834c5e12b2041a88d09dad8988b027bedaa"
+      },
+      {
+        "module": "akas.ops.vocabulary.kernel",
+        "factory": "embedding",
+        "parameters": {
+          "r": 7,
+          "c": 192,
+          "v": 43,
+          "start": 16
+        },
+        "bitwise": true,
+        "old_tbin": "6274f99c387b502368fc6eb48934dca3e0746c7afd04a649d6993c32f3b1b7dc",
+        "new_tbin": "374bc5c647e1bc0c0bc45afabd3e8bbcb1b1f3821cd7d02a21301dd8e8d5e336"
+      },
+      {
+        "module": "akas.ops.vocabulary.kernel",
+        "factory": "embedding",
+        "parameters": {
+          "r": 64,
+          "c": 257,
+          "v": 43,
+          "start": 16
+        },
+        "bitwise": true,
+        "old_tbin": "4e90ff8553ca40e9810b6c7953081b6273cc6140ad74c94db88b8a8696f23c5e",
+        "new_tbin": "6eb61a4cb77b536dbf2038f50fa9fda28d8452a0d6195f76dd19bec854f6d810"
+      },
+      {
+        "module": "akas.ops.vocabulary.kernel",
+        "factory": "embedding",
+        "parameters": {
+          "r": 128,
+          "c": 1024,
+          "v": 43,
+          "start": 16
+        },
+        "bitwise": true,
+        "old_tbin": "a2a824a96ffe13aafa91f97ec7337614ce38204d130fd98a09c494066091cd50",
+        "new_tbin": "50b66c089d647406f7d7b08ca198a1fe97f5531aeaeba30508332d6327fdd669"
+      },
+      {
+        "module": "akas.ops.attention.cuda",
+        "factory": "floating",
+        "parameters": {
+          "r": 32,
+          "h": 4,
+          "kh": 2,
+          "d": 64,
+          "capacity": 32,
+          "chunk": 16,
+          "kv_dtype": "float16",
+          "unit_scales": true
+        },
+        "bitwise": true,
+        "old_tbin": "931e6059b48de293eb7ff1b8298c150f7dca2f764ef113a98bdedd76ec14dd8a",
+        "new_tbin": "bc7939944921ea8e781a51c947ec20bd92197b62c191b63c968a70d1cad16278"
+      },
+      {
+        "module": "akas.ops.attention.cuda",
+        "factory": "floating",
+        "parameters": {
+          "r": 64,
+          "h": 4,
+          "kh": 2,
+          "d": 64,
+          "capacity": 64,
+          "chunk": 32,
+          "kv_dtype": "float16",
+          "unit_scales": true
+        },
+        "bitwise": true,
+        "old_tbin": "9d5baec78c94953cf0e091185a3f5437720c4e580395e9738fcb211e1a2db926",
+        "new_tbin": "e0aa457938d23380e081d9c7e2247de39fe56ae801812ec6b832f150a1003603"
+      },
+      {
+        "module": "akas.ops.attention.cuda",
+        "factory": "floating",
+        "parameters": {
+          "r": 128,
+          "h": 4,
+          "kh": 2,
+          "d": 64,
+          "capacity": 128,
+          "chunk": 64,
+          "kv_dtype": "float16",
+          "unit_scales": true
+        },
+        "bitwise": true,
+        "old_tbin": "11374b72f3c369248cf4d33655d90b45d5fda97e5d1983eeddfe369e09e12ce4",
+        "new_tbin": "11dda83f249976f4e5d159172e57b4c781f730c063a06f56a85889da342861df"
+      }
+    ],
+    "device": {
+      "ordinal": 0,
+      "name": "NVIDIA L40S",
+      "arch": "sm_89",
+      "provider": "cuda"
+    }
+  },
+  "results": []
+}
