@@ -46,8 +46,10 @@ Then remove verified local copies:
 python -m tools.benchmark_archive prune
 ```
 
-Commits contain at most 192 MiB, branches at most 512 MiB of historical payload.
-Every archive commit replaces the previous batch in its tree; each new shard starts
+Commits contain at most 192 MiB, branches at most 512 MiB of unique historical
+blob content. Identical evidence retained at multiple paths shares one Git blob
+without dropping any path or checksum. Every archive commit replaces the previous
+batch in its tree; each new shard starts
 without a parent. A run stays intact. Larger bundles must be reduced or explicitly
 handled before publishing. Previous commits remain reachable through their branch.
 Never merge archive branches into main, squash their history, force-push them or

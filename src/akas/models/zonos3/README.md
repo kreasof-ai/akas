@@ -35,4 +35,10 @@ WGPU_BACKEND_TYPE=Vulkan uv run --no-sync akas compile \
 Set `$env:WGPU_BACKEND_TYPE = 'Vulkan'` before the command in PowerShell. For longer prompts, a larger prefill capacity reduces repeated backbone dispatches and active-expert reads. The validated 256-row configuration uses `prefill_rows: 256`; it retains the same decode, sampling, codec, and waveform path and is within the established backbone reference tolerance.
 
 Use the [speech benchmark commands](../../../../tools/baselines/README.md#speech-synthesis-demo)
-to compare with llama.cpp Vulkan under the same request and audio protocol. On the RX 6700 XT, the 60-case language-matched workload completed 60/60 cases with 1.548× wall-time and 1.575× audio-throughput speedup over llama.cpp Vulkan, versus 1.427× and 1.443× for the 64-row prefill configuration. The generated report remains unqualified until the speech workload has full-model reference qualification.
+to compare with llama.cpp Vulkan under the same request and audio protocol.
+On the RX 6700 XT, the [final 43-language fixed-voice benchmark](https://github.com/kreasof-ai/akas/blob/b45b707fb78c9333ed37a49f860a8d6d2103c625/benchmarks/reports/20261117T121145Z-48e3bd2d83ae/COMPARISON.md)
+completed 253/258 cases with **1.534× wall-time** and **1.712× audio-throughput**
+speedup over llama.cpp Vulkan, and **1.876× wall-time speedup** over llama.cpp
+CPU. The earlier 64-row configuration reached 1.369× and 1.477× on the same
+sample. The generated report remains unqualified until the speech workload has
+full-model reference qualification.

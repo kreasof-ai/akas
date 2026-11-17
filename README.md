@@ -308,7 +308,7 @@ Replace `REPORT_DIRECTORY` with the verified directory printed by the fetch comm
 
 **ZONOS3-Mini† · Q8_0 weights and F32 ZAC projector · Radeon RX 6700 XT (Vulkan) · Ryzen 5 5600 (CPU)**
 
-Results from the [November 17, 2026 fixed-voice benchmark](benchmarks/reports/20261117T121145Z-48e3bd2d83ae/COMPARISON.md)
+Results from the [November 17, 2026 fixed-voice benchmark](https://github.com/kreasof-ai/akas/blob/b45b707fb78c9333ed37a49f860a8d6d2103c625/benchmarks/reports/20261117T121145Z-48e3bd2d83ae/COMPARISON.md)
 cover 258 FLORES-200 prompts across 43 languages, with matching settings on
 AKAS WebGPU/Vulkan, llama.cpp b12424 Vulkan, and llama.cpp CPU. The optimized program uses
 256-row prefill with the same decode, sampling, codec, and waveform pipeline.
@@ -338,12 +338,12 @@ medians and interquartile ranges. The third panel shows CPU wall time divided by
 required independent full-model speech qualification. Intelligibility,
 pronunciation, and MOS were not measured.
 
-The earlier [43-language fixed-voice benchmark](benchmarks/reports/20261117T071744Z-ad4250ae7c74/README.md)
+The earlier [43-language fixed-voice benchmark](https://github.com/kreasof-ai/akas/blob/e15f76bee2435c30b707c80778aed594ed88170f/benchmarks/reports/20261117T071744Z-ad4250ae7c74/README.md)
 retains its original results: 253 matched prompts, 1.369× wall-time and 1.477×
 audio-throughput speedup over llama.cpp Vulkan. Two Japanese prompts reached
 the frame limit and three Punjabi prompts returned silence. Its CPU comparison
 reported 1.678× wall-time speedup for AKAS over llama.cpp CPU.
-[Original-sample comparison](benchmarks/reports/20261117T121145Z-48e3bd2d83ae/README.md)
+[Original-sample comparison](https://github.com/kreasof-ai/akas/blob/b45b707fb78c9333ed37a49f860a8d6d2103c625/benchmarks/reports/20261117T121145Z-48e3bd2d83ae/README.md)
 
 **Audio samples** · Unedited AKAS output for FLORES-200 devtest row 942.
 WAVs are mono PCM16 at 44.1 kHz. RTF is shown for timed benchmark samples.
@@ -363,13 +363,16 @@ The Indonesian and Japanese clips use speaker rows from the FLEURS
 speech in this synthesis run, including the two Japanese prompts that
 reached the frame limit in the fixed-voice benchmark.
 [FLEURS audio dataset](https://huggingface.co/datasets/google/fleurs) ·
-[Synthesis record](benchmarks/runs/20261117082408590505-2855e9c0/report.json)
+[Synthesis record](https://github.com/kreasof-ai/akas/blob/4c7bfaa20d59b1a4e0ff0c81c8de14e73dbcf1d7/benchmarks/runs/20261117082408590505-2855e9c0/report.json)
 
-Regenerate the plot from the retained report:
+Regenerate the plot after retrieving the archived report:
 
 ```sh
-uv run --no-sync python -m tools.plot_comparison benchmarks/reports/20261117T114524Z-3c395882b896/report.json build/zonos3-mini/showcase.svg
+uv run --no-sync python -m tools.benchmark_archive fetch reports 20261117T121145Z-48e3bd2d83ae
+uv run --no-sync python -m tools.plot_comparison REPORT_DIRECTORY/report.json docs/assets/zonos3-mini/throughput.svg
 ```
+
+Replace `REPORT_DIRECTORY` with the verified directory printed by the fetch command.
 
 ## Getting started
 

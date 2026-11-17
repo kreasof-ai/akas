@@ -29,6 +29,17 @@ def file_manifest(directory):
     return result
 
 
+def stored_size(files):
+    """Git stores duplicate payload content in one blob, not once per path."""
+    unique = {}
+    for info in files.values():
+        digest, size = info["sha256"], info["bytes"]
+        if digest in unique and unique[digest] != size:
+            raise ValueError("archive checksum collision has inconsistent byte counts")
+        unique[digest] = size
+    return sum(unique.values())
+
+
 def report_summary(data):
     profiles = data["profiles"]
     counts = {}
@@ -176,7 +187,7 @@ def publish(
             else:
                 summary = report_summary(record)
             size = sum(p.stat().st_size for p in folder.rglob("*") if p.is_file())
-            if size > max_commit_bytes:
+            if stored_size(file_manifest(folder)) > max_commit_bytes:
                 raise ValueError(f"bundle exceeds commit size limit: {folder}")
             pending.append((kind, folder, summary, size))
     if any(kind == "reports" for kind, *_ in pending) and not legacy_bootstrap:
@@ -191,8 +202,9 @@ def publish(
     for kind in ("runs", "reports"):
         for entry in data[kind].values():
             state = branches.setdefault(entry["branch"], dict(bytes=0, commits=set()))
-            state["bytes"] += sum(f["bytes"] for f in entry["files"].values())
-            state["commits"].add(entry["commit"])
+            if entry["commit"] not in state["commits"]:
+                state["bytes"] += stored_size(entry["files"])
+                state["commits"].add(entry["commit"])
     with tempfile.TemporaryDirectory(prefix="akas-archive-") as temporary:
         temporary = Path(temporary)
         env = dict(os.environ, GIT_INDEX_FILE=str(temporary / "index"))
@@ -220,9 +232,16 @@ def publish(
                 previous = parent
             except ValueError:
                 try:
-                    parent = archive.git(
-                        repo, "rev-parse", "--verify", "refs/remotes/origin/" + branch
-                    ).decode().strip()
+                    parent = (
+                        archive.git(
+                            repo,
+                            "rev-parse",
+                            "--verify",
+                            "refs/remotes/origin/" + branch,
+                        )
+                        .decode()
+                        .strip()
+                    )
                 except ValueError:
                     parent = None
             if parent is None and state["commits"]:
@@ -250,7 +269,7 @@ def publish(
                 for kind, folder, _, snapshot, files, _ in entries
                 for name, info in files.items()
             ]
-            actual_size = sum(info["bytes"] for _, _, info in files_to_hash)
+            actual_size = stored_size({name: info for _, name, info in files_to_hash})
             if (
                 actual_size > max_commit_bytes
                 or state["bytes"] + actual_size > max_branch_bytes

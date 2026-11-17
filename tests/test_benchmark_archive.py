@@ -17,7 +17,7 @@ from akas.benchmarking.history import (
     records,
     write,
 )
-from tools.benchmark_archive import check, file_manifest, prune, publish
+from tools.benchmark_archive import check, file_manifest, prune, publish, stored_size
 
 
 @pytest.fixture
@@ -128,6 +128,36 @@ def test_rotation_preserves_index_head_source_bytes_and_retrieval(repo, capsys):
     assert "run-0 passed akas toy" in capsys.readouterr().out
     publish(root)
     assert len(archive.catalog(root)["runs"]) == 5
+
+
+def test_size_limits_count_unique_git_blob_content(repo):
+    root = repo / "benchmarks"
+    folder = run(root, "duplicate")
+    (folder / "first.wav").write_bytes(b"speech" * 1024)
+    (folder / "second.wav").write_bytes(b"speech" * 1024)
+    limit = sum(v["bytes"] for v in file_manifest(folder).values())
+    assert stored_size(file_manifest(folder)) == limit - 6 * 1024
+    with pytest.raises(ValueError, match="exceeds commit size limit"):
+        publish(
+            root,
+            repository_url="https://github.com/example/archive",
+            max_commit_bytes=stored_size(file_manifest(folder)) - 1,
+            max_branch_bytes=limit,
+        )
+    publish(
+        root,
+        repository_url="https://github.com/example/archive",
+        max_commit_bytes=stored_size(file_manifest(folder)),
+        max_branch_bytes=limit,
+    )
+    data = check(root, objects=True)
+    entry = data["runs"]["duplicate"]
+    assert set(entry["files"]) == {"run.json", "report.json", "first.wav", "second.wav"}
+    assert archive.git(
+        repo, "rev-parse", entry["commit"] + ":" + entry["path"] + "/first.wav"
+    ) == archive.git(
+        repo, "rev-parse", entry["commit"] + ":" + entry["path"] + "/second.wav"
+    )
 
 
 def test_prune_refuses_changed_or_unsealed_data(repo):
