@@ -41,6 +41,16 @@ def stored_size(files):
 
 
 def report_summary(data):
+    if data.get("schema") == "akas.native-stream-comparison-report.v1":
+        state = data["campaign"]
+        # The paired workload checks do not constitute full model qualification.
+        return dict(
+            started_at=state["created_at"],
+            workload=data["workload"]["id"],
+            revision=state["source"]["revision"],
+            akas=f"0/{len(data['measurements'])}",
+            baseline=f"0/{len(data['measurements'])}",
+        )
     if data.get("schema") == "akas.native-stream-baseline-report.v1":
         state = data["campaign"]
         return dict(

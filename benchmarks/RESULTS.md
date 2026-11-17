@@ -4,6 +4,7 @@ Generated from run records. See [the benchmark guide](../docs/benchmarking.md).
 
 | UTC | Hardware | Runtime / model | Backend / weights / mode / KV | Shapes (B/P/O) | Purpose | Status | Source | Record |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-17T23:14:58.075664Z | NVIDIA L40S | akas /  | cuda / unspecified / ar / unspecified |  | kernel-qualification | passed | f5cdde58d1 + snapshot | [run](https://github.com/kreasof-ai/akas/blob/3ff3c48526286e49c8ca6236041a12aa34bc7736/benchmarks/runs/20261117231458075664-bc9db56b/run.json) |
 | 2026-11-17T23:10:16.345646Z | NVIDIA L40S | akas / Zyphra/ZONOS3-Mini | cuda / bf16 / ar / unspecified |  | streaming-speech-showcase-figure | passed | 1f240d0171 + snapshot | [run](https://github.com/kreasof-ai/akas/blob/45bc9c006efd1a00dfb76df133ab3b1dfb348e5a/benchmarks/runs/20261117231016345646-b1f74c89/run.json) |
 | 2026-11-17T22:52:29.028356Z | NVIDIA L40S | akas / Zyphra/ZONOS3-Mini | cuda / bf16 / ar / unspecified |  | streaming-speech-showcase-figure | passed | a3f3cc4a9c + snapshot | [run](https://github.com/kreasof-ai/akas/blob/e645f9653992ce14080f95994964b412fda6b7fe/benchmarks/runs/20261117225229028356-dbb5f541/run.json) |
 | 2026-11-17T22:44:39.048177Z | NVIDIA L40S | akas / Zyphra/ZONOS3-Mini | cuda / bf16 / ar / unspecified |  | akas-streaming-capacity | passed | a3f3cc4a9c + snapshot | [run](https://github.com/kreasof-ai/akas/blob/092e255f32f6bd5cb3f8e03fd1e8bc95802e033c/benchmarks/runs/20261117224439048177-b767426d/run.json) |

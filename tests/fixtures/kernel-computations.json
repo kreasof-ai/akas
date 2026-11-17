@@ -96,6 +96,17 @@
             "tests/test_attention_cache_staging.py::test_staged_attention_matches_fp8_oracle_with_poisoned_padding"
           ],
           "qualification_run": "20261020170127736154-28a52ca6"
+        },
+        {
+          "original": [
+            "launch:416008a945e89aef0f67a3a431d401e03d2cf8f70bea33ed067b984f5d1d4ae0"
+          ],
+          "replacement": [
+            "launch:bbd83f248bd6bc0473cce4535fdce3dd83c88414133b9614bd565d9fa5b95fc1"
+          ],
+          "reason": "Add an occupancy annotation and optional TMA without changing default floating attention.",
+          "qualification_tests": ["probe.py"],
+          "qualification_run": "20261117231458075664-bc9db56b"
         }
       ]
     },
@@ -642,6 +653,21 @@
         "launch:4dae97ff8a2aedb690668ed4c4ace5ea0faf384d8222553937f59f5b01776c21",
         "launch:97c08d2c6a8229d5496ac591145990abd07669446d6257d408e2e9854287da7d",
         "launch:ebd2bdc387c8b6c39efc4b8ba2a760b35af16b6eb4e4ff115fcb6c9d84642272"
+      ],
+      "qualified_replacements": [
+        {
+          "original": [
+            "launch:165534311037346379d3485ba005d2b72a8c5ece99a3b07c3e5f9c59e9d632fd",
+            "launch:44708b45d64d66e1227e47de2e30d62648c6394f7e417968137543acfbd3e928"
+          ],
+          "replacement": [
+            "launch:99a54469b2ed43a05f7f3f2aaf450c4aa848963a77a56e997dc45c1de108cb05",
+            "launch:d759335e5cfc2250e08d260ddb51e0ed2cbefca12afb556f6d58229e69b72ec7"
+          ],
+          "reason": "Keep default 64-thread argmax tie and mask handling, and flatten the embedding grid without changing output or invalid-row writes.",
+          "qualification_tests": ["probe.py"],
+          "qualification_run": "20261117231458075664-bc9db56b"
+        }
       ]
     },
     {

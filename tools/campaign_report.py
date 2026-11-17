@@ -22,6 +22,8 @@ from akas.optimization.context import workload
 SCHEMA = "akas.campaign-report.v1"
 SPEECH_SCHEMA = "akas.speech-report.v1"
 NATIVE_STREAM_SCHEMA = "akas.native-stream-baseline-report.v1"
+STREAM_COMPARISON_SCHEMA = "akas.native-stream-comparison-report.v1"
+STREAM_COMPARISON_FILES = frozenset(("README.md", "measurements.csv", "campaign.json", "report.json"))
 SPEECH_FILES = frozenset((
     "README.md", "COMPARISON.md", "AKAS.md", "BASELINES.md",
     "measurements.csv", "campaign.json", "report.json",
@@ -828,6 +830,8 @@ def table_rows(profiles):
 
 
 def render(data, out, history):
+    if data.get("schema") == STREAM_COMPARISON_SCHEMA:
+        return render_native_stream_comparison(data, Path(out).resolve(), Path(history).resolve())
     if data.get("schema") == NATIVE_STREAM_SCHEMA:
         return render_native_stream_baseline(data, Path(out).resolve(), Path(history).resolve())
     if data.get("schema") == SPEECH_SCHEMA:
@@ -1648,6 +1652,122 @@ def render_native_stream_baseline(data, out, history):
     return out
 
 
+def export_native_stream_comparison(akas_run, native_report, correctness_run, figure_run, history, out=None):
+    """Export the matched BF16 streaming comparison from sealed archive records."""
+    from tools.plot_comparison import _native_stream_points
+
+    akas, correctness, figure = (record(history, run) for run in (akas_run, correctness_run, figure_run))
+    if any(run is None or run["status"] != "passed" for run in (akas, correctness, figure)):
+        raise ValueError("streaming comparison requires three sealed, passed runs")
+    native_raw = archive.read_file(history, "reports", native_report, "report.json")
+    native = json.loads(native_raw)
+    for key in ("akas", "native", "correctness"):
+        source = figure["metadata"]["inputs"][key]
+        raw = archive.read_file(history, source["kind"], source["id"], "report.json")
+        if source["id"] != {"akas": akas_run, "native": native_report, "correctness": correctness_run}[key] or (
+            hashlib.sha256(raw).hexdigest() != source["sha256"]
+        ):
+            raise ValueError(f"figure inputs do not match the comparison: {key}")
+    if (
+        akas["metadata"]["program_sha256"] != correctness["metadata"]["program_sha256"]
+        or akas["source"]["tree_sha256"] != correctness["source"]["tree_sha256"]
+    ):
+        raise ValueError("correctness evidence belongs to a different program or source tree")
+    points = _native_stream_points({
+        "schema": "akas.benchmark.v1", "metadata": akas["metadata"], "results": akas["results"],
+    }, native)
+    rows = []
+    for count, a, n in points:
+        row = {"concurrency": count}
+        for label, value in (("akas", a), ("native", n)):
+            row.update({
+                f"{label}_completed": value["completed"],
+                f"{label}_wall_s": value["wall_s"],
+                f"{label}_audio_s_per_s": value["audio_seconds_per_second"],
+                f"{label}_ttfa_p50_ms": 1000 * value["ttfa_s"]["p50"],
+                f"{label}_peak_gpu_gib": value["gpu_memory_peak"]["memory_used_mib"] / 1024,
+            })
+        row["throughput_speedup"] = row["akas_audio_s_per_s"] / row["native_audio_s_per_s"]
+        rows.append(row)
+    checks = correctness["metadata"]["checks"]
+    replay_shapes = {r["case"]["batch"] for r in correctness["results"] if r["slot_reuse_bitwise"]}
+    if not checks or replay_shapes != {row["concurrency"] for row in rows}:
+        raise ValueError("streaming correctness evidence does not cover the measured matrix")
+    state = dict(
+        identity=hashlib.sha256("\n".join((akas_run, native_report, correctness_run, figure_run)).encode()).hexdigest(),
+        created_at=akas["started_at"], updated_at=figure["completed_at"],
+        akas_run=akas_run, native_report=native_report, correctness_run=correctness_run, figure_run=figure_run,
+        source={"revision": akas["source"]["revision"], "tree_sha256": akas["source"]["tree_sha256"]},
+    )
+    data = dict(
+        schema=STREAM_COMPARISON_SCHEMA, campaign=state, workload=native["workload"], measurements=rows,
+        correctness=dict(codec_checks=len(checks), max_rms=max(c["rms"] for c in checks),
+                         max_abs=max(c["max_abs"] for c in checks),
+                         replays=sum(r["completed"] for r in correctness["results"])),
+        program_sha256=akas["metadata"]["program_sha256"],
+    )
+    return render(data, Path(out) if out else report_directory(state, history), history)
+
+
+def render_native_stream_comparison(data, out, history):
+    out.mkdir(parents=True, exist_ok=True)
+    state, rows, correctness = (data[key] for key in ("campaign", "measurements", "correctness"))
+    native = archive.link(history, "reports", state["native_report"], "README.md")
+    native = native or f"../{state['native_report']}/README.md"
+    akas = evidence_link(state["akas_run"], out, history, name="report.json", label="AKAS measurements")
+    checks = evidence_link(state["correctness_run"], out, history, name="report.json", label="Correctness probes")
+    plot = evidence_link(state["figure_run"], out, history, name="figures/throughput.svg", label="Three-panel figure")
+    best = max(rows, key=lambda row: row["native_audio_s_per_s"])
+    largest = max(rows, key=lambda row: row["concurrency"])
+    ratio = largest["akas_audio_s_per_s"] / best["native_audio_s_per_s"]
+    lines = [
+        "# ZONOS3-Mini: native BF16 streaming on NVIDIA L40S",
+        "",
+        "Native BF16 LM weights, FP32 `keep2_plain`, and 44.1 kHz float32 PCM on CUDA. "
+        "Both runtimes measured one HTTP prefix-streaming burst at each concurrency with the fixed "
+        "30-word (177-byte) English prompt, 50 prompt frames, and `max_tokens=384`.",
+        "",
+        f"{plot} · {akas} · [Zyphra native baseline]({native}) · {checks}",
+        "",
+        "| Concurrency | Valid AKAS/native | AKAS wall s | Native wall s | AKAS audio s/s | Native audio s/s | Speedup | AKAS/native median TTFA (ms) |",
+        "| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+    ]
+    for row in rows:
+        lines.append(
+            f"| {row['concurrency']} | {row['akas_completed']}/{row['native_completed']} | "
+            f"{row['akas_wall_s']:.2f} | {row['native_wall_s']:.2f} | {row['akas_audio_s_per_s']:.2f} | "
+            f"{row['native_audio_s_per_s']:.2f} | {row['throughput_speedup']:.2f}× | "
+            f"{row['akas_ttfa_p50_ms']:.0f}/{row['native_ttfa_p50_ms']:.0f} |"
+        )
+    lines.extend((
+        "",
+        "Throughput is aggregate generated audio duration divided by burst wall time. "
+        "TTFA is client time to first audio. Compilation and model loading are excluded.",
+        "",
+        f"AKAS at C{largest['concurrency']} delivered **{ratio:.2f}×** Zyphra's best measured throughput "
+        f"(C{best['concurrency']}). Zyphra's C256 prefill budget serialized admission into waves; "
+        "the matched C256 speedup includes the effect of that scheduling limit.",
+        "",
+        "## Correctness and provenance",
+        "",
+        f"The measured CUDA bundle passed {correctness['codec_checks']} codec probes against Zyphra's "
+        f"`ISTFTStream` (worst RMS {correctness['max_rms']:.2e}, max absolute {correctness['max_abs']:.2e}). "
+        f"Greedy and seeded sampled requests reproduced token rows and PCM bitwise on slot reuse across "
+        f"{correctness['replays']} replayed utterances. These are workload checks, not independent "
+        "end-to-end equivalence or an intelligibility assessment.",
+        "",
+        f"CUDA bundle SHA-256: `{data['program_sha256']}`. The linked run bundles preserve source snapshots, "
+        "dependency revisions, and phase manifests. The compact codec checkpoint is not part of the archive.",
+        "",
+    ))
+    text(out / "README.md", "\n".join(lines))
+    csv_file(out / "measurements.csv", rows, tuple(rows[0]))
+    write(out / "report.json", data)
+    write(out / "campaign.json", state)
+    index(history)
+    return out
+
+
 def export_speech(native, model, workload_id, history, out, baseline_lock=None):
     from akas.benchmarking.workload import load
 
@@ -2270,6 +2390,7 @@ def check(history="benchmarks"):
                 raise ValueError(f"Unexpected report entry: {folder}")
             data = read(folder / "report.json")
             expected_files = (
+                STREAM_COMPARISON_FILES if data.get("schema") == STREAM_COMPARISON_SCHEMA else
                 SPEECH_FILES
                 if data.get("schema") in (SPEECH_SCHEMA, NATIVE_STREAM_SCHEMA)
                 else REPORT_FILES
@@ -2319,6 +2440,10 @@ def main():
         help="portable report.json; compiler/build directories are unnecessary",
     )
     source.add_argument("--runs", nargs="+", help="native run IDs to export without promoting qualification")
+    source.add_argument(
+        "--native-stream-comparison", nargs=4, metavar=("AKAS", "BASELINE", "CHECKS", "FIGURE"),
+        help="export comparison from an AKAS run, native report, correctness run, and figure run",
+    )
     parser.add_argument("--model", help="benchmark model declaration ID for --runs")
     parser.add_argument("--workload", help="versioned workload ID or JSON path for --runs")
     parser.add_argument("--history", type=Path, default=Path("benchmarks"))
@@ -2335,6 +2460,10 @@ def main():
         destination = export_runs(args.runs, model_id=args.model, workload_id=args.workload,
                                   history=args.history, out=args.out,
                                   baseline_lock=args.baseline_lock)
+    elif args.native_stream_comparison:
+        destination = export_native_stream_comparison(
+            *args.native_stream_comparison, history=args.history, out=args.out,
+        )
     elif args.render:
         destination = args.out or args.render.parent
         render(read(args.render), destination, args.history)
