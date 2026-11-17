@@ -1,6 +1,7 @@
 """Validated loading of compiled program kernels."""
 
 import hashlib
+import json
 from pathlib import Path
 
 def artifact_path(directory, record):
@@ -55,6 +56,39 @@ def artifacts(records):
                 yield row[role]
 
 
+def read_forward(path):
+    """Load the metadata for one compiled graph."""
+    manifest = json.loads(Path(path).read_text(encoding="utf-8"))
+    if manifest.get("schema") != "akas.forward.v1":
+        raise ValueError("unsupported forward bundle")
+    return manifest
+
+
+def read_forward_set(directory, filename, *, schema, provider):
+    manifest = json.loads((Path(directory) / filename).read_text(encoding="utf-8"))
+    return validate_forward_set(directory, manifest, schema=schema, provider=provider)
+
+
+def validate_forward_set(directory, manifest, *, schema, provider):
+    """Resolve every indexed phase before publishing or executing the set."""
+    if manifest.get("schema") != schema or manifest.get("provider") != provider:
+        raise ValueError("incompatible forward index schema or provider")
+    records = manifest.get("phases")
+    if not isinstance(records, dict) or not records:
+        raise ValueError("forward index has an empty phase set")
+    phases = {}
+    for name, rows in records.items():
+        if not isinstance(rows, dict) or not rows:
+            raise ValueError(f"forward index has no rows for {name}")
+        phases[name] = {}
+        for size, record in rows.items():
+            if not size.isascii() or not size.isdecimal() or size.startswith("0"):
+                raise ValueError("invalid forward phase row count")
+            phase = read_forward(artifact_path(directory, record))
+            if phase.get("provider") != provider:
+                raise ValueError("forward phase provider differs from its index")
+            phases[name][int(size)] = phase
+    return phases
 
 
 def read_program(directory):

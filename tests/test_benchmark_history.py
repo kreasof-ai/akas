@@ -110,6 +110,23 @@ def test_changed_sources_invalidate_run_and_legacy_accounting_stays_separate(
     assert record["workload"]["id"] == "custom"
 
 
+def test_speech_records_preserve_utterances_without_token_shapes(tmp_path, source):
+    from akas.benchmarking.workload import load
+
+    workload = load("speech-demo-v1")
+    speech_report = report(workload["protocol"])
+    metadata = speech_report["metadata"]
+    metadata["speech_workload"] = dict(id=workload["id"], definition=workload)
+    speech_report["results"] = [
+        dict(status="ok", case=utterance) for utterance in workload["utterances"]
+    ]
+    run = Recorder(tmp_path / "history", metadata, source_root=source)
+    record = run.update(speech_report, final=True)
+    assert record["status"] == "passed"
+    assert record["workload"] == dict(id=workload["id"], definition=workload, shapes=[])
+    assert [row["case"] for row in record["results"]] == workload["utterances"]
+
+
 def program(root):
     profile = dict(
         schema="tensor.schedule-profile.v1",

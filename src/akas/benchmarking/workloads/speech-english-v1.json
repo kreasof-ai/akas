@@ -1,0 +1,35 @@
+{
+  "schema": "akas.speech-workload.v1",
+  "id": "speech-english-v1",
+  "protocol": "client-speech-pcm-v1",
+  "warmup": 1,
+  "repeats": 3,
+  "request": {
+    "lang": "en",
+    "seed": 17,
+    "temperature": 0.75,
+    "n_predict": 384,
+    "stream": false,
+    "response_format": "pcm16"
+  },
+  "utterances": [
+    {"id": "hello", "tier": "short", "text": "Hello world."},
+    {"id": "question", "tier": "short", "text": "Are you ready?"},
+    {"id": "warning", "tier": "short", "text": "Watch your step!"},
+    {"id": "numbers", "tier": "short", "text": "Seven, fourteen, twenty-one."},
+    {"id": "reply", "tier": "short", "text": "Yes, that sounds right."},
+    {"id": "time", "tier": "short", "text": "Please call me at noon."},
+    {"id": "lighthouse", "tier": "medium", "text": "The old lighthouse keeper climbed the spiral stairs every evening."},
+    {"id": "directions", "tier": "medium", "text": "Turn left at the bakery, then cross the bridge and follow the river."},
+    {"id": "announcement", "tier": "medium", "text": "The next train leaves from platform three. Please stand behind the yellow line."},
+    {"id": "names", "tier": "medium", "text": "Maya and Oliver brought warm bread, ripe pears, and a jar of honey."},
+    {"id": "dialogue", "tier": "medium", "text": "Did you hear that knock? Wait, I think it came from the kitchen."},
+    {"id": "technical", "tier": "medium", "text": "The sensor takes five readings and reports the average when the light turns green."},
+    {"id": "story", "tier": "long", "text": "When the rain finally stopped, we opened the windows and listened. Water dripped from the trees, and somewhere beyond the fence a blackbird began to sing."},
+    {"id": "instructions", "tier": "long", "text": "Before you leave, turn off the oven, check that the back door is locked, and put the spare key in the blue bowl beside the telephone."},
+    {"id": "conversation", "tier": "long", "text": "I thought we were meeting on Friday. Did something change? If Thursday works better for everyone, I can move my appointment and meet you after lunch."},
+    {"id": "explanation", "tier": "long", "text": "A compass needle aligns with the local magnetic field. Near a large steel object, that field can bend enough to make the needle point away from north."},
+    {"id": "announcement-long", "tier": "long", "text": "Good afternoon, passengers. Because of road repairs near the central station, this bus will follow a different route. The next stop is the library on Market Street."},
+    {"id": "recipe", "tier": "long", "text": "Stir the chopped apples into the batter, then pour it into a greased pan. Bake until the top is golden and a toothpick comes out clean."}
+  ]
+}

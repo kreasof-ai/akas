@@ -45,3 +45,14 @@ def feature_validation(kind, p, signature):
     else:
         raise ValueError("unknown feature indexing operation")
     return ValidationCase(values, expected, rtol=0, atol=0)
+
+
+def interleave_validation(kind, p, signature):
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    values = sample_arguments(signature)
+    r, c, factor = (p[key] for key in ("r", "c", "factor"))
+    out = values["x"].reshape(r, c // factor, factor).transpose(0, 2, 1)
+    return ValidationCase(
+        values, {**values, "out": out.reshape(r * factor, c // factor)}
+    )

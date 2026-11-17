@@ -74,4 +74,8 @@ inactive requests, position updates and fused versus materialized head outputs. 
 tests](../../../../tests/test_qwen_kernels.py) and [device feedback
 tests](../../../../tests/test_device_feedback.py).
 
+## ZONOS3 and ZAC
+
+Codebook residual lookup adds offset codebook rows and per-codebook biases to the semantic embedding. CUDA and WebGPU share the F32 lookup body.
+
 Return to the [operation index](../README.md).

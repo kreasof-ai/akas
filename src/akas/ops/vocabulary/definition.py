@@ -330,3 +330,17 @@ IMPLEMENTATIONS = tuple(
     else item
     for item in IMPLEMENTATIONS
 )
+from akas.ops.vocabulary.validation import codebook_residual_validation
+
+OUTPUT_ARGUMENTS["reference"]["codebook_residual"] = OutputABI((-1,), ("out",))
+VALIDATIONS["codebook_residual"] = codebook_residual_validation
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        "codebook_residual",
+        "akas.ops.vocabulary.kernel",
+        "reference",
+        provider=provider,
+        factory="codebook_residual",
+    )
+    for provider in ("cuda", "webgpu")
+)

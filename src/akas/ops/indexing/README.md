@@ -57,4 +57,8 @@ unselected rows. See [state mapping tests](../../../../tests/test_state_mapping.
 [draft primitive tests](../../../../tests/test_draft_primitives.py) check immutable
 gathers, column replacement and concatenation on CUDA and WebGPU.
 
+## ZONOS3 and ZAC
+
+The row interleave operation moves adjacent channel groups into consecutive time rows in the ZAC upsampler. CUDA and WebGPU share its copy layout.
+
 Return to the [operation index](../README.md).

@@ -306,6 +306,71 @@ python -m tools.lfm3_vulkan_plot REPORT_DIRECTORY/report.json build/throughput.s
 
 Replace `REPORT_DIRECTORY` with the verified directory printed by the fetch command.
 
+**ZONOS3-Mini† · Q8_0 weights and F32 ZAC projector · Radeon RX 6700 XT (Vulkan) · Ryzen 5 5600 (CPU)**
+
+Results from the [November 17, 2026 fixed-voice benchmark](benchmarks/reports/20261117T121145Z-48e3bd2d83ae/COMPARISON.md)
+cover 258 FLORES-200 prompts across 43 languages, with matching settings on
+AKAS WebGPU/Vulkan, llama.cpp b12424 Vulkan, and llama.cpp CPU. The optimized program uses
+256-row prefill with the same decode, sampling, codec, and waveform pipeline.
+Each prompt has two measured requests after one warmup.
+
+![ZONOS3-Mini fixed-voice request latency, real-time factor, and wall-time speedup versus llama.cpp CPU by prompt length.](docs/assets/zonos3-mini/throughput.svg)
+
+<details>
+<summary>Request latency, real-time factor, and CPU-relative wall speedup (medians)</summary>
+
+| Prompt tier | AKAS wall s | llama.cpp Vulkan wall s | llama.cpp CPU wall s | AKAS RTF | Vulkan RTF | CPU RTF |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Short | 0.843 | 1.413 | 1.664 | 0.231 | 0.404 | 0.476 |
+| Medium | 1.027 | 1.659 | 2.025 | 0.227 | 0.391 | 0.459 |
+| Long | 1.489 | 2.702 | 3.013 | 0.211 | 0.356 | 0.426 |
+| All | 1.046 | 1.582 | 1.933 | 0.226 | 0.392 | 0.462 |
+
+</details>
+
+Across the **253 prompts completed by all three runtimes**, AKAS delivered **1.534× wall-time speedup**
+and **1.712× audio-throughput speedup** over llama.cpp Vulkan by geometric mean. Relative to llama.cpp CPU, AKAS achieved **1.876× wall-time speedup**, while llama.cpp Vulkan achieved **1.223×**.
+
+RTF is wall seconds per second of generated audio. Timings cover a warm
+localhost request through receipt of complete PCM16. The plots show tier
+medians and interquartile ranges. The third panel shows CPU wall time divided by each GPU runtime's wall time, with CPU at 1×. † All three profiles remain
+**unqualified**: deterministic PCM and operation-level checks do not replace the
+required independent full-model speech qualification. Intelligibility,
+pronunciation, and MOS were not measured.
+
+The earlier [43-language fixed-voice benchmark](benchmarks/reports/20261117T071744Z-ad4250ae7c74/README.md)
+retains its original results: 253 matched prompts, 1.369× wall-time and 1.477×
+audio-throughput speedup over llama.cpp Vulkan. Two Japanese prompts reached
+the frame limit and three Punjabi prompts returned silence. Its CPU comparison
+reported 1.678× wall-time speedup for AKAS over llama.cpp CPU.
+[Original-sample comparison](benchmarks/reports/20261117T121145Z-48e3bd2d83ae/README.md)
+
+**Audio samples** · Unedited AKAS output for FLORES-200 devtest row 942.
+WAVs are mono PCM16 at 44.1 kHz. RTF is shown for timed benchmark samples.
+The source text is from [FLORES-200](https://github.com/facebookresearch/flores/tree/main/flores200)
+under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
+
+| Language | Voice source | Audio | Duration | RTF |
+| --- | --- | --- | ---: | ---: |
+| English | Savannah (English) | [WAV](docs/assets/zonos3-mini/english.wav) | 3.40 s | 0.262 |
+| Indonesian | FLEURS Indonesian reference | [WAV](docs/assets/zonos3-mini/indonesian-fleurs.wav) | 4.33 s | — |
+| Japanese | FLEURS Japanese reference | [WAV](docs/assets/zonos3-mini/japanese-fleurs.wav) | 4.67 s | — |
+| Mandarin | Haoran (Mandarin) | [WAV](docs/assets/zonos3-mini/mandarin.wav) | 3.20 s | 0.276 |
+| Hindi | Ananya (Hindi) | [WAV](docs/assets/zonos3-mini/hindi.wav) | 4.07 s | 0.244 |
+
+The Indonesian and Japanese clips use speaker rows from the FLEURS
+`id_id` and `ja_jp` test splits. All six prompts per language reached end of
+speech in this synthesis run, including the two Japanese prompts that
+reached the frame limit in the fixed-voice benchmark.
+[FLEURS audio dataset](https://huggingface.co/datasets/google/fleurs) ·
+[Synthesis record](benchmarks/runs/20261117082408590505-2855e9c0/report.json)
+
+Regenerate the plot from the retained report:
+
+```sh
+uv run --no-sync python -m tools.plot_comparison benchmarks/reports/20261117T114524Z-3c395882b896/report.json build/zonos3-mini/showcase.svg
+```
+
 ## Getting started
 
 Use Python 3.12. `uv.lock` pins Tensor to a published Git revision.

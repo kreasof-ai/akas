@@ -172,4 +172,8 @@ tests](../../../../tests/test_native_pipeline_policy.py) and [Hopper
 tests](../../../../tests/test_qwen_hopper.py). Benchmark routing plus expert work plus
 combination.
 
+## ZONOS3 and ZAC
+
+Biased softmax routing selects experts from logits plus bias and normalizes the original logits of the selected experts. It shares the routed projection and combination operations with the sigmoid variant.
+
 Return to the [operation index](../README.md).

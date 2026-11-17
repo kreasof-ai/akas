@@ -62,4 +62,8 @@ tests](../../../../tests/test_qwen_recompute.py) and [state
 tests](../../../../tests/test_state_prefill.py). Measure the full state plan, including
 recovery.
 
+## ZONOS3 and ZAC
+
+The reference contract binds the mapped convolution, preparation, scan and normalization with F32 activations and recurrent state. This path covers the ZONOS3 Gated DeltaNet layers.
+
 Return to the [operation index](../README.md).

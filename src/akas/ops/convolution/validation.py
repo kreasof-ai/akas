@@ -75,3 +75,14 @@ def verification_validation(kind, p, signature):
                 out[row, token] = 0
             expected["journal"][row, token] = history
     return ValidationCase(values, expected)
+
+
+def causal_depthwise_validation(kind, p, signature):
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    values = sample_arguments(signature)
+    padded = np.pad(values["x"].astype("float64"), ((p["taps"] - 1, 0), (0, 0)))
+    windows = np.lib.stride_tricks.sliding_window_view(padded, p["taps"], axis=0)
+    out = np.einsum("rct,ct->rc", windows, values["w"]) + values["bias"]
+    return ValidationCase(values, {**values, "out": out.astype("float32")})

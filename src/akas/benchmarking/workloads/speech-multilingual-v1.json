@@ -1,0 +1,459 @@
+{
+  "schema": "akas.speech-workload.v1",
+  "id": "speech-multilingual-v1",
+  "protocol": "client-speech-pcm-v1",
+  "warmup": 1,
+  "repeats": 2,
+  "request": {
+    "seed": 17,
+    "temperature": 0.75,
+    "n_predict": 384,
+    "stream": false,
+    "response_format": "pcm16"
+  },
+  "language_source": "https://huggingface.co/Zyphra/ZONOS3-Mini#languages",
+  "corpus": {
+    "name": "FLORES-200 devtest",
+    "url": "https://github.com/facebookresearch/flores/tree/main/flores200",
+    "download_url": "https://dl.fbaipublicfiles.com/nllb/flores200_dataset.tar.gz",
+    "archive_sha256": "b8b0b76783024b85797e5cc75064eb83fc5288b41e9654dabc7be6ae944011f6",
+    "license": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "split": "devtest",
+    "selection": "Six aligned one-based rows, two per length tier by English character count. Rows use translated text as distributed and exclude digits across the selected languages."
+  },
+  "languages": {
+    "en": {
+      "name": "English",
+      "locale": "eng_Latn"
+    },
+    "fr": {
+      "name": "French",
+      "locale": "fra_Latn"
+    },
+    "es": {
+      "name": "Spanish",
+      "locale": "spa_Latn"
+    },
+    "de": {
+      "name": "German",
+      "locale": "deu_Latn"
+    },
+    "it": {
+      "name": "Italian",
+      "locale": "ita_Latn"
+    },
+    "pt": {
+      "name": "Portuguese",
+      "locale": "por_Latn"
+    },
+    "nl": {
+      "name": "Dutch",
+      "locale": "nld_Latn"
+    },
+    "el": {
+      "name": "Greek",
+      "locale": "ell_Grek"
+    },
+    "sv": {
+      "name": "Swedish",
+      "locale": "swe_Latn"
+    },
+    "da": {
+      "name": "Danish",
+      "locale": "dan_Latn"
+    },
+    "nb": {
+      "name": "Norwegian Bokmål",
+      "locale": "nob_Latn"
+    },
+    "fi": {
+      "name": "Finnish",
+      "locale": "fin_Latn"
+    },
+    "pl": {
+      "name": "Polish",
+      "locale": "pol_Latn"
+    },
+    "cs": {
+      "name": "Czech",
+      "locale": "ces_Latn"
+    },
+    "sk": {
+      "name": "Slovak",
+      "locale": "slk_Latn"
+    },
+    "hu": {
+      "name": "Hungarian",
+      "locale": "hun_Latn"
+    },
+    "ro": {
+      "name": "Romanian",
+      "locale": "ron_Latn"
+    },
+    "bg": {
+      "name": "Bulgarian",
+      "locale": "bul_Cyrl"
+    },
+    "ru": {
+      "name": "Russian",
+      "locale": "rus_Cyrl"
+    },
+    "uk": {
+      "name": "Ukrainian",
+      "locale": "ukr_Cyrl"
+    },
+    "tr": {
+      "name": "Turkish",
+      "locale": "tur_Latn"
+    },
+    "ar": {
+      "name": "Arabic",
+      "locale": "arb_Arab"
+    },
+    "he": {
+      "name": "Hebrew",
+      "locale": "heb_Hebr"
+    },
+    "ka": {
+      "name": "Georgian",
+      "locale": "kat_Geor"
+    },
+    "zh": {
+      "name": "Mandarin Chinese",
+      "locale": "zho_Hans"
+    },
+    "ja": {
+      "name": "Japanese",
+      "locale": "jpn_Jpan"
+    },
+    "ko": {
+      "name": "Korean",
+      "locale": "kor_Hang"
+    },
+    "vi": {
+      "name": "Vietnamese",
+      "locale": "vie_Latn"
+    },
+    "id": {
+      "name": "Indonesian",
+      "locale": "ind_Latn"
+    },
+    "ms": {
+      "name": "Malay",
+      "locale": "zsm_Latn"
+    },
+    "th": {
+      "name": "Thai",
+      "locale": "tha_Thai"
+    },
+    "tl": {
+      "name": "Tagalog",
+      "locale": "tgl_Latn"
+    },
+    "hi": {
+      "name": "Hindi",
+      "locale": "hin_Deva"
+    },
+    "bn": {
+      "name": "Bengali",
+      "locale": "ben_Beng"
+    },
+    "ta": {
+      "name": "Tamil",
+      "locale": "tam_Taml"
+    },
+    "te": {
+      "name": "Telugu",
+      "locale": "tel_Telu"
+    },
+    "mr": {
+      "name": "Marathi",
+      "locale": "mar_Deva"
+    },
+    "gu": {
+      "name": "Gujarati",
+      "locale": "guj_Gujr"
+    },
+    "kn": {
+      "name": "Kannada",
+      "locale": "kan_Knda"
+    },
+    "ml": {
+      "name": "Malayalam",
+      "locale": "mal_Mlym"
+    },
+    "pa": {
+      "name": "Punjabi",
+      "locale": "pan_Guru"
+    },
+    "or": {
+      "name": "Odia",
+      "locale": "ory_Orya"
+    },
+    "ur": {
+      "name": "Urdu",
+      "locale": "urd_Arab"
+    }
+  },
+  "utterances": [
+    {"id": "en-0007", "lang": "en", "tier": "short", "source_row": 7, "text": "He built a WiFi door bell, he said."},
+    {"id": "en-0320", "lang": "en", "tier": "short", "source_row": 320, "text": "Fellow wrestlers also paid tribute to Luna."},
+    {"id": "en-0942", "lang": "en", "tier": "medium", "source_row": 942, "text": "The major religion in Moldova is Orthodox Christian."},
+    {"id": "en-0030", "lang": "en", "tier": "medium", "source_row": 30, "text": "The find also grants insight into the evolution of feathers in birds."},
+    {"id": "en-0082", "lang": "en", "tier": "long", "source_row": 82, "text": "The National Hurricane Center (NHC) says that at this point Jerry poses no threat to land."},
+    {"id": "en-0977", "lang": "en", "tier": "long", "source_row": 977, "text": "The main letters to watch out for are c and g, since their pronunciation varies based on the following vowel."},
+    {"id": "fr-0007", "lang": "fr", "tier": "short", "source_row": 7, "text": "Il dit avoir conçu une sonnette de porte Wi-Fi."},
+    {"id": "fr-0320", "lang": "fr", "tier": "short", "source_row": 320, "text": "Les autres lutteurs ont également rendu hommage à Luna."},
+    {"id": "fr-0942", "lang": "fr", "tier": "medium", "source_row": 942, "text": "La principale religion en Moldavie est le christianisme orthodoxe."},
+    {"id": "fr-0030", "lang": "fr", "tier": "medium", "source_row": 30, "text": "Cette découverte permet également de mieux comprendre l'évolution des plumes chez les oiseaux."},
+    {"id": "fr-0082", "lang": "fr", "tier": "long", "source_row": 82, "text": "Le National Hurricane Center (NHC) affirme qu'à ce stade, Jerry ne représente aucune menace pour les terres."},
+    {"id": "fr-0977", "lang": "fr", "tier": "long", "source_row": 977, "text": "Les principales lettres à surveiller sont le c et le g, car leur prononciation varie en fonction de la voyelle suivante."},
+    {"id": "es-0007", "lang": "es", "tier": "short", "source_row": 7, "text": "Él dijo que construyó un timbre wifi."},
+    {"id": "es-0320", "lang": "es", "tier": "short", "source_row": 320, "text": "Los luchadores compañeros de Luna también le rindieron homenaje."},
+    {"id": "es-0942", "lang": "es", "tier": "medium", "source_row": 942, "text": "El cristianismo ortodoxo es la religión mayoritaria en Moldavia. "},
+    {"id": "es-0030", "lang": "es", "tier": "medium", "source_row": 30, "text": "Asimismo, el hallazgo permite comprender mejor la evolución de las plumas de las aves."},
+    {"id": "es-0082", "lang": "es", "tier": "long", "source_row": 82, "text": "El Centro Nacional de Huracanes (CNH) declaró que por ahora está previsto que Jerry toque el suelo."},
+    {"id": "es-0977", "lang": "es", "tier": "long", "source_row": 977, "text": "La c y la g son las letras con las que se debe estar más atentos, dado que se pronuncian de diferente forma dependiendo de la vocal que les sigue."},
+    {"id": "de-0007", "lang": "de", "tier": "short", "source_row": 7, "text": "Er sagte, dass er eine WLAN-Türklingel gebaut habe."},
+    {"id": "de-0320", "lang": "de", "tier": "short", "source_row": 320, "text": "Ringer-Kollegen zollten Luna ebenfalls Tribut."},
+    {"id": "de-0942", "lang": "de", "tier": "medium", "source_row": 942, "text": "Die wichtigste Religion in Moldawien ist die christlich-orthodoxe."},
+    {"id": "de-0030", "lang": "de", "tier": "medium", "source_row": 30, "text": "Der Fund gewährt auch Einblicke in die Evolution von Federn bei Vögeln."},
+    {"id": "de-0082", "lang": "de", "tier": "long", "source_row": 82, "text": "Das National Hurricane Center (NHC) sagt, dass Jerry zu diesem Zeitpunkt keine Gefahr für die Landung darstellt."},
+    {"id": "de-0977", "lang": "de", "tier": "long", "source_row": 977, "text": "Die wichtigsten Buchstaben, auf die man achten muss, sind c und g, da ihre Aussprache je nach Folgevokal variiert."},
+    {"id": "it-0007", "lang": "it", "tier": "short", "source_row": 7, "text": "Ha detto di aver costruito un campanello Wi-Fi."},
+    {"id": "it-0320", "lang": "it", "tier": "short", "source_row": 320, "text": "Anche i suoi compagni di wrestling hanno voluto rendere omaggio a Luna."},
+    {"id": "it-0942", "lang": "it", "tier": "medium", "source_row": 942, "text": "La religione predominante in Moldavia è quella cristiano-ortodossa."},
+    {"id": "it-0030", "lang": "it", "tier": "medium", "source_row": 30, "text": "La scoperta permette inoltre di ottenere informazioni dettagliate in merito all'evoluzione delle piume degli uccelli."},
+    {"id": "it-0082", "lang": "it", "tier": "long", "source_row": 82, "text": "Secondo il National Hurricane Center (NHC), Jerry a questo punto non costituisce una minaccia per la terraferma."},
+    {"id": "it-0977", "lang": "it", "tier": "long", "source_row": 977, "text": "Le lettere principali a cui fare attenzione sono la c e la g, dal momento che la loro pronuncia cambia in base alla vocale che segue."},
+    {"id": "pt-0007", "lang": "pt", "tier": "short", "source_row": 7, "text": "Ele montou uma campainha sem fio, disse."},
+    {"id": "pt-0320", "lang": "pt", "tier": "short", "source_row": 320, "text": "Outros lutadores também prestaram homenagem a Luna."},
+    {"id": "pt-0942", "lang": "pt", "tier": "medium", "source_row": 942, "text": "A religião principal na Moldávia é o cristianismo ortodoxo. "},
+    {"id": "pt-0030", "lang": "pt", "tier": "medium", "source_row": 30, "text": "A descoberta também concede pistas sobre a evolução das penas nas aves."},
+    {"id": "pt-0082", "lang": "pt", "tier": "long", "source_row": 82, "text": "O Centro Nacional de Furacões (NHC) diz que, neste momento, Jerry não causa ameaças à terra."},
+    {"id": "pt-0977", "lang": "pt", "tier": "long", "source_row": 977, "text": "As principais letras a serem observadas são o C e G, pois sua pronúncia varia de acordo com a vogal a seguir."},
+    {"id": "nl-0007", "lang": "nl", "tier": "short", "source_row": 7, "text": "Hij zei dat hij daarop een wifi-deurbel maakte."},
+    {"id": "nl-0320", "lang": "nl", "tier": "short", "source_row": 320, "text": "Ook medeworstelaars brachten hulde aan Luna."},
+    {"id": "nl-0942", "lang": "nl", "tier": "medium", "source_row": 942, "text": "Orthodox-christelijk is de voornaamste godsdienst in Moldavië."},
+    {"id": "nl-0030", "lang": "nl", "tier": "medium", "source_row": 30, "text": "De vondst geeft ook inzicht in de evolutie van veren bij vogels."},
+    {"id": "nl-0082", "lang": "nl", "tier": "long", "source_row": 82, "text": "Volgens de NHC (National Hurricane Center) levert Jerry momenteel geen gevaar voor het vasteland op."},
+    {"id": "nl-0977", "lang": "nl", "tier": "long", "source_row": 977, "text": "Je moet het meeste letten op de c en de g. De uitspraak daarvan is namelijk afhankelijk van de klinker die erna volgt."},
+    {"id": "el-0007", "lang": "el", "tier": "short", "source_row": 7, "text": "Είπε ότι έφτιαξε ένα κουδούνι με Wi-Fi."},
+    {"id": "el-0320", "lang": "el", "tier": "short", "source_row": 320, "text": "Οι συν-παλαιστές απέτισαν φόρο τιμής στη Λούνα. "},
+    {"id": "el-0942", "lang": "el", "tier": "medium", "source_row": 942, "text": "Η κυρίαρχη θρησκεία της Μολδαβίας είναι ο ορθόδοξος χριστιανισμός. "},
+    {"id": "el-0030", "lang": "el", "tier": "medium", "source_row": 30, "text": "Το εύρημα παρέχει επίσης πληροφορίες για την εξέλιξη του φτερώματος στα πτηνά. "},
+    {"id": "el-0082", "lang": "el", "tier": "long", "source_row": 82, "text": "Το Εθνικό Κέντρο Τυφώνων των ΗΠΑ (NHC) αναφέρει πως ο Τζέρι σε αυτό το σημείο δεν απειλεί την ξηρά."},
+    {"id": "el-0977", "lang": "el", "tier": "long", "source_row": 977, "text": "Τα βασικά γράμματα που απαιτούν την προσοχή σας, είναι το c και το g, καθώς η προφορά τους ποικίλλει ανάλογα με το φωνήεν που ακολουθεί. "},
+    {"id": "sv-0007", "lang": "sv", "tier": "short", "source_row": 7, "text": "Han berättade att han hade byggt en wifi-dörrklocka."},
+    {"id": "sv-0320", "lang": "sv", "tier": "short", "source_row": 320, "text": "Brottarkollegor hyllade också Luna."},
+    {"id": "sv-0942", "lang": "sv", "tier": "medium", "source_row": 942, "text": "Den största religionen i Moldavien är ortodox kristendom."},
+    {"id": "sv-0030", "lang": "sv", "tier": "medium", "source_row": 30, "text": "Fyndet ger också inblick i utvecklingen av fjädrar hos fåglar."},
+    {"id": "sv-0082", "lang": "sv", "tier": "long", "source_row": 82, "text": "The National Hurricane Center (NHC) meddelar att Jerry inte utgör något hot mot land vid denna tidpunkt."},
+    {"id": "sv-0977", "lang": "sv", "tier": "long", "source_row": 977, "text": "Bokstäverna att se upp med är c och g, eftersom deras uttal varierar på grundval av följande vokal."},
+    {"id": "da-0007", "lang": "da", "tier": "short", "source_row": 7, "text": "Han fortalte, at han byggede en WiFi-dørklokke. "},
+    {"id": "da-0320", "lang": "da", "tier": "short", "source_row": 320, "text": "Andre brydere hyldede også Luna.  "},
+    {"id": "da-0942", "lang": "da", "tier": "medium", "source_row": 942, "text": "Den største religion i Moldova, er ortodoks kristendom."},
+    {"id": "da-0030", "lang": "da", "tier": "medium", "source_row": 30, "text": "Fundet giver også indsigt i udviklingen af fjer hos fugle. "},
+    {"id": "da-0082", "lang": "da", "tier": "long", "source_row": 82, "text": "Amerikas nationale orkancenter (på engelsk, \"National Hurricane Center\", forkortet som NHC) mener, at orkanen Jerry ikke udgør nogen trussel mod land på dette tidspunkt."},
+    {"id": "da-0977", "lang": "da", "tier": "long", "source_row": 977, "text": "De vigtigste bogstaver at holde øje med, er c og g, da deres udtale varierer afhængigt af den efterstående vokal. "},
+    {"id": "nb-0007", "lang": "nb", "tier": "short", "source_row": 7, "text": "Han laget en ringeklokke som er koblet til trådløst nett, fortalte han."},
+    {"id": "nb-0320", "lang": "nb", "tier": "short", "source_row": 320, "text": "Andre brytere gav også en hyllest til Luna."},
+    {"id": "nb-0942", "lang": "nb", "tier": "medium", "source_row": 942, "text": "Hovedreligionen i Moldova er ortodoks kristendom."},
+    {"id": "nb-0030", "lang": "nb", "tier": "medium", "source_row": 30, "text": "Oppdagelsen gir i tillegg innsikt i utviklingen for fjær hos fugler."},
+    {"id": "nb-0082", "lang": "nb", "tier": "long", "source_row": 82, "text": "Ifølge NHC (National Hurricane Center) er ikke Jerry lenger noen trussel mot land."},
+    {"id": "nb-0977", "lang": "nb", "tier": "long", "source_row": 977, "text": "Hovedbokstavene man må være obs på er c og g, siden deres uttale er forskjellig basert på den følgende vokalen."},
+    {"id": "fi-0007", "lang": "fi", "tier": "short", "source_row": 7, "text": "Hän sanoi rakentaneensa Wi-Fi-ovikellon."},
+    {"id": "fi-0320", "lang": "fi", "tier": "short", "source_row": 320, "text": "Muut painijat osoittivat myös kunnioitusta Lunalle."},
+    {"id": "fi-0942", "lang": "fi", "tier": "medium", "source_row": 942, "text": "Moldovan pääuskonto on ortodoksinen kristinusko."},
+    {"id": "fi-0030", "lang": "fi", "tier": "medium", "source_row": 30, "text": "Lisäksi löytö auttaa ymmärtämään lintujen sulkien evoluutiota."},
+    {"id": "fi-0082", "lang": "fi", "tier": "long", "source_row": 82, "text": "Kansallinen hurrikaanikeskus NHC toteaa, ettei Jerry aiheuta tässä vaiheessa vaaraa maalla."},
+    {"id": "fi-0977", "lang": "fi", "tier": "long", "source_row": 977, "text": "Kirjaimiin C ja G on syytä kiinnittää eniten huomiota, sillä niiden ääntäminen riippuu seuraavasta vokaalista."},
+    {"id": "pl-0007", "lang": "pl", "tier": "short", "source_row": 7, "text": "Stwierdził, że skonstruował dzwonek do drzwi na Wi-Fi."},
+    {"id": "pl-0320", "lang": "pl", "tier": "short", "source_row": 320, "text": "Także zapaśnicy złożyli hołd Lunie."},
+    {"id": "pl-0942", "lang": "pl", "tier": "medium", "source_row": 942, "text": "Prawosławie jest w Mołdawii religią dominującą."},
+    {"id": "pl-0030", "lang": "pl", "tier": "medium", "source_row": 30, "text": "Odkrycie to rzuca także światło na ewolucję piór u ptaków."},
+    {"id": "pl-0082", "lang": "pl", "tier": "long", "source_row": 82, "text": "Narodowe Centrum ds. Huraganów (NHC) utrzymuje, że według stanu na dziś huragan Jerry nie jest groźny dla obszarów lądowych."},
+    {"id": "pl-0977", "lang": "pl", "tier": "long", "source_row": 977, "text": "Szczególną uwagę należy zwracać na litery „c” i „g”, gdyż wymawia się je inaczej w zależności od samogłoski, jaka po nich występuje."},
+    {"id": "cs-0007", "lang": "cs", "tier": "short", "source_row": 7, "text": "Uvedl, že vytvořil dveřní zvonek přes WiFi."},
+    {"id": "cs-0320", "lang": "cs", "tier": "short", "source_row": 320, "text": "Kolegové wrestleři také vzdali Luně hold."},
+    {"id": "cs-0942", "lang": "cs", "tier": "medium", "source_row": 942, "text": "Hlavním náboženstvím Moldavska je ortodoxní křesťanství."},
+    {"id": "cs-0030", "lang": "cs", "tier": "medium", "source_row": 30, "text": "Objev také poskytuje náhled do problematiky vývoje peří u ptáků."},
+    {"id": "cs-0082", "lang": "cs", "tier": "long", "source_row": 82, "text": "Národní centrum pro hurikány (NHC) tvrdí, že v tuto chvíli Jerry nepředstavuje žádnou hrozbu pro pevninu."},
+    {"id": "cs-0977", "lang": "cs", "tier": "long", "source_row": 977, "text": "Hlavní písmena, na které je nutné dát si pozor, jsou C a G, protože jejich výslovnost se liší podle samohlásky, která po nich následuje."},
+    {"id": "sk-0007", "lang": "sk", "tier": "short", "source_row": 7, "text": "Vytvoril podľa neho WiFi zvonček na dvere."},
+    {"id": "sk-0320", "lang": "sk", "tier": "short", "source_row": 320, "text": "Spolubojovníci taktiež vzdali úctu Lune."},
+    {"id": "sk-0942", "lang": "sk", "tier": "medium", "source_row": 942, "text": "Hlavným náboženstvom v Moldavsku je pravoslávne kresťanstvo."},
+    {"id": "sk-0030", "lang": "sk", "tier": "medium", "source_row": 30, "text": "Nález takisto poskytuje detailný pohľad na vývoj peria vtákov."},
+    {"id": "sk-0082", "lang": "sk", "tier": "long", "source_row": 82, "text": "Národné centrum pre hurikány (NHC) hlási, že Jerry v tomto momente nepredstavuje žiadnu hrozbu pre krajinu."},
+    {"id": "sk-0977", "lang": "sk", "tier": "long", "source_row": 977, "text": "Najdôležitejšie písmená, na ktoré si treba dávať pozor, sú c a g, pretože ich výslovnosť sa líši v závislosti od nasledujúcej samohlásky."},
+    {"id": "hu-0007", "lang": "hu", "tier": "short", "source_row": 7, "text": "Megoldásként készített egy wifis kapucsengőt."},
+    {"id": "hu-0320", "lang": "hu", "tier": "short", "source_row": 320, "text": "A többi birkózó szintén tisztelgett Luna előtt."},
+    {"id": "hu-0942", "lang": "hu", "tier": "medium", "source_row": 942, "text": "Moldovában az ortodox kereszténység a fő vallás."},
+    {"id": "hu-0030", "lang": "hu", "tier": "medium", "source_row": 30, "text": "A felfedezés betekintést nyújthat a madarak tollazatának evolúciójába is."},
+    {"id": "hu-0082", "lang": "hu", "tier": "long", "source_row": 82, "text": "A Nemzeti Hurrikánközpont (NHC) szerint, ezen a ponton a Jerry nem jelent fenyegetést a szárazföldre."},
+    {"id": "hu-0977", "lang": "hu", "tier": "long", "source_row": 977, "text": "A fő betűk, melyekre oda kell figyelni a c és a g, mivel ezeknek a kiejtése az őket követő magánhangzótól függ."},
+    {"id": "ro-0007", "lang": "ro", "tier": "short", "source_row": 7, "text": "A construit o sonerie de ușă WiFi, a spus el."},
+    {"id": "ro-0320", "lang": "ro", "tier": "short", "source_row": 320, "text": "Confrații wrestleri i-au adus și ei un omagiu Lunei."},
+    {"id": "ro-0942", "lang": "ro", "tier": "medium", "source_row": 942, "text": "Religia dominantă a Moldovei este creștin-ortodoxismul."},
+    {"id": "ro-0030", "lang": "ro", "tier": "medium", "source_row": 30, "text": "Descoperirea oferă și o perspectivă asupra modului în care au evoluat penele păsărilor."},
+    {"id": "ro-0082", "lang": "ro", "tier": "long", "source_row": 82, "text": "Centrul Național pentru Uragane (NHC) a declarat că deocamdată Jerry nu constituie o amenințare pentru uscat. "},
+    {"id": "ro-0977", "lang": "ro", "tier": "long", "source_row": 977, "text": "Literele la care trebuie să fiți mai atenți sunt c și g, deoarece pronunția lor variază în funcție de vocala de după ele."},
+    {"id": "bg-0007", "lang": "bg", "tier": "short", "source_row": 7, "text": "Той каза, че е създал WiFi звънец."},
+    {"id": "bg-0320", "lang": "bg", "tier": "short", "source_row": 320, "text": "Бе отдадена почит на Луна и от колеги борци."},
+    {"id": "bg-0942", "lang": "bg", "tier": "medium", "source_row": 942, "text": "Православното християнство е основната религия в Молдова."},
+    {"id": "bg-0030", "lang": "bg", "tier": "medium", "source_row": 30, "text": "Находката също така дава възможност да се вникне в еволюцията на птичите пера."},
+    {"id": "bg-0082", "lang": "bg", "tier": "long", "source_row": 82, "text": "От националният център за урагани (NHC) съобщиха, че ураганът Джери не представлява заплаха за сушата."},
+    {"id": "bg-0977", "lang": "bg", "tier": "long", "source_row": 977, "text": "Основните букви, за които трябва да се внимава, са „c“ и „g“, тъй като тяхното произнасяне варира въз основа на следващата гласна."},
+    {"id": "ru-0007", "lang": "ru", "tier": "short", "source_row": 7, "text": "Он сказал, что создал дверной звонок, работающий от WiFi."},
+    {"id": "ru-0320", "lang": "ru", "tier": "short", "source_row": 320, "text": "Коллеги-рестлеры тоже отдали Луне дань уважения."},
+    {"id": "ru-0942", "lang": "ru", "tier": "medium", "source_row": 942, "text": "Основной религией в Молдавии является православное христианство."},
+    {"id": "ru-0030", "lang": "ru", "tier": "medium", "source_row": 30, "text": "Находка также позволяет ознакомиться с эволюцией перьев у птиц."},
+    {"id": "ru-0082", "lang": "ru", "tier": "long", "source_row": 82, "text": "Согласно Национальному ураганному центру, на данный момент Джерри не представляет никакой угрозы на суше."},
+    {"id": "ru-0977", "lang": "ru", "tier": "long", "source_row": 977, "text": "Следует быть особенно внимательным с буквами c и g, так как их произношение меняется в зависимости от последующей гласной."},
+    {"id": "uk-0007", "lang": "uk", "tier": "short", "source_row": 7, "text": "Він сказав, що створив дзвінок у двері з вай-фай."},
+    {"id": "uk-0320", "lang": "uk", "tier": "short", "source_row": 320, "text": "Бійці-колеги також віддали шану Луні."},
+    {"id": "uk-0942", "lang": "uk", "tier": "medium", "source_row": 942, "text": "Головна релігія Молдови — православне християнство."},
+    {"id": "uk-0030", "lang": "uk", "tier": "medium", "source_row": 30, "text": "Відкриття так само надає розуміння еволюції пір'я у птахів."},
+    {"id": "uk-0082", "lang": "uk", "tier": "long", "source_row": 82, "text": "Національний ураганний центр (NHC) повідомляє, що на цей час Джеррі не становить загрози для суші. "},
+    {"id": "uk-0977", "lang": "uk", "tier": "long", "source_row": 977, "text": "Основні літери, на які треба звернути увагу, це с та g, оскільки їхня вимова відрізняється в залежності від наступних голосних."},
+    {"id": "tr-0007", "lang": "tr", "tier": "short", "source_row": 7, "text": "WiFi ile çalışan bir kapı zili yaptığını söyledi."},
+    {"id": "tr-0320", "lang": "tr", "tier": "short", "source_row": 320, "text": "Güreşçi arkadaşları da Luna'ya saygılarını sundular."},
+    {"id": "tr-0942", "lang": "tr", "tier": "medium", "source_row": 942, "text": "Moldova'daki temel inanç Ortodoks Hristiyanlığıdır."},
+    {"id": "tr-0030", "lang": "tr", "tier": "medium", "source_row": 30, "text": "Keşif aynı zamanda kuşlardaki tüylerin evrimi konusunda fikirler veriyor."},
+    {"id": "tr-0082", "lang": "tr", "tier": "long", "source_row": 82, "text": "Ulusal Kasırga Merkezi (NHC), Jerry'nin bu noktada kara için herhangi bir tehdit teşkil etmediğini söylüyor."},
+    {"id": "tr-0977", "lang": "tr", "tier": "long", "source_row": 977, "text": "Telaffuzları, sonrasında gelen sesli harfe göre değişiklik gösterdiği için dikkat edilmesi gereken temel harfler c ve g'dir."},
+    {"id": "ar-0007", "lang": "ar", "tier": "short", "source_row": 7, "text": "قال إنه صنع جرس باب يعمل بتقنية واي فاي."},
+    {"id": "ar-0320", "lang": "ar", "tier": "short", "source_row": 320, "text": "كما أثنى الزملاء المصارعون على لونا."},
+    {"id": "ar-0942", "lang": "ar", "tier": "medium", "source_row": 942, "text": "الديانة الرئيسية في \"مولدوفا\" هي المسيحية الأرثوذكسية."},
+    {"id": "ar-0030", "lang": "ar", "tier": "medium", "source_row": 30, "text": "يمنح الاكتشاف أيضاً نظرة على تطور الريش في الطيور."},
+    {"id": "ar-0082", "lang": "ar", "tier": "long", "source_row": 82, "text": "يقول المركز الوطني للأعاصير (المركز الوطني للأعاصير) وإنه في هذه المرحلة لا يشكل إعصار \"جيري\" أي تهديد للأرض."},
+    {"id": "ar-0977", "lang": "ar", "tier": "long", "source_row": 977, "text": "الأحرف الرئيسية التي يجب أن نترقب لها هي c و g، لأن لفظهما يختلف على أساس العلة التالية."},
+    {"id": "he-0007", "lang": "he", "tier": "short", "source_row": 7, "text": "הוא בנה פעמון WiFi  לדלת, כך אמר."},
+    {"id": "he-0320", "lang": "he", "tier": "short", "source_row": 320, "text": "גם מתאבקים עמיתים חלקו ללונה כבוד."},
+    {"id": "he-0942", "lang": "he", "tier": "medium", "source_row": 942, "text": "הדת השלטת במולדובה היא נצרות אורתודוקסית."},
+    {"id": "he-0030", "lang": "he", "tier": "medium", "source_row": 30, "text": "הממצא גם נותן תובנות בנוגע לאבולוציה של נוצות אצל ציפורים."},
+    {"id": "he-0082", "lang": "he", "tier": "long", "source_row": 82, "text": "מרכז ההוריקנים הלאומי (NHC) מוסר כי בשלב זה ג'רי לא מהווה סכנה ביבשה."},
+    {"id": "he-0977", "lang": "he", "tier": "long", "source_row": 977, "text": "האותיות העיקריות שיש לשים אליהן לב הן c ו-g, כיוון שהגייתן משתנה בהתאם לתנועה שבאה אחריהן."},
+    {"id": "ka-0007", "lang": "ka", "tier": "short", "source_row": 7, "text": "მისი თქმით მან WiFi-სთან დაკავშირებული კარის ზარი შექმნა."},
+    {"id": "ka-0320", "lang": "ka", "tier": "short", "source_row": 320, "text": "ლუნას პატივი მეგობარმა მოჭიდავეებმაც მიაგეს."},
+    {"id": "ka-0942", "lang": "ka", "tier": "medium", "source_row": 942, "text": "მოლდოვაში მთავარი სარწმუნოება მართლმადიდებელი ქრისტიანობაა."},
+    {"id": "ka-0030", "lang": "ka", "tier": "medium", "source_row": 30, "text": "აღმოჩენა ასევე საშუალებას იძლევა კარგად შევისწავლოთ ფრინველებში ბუმბულის ევოლუცია."},
+    {"id": "ka-0082", "lang": "ka", "tier": "long", "source_row": 82, "text": "აშშ-ის ქარიშხლების ეროვნული ცენტრის (NHC) განცხადებით, ამ დროისთვის ქარიშხალი ჯერი ხმელეთისთვის საფრთხეს არ წარმოადგენს."},
+    {"id": "ka-0977", "lang": "ka", "tier": "long", "source_row": 977, "text": "ძირითადი ასოები, რომელსაც უნდა მიაქციოთ ყურადღება არის c და g, რადგან მის შემდეგ მდგარი ხმოვანიდან გამომდინარე მათი გამოთქმა იცვლება."},
+    {"id": "zh-0007", "lang": "zh", "tier": "short", "source_row": 7, "text": "他称，他制作了一个 WiFi 门铃。"},
+    {"id": "zh-0320", "lang": "zh", "tier": "short", "source_row": 320, "text": "其他摔跤选手也纷纷悼念露娜 (Luna) 。"},
+    {"id": "zh-0942", "lang": "zh", "tier": "medium", "source_row": 942, "text": "摩尔多瓦 (Moldova) 的主要宗教是东正教。"},
+    {"id": "zh-0030", "lang": "zh", "tier": "medium", "source_row": 30, "text": "这一发现也有助于深入了解鸟类羽毛的进化。"},
+    {"id": "zh-0082", "lang": "zh", "tier": "long", "source_row": 82, "text": "国家飓风中心 (NHC) 表示，目前“杰瑞”对陆地没有威胁。"},
+    {"id": "zh-0977", "lang": "zh", "tier": "long", "source_row": 977, "text": "需要注意的主要字母是 c 和 g，因为它们的发音是根据以下元音变化的。"},
+    {"id": "ja-0007", "lang": "ja", "tier": "short", "source_row": 7, "text": "彼はWi-Fiで鳴るドアベルを作ったそうです。"},
+    {"id": "ja-0320", "lang": "ja", "tier": "short", "source_row": 320, "text": "仲間のレスラーたちもルナに敬意を表しました。"},
+    {"id": "ja-0942", "lang": "ja", "tier": "medium", "source_row": 942, "text": "モルドバの主な宗教は正統派キリスト教です。"},
+    {"id": "ja-0030", "lang": "ja", "tier": "medium", "source_row": 30, "text": "この発見はまた、鳥類の羽毛の進化について探るための手がかりとなるものでした。"},
+    {"id": "ja-0082", "lang": "ja", "tier": "long", "source_row": 82, "text": "国立ハリケーンセンター (NHC) によれば、現時点でジェリーは上陸の危険性はないとのことです。"},
+    {"id": "ja-0977", "lang": "ja", "tier": "long", "source_row": 977, "text": "発音は次に来る母音に基づいて変化するため、注意するべき主な文字はcとgになります。"},
+    {"id": "ko-0007", "lang": "ko", "tier": "short", "source_row": 7, "text": "그는 무선 도어벨(Wi-Fi doorbell)을 만들었다고 말했다."},
+    {"id": "ko-0320", "lang": "ko", "tier": "short", "source_row": 320, "text": "다른 동료 레슬링 선수들도 루나에게 경의를 표했습니다."},
+    {"id": "ko-0942", "lang": "ko", "tier": "medium", "source_row": 942, "text": "몰도바의 주요 종교는 동방정교입니다."},
+    {"id": "ko-0030", "lang": "ko", "tier": "medium", "source_row": 30, "text": "그러한 발견은 또한 조류에 있어서 깃털의 진화에 대한 통찰을 제공한다."},
+    {"id": "ko-0082", "lang": "ko", "tier": "long", "source_row": 82, "text": "미국 국립 허리케인 센터 (NHC)에 의하면, 태풍 제리는 더 이상 위협이 되지 않는다."},
+    {"id": "ko-0977", "lang": "ko", "tier": "long", "source_row": 977, "text": "주의해야 할 주요 문자는 c와 g인데, 이는 발음이 뒤에 오는 모음에 따라 다양하게 변하기 때문이다."},
+    {"id": "vi-0007", "lang": "vi", "tier": "short", "source_row": 7, "text": "Ông đã lắp môt chuông cửa WiFi, ông cho biết."},
+    {"id": "vi-0320", "lang": "vi", "tier": "short", "source_row": 320, "text": "Các đô vật khác cũng thể hiện sự tri ân với Luna."},
+    {"id": "vi-0942", "lang": "vi", "tier": "medium", "source_row": 942, "text": "Tôn giáo chính ở Moldova là Chính thống giáo."},
+    {"id": "vi-0030", "lang": "vi", "tier": "medium", "source_row": 30, "text": "Phát hiện này cũng mang đến một cái nhìn sâu sắc cho sự tiến hóa đối với lông vũ của các loài chim."},
+    {"id": "vi-0082", "lang": "vi", "tier": "long", "source_row": 82, "text": "Trung tâm Bão Quốc gia (NHC) cho biết tại thời điểm này cơn bão Jerry không cho thấy khả năng đe dọa tới đất liền."},
+    {"id": "vi-0977", "lang": "vi", "tier": "long", "source_row": 977, "text": "Những ký tự chính cần phải cẩn thận là chữ c và chữ g, vì cách phát âm của chúng thay đổi tùy theo nguyên âm kế tiếp."},
+    {"id": "id-0007", "lang": "id", "tier": "short", "source_row": 7, "text": "Ia melakukan pembuatan bel pintu dengan teknologi WiFi, katanya. "},
+    {"id": "id-0320", "lang": "id", "tier": "short", "source_row": 320, "text": "Rekan-rekan pegulat pun memberikan penghormatan kepada Luna."},
+    {"id": "id-0942", "lang": "id", "tier": "medium", "source_row": 942, "text": "Agama utama di Moldova adalah Kristen Ortodoks."},
+    {"id": "id-0030", "lang": "id", "tier": "medium", "source_row": 30, "text": "Penemuan ini juga memberikan wawasan tentang evolusi bulu pada burung."},
+    {"id": "id-0082", "lang": "id", "tier": "long", "source_row": 82, "text": "Pusat Badai Nasional (NHC) menyatakan bahwa saat ini Badai Jerry tidak mengancam daratan."},
+    {"id": "id-0977", "lang": "id", "tier": "long", "source_row": 977, "text": "Huruf utama yang perlu diperhatikan adalah c dan g, karena pengucapannya bervariasi sesuai vokal berikut."},
+    {"id": "ms-0007", "lang": "ms", "tier": "short", "source_row": 7, "text": "Dia menghasilkan loceng pintu WiFi, katanya."},
+    {"id": "ms-0320", "lang": "ms", "tier": "short", "source_row": 320, "text": "Ahli gusti lain juga memberi penghormatan kepada Luna."},
+    {"id": "ms-0942", "lang": "ms", "tier": "medium", "source_row": 942, "text": "Agama utama di Moldova ialah Kristian Ortodoks."},
+    {"id": "ms-0030", "lang": "ms", "tier": "medium", "source_row": 30, "text": "Kajian juga memberi wawasan tentang evolusi bulu pelepah pada burung."},
+    {"id": "ms-0082", "lang": "ms", "tier": "long", "source_row": 82, "text": "Pusat Taufan Nasional (NHC) mengatakan pada masa kini Jerry tidak memberi ancaman kepada darat."},
+    {"id": "ms-0977", "lang": "ms", "tier": "long", "source_row": 977, "text": "Huruf-huruf utama yang perlu diperhatikan adalah c dan g, disebabkan sebutannya yang berbeza berdasarkan huruf vokal yang mengikutinya."},
+    {"id": "th-0007", "lang": "th", "tier": "short", "source_row": 7, "text": "เขาบอกว่าได้สร้างกริ่งประตู WiFi ขึ้นมา"},
+    {"id": "th-0320", "lang": "th", "tier": "short", "source_row": 320, "text": "บรรดาเพื่อนนักมวยปล้ำยังแสดงความชื่นชมสรรเสริญลูน่าอีกด้วย"},
+    {"id": "th-0942", "lang": "th", "tier": "medium", "source_row": 942, "text": "ประชากรในประเทศมอลโดวาส่วนใหญ่เป็นผู้นับถือศาสนาคริสต์นิกายออร์โธด็อกซ์ "},
+    {"id": "th-0030", "lang": "th", "tier": "medium", "source_row": 30, "text": "การค้นพบเกี่ยวกับเรื่องดังกล่าวยังช่วยให้เห็นวิวัฒนาการของขนนกในเชิงลึกอีกด้วย"},
+    {"id": "th-0082", "lang": "th", "tier": "long", "source_row": 82, "text": "ศูนย์เฮอร์ริเคนแห่งชาติ (NHC) แถลงว่า ณ ขณะนี้เจอร์รี่ไม่มีวี่แววว่าจะเป็นภัยคุกคามต่อแผ่นดิน"},
+    {"id": "th-0977", "lang": "th", "tier": "long", "source_row": 977, "text": "ตัวพยัญชนะหลักที่ต้องระวังให้ดีคือ c และ g เนื่องจากวิธีการออกเสียงจะแตกต่างกันออกไปตามรูปสระที่ตามมา"},
+    {"id": "tl-0007", "lang": "tl", "tier": "short", "source_row": 7, "text": "Gumawa siya ng WiFi na timbre para sa pintuan, sabi niya."},
+    {"id": "tl-0320", "lang": "tl", "tier": "short", "source_row": 320, "text": "Pinarangalan din ng mga katulad niyang mambubuno si Luna."},
+    {"id": "tl-0942", "lang": "tl", "tier": "medium", "source_row": 942, "text": "Ang pangunahing relihiyon sa Moldova ay Kristiyanong Ortodokso."},
+    {"id": "tl-0030", "lang": "tl", "tier": "medium", "source_row": 30, "text": "Ang natuklasan ay nagbigay din ng pananaw sa ebolusyon ng mga balahibo sa mga ibon. "},
+    {"id": "tl-0082", "lang": "tl", "tier": "long", "source_row": 82, "text": "Sinabi ng Pambansang Sentro Para sa Mga Bagyo (NHC) na sa puntong ito ay walang pagbabantang panganib sa lupa ang Jerry. "},
+    {"id": "tl-0977", "lang": "tl", "tier": "long", "source_row": 977, "text": "Ang mga pinakaimportanteng letra na dapat bigyan ng pansin ay ang c at g, dahil ang pagbigkas sa mga ito ay nagbabago-bago depende sa kasunod na patinig."},
+    {"id": "hi-0007", "lang": "hi", "tier": "short", "source_row": 7, "text": "उन्होंने (जेमी सिमिनॉफ़) कहा, कि उन्होंने एक वाईफ़ाई डोर बेल बनाई है."},
+    {"id": "hi-0320", "lang": "hi", "tier": "short", "source_row": 320, "text": "लूना को साथी पहलवानों ने भी श्रद्धांजलि दी."},
+    {"id": "hi-0942", "lang": "hi", "tier": "medium", "source_row": 942, "text": "मोल्दोवा में प्रमुख धर्म रूढ़िवादी ईसाई धर्म है।"},
+    {"id": "hi-0030", "lang": "hi", "tier": "medium", "source_row": 30, "text": "यह खोज पक्षियों में पंखों के विकास की पूरी जानकारी भी प्रदान करती है."},
+    {"id": "hi-0082", "lang": "hi", "tier": "long", "source_row": 82, "text": "राष्ट्रीय तूफ़ान केंद्र (एनएचसी) का कहना है कि इस समय जैरी का ज़मीन को कोई खतरा नहीं है।"},
+    {"id": "hi-0977", "lang": "hi", "tier": "long", "source_row": 977, "text": "ध्यान रखने वाले मुख्य वर्ण c और g है, चूँकि उनका उच्चारण निम्न स्वर के आधार पर भिन्न होता है."},
+    {"id": "bn-0007", "lang": "bn", "tier": "short", "source_row": 7, "text": "তিনি জানান যে তিনি একটি ওয়াই-ফাই ডোর বেল তৈরি করেছিলেন।"},
+    {"id": "bn-0320", "lang": "bn", "tier": "short", "source_row": 320, "text": "সহকর্মী কুস্তিগীররা এমনকি লুনাকে শ্রদ্ধা জানিয়েছিল।"},
+    {"id": "bn-0942", "lang": "bn", "tier": "medium", "source_row": 942, "text": "মোলডোভার প্রধান ধর্ম হল গোঁড়া খ্রিস্টান।"},
+    {"id": "bn-0030", "lang": "bn", "tier": "medium", "source_row": 30, "text": "অনুসন্ধানটি পাখির পালকের বিবর্তনের  বিষয়েও পরিজ্ঞান দেয়"},
+    {"id": "bn-0082", "lang": "bn", "tier": "long", "source_row": 82, "text": "ন্যাশনাল হ্যারিকেন সেন্টার (NHC) বলছে যে জেরি নিয়ে এই মুহূর্তে ভূভাগে কোন সতর্কতা নেই।"},
+    {"id": "bn-0977", "lang": "bn", "tier": "long", "source_row": 977, "text": "নজর রাখার মত প্রধান অক্ষরগুলি হলো c এবং g যেহেতু তাদের উচ্চারণ নীচের স্বরবর্ণের উপর ভিত্তি করে পরিবর্তিত হয়।"},
+    {"id": "ta-0007", "lang": "ta", "tier": "short", "source_row": 7, "text": "அவர், தான் வைஃபை கதவு அறிவிப்பு மணியை உருவாக்கியதாகக் கூறினார்."},
+    {"id": "ta-0320", "lang": "ta", "tier": "short", "source_row": 320, "text": "லூனாவுக்குச் சக மல்யுத்த வீரர்களும் அஞ்சலி செலுத்தினர்."},
+    {"id": "ta-0942", "lang": "ta", "tier": "medium", "source_row": 942, "text": "மோல்டோவாவில் உள்ள முக்கிய மதம் ஆர்தடாக்ஸ் கிறிஸ்துவ மதம்."},
+    {"id": "ta-0030", "lang": "ta", "tier": "medium", "source_row": 30, "text": "கண்டுபிடிப்பானது பறவைகளில் இறகுகளின் பரிணாம வளர்ச்சியைப் பற்றிய நுண்ணறிவை வழங்குகிறது."},
+    {"id": "ta-0082", "lang": "ta", "tier": "long", "source_row": 82, "text": "தேசிய சூறாவளி மையம் (NHC) இந்த நேரத்தில் ஜெர்ரி ஆல் எந்த அச்சுறுத்தலும் இல்லை என்று கூறுகிறது."},
+    {"id": "ta-0977", "lang": "ta", "tier": "long", "source_row": 977, "text": "c மற்றும் g ஆகிய எழுத்துக்கள் கவனிக்க வேண்டிய முக்கிய எழுத்துக்கள், அவற்றின் உச்சரிப்பு, பின்வரும் வவ்வலைப் பொறுத்து மாறுபடுகின்றன."},
+    {"id": "te-0007", "lang": "te", "tier": "short", "source_row": 7, "text": "అతను WiFi డోర్ బెల్ నిర్మించాడు. అని చెప్పాడు."},
+    {"id": "te-0320", "lang": "te", "tier": "short", "source_row": 320, "text": "తోటి మల్ల యుద్ధకారులు కూడా లూనాకు నివాళులు అర్పించారు."},
+    {"id": "te-0942", "lang": "te", "tier": "medium", "source_row": 942, "text": "ఆర్థోడాక్స్  క్రిస్టియన్ మోల్డోవాలో ప్రధాన మతంగా ఉంది."},
+    {"id": "te-0030", "lang": "te", "tier": "medium", "source_row": 30, "text": " శోధన కూడా పక్షులలో ఈకల యొక్క పరిణామంపై  లోతుగా తెలుసుకోవడానికి  వీలు కల్పిస్తుంది. "},
+    {"id": "te-0082", "lang": "te", "tier": "long", "source_row": 82, "text": "ఈ సమయంలో జెర్రీ వల్ల భూమికి ఎటువంటి ముప్పు లేదని నేషనల్ హరికేన్ సెంటర్ (ఎన్‌హెచ్‌సి) పేర్కొంది."},
+    {"id": "te-0977", "lang": "te", "tier": "long", "source_row": 977, "text": "ప్రధానంగా దృష్టి సారించాల్సిన అక్షరాలు c మరియు g. ఎందుకంటే, వాటి యొక్క ఉచ్ఛారణ, తర్వాత వచ్చే వొవెల్ మీద ఆధారపడి ఉంటుంది."},
+    {"id": "mr-0007", "lang": "mr", "tier": "short", "source_row": 7, "text": "ते म्हणाले की, त्यांनी WiFi डोअर बेल बनवली आहे."},
+    {"id": "mr-0320", "lang": "mr", "tier": "short", "source_row": 320, "text": "सह कुस्तीगिरांनी देखील लुना यांना श्रद्धांजली वाहिली."},
+    {"id": "mr-0942", "lang": "mr", "tier": "medium", "source_row": 942, "text": "मोल्दोव्हा मधील प्रमुख धर्म ऑर्थोडॉक्स ख्रिश्चन आहे."},
+    {"id": "mr-0030", "lang": "mr", "tier": "medium", "source_row": 30, "text": "शोध पक्षाच्या पिसांच्या उत्क्रांतीबाबतही माहिती देतो."},
+    {"id": "mr-0082", "lang": "mr", "tier": "long", "source_row": 82, "text": "नॅशनल हरिकेन सेंटर (NHC) चे असे म्हणणे आहे की, या क्षणी जेरीचा जमिनीला कोणत्याही प्रकारचा धोका नाही."},
+    {"id": "mr-0977", "lang": "mr", "tier": "long", "source_row": 977, "text": "लक्ष ठेवण्यासारखी मुख्य अक्षरे सी आणि जी आहेत, कारण त्यांचे उच्चार पुढील स्वरानुसार वेगवेगळे असू शकतात."},
+    {"id": "gu-0007", "lang": "gu", "tier": "short", "source_row": 7, "text": "તેમણે વાઈફાઈડોર બેલ બનાવ્યો હતો, એમ તેમણે કહ્યું હતું."},
+    {"id": "gu-0320", "lang": "gu", "tier": "short", "source_row": 320, "text": "સાથી કુસ્તીબાજોએ પણ લુનાને શ્રદ્ધાંજલિ આપી હતી."},
+    {"id": "gu-0942", "lang": "gu", "tier": "medium", "source_row": 942, "text": "મોલ્ડોવામાં મુખ્ય ધર્મ રૂઢિચુસ્ત ખ્રિસ્તીધર્મ છે."},
+    {"id": "gu-0030", "lang": "gu", "tier": "medium", "source_row": 30, "text": "આ શોધ પક્ષીઓના પીછાની ઉત્ક્રાંતિ ની ગૂઢ સમજણ પણ આપે છે."},
+    {"id": "gu-0082", "lang": "gu", "tier": "long", "source_row": 82, "text": "નેશનલ હરિકેન સેન્ટર (NHC) જણાવે છે કે આ સમયે જેરી જમીન પર કોઈ ખતરારૂપ નથી."},
+    {"id": "gu-0977", "lang": "gu", "tier": "long", "source_row": 977, "text": "ધ્યાન રાખવા માટેના મુખ્ય અક્ષરો સી અને જી છે, કારણ કે તેમના ઉચ્ચારણ પાછળના સ્વરના આધારે બદલાય છે."},
+    {"id": "kn-0007", "lang": "kn", "tier": "short", "source_row": 7, "text": "ಅವರು ವೈಫೈ ಡೋರ್ ಬೆಲ್ ತಯಾರಿಸಿದ್ದಾರೆ ಎಂದು ಅವರು ಹೇಳಿದರು."},
+    {"id": "kn-0320", "lang": "kn", "tier": "short", "source_row": 320, "text": "ಸಹ ಕುಸ್ತಿಪಟುಗಳು ಸಹ ಲೂನಾ ಅವರಿಗೆ ಗೌರವ ಸಲ್ಲಿಸಿದರು."},
+    {"id": "kn-0942", "lang": "kn", "tier": "medium", "source_row": 942, "text": "ಮೊಲ್ಡೊವಾದಲ್ಲಿನ ಮುಖ್ಯ ಧರ್ಮ ಆರ್ಥೊಡಾಕ್ಸ್ ಕ್ರಿಶ್ಚಿಯನ್ ಆಗಿದೆ."},
+    {"id": "kn-0030", "lang": "kn", "tier": "medium", "source_row": 30, "text": "ಆವಿಷ್ಕಾರವು ಪಕ್ಷಿ ಗರಿಗಳ ವಿಕಾಸದ ಒಳನೋಟವನ್ನು ಸಹ ನೀಡುತ್ತದೆ."},
+    {"id": "kn-0082", "lang": "kn", "tier": "long", "source_row": 82, "text": "ಈ ಸಮಯದಲ್ಲಿ ಜೆರ್ರಿ ಚಂಡಮಾರುತದಿಂದ ಭೂಮಿಗೆ ಯಾವುದೇ ಆತಂಕವಿಲ್ಲ ಎಂದು ರಾಷ್ಟ್ರೀಯ ಚಂಡಮಾರುತ ಕೇಂದ್ರ (NHC) ಹೇಳುತ್ತದೆ."},
+    {"id": "kn-0977", "lang": "kn", "tier": "long", "source_row": 977, "text": "ಗಮನಿಸಬೇಕಾದ ಮುಖ್ಯ ಅಕ್ಷರಗಳು c ಮತ್ತು g, ಏಕೆಂದರೆ ಅವುಗಳ ಉಚ್ಚಾರಣೆಯು ಈ ಸ್ವರವನ್ನು ಆಧರಿಸಿ ಬದಲಾಗುತ್ತದೆ."},
+    {"id": "ml-0007", "lang": "ml", "tier": "short", "source_row": 7, "text": "അദ്ദേഹം ഒരു WiFi ഡോർ ബെൽ ഉണ്ടാക്കിയെന്ന് അവൻ പറഞ്ഞു."},
+    {"id": "ml-0320", "lang": "ml", "tier": "short", "source_row": 320, "text": "സഹ ഗുസ്തിക്കാരും ലൂണയ്ക്ക് ആദരാഞ്ജലികൾ അർപ്പിച്ചു."},
+    {"id": "ml-0942", "lang": "ml", "tier": "medium", "source_row": 942, "text": "മോൽദോവയിലെ പ്രധാന മതം ഓർത്തഡോക്സ് ക്രിസ്ത്യനാണ്."},
+    {"id": "ml-0030", "lang": "ml", "tier": "medium", "source_row": 30, "text": "ഈ കണ്ടുപിടിത്തം പക്ഷികളിലെ തൂവലുകളുടെ ഉൽഭവത്തിലേക്ക് വെളിച്ചം വീശി."},
+    {"id": "ml-0082", "lang": "ml", "tier": "long", "source_row": 82, "text": "ജെറി നിലവിൽ കരയ്ക്ക് ഒരു ഭീഷണിയും ഉണ്ടാക്കുന്നില്ലെന്ന് ദേശീയ ചുഴലിക്കാറ്റ് കേന്ദ്രം (എൻ‌എച്ച്‌സി) പറയുന്നു."},
+    {"id": "ml-0977", "lang": "ml", "tier": "long", "source_row": 977, "text": "നിരീക്ഷിക്കേണ്ട അക്ഷരങ്ങൾ സി, ജി എന്നിവയാണ്, കാരണം അവയുടെ ഉച്ചാരണം അത് കഴിഞ്ഞ് വരുന്ന സ്വരാക്ഷരത്തിനെ അടിസ്ഥാനമാക്കിയാണ്."},
+    {"id": "pa-0007", "lang": "pa", "tier": "short", "source_row": 7, "text": "ਉਸਨੇ ਕਿਹਾ, ਉਸਨੇ ਇੱਕ ਵਾਈ-ਫਾਈ ਡੋਰ ਬੈੱਲ ਬਣਾਈ ਹੈ।"},
+    {"id": "pa-0320", "lang": "pa", "tier": "short", "source_row": 320, "text": "ਸਾਥੀ ਪਹਿਲਵਾਨਾਂ ਨੇ ਵੀ ਲੁਨਾ ਨੂੰ ਸ਼ਰਧਾਂਜਲੀ ਭੇਟ ਕੀਤੀ।"},
+    {"id": "pa-0942", "lang": "pa", "tier": "medium", "source_row": 942, "text": "ਮੋਲਦੋਵਾ ਦਾ ਵੱਡਾ ਧਰਮ ਕੱਟੜ ਈਸਾਈ ਧਰਮ ਹੈ।"},
+    {"id": "pa-0030", "lang": "pa", "tier": "medium", "source_row": 30, "text": "ਇਹ ਜਾਣਕਾਰੀ ਪੰਛੀਆਂ ਦੇ ਖੰਭਾਂ ਬਾਰੇ ਵੀ ਸੂਝ ਪ੍ਰਦਾਨ ਕਰਦੀ ਹੈ।"},
+    {"id": "pa-0082", "lang": "pa", "tier": "long", "source_row": 82, "text": "ਨੈਸ਼ਨਲ ਹਰੀਕੇਨ ਸੈਂਟਰ (ਐਨ.ਐਚ.ਸੀ.) ਦਾ ਕਹਿਣਾ ਹੈ ਕਿ ਇਸ ਸਮੇਂ ਜੈਰੀ ਤੋਂ ਸਾਨੂੰ ਇਸ ਖੇਤਰ ਵਿੱਚ ਕੋਈ ਖਤਰਾ ਨਹੀਂ ਹੈ।"},
+    {"id": "pa-0977", "lang": "pa", "tier": "long", "source_row": 977, "text": "ਮੁੱਖ ਅੱਖਰ ਸੀ ਅਤੇ ਜੀ ਦੇਖਣ ਲਈ ਹੁੰਦੇ ਹਨ, ਕਿਉਂਕਿ ਇਹਨਾਂ ਦਾ ਉਚਾਰਨ ਹੇਠਾਂ ਦਿੱਤੇ ਸਵਰ-ਅੱਖਰਾਂ ਦੇ ਆਧਾਰ 'ਤੇ ਵੱਖ-ਵੱਖ ਹੁੰਦਾ ਹੈ।"},
+    {"id": "or-0007", "lang": "or", "tier": "short", "source_row": 7, "text": "ସେ ୱାଇଫାଇ ଡୋର୍ ବେଲ୍ ନିର୍ମାଣ କରିଥିବା କହିଛନ୍ତି।"},
+    {"id": "or-0320", "lang": "or", "tier": "short", "source_row": 320, "text": "ସାଥୀ କୁସ୍ତିଯୋଦ୍ଧାମାନେ ମଧ୍ୟ ଲୁନାଙ୍କୁ ଶ୍ରଦ୍ଧାଞ୍ଜଳି ଅର୍ପଣ କରିଥିଲେ।"},
+    {"id": "or-0942", "lang": "or", "tier": "medium", "source_row": 942, "text": "ରକ୍ଷଣଶୀଳ ଖ୍ରୀଷ୍ଟିଆନ ଧର୍ମ, ମୋଲଡୋଭାର ମୁଖ୍ୟ ଧର୍ମ ଅଟେ।"},
+    {"id": "or-0030", "lang": "or", "tier": "medium", "source_row": 30, "text": "ଏହି ଆବିଷ୍କାର ପକ୍ଷୀମାନଙ୍କ ଶରୀରରେ ପରର କ୍ରମବିକାଶ ବିଷୟରେ ମଧ୍ୟ ଅନ୍ତର୍ଦୃଷ୍ଟି ପ୍ରଦାନ କରେ।"},
+    {"id": "or-0082", "lang": "or", "tier": "long", "source_row": 82, "text": "ଜାତୀୟ ଘୂର୍ଣ୍ଣିବଳୟ କେନ୍ଦ୍ର (NHC) କହିଛି ଯେ, ଏହି ସମୟରେ ଜେରୀ ଅବତରଣ କଲେ କୌଣସି ବିପଦ ନାହିଁ।"},
+    {"id": "or-0977", "lang": "or", "tier": "long", "source_row": 977, "text": "ଧ୍ୟାନ ଦେବା ପାଇଁ ମୁଖ୍ୟ ଅକ୍ଷରଗୁଡ଼ିକ ହେଉଛି c ଏବଂ g, ଯେହେତୁ ସେମାନଙ୍କର ଉଚ୍ଚାରଣ ନିମ୍ନ ସ୍ଵର ଉପରେ ଆଧାର କରି ଭିନ୍ନ ହୋଇଥାଏ।"},
+    {"id": "ur-0007", "lang": "ur", "tier": "short", "source_row": 7, "text": "اس نے کہا کہ اس نے ایک وائی فائی ڈور بیل اختراع کیا ہے۔"},
+    {"id": "ur-0320", "lang": "ur", "tier": "short", "source_row": 320, "text": "ساتھی پہلوانوں نے بھی لونا کو خراجِ عقیدت پیش کیا۔"},
+    {"id": "ur-0942", "lang": "ur", "tier": "medium", "source_row": 942, "text": "مولڈوا کا سب سے بڑا مذہب کٹر عیسائیت ہے۔"},
+    {"id": "ur-0030", "lang": "ur", "tier": "medium", "source_row": 30, "text": "یہ تحقیق پرندوں میں پروں کے ارتقاء کا ادراک بھی فراہم کرتی ہے۔"},
+    {"id": "ur-0082", "lang": "ur", "tier": "long", "source_row": 82, "text": "نیشنل ہریکین سینٹر (این ایچ سی) کہتا ہے کہ اس موقع پر جیری، زمین کے لیے کسی خطرے کا باعث نہیں۔"},
+    {"id": "ur-0977", "lang": "ur", "tier": "long", "source_row": 977, "text": "وہ خاص حروف جن پر دھیان رکھنا چاہئے وہ سی اور جی ہیں حالانکہ ان کا تلّفظ مندرجہ ذیل حروف علت کی بنیاد پر تبدیل ہوتا ہے۔"}
+  ]
+}

@@ -20,6 +20,11 @@ from akas.benchmarking.workload import prompt_digest
 from akas.optimization.context import workload
 
 SCHEMA = "akas.campaign-report.v1"
+SPEECH_SCHEMA = "akas.speech-report.v1"
+SPEECH_FILES = frozenset((
+    "README.md", "COMPARISON.md", "AKAS.md", "BASELINES.md",
+    "measurements.csv", "campaign.json", "report.json",
+))
 REPORT_FILES = frozenset(
     (
         "README.md",
@@ -781,12 +786,12 @@ def clean(value):
     return str(value or "").replace("|", "\\|").replace("\n", " ").strip()
 
 
-def evidence_link(run_id, out, history):
+def evidence_link(run_id, out, history, *, name="run.json", label=None):
     if not run_id:
         return "—"
-    path = (archive.link(history, "runs", run_id, "run.json") or
-            Path(os.path.relpath(Path(history) / "runs" / run_id / "run.json", out)).as_posix())
-    return f"[{run_id}]({path})"
+    path = (archive.link(history, "runs", run_id, name) or
+            Path(os.path.relpath(Path(history) / "runs" / run_id / name, out)).as_posix())
+    return f"[{label or run_id}]({path})"
 
 
 def csv_file(path, rows, fields):
@@ -822,6 +827,8 @@ def table_rows(profiles):
 
 
 def render(data, out, history):
+    if data.get("schema") == SPEECH_SCHEMA:
+        return render_speech(data, Path(out).resolve(), Path(history).resolve())
     validate(data)
     out = Path(out).resolve()
     history = Path(history).resolve()
@@ -1414,6 +1421,443 @@ def export(campaign, *, history="benchmarks", out=None):
     return destination
 
 
+def export_speech(native, model, workload_id, history, out, baseline_lock=None):
+    from akas.benchmarking.workload import load
+
+    metadata = native["metadata"]
+    workload = load(workload_id)
+    if (
+        metadata["model"] != model["model"]
+        or metadata["speech_workload"]["definition"] != workload
+        or not native["completed_at"]
+        or native["status"] == "invalidated"
+    ):
+        raise ValueError(
+            "the retained speech run does not match the requested workload"
+        )
+    reference = metadata.get("reference")
+    vulkan = record(history, reference["run_id"]) if reference else None
+    if reference and vulkan is None:
+        raise ValueError("the frozen speech baseline is unavailable")
+    cpu = None
+    if baseline_lock is not None:
+        if (
+            not vulkan
+            or baseline_lock.get("schema") != "akas.baseline-lock.v1"
+            or set(baseline_lock["runs"]) != {"llama"}
+        ):
+            raise ValueError(
+                "a supplemental speech lock must name one llama.cpp CPU run"
+            )
+        entry = baseline_lock["runs"]["llama"]
+        run_id = entry["run_id"]
+        for name, checksum in {
+            "run.json": entry["sha256"],
+            **entry.get("artifact_checksums", {}),
+        }.items():
+            if (
+                hashlib.sha256(
+                    archive.read_file(history, "runs", run_id, name)
+                ).hexdigest()
+                != checksum
+            ):
+                raise ValueError(f"frozen speech CPU checksum differs: {run_id}/{name}")
+        cpu = record(history, run_id)
+        cpu_meta = cpu["metadata"]
+        gpu_meta = vulkan["metadata"]
+        matched = (
+            "runtime",
+            "binary_sha256",
+            "runtime_revision",
+            "runtime_files",
+            "model",
+            "protocol",
+            "speech_workload",
+            "weight_format",
+            "checkpoint_sha256",
+            "voice",
+            "sample_rate_hz",
+            "warmup",
+            "repeats",
+        )
+        if (
+            not cpu["completed_at"]
+            or cpu["status"] not in ("passed", "failed")
+            or cpu_meta["provider"] != "cpu"
+            or any(cpu_meta[key] != gpu_meta[key] for key in matched)
+            or cpu_meta["projector"]["sha256"] != gpu_meta["projector"]["sha256"]
+            or [row["case"] for row in cpu["results"]] != workload["utterances"]
+        ):
+            raise ValueError(
+                "the frozen CPU run does not match the Vulkan speech workload"
+            )
+    profiles = []
+    for run in (native, vulkan, cpu):
+        if run is None:
+            continue
+        kind = "akas" if run is native else "baseline"
+        evidence = json.loads(
+            archive.read_file(history, "runs", run["id"], "report.json")
+        )
+        meta = evidence["metadata"]
+        if meta != run["metadata"] or evidence["results"] != run["results"]:
+            raise ValueError("speech run record differs from its sealed report")
+        checksum = next(
+            item["sha256"] for item in run["artifacts"] if item["path"] == "report.json"
+        )
+        if run is vulkan and checksum != reference["report_sha256"]:
+            raise ValueError("the frozen speech baseline checksum differs")
+        profiles.append(
+            dict(
+                id="llama-cpu" if run is cpu else meta["runtime"],
+                kind=kind,
+                status=run["status"],
+                qualifying_status="unqualified",
+                metadata=meta,
+                source=run["source"],
+                run_id=run["id"],
+                report_sha256=checksum,
+                measurements=evidence["results"],
+            )
+        )
+    state = dict(
+        source=native["source"],
+        created_at=native["started_at"],
+        updated_at=native["completed_at"],
+        status=native["status"],
+        runs={profile["run_id"]: profile["report_sha256"] for profile in profiles},
+    )
+    if cpu is not None:
+        state.update(
+            updated_at=max(state["updated_at"], cpu["completed_at"]),
+            baseline_lock=baseline_lock,
+        )
+    state["identity"] = hashlib.sha256(
+        json.dumps(state, sort_keys=True).encode()
+    ).hexdigest()
+    data = dict(
+        schema=SPEECH_SCHEMA, campaign=state, workload=workload, profiles=profiles
+    )
+    destination = Path(out) if out else report_directory(state, history)
+    render(data, destination, history)
+    return destination
+
+
+def render_speech(data, out, history):
+    state, workload, profiles = data["campaign"], data["workload"], data["profiles"]
+    protocol = "client-speech-pcm-v1"
+    if workload.get("protocol") != protocol or [p["kind"] for p in profiles] not in (
+        ["akas"],
+        ["akas", "baseline"],
+        ["akas", "baseline", "baseline"],
+    ):
+        raise ValueError("invalid speech report protocol or profiles")
+    utterances = workload["utterances"]
+    cases = {item["id"]: item for item in utterances}
+    default_lang = workload["request"].get("lang")
+    languages = workload.get("languages") or {default_lang: dict(name=default_lang)}
+    if len(cases) != len(utterances) or set(languages) != {
+        item.get("lang", default_lang) for item in utterances
+    }:
+        raise ValueError("invalid speech case or language coverage")
+    nav = "[Overview](README.md) · [Comparison](COMPARISON.md) · [AKAS](AKAS.md) · [Baselines](BASELINES.md) · [Measurements](measurements.csv)"
+    explicit_voices = any("voice" in item for item in utterances)
+    has_cpu = any(profile["id"] == "llama-cpu" for profile in profiles)
+    runtime_count = "All runtimes" if has_cpu else "Both runtimes"
+    voice_note = (
+        f"{runtime_count} used the same case-specific presets. "
+        if explicit_voices
+        else f"{runtime_count} used one fixed voice for all languages. "
+    )
+    notes = (
+        "Timings cover one warm localhost request through receipt of complete PCM16. "
+        "Wall time and real-time factor (RTF, wall time divided by audio duration) are per-utterance medians. "
+        "Comparison ratios use geometric means of matched successful utterances. "
+        "Pass counts cover request completion, format and non-silent audio. AKAS also reports end of speech. "
+        "WAV byte determinism is assessed within each runtime. "
+        + voice_note
+        + "Intelligibility, pronunciation and MOS were outside the measurement scope."
+    )
+    overview = [
+        "# Speech benchmark report",
+        "",
+        nav,
+        "",
+        f"Workload `{workload['id']}` covers **{len(languages)} languages**, **{len(cases)} utterances** "
+        f"and {workload['repeats']} measured requests per utterance after {workload['warmup']} warmup.",
+        "",
+        f"Protocol `{protocol}`. UTC {state['created_at']} to {state['updated_at']}.",
+        "",
+        notes,
+        "",
+    ]
+    if "corpus" in workload:
+        corpus = workload["corpus"]
+        overview.extend(
+            [
+                f"Language coverage follows the [model card]({workload['language_source']}). "
+                f"Prompts are from [{corpus['name']}]({corpus['url']}), "
+                f"licensed [{corpus['license']}]({corpus['license_url']}). {corpus['selection']}",
+                "",
+            ]
+        )
+    if explicit_voices:
+        overview.extend(
+            [
+                "| Language | Preset voice |",
+                "| --- | --- |",
+            ]
+        )
+        for lang, info in languages.items():
+            voices = {
+                item.get("voice", profiles[0]["metadata"]["voice"])
+                for item in utterances
+                if item.get("lang", default_lang) == lang
+            }
+            overview.append(
+                f"| {info['name']} (`{lang}`) | {', '.join(sorted(voices))} |"
+            )
+        overview.append("")
+    overview.extend(
+        [
+            "| Runtime | Device | Successful cases | Deterministic cases | Run |",
+            "| --- | --- | ---: | ---: | --- |",
+        ]
+    )
+    measurements = {}
+    samples = []
+    baseline_sections = []
+    for profile in profiles:
+        meta = profile["metadata"]
+        if (
+            meta["speech_workload"]["definition"] != workload
+            or meta["protocol"] != protocol
+        ):
+            raise ValueError("speech profile metadata differs from the workload")
+        rows = profile["measurements"]
+        by_id = {row["case"]["id"]: row for row in rows}
+        if len(by_id) != len(rows) or any(
+            cases.get(row["case"]["id"]) != row["case"] for row in rows
+        ):
+            raise ValueError("undeclared or duplicate speech measurements")
+        runtime = profile["id"]
+        measurements[runtime] = by_id
+        count = sum(r["status"] == "ok" for r in rows)
+        stable = sum(
+            r.get("correctness", {}).get("deterministic_pcm", False) for r in rows
+        )
+        link = evidence_link(profile["run_id"], out, history)
+        overview.append(
+            f"| {runtime} ({meta['provider']}) | {clean(meta['device']['name'])} | "
+            f"{count}/{len(cases)} | {stable}/{len(cases)} | {link} |"
+        )
+        lines = [
+            f"# {runtime} speech measurements",
+            "",
+            nav,
+            "",
+            notes,
+            "",
+            f"Model {meta['model']} · {meta['weight_format']} · {meta['sample_rate_hz']:,} Hz · "
+            + (
+                "case-specific voices are listed in the overview."
+                if explicit_voices
+                else f"voice `{meta['voice']}`."
+            ),
+            f"Run {link} · report SHA-256 `{profile['report_sha256']}`.",
+            f"Checkpoint SHA-256 `{meta['checkpoint_sha256']}`. Projector SHA-256 `{meta['projector']['sha256']}`.",
+        ]
+        if meta.get("program_sha256"):
+            lines.append(f"Compiled program SHA-256 `{meta['program_sha256']}`.")
+        if meta.get("compiled_codec_frames"):
+            lines.append(
+                f"Compiled codec frame capacities: {', '.join(map(str, meta['compiled_codec_frames']))}."
+            )
+        if meta.get("runtime_version"):
+            lines.append(f"Runtime version `{clean(meta['runtime_version'])}`.")
+        lines.extend(
+            [
+                "",
+                "| Language | Case | Tier | Status | Repeats | Wall ms | Audio s | RTF | PCM repeatable | Example | Error |",
+                "| --- | --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- | --- |",
+            ]
+        )
+        for item in utterances:
+            case_id = item["id"]
+            lang = item.get("lang", default_lang)
+            row = by_id.get(case_id, {})
+            summary = row.get("summary", {})
+            reps = row.get("samples", ())
+            status = row.get("status", "not measured")
+            repeatable = row.get("correctness", {}).get("deterministic_pcm")
+            wall = summary.get("wall_seconds")
+            audio = summary.get("audio_seconds")
+            rtf = summary.get("real_time_factor")
+            wav = (
+                evidence_link(
+                    profile["run_id"], out, history, name=reps[0]["wav"], label="WAV"
+                )
+                if reps
+                else "—"
+            )
+            lines.append(
+                f"| {lang} | {case_id} | {item['tier']} | {status} | {len(reps)} | "
+                f"{f'{wall * 1000:.1f}' if wall is not None else '—'} | "
+                f"{f'{audio:.3f}' if audio is not None else '—'} | "
+                f"{f'{rtf:.3f}' if rtf is not None else '—'} | "
+                f"{'—' if repeatable is None else 'yes' if repeatable else 'no'} | "
+                f"{wav} | {clean(row.get('error'))} |"
+            )
+            for repeat, sample in enumerate(reps or ({},), 1):
+                samples.append(
+                    dict(
+                        runtime=runtime,
+                        provider=meta["provider"],
+                        run_id=profile["run_id"],
+                        language=lang,
+                        case_id=case_id,
+                        tier=item["tier"],
+                        source_row=item.get("source_row"),
+                        text=item["text"],
+                        status=status,
+                        error=row.get("error"),
+                        **(
+                            {"voice": item.get("voice", meta["voice"])}
+                            if explicit_voices
+                            else {}
+                        ),
+                        **({"repeat": repeat, **sample} if sample else {}),
+                    )
+                )
+        if profile["kind"] == "akas":
+            text(out / "AKAS.md", "\n".join(lines))
+        else:
+            baseline_sections.append("\n".join(lines))
+    text(
+        out / "BASELINES.md",
+        "\n\n---\n\n".join(baseline_sections)
+        if baseline_sections
+        else f"# Speech baselines\n\n{nav}\n\nNo frozen baseline was retained.",
+    )
+    comparison = [
+        "# Speech benchmark comparison",
+        "",
+        nav,
+        "",
+        notes,
+        "",
+        "| Language | Cases | AKAS passed | Baseline passed | Paired | Wall wins | Wall speedup | Audio throughput speedup |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+    ]
+    native, baseline = (measurements.get(name, {}) for name in ("akas", "llama"))
+    for lang, name in [
+        *[(code, row["name"]) for code, row in languages.items()],
+        (None, "All languages"),
+    ]:
+        ids = [
+            key
+            for key, item in cases.items()
+            if lang is None or item.get("lang", default_lang) == lang
+        ]
+        good = [
+            {k for k in ids if rows.get(k, {}).get("status") == "ok"}
+            for rows in (native, baseline)
+        ]
+        paired = sorted(good[0] & good[1])
+        wall, rtf = (
+            [
+                baseline[k]["summary"][metric] / native[k]["summary"][metric]
+                for k in paired
+            ]
+            for metric in ("wall_seconds", "real_time_factor")
+        )
+        label = f"{name} (`{lang}`)" if lang else f"**{name}**"
+        ratios = [
+            f"{statistics.geometric_mean(values):.3f}×" if values else "—"
+            for values in (wall, rtf)
+        ]
+        comparison.append(
+            f"| {label} | {len(ids)} | {len(good[0])} | {len(good[1])} | {len(paired)} | "
+            f"{sum(value > 1 for value in wall)} | {ratios[0]} | {ratios[1]} |"
+        )
+    if has_cpu:
+        cpu = measurements["llama-cpu"]
+        comparison.extend(
+            [
+                "",
+                "## Relative to llama.cpp CPU",
+                "",
+                "All three runtimes must complete a prompt for it to enter the ratios. "
+                "Wall speedup is CPU wall time divided by the corresponding GPU wall time.",
+                "",
+                "| Language | Cases | CPU passed | Matched on all three | AKAS wall speedup | llama.cpp Vulkan wall speedup |",
+                "| --- | ---: | ---: | ---: | ---: | ---: |",
+            ]
+        )
+        for lang, name in [
+            *[(key, row["name"]) for key, row in languages.items()],
+            (None, "All languages"),
+        ]:
+            ids = [
+                key
+                for key, item in cases.items()
+                if lang is None or item.get("lang", default_lang) == lang
+            ]
+            cpu_good = [key for key in ids if cpu.get(key, {}).get("status") == "ok"]
+            paired = [
+                key
+                for key in cpu_good
+                if native.get(key, {}).get("status")
+                == baseline.get(key, {}).get("status")
+                == "ok"
+            ]
+            ratios = []
+            for rows in (native, baseline):
+                values = [
+                    cpu[key]["summary"]["wall_seconds"]
+                    / rows[key]["summary"]["wall_seconds"]
+                    for key in paired
+                ]
+                ratios.append(
+                    f"{statistics.geometric_mean(values):.3f}×" if values else "—"
+                )
+            comparison.append(
+                f"| {name} | {len(ids)} | {len(cpu_good)} | {len(paired)} | {ratios[0]} | {ratios[1]} |"
+            )
+    text(out / "README.md", "\n".join(overview))
+    text(out / "COMPARISON.md", "\n".join(comparison))
+    csv_file(
+        out / "measurements.csv",
+        samples,
+        (
+            "runtime",
+            "provider",
+            "run_id",
+            "language",
+            *(("voice",) if explicit_voices else ()),
+            "case_id",
+            "tier",
+            "source_row",
+            "text",
+            "status",
+            "error",
+            "repeat",
+            "wall_seconds",
+            "audio_seconds",
+            "real_time_factor",
+            "samples",
+            "peak_pcm16",
+            "audio_frames",
+            "terminated",
+            "wav",
+            "wav_sha256",
+        ),
+    )
+    write(out / "campaign.json", state)
+    write(out / "report.json", data)
+    index(history)
+
+
 def export_runs(run_ids, *, model_id, workload_id, history="benchmarks", out=None,
                 baseline_lock=None):
     """Render retained native measurements through the existing campaign exporter.
@@ -1424,12 +1868,17 @@ def export_runs(run_ids, *, model_id, workload_id, history="benchmarks", out=Non
     history = Path(history).resolve()
     root = Path(__file__).resolve().parents[1]
     model = read(root / "benchmarks/models" / (model_id + ".json"))
-    requested = workload(workload_id)
     runs = [record(history, identity) for identity in run_ids]
     if not runs or any(data is None for data in runs):
         raise ValueError("retained native runs must exist")
     if any(data["metadata"].get("runtime") != "akas" for data in runs):
         raise ValueError("--runs accepts native AKAS records; baselines use normal selection")
+    if any(run["metadata"].get("protocol") == "client-speech-pcm-v1" for run in runs):
+        if len(runs) != 1:
+            raise ValueError("speech export accepts one AKAS run with its frozen reference")
+        lock = read(baseline_lock) if isinstance(baseline_lock, (str, Path)) else baseline_lock
+        return export_speech(runs[0], model, workload_id, history, out, lock)
+    requested = workload(workload_id)
     runs.sort(key=lambda data: data["started_at"])
     formats = set()
     for data in runs:
@@ -1593,7 +2042,7 @@ def check(history="benchmarks"):
             if not folder.is_dir() or not (folder / "report.json").is_file():
                 raise ValueError(f"Unexpected report entry: {folder}")
             data = read(folder / "report.json")
-            expected_files = REPORT_FILES | (
+            expected_files = (SPEECH_FILES if data.get("schema") == SPEECH_SCHEMA else REPORT_FILES) | (
                 {"PARITY.json"} if "performance_acceptance" in data else set()
             )
             if {

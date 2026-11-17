@@ -53,6 +53,54 @@ safetensors checkpoint with llama.cpp `--outtype f16 --no-mtp`; a vision project
 is not the text model. The other GGUF variants reference their pinned repositories.
 Use identical resulting bytes when measuring AKAS and llama.cpp.
 
+## Speech synthesis demo
+
+The [ZONOS3-Mini declaration](../../benchmarks/models/zonos3-mini.json) pins
+the Q8_0 backbone, F32 audio projector, and llama.cpp b12424 revision.
+Place both GGUF files at their declared paths and extract the
+[Windows Vulkan release](https://github.com/ggml-org/llama.cpp/releases/tag/b12424)
+under `build/baselines/llama-b12424-vulkan`. Supply `--binary` to use a build
+from the same revision elsewhere.
+
+```sh
+uv run --no-sync python -m tools.baselines llama zonos3-mini --format q8_0 --provider vulkan
+```
+
+Compile AKAS with the [ZONOS3-Mini speech profile](../../src/akas/models/zonos3/README.md).
+Use the retained llama.cpp Vulkan run ID when measuring AKAS. The launcher
+checks the reference report checksum, hardware, checkpoint pair, and workload.
+
+```sh
+uv run --no-sync python -m tools.baselines akas zonos3-mini --format q8_0 --provider vulkan \
+  --bundle build/zonos3-mini/speech --reference-run LLAMA_RUN_ID
+```
+
+Use `--workload speech-multilingual-v1` on both commands to run six
+FLORES-200 prompts in each of the 43 model-card languages. Set a deadline
+for the full matrix with `--seconds` and include a 384-frame codec phase
+in the AKAS bundle so its capacity covers the request frame limit.
+Export the measured run and its frozen reference with
+`python -m tools.campaign_report --runs AKAS_RUN_ID --model zonos3-mini --workload speech-multilingual-v1`.
+
+`speech-language-voices-v1` keeps the same six prompts for each of the 10
+languages with a shipped preset. It explicitly pins a matching voice per
+language on both runtimes. Use its own frozen llama.cpp run when comparing it.
+
+Select `--provider cpu` on the llama.cpp command for a CPU control.
+
+[`speech-demo-v1`](../../src/akas/benchmarking/workloads/speech-demo-v1.json)
+uses two English utterances, a fixed seed and the same predefined voice on both
+backends. Each utterance gets one warmup and three measured requests. Timing
+starts at the localhost request and ends when the client has read all PCM16
+samples. It includes text conditioning, audio generation, codec decoding and
+delivery. The real-time factor is elapsed seconds divided by returned audio
+seconds. Model loading and WAV writing are outside this interval.
+
+The run retains the workload, the server log and a WAV per measured repeat
+under `benchmarks/runs/<run-id>/`. The comparison reports both wall latency
+and the ratio of real-time factors. Seeded sampling can produce different clip
+durations across runtimes.
+
 ## Measure the complete workload
 
 Add `--optimized` to enable graph execution for the native engines, provision the

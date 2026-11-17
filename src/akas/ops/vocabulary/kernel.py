@@ -389,3 +389,35 @@ def argmax_merge(spec, schedule):
         return out
 
     return compute
+
+
+def codebook_residual(spec, schedule):
+    """Add a group of offset audio codebook lookups and their channel biases."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    rows, width, groups, vocab = (p[key] for key in ("r", "c", "groups", "vocab"))
+
+    @kernel
+    def compute(
+        x: Tensor((rows, width), "float32"),
+        ids: Tensor((rows, groups), "int32"),
+        table: Tensor((groups * vocab * width,), "float32"),
+        bias: Tensor((groups * width,), "float32"),
+    ) -> Tensor((rows, width), "float32"):
+        out = output((rows, width), "float32")
+        with T.Kernel(rows, T.ceildiv(width, 128), threads=128) as (row, tile):
+            for lane in T.Parallel(128):
+                column = tile * 128 + lane
+                if column < width:
+                    value = T.alloc_var("float32")
+                    value = x[row, column]
+                    for group in T.unroll(groups):
+                        index = ids[row, group] + group * vocab
+                        value += (
+                            table[index * width + column] + bias[group * width + column]
+                        )
+                    out[row, column] = value
+        return out
+
+    return compute

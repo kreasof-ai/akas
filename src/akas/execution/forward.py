@@ -1,8 +1,7 @@
 """Compiler-free loading and ownership for composed forward bundles."""
 
-import json
 from pathlib import Path
-from akas.artifacts.read import load_kernels
+from akas.artifacts.read import load_kernels, read_forward
 from akas.graph import Graph
 from akas.execution.plan import bind_graph
 from akas.execution.workspace import release
@@ -12,20 +11,23 @@ from akas.execution.workspace import Workspace
 class Forward:
     def __init__(
         self, directory, device, buffers, *, filename="forward.json", graphs=False,
-        scratch_pool=None, kernel_cache=None,
+        scratch_pool=None, kernel_cache=None, manifest=None, allocate_io=False,
     ):
         self.device, self.closed = device, False
         self.owns_kernels = kernel_cache is None
         self.owned, self.kernels, self.graph = [], {}, None
         self.workspace = None
-        manifest = json.loads((Path(directory) / filename).read_text())
+        if manifest is None:
+            manifest = read_forward(Path(directory) / filename)
         if manifest.get("schema") != "akas.forward.v1":
             raise ValueError("unsupported forward bundle")
         self.definition = Graph.from_metadata(manifest["forward"])
         self.buffers = dict(buffers)
         try:
-            self.workspace = Workspace(self.definition, device, buffers, manifest.get("allocations"),
-                                       scratch_pool=scratch_pool)
+            self.workspace = Workspace(
+                self.definition, device, buffers, manifest.get("allocations"),
+                scratch_pool=scratch_pool, allocate_io=allocate_io,
+            )
             self.buffers = self.workspace.buffers
             self.owned = self.workspace.owned
             self.kernels = load_kernels(

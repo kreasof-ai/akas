@@ -100,6 +100,8 @@ def validation(kind, p, signature):
     )
 
     def rounded(x):
+        if p.get("dtype") == "float32":
+            return np.asarray(x, dtype="float32")
         if f16:
             return np.asarray(x, dtype="float16").astype("float32")
         return decode_bfloat16(encode_bfloat16(x))

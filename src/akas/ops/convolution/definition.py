@@ -147,3 +147,21 @@ def commit_histories(graph, commit):
             journal=commit.buffers[fields["journal"]],
             accepted=commit.buffers[fields["enabled"]],
         )
+
+
+from akas.ops.convolution.validation import causal_depthwise_validation
+
+OUTPUT_ARGUMENTS.setdefault("reference", {})["causal_depthwise"] = OutputABI(
+    (-1,), ("out",)
+)
+VALIDATIONS["causal_depthwise"] = causal_depthwise_validation
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        "causal_depthwise",
+        "akas.ops.convolution.kernel",
+        "reference",
+        provider=provider,
+        factory="causal_depthwise",
+    )
+    for provider in ("cuda", "webgpu")
+)

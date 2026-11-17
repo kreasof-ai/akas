@@ -60,4 +60,8 @@ enabled prefixes and channel tails. See [state prefill
 tests](../../../../tests/test_state_prefill.py) and [LFM reference
 tests](../../../../tests/test_lfm2_reference.py).
 
+## ZONOS3 and ZAC
+
+The causal depthwise FIR uses a zero-padded input prefix and one bias per channel. CUDA and WebGPU share the full-utterance body used by ZAC.
+
 Return to the [operation index](../README.md).

@@ -103,6 +103,8 @@ def source_identity(root):
 def shapes(report):
     """Keep total-output and legacy additional-decode accounting distinguishable."""
     protocol = report["metadata"].get("protocol")
+    if protocol == "client-speech-pcm-v1":
+        return []
     result = []
     for row in report["results"]:
         case = row["case"]
@@ -385,6 +387,8 @@ class Recorder:
         self.record["workload"] = dict(
             id="standard-v1" if standard else "custom", shapes=observed
         )
+        if report["metadata"].get("protocol") == "client-speech-pcm-v1":
+            self.record["workload"].update(report["metadata"]["speech_workload"])
         if standard:
             self.record["workload"]["definition"] = STANDARD
             self.record["workload"]["sha256"] = STANDARD_SHA256
@@ -523,7 +527,7 @@ def rebuild_index(root):
     write(root / "index.json", dict(schema="akas.benchmark-index.v1", runs=entries), compact_entries=True)
     guide = root.parent / "docs/benchmarking.md"
     guide_link = (
-        os.path.relpath(guide, root)
+        Path(os.path.relpath(guide, root)).as_posix()
         if guide.is_file()
         else "https://github.com/kreasof-ai/akas/blob/main/docs/benchmarking.md"
     )

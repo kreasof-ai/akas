@@ -1005,3 +1005,56 @@ def projection(spec, schedule):
 
 
 from .kernel import column_projection as column_projection
+
+
+def tiled_f32(spec, schedule):
+    """Cooperative FP32 projections without the mixed-precision staging path."""
+    import tilelang.language as T
+    from akas.ops.linear.kernel import _epilogue
+    from tensor.compiler.webgpu.schedules.outer_product import outer_product_matmul
+
+    p = {**spec.parameters, **schedule}
+    r, k, o = (p[key] for key in ("r", "k", "o"))
+    tile_m, tile_n, micro_m, micro_n = p.get("tile_geometry", (32, 64, 4, 4))
+    if (tile_m // micro_m) * (tile_n // micro_n) not in (64, 128, 256):
+        raise ValueError("invalid F32 outer-product ownership")
+    threads = (tile_m // micro_m) * (tile_n // micro_n)
+
+    @T.macro
+    def lhs(value):
+        return value
+
+    @T.macro
+    def rhs(w, row, col):
+        return w[row * k + col]
+
+    algorithm = outer_product_matmul(
+        r,
+        k,
+        o,
+        lhs,
+        rhs,
+        _epilogue(),
+        tile_m=tile_m,
+        tile_n=tile_n,
+        tile_k=p.get("tile_k", 16),
+        micro_m=micro_m,
+        micro_n=micro_n,
+        threads=threads,
+        lhs_pad=1,
+        rhs_pad=1,
+        dtype="float32",
+        dot_width=p.get("dot_width", 1),
+        unroll=p.get("unroll", 4),
+    )
+
+    @kernel
+    def compute(
+        x: Tensor((r * k,), "float32"),
+        w: Tensor((o * k,), "float32"),
+    ) -> Tensor((r * o,), "float32"):
+        out = output((r * o,), "float32")
+        algorithm(x, w, out)
+        return out
+
+    return compute

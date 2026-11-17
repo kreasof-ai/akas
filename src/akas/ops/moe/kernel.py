@@ -438,3 +438,59 @@ def _packed_float_experts(spec, schedule, *, provider):
         return out
 
     return compute
+def biased_softmax_router(spec, schedule):
+    """Select using biased logits and normalize the selected unbiased logits."""
+    import tilelang.language as T
+    from akas.kernels.kernel import Tensor, kernel, output
+
+    p = {**spec.parameters, **schedule}
+    rows, experts, top = (p[name] for name in ("r", "experts", "top"))
+
+    @kernel
+    def compute(
+        logits: Tensor((rows, experts), "float32"), bias: Tensor((experts,), "float32")
+    ) -> tuple[Tensor((rows, top), "int32"), Tensor((rows, top), "float32")]:
+        ids = output((rows, top), "int32")
+        weights = output((rows, top), "float32")
+        with T.Kernel(rows, threads=128) as row:
+            scores = T.alloc_fragment((experts,), "float32")
+            candidates = T.alloc_fragment((experts,), "float32")
+            maximum = T.alloc_fragment((1,), "float32")
+            winner = T.alloc_fragment((1,), "float32")
+            chosen = T.alloc_shared((top,), "float32")
+            peak = T.alloc_shared((1,), "float32")
+            for i in T.Parallel(experts):
+                scores[i] = logits[row, i] + bias[i]
+            for rank in T.serial(top):
+                T.reduce_max(scores, maximum, dim=0)
+                for i in T.Parallel(experts):
+                    candidates[i] = T.if_then_else(
+                        scores[i] == maximum[0],
+                        -T.cast(i, "float32"),
+                        -T.cast(experts, "float32"),
+                    )
+                T.reduce_max(candidates, winner, dim=0)
+                for i in T.Parallel(1):
+                    index = T.cast(-winner[0], "int32")
+                    ids[row, rank] = index
+                    chosen[rank] = logits[row, index]
+                T.sync_threads()
+                for i in T.Parallel(experts):
+                    if i == T.cast(-winner[0], "int32"):
+                        scores[i] = -T.infinity("float32")
+            for i in T.Parallel(1):
+                peak[0] = chosen[0]
+                for rank in T.serial(1, top):
+                    peak[0] = T.max(peak[0], chosen[rank])
+            T.sync_threads()
+            for rank in T.Parallel(top):
+                total = T.alloc_var("float32")
+                total = 0
+                for i in T.serial(top):
+                    total += T.exp(chosen[i] - peak[0])
+                weights[row, rank] = (
+                    p.get("scale", 1.0) * T.exp(chosen[rank] - peak[0]) / total
+                )
+        return ids, weights
+
+    return compute

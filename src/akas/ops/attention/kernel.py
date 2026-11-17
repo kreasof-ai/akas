@@ -1673,3 +1673,106 @@ def window_cache_tail(spec, schedule):
         return kc, vc
 
     return compute
+def head_rms_rotary(spec, schedule):
+    """Scale and rotate adjacent coordinate pairs with optional RMS normalization."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    r, h, d, cap, scale_heads = (
+        p[k] for k in ("r", "h", "d", "capacity", "scale_heads")
+    )
+    normalize, eps = p.get("normalize", True), p.get("eps", 1e-6)
+
+    @kernel
+    def compute(
+        x: Tensor((r, h * d), "float32"),
+        scale: Tensor((scale_heads * d,), "float32"),
+        table: Tensor((cap, d), "float32"),
+        positions: Tensor((r,), "int32"),
+    ) -> Tensor((r, h * d), "float32"):
+        out = output((r, h * d), "float32")
+        with T.Kernel(r, h, threads=64) as (row, head):
+            total = T.alloc_fragment((1,), "float32")
+            if normalize:
+                squares = T.alloc_fragment((d,), "float32")
+                for j in T.Parallel(d):
+                    value = x[row, head * d + j]
+                    squares[j] = value * value
+                T.reduce_sum(squares, total)
+            for j in T.Parallel(d // 2):
+                position = positions[row]
+                a = T.alloc_var("float32")
+                b = T.alloc_var("float32")
+                a = x[row, head * d + 2 * j] * scale[(head % scale_heads) * d + 2 * j]
+                b = (
+                    x[row, head * d + 2 * j + 1]
+                    * scale[(head % scale_heads) * d + 2 * j + 1]
+                )
+                if normalize:
+                    a *= T.rsqrt(total[0] / d + eps)
+                    b *= T.rsqrt(total[0] / d + eps)
+                cosine = table[position, j]
+                sine = table[position, j + d // 2]
+                out[row, head * d + 2 * j] = a * cosine - b * sine
+                out[row, head * d + 2 * j + 1] = a * sine + b * cosine
+        return out
+
+    return compute
+
+
+def causal_grouped(spec, schedule):
+    """Reference grouped-query attention for short native F16 caches."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    r, h, kh, d, cap, chunk = (
+        p[key] for key in ("r", "h", "kh", "d", "capacity", "chunk")
+    )
+    cache = (r // chunk, kh, cap, d)
+
+    @kernel
+    def compute(
+        q: Tensor((r, h * d), "float32"),
+        kc: Tensor(cache, "float16"),
+        vc: Tensor(cache, "float16"),
+        positions: Tensor((r,), "int32"),
+        enabled: Tensor((r,), "int32"),
+    ) -> Tensor((r * h * d,), "float32"):
+        out = output((r * h * d,), "float32")
+        with T.Kernel(r, h, threads=128) as (row, head):
+            slot, kv = row // chunk, head // (h // kh)
+            scores = T.alloc_fragment((cap,), "float32")
+            probs = T.alloc_fragment((cap,), "float32")
+            weights = T.alloc_shared((cap,), "float32")
+            maximum = T.alloc_fragment((1,), "float32")
+            denominator = T.alloc_fragment((1,), "float32")
+            for i in T.Parallel(cap):
+                dot = T.alloc_var("float32")
+                dot = 0
+                if i <= positions[row]:
+                    for j in T.serial(d):
+                        dot += q[row, head * d + j] * T.cast(
+                            kc[slot, kv, i, j], "float32"
+                        )
+                    scores[i] = dot * d ** (-0.5)
+                else:
+                    scores[i] = T.float32(-1e30)
+            T.reduce_max(scores, maximum)
+            for i in T.Parallel(cap):
+                probs[i] = T.if_then_else(
+                    i <= positions[row], T.exp(scores[i] - maximum[0]), 0
+                )
+            T.reduce_sum(probs, denominator)
+            for i in T.Parallel(cap):
+                weights[i] = probs[i] / T.max(denominator[0], T.float32(1e-20))
+            T.sync_threads()
+            for j in T.Parallel(d):
+                total = T.alloc_var("float32")
+                total = 0
+                if enabled[row] != 0:
+                    for i in T.serial(positions[row] + 1):
+                        total += weights[i] * T.cast(vc[slot, kv, i, j], "float32")
+                out[row * h * d + head * d + j] = total
+        return out
+
+    return compute

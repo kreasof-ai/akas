@@ -244,3 +244,51 @@ def head_gate_half(spec, schedule):
         return out
 
     return compute
+
+
+def column_activation(spec, schedule):
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    r, c = (p[key] for key in ("r", "c"))
+    gelu = spec.kind != "column_bias"
+
+    @T.macro
+    def activate(value):
+        x = value * T.float32(0.7071067811865476)
+        t = 1 / (1 + T.float32(0.3275911) * T.abs(x))
+        poly = (
+            ((T.float32(1.061405429) * t - 1.453152027) * t + 1.421413741) * t
+            - 0.284496736
+        ) * t + 0.254829592
+        erf = 1 - poly * t * T.exp(-x * x)
+        return 0.5 * value * (1 + T.if_then_else(x < 0, -erf, erf))
+
+    if spec.kind == "gelu":
+
+        @kernel
+        def compute(x: Tensor((r, c), "float32")) -> Tensor((r, c), "float32"):
+            out = output((r, c), "float32")
+            with T.Kernel(r, T.ceildiv(c, 128), threads=128) as (row, tile):
+                for lane in T.Parallel(128):
+                    col = tile * 128 + lane
+                    if col < c:
+                        out[row, col] = activate(x[row, col])
+            return out
+
+        return compute
+
+    @kernel
+    def compute(x: Tensor((r, c), "float32"), bias: Tensor((c,), "float32")) -> Tensor(
+        (r, c), "float32"
+    ):
+        out = output((r, c), "float32")
+        with T.Kernel(r, T.ceildiv(c, 128), threads=128) as (row, tile):
+            for lane in T.Parallel(128):
+                col = tile * 128 + lane
+                if col < c:
+                    value = x[row, col] + bias[col]
+                    out[row, col] = activate(value) if gelu else value
+        return out
+
+    return compute

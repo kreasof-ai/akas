@@ -487,6 +487,7 @@ OUTPUT_ARGUMENTS = {
         "restore": OutputABI((1,), ("state",)),
     },
 }
+OUTPUT_ARGUMENTS["reference"] = OUTPUT_ARGUMENTS["bf16"]
 IMPLEMENTATIONS = (
     Implementation(
         "conv_commit",
@@ -753,4 +754,26 @@ IMPLEMENTATIONS = (
         factory="mapped_scan",
         name="gdn.cuda.bf16_batch",
     ),
+)
+
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        kind,
+        "akas.ops.gdn.kernel",
+        "reference",
+        provider=provider,
+        defaults=(("dtype", "float32"),)
+        + (
+            (("webgpu_tile", 8),) if kind == "gdn_scan" and provider == "webgpu" else ()
+        ),
+        factory=factory,
+        name=f"gdn.{provider}.reference",
+    )
+    for provider in ("cuda", "webgpu")
+    for kind, factory in (
+        ("gdn_conv", "mapped_conv_f16"),
+        ("gdn_prepare", "mapped_prepare_f16"),
+        ("gdn_norm", "mapped_norm_f16"),
+        ("gdn_scan", "mapped_scan"),
+    )
 )

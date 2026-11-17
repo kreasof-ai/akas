@@ -1876,3 +1876,29 @@ IMPLEMENTATIONS = tuple(
     else item
     for item in IMPLEMENTATIONS
 )
+IMPLEMENTATIONS += (
+    Implementation(
+        "linear",
+        "akas.ops.linear.webgpu",
+        "reference",
+        provider="webgpu",
+        priority=50,
+        factory="tiled_f32",
+        accepts=lambda p: p.get("tiled_f32", False),
+        space=(
+            ("tile_k", (16, 32)),
+            ("unroll", (4, 8)),
+            ("dot_width", (1, 2, 4)),
+            (
+                "tile_geometry",
+                (
+                    (32, 64, 4, 4),
+                    (64, 64, 4, 4),
+                    (32, 64, 2, 4),
+                    (64, 64, 8, 8),
+                    (32, 64, 4, 8),
+                ),
+            ),
+        ),
+    ),
+)

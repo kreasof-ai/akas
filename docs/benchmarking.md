@@ -25,6 +25,12 @@ Workload IDs and JSON paths are accepted by the optimizer and baseline tools.
 fixes C1/4/16/64/256, P2048 and 128 total outputs, with 16-bit KV and AR only.
 It disables prefix reuse, early EOS, offload and speculative decoding.
 
+[`speech-demo-v1`](../src/akas/benchmarking/workloads/speech-demo-v1.json)
+uses two fixed text utterances with one warmup and three PCM16 requests each.
+The [speech baseline launcher](../tools/baselines/README.md#speech-synthesis-demo)
+records end-to-end latency, audio duration, and real-time factor against the
+frozen llama.cpp Vulkan run.
+
 A prompt starts with an empty cache. Disable prefix sharing, early EOS and CPU
 offload. Use greedy sampling with repetition penalty 1 and presence/frequency
 penalties 0; set these explicitly rather than inheriting server defaults.

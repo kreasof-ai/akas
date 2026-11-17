@@ -96,3 +96,16 @@ def gated_validation(kind, p, signature):
         expected["out"] = expected["out"].astype("float16")
         return ValidationCase(values, expected, rtol=0.002, atol=0.002)
     return ValidationCase(values, expected, rtol=2e-5, atol=2e-6)
+
+
+def column_activation_validation(kind, p, signature):
+    import math
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    values = sample_arguments(signature)
+    x = values["x"].astype("float64") + values.get("bias", 0)
+    if kind != "column_bias":
+        erf = np.frompyfunc(math.erf, 1, 1)
+        x *= 0.5 * (1 + erf(x / math.sqrt(2)).astype("float64"))
+    return ValidationCase(values, {**values, "out": x.astype("float32")})

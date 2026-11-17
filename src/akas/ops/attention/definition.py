@@ -1692,6 +1692,34 @@ IMPLEMENTATIONS += (
 
 OUTPUT_ARGUMENTS["reference"]["rotary_compact"] = OutputABI((1,), ("out",))
 VALIDATIONS["rotary_compact"] = rotary_compact_validation
+from akas.ops.attention.validation import (
+    causal_grouped_validation,
+    head_rms_rotary_validation,
+)
+
+OUTPUT_ARGUMENTS["reference"]["head_rms_rotary"] = OutputABI((-1,), ("out",))
+VALIDATIONS["head_rms_rotary"] = head_rms_rotary_validation
+OUTPUT_ARGUMENTS["reference"]["causal_grouped"] = OutputABI((-1,), ("out",))
+VALIDATIONS["causal_grouped"] = causal_grouped_validation
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        "head_rms_rotary",
+        "akas.ops.attention.kernel",
+        "reference",
+        provider=provider,
+        factory="head_rms_rotary",
+    )
+    for provider in ("cuda", "webgpu")
+)
+IMPLEMENTATIONS += (
+    Implementation(
+        "causal_grouped",
+        "akas.ops.attention.kernel",
+        "reference",
+        provider="webgpu",
+        factory="causal_grouped",
+    ),
+)
 IMPLEMENTATIONS += (
     Implementation(
         "rotary_compact",
@@ -1731,6 +1759,7 @@ IMPLEMENTATIONS += tuple(
     )
     for kind, module, factory in (
         ("window_cache", "kernel", "window_cache"),
+        ("qkv_split", "kernel", "qkv_split"),
         ("window_merge", "webgpu", "window_merge"),
         ("rotary_compact", "kernel", "rotary_compact"),
         ("window_attention", "webgpu", "window_prefill"),

@@ -1,6 +1,6 @@
 """Contracts and implementation choices for indexing."""
 
-from akas.kernels.contracts import Implementation
+from akas.kernels.contracts import Implementation, OutputABI
 from akas.ops.indexing.validation import validation, feature_validation
 
 OUTPUT_ARGUMENTS = {}
@@ -46,4 +46,20 @@ IMPLEMENTATIONS += tuple(
     )
     for provider in ("cuda", "webgpu")
     for kind in ("select_token", "concatenate", "replace_token")
+)
+from akas.ops.indexing.validation import interleave_validation
+
+OUTPUT_ARGUMENTS.setdefault("reference", {})["interleave_rows"] = OutputABI(
+    (-1,), ("out",)
+)
+VALIDATIONS["interleave_rows"] = interleave_validation
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        "interleave_rows",
+        "akas.ops.indexing.kernel",
+        "reference",
+        provider=provider,
+        factory="interleave_rows",
+    )
+    for provider in ("cuda", "webgpu")
 )

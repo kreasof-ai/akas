@@ -1,0 +1,129 @@
+{
+  "schema": "akas.speech-workload.v1",
+  "id": "speech-language-voices-v1",
+  "protocol": "client-speech-pcm-v1",
+  "warmup": 1,
+  "repeats": 2,
+  "request": {
+    "seed": 17,
+    "temperature": 0.75,
+    "n_predict": 384,
+    "stream": false,
+    "response_format": "pcm16"
+  },
+  "language_source": "https://huggingface.co/Zyphra/ZONOS3-Mini#languages",
+  "corpus": {
+    "name": "FLORES-200 devtest",
+    "url": "https://github.com/facebookresearch/flores/tree/main/flores200",
+    "download_url": "https://dl.fbaipublicfiles.com/nllb/flores200_dataset.tar.gz",
+    "archive_sha256": "b8b0b76783024b85797e5cc75064eb83fc5288b41e9654dabc7be6ae944011f6",
+    "license": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "split": "devtest",
+    "selection": "Six aligned one-based rows, two per length tier by English character count. Rows use translated text as distributed and exclude digits across the selected languages."
+  },
+  "languages": {
+    "en": {
+      "name": "English",
+      "locale": "eng_Latn"
+    },
+    "fr": {
+      "name": "French",
+      "locale": "fra_Latn"
+    },
+    "es": {
+      "name": "Spanish",
+      "locale": "spa_Latn"
+    },
+    "de": {
+      "name": "German",
+      "locale": "deu_Latn"
+    },
+    "it": {
+      "name": "Italian",
+      "locale": "ita_Latn"
+    },
+    "pt": {
+      "name": "Portuguese",
+      "locale": "por_Latn"
+    },
+    "zh": {
+      "name": "Mandarin Chinese",
+      "locale": "zho_Hans"
+    },
+    "ko": {
+      "name": "Korean",
+      "locale": "kor_Hang"
+    },
+    "hi": {
+      "name": "Hindi",
+      "locale": "hin_Deva"
+    },
+    "te": {
+      "name": "Telugu",
+      "locale": "tel_Telu"
+    }
+  },
+  "utterances": [
+    {"id": "en-0007", "lang": "en", "tier": "short", "source_row": 7, "text": "He built a WiFi door bell, he said.", "voice": "Savannah_en-American_F_1"},
+    {"id": "en-0320", "lang": "en", "tier": "short", "source_row": 320, "text": "Fellow wrestlers also paid tribute to Luna.", "voice": "Savannah_en-American_F_1"},
+    {"id": "en-0942", "lang": "en", "tier": "medium", "source_row": 942, "text": "The major religion in Moldova is Orthodox Christian.", "voice": "Savannah_en-American_F_1"},
+    {"id": "en-0030", "lang": "en", "tier": "medium", "source_row": 30, "text": "The find also grants insight into the evolution of feathers in birds.", "voice": "Savannah_en-American_F_1"},
+    {"id": "en-0082", "lang": "en", "tier": "long", "source_row": 82, "text": "The National Hurricane Center (NHC) says that at this point Jerry poses no threat to land.", "voice": "Savannah_en-American_F_1"},
+    {"id": "en-0977", "lang": "en", "tier": "long", "source_row": 977, "text": "The main letters to watch out for are c and g, since their pronunciation varies based on the following vowel.", "voice": "Savannah_en-American_F_1"},
+    {"id": "fr-0007", "lang": "fr", "tier": "short", "source_row": 7, "text": "Il dit avoir conçu une sonnette de porte Wi-Fi.", "voice": "Gaspard_fr_M_1"},
+    {"id": "fr-0320", "lang": "fr", "tier": "short", "source_row": 320, "text": "Les autres lutteurs ont également rendu hommage à Luna.", "voice": "Gaspard_fr_M_1"},
+    {"id": "fr-0942", "lang": "fr", "tier": "medium", "source_row": 942, "text": "La principale religion en Moldavie est le christianisme orthodoxe.", "voice": "Gaspard_fr_M_1"},
+    {"id": "fr-0030", "lang": "fr", "tier": "medium", "source_row": 30, "text": "Cette découverte permet également de mieux comprendre l'évolution des plumes chez les oiseaux.", "voice": "Gaspard_fr_M_1"},
+    {"id": "fr-0082", "lang": "fr", "tier": "long", "source_row": 82, "text": "Le National Hurricane Center (NHC) affirme qu'à ce stade, Jerry ne représente aucune menace pour les terres.", "voice": "Gaspard_fr_M_1"},
+    {"id": "fr-0977", "lang": "fr", "tier": "long", "source_row": 977, "text": "Les principales lettres à surveiller sont le c et le g, car leur prononciation varie en fonction de la voyelle suivante.", "voice": "Gaspard_fr_M_1"},
+    {"id": "es-0007", "lang": "es", "tier": "short", "source_row": 7, "text": "Él dijo que construyó un timbre wifi.", "voice": "Rodrigo_es_M_1"},
+    {"id": "es-0320", "lang": "es", "tier": "short", "source_row": 320, "text": "Los luchadores compañeros de Luna también le rindieron homenaje.", "voice": "Rodrigo_es_M_1"},
+    {"id": "es-0942", "lang": "es", "tier": "medium", "source_row": 942, "text": "El cristianismo ortodoxo es la religión mayoritaria en Moldavia. ", "voice": "Rodrigo_es_M_1"},
+    {"id": "es-0030", "lang": "es", "tier": "medium", "source_row": 30, "text": "Asimismo, el hallazgo permite comprender mejor la evolución de las plumas de las aves.", "voice": "Rodrigo_es_M_1"},
+    {"id": "es-0082", "lang": "es", "tier": "long", "source_row": 82, "text": "El Centro Nacional de Huracanes (CNH) declaró que por ahora está previsto que Jerry toque el suelo.", "voice": "Rodrigo_es_M_1"},
+    {"id": "es-0977", "lang": "es", "tier": "long", "source_row": 977, "text": "La c y la g son las letras con las que se debe estar más atentos, dado que se pronuncian de diferente forma dependiendo de la vocal que les sigue.", "voice": "Rodrigo_es_M_1"},
+    {"id": "de-0007", "lang": "de", "tier": "short", "source_row": 7, "text": "Er sagte, dass er eine WLAN-Türklingel gebaut habe.", "voice": "Liesel_de_F_1"},
+    {"id": "de-0320", "lang": "de", "tier": "short", "source_row": 320, "text": "Ringer-Kollegen zollten Luna ebenfalls Tribut.", "voice": "Liesel_de_F_1"},
+    {"id": "de-0942", "lang": "de", "tier": "medium", "source_row": 942, "text": "Die wichtigste Religion in Moldawien ist die christlich-orthodoxe.", "voice": "Liesel_de_F_1"},
+    {"id": "de-0030", "lang": "de", "tier": "medium", "source_row": 30, "text": "Der Fund gewährt auch Einblicke in die Evolution von Federn bei Vögeln.", "voice": "Liesel_de_F_1"},
+    {"id": "de-0082", "lang": "de", "tier": "long", "source_row": 82, "text": "Das National Hurricane Center (NHC) sagt, dass Jerry zu diesem Zeitpunkt keine Gefahr für die Landung darstellt.", "voice": "Liesel_de_F_1"},
+    {"id": "de-0977", "lang": "de", "tier": "long", "source_row": 977, "text": "Die wichtigsten Buchstaben, auf die man achten muss, sind c und g, da ihre Aussprache je nach Folgevokal variiert.", "voice": "Liesel_de_F_1"},
+    {"id": "it-0007", "lang": "it", "tier": "short", "source_row": 7, "text": "Ha detto di aver costruito un campanello Wi-Fi.", "voice": "Ginevra_it_F_1"},
+    {"id": "it-0320", "lang": "it", "tier": "short", "source_row": 320, "text": "Anche i suoi compagni di wrestling hanno voluto rendere omaggio a Luna.", "voice": "Ginevra_it_F_1"},
+    {"id": "it-0942", "lang": "it", "tier": "medium", "source_row": 942, "text": "La religione predominante in Moldavia è quella cristiano-ortodossa.", "voice": "Ginevra_it_F_1"},
+    {"id": "it-0030", "lang": "it", "tier": "medium", "source_row": 30, "text": "La scoperta permette inoltre di ottenere informazioni dettagliate in merito all'evoluzione delle piume degli uccelli.", "voice": "Ginevra_it_F_1"},
+    {"id": "it-0082", "lang": "it", "tier": "long", "source_row": 82, "text": "Secondo il National Hurricane Center (NHC), Jerry a questo punto non costituisce una minaccia per la terraferma.", "voice": "Ginevra_it_F_1"},
+    {"id": "it-0977", "lang": "it", "tier": "long", "source_row": 977, "text": "Le lettere principali a cui fare attenzione sono la c e la g, dal momento che la loro pronuncia cambia in base alla vocale che segue.", "voice": "Ginevra_it_F_1"},
+    {"id": "pt-0007", "lang": "pt", "tier": "short", "source_row": 7, "text": "Ele montou uma campainha sem fio, disse.", "voice": "Leonor_pt_F_1"},
+    {"id": "pt-0320", "lang": "pt", "tier": "short", "source_row": 320, "text": "Outros lutadores também prestaram homenagem a Luna.", "voice": "Leonor_pt_F_1"},
+    {"id": "pt-0942", "lang": "pt", "tier": "medium", "source_row": 942, "text": "A religião principal na Moldávia é o cristianismo ortodoxo. ", "voice": "Leonor_pt_F_1"},
+    {"id": "pt-0030", "lang": "pt", "tier": "medium", "source_row": 30, "text": "A descoberta também concede pistas sobre a evolução das penas nas aves.", "voice": "Leonor_pt_F_1"},
+    {"id": "pt-0082", "lang": "pt", "tier": "long", "source_row": 82, "text": "O Centro Nacional de Furacões (NHC) diz que, neste momento, Jerry não causa ameaças à terra.", "voice": "Leonor_pt_F_1"},
+    {"id": "pt-0977", "lang": "pt", "tier": "long", "source_row": 977, "text": "As principais letras a serem observadas são o C e G, pois sua pronúncia varia de acordo com a vogal a seguir.", "voice": "Leonor_pt_F_1"},
+    {"id": "zh-0007", "lang": "zh", "tier": "short", "source_row": 7, "text": "他称，他制作了一个 WiFi 门铃。", "voice": "Haoran_zh-energetic_M_1"},
+    {"id": "zh-0320", "lang": "zh", "tier": "short", "source_row": 320, "text": "其他摔跤选手也纷纷悼念露娜 (Luna) 。", "voice": "Haoran_zh-energetic_M_1"},
+    {"id": "zh-0942", "lang": "zh", "tier": "medium", "source_row": 942, "text": "摩尔多瓦 (Moldova) 的主要宗教是东正教。", "voice": "Haoran_zh-energetic_M_1"},
+    {"id": "zh-0030", "lang": "zh", "tier": "medium", "source_row": 30, "text": "这一发现也有助于深入了解鸟类羽毛的进化。", "voice": "Haoran_zh-energetic_M_1"},
+    {"id": "zh-0082", "lang": "zh", "tier": "long", "source_row": 82, "text": "国家飓风中心 (NHC) 表示，目前“杰瑞”对陆地没有威胁。", "voice": "Haoran_zh-energetic_M_1"},
+    {"id": "zh-0977", "lang": "zh", "tier": "long", "source_row": 977, "text": "需要注意的主要字母是 c 和 g，因为它们的发音是根据以下元音变化的。", "voice": "Haoran_zh-energetic_M_1"},
+    {"id": "ko-0007", "lang": "ko", "tier": "short", "source_row": 7, "text": "그는 무선 도어벨(Wi-Fi doorbell)을 만들었다고 말했다.", "voice": "Minjun_ko_M_1"},
+    {"id": "ko-0320", "lang": "ko", "tier": "short", "source_row": 320, "text": "다른 동료 레슬링 선수들도 루나에게 경의를 표했습니다.", "voice": "Minjun_ko_M_1"},
+    {"id": "ko-0942", "lang": "ko", "tier": "medium", "source_row": 942, "text": "몰도바의 주요 종교는 동방정교입니다.", "voice": "Minjun_ko_M_1"},
+    {"id": "ko-0030", "lang": "ko", "tier": "medium", "source_row": 30, "text": "그러한 발견은 또한 조류에 있어서 깃털의 진화에 대한 통찰을 제공한다.", "voice": "Minjun_ko_M_1"},
+    {"id": "ko-0082", "lang": "ko", "tier": "long", "source_row": 82, "text": "미국 국립 허리케인 센터 (NHC)에 의하면, 태풍 제리는 더 이상 위협이 되지 않는다.", "voice": "Minjun_ko_M_1"},
+    {"id": "ko-0977", "lang": "ko", "tier": "long", "source_row": 977, "text": "주의해야 할 주요 문자는 c와 g인데, 이는 발음이 뒤에 오는 모음에 따라 다양하게 변하기 때문이다.", "voice": "Minjun_ko_M_1"},
+    {"id": "hi-0007", "lang": "hi", "tier": "short", "source_row": 7, "text": "उन्होंने (जेमी सिमिनॉफ़) कहा, कि उन्होंने एक वाईफ़ाई डोर बेल बनाई है.", "voice": "Ananya_hi_F_1"},
+    {"id": "hi-0320", "lang": "hi", "tier": "short", "source_row": 320, "text": "लूना को साथी पहलवानों ने भी श्रद्धांजलि दी.", "voice": "Ananya_hi_F_1"},
+    {"id": "hi-0942", "lang": "hi", "tier": "medium", "source_row": 942, "text": "मोल्दोवा में प्रमुख धर्म रूढ़िवादी ईसाई धर्म है।", "voice": "Ananya_hi_F_1"},
+    {"id": "hi-0030", "lang": "hi", "tier": "medium", "source_row": 30, "text": "यह खोज पक्षियों में पंखों के विकास की पूरी जानकारी भी प्रदान करती है.", "voice": "Ananya_hi_F_1"},
+    {"id": "hi-0082", "lang": "hi", "tier": "long", "source_row": 82, "text": "राष्ट्रीय तूफ़ान केंद्र (एनएचसी) का कहना है कि इस समय जैरी का ज़मीन को कोई खतरा नहीं है।", "voice": "Ananya_hi_F_1"},
+    {"id": "hi-0977", "lang": "hi", "tier": "long", "source_row": 977, "text": "ध्यान रखने वाले मुख्य वर्ण c और g है, चूँकि उनका उच्चारण निम्न स्वर के आधार पर भिन्न होता है.", "voice": "Ananya_hi_F_1"},
+    {"id": "te-0007", "lang": "te", "tier": "short", "source_row": 7, "text": "అతను WiFi డోర్ బెల్ నిర్మించాడు. అని చెప్పాడు.", "voice": "Chaitanya_te_M_1"},
+    {"id": "te-0320", "lang": "te", "tier": "short", "source_row": 320, "text": "తోటి మల్ల యుద్ధకారులు కూడా లూనాకు నివాళులు అర్పించారు.", "voice": "Chaitanya_te_M_1"},
+    {"id": "te-0942", "lang": "te", "tier": "medium", "source_row": 942, "text": "ఆర్థోడాక్స్  క్రిస్టియన్ మోల్డోవాలో ప్రధాన మతంగా ఉంది.", "voice": "Chaitanya_te_M_1"},
+    {"id": "te-0030", "lang": "te", "tier": "medium", "source_row": 30, "text": " శోధన కూడా పక్షులలో ఈకల యొక్క పరిణామంపై  లోతుగా తెలుసుకోవడానికి  వీలు కల్పిస్తుంది. ", "voice": "Chaitanya_te_M_1"},
+    {"id": "te-0082", "lang": "te", "tier": "long", "source_row": 82, "text": "ఈ సమయంలో జెర్రీ వల్ల భూమికి ఎటువంటి ముప్పు లేదని నేషనల్ హరికేన్ సెంటర్ (ఎన్‌హెచ్‌సి) పేర్కొంది.", "voice": "Chaitanya_te_M_1"},
+    {"id": "te-0977", "lang": "te", "tier": "long", "source_row": 977, "text": "ప్రధానంగా దృష్టి సారించాల్సిన అక్షరాలు c మరియు g. ఎందుకంటే, వాటి యొక్క ఉచ్ఛారణ, తర్వాత వచ్చే వొవెల్ మీద ఆధారపడి ఉంటుంది.", "voice": "Chaitanya_te_M_1"}
+  ]
+}

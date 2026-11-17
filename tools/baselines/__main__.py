@@ -30,6 +30,8 @@ def select_weight_format(model, runtime, requested=None):
     """Select declared checkpoint bytes independently from execution dtype."""
     if requested is not None:
         selected = requested
+    elif runtime == "llama" and model.get("modes") == ["tts"]:
+        selected = "q8_0"
     elif runtime == "llama":
         selected = "q4_k_m"
     elif "bf16" in model["weights"]:
@@ -48,12 +50,15 @@ def select_weight_format(model, runtime, requested=None):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("runtime", choices=("vllm", "sglang", "llama"))
+    parser.add_argument("runtime", choices=("vllm", "sglang", "llama", "akas"))
     parser.add_argument("model", help="ID or alias from benchmarks/models")
     parser.add_argument("--models", type=Path, default=Path("benchmarks/models"))
     parser.add_argument("--mtp", action="store_true")
-    parser.add_argument("--provider", choices=("cuda", "vulkan"), default="cuda")
-    parser.add_argument("--format", choices=("bf16", "fp8", "f16", "q4_0", "q4_k_m"))
+    parser.add_argument("--provider", choices=("cpu", "cuda", "vulkan"), default="cuda")
+    parser.add_argument("--format", choices=("bf16", "fp8", "f16", "q4_0", "q4_k_m", "q8_0"))
+    parser.add_argument("--binary", type=Path, help="override the speech server executable")
+    parser.add_argument("--bundle", type=Path, help="compiled AKAS speech bundle")
+    parser.add_argument("--reference-run", help="frozen llama.cpp Vulkan speech run")
     parser.add_argument("--history", type=Path, default=Path("benchmarks"))
     parser.add_argument("--seconds", type=int, default=600)
     parser.add_argument(
@@ -71,7 +76,7 @@ def main():
     if (
         args.seconds <= 0
         or (args.repeats is not None and args.repeats < 1)
-        or (args.runtime != "llama" and args.provider != "cuda")
+        or (args.runtime in ("vllm", "sglang") and args.provider != "cuda")
     ):
         parser.error("a positive deadline and compatible provider are required")
     if args.runtime == "llama" and args.mtp:
@@ -79,6 +84,29 @@ def main():
     if args.streaming and args.runtime == "llama":
         parser.error("streamed native timing currently supports vLLM and SGLang")
     definition_path, model = model_definition(args.models, args.model)
+    speech = model.get("runtime_options", {}).get("llama", {}).get("speech")
+    if speech and args.runtime in ("llama", "akas"):
+        if args.mtp or args.optimized or args.streaming or args.provider == "cuda":
+            parser.error("the speech probe supports CPU or Vulkan and its own workload")
+        if args.runtime == "akas" and (
+            args.provider != "vulkan" or args.bundle is None or args.binary is not None
+        ):
+            parser.error("AKAS speech requires Vulkan and --bundle")
+        if args.runtime == "llama" and (args.bundle is not None or args.reference_run):
+            parser.error("--bundle and --reference-run apply to AKAS speech")
+        from tools.baselines.speech import run
+
+        weight_format = select_weight_format(model, "llama", args.format)
+        record = run(args, definition_path, model, speech, weight_format)
+        print(record["id"], record["status"], flush=True)
+        if record["status"] != "passed":
+            raise SystemExit(1)
+        return
+    if (
+        args.runtime == "akas" or args.provider == "cpu" or args.binary is not None
+        or args.bundle is not None or args.reference_run
+    ):
+        parser.error("the selected backend or options require a speech model")
     mode = "mtp" if args.mtp else "ar"
     if mode not in model["modes"]:
         parser.error("the model definition does not declare this generation mode")

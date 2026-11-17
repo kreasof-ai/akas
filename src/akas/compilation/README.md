@@ -18,6 +18,13 @@ graph = compose(Config(width=256), rows=4)
 produce(graph, "build/residual", provider="cuda", target="sm_89")
 ```
 
+For a model that runs several forwards directly, the declaration supplies
+`forward_phases()` with program metadata and `(name, rows, graph)` entries, and
+`forward_index` with the index filename and schema. `compile_forwards()` uses the
+same `plan()` and `build()` path for each entry and publishes the validated index
+last. The `speech` profile is the CLI entry for the
+[ZONOS3-Mini forward set](../models/zonos3/README.md).
+
 The compiler selects compatible operation implementations and applies graph
 optimizations. Operation registrations and rewrite rules live in each operation's
 `definition.py`; discovery lives in `akas.kernels.registry`. See the

@@ -4,6 +4,12 @@ Each report contains the full requested matrix, all available AKAS and baseline 
 
 | Started UTC | Workload | Source | Qualified AKAS | Qualified baselines | Report |
 | --- | --- | --- | ---: | ---: | --- |
+| 2026-11-17T12:11:45.468578Z | speech-multilingual-v1 | `9ce5ef8870fce8bd1bd59034ef9c78ff666ec858` | 0/1 | 0/2 | [full tables](20261117T121145Z-48e3bd2d83ae/README.md) |
+| 2026-11-17T11:45:24.389596Z | speech-language-voices-v1 | `9ce5ef8870fce8bd1bd59034ef9c78ff666ec858` | 0/1 | 0/1 | [full tables](20261117T114524Z-3c395882b896/README.md) |
+| 2026-11-17T11:37:36.893998Z | speech-language-voices-v1 | `9ce5ef8870fce8bd1bd59034ef9c78ff666ec858` | 0/1 | 0/1 | [full tables](20261117T113736Z-223dac01a754/README.md) |
+| 2026-11-17T08:03:39.952097Z | speech-language-voices-v1 | `9ce5ef8870fce8bd1bd59034ef9c78ff666ec858` | 0/1 | 0/1 | [full tables](20261117T080339Z-793abe430c11/README.md) |
+| 2026-11-17T07:17:44.218931Z | speech-multilingual-v1 | `9ce5ef8870fce8bd1bd59034ef9c78ff666ec858` | 0/1 | 0/2 | [full tables](20261117T071744Z-ad4250ae7c74/README.md) |
+| 2026-11-17T07:17:44.218931Z | speech-multilingual-v1 | `9ce5ef8870fce8bd1bd59034ef9c78ff666ec858` | 0/1 | 0/1 | [full tables](20261117T071744Z-6e2cb7df1b0b/README.md) |
 | 2026-11-03T09:12:07.139029Z | concurrent-prefill-v1 | `None` | 1/1 | 1/2 | [full tables](https://github.com/kreasof-ai/akas/blob/2e8d1df4513b30ad7806606e0f47b09d8e5485f7/benchmarks/reports/20261103T091207Z-e3686524dce5/README.md) |
 | 2026-11-03T05:22:43.038756Z | concurrent-prefill-v1 | `None` | 1/1 | 1/2 | [full tables](https://github.com/kreasof-ai/akas/blob/2e8d1df4513b30ad7806606e0f47b09d8e5485f7/benchmarks/reports/20261103T052243Z-8ea11a78fe72/README.md) |
 | 2026-11-02T23:04:21.074409Z | concurrent-prefill-v1 | `None` | 1/1 | 1/2 | [full tables](https://github.com/kreasof-ai/akas/blob/2e8d1df4513b30ad7806606e0f47b09d8e5485f7/benchmarks/reports/20261102T230421Z-2b90f38ec41e/README.md) |

@@ -467,3 +467,37 @@ def _serial(p):
         return out
 
     return compute
+
+
+def affine_layer_norm(spec, schedule):
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    r, c, eps = (p[key] for key in ("r", "c", "eps"))
+
+    @kernel
+    def compute(
+        x: Tensor((r, c), "float32"),
+        scale: Tensor((c,), "float32"),
+        bias: Tensor((c,), "float32"),
+    ) -> Tensor((r, c), "float32"):
+        out = output((r, c), "float32")
+        with T.Kernel(r, threads=128) as row:
+            values = T.alloc_fragment((c,), "float32")
+            squared = T.alloc_fragment((c,), "float32")
+            sum_x = T.alloc_fragment((1,), "float32")
+            sum_sq = T.alloc_fragment((1,), "float32")
+            for j in T.Parallel(c):
+                values[j] = x[row, j]
+            T.reduce_sum(values, sum_x)
+            for j in T.Parallel(c):
+                centered = values[j] - sum_x[0] / c
+                squared[j] = centered * centered
+            T.reduce_sum(squared, sum_sq)
+            for j in T.Parallel(c):
+                out[row, j] = (values[j] - sum_x[0] / c) * T.rsqrt(
+                    sum_sq[0] / c + eps
+                ) * scale[j] + bias[j]
+        return out
+
+    return compute

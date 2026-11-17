@@ -140,3 +140,19 @@ def parallel_argmax_validation(kind, p, signature):
         active = values["enabled"] != 0
         expected["out"][active] = indices[active]
     return ValidationCase(values, expected, rtol=0, atol=0)
+
+
+def codebook_residual_validation(kind, p, signature):
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    values = sample_arguments(signature)
+    groups, vocab, width = (p[key] for key in ("groups", "vocab", "c"))
+    values["ids"][:] = (
+        np.arange(values["ids"].size).reshape(values["ids"].shape) % vocab
+    )
+    table = values["table"].reshape(groups, vocab, width)
+    biases = values["bias"].reshape(groups, width)
+    residual = table[np.arange(groups), values["ids"]].astype("float64") + biases
+    out = values["x"] + residual.sum(axis=1)
+    return ValidationCase(values, {**values, "out": out.astype("float32")})

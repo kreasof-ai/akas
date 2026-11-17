@@ -1505,3 +1505,49 @@ def projected_gate_validation(kind, p, signature):
         raw = v["w"].view("uint8").reshape(-1)
         raw[:] = repack_host(raw)
     return ValidationCase(v, expected, rtol=0.002, atol=2e-5)
+
+
+def head_rms_rotary_validation(kind, p, signature):
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    values = sample_arguments(signature)
+    r, h, d = (p[key] for key in ("r", "h", "d"))
+    values["positions"][:] = np.arange(r) % p["capacity"]
+    x = values["x"].reshape(r, h, d).astype("float64")
+    if p.get("normalize", True):
+        x /= np.sqrt(np.mean(x * x, axis=-1, keepdims=True) + p.get("eps", 1e-6))
+    scales = values["scale"].reshape(p["scale_heads"], d)
+    x *= scales[np.arange(h) % p["scale_heads"]]
+    table = values["table"][values["positions"]]
+    real, imag = x[..., 0::2], x[..., 1::2]
+    rotation = table[:, None, : d // 2] + 1j * table[:, None, d // 2 :]
+    rotated = (real + 1j * imag) * rotation
+    out = np.stack((rotated.real, rotated.imag), axis=-1).reshape(r, h * d)
+    return ValidationCase(values, {**values, "out": out.astype("float32")})
+
+
+def causal_grouped_validation(kind, p, signature):
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    values = sample_arguments(signature)
+    r, h, kh, d, cap, chunk = (
+        p[key] for key in ("r", "h", "kh", "d", "capacity", "chunk")
+    )
+    values["positions"][:] = np.arange(r) % cap
+    values["enabled"][:] = 1
+    if r > 1:
+        values["enabled"][-1] = 0
+    q = values["q"].reshape(r, h, d).astype("float64")
+    kc, vc = (values[name].astype("float64") for name in ("kc", "vc"))
+    out = np.zeros_like(q)
+    for row, position in enumerate(values["positions"]):
+        if values["enabled"][row]:
+            keys = np.repeat(kc[row // chunk, :, : position + 1], h // kh, axis=0)
+            vals = np.repeat(vc[row // chunk, :, : position + 1], h // kh, axis=0)
+            scores = np.einsum("hd,htd->ht", q[row], keys) * d ** (-0.5)
+            probabilities = np.exp(scores - scores.max(axis=-1, keepdims=True))
+            probabilities /= probabilities.sum(axis=-1, keepdims=True)
+            out[row] = np.einsum("ht,htd->hd", probabilities, vals)
+    return ValidationCase(values, {**values, "out": out.astype("float32").reshape(-1)})

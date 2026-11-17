@@ -63,6 +63,7 @@ def main():
     )
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8103)
+    serve.add_argument("--speech", action="store_true", help="serve complete PCM utterances")
     serve.set_defaults(run=_serve)
     from akas.compilation import PROFILES
 
@@ -176,9 +177,16 @@ def _settings(value):
 
 def _serve(args):
     from aiohttp import web
-    from akas.serving import create_app
+
+    speech = getattr(args, "speech", False)
+    if speech:
+        from akas.serving.speech import create_app
+    else:
+        from akas.serving import create_app
 
     if getattr(args, "deployment", None) is not None:
+        if speech:
+            raise ValueError("speech serving requires a speech service factory")
         if args.config:
             raise ValueError(
                 "a deployment already contains its selected inference settings"

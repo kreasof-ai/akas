@@ -2,6 +2,7 @@
 
 from akas.kernels.contracts import OutputABI
 from akas.ops.activation.validation import validation, sigmoid_bias_validation
+from akas.ops.activation.validation import column_activation_validation
 from akas.kernels.contracts import Implementation
 
 ROW_INDEPENDENT = ("swiglu",)
@@ -14,6 +15,9 @@ for _contract in ("reference", "packed", "packed-baseline", "bf16", "block-fp8")
         }
     )
 VALIDATIONS = {name: validation for name in ("swiglu", "swiglu_experts")}
+for _kind in ("column_bias", "gelu", "gelu_bias"):
+    OUTPUT_ARGUMENTS["reference"][_kind] = OutputABI((-1,), ("out",))
+    VALIDATIONS[_kind] = column_activation_validation
 IMPLEMENTATIONS = (
     Implementation(
         "swiglu",
@@ -124,6 +128,17 @@ IMPLEMENTATIONS = (
         factory="swiglu",
         name="activation.kernel",
     ),
+)
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        kind,
+        "akas.ops.activation.kernel",
+        "reference",
+        provider=provider,
+        factory="column_activation",
+    )
+    for provider in ("cuda", "webgpu")
+    for kind in ("column_bias", "gelu", "gelu_bias")
 )
 
 IMPLEMENTATIONS += tuple(

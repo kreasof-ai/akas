@@ -81,3 +81,17 @@ def post_add_rms_validation(kind, p, signature):
 
 
 VALIDATIONS["post_add_rms"] = post_add_rms_validation
+
+
+def layer_norm_validation(kind, p, signature):
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    values = sample_arguments(signature)
+    centered = values["x"].astype("float64")
+    centered -= centered.mean(axis=-1, keepdims=True)
+    normalized = centered / np.sqrt(
+        np.mean(centered**2, axis=-1, keepdims=True) + p["eps"]
+    )
+    out = normalized * values["scale"] + values["bias"]
+    return ValidationCase(values, {**values, "out": out.astype("float32")})

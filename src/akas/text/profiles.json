@@ -20,6 +20,10 @@
       "normalization": "NFC",
       "add_bos": false
     },
+    "zonos3": {
+      "model": "gpt2",
+      "pattern": "\\p{N}{1,3}| ?[^\\s\\p{L}\\p{N}]{2,}[\\r\\n/]*| +(?!\\S)"
+    },
     "spark2_5": {
       "model": "gpt2",
       "pattern": "\\p{N}{1,3}",

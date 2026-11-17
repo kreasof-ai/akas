@@ -4,6 +4,7 @@ from akas.kernels.contracts import OutputABI
 from dataclasses import replace
 from akas.kernels.contracts import Implementation
 from akas.ops.normalization.validation import VALIDATIONS as VALIDATIONS
+from akas.ops.normalization.validation import layer_norm_validation
 
 
 def rms_norm(
@@ -172,8 +173,11 @@ def search_policies(graph, commit, *, provider, target):
 
 
 ROW_INDEPENDENT = ("rms",)
+ROW_INDEPENDENT += ("affine_layer_norm",)
 REWRITES = (fuse_residual_normalization,)
 OUTPUT_ARGUMENTS = {"reference": {"rms": (-1,), "add_rms": (2, -1)}}
+OUTPUT_ARGUMENTS["reference"]["affine_layer_norm"] = OutputABI((-1,), ("out",))
+VALIDATIONS["affine_layer_norm"] = layer_norm_validation
 for _contract in ("reference", "packed", "packed-baseline", "bf16", "block-fp8"):
     OUTPUT_ARGUMENTS.setdefault(_contract, {}).update(
         {"rms": OutputABI((-1,), ("out",))}
@@ -458,6 +462,16 @@ IMPLEMENTATIONS += tuple(
         name="normalization.webgpu.parallel-subgroup",
     )
     for kind in ("rms", "add_rms")
+)
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        "affine_layer_norm",
+        "akas.ops.normalization.kernel",
+        "reference",
+        provider=provider,
+        factory="affine_layer_norm",
+    )
+    for provider in ("cuda", "webgpu")
 )
 
 OUTPUT_ARGUMENTS["reference"]["post_add_rms"] = OutputABI((-2, -1), ("hidden", "out"))

@@ -39,14 +39,17 @@ def routed_moe(
     scale=1.0,
     normalize=True,
     provider="cuda",
+    router="biased_router",
 ):
-    """Sigmoid/bias routing over encoded experts without a shared branch."""
+    """Biased routing over encoded experts without a shared branch."""
+    if router not in ("biased_router", "biased_softmax_router"):
+        raise ValueError("unknown routed expert scoring")
     rows, width = x.shape
     experts, hidden, _ = weights["gate"].shape
     ids = graph.buffer(prefix + "ids", (rows, top), "int32")
     probability = graph.buffer(prefix + "probability", (rows, top), "float32")
     graph(
-        "biased_router",
+        router,
         dict(r=rows, experts=experts, top=top, scale=scale, normalize=normalize),
         logits,
         bias,
@@ -2425,6 +2428,23 @@ OUTPUT_ARGUMENTS["reference"]["expert_pack"] = OutputABI(
     (-3, -2, -1), ("packed", "packed_scales", "expert_offsets")
 )
 VALIDATIONS["expert_pack"] = pack_validation
+
+from akas.ops.moe.validation import biased_softmax_validation
+
+OUTPUT_ARGUMENTS["reference"]["biased_softmax_router"] = OutputABI(
+    (2, 3), ("ids", "weights")
+)
+VALIDATIONS["biased_softmax_router"] = biased_softmax_validation
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        "biased_softmax_router",
+        "akas.ops.moe.kernel",
+        "reference",
+        provider=provider,
+        factory="biased_softmax_router",
+    )
+    for provider in ("cuda", "webgpu")
+)
 IMPLEMENTATIONS += (
     Implementation(
         "expert_pack",

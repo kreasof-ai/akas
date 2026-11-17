@@ -703,3 +703,26 @@ def packed_validation(kind, p, signature):
                     row, rank = divmod(int(route), top)
                     expected[name][begin + local] = old[row, rank]
     return ValidationCase(values, expected, rtol=baseline.rtol, atol=baseline.atol)
+
+
+def biased_softmax_validation(kind, p, signature):
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    values = sample_arguments(signature)
+    logits, bias = values["logits"], values["bias"]
+    # Force a tied row to qualify the lower-ID selection rule.
+    logits[0, 1] = logits[0, 0]
+    bias[1] = bias[0]
+    indices = np.argsort(-(logits + bias), axis=1, kind="stable")[:, : p["top"]]
+    selected = np.take_along_axis(logits.astype("float64"), indices, axis=1)
+    probabilities = np.exp(selected - selected.max(axis=1, keepdims=True))
+    probabilities *= p.get("scale", 1.0) / probabilities.sum(axis=1, keepdims=True)
+    return ValidationCase(
+        values,
+        {
+            **values,
+            "ids": indices.astype("int32"),
+            "weights": probabilities.astype("float32"),
+        },
+    )

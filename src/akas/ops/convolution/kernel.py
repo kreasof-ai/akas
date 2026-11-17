@@ -184,3 +184,33 @@ def commit(spec: KernelSpec, schedule: Mapping[str, object]):
         return state
 
     return compute
+
+
+def causal_depthwise(spec, schedule):
+    """Finite channelwise FIR over one left-padded sequence."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    rows, width, taps = (p[key] for key in ("r", "c", "taps"))
+
+    @kernel
+    def compute(
+        x: Tensor((rows, width), "float32"),
+        w: Tensor((width, taps), "float32"),
+        bias: Tensor((width,), "float32"),
+    ) -> Tensor((rows, width), "float32"):
+        out = output((rows, width), "float32")
+        with T.Kernel(rows, T.ceildiv(width, 128), threads=128) as (row, tile):
+            for lane in T.Parallel(128):
+                column = tile * 128 + lane
+                if column < width:
+                    value = T.alloc_var("float32")
+                    value = bias[column]
+                    for j in T.unroll(taps):
+                        step = row + j - taps + 1
+                        if step >= 0:
+                            value += x[step, column] * w[column, j]
+                    out[row, column] = value
+        return out
+
+    return compute

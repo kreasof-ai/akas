@@ -175,4 +175,8 @@ defined. Padding rows are not borrowed state and need not preserve old buffer
 contents. Qualification compares live output rows numerically and checks all
 inputs and KV state in full.
 
+## ZONOS3 and ZAC
+
+Adjacent-pair rotary with optional per-head RMS normalization supports the ZONOS3 backbone and ZAC. The WebGPU grouped causal kernel covers its 32-channel attention heads with a bounded native F16 cache.
+
 Return to the [operation index](../README.md).

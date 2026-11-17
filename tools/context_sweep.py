@@ -6,7 +6,6 @@ Keep the shared token manifest, raw responses and qualified schedules in history
 """
 
 import argparse
-from contextlib import contextmanager
 from datetime import datetime
 import hashlib
 import json
@@ -19,30 +18,11 @@ import urllib.request
 
 from akas.benchmarking.history import Recorder, digest, utc, write
 from akas.benchmarking.workload import prompt_digest
+from akas.tensor.device import vulkan_device
 
 
 PREFIXES = [32, 512, 2048, 8192, 16384, 32768, 65536, 130944]
 CHECKPOINT_SHA256 = "e1a61bf937bc60726e18626e97f7ee9bfd2574d95744c2ed909de98b78006fbe"
-
-
-@contextmanager
-def vulkan_device():
-    import tensor
-
-    device = tensor.Device(provider="webgpu", max_buffer_size=1024**3)
-    if device.info["adapter"]["backend_type"] != "Vulkan":
-        raise ValueError("select a hardware Vulkan adapter (WGPU_BACKEND_TYPE=Vulkan)")
-    if device.info["adapter"]["adapter_type"] == "CPU":
-        raise ValueError("software Vulkan is not a GPU measurement")
-    # AMD's Windows driver reports UINT32_MAX here. In wgpu's device request,
-    # that value means UNDEFINED and silently requests the default eight slots.
-    # Request a finite subset instead; cache_write needs more than eight slots.
-    limit = device._adapter.limits["max-storage-buffers-per-shader-stage"]
-    if limit == 0xFFFFFFFF:
-        device._adapter._limits["max-storage-buffers-per-shader-stage"] = 32
-    with device:
-        device.info["adapter_storage_buffers_reported"] = limit
-        yield device
 
 
 def inputs(args):

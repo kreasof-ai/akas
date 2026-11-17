@@ -3,6 +3,8 @@
 from akas.kernels.contracts import OutputABI
 from akas.kernels.contracts import Implementation
 from akas.ops.residual.validation import validation
+from akas.ops.residual.validation import bank_validation
+from akas.ops.residual.validation import scaled_residual_validation
 
 
 OUTPUT_ARGUMENTS = {"reference": {"add": (-1,)}}
@@ -11,6 +13,10 @@ for _contract in ("reference", "packed", "packed-baseline", "bf16", "block-fp8")
         {"add": OutputABI((-1,), ("out",))}
     )
 VALIDATIONS = {"add": validation}
+OUTPUT_ARGUMENTS["*"] = {"attention_residual": OutputABI((0, -1), ("bank", "out"))}
+VALIDATIONS["attention_residual"] = bank_validation
+OUTPUT_ARGUMENTS["*"]["scaled_residual"] = OutputABI((-1,), ("out",))
+VALIDATIONS["scaled_residual"] = scaled_residual_validation
 IMPLEMENTATIONS = (
     Implementation(
         "add",
@@ -52,3 +58,16 @@ IMPLEMENTATIONS = (
         name="residual.kernel",
     ),
 )
+
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        kind,
+        "akas.ops.residual.kernel",
+        "*",
+        provider=provider,
+        factory=kind,
+    )
+    for provider in ("cuda", "webgpu")
+    for kind in ("attention_residual", "scaled_residual")
+)
+

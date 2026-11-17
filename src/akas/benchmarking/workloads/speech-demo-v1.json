@@ -1,0 +1,19 @@
+{
+  "schema": "akas.speech-workload.v1",
+  "id": "speech-demo-v1",
+  "protocol": "client-speech-pcm-v1",
+  "warmup": 1,
+  "repeats": 3,
+  "request": {
+    "lang": "en",
+    "seed": 17,
+    "temperature": 0.75,
+    "n_predict": 384,
+    "stream": false,
+    "response_format": "pcm16"
+  },
+  "utterances": [
+    {"id": "hello", "text": "Hello world."},
+    {"id": "lighthouse", "text": "The old lighthouse keeper climbed the spiral stairs every evening."}
+  ]
+}

@@ -110,3 +110,31 @@ def replace_token(spec, schedule):
         return out
 
     return compute
+
+
+def interleave_rows(spec, schedule):
+    """Move channel groups into consecutive rows while preserving order."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    rows, width, factor = (p[key] for key in ("r", "c", "factor"))
+    if width % factor:
+        raise ValueError("interleaved channels must divide evenly into rows")
+    channels = width // factor
+
+    @kernel
+    def compute(x: Tensor((rows, width), "float32")) -> Tensor(
+        (rows * factor, channels), "float32"
+    ):
+        out = output((rows * factor, channels), "float32")
+        with T.Kernel(rows * factor, T.ceildiv(channels, 128), threads=128) as (
+            row,
+            tile,
+        ):
+            for lane in T.Parallel(128):
+                column = tile * 128 + lane
+                if column < channels:
+                    out[row, column] = x[row // factor, column * factor + row % factor]
+        return out
+
+    return compute

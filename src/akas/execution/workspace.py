@@ -80,7 +80,9 @@ class ScratchPool:
 
 
 class Workspace:
-    def __init__(self, graph, device, supplied, allocations, *, scratch_pool=None):
+    def __init__(
+        self, graph, device, supplied, allocations, *, scratch_pool=None, allocate_io=False
+    ):
         self.device, self.buffers = device, dict(supplied)
         self.owned, self.views, self.closed = [], [], False
         if set(supplied) - set(graph.buffers):
@@ -120,6 +122,9 @@ class Workspace:
                          else device.empty(spec.shape,spec.dtype))
                 self.owned.append(value)
                 self.buffers.update((name,value) for name in names)
+            owned_roles = ("scratch", "state", "journal")
+            if allocate_io:
+                owned_roles += ("input", "output")
             for name,spec in graph.buffers.items():
                 if spec.alias_of is not None:
                     if name in supplied:
@@ -128,7 +133,7 @@ class Workspace:
                     self.views.append(value)
                     self.buffers[name] = value
                 elif name not in self.buffers:
-                    if spec.role not in ("scratch","state","journal"):
+                    if spec.role not in owned_roles:
                         raise ValueError(f"missing supplied buffer: {name}")
                     if spec.role == "state":
                         value = device.zeros(spec.shape, spec.dtype)

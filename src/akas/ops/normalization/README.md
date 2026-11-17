@@ -62,4 +62,8 @@ behavior, tails and intentional rounding. Use [normalization parity
 tests](../../../../tests/test_normalization_parity.py) and [operation write
 tests](../../../../tests/test_operation_writes.py).
 
+## ZONOS3 and ZAC
+
+Affine layer normalization uses mean and centered variance in F32 with separate scale and bias weights on CUDA and WebGPU. ZAC uses this path.
+
 Return to the [operation index](../README.md).

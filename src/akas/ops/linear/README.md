@@ -75,6 +75,10 @@ tests](../../../../tests/test_qwen_kernels.py) and [WebGPU
 tests](../../../../tests/test_webgpu_model_lowering.py). Benchmark complete
 conversion/projection/merge plans.
 
+## ZONOS3 and ZAC
+
+The WebGPU `tiled_f32` choice uses Tensor's outer-product schedule with F32 shared storage and accumulation for wide ZAC projections. Its schedule search can select the default 32×64/4×4 geometry or alternative 64-row macro-tiles and 2×4, 4×8, or 8×8 micro-tiles while preserving F32 accumulation.
+
 Return to the [operation index](../README.md).
 
 

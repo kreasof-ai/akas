@@ -53,4 +53,8 @@ Check packed versus separate inputs, expert rows, nonmultiple widths and explici
 rounding. Use [activation parity tests](../../../../tests/test_activation_parity.py) and
 the independent recipe; adding a registration does not prove a new dtype compiles.
 
+## ZONOS3 and ZAC
+
+The F32 column-bias and GELU operations share a CUDA and WebGPU body. The GELU kernel uses an erf polynomial on both backends and is checked against a host erf.
+
 Return to the [operation index](../README.md).

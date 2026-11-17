@@ -1,6 +1,7 @@
 # Model definitions
 
-Every family exposes one public composition function in `model.py`:
+Every family exposes one public composition function in `model.py`. For token
+programs, it takes the standard request geometry.
 
 ```python
 def compose(
@@ -163,3 +164,10 @@ native dynamic W8A8 arithmetic is not implemented.
 and block-scaled FP8 safetensors or packed GGUF. The [LFM3 guide](lfm3/README.md)
 covers seven-tap convolution, sandwich norms, sliding attention, full-head
 partial RoPE, execution precision and the single-user Q4_0 llama.cpp comparison.
+
+## ZONOS3-Mini
+
+`from akas.models.zonos3 import Zonos3MiniSynthesis` selects the speech model
+with a Q8_0 backbone and F32 `keep2_plain` ZAC projector. The
+[ZONOS3-Mini guide](zonos3/README.md) covers compilation, predefined voices,
+and the llama.cpp Vulkan comparison.

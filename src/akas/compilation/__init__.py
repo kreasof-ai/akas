@@ -6,6 +6,7 @@ PROFILES = {
     "program": ("akas.compilation.compile", "compile_program"),
     "reference": ("akas.compilation.compile", "compile_program"),
     "floating": ("akas.compilation.compile", "compile_program"),
+    "speech": ("akas.compilation.compile", "compile_forwards"),
 }
 
 
@@ -21,7 +22,9 @@ def compile_checkpoint(
     """Load with a supplied definition; reusable profiles never name a model family."""
     module, factory = PROFILES[profile]
     loaded = definition.checkpoint_type(checkpoint, **(checkpoint_options or {}))
-    if profile in ("program", "reference", "floating"):
+    if profile == "speech":
+        options["definition"] = definition
+    else:
         options["definition"] = definition.compose
         if getattr(definition, "model_defaults", None):
             options["model_options"] = {

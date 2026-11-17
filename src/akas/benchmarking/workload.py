@@ -10,13 +10,13 @@ def load(value):
     """Read a packaged workload by ID or a user-supplied JSON path."""
     path = Path(value)
     if path.is_file():
-        return json.loads(path.read_text())
+        return json.loads(path.read_text(encoding="utf-8"))
     if path.name != str(value) or path.suffix:
         raise ValueError(f"workload file does not exist: {value}")
     resource = files("akas.benchmarking").joinpath(f"workloads/{value}.json")
     if not resource.is_file():
         raise ValueError(f"unknown workload: {value}")
-    return json.loads(resource.read_text())
+    return json.loads(resource.read_text(encoding="utf-8"))
 
 
 _encoded = (

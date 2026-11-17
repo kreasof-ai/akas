@@ -3,6 +3,7 @@
 from dataclasses import replace
 import json
 import os
+from pathlib import Path
 from types import SimpleNamespace
 import numpy as np
 import pytest
@@ -37,6 +38,64 @@ def test_calls_derive_unique_kernel_requirements():
     forward(call.kind, call.parameters, *call.arguments)
     assert len(forward.calls) == 3
     assert len(compile_plan(forward).kernels) == 2
+
+
+def test_compile_forward_set_uses_declared_phases_and_keeps_last_valid_index(
+    tmp_path, monkeypatch
+):
+    from akas.artifacts.read import read_forward_set
+    from akas.artifacts.write import publish
+    from akas.compilation import compile_checkpoint
+    from akas.compilation import compile as compiler
+
+    class Definition:
+        checkpoint_type = Path
+        forward_index = ("example.json", "example.forward-set.v1")
+
+        @staticmethod
+        def forward_phases(checkpoint, *, provider, frames):
+            return {"checkpoint": checkpoint.name}, [
+                ("transform", frames, compose(Config(), rows=frames)),
+                ("project", 1, compose(Config(), rows=1)),
+            ]
+
+    def build(bundle, directory, **options):
+        assert (
+            bundle.artifact_directory
+            == (Path(bundle.filename).parent / "kernels").as_posix()
+        )
+        publish(directory / bundle.filename, bundle.manifest)
+
+    monkeypatch.setattr(compiler, "build", build)
+    filename, schema = Definition.forward_index
+    program = compile_checkpoint(
+        Definition, "checkpoint", tmp_path, profile="speech", provider="cuda", frames=3
+    )
+    assert program["checkpoint"] == "checkpoint"
+    phases = read_forward_set(tmp_path, filename, schema=schema, provider="cuda")
+    assert {name: tuple(rows) for name, rows in phases.items()} == {
+        "transform": (3,),
+        "project": (1,),
+    }
+    published = (tmp_path / filename).read_bytes()
+
+    def fail(bundle, directory, **options):
+        raise ValueError("build failure")
+
+    monkeypatch.setattr(compiler, "build", fail)
+    with pytest.raises(ValueError, match="build failure"):
+        compile_checkpoint(
+            Definition,
+            "checkpoint",
+            tmp_path,
+            profile="speech",
+            provider="cuda",
+            frames=7,
+        )
+    assert (tmp_path / filename).read_bytes() == published
+    (tmp_path / program["phases"]["transform"]["3"]["path"]).write_text("{}")
+    with pytest.raises(ValueError, match="checksum"):
+        read_forward_set(tmp_path, filename, schema=schema, provider="cuda")
 
 
 def test_named_bindings_follow_compiled_argument_order(monkeypatch):
@@ -333,7 +392,10 @@ def test_beam_winner_builds_and_runs_on_representative_cuda_batches(tmp_path):
             w.release()
 
 
-def test_forward_failure_releases_only_owned_buffers(tmp_path, monkeypatch):
+@pytest.mark.parametrize("allocate_io", [False, True])
+def test_forward_failure_releases_only_owned_buffers(
+    tmp_path, monkeypatch, allocate_io
+):
     from akas.execution.forward import Forward
 
     forward = compose(Config())
@@ -359,7 +421,7 @@ def test_forward_failure_releases_only_owned_buffers(tmp_path, monkeypatch):
     supplied = {
         name: Buffer(spec.shape, spec.dtype)
         for name, spec in forward.buffers.items()
-        if spec.role != "scratch"
+        if spec.role != "scratch" and (not allocate_io or spec.role != "output")
     }
 
     def fail(*args, **kwargs):
@@ -367,8 +429,9 @@ def test_forward_failure_releases_only_owned_buffers(tmp_path, monkeypatch):
 
     monkeypatch.setattr("akas.execution.forward.load_kernels", fail)
     with pytest.raises(ValueError, match="bad artifact"):
-        Forward(tmp_path, Device(), supplied)
-    assert len(allocated) == 1 and allocated[0].released
+        Forward(tmp_path, Device(), supplied, allocate_io=allocate_io)
+    assert len(allocated) == (2 if allocate_io else 1)
+    assert all(value.released for value in allocated)
     assert not any((value.released for value in supplied.values()))
 
 

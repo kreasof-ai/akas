@@ -52,4 +52,8 @@ walkthrough](../../../../docs/operations.md#add-a-shared-operation)
 builds on this format; [operation write
 tests](../../../../tests/test_operation_writes.py) cover graph-visible effects.
 
+## ZONOS3 and ZAC
+
+Attention over a residual bank appends one source, scores the valid prefix with an RMS-normalized dot product and blends the raw rows. The append is explicit in the output ABI. CUDA and WebGPU also share the scaled residual addition used by ZAC.
+
 Return to the [operation index](../README.md).

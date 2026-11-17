@@ -18,3 +18,8 @@ def test_existing_defaults_and_incompatible_native_encodings():
     assert select_weight_format(model, "llama") == "q4_k_m"
     with pytest.raises(ValueError, match="safetensors"):
         select_weight_format(model, "sglang", "q4_k_m")
+
+
+def test_speech_default_uses_declared_q8_weights():
+    model = {"modes": ["tts"], "weights": {"q8_0": {}}}
+    assert select_weight_format(model, "llama") == "q8_0"

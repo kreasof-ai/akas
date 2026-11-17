@@ -1,9 +1,10 @@
 """One graph compilation and program publication coordinator."""
 
 from pathlib import Path
+from uuid import uuid4
 
 from akas.artifacts.schema import Bundle
-from akas.artifacts.write import publish
+from akas.artifacts.write import checksum, publish
 from akas.compilation.emit import compile_kernel
 from akas.compilation.selection import kernels as assemble
 
@@ -144,6 +145,54 @@ def produce(forward, out, *, search=True, search_settings=None, device=None, **o
         search_settings=search_settings,
         device=device,
     )
+
+
+def compile_forwards(
+    checkpoint,
+    out,
+    *,
+    definition,
+    provider="webgpu",
+    device=None,
+    search_settings=None,
+    **model_options,
+):
+    """Build a model-declared set of forwards with an atomic, versioned index."""
+    from contextlib import nullcontext
+
+    from akas.artifacts.read import validate_forward_set
+
+    filename, schema = definition.forward_index
+    metadata, graphs = definition.forward_phases(
+        checkpoint, provider=provider, **model_options
+    )
+    scope = nullcontext(device)
+    if device is None and provider == "webgpu":
+        from akas.tensor.device import vulkan_device
+
+        scope = vulkan_device()
+    folder = Path(out)
+    version = uuid4().hex
+    phases = {}
+    with scope as adapter:
+        for name, rows, graph in graphs:
+            if not name.isidentifier() or type(rows) is not int or rows < 1:
+                raise ValueError("invalid forward phase identity")
+            records = phases.setdefault(name, {})
+            if str(rows) in records:
+                raise ValueError(f"duplicate forward phase: {name} at {rows} rows")
+            phase_directory = f"phases/{version}/{name}-{rows}"
+            path = f"{phase_directory}/forward.json"
+            print(f"Compiling {name} with {rows} rows", flush=True)
+            bundle = plan(graph, filename=path, provider=provider)
+            bundle.source_directory = f"{phase_directory}/sources"
+            bundle.artifact_directory = f"{phase_directory}/kernels"
+            build(bundle, folder, device=adapter, search_settings=search_settings)
+            records[str(rows)] = {"path": path, "sha256": checksum(folder / path)}
+    manifest = dict(metadata, schema=schema, provider=provider, phases=phases)
+    validate_forward_set(folder, manifest, schema=schema, provider=provider)
+    publish(folder / filename, manifest)
+    return manifest
 
 
 def compile_model(
