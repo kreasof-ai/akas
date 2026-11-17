@@ -1,0 +1,342 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "model": "Zyphra/ZONOS3-Mini",
+    "runtime": "akas",
+    "mode": "tts",
+    "provider": "webgpu",
+    "weight_format": "q8_0",
+    "purpose": "speech-reference-demo",
+    "protocol": "zonos3-reference-synthesis-v1",
+    "checkpoint_sha256": "60568efc88e2f9231f4f5c061e246421f575986642d72ab9ae68f77d6cf76be4",
+    "projector": {
+      "path": "D:\\Workspace\\kreasof-ai\\github\\akas\\build\\checkpoints\\zonos3-mini\\mmproj-ZONOS3-Mini-F32.gguf",
+      "sha256": "aeeb92325b4b6927bef656390b78e1246148065f947d8b59c2663557a809414d",
+      "source": {
+        "repo": "ggml-org/ZONOS3-Mini-GGUF",
+        "revision": "2e7bc4126a2343787298e1a297a3d1c4a13165aa",
+        "file": "mmproj-ZONOS3-Mini-F32.gguf"
+      }
+    },
+    "program_sha256": "d699af0398d274bfa72738600bcbaa50ad0859a627cbc4915bfac24684408184",
+    "references": {
+      "id": {
+        "dataset": "google/fleurs",
+        "revision": "70bb2e84b976b7e960aa89f1c648e09c59f894dd",
+        "locale": "id_id",
+        "split": "test",
+        "archive": "https://huggingface.co/datasets/google/fleurs/resolve/70bb2e84b976b7e960aa89f1c648e09c59f894dd/data/id_id/audio/test.tar.gz",
+        "member": "test/10000183170391984234.wav",
+        "license": "CC BY 4.0",
+        "sha256": "7f161741420a7b1c867effcdd6b570ac9f642644748f17fe6599e3830ec39423",
+        "seconds": 8.58,
+        "sample_rate": 16000,
+        "format": "mono IEEE float32 WAV",
+        "modifications": "none"
+      },
+      "ja": {
+        "dataset": "google/fleurs",
+        "revision": "70bb2e84b976b7e960aa89f1c648e09c59f894dd",
+        "locale": "ja_jp",
+        "split": "test",
+        "archive": "https://huggingface.co/datasets/google/fleurs/resolve/70bb2e84b976b7e960aa89f1c648e09c59f894dd/data/ja_jp/audio/test.tar.gz",
+        "member": "test/10214476888438240131.wav",
+        "license": "CC BY 4.0",
+        "sha256": "3cae5637b6406e6bdaaada5b7bbb75272b2e50f8f178dfdfc0c3760442e582a1",
+        "seconds": 8.88,
+        "sample_rate": 16000,
+        "format": "mono IEEE float32 WAV",
+        "modifications": "none"
+      }
+    },
+    "speaker_row_run": "20261117082215395081-f2f1661a",
+    "earlier_preset_run": "20261117071744218931-50693886",
+    "workload": "speech-multilingual-v1",
+    "request": {
+      "seed": 17,
+      "temperature": 0.75,
+      "n_predict": 384,
+      "stream": false,
+      "response_format": "pcm16"
+    },
+    "checks": [
+      {
+        "case": {
+          "id": "ja-0007",
+          "lang": "ja",
+          "tier": "short",
+          "source_row": 7,
+          "text": "\u5f7c\u306fWi-Fi\u3067\u9cf4\u308b\u30c9\u30a2\u30d9\u30eb\u3092\u4f5c\u3063\u305f\u305d\u3046\u3067\u3059\u3002"
+        },
+        "earlier_preset_status": "error",
+        "status": "ok",
+        "terminated": true,
+        "peak": 0.07187100499868393,
+        "frames": 102,
+        "samples": 299880,
+        "seconds": 6.8,
+        "wav": "audio/ja-0007.wav",
+        "wav_sha256": "da54929d1cad35f1fc8d1844747c14aeb740bc3abb1d1508d4b1820e40957ebb"
+      },
+      {
+        "case": {
+          "id": "ja-0320",
+          "lang": "ja",
+          "tier": "short",
+          "source_row": 320,
+          "text": "\u4ef2\u9593\u306e\u30ec\u30b9\u30e9\u30fc\u305f\u3061\u3082\u30eb\u30ca\u306b\u656c\u610f\u3092\u8868\u3057\u307e\u3057\u305f\u3002"
+        },
+        "earlier_preset_status": "ok",
+        "status": "ok",
+        "terminated": true,
+        "peak": 0.1238449439406395,
+        "frames": 108,
+        "samples": 317520,
+        "seconds": 7.2,
+        "wav": "audio/ja-0320.wav",
+        "wav_sha256": "b0fd84d62910a4c40a86f4f5d4ce6835a87e3cca115a44f6cadd93e061ef6a0d"
+      },
+      {
+        "case": {
+          "id": "ja-0942",
+          "lang": "ja",
+          "tier": "medium",
+          "source_row": 942,
+          "text": "\u30e2\u30eb\u30c9\u30d0\u306e\u4e3b\u306a\u5b97\u6559\u306f\u6b63\u7d71\u6d3e\u30ad\u30ea\u30b9\u30c8\u6559\u3067\u3059\u3002"
+        },
+        "earlier_preset_status": "ok",
+        "status": "ok",
+        "terminated": true,
+        "peak": 0.07469629496335983,
+        "frames": 70,
+        "samples": 205800,
+        "seconds": 4.666666666666667,
+        "wav": "audio/ja-0942.wav",
+        "wav_sha256": "a252b98af3fc3ddf62d2c289eb42d4986a777479edc2d67bcf75424e5cf9e52e"
+      },
+      {
+        "case": {
+          "id": "ja-0030",
+          "lang": "ja",
+          "tier": "medium",
+          "source_row": 30,
+          "text": "\u3053\u306e\u767a\u898b\u306f\u307e\u305f\u3001\u9ce5\u985e\u306e\u7fbd\u6bdb\u306e\u9032\u5316\u306b\u3064\u3044\u3066\u63a2\u308b\u305f\u3081\u306e\u624b\u304c\u304b\u308a\u3068\u306a\u308b\u3082\u306e\u3067\u3057\u305f\u3002"
+        },
+        "earlier_preset_status": "error",
+        "status": "ok",
+        "terminated": true,
+        "peak": 0.10863424092531204,
+        "frames": 139,
+        "samples": 408660,
+        "seconds": 9.266666666666667,
+        "wav": "audio/ja-0030.wav",
+        "wav_sha256": "1b60117cc6c9f11290fe560818ac8ffe7003ad7edce9c605525f2717bd0814b4"
+      },
+      {
+        "case": {
+          "id": "ja-0082",
+          "lang": "ja",
+          "tier": "long",
+          "source_row": 82,
+          "text": "\u56fd\u7acb\u30cf\u30ea\u30b1\u30fc\u30f3\u30bb\u30f3\u30bf\u30fc (NHC) \u306b\u3088\u308c\u3070\u3001\u73fe\u6642\u70b9\u3067\u30b8\u30a7\u30ea\u30fc\u306f\u4e0a\u9678\u306e\u5371\u967a\u6027\u306f\u306a\u3044\u3068\u306e\u3053\u3068\u3067\u3059\u3002"
+        },
+        "earlier_preset_status": "ok",
+        "status": "ok",
+        "terminated": true,
+        "peak": 0.21747642755508423,
+        "frames": 140,
+        "samples": 411600,
+        "seconds": 9.333333333333334,
+        "wav": "audio/ja-0082.wav",
+        "wav_sha256": "4342adf7f1951cf7f994d139bad67259e34700bf96d77348eff0347af47df282"
+      },
+      {
+        "case": {
+          "id": "ja-0977",
+          "lang": "ja",
+          "tier": "long",
+          "source_row": 977,
+          "text": "\u767a\u97f3\u306f\u6b21\u306b\u6765\u308b\u6bcd\u97f3\u306b\u57fa\u3065\u3044\u3066\u5909\u5316\u3059\u308b\u305f\u3081\u3001\u6ce8\u610f\u3059\u308b\u3079\u304d\u4e3b\u306a\u6587\u5b57\u306fc\u3068g\u306b\u306a\u308a\u307e\u3059\u3002"
+        },
+        "earlier_preset_status": "ok",
+        "status": "ok",
+        "terminated": true,
+        "peak": 0.04221900552511215,
+        "frames": 145,
+        "samples": 426300,
+        "seconds": 9.666666666666666,
+        "wav": "audio/ja-0977.wav",
+        "wav_sha256": "af3a76b8162c13dd5b4d17df4cebbf488277e32c7b8eb38d7d6cfe25c39b040b"
+      },
+      {
+        "case": {
+          "id": "id-0007",
+          "lang": "id",
+          "tier": "short",
+          "source_row": 7,
+          "text": "Ia melakukan pembuatan bel pintu dengan teknologi WiFi, katanya. "
+        },
+        "earlier_preset_status": "ok",
+        "status": "ok",
+        "terminated": true,
+        "peak": 0.22683635354042053,
+        "frames": 91,
+        "samples": 267540,
+        "seconds": 6.066666666666666,
+        "wav": "audio/id-0007.wav",
+        "wav_sha256": "542c352091cb8b6458521796ee8f2287bf98a7ba8a75443919f78c3ff2f38a71"
+      },
+      {
+        "case": {
+          "id": "id-0320",
+          "lang": "id",
+          "tier": "short",
+          "source_row": 320,
+          "text": "Rekan-rekan pegulat pun memberikan penghormatan kepada Luna."
+        },
+        "earlier_preset_status": "ok",
+        "status": "ok",
+        "terminated": true,
+        "peak": 0.08709118515253067,
+        "frames": 83,
+        "samples": 244020,
+        "seconds": 5.533333333333333,
+        "wav": "audio/id-0320.wav",
+        "wav_sha256": "2f95e9fe19ac78247033d4718f532d938fed31584516ea44c7421b93d40ac846"
+      },
+      {
+        "case": {
+          "id": "id-0942",
+          "lang": "id",
+          "tier": "medium",
+          "source_row": 942,
+          "text": "Agama utama di Moldova adalah Kristen Ortodoks."
+        },
+        "earlier_preset_status": "ok",
+        "status": "ok",
+        "terminated": true,
+        "peak": 0.15920276939868927,
+        "frames": 65,
+        "samples": 191100,
+        "seconds": 4.333333333333333,
+        "wav": "audio/id-0942.wav",
+        "wav_sha256": "0e04715208e4d68ad164abdc1a05ac7cbf8570c02c3c83778f8d5555f249907b"
+      },
+      {
+        "case": {
+          "id": "id-0030",
+          "lang": "id",
+          "tier": "medium",
+          "source_row": 30,
+          "text": "Penemuan ini juga memberikan wawasan tentang evolusi bulu pada burung."
+        },
+        "earlier_preset_status": "ok",
+        "status": "ok",
+        "terminated": true,
+        "peak": 0.16434210538864136,
+        "frames": 93,
+        "samples": 273420,
+        "seconds": 6.2,
+        "wav": "audio/id-0030.wav",
+        "wav_sha256": "5ccab96f0fd78767acb091e9cef9128c13db4c78abc16f8403f56baa66f5540a"
+      },
+      {
+        "case": {
+          "id": "id-0082",
+          "lang": "id",
+          "tier": "long",
+          "source_row": 82,
+          "text": "Pusat Badai Nasional (NHC) menyatakan bahwa saat ini Badai Jerry tidak mengancam daratan."
+        },
+        "earlier_preset_status": "ok",
+        "status": "ok",
+        "terminated": true,
+        "peak": 0.23166628181934357,
+        "frames": 134,
+        "samples": 393960,
+        "seconds": 8.933333333333334,
+        "wav": "audio/id-0082.wav",
+        "wav_sha256": "a38666baa8495d7ae943e95d6f87162555b8b771a910dfefd32656d05aedfd59"
+      },
+      {
+        "case": {
+          "id": "id-0977",
+          "lang": "id",
+          "tier": "long",
+          "source_row": 977,
+          "text": "Huruf utama yang perlu diperhatikan adalah c dan g, karena pengucapannya bervariasi sesuai vokal berikut."
+        },
+        "earlier_preset_status": "ok",
+        "status": "ok",
+        "terminated": true,
+        "peak": 0.208717480301857,
+        "frames": 130,
+        "samples": 382200,
+        "seconds": 8.666666666666666,
+        "wav": "audio/id-0977.wav",
+        "wav_sha256": "5482a6daeeb36a1684052aaa2c93ccfd1b616e75ed834561f6b48bb686dc37e5"
+      }
+    ],
+    "device": {
+      "ordinal": 0,
+      "provider": "webgpu",
+      "arch": "webgpu-portable-v1",
+      "name": "AMD Radeon RX 6700 XT",
+      "adapter": {
+        "vendor": "AMD proprietary driver",
+        "architecture": "",
+        "device": "AMD Radeon RX 6700 XT",
+        "description": "26.6.2 (AMD proprietary shader compiler)",
+        "stackgroup_min_size": 4,
+        "stackgroup_max_size": 128,
+        "vendor_id": 4098,
+        "device_id": 29663,
+        "adapter_type": "DiscreteGPU",
+        "backend_type": "Vulkan"
+      },
+      "features": [
+        "shader-f16",
+        "subgroup"
+      ],
+      "limits": {
+        "max-bind-groups": 8,
+        "max-bind-groups-plus-vertex-buffers": 0,
+        "max-bindings-per-bind-group": 1000,
+        "max-buffer-size": 1073741824,
+        "max-color-attachment-bytes-per-sample": 0,
+        "max-color-attachments": 0,
+        "max-compute-invocations-per-workgroup": 1024,
+        "max-compute-workgroup-size-x": 1024,
+        "max-compute-workgroup-size-y": 1024,
+        "max-compute-workgroup-size-z": 1024,
+        "max-compute-workgroup-storage-size": 32768,
+        "max-compute-workgroups-per-dimension": 65535,
+        "max-dynamic-storage-buffers-per-pipeline-layout": 8,
+        "max-dynamic-uniform-buffers-per-pipeline-layout": 8,
+        "max-inter-stage-shader-variables": 0,
+        "max-non-sampler-bindings": 1000000,
+        "max-push-constant-size": 256,
+        "max-sampled-textures-per-shader-stage": 16,
+        "max-samplers-per-shader-stage": 16,
+        "max-storage-buffer-binding-size": 1073741824,
+        "max-storage-buffers-per-shader-stage": 32,
+        "max-storage-textures-per-shader-stage": 4,
+        "max-texture-array-layers": 8192,
+        "max-texture-dimension-1d": 16384,
+        "max-texture-dimension-2d": 16384,
+        "max-texture-dimension-3d": 8192,
+        "max-uniform-buffer-binding-size": 2147483647,
+        "max-uniform-buffers-per-shader-stage": 12,
+        "max-vertex-attributes": 64,
+        "max-vertex-buffer-array-stride": 16383,
+        "max-vertex-buffers": 16,
+        "min-storage-buffer-offset-alignment": 32,
+        "min-uniform-buffer-offset-alignment": 32
+      },
+      "adapter_storage_buffers_reported": 4294967295,
+      "prepared_encoding": "native",
+      "prepared_submission": "native"
+    }
+  },
+  "results": []
+}
