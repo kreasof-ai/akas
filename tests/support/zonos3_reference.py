@@ -56,7 +56,12 @@ def reference(checkpoint, embeddings):
         )
         k = k / np.sqrt(np.sum(k**2, axis=-1, keepdims=True) + 1e-6)
         alpha = affine(x, prefix + "ssm_alpha.weight") + get("ssm_dt.bias")
-        decay = np.exp(np.logaddexp(0, alpha) * get("ssm_a"))
+        a_factor = (
+            -np.exp(get("ssm_a_log"))
+            if (prefix + "ssm_a_log") in weights.tensors
+            else get("ssm_a")
+        )
+        decay = np.exp(np.logaddexp(0, alpha) * a_factor)
         beta = 1 / (1 + np.exp(-affine(x, prefix + "ssm_beta.weight")))
         memory = np.zeros((c.delta_heads, c.delta_dim, c.delta_dim), "float64")
         out = []
@@ -101,7 +106,10 @@ def reference(checkpoint, embeddings):
             gate = affine(x, prefix + "ffn_gate.weight")
             up = affine(x, prefix + "ffn_up.weight")
             return affine(_silu(gate) * up, prefix + "ffn_down.weight")
-        raw = affine(_rms(x, c.epsilon), prefix + "ffn_gate_inp.weight")
+        route_scale = (
+            floating(prefix + "ffn_route_norm.weight") if c.router_norm else 1
+        )
+        raw = affine(_rms(x, c.epsilon, route_scale), prefix + "ffn_gate_inp.weight")
         selected = np.argsort(-(raw + floating(prefix + "exp_probs_b.bias")), axis=-1)
         selected = selected[:, : c.experts_per_row]
         probabilities = _softmax(np.take_along_axis(raw, selected, axis=-1))

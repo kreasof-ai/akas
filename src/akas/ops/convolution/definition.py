@@ -165,3 +165,46 @@ IMPLEMENTATIONS += tuple(
     )
     for provider in ("cuda", "webgpu")
 )
+
+from akas.ops.convolution.validation import (
+    causal_depthwise_state_validation,
+    istft_stream_validation,
+)
+
+OUTPUT_ARGUMENTS["reference"].update(
+    {
+        "causal_depthwise_state": OutputABI((3, -1), ("state", "out")),
+        "istft_polar": OutputABI((-2, -1), ("spec0", "spec1")),
+        "istft_ola": OutputABI((-2, -1), ("cat0", "cat1")),
+        "istft_mix_commit": OutputABI((3, -1), ("state", "mid")),
+        "sinc_resample_limit": OutputABI((-1,), ("pcm",)),
+        "sinc_resample_commit": OutputABI((1,), ("rs_state",)),
+    }
+)
+VALIDATIONS["causal_depthwise_state"] = causal_depthwise_state_validation
+for _istft_kind in (
+    "istft_polar",
+    "istft_ola",
+    "istft_mix_commit",
+    "sinc_resample_limit",
+    "sinc_resample_commit",
+):
+    VALIDATIONS[_istft_kind] = istft_stream_validation
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        kind,
+        "akas.ops.convolution.kernel",
+        "reference",
+        provider=provider,
+        factory=kind,
+    )
+    for provider in ("cuda", "webgpu")
+    for kind in (
+        "causal_depthwise_state",
+        "istft_polar",
+        "istft_ola",
+        "istft_mix_commit",
+        "sinc_resample_limit",
+        "sinc_resample_commit",
+    )
+)

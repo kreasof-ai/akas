@@ -4,6 +4,15 @@
   "model": "Zyphra/ZONOS3-Mini",
   "modes": ["tts"],
   "weights": {
+    "bf16": {
+      "path": "build/zonos3-concurrent-v1/cache2/zonos3-mini/lm/zonos3_mini",
+      "source": {
+        "repo": "Zyphra/ZONOS3-Mini",
+        "revision": "d2d142a86b1e6aeb4252679673c86ecd86177bf8",
+        "file": "lm/zonos3_mini/model.pth"
+      },
+      "sha256": "3b4ac0a6e3002bd575ad9a0761ae7524806a908f553042171dead8f3a2146caa"
+    },
     "q8_0": {
       "path": "build/checkpoints/zonos3-mini/ZONOS3-Mini-Q8_0.gguf",
       "source": {

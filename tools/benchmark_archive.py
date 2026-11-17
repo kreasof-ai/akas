@@ -41,6 +41,15 @@ def stored_size(files):
 
 
 def report_summary(data):
+    if data.get("schema") == "akas.native-stream-baseline-report.v1":
+        state = data["campaign"]
+        return dict(
+            started_at=state["created_at"],
+            workload=data["workload"]["id"],
+            revision="native-dependency-snapshots",
+            akas="0/0",
+            baseline=f"{len(data['measurements'])}/{len(data['measurements'])}",
+        )
     profiles = data["profiles"]
     counts = {}
     for kind in ("akas", "baseline"):

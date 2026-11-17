@@ -1,0 +1,29 @@
+{
+  "schema": "akas.speech-workload.v1",
+  "id": "speech-concurrent-v1",
+  "protocol": "client-speech-pcm-stream-v1",
+  "warmup": 0,
+  "repeats": 1,
+  "request": {
+    "language": "en_us",
+    "temperature": null,
+    "topk": null,
+    "top_p": null,
+    "min_p": null,
+    "repetition_penalty": null,
+    "max_tokens": 384,
+    "stream": true,
+    "stream_decode": "prefix",
+    "response_format": "pcm",
+    "sample_rate_hz": 44100,
+    "channels": 1,
+    "sample_format": "float32",
+    "decoder": "keep2_plain"
+  },
+  "utterances": [
+    {
+      "id": "delivery",
+      "text": "Your order has been confirmed and will arrive tomorrow between nine and noon. You can change the delivery address, contact the courier, or track your package online at any time."
+    }
+  ]
+}

@@ -86,9 +86,106 @@ def create_app(factory):
             },
         )
 
+    async def speech_stream(request):
+        if not hasattr(service, "engine"):
+            raise web.HTTPNotImplemented(
+                text="streaming speech requires a streaming service"
+            )
+        try:
+            payload = await request.json()
+        except (ValueError, UnicodeError) as error:
+            raise web.HTTPBadRequest(text="requires a JSON object") from error
+        if not isinstance(payload, dict):
+            raise web.HTTPBadRequest(text="requires a JSON object")
+        text = payload.get("input") or payload.get("text")
+        if not isinstance(text, str) or not text.strip():
+            raise web.HTTPBadRequest(text="input must be a non-empty string")
+        fmt = payload.get("response_format", payload.get("format", "pcm"))
+        if fmt != "pcm":
+            raise web.HTTPBadRequest(
+                text="streaming /v1/audio/speech requires pcm format"
+            )
+        decoder = payload.get("decoder") or "keep2_plain"
+        if decoder != "keep2_plain":
+            raise web.HTTPBadRequest(text=f"unsupported decoder: {decoder}")
+        stream_decode = payload.get("stream_decode") or "prefix"
+        if stream_decode not in ("prefix", "whole"):
+            raise web.HTTPBadRequest(text=f"unsupported stream_decode: {stream_decode}")
+        seed = payload.get("seed")
+        scope = payload.get("stream_codebooks_scope", "first")
+        if scope not in ("first", "all"):
+            raise web.HTTPBadRequest(text="invalid stream_codebooks_scope")
+
+        loop = asyncio.get_running_loop()
+        queue = asyncio.Queue()
+
+        def on_chunk(data):
+            loop.call_soon_threadsafe(queue.put_nowait, ("chunk", data))
+
+        def on_done():
+            loop.call_soon_threadsafe(queue.put_nowait, ("done", None))
+
+        def on_error(msg):
+            loop.call_soon_threadsafe(queue.put_nowait, ("error", msg))
+
+        try:
+            job = service.engine.submit(
+                text,
+                seed=1000 if seed is None else seed,
+                temperature=payload.get("temperature", 0.75),
+                max_tokens=payload.get("max_tokens", 384),
+                stream_decode=stream_decode,
+                stream_codebooks=payload.get("stream_codebooks", 1),
+                first_only=scope == "first",
+                on_chunk=on_chunk,
+                on_done=on_done,
+                on_error=on_error,
+            )
+        except (ValueError, TypeError, OverflowError) as error:
+            raise web.HTTPBadRequest(text=str(error)) from error
+        response = None
+        sample_rate = int(service.metadata.get("sample_rate_hz", 44100))
+        headers = {
+            "Content-Type": "audio/pcm",
+            "X-Audio-Sample-Rate": str(sample_rate),
+            "X-Audio-Channels": "1",
+            "X-Audio-Format": "float32",
+            "X-Seed": str(job.seed),
+            "X-Decoder": decoder,
+        }
+        try:
+            while True:
+                kind, item = await queue.get()
+                if kind == "error":
+                    if response is None:
+                        raise web.HTTPBadRequest(text=str(item))
+                    break
+                if kind == "chunk" and item:
+                    if response is None:
+                        response = web.StreamResponse(status=200, headers=headers)
+                        await response.prepare(request)
+                    await response.write(item)
+                elif kind == "done":
+                    if response is None:
+                        response = web.StreamResponse(status=200, headers=headers)
+                        await response.prepare(request)
+                    await response.write_eof()
+                    return response
+        except asyncio.CancelledError:
+            job.cancelled.set()
+            raise
+        finally:
+            job.cancelled.set()
+        return response
+
     app = web.Application(client_max_size=1024**2)
     app.cleanup_ctx.append(lifecycle)
     app.add_routes(
-        [web.get("/health", health), web.get("/props", props), web.post("/tts", tts)]
+        [
+            web.get("/health", health),
+            web.get("/props", props),
+            web.post("/tts", tts),
+            web.post("/v1/audio/speech", speech_stream),
+        ]
     )
     return app

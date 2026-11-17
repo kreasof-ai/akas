@@ -72,6 +72,8 @@ class Zonos3MiniConfig:
     experts_per_row: int
     expert_width: int
     latent_width: int
+    condition_buckets: tuple[int, ...] = ()
+    router_norm: bool = False
 
     codebooks = 10
     codes = 4096
@@ -151,3 +153,63 @@ class Zonos3MiniConfig:
         ):
             raise ValueError("unsupported ZONOS3 attention or expert geometry")
         return config
+
+    @classmethod
+    def from_zonos3(cls, metadata):
+        """Parse native ZONOS3-Mini params.json model geometry."""
+        model = metadata.get("model", metadata) if isinstance(metadata, dict) else None
+        if not isinstance(model, dict) or model.get("model_type") != "zonos2":
+            raise ValueError("requires native ZONOS3 model parameters")
+        layers = model.get("n_layers")
+        pattern = model.get("attention_pattern")
+        if type(layers) is not int or layers < 1 or pattern != "gdn3_global1":
+            raise ValueError("unsupported ZONOS3 layer schedule")
+        recurrent = tuple((i + 1) % 4 != 0 for i in range(layers))
+        width = int(model["dim"])
+        head_dim = int(model["head_dim"])
+        heads = int(model["n_heads"])
+        kv_heads = int(model["n_kv_heads"])
+        multiple = int(model.get("multiple_of", 64))
+        moe_multiple = int(model.get("moe_multiple_of", 64))
+        dense_raw = int(width * float(model["ffn_dim_multiplier"]))
+        dense_width = multiple * ((dense_raw + multiple - 1) // multiple)
+        expert_raw = int(width * float(model["moe_ffn_dim_multiplier"]))
+        expert_width = moe_multiple * ((expert_raw + moe_multiple - 1) // moe_multiple)
+        latent_width = int(round(width * float(model["moe_alpha"])))
+        spec = model.get("text_tokenizer_spec") or {}
+        text_vocab = int(model["text_vocab"])
+        if spec.get("kind") != "superbpe" or text_vocab != int(spec.get("vocab_size", 0)) + int(spec.get("offset", 0)):
+            raise ValueError("unsupported ZONOS3 text tokenizer specification")
+        buckets = tuple(int(n) for n in model.get("condition_bucket_counts", ()))
+        if int(model.get("condition_count", 0)) != len(buckets):
+            raise ValueError("inconsistent ZONOS3 condition bucket counts")
+        if (
+            int(model["n_codebooks"]) != cls.codebooks
+            or int(model["codebook_size"]) != cls.codes
+            or model.get("residual_type") != "full_attnres"
+            or model.get("moe_router_type") != "linear"
+            or bool(model.get("moe_router_use_eda", False))
+        ):
+            raise ValueError("unsupported ZONOS3 codebook, residual or router configuration")
+        return cls(
+            width=width,
+            vocab=text_vocab + 1 + int(model.get("text_extra_tokens", 0)),
+            max_context=int(model["max_seqlen"]),
+            recurrent=recurrent,
+            epsilon=float(model["norm_eps"]),
+            heads=heads,
+            kv_heads=kv_heads,
+            head_dim=head_dim,
+            rope_theta=float(model["rope_theta"]),
+            conv_width=4,
+            delta_heads=4,
+            delta_dim=128,
+            dense_layers=int(model.get("moe_start_from_layer", 1)),
+            dense_width=dense_width,
+            experts=int(model["moe_n_experts"]),
+            experts_per_row=int(model["moe_router_topk"]),
+            expert_width=expert_width,
+            latent_width=latent_width,
+            condition_buckets=buckets,
+            router_norm=True,
+        )

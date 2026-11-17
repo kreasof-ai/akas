@@ -1,9 +1,10 @@
 # Campaign reports
 
-Each report contains the full requested matrix, all available AKAS and baseline measurements, failed or unsupported rows, runtime settings, source provenance and selected kernel schedules. Archived reports and runs are pinned by commit in [the artifact catalog](../archive.json).
+Each report contains the full requested matrix, all available AKAS and baseline measurements, failed or unsupported rows, runtime settings, source provenance and selected kernel schedules. Archived reports and runs are pinned by commit in [the artifact catalog](../archive.json). Native streaming baseline reports contain native diagnostics only.
 
 | Started UTC | Workload | Source | Qualified AKAS | Qualified baselines | Report |
 | --- | --- | --- | ---: | ---: | --- |
+| 2026-11-17T16:05:18.967887Z | speech-concurrent-v1 | `native-dependency-snapshots` | 0/0 | 5/5 | [full tables](https://github.com/kreasof-ai/akas/blob/1042dbbe1dee7c0e6ad519374ecfd8ef85183f65/benchmarks/reports/20261117T160518Z-59b3379b9d08/README.md) |
 | 2026-11-17T12:11:45.468578Z | speech-multilingual-v1 | `9ce5ef8870fce8bd1bd59034ef9c78ff666ec858` | 0/1 | 0/2 | [full tables](https://github.com/kreasof-ai/akas/blob/b45b707fb78c9333ed37a49f860a8d6d2103c625/benchmarks/reports/20261117T121145Z-48e3bd2d83ae/README.md) |
 | 2026-11-17T11:45:24.389596Z | speech-language-voices-v1 | `9ce5ef8870fce8bd1bd59034ef9c78ff666ec858` | 0/1 | 0/1 | [full tables](https://github.com/kreasof-ai/akas/blob/e15f76bee2435c30b707c80778aed594ed88170f/benchmarks/reports/20261117T114524Z-3c395882b896/README.md) |
 | 2026-11-17T11:37:36.893998Z | speech-language-voices-v1 | `9ce5ef8870fce8bd1bd59034ef9c78ff666ec858` | 0/1 | 0/1 | [full tables](https://github.com/kreasof-ai/akas/blob/e15f76bee2435c30b707c80778aed594ed88170f/benchmarks/reports/20261117T113736Z-223dac01a754/README.md) |

@@ -1711,14 +1711,15 @@ IMPLEMENTATIONS += tuple(
     )
     for provider in ("cuda", "webgpu")
 )
-IMPLEMENTATIONS += (
+IMPLEMENTATIONS += tuple(
     Implementation(
         "causal_grouped",
         "akas.ops.attention.kernel",
         "reference",
-        provider="webgpu",
+        provider=provider,
         factory="causal_grouped",
-    ),
+    )
+    for provider in ("cuda", "webgpu")
 )
 IMPLEMENTATIONS += (
     Implementation(

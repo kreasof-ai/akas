@@ -68,26 +68,52 @@ def compose(checkpoint, *, phase, rows=1, provider="webgpu", context=1024):
     return graph
 
 
-def compose_backbone(checkpoint, *, rows, context, provider):
+def compose_backbone(
+    checkpoint,
+    *,
+    rows=None,
+    slots=None,
+    chunk=None,
+    pool=None,
+    context=1024,
+    provider="webgpu",
+    include_head=False,
+    embed_frames=False,
+    sample=False,
+):
     from akas.ops.gdn.definition import gated_delta
     from akas.ops.linear.definition import project
     from akas.ops.moe.definition import routed_moe
     from akas.quantization.weights import Weight
 
     c = checkpoint.config
+    if slots is None:
+        if type(rows) is not int or rows < 1:
+            raise ValueError("ZONOS3 backbone requires positive row counts")
+        slots, chunk, pool = 1, rows, 1 if pool is None else pool
+    else:
+        chunk = 1 if chunk is None else chunk
+        pool = slots if pool is None else pool
+        if any(type(v) is not int or v < 1 for v in (slots, chunk, pool)) or slots > pool:
+            raise ValueError("invalid ZONOS3 multi-slot backbone geometry")
+        rows = slots * chunk
     if (
-        provider != "webgpu"
+        provider not in ("cuda", "webgpu")
         or type(context) is not int
-        or not 1 <= rows <= context <= c.max_context
+        or not 1 <= chunk <= context <= c.max_context
     ):
-        raise ValueError("ZONOS3 backbone requires WebGPU and a valid request context")
+        raise ValueError("ZONOS3 backbone requires CUDA or WebGPU and a valid request context")
     if c.conv_width != 4 or c.delta_dim % 32:
         raise ValueError("unsupported ZONOS3 recurrent geometry")
+    if sample and not include_head:
+        raise ValueError("ZONOS3 codebook sampling requires include_head=True")
     g = Graph(contract="reference")
-    x = g.buffer("embedding", (rows, c.width), "float32", role="input")
+    x = g.buffer(
+        "embedding", (rows, c.width), "float32", role="scratch" if embed_frames else "input"
+    )
     positions = g.buffer("positions", (rows,), "int32", role="input")
-    lengths = g.buffer("lengths", (1,), "int32", role="input")
-    mapping = g.buffer("mapping", (1,), "int32", role="input")
+    lengths = g.buffer("lengths", (slots,), "int32", role="input")
+    mapping = g.buffer("mapping", (slots,), "int32", role="input")
     active = g.buffer("active", (rows,), "int32", role="input")
     rotary = g.buffer("rope", (context, c.head_dim), "float32", role="weight")
     unit = g.buffer("unit.weight", (c.width,), "float32", role="weight")
@@ -100,8 +126,28 @@ def compose_backbone(checkpoint, *, rows, context, provider):
             checkpoint.graph_weight(g, name, provider=provider)
         return g.buffers[name]
 
-    def encoded(names, shape):
-        tensors = checkpoint.backbone.tensors
+    if embed_frames:
+        cond_rows = sum(b + 1 for b in c.condition_buckets)
+        frames = g.buffer("frames", (rows, c.codebooks + 1), "int32", role="input")
+        g(
+            "zonos3_frame_embed",
+            dict(
+                r=rows,
+                c=c.width,
+                codebooks=c.codebooks,
+                code_vocab=c.code_vocab,
+                text_vocab=c.vocab,
+                cond_rows=cond_rows,
+            ),
+            frames,
+            weight("a.gen.code.out_embd.bf16"),
+            weight(TOKEN_EMBEDDING),
+            weight("cond_embd.weight").view((cond_rows, c.width)),
+            x,
+        )
+
+    def encoded(names, shape, *, store=None):
+        tensors = (checkpoint.backbone if store is None else store).tensors
         return Weight(
             shape,
             tuple(weight(name) for name in names),
@@ -153,14 +199,17 @@ def compose_backbone(checkpoint, *, rows, context, provider):
             "ssm_alpha.weight",
             "ssm_beta.weight",
         )
+        input_names = (
+            (prefix + "input.weight",)
+            if (prefix + "input.weight") in checkpoint.backbone.tensors
+            else tuple(prefix + name for name in joined)
+        )
         conv = g.view(
             prefix + "conv", weight(prefix + "ssm_conv1d.weight"), (channels, 1, 4)
         )
         log_decay = g.buffer(prefix + "ssm_a_log", (heads,), "float32", role="weight")
         w = {
-            prefix + "input.weight": encoded(
-                tuple(prefix + name for name in joined), shape
-            ),
+            prefix + "input.weight": encoded(input_names, shape),
             prefix + "conv1d.weight": conv,
             prefix + "dt_bias": weight(prefix + "ssm_dt.bias"),
             prefix + "A_log": log_decay,
@@ -178,14 +227,14 @@ def compose_backbone(checkpoint, *, rows, context, provider):
             key_dim=d,
             epsilon=c.epsilon,
         )
-        state = g.buffer(prefix + "delta", (1, heads, d, d), "float32", role="state")
+        state = g.buffer(prefix + "delta", (pool, heads, d, d), "float32", role="state")
         history = g.buffer(
-            prefix + "conv_state", (1, channels, 3), "float32", role="state"
+            prefix + "conv_state", (pool, channels, 3), "float32", role="state"
         )
         controls = dict(
             mapping=mapping,
             lengths=lengths,
-            parameters=dict(slots=1, chunk=rows, pool=1, dtype="float32"),
+            parameters=dict(slots=slots, chunk=chunk, pool=pool, dtype="float32"),
         )
         return gated_delta(
             g,
@@ -224,12 +273,12 @@ def compose_backbone(checkpoint, *, rows, context, provider):
                 out,
             )
         v = linear(x, prefix + "attn_v.weight", prefix + "v")
-        shape = (1, kh, context, d)
+        shape = (pool, kh, context, d)
         kc, vc = (
             g.buffer(prefix + name, shape, "float16", role="state")
             for name in ("kc", "vc")
         )
-        params = dict(r=rows, h=h, kh=kh, d=d, capacity=context, chunk=rows, window=0)
+        params = dict(r=rows, h=h, kh=kh, d=d, capacity=context, chunk=chunk, window=0)
         g("window_cache", params, k, v, kc, vc, positions, active)
         attended = g.buffer(prefix + "attended", (rows * h * d,), "float32")
         g("causal_grouped", params, q, kc, vc, positions, active, attended)
@@ -258,7 +307,8 @@ def compose_backbone(checkpoint, *, rows, context, provider):
                 inner.view(flat),
             )
             return linear(inner, prefix + "ffn_down.weight", prefix + "dense")
-        route_input = norm(x, unit, prefix + "route_norm")
+        route_scale = weight(prefix + "ffn_route_norm.weight") if c.router_norm else unit
+        route_input = norm(x, route_scale, prefix + "route_norm")
         logits = linear(route_input, prefix + "ffn_gate_inp.weight", prefix + "logits")
         latent = linear(x, prefix + "ffn_latent_down.weight", prefix + "latent")
         names = {
@@ -306,7 +356,67 @@ def compose_backbone(checkpoint, *, rows, context, provider):
     routed = residual(
         current, sources - 1, "output_route", weight("output_res_score.weight")
     )
-    norm(routed, weight("output_norm.weight"), "hidden", role="output")
+    hidden = norm(
+        routed,
+        weight("output_norm.weight"),
+        "hidden",
+        role="scratch" if include_head else "output",
+    )
+    if include_head:
+        head_in = hidden
+        if chunk > 1:
+            head_in = g.buffer("head_hidden", (slots, c.width), "float32")
+            g(
+                "last_rows",
+                dict(slots=slots, chunk=chunk, pool=pool, c=c.width, dtype="float32"),
+                hidden,
+                lengths,
+                head_in,
+            )
+        logits = project(
+            g,
+            head_in,
+            encoded(
+                (CODEBOOK_HEAD,),
+                (c.codebooks * c.code_vocab, c.width),
+                store=checkpoint.projector,
+            ),
+            width=c.width,
+            name="logits",
+            role="output",
+        )
+        if sample:
+            history = g.buffer(
+                "sample_history", (pool, 96, c.codebooks), "int32", role="state"
+            )
+            steps = g.buffer("sample_steps", (slots,), "int32", role="input")
+            temps = g.buffer("temperatures", (slots,), "float32", role="input")
+            unifs = g.buffer("uniforms", (slots, c.codebooks), "float32", role="input")
+            sampled = g.buffer(
+                "sampled_frames", (slots, c.codebooks + 1), "int32", role="output"
+            )
+            g(
+                "codebook_sample",
+                dict(
+                    slots=slots,
+                    codebooks=c.codebooks,
+                    vocab=c.code_vocab,
+                    window=96,
+                    rep_codebooks=6,
+                    top_k=80,
+                    top_p=0.69,
+                    penalty=2.4,
+                    softcap=c.logit_softcap,
+                    silence_frames=c.codebooks,
+                    text_pad=c.vocab - 1,
+                ),
+                logits.view((slots, c.codebooks * c.code_vocab)),
+                history,
+                steps,
+                temps,
+                unifs,
+                sampled,
+            )
     return g
 
 

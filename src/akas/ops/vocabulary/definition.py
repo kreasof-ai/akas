@@ -344,3 +344,35 @@ IMPLEMENTATIONS += tuple(
     )
     for provider in ("cuda", "webgpu")
 )
+
+from akas.ops.vocabulary.validation import (
+    codebook_residual_masked_validation,
+    codebook_sample_validation,
+    zonos3_frame_embed_validation,
+)
+
+OUTPUT_ARGUMENTS["reference"].update(
+    {
+        "codebook_residual_masked": OutputABI((-1,), ("out",)),
+        "zonos3_frame_embed": OutputABI((-1,), ("out",)),
+        "codebook_sample": OutputABI((1, -1), ("history", "out")),
+    }
+)
+VALIDATIONS["codebook_residual_masked"] = codebook_residual_masked_validation
+VALIDATIONS["zonos3_frame_embed"] = zonos3_frame_embed_validation
+VALIDATIONS["codebook_sample"] = codebook_sample_validation
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        kind,
+        "akas.ops.vocabulary.kernel",
+        "reference",
+        provider=provider,
+        factory=kind,
+    )
+    for provider in ("cuda", "webgpu")
+    for kind in (
+        "codebook_residual_masked",
+        "zonos3_frame_embed",
+        "codebook_sample",
+    )
+)

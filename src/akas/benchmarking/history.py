@@ -79,7 +79,7 @@ def source_identity(root):
         if not name or name.startswith("benchmarks/") or ".ipynb_checkpoints" in name:
             continue
         if revision is not None and not (
-            name.startswith(("src/", "tools/", "tests/", "examples/"))
+            name.startswith(("src/", "tools/", "tests/", "examples/", "model/", "servers/"))
             or name in ("pyproject.toml", "uv.lock", "MANIFEST.in")
             or ("/" not in name and name.endswith(".py"))
         ):
@@ -103,7 +103,7 @@ def source_identity(root):
 def shapes(report):
     """Keep total-output and legacy additional-decode accounting distinguishable."""
     protocol = report["metadata"].get("protocol")
-    if protocol == "client-speech-pcm-v1":
+    if protocol in ("client-speech-pcm-v1", "client-speech-pcm-stream-v1"):
         return []
     result = []
     for row in report["results"]:
@@ -387,7 +387,10 @@ class Recorder:
         self.record["workload"] = dict(
             id="standard-v1" if standard else "custom", shapes=observed
         )
-        if report["metadata"].get("protocol") == "client-speech-pcm-v1":
+        if report["metadata"].get("protocol") in (
+            "client-speech-pcm-v1",
+            "client-speech-pcm-stream-v1",
+        ):
             self.record["workload"].update(report["metadata"]["speech_workload"])
         if standard:
             self.record["workload"]["definition"] = STANDARD

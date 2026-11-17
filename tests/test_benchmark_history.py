@@ -113,7 +113,7 @@ def test_changed_sources_invalidate_run_and_legacy_accounting_stays_separate(
 def test_speech_records_preserve_utterances_without_token_shapes(tmp_path, source):
     from akas.benchmarking.workload import load
 
-    workload = load("speech-demo-v1")
+    workload = load("speech-concurrent-v1")
     speech_report = report(workload["protocol"])
     metadata = speech_report["metadata"]
     metadata["speech_workload"] = dict(id=workload["id"], definition=workload)
@@ -212,10 +212,16 @@ def test_dependency_working_sources_are_retained_and_checked(tmp_path, source, c
     dependency = tmp_path / "compiler"
     dependency.mkdir()
     (dependency / "lowering.py").write_text("x = 1\n")
+    (dependency / "model").mkdir()
+    (dependency / "model" / "codec.py").write_text("codec = True\n")
+    (dependency / "servers").mkdir()
+    (dependency / "servers" / "scheduler.py").write_text("slots = True\n")
     run = Recorder(tmp_path / "history", report()["metadata"], source_root=source,
                    dependency_sources={"compiler": dependency})
     with tarfile.open(run.directory / "dependencies/compiler/source.tar.gz") as archive:
         assert archive.extractfile("lowering.py").read() == b"x = 1\n"
+        assert archive.extractfile("model/codec.py").read() == b"codec = True\n"
+        assert archive.extractfile("servers/scheduler.py").read() == b"slots = True\n"
     if changed:
         (dependency / "lowering.py").write_text("x = 2\n")
     record = run.update(report(), final=True)

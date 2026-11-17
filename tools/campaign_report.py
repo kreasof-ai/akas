@@ -21,6 +21,7 @@ from akas.optimization.context import workload
 
 SCHEMA = "akas.campaign-report.v1"
 SPEECH_SCHEMA = "akas.speech-report.v1"
+NATIVE_STREAM_SCHEMA = "akas.native-stream-baseline-report.v1"
 SPEECH_FILES = frozenset((
     "README.md", "COMPARISON.md", "AKAS.md", "BASELINES.md",
     "measurements.csv", "campaign.json", "report.json",
@@ -827,6 +828,8 @@ def table_rows(profiles):
 
 
 def render(data, out, history):
+    if data.get("schema") == NATIVE_STREAM_SCHEMA:
+        return render_native_stream_baseline(data, Path(out).resolve(), Path(history).resolve())
     if data.get("schema") == SPEECH_SCHEMA:
         return render_speech(data, Path(out).resolve(), Path(history).resolve())
     validate(data)
@@ -1392,7 +1395,7 @@ def index(history):
     lines = [
         "# Campaign reports",
         "",
-        "Each report contains the full requested matrix, all available AKAS and baseline measurements, failed or unsupported rows, runtime settings, source provenance and selected kernel schedules. Archived reports and runs are pinned by commit in [the artifact catalog](../archive.json).",
+        "Each report contains the full requested matrix, all available AKAS and baseline measurements, failed or unsupported rows, runtime settings, source provenance and selected kernel schedules. Archived reports and runs are pinned by commit in [the artifact catalog](../archive.json). Native streaming baseline reports contain native diagnostics only.",
         "",
         "| Started UTC | Workload | Source | Qualified AKAS | Qualified baselines | Report |",
         "| --- | --- | --- | ---: | ---: | --- |",
@@ -1419,6 +1422,230 @@ def export(campaign, *, history="benchmarks", out=None):
     destination = Path(out) if out else report_directory(data["campaign"], history)
     render(data, destination, history)
     return destination
+
+
+def export_native_stream_baseline(run_ids, history, out):
+    """Render native BF16 streaming diagnostics and their archived source dependencies."""
+    runs = [record(history, run_id) for run_id in run_ids]
+    if any(data is None or data["status"] != "passed" for data in runs):
+        raise ValueError("native stream baseline requires sealed, passed runs")
+    measurements = sorted(
+        ({**row, "run_id": data["id"]} for data in runs for row in data["results"]),
+        key=lambda row: (row["case"]["concurrency"], row["case"]["id"]),
+    )
+    if not measurements:
+        raise ValueError("native stream baseline has no measurements")
+    for data in runs:
+        meta = data["metadata"]
+        if (
+            meta.get("protocol") != "client-speech-pcm-stream-v1"
+            or meta.get("weight_format") != "bf16"
+        ):
+            raise ValueError("invalid native stream baseline metadata: " + data["id"])
+        workload = meta["speech_workload"]["definition"]
+        if workload["request"]["max_tokens"] != 384 or workload["request"]["stream_decode"] != "prefix":
+            raise ValueError("native stream baseline protocol differs")
+        for row in data["results"]:
+            if (
+                row["case"]["concurrency"] != row["requests"]
+                or row["completed"] != row["requests"]
+                or row["failed"]
+                or len(row["results"]) != row["requests"]
+                or not all(item["ok"] for item in row["results"])
+            ):
+                raise ValueError("invalid native stream baseline measurement: " + data["id"])
+    identity = hashlib.sha256("\n".join(run_ids).encode()).hexdigest()
+    state = dict(
+        identity=identity,
+        created_at=min(data["started_at"] for data in runs),
+        updated_at=max(data["completed_at"] for data in runs),
+        run_ids=list(run_ids),
+        codec_qualification_run=None,
+        codec_qualification=None,
+        compact_integration_run=None,
+        source_provenance_run=None,
+    )
+    data = dict(
+        schema=NATIVE_STREAM_SCHEMA,
+        generated_at=datetime.now(timezone.utc).isoformat(),
+        campaign=state,
+        workload=runs[0]["metadata"]["speech_workload"]["definition"],
+        measurements=measurements,
+        evidence={data["id"]: metadata_for(data) for data in runs},
+    )
+    destination = Path(out) if out else report_directory(state, history)
+    render_native_stream_baseline(data, destination, history)
+    return destination
+
+
+def attach_native_stream_codec(report, qualification_run_id, compact_run_id, history):
+    """Link packaging/integration evidence without rewriting the original baseline matrix."""
+    data = read(Path(report) / "report.json")
+    if data.get("schema") != NATIVE_STREAM_SCHEMA:
+        raise ValueError("not a native stream baseline report")
+    qualification = record(history, qualification_run_id)
+    integration = record(history, compact_run_id)
+    if not qualification or qualification["status"] != "passed" or not integration or integration["status"] != "passed":
+        raise ValueError("compact codec evidence must be sealed and passed")
+    if not qualification["metadata"].get("checks") or not all(
+        check["bitwise"] for check in qualification["metadata"]["checks"]
+    ):
+        raise ValueError("compact codec requires bitwise qualification")
+    if not all(row["status"] == "ok" for row in integration["results"]):
+        raise ValueError("compact integration has failed requests")
+    data["campaign"]["codec_qualification_run"] = qualification_run_id
+    data["campaign"]["compact_integration_run"] = compact_run_id
+    data["campaign"]["codec_qualification"] = qualification["metadata"]["compact_codec"]
+    data["evidence"][qualification_run_id] = metadata_for(qualification)
+    data["evidence"][compact_run_id] = metadata_for(integration)
+    provenance_id = data["campaign"].get("source_provenance_run")
+    if provenance_id:
+        data["evidence"][provenance_id] = metadata_for(record(history, provenance_id))
+    render_native_stream_baseline(data, Path(report).resolve(), Path(history).resolve())
+
+
+def attach_native_stream_provenance(report, provenance_run_id, history):
+    """Link the actual baseline source without changing the original measurements."""
+    data = read(Path(report) / "report.json")
+    if data.get("schema") != NATIVE_STREAM_SCHEMA:
+        raise ValueError("not a native stream baseline report")
+    provenance = record(history, provenance_run_id)
+    if not provenance or provenance["status"] != "passed":
+        raise ValueError("baseline source provenance must be sealed and passed")
+    data["campaign"]["source_provenance_run"] = provenance_run_id
+    data["evidence"][provenance_run_id] = metadata_for(provenance)
+    render_native_stream_baseline(data, Path(report).resolve(), Path(history).resolve())
+
+
+def render_native_stream_baseline(data, out, history):
+    if data.get("schema") != NATIVE_STREAM_SCHEMA:
+        raise ValueError("invalid native stream baseline schema")
+    out.mkdir(parents=True, exist_ok=True)
+    state = data["campaign"]
+    measurements = sorted(data["measurements"], key=lambda row: row["case"]["concurrency"])
+    workload = data["workload"]
+    prompt = workload["utterances"][0]["text"]
+    if len(prompt.encode()) != 177 or len(prompt.split()) != 30:
+        raise ValueError("native stream baseline input differs")
+    if any(row["case"]["text"] != prompt for row in measurements):
+        raise ValueError("native stream baseline prompt differs between runs")
+    qualification_id = state.get("codec_qualification_run")
+    integration_id = state.get("compact_integration_run")
+    lines = [
+        "# Native BF16 streaming baseline",
+        "",
+        "These are Zyphra native CUDA **baseline diagnostics**, not qualified AKAS measurements. "
+        "The GGUF/llama.cpp path is not part of this comparison.",
+        "",
+        f"Model: **{measurements[0]['case'].get('model', 'Zyphra/ZONOS3-Mini')}**; weights: **BF16 LM** with the FP32 "
+        "`keep2_plain` codec. Fixed English input: **30 words / 177 UTF-8 bytes**. "
+        "Each request uses **50 prompt frames** (47 model-input frames + 3 silence-prefill frames), "
+        "up to **384 generated tokens** within a **512-frame** limit.",
+        "",
+        "Flat admission up to the requested request limit; no request-class bucketing. Prefix streaming is enabled. "
+        "The scheduler fix prevents request-slot recycling while earlier decodes remain active. "
+        "C64 had the highest measured audio throughput; C256 is a successful capacity result, not a latency target.",
+        "",
+        "| Concurrency | Valid audio | Wall time (s) | Audio seconds/s | Peak GPU (GiB) | Evidence |",
+        "| ---: | ---: | ---: | ---: | ---: | --- |",
+    ]
+    for row in measurements:
+        peak = row["gpu_memory_peak"]["memory_used_mib"] / 1024
+        lines.append(
+            f"| {row['concurrency']} | {row['completed']}/{row['requests']} | {row['wall_s']:.2f} | "
+            f"{row['audio_seconds_per_second']:.2f} | {peak:.2f} | {evidence_link(row['run_id'], out, history)} |"
+        )
+    lines += [
+        "",
+        "## Source and weight packaging",
+        "",
+        "For the native baseline, the full training generator can be replaced by a **compact, dtype-preserving "
+        "codec checkpoint** with identical output. The matrix used the original assets; the separately qualified "
+        "compact package is linked below. The LM remains BF16; no weights are quantized for size. "
+        "The local scheduler and loading changes "
+        "are retained in each run's **`dependencies/<dependency>/source.tar.gz`** artifact. "
+        "Inspect the linked run's `run.json` and dependency snapshot for the exact source used; do not use a mutable "
+        "checkout as provenance.",
+        "",
+    ]
+    if qualification_id:
+        codec = state["codec_qualification"]
+        lines += [
+            f"Codec packaging: **{codec['bytes'] / 1e9:.3f} GB**, replacing **8.48 GB** of full generator + override "
+            f"assets. With the 1.772 GB BF16 LM, the required native model data is approximately **2.35 GB** "
+            "instead of **10.25 GB**.",
+            "",
+            f"Bitwise codec qualification: {evidence_link(qualification_id, out, history, name='qualification.json', label='1-, 7-, and 32-frame identical-output checks')}. "
+            f"Compact C1/C16 HTTP integration: {evidence_link(integration_id, out, history)}.",
+            "",
+            "The compact checkpoint remains a local build artifact; it is intentionally not uploaded to external storage. "
+            "Its size, format and SHA-256 are retained in the qualification record.",
+            "",
+        ]
+    else:
+        lines += [
+            "The original baseline matrix used the full native codec assets. A separately qualified compact-codec "
+            "package may be linked here after validation.",
+            "",
+        ]
+    if state.get("source_provenance_run"):
+        lines += [
+            "Exact baseline source bundle: "
+            + evidence_link(
+                state["source_provenance_run"],
+                out,
+                history,
+                name="dependencies/zonos3/source.tar.gz",
+                label="dependencies/zonos3/source.tar.gz",
+            )
+            + ". This supplemental bundle includes `model/` and `servers/` and is the authoritative source for "
+            "the compact codec loader and safe slot-lifecycle scheduler change.",
+            "",
+        ]
+    lines += [
+        "Run artifacts, source snapshots, exact dependency revisions, per-request audio hashes and server logs are "
+        "retained under the normal benchmark archive. These measurements establish native baseline functionality "
+        "and capacity; they do not claim AKAS BF16 correctness or qualified speedups.",
+        "",
+    ]
+    text(out / "README.md", "\n".join(lines))
+    text(
+        out / "COMPARISON.md",
+        "# Native baseline concurrency comparison\n\n"
+        + "\n".join(line for line in lines if line.startswith("| ") or line.startswith("# Native")),
+    )
+    text(
+        out / "AKAS.md",
+        "# AKAS status\n\nNo AKAS BF16 implementation has been measured in this baseline report. "
+        "The matrix contains native Zyphra CUDA diagnostics only.\n",
+    )
+    text(
+        out / "BASELINES.md",
+        "# Native baseline provenance\n\n"
+        "Each linked run retains its exact source and dependency snapshots under "
+        "`dependencies/<dependency>/source.tar.gz`, plus per-request audio hashes and server logs. "
+        "Use those artifacts, not the mutable checkout, when inspecting the baseline source.\n",
+    )
+    csv_file(
+        out / "measurements.csv",
+        measurements,
+        (
+            "run_id",
+            "concurrency",
+            "requests",
+            "completed",
+            "failed",
+            "wall_s",
+            "throughput_qps",
+            "audio_seconds_per_second",
+            "gpu_memory_initial",
+            "gpu_memory_peak",
+        ),
+    )
+    write(out / "report.json", data)
+    write(out / "campaign.json", state)
+    index(history)
+    return out
 
 
 def export_speech(native, model, workload_id, history, out, baseline_lock=None):
@@ -2042,7 +2269,11 @@ def check(history="benchmarks"):
             if not folder.is_dir() or not (folder / "report.json").is_file():
                 raise ValueError(f"Unexpected report entry: {folder}")
             data = read(folder / "report.json")
-            expected_files = (SPEECH_FILES if data.get("schema") == SPEECH_SCHEMA else REPORT_FILES) | (
+            expected_files = (
+                SPEECH_FILES
+                if data.get("schema") in (SPEECH_SCHEMA, NATIVE_STREAM_SCHEMA)
+                else REPORT_FILES
+            ) | (
                 {"PARITY.json"} if "performance_acceptance" in data else set()
             )
             if {

@@ -421,3 +421,255 @@ def codebook_residual(spec, schedule):
         return out
 
     return compute
+
+
+def codebook_residual_masked(spec, schedule):
+    """Add offset audio codebook lookups while skipping negative missing codes."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    rows, width, groups, vocab = (p[key] for key in ("r", "c", "groups", "vocab"))
+
+    @kernel
+    def compute(
+        x: Tensor((rows, width), "float32"),
+        ids: Tensor((rows, groups), "int32"),
+        table: Tensor((groups * vocab * width,), "float32"),
+        bias: Tensor((groups * width,), "float32"),
+    ) -> Tensor((rows, width), "float32"):
+        out = output((rows, width), "float32")
+        with T.Kernel(rows, T.ceildiv(width, 128), threads=128) as (row, tile):
+            for lane in T.Parallel(128):
+                column = tile * 128 + lane
+                if column < width:
+                    value = T.alloc_var("float32")
+                    value = x[row, column]
+                    for group in T.unroll(groups):
+                        code = ids[row, group]
+                        if (code >= 0) & (code < vocab):
+                            index = code + group * vocab
+                            value += (
+                                table[index * width + column]
+                                + bias[group * width + column]
+                            )
+                    out[row, column] = value
+        return out
+
+    return compute
+
+
+def zonos3_frame_embed(spec, schedule):
+    """Sum BF16 multi-codebook + text embeddings on device with condition-row overrides."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    rows, width, codebooks, code_vocab, text_vocab, cond_rows = (
+        p[k]
+        for k in ("r", "c", "codebooks", "code_vocab", "text_vocab", "cond_rows")
+    )
+    cols = codebooks + 1
+    audio_bytes = codebooks * code_vocab * width * 2
+    text_bytes = text_vocab * width * 2
+
+    @T.macro
+    def load_bf16(buf, elem_idx):
+        lo = T.cast(buf[elem_idx * 2], "uint32")
+        hi = T.cast(buf[elem_idx * 2 + 1], "uint32")
+        return T.reinterpret("float32", (lo | (hi << 8)) << 16)
+
+    @kernel
+    def compute(
+        frames: Tensor((rows, cols), "int32"),
+        audio_w: Tensor((audio_bytes,), "uint8"),
+        text_w: Tensor((text_bytes,), "uint8"),
+        cond_w: Tensor((cond_rows, width), "float32"),
+    ) -> Tensor((rows, width), "float32"):
+        out = output((rows, width), "float32")
+        with T.Kernel(rows, T.ceildiv(width, 128), threads=128) as (row, tile):
+            c0 = frames[row, 0]
+            t_id = frames[row, codebooks]
+            for lane in T.Parallel(128):
+                col = tile * 128 + lane
+                if col < width:
+                    if c0 < 0:
+                        out[row, col] = 0.0
+                    elif t_id < 0:
+                        cond_idx = T.min(T.max(-1 - t_id, 0), cond_rows - 1)
+                        out[row, col] = cond_w[cond_idx, col]
+                    else:
+                        acc = T.alloc_var("float32")
+                        acc = load_bf16(
+                            text_w,
+                            T.min(t_id, text_vocab - 1) * width + col,
+                        )
+                        for cb in T.unroll(codebooks):
+                            aid = cb * code_vocab + T.min(
+                                T.max(frames[row, cb], 0), code_vocab - 1
+                            )
+                            acc += load_bf16(audio_w, aid * width + col)
+                        out[row, col] = acc
+        return out
+
+    return compute
+
+
+def codebook_sample(spec, schedule):
+    """Sample delayed multi-codebook rows with softcap, repetition penalty, top-k and top-p."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    slots = p["slots"]
+    codebooks = p.get("codebooks", 10)
+    vocab = p.get("vocab", 4098)
+    eoa = vocab - 2
+    pad = vocab - 1
+    window = p.get("window", 96)
+    rep_cbs = p.get("rep_codebooks", 6)
+    top_k = p.get("top_k", 80)
+    top_p = p.get("top_p", 0.69)
+    penalty = p.get("penalty", 2.4)
+    softcap = p.get("softcap", 15.0)
+    silence = p.get("silence_frames", 3)
+    text_pad = p.get("text_pad", 8196)
+    threads = 128
+    per_thread = (eoa + 1 + threads - 1) // threads
+
+    @kernel
+    def compute(
+        projection: Tensor((slots, codebooks * vocab), "float32"),
+        history: Tensor((slots, window, codebooks), "int32"),
+        steps: Tensor((slots,), "int32"),
+        temperatures: Tensor((slots,), "float32"),
+        uniforms: Tensor((slots, codebooks), "float32"),
+    ) -> tuple[
+        Tensor((slots, window, codebooks), "int32"),
+        Tensor((slots, codebooks + 1), "int32"),
+    ]:
+        out = output((slots, codebooks + 1), "int32")
+        with T.Kernel(codebooks, slots, threads=threads) as (cb, slot):
+            tx = T.get_thread_binding()
+            step = steps[slot]
+            hist_sh = T.alloc_shared((window,), "int32")
+            sh_val = T.alloc_shared((threads,), "float32")
+            sh_idx = T.alloc_shared((threads,), "int32")
+            top_vals = T.alloc_shared((top_k,), "float32")
+            top_ids = T.alloc_shared((top_k,), "int32")
+            probs = T.alloc_local((top_k,), "float32")
+            vals = T.alloc_local((per_thread,), "float32")
+
+            if step >= 0:
+                if tx < window:
+                    hist_sh[tx] = history[slot, tx, cb]
+                T.sync_threads()
+
+                for m in T.serial(per_thread):
+                    tok = m * threads + tx
+                    if tok <= eoa:
+                        raw = projection[slot, cb * vocab + tok]
+                        v = T.alloc_var("float32")
+                        v = T.float32(softcap) * T.tanh(raw / T.float32(softcap))
+                        if (cb < rep_cbs) & (tok < eoa):
+                            seen = T.alloc_var("int32")
+                            seen = 0
+                            for w_idx in T.serial(window):
+                                if (w_idx < step) & (hist_sh[w_idx] == tok):
+                                    seen = 1
+                            if seen != 0:
+                                v = T.if_then_else(
+                                    v > 0.0,
+                                    v / T.float32(penalty),
+                                    v * T.float32(penalty),
+                                )
+                        vals[m] = v
+                    else:
+                        vals[m] = T.float32(-1e30)
+
+                for rank in T.serial(top_k):
+                    best_v = T.alloc_var("float32")
+                    best_m = T.alloc_var("int32")
+                    best_i = T.alloc_var("int32")
+                    best_v = T.float32(-1e30)
+                    best_m = 0
+                    best_i = vocab
+                    for m in T.serial(per_thread):
+                        tok = m * threads + tx
+                        if (tok <= eoa) & (
+                            (vals[m] > best_v)
+                            | ((vals[m] == best_v) & (tok < best_i))
+                        ):
+                            best_v = vals[m]
+                            best_m = m
+                            best_i = tok
+                    sh_val[tx] = best_v
+                    sh_idx[tx] = best_i
+                    T.sync_threads()
+                    for stride_exp in T.unroll(7):
+                        stride = 64 >> stride_exp
+                        if tx < stride:
+                            other_v = sh_val[tx + stride]
+                            other_i = sh_idx[tx + stride]
+                            if (other_v > sh_val[tx]) | (
+                                (other_v == sh_val[tx]) & (other_i < sh_idx[tx])
+                            ):
+                                sh_val[tx] = other_v
+                                sh_idx[tx] = other_i
+                        T.sync_threads()
+                    win_id = sh_idx[0]
+                    if tx == 0:
+                        top_vals[rank] = sh_val[0]
+                        top_ids[rank] = win_id
+                    if best_i == win_id:
+                        vals[best_m] = T.float32(-1e30)
+                    T.sync_threads()
+
+                if tx == 0:
+                    temp = temperatures[slot]
+                    chosen_tok = T.alloc_var("int32")
+                    if temp <= 0.0:
+                        chosen_tok = top_ids[0]
+                    else:
+                        peak = top_vals[0] / temp
+                        sum_w = T.alloc_var("float32")
+                        sum_w = 0.0
+                        for r in T.serial(top_k):
+                            w_r = T.exp(top_vals[r] / temp - peak)
+                            probs[r] = w_r
+                            sum_w += w_r
+                        cum = T.alloc_var("float32")
+                        kept_sum = T.alloc_var("float32")
+                        cum = 0.0
+                        kept_sum = 0.0
+                        for r in T.serial(top_k):
+                            w_r = probs[r]
+                            if cum > T.float32(top_p) * sum_w:
+                                probs[r] = 0.0
+                            else:
+                                kept_sum += w_r
+                            cum += w_r
+                        target = uniforms[slot, cb] * kept_sum
+                        cdf = T.alloc_var("float32")
+                        picked = T.alloc_var("int32")
+                        cdf = 0.0
+                        picked = -1
+                        for r in T.serial(top_k):
+                            cdf += probs[r]
+                            if (picked < 0) & (target < cdf):
+                                picked = top_ids[r]
+                        if picked < 0:
+                            picked = top_ids[0]
+                        chosen_tok = picked
+                    delayed_tok = T.if_then_else(
+                        cb > silence + step, pad, chosen_tok
+                    )
+                    out[slot, cb] = delayed_tok
+                    history[slot, step % window, cb] = delayed_tok
+                    if cb == 0:
+                        out[slot, codebooks] = text_pad
+            else:
+                if tx == 0:
+                    out[slot, cb] = pad
+                    if cb == 0:
+                        out[slot, codebooks] = text_pad
+        return history, out
+
+    return compute

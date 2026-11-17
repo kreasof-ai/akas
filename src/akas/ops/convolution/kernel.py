@@ -214,3 +214,319 @@ def causal_depthwise(spec, schedule):
         return out
 
     return compute
+
+
+def causal_depthwise_state(spec, schedule):
+    """Stateful channelwise causal FIR across multi-slot streaming chunks."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    slots, chunk, width, taps = (p[k] for k in ("slots", "chunk", "c", "taps"))
+    rows = slots * chunk
+    hist_len = taps - 1
+
+    @kernel
+    def compute(
+        x: Tensor((rows, width), "float32"),
+        w: Tensor((width, taps), "float32"),
+        bias: Tensor((width,), "float32"),
+        state: Tensor((slots, hist_len, width), "float32"),
+        lengths: Tensor((slots,), "int32"),
+    ) -> tuple[
+        Tensor((slots, hist_len, width), "float32"),
+        Tensor((rows, width), "float32"),
+    ]:
+        out = output((rows, width), "float32")
+        with T.Kernel(slots, T.ceildiv(width, 128), threads=128) as (slot, tile):
+            live = lengths[slot]
+            for lane in T.Parallel(128):
+                col = tile * 128 + lane
+                if col < width:
+                    hist = T.alloc_local((hist_len,), "float32")
+                    taps_w = T.alloc_local((taps,), "float32")
+                    b = T.alloc_var("float32")
+                    b = bias[col]
+                    for k in T.unroll(hist_len):
+                        hist[k] = state[slot, k, col]
+                    for k in T.unroll(taps):
+                        taps_w[k] = w[col, k]
+                    for step in T.serial(chunk):
+                        row = slot * chunk + step
+                        if step < live:
+                            cur = T.alloc_var("float32")
+                            acc = T.alloc_var("float32")
+                            cur = x[row, col]
+                            acc = b + cur * taps_w[taps - 1]
+                            for k in T.unroll(hist_len):
+                                acc += hist[k] * taps_w[k]
+                            out[row, col] = acc
+                            for k in T.unroll(hist_len - 1):
+                                hist[k] = hist[k + 1]
+                            hist[hist_len - 1] = cur
+                        else:
+                            out[row, col] = 0
+                    for k in T.unroll(hist_len):
+                        state[slot, k, col] = hist[k]
+        return state, out
+
+    return compute
+
+
+def istft_polar(spec, schedule):
+    """Convert two-branch log-magnitude/phase spectra into real/imag vectors."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    rows = p["r"]
+    n0, n1 = p.get("n0", 736), p.get("n1", 2208)
+    b0, b1 = n0 // 2 + 1, n1 // 2 + 1
+    w0, w1 = 2 * b0, 2 * b1
+    total = w0 + w1
+    max_log = p.get("max_log_mag", 4.605170185988092)
+
+    @kernel
+    def compute(
+        spectrum: Tensor((rows, total), "float32"),
+    ) -> tuple[Tensor((rows, w0), "float32"), Tensor((rows, w1), "float32")]:
+        spec0 = output((rows, w0), "float32")
+        spec1 = output((rows, w1), "float32")
+        with T.Kernel(rows, T.ceildiv(b1, 128), threads=128) as (row, tile):
+            for lane in T.Parallel(128):
+                j = tile * 128 + lane
+                if j < b0:
+                    mag0 = T.exp(T.min(spectrum[row, j], T.float32(max_log)))
+                    ph0 = spectrum[row, b0 + j]
+                    spec0[row, j] = mag0 * T.cos(ph0)
+                    spec0[row, b0 + j] = T.if_then_else(
+                        (j == 0) | (j == b0 - 1), 0.0, mag0 * T.sin(ph0)
+                    )
+                if j < b1:
+                    mag1 = T.exp(T.min(spectrum[row, w0 + j], T.float32(max_log)))
+                    ph1 = spectrum[row, w0 + b1 + j]
+                    spec1[row, j] = mag1 * T.cos(ph1)
+                    spec1[row, b1 + j] = T.if_then_else(
+                        (j == 0) | (j == b1 - 1), 0.0, mag1 * T.sin(ph1)
+                    )
+        return spec0, spec1
+
+    return compute
+
+
+def istft_ola(spec, schedule):
+    """Materialize continuous overlap-added mixer inputs without mutating state."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    slots, frames = p["slots"], p["frames"]
+    cols = frames * 16
+    hop, n0, n1 = 184, 736, 2208
+    t0, t1, m0_len, m1_len = n0 - hop, n1 - hop, 862, 126
+    state_width = t0 + t1 + m0_len + m1_len
+    span = cols * hop
+
+    @kernel
+    def compute(
+        fr0: Tensor((slots * cols, n0), "float32"),
+        fr1: Tensor((slots * cols, n1), "float32"),
+        state: Tensor((slots, state_width), "float32"),
+        lengths: Tensor((slots,), "int32"),
+    ) -> tuple[
+        Tensor((slots, m0_len + span + t0), "float32"),
+        Tensor((slots, m1_len + span + t1), "float32"),
+    ]:
+        cat0 = output((slots, m0_len + span + t0), "float32")
+        cat1 = output((slots, m1_len + span + t1), "float32")
+        with T.Kernel(slots, T.ceildiv(m0_len + span + t1, 256), threads=256) as (
+            slot,
+            blk,
+        ):
+            live_cols = lengths[slot] * 16
+            for lane in T.Parallel(256):
+                idx = blk * 256 + lane
+                if idx < m0_len + span + t0:
+                    if idx < m0_len:
+                        cat0[slot, idx] = state[slot, t0 + t1 + idx]
+                    else:
+                        s0 = idx - m0_len
+                        v0 = T.alloc_var("float32")
+                        v0 = T.if_then_else(s0 < t0, state[slot, s0], 0.0)
+                        c0 = T.max(0, (s0 - n0 + hop) // hop)
+                        for m in T.unroll(4):
+                            c = c0 + m
+                            off = s0 - c * hop
+                            if (c >= 0) & (c < live_cols) & (off >= 0) & (off < n0):
+                                v0 += fr0[slot * cols + c, off]
+                        cat0[slot, idx] = v0
+                if idx < m1_len + span + t1:
+                    if idx < m1_len:
+                        cat1[slot, idx] = state[slot, t0 + t1 + m0_len + idx]
+                    else:
+                        s1 = idx - m1_len
+                        v1 = T.alloc_var("float32")
+                        v1 = T.if_then_else(s1 < t1, state[slot, t0 + s1], 0.0)
+                        c1 = T.max(0, (s1 - n1 + hop) // hop)
+                        for m in T.unroll(12):
+                            c = c1 + m
+                            off = s1 - c * hop
+                            if (c >= 0) & (c < live_cols) & (off >= 0) & (off < n1):
+                                v1 += fr1[slot * cols + c, off]
+                        cat1[slot, idx] = v1
+        return cat0, cat1
+
+    return compute
+
+
+def istft_mix_commit(spec, schedule):
+    """Apply the 127-tap two-branch FIR mixer and commit updated overlap/mixer state."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    slots, frames = p["slots"], p["frames"]
+    cols = frames * 16
+    hop, n0, n1 = 184, 736, 2208
+    t0, t1, m0_len, m1_len, fir_k = n0 - hop, n1 - hop, 862, 126, 127
+    state_width = t0 + t1 + m0_len + m1_len
+    span = cols * hop
+
+    @kernel
+    def compute(
+        cat0: Tensor((slots, m0_len + span + t0), "float32"),
+        cat1: Tensor((slots, m1_len + span + t1), "float32"),
+        mixer: Tensor((2, fir_k), "float32"),
+        state: Tensor((slots, state_width), "float32"),
+        lengths: Tensor((slots,), "int32"),
+    ) -> tuple[
+        Tensor((slots, state_width), "float32"),
+        Tensor((slots, span), "float32"),
+    ]:
+        mid = output((slots, span), "float32")
+        with T.Kernel(
+            slots, T.ceildiv(T.max(span, state_width), 256), threads=256
+        ) as (slot, blk):
+            live_span = lengths[slot] * 16 * hop
+            sh0 = T.alloc_shared((256 + fir_k,), "float32")
+            sh1 = T.alloc_shared((256 + fir_k,), "float32")
+            mw0 = T.alloc_shared((fir_k,), "float32")
+            mw1 = T.alloc_shared((fir_k,), "float32")
+            tx = T.get_thread_binding()
+            if tx < fir_k:
+                mw0[tx] = mixer[0, tx]
+                mw1[tx] = mixer[1, tx]
+            base = blk * 256
+            for step in T.unroll(2):
+                pos = tx + step * 256
+                if pos < 256 + fir_k - 1:
+                    g = base + pos
+                    sh0[pos] = T.if_then_else(g < m0_len + span, cat0[slot, g], 0.0)
+                    sh1[pos] = T.if_then_else(g < m1_len + span, cat1[slot, g], 0.0)
+            T.sync_threads()
+            idx = base + tx
+            if idx < span:
+                if idx < live_span:
+                    acc = T.alloc_var("float32")
+                    acc = 0.0
+                    for k in T.unroll(fir_k):
+                        acc += mw0[k] * sh0[tx + k] + mw1[k] * sh1[tx + k]
+                    mid[slot, idx] = acc
+                else:
+                    mid[slot, idx] = 0.0
+            if (lengths[slot] > 0) & (idx < state_width):
+                if idx < t0:
+                    state[slot, idx] = cat0[slot, m0_len + live_span + idx]
+                elif idx < t0 + t1:
+                    state[slot, idx] = cat1[slot, m1_len + live_span + (idx - t0)]
+                elif idx < t0 + t1 + m0_len:
+                    state[slot, idx] = cat0[slot, live_span + (idx - t0 - t1)]
+                else:
+                    state[slot, idx] = cat1[slot, live_span + (idx - t0 - t1 - m0_len)]
+        return state, mid
+
+    return compute
+
+
+def sinc_resample_limit(spec, schedule):
+    """Resample 44160->44100 Hz (736->735), apply headroom gain + soft limiter, and update buffer."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    slots, frames = p["slots"], p["frames"]
+    blocks = frames * 4
+    orig, new, kl, buf_len = 736, 735, 770, 322
+    in_span = blocks * orig
+    out_span = blocks * new
+    gain = p.get("gain", 0.70794578)
+    knee = p.get("knee", 0.8912509381337456)
+
+    @kernel
+    def compute(
+        mid: Tensor((slots, in_span), "float32"),
+        filt: Tensor((new, kl), "float32"),
+        rs_state: Tensor((slots, buf_len), "float32"),
+        lengths: Tensor((slots,), "int32"),
+    ) -> Tensor((slots, out_span), "float32"):
+        pcm = output((slots, out_span), "float32")
+        with T.Kernel(T.ceildiv(new, 64), slots * blocks, threads=64) as (
+            out_tile,
+            sb,
+        ):
+            slot = sb // blocks
+            blk = sb % blocks
+            live_blocks = lengths[slot] * 4
+            tx = T.get_thread_binding()
+            win = T.alloc_shared((kl,), "float32")
+            for step in T.serial(T.ceildiv(kl, 64)):
+                j = step * 64 + tx
+                if j < kl:
+                    src = blk * orig + j
+                    win[j] = T.if_then_else(
+                        src < buf_len,
+                        rs_state[slot, src],
+                        mid[slot, T.min(src - buf_len, in_span - 1)],
+                    )
+            T.sync_threads()
+            o_idx = out_tile * 64 + tx
+            if o_idx < new:
+                if blk < live_blocks:
+                    acc = T.alloc_var("float32")
+                    acc = 0.0
+                    for j in T.serial(kl):
+                        acc += win[j] * filt[o_idx, j]
+                    val = T.alloc_var("float32")
+                    val = acc * T.float32(gain)
+                    mag = T.abs(val)
+                    if mag > T.float32(knee):
+                        width = T.float32(1.0 - knee)
+                        lim = T.float32(knee) + width * T.tanh((mag - T.float32(knee)) / width)
+                        val = T.if_then_else(val >= 0.0, lim, -lim)
+                    pcm[slot, blk * new + o_idx] = val
+                else:
+                    pcm[slot, blk * new + o_idx] = 0.0
+        return pcm
+
+    return compute
+
+
+def sinc_resample_commit(spec, schedule):
+    """Commit the trailing 322 samples of each active slot into rs_state."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    slots, frames = p["slots"], p["frames"]
+    in_span = frames * 4 * 736
+    buf_len = 322
+
+    @kernel
+    def compute(
+        mid: Tensor((slots, in_span), "float32"),
+        rs_state: Tensor((slots, buf_len), "float32"),
+        lengths: Tensor((slots,), "int32"),
+    ) -> Tensor((slots, buf_len), "float32"):
+        with T.Kernel(slots, T.ceildiv(buf_len, 128), threads=128) as (slot, blk):
+            live_span = lengths[slot] * 4 * 736
+            for lane in T.Parallel(128):
+                idx = blk * 128 + lane
+                if (lengths[slot] > 0) & (idx < buf_len):
+                    rs_state[slot, idx] = mid[slot, live_span - buf_len + idx]
+        return rs_state
+
+    return compute

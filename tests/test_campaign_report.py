@@ -12,6 +12,54 @@ from akas.benchmarking.history import digest, write
 from tools.campaign_report import check, export, read, render, speculative_baselines, validate
 
 
+def test_native_stream_baseline_export_preserves_dependency_provenance(tmp_path):
+    from tools.campaign_report import NATIVE_STREAM_SCHEMA, export_native_stream_baseline
+    from akas.benchmarking.workload import load
+
+    workload = load("speech-concurrent-v1")
+    prompt = workload["utterances"][0]["text"]
+    metadata = dict(
+        protocol="client-speech-pcm-stream-v1",
+        speech_workload=dict(id=workload["id"], definition=workload),
+        runtime="zonos3-sgl",
+        provider="cuda",
+        weight_format="bf16",
+    )
+    result = dict(
+        status="ok",
+        case=dict(id="delivery", text=prompt, concurrency=1, requests=1),
+        concurrency=1,
+        completed=1,
+        requests=1,
+        failed=0,
+        wall_s=0.7,
+        audio_seconds_per_second=15.5,
+        gpu_memory_peak=dict(memory_used_mib=4944),
+        results=[dict(ok=True)],
+    )
+    directory = tmp_path / "benchmarks/runs/native"
+    write(directory / "report.json", dict(metadata=metadata, results=[result]))
+    write(
+        directory / "run.json",
+        dict(
+            id="native",
+            status="passed",
+            started_at="2026-01-01T00:00:00Z",
+            completed_at="2026-01-01T00:01:00Z",
+            source=dict(revision="upstream"),
+            metadata=metadata,
+            results=[result],
+            artifacts=[dict(path="report.json", sha256=digest(directory / "report.json"))],
+        ),
+    )
+    out = export_native_stream_baseline(["native"], tmp_path / "benchmarks", None)
+    data = read(out / "report.json")
+    assert data["schema"] == NATIVE_STREAM_SCHEMA
+    assert data["measurements"][0]["run_id"] == "native"
+    assert "source.tar.gz" in (out / "README.md").read_text()
+    assert "matrix used the original assets" in (out / "README.md").read_text()
+
+
 def test_streamed_native_measurements_preserve_latency_and_failed_qualification():
     from tools.campaign_report import measurement
 

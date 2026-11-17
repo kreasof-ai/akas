@@ -28,6 +28,57 @@ generation and serving. Tensor provides compilation and device execution.
 
 ## Benchmark showcase
 
+### ZONOS3-Mini streaming speech on NVIDIA L40S
+
+Native BF16 language-model weights and the compact FP32 `keep2_plain` codec.
+Both servers streamed 44.1 kHz float32 PCM over HTTP for the same fixed
+30-word English prompt (50 prompt frames, `max_tokens=384`, prefix decoding).
+Each row is one request burst; throughput is total generated audio duration
+divided by client wall time.
+
+![ZONOS3-Mini on L40S: burst completion time, audio throughput, and throughput speedup relative to Zyphra's native CUDA runtime at matched concurrency.](https://raw.githubusercontent.com/kreasof-ai/akas/e645f9653992ce14080f95994964b412fda6b7fe/benchmarks/runs/20261117225229028356-dbb5f541/figures/throughput.svg)
+
+<details>
+<summary>Audio throughput, relative speedup, and median time to first audio</summary>
+
+| Concurrent requests | AKAS audio seconds/s | Zyphra native audio seconds/s | Speedup | AKAS median time to first audio |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 28.80 | 15.53 | 1.85× | 43 ms |
+| 4 | 52.10 | 42.46 | 1.23× | 20 ms |
+| 16 | 68.73 | 47.81 | 1.44× | 51 ms |
+| 64 | 115.60 | 68.12 | 1.70× | 287 ms |
+| 256 | **142.11** | 17.35 | **8.19×** | 911 ms |
+
+</details>
+
+AKAS returned finite, non-silent audio for all 341 requests. At C256 it
+completed the burst in 20.15 seconds and delivered **2.09×** Zyphra's best
+measured throughput (C64). The matched C256 speedup also reflects Zyphra's
+prefill budget, which serialized admission into waves in that run.
+
+On the same CUDA bundle, greedy and seeded sampled requests reproduced their
+token rows and PCM bitwise on slot reuse at every tested concurrency. Codec
+probes matched Zyphra's `ISTFTStream` within tolerance (worst RMS error
+`1.53e-4`). These checks do not establish end-to-end equivalence with Zyphra.
+Evidence:
+[Zyphra baseline](https://github.com/kreasof-ai/akas/blob/1042dbbe1dee7c0e6ad519374ecfd8ef85183f65/benchmarks/reports/20261117T160518Z-59b3379b9d08/README.md) ·
+[AKAS measurements](https://github.com/kreasof-ai/akas/blob/092e255f32f6bd5cb3f8e03fd1e8bc95802e033c/benchmarks/runs/20261117224439048177-b767426d/report.json) ·
+[correctness checks](https://github.com/kreasof-ai/akas/blob/72bb2dc8a1fee29e3cfe2f1a40e967e6228c58f5/benchmarks/runs/20261117224224262017-91925158/report.json).
+
+<details>
+<summary>Regenerate the plot from the benchmark archive</summary>
+
+```sh
+akas_run=$(uv run --no-sync python -m tools.benchmark_archive fetch runs 20261117224439048177-b767426d)
+native_report=$(uv run --no-sync python -m tools.benchmark_archive fetch reports 20261117T160518Z-59b3379b9d08)
+uv run --no-sync python -m tools.plot_comparison "$akas_run" build/zonos3-streaming.svg \
+  --native-baseline "$native_report"
+```
+
+</details>
+
+### Language-model inference
+
 **LFM2.5-24B-A2B-FP8 · Block-scaled FP8 weights · NVIDIA L40S (46,068 MiB) · CUDA**
 
 Results from the [November 1, 2026 comparison](https://github.com/kreasof-ai/akas/blob/f19575adf59fa682eb15ac3756de0f62a8320728/benchmarks/reports/20261101T074055Z-ad51ac551826/COMPARISON.md),

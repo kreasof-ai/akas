@@ -15,6 +15,7 @@ OUTPUT_ARGUMENTS = {
         "chunk_controls": (2, 3),
         "advance": (0,),
         "next_tokens": (1,),
+        "last_rows": OutputABI((-1,), ("out",)),
     }
 }
 for _contract in ("bf16", "block-fp8"):
@@ -325,6 +326,19 @@ IMPLEMENTATIONS += tuple(
         provider=provider,
         factory="block_limits",
         name="sequence.block_limits",
+    )
+    for provider in ("cuda", "webgpu")
+)
+
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        "last_rows",
+        "akas.ops.sequence.kernel",
+        "reference",
+        provider=provider,
+        defaults=(("dtype", "float32"),),
+        factory="mapped_last_rows",
+        name="sequence.last_rows",
     )
     for provider in ("cuda", "webgpu")
 )

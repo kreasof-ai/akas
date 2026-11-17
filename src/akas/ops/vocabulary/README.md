@@ -76,6 +76,6 @@ tests](../../../../tests/test_device_feedback.py).
 
 ## ZONOS3 and ZAC
 
-Codebook residual lookup adds offset codebook rows and per-codebook biases to the semantic embedding. CUDA and WebGPU share the F32 lookup body.
+Codebook residual lookup adds offset codebook rows and per-codebook biases to the semantic embedding (`codebook_residual` for complete frames and `codebook_residual_masked` when negative IDs mark omitted early-decode residual codebooks). For native BF16 ZONOS3 serving, `zonos3_frame_embed` sums multi-codebook and text BF16 embeddings on device with negative-sentinel condition-row overrides, and `codebook_sample` performs softcapped, repetition-penalized top-k/top-p sampling with cold-start delay padding across active slots. CUDA and WebGPU share these portable bodies.
 
 Return to the [operation index](../README.md).
