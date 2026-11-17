@@ -1,0 +1,37 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "protocol": "derived-benchmark-figure-v1",
+    "purpose": "streaming-speech-showcase-figure",
+    "model": "Zyphra/ZONOS3-Mini",
+    "runtime": "akas",
+    "provider": "cuda",
+    "weight_format": "bf16",
+    "device": {
+      "name": "NVIDIA L40S",
+      "memory_total_mib": 46068
+    },
+    "matplotlib": "3.11.2",
+    "inputs": {
+      "akas": {
+        "kind": "runs",
+        "id": "20261117224439048177-b767426d",
+        "path": "report.json",
+        "sha256": "1cf5dbcebcac7e940f3052df4f8b804a17b42c70b9d97d61d4491ffa0c66a113"
+      },
+      "native": {
+        "kind": "reports",
+        "id": "20261117T160518Z-59b3379b9d08",
+        "path": "report.json",
+        "sha256": "9e44531d7cdbfa57bef3a6f8dfc56e267335e3086a0e6457f4a45527b23a3663"
+      },
+      "correctness": {
+        "kind": "runs",
+        "id": "20261117224224262017-91925158",
+        "path": "report.json",
+        "sha256": "86ec1d914ce66a4e26a7da5d962ff32c18370194f720be2c7e65e0a70fbf2187"
+      }
+    }
+  },
+  "results": []
+}

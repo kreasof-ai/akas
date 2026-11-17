@@ -2479,3 +2479,221 @@ index f5f98420..8019f19f 100644
                  {"PARITY.json"} if "performance_acceptance" in data else set()
              )
              if {
+diff --git a/tools/plot_comparison.py b/tools/plot_comparison.py
+index 84d40c2b..f817db78 100644
+--- a/tools/plot_comparison.py
++++ b/tools/plot_comparison.py
+@@ -4,8 +4,9 @@ Run: python -m tools.plot_comparison REPORT_JSON OUTPUT_SVG
+ """
+ 
+ import argparse
+-from datetime import datetime
++from datetime import datetime, timezone
+ import json
++from math import isfinite
+ from pathlib import Path
+ from statistics import median, quantiles
+ 
+@@ -212,7 +213,166 @@ def _plot_speech(data, plt, output):
+         plt.close(fig)
+ 
+ 
+-def plot(report=None, output=None):
++def _native_stream_points(data, baseline):
++    """Match completed single-burst results from the same speech workload."""
++    meta = data["metadata"]
++    if (
++        data.get("schema") != "akas.benchmark.v1"
++        or meta.get("protocol") != "client-speech-pcm-stream-v1"
++        or meta.get("runtime") != "akas"
++        or meta.get("weight_format") != "bf16"
++        or baseline.get("schema") != "akas.native-stream-baseline-report.v1"
++        or meta["speech_workload"]["definition"] != baseline["workload"]
++    ):
++        raise ValueError("incompatible native speech streaming reports")
++    prompt = baseline["workload"]["utterances"][0]["text"]
++
++    def by_concurrency(rows):
++        matched = {}
++        for row in rows:
++            count = row["case"]["concurrency"]
++            if (
++                row["case"]["text"] != prompt
++                or count < 1
++                or count in matched
++                or count != row["requests"]
++                or count != row["completed"]
++                or row["failed"]
++                or any(
++                    not isfinite(row[key]) or row[key] <= 0
++                    for key in ("audio_seconds_per_second", "wall_s")
++                )
++            ):
++                raise ValueError(
++                    "native speech plot requires one complete burst per concurrency"
++                )
++            matched[count] = row
++        return matched
++
++    akas = by_concurrency(data["results"])
++    native = by_concurrency(baseline["measurements"])
++    if not akas or akas.keys() != native.keys():
++        raise ValueError("native speech reports must cover the same concurrencies")
++    return [(count, akas[count], native[count]) for count in sorted(akas)]
++
++
++def _plot_native_stream(data, baseline, plt, output):
++    from matplotlib.ticker import StrMethodFormatter
++
++    points = _native_stream_points(data, baseline)
++    positions = range(len(points))
++    fig, axes = plt.subplots(1, 3, figsize=(16, 6.2), sharex=True)
++    panels = (
++        ("Burst completion time", "Wall seconds (log scale)", "{x:g}"),
++        ("Audio throughput", "Audio seconds / wall second", "{x:g}"),
++        ("Throughput speedup vs Zyphra", "AKAS / Zyphra native", "{x:g}×"),
++    )
++    for axis, (title, unit, ticks) in zip(axes, panels, strict=True):
++        axis.set_title(title, loc="left", fontsize=14, fontweight="bold", pad=12)
++        axis.set_xticks(positions, [str(count) for count, *_ in points])
++        axis.set_xlim(-0.2, len(points) - 0.8)
++        axis.set_xlabel("Concurrent requests", labelpad=10)
++        axis.set_ylabel(unit)
++        axis.yaxis.set_major_formatter(StrMethodFormatter(ticks))
++        axis.grid(axis="x", color="#e2e8f0", linewidth=0.8)
++        _style_axis(axis)
++    axes[0].set_yscale("log")
++    axes[0].yaxis.set_major_formatter(StrMethodFormatter("{x:g}"))
++    axes[0].set_ylim(
++        0.25 * min(row["wall_s"] for _, a, n in points for row in (a, n)),
++        2 * max(row["wall_s"] for _, a, n in points for row in (a, n)),
++    )
++    axes[1].set_ylim(
++        0,
++        1.15
++        * max(row["audio_seconds_per_second"] for _, a, n in points for row in (a, n)),
++    )
++    for axis, metric in zip(
++        axes[:2], ("wall_s", "audio_seconds_per_second"), strict=True
++    ):
++        for col, label, color, marker, style in (
++            (1, "AKAS · CUDA", "#2563eb", "o", "-"),
++            (2, "Zyphra native · CUDA", "#ea580c", "s", "--"),
++        ):
++            axis.plot(
++                positions,
++                [point[col][metric] for point in points],
++                label=label,
++                color=color,
++                marker=marker,
++                linestyle=style,
++                linewidth=2.2,
++                markersize=5,
++            )
++    rates = [
++        a["audio_seconds_per_second"] / n["audio_seconds_per_second"]
++        for _, a, n in points
++    ]
++    axes[2].axhline(1, color="#ea580c", linestyle="--", linewidth=1.5)
++    axes[2].plot(
++        positions, rates, color="#2563eb", marker="o", linewidth=2.2, markersize=5
++    )
++    axes[2].set_ylim(0, 1.2 * max(1, *rates))
++    for x, ratio in zip(positions, rates, strict=True):
++        offset, align = (-6, "right") if x == len(points) - 1 else (0, "center")
++        axes[2].annotate(
++            f"{ratio:.2f}×",
++            (x, ratio),
++            xytext=(offset, 8),
++            textcoords="offset points",
++            ha=align,
++            color="#2563eb",
++            fontsize=9,
++        )
++    meta = data["metadata"]
++    started = datetime.fromtimestamp(meta["started_unix_s"], tz=timezone.utc)
++    model = meta["model"].rsplit("/", 1)[-1]
++    device = meta["device"]["name"]
++    fig.suptitle(
++        f"{model} streaming speech",
++        x=0.07,
++        y=0.97,
++        ha="left",
++        fontsize=23,
++        fontweight="bold",
++        color="#0f172a",
++    )
++    fig.text(
++        0.07,
++        0.895,
++        f"BF16 LM · FP32 keep2_plain codec · {device} (CUDA) · {started:%B} {started.day}, {started.year}",
++        fontsize=11,
++        color="#475569",
++    )
++    handles, labels = axes[0].get_legend_handles_labels()
++    fig.legend(
++        handles,
++        labels,
++        loc="lower left",
++        bbox_to_anchor=(0.06, 0.15),
++        ncol=2,
++        frameon=False,
++        columnspacing=2.5,
++    )
++    fig.text(
++        0.07,
++        0.045,
++        "Lower is better for wall time. Higher is better for throughput and speedup. "
++        "One HTTP PCM burst per runtime and concurrency.\n"
++        "Speedup uses audio throughput at matched concurrency. "
++        "Zyphra's C256 run admitted requests in waves.",
++        fontsize=9,
++        color="#475569",
++        linespacing=1.5,
++    )
++    fig.subplots_adjust(left=0.07, right=0.98, top=0.78, bottom=0.31, wspace=0.25)
++    try:
++        return _save(fig, output)
++    finally:
++        plt.close(fig)
++
++
++def plot(report=None, output=None, *, native_baseline=None):
+     import matplotlib
+ 
+     matplotlib.use("Agg")
+@@ -226,12 +386,16 @@ def plot(report=None, output=None):
+             "font.family": "DejaVu Sans",
+             "font.size": 11,
+             "svg.fonttype": "path",
+-            "svg.hashsalt": "akas-speech-showcase"
++            "svg.hashsalt": "akas-speech-stream-showcase"
++            if native_baseline is not None
++            else "akas-speech-showcase"
+             if speech
+             else "akas-lfm25-fp8-showcase",
+         }
+     )
+     output = output or ROOT / "build/throughput.svg"
++    if native_baseline is not None:
++        return _plot_native_stream(data, _load_report(native_baseline), plt, output)
+     if speech:
+         return _plot_speech(data, plt, output)
+     fig, axes = plt.subplots(1, 2, figsize=(13, 6.2))
+@@ -327,8 +491,15 @@ def main():
+     parser.add_argument("output", nargs="?", type=Path, default=None)
+     parser.add_argument("--report", dest="report_opt", type=Path, default=None)
+     parser.add_argument("--out", dest="output_opt", type=Path, default=None)
++    parser.add_argument(
++        "--native-baseline", type=Path, help="paired Zyphra speech report"
++    )
+     args = parser.parse_args()
+-    out = plot(args.report_opt or args.report, args.output_opt or args.output)
++    out = plot(
++        args.report_opt or args.report,
++        args.output_opt or args.output,
++        native_baseline=args.native_baseline,
++    )
+     print(out)
+ 
+ 
