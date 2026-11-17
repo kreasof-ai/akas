@@ -1,0 +1,163 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "protocol": "client-speech-pcm-stream-v1",
+    "text": "Your order has been confirmed and will arrive tomorrow between nine and noon. You can change the delivery address, contact the courier, or track your package online at any time.",
+    "words": 30,
+    "utf8_bytes": 177,
+    "model": "Zyphra/ZONOS3-Mini",
+    "model_revision": "d2d142a86b1e6aeb4252679673c86ecd86177bf8",
+    "runtime": "zonos3-sgl",
+    "stream": true,
+    "sample_rate_hz": 44100,
+    "default_sampling": true,
+    "default_voice_or_unconditioned": true,
+    "decoder": "keep2_plain",
+    "max_tokens": 384,
+    "stream_decode": "prefix",
+    "server_pid": 18065,
+    "gpu_memory_before": {
+      "memory_used_mib": 4906,
+      "memory_total_mib": 46068
+    },
+    "concurrencies": [
+      4
+    ],
+    "requests_per_concurrency": 0,
+    "warmup": 0,
+    "started_unix_s": 1794931073.503851,
+    "speech_workload": {
+      "id": "speech-concurrent-v1",
+      "definition": {
+        "schema": "akas.speech-workload.v1",
+        "id": "speech-concurrent-v1",
+        "protocol": "client-speech-pcm-stream-v1",
+        "warmup": 0,
+        "repeats": 1,
+        "request": {
+          "language": "en_us",
+          "temperature": null,
+          "topk": null,
+          "top_p": null,
+          "min_p": null,
+          "repetition_penalty": null,
+          "max_tokens": 384,
+          "stream": true,
+          "stream_decode": "prefix",
+          "response_format": "pcm",
+          "sample_rate_hz": 44100,
+          "channels": 1,
+          "sample_format": "float32",
+          "decoder": "keep2_plain"
+        },
+        "utterances": [
+          {
+            "id": "delivery",
+            "text": "Your order has been confirmed and will arrive tomorrow between nine and noon. You can change the delivery address, contact the courier, or track your package online at any time."
+          }
+        ]
+      },
+      "sha256": "1c20af0128f13554cdf2b79aa714cbba646b4bf03f9399f21c185e8a7cdb3602"
+    },
+    "provider": "cuda",
+    "device": {
+      "name": "NVIDIA L40S",
+      "memory_total_mib": 46068
+    },
+    "weight_format": "bf16",
+    "purpose": "native-capacity-diagnostic",
+    "model_definition_sha256": "e84617ab992c8bac2d4301f39f61a85b5d18002f397628a4359ac01e80591035",
+    "configuration": {
+      "max_running_requests": 4,
+      "num_pages": 2048,
+      "max_frames": 512,
+      "request_bucketing": false,
+      "weight_mmap": true,
+      "codec": "keep2_plain",
+      "safe_slot_lifecycle": false
+    }
+  },
+  "results": [
+    {
+      "runtime": "native",
+      "concurrency": 4,
+      "requests": 4,
+      "completed": 4,
+      "failed": 0,
+      "wall_s": 1.0614643749995594,
+      "throughput_qps": 3.7683789434776465,
+      "audio_seconds_per_second": 42.457069429848154,
+      "latency_s": {
+        "mean": 0.998818610750277,
+        "p50": 1.0067338620001465,
+        "p95": 1.050992136700188,
+        "p99": 1.0555450689402277
+      },
+      "ttfa_s": {
+        "mean": 0.05767081949989006,
+        "p50": 0.06049183949926373,
+        "p95": 0.060901048850337244,
+        "p99": 0.06093893777046105
+      },
+      "rtf": {
+        "mean": 0.08874118803959594,
+        "p50": 0.08866779668325969,
+        "p95": 0.09095776479031976,
+        "p99": 0.09122761219495164
+      },
+      "audio_duration_s": {
+        "mean": 11.266666666666667,
+        "p50": 11.533333333333335,
+        "p95": 11.856666666666667,
+        "p99": 11.864666666666666
+      },
+      "gpu_memory_initial": {
+        "memory_used_mib": 4906,
+        "memory_total_mib": 46068
+      },
+      "gpu_memory_peak": {
+        "memory_used_mib": 4908,
+        "memory_total_mib": 46068
+      },
+      "server_processes_rss_mib": {
+        "18065": 747,
+        "18076": 13,
+        "18077": 1966,
+        "18078": 1619
+      },
+      "status": "ok",
+      "case": {
+        "id": "delivery",
+        "text": "Your order has been confirmed and will arrive tomorrow between nine and noon. You can change the delivery address, contact the courier, or track your package online at any time.",
+        "concurrency": 4,
+        "requests": 4
+      },
+      "results": [
+        {
+          "ok": true,
+          "seed": 1000,
+          "audio_duration_s": 11.866666666666667,
+          "audio_sha256": "b3eb6c1d6379ae5fbe0a7f5e71963fd79c0fba5671b3a6758f55d2160cd75dfe"
+        },
+        {
+          "ok": true,
+          "seed": 1001,
+          "audio_duration_s": 10.133333333333333,
+          "audio_sha256": "1c276f093dd8e6bb92acf7edad0456ccc9fc51bf8092b39b2b8490df76868e50"
+        },
+        {
+          "ok": true,
+          "seed": 1002,
+          "audio_duration_s": 11.8,
+          "audio_sha256": "0ea9308e771dd1c652fd2fd5eedae6b69e9656e3774d850564b80c7db52f9cea"
+        },
+        {
+          "ok": true,
+          "seed": 1003,
+          "audio_duration_s": 11.266666666666667,
+          "audio_sha256": "bfa5f1cc4d7eac4960d9a8d9309ca11911b6425687d606bb7245dfd66a677bf7"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,111 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "protocol": "client-speech-pcm-stream-v1",
+    "speech_workload": {
+      "id": "speech-concurrent-v1",
+      "definition": {
+        "schema": "akas.speech-workload.v1",
+        "id": "speech-concurrent-v1",
+        "protocol": "client-speech-pcm-stream-v1",
+        "warmup": 0,
+        "repeats": 1,
+        "request": {
+          "language": "en_us",
+          "temperature": null,
+          "topk": null,
+          "top_p": null,
+          "min_p": null,
+          "repetition_penalty": null,
+          "max_tokens": 384,
+          "stream": true,
+          "stream_decode": "prefix",
+          "response_format": "pcm",
+          "sample_rate_hz": 44100,
+          "channels": 1,
+          "sample_format": "float32",
+          "decoder": "keep2_plain"
+        },
+        "utterances": [
+          {
+            "id": "delivery",
+            "text": "Your order has been confirmed and will arrive tomorrow between nine and noon. You can change the delivery address, contact the courier, or track your package online at any time."
+          }
+        ]
+      },
+      "sha256": "1c20af0128f13554cdf2b79aa714cbba646b4bf03f9399f21c185e8a7cdb3602"
+    },
+    "runtime": "zonos3-sgl",
+    "provider": "cuda",
+    "device": {
+      "name": "NVIDIA L40S",
+      "memory_total_mib": 46068
+    },
+    "model": "Zyphra/ZONOS3-Mini",
+    "weight_format": "bf16",
+    "purpose": "codec-packaging-qualification",
+    "checks": [
+      {
+        "frames": 1,
+        "bitwise": true,
+        "rms": 0.0,
+        "reference_sha256": "ca65ddeddaa29703e397afc73d22d8ffd61ad495281d19638d526c8550ed6705",
+        "compact_sha256": "ca65ddeddaa29703e397afc73d22d8ffd61ad495281d19638d526c8550ed6705"
+      },
+      {
+        "frames": 7,
+        "bitwise": true,
+        "rms": 0.0,
+        "reference_sha256": "987b87feb664a12b95655ca48a094d4402d36cc580c6578edc344536cf9250a6",
+        "compact_sha256": "987b87feb664a12b95655ca48a094d4402d36cc580c6578edc344536cf9250a6"
+      },
+      {
+        "frames": 32,
+        "bitwise": true,
+        "rms": 0.0,
+        "reference_sha256": "0f804b5d6c799a26788d89549f2dcbd1a168b0a850fe4923a9500f85c2874f18",
+        "compact_sha256": "0f804b5d6c799a26788d89549f2dcbd1a168b0a850fe4923a9500f85c2874f18"
+      }
+    ],
+    "compact_codec": {
+      "path": "build/codec-artifacts/keep2_plain-9d1b6342.pt",
+      "bytes": 576500243,
+      "sha256": "9d1b6342d3662ae4646e69606b210d458cd183e79922ee0fef1be8110b3574a0",
+      "format": "zonos3-istft-codec-v1",
+      "storage": "local build artifact; excluded from Git archive by size"
+    }
+  },
+  "results": [
+    {
+      "status": "ok",
+      "case": {
+        "id": "codec-compact-bitwise",
+        "decoder": "keep2_plain"
+      },
+      "bitwise": true,
+      "checks": [
+        {
+          "frames": 1,
+          "bitwise": true,
+          "rms": 0.0,
+          "reference_sha256": "ca65ddeddaa29703e397afc73d22d8ffd61ad495281d19638d526c8550ed6705",
+          "compact_sha256": "ca65ddeddaa29703e397afc73d22d8ffd61ad495281d19638d526c8550ed6705"
+        },
+        {
+          "frames": 7,
+          "bitwise": true,
+          "rms": 0.0,
+          "reference_sha256": "987b87feb664a12b95655ca48a094d4402d36cc580c6578edc344536cf9250a6",
+          "compact_sha256": "987b87feb664a12b95655ca48a094d4402d36cc580c6578edc344536cf9250a6"
+        },
+        {
+          "frames": 32,
+          "bitwise": true,
+          "rms": 0.0,
+          "reference_sha256": "0f804b5d6c799a26788d89549f2dcbd1a168b0a850fe4923a9500f85c2874f18",
+          "compact_sha256": "0f804b5d6c799a26788d89549f2dcbd1a168b0a850fe4923a9500f85c2874f18"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,442 @@
+[1m[2026-11-17|15:58:16][0m [32mINFO    [0m TTS settings: n_codebooks=10, text_vocab=8196, speaking_rate_num_buckets=0, quality_num_buckets=0, speaker_background_token=False, accurate_mode_token=False
+[1m[2026-11-17|15:58:16][0m [32mINFO    [0m Parsed arguments:
+ServerArgs(model_path='/home/sagemaker-user/akas/build/zonos3-concurrent-v1/cache2/zonos3-mini/lm/zonos3_mini', tp_info=DistributedInfo(rank=0, size=1), dtype=torch.bfloat16, max_running_req=64, attention_backend='fa', moe_backend='fused_moe', cuda_graph_bs=None, cuda_graph_max_bs=64, page_size=1, memory_ratio=0.9, distributed_timeout=60.0, use_dummy_weight=False, use_pynccl=True, max_seq_len_override=512, num_page_override=32768, accent_adapters=None, phoneme_rows=None, align_probe_max_text=0, align_probe_max_masked=8, align_probe_max_keys=12288, max_extend_tokens=512, cache_type='naive', offline_mode=False, eoa_policy='any', laci_heads={}, _unique_suffix='.pid=18657', server_host='127.0.0.1', server_port=1919, num_tokenizer=0, silent_output=False, tts_n_codebooks=10, tts_audio_pad_id=4097, tts_text_vocab=8196, tts_sample_rate=44100, tts_audio_codec='opus_dual_3n_600k_sched600k_r4096_step600000', tts_speaker_reference_max_seconds=60.0, tts_decoders=('keep2_plain',), tts_speaker_background_token_enabled=False, tts_accurate_mode_token_enabled=False, tts_speaking_rate_num_buckets=0, tts_speaking_rate_buckets=(), tts_quality_num_buckets=0, tts_quality_features=(), tts_quality_buckets={}, tts_quality_dropout=None, tts_default_voices_dir=None, steer_bundle=None, tts_phoneme_lexicon=None, studio_projects_dir=None, studio_max_project_bytes=20971520, studio_max_media_bytes=2147483648, studio_dir='/home/sagemaker-user/akas/build/zonos3-concurrent-v1/ZONOS3-Mini/studio/dist', plugins=())
+[release] fetching hf://Zyphra/ZONOS3-Mini/autoencoder/generator.pt
+[Gloo] Rank 0 is connected to 0 peer ranks. Expected number of connected peer ranks is : 0
+[1m[2026-11-17|15:58:20|core|rank=0][0m [32mINFO    [0m Free memory before loading model: 43.95 GiB
+[1m[2026-11-17|15:58:21|core|rank=0][0m [32mINFO    [0m Model config: num_kv_heads=4, head_dim=32
+[1m[2026-11-17|15:58:21|core|rank=0][0m [32mINFO    [0m Expected kv_dim per TP rank: 128
+[1m[2026-11-17|15:58:21|core|rank=0][0m [32mINFO    [0m Loading consolidated checkpoint from /home/sagemaker-user/akas/build/zonos3-concurrent-v1/cache2/zonos3-mini/lm/zonos3_mini/model.pth
+[1m[2026-11-17|15:58:22|core|rank=0][0m [32mINFO    [0m Original GDN: replicated mixer, independent FP32 states, fixed-window decode
+[1m[2026-11-17|15:58:22|core|rank=0][0m [32mINFO    [0m LM head batch invariance verified (padded to 2 rows)
+[1m[2026-11-17|15:58:22|core|rank=0][0m [32mINFO    [0m Allocating 32768 pages for KV cache, K + V = 0.17 GiB
+[1m[2026-11-17|15:58:22|core|rank=0][0m [32mINFO    [0m Free memory after initialization: 41.72 GiB
+[1m[2026-11-17|15:58:22|core|rank=0][0m [32mINFO    [0m GDN decode CUDA graphs: [1, 2, 4, 8, 16, 24, 32, 40, 48, 56, 64]
+[1m[2026-11-17|15:58:22|core|rank=0][0m [32mINFO    [0m Start capturing CUDA graphs with sizes: [1, 2, 4, 8, 16, 24, 32, 40, 48, 56, 64]
+[1m[2026-11-17|15:58:22|core|rank=0][0m [32mINFO    [0m Free GPU memory before capturing CUDA graphs: 41.72 GiB
+Preparing for capturing CUDA graphs...:   0%|                                    | 0/11 [00:00<?, ?batch/s]Capturing graphs: bs = 64  | avail_mem = 41.72 GiB:   0%|                        | 0/11 [00:00<?, ?batch/s][release] fetching hf://Zyphra/ZONOS3-Mini/autoencoder/heads/keep2_plain/config_full_unfreezeall_mr_drop30_4x10.json
+Capturing graphs: bs = 64  | avail_mem = 41.72 GiB:   9%|█▍              | 1/11 [00:12<02:04, 12.43s/batch]Capturing graphs: bs = 56  | avail_mem = 41.59 GiB:   9%|█▍              | 1/11 [00:12<02:04, 12.43s/batch]Capturing graphs: bs = 48  | avail_mem = 41.59 GiB:   9%|█▍              | 1/11 [00:12<02:04, 12.43s/batch]/home/sagemaker-user/akas/build/zonos3-concurrent-v1/ZONOS3-Mini/.venv/lib/python3.12/site-packages/torch/nn/utils/weight_norm.py:144: FutureWarning: `torch.nn.utils.weight_norm` is deprecated in favor of `torch.nn.utils.parametrizations.weight_norm`.
+  WeightNorm.apply(module, name, dim)
+[release] fetching hf://Zyphra/ZONOS3-Mini/autoencoder/heads/keep2_plain/step_0050000.pt
+[vocoder] codec-matched silence frame [1918, 746, 3544, 234, 1267, 2914, 3944, 2849, 326, 1337] from the codec registry
+[1m[2026-11-17|15:58:38|initializer][0m [32mINFO    [0m Tokenize server 0 is ready
+Capturing graphs: bs = 48  | avail_mem = 41.59 GiB:  27%|████▎           | 3/11 [00:23<00:58,  7.34s/batch]Capturing graphs: bs = 40  | avail_mem = 39.60 GiB:  27%|████▎           | 3/11 [00:23<00:58,  7.34s/batch]Capturing graphs: bs = 32  | avail_mem = 39.60 GiB:  27%|████▎           | 3/11 [00:23<00:58,  7.34s/batch]Capturing graphs: bs = 32  | avail_mem = 39.60 GiB:  45%|███████▎        | 5/11 [00:34<00:37,  6.33s/batch]Capturing graphs: bs = 24  | avail_mem = 39.59 GiB:  45%|███████▎        | 5/11 [00:34<00:37,  6.33s/batch]Capturing graphs: bs = 16  | avail_mem = 39.58 GiB:  45%|███████▎        | 5/11 [00:34<00:37,  6.33s/batch]Capturing graphs: bs = 16  | avail_mem = 39.58 GiB:  64%|██████████▏     | 7/11 [00:34<00:14,  3.68s/batch]Capturing graphs: bs = 8   | avail_mem = 39.57 GiB:  64%|██████████▏     | 7/11 [00:34<00:14,  3.68s/batch]Capturing graphs: bs = 4   | avail_mem = 39.57 GiB:  64%|██████████▏     | 7/11 [00:34<00:14,  3.68s/batch]Capturing graphs: bs = 4   | avail_mem = 39.57 GiB:  82%|█████████████   | 9/11 [00:34<00:04,  2.32s/batch]Capturing graphs: bs = 2   | avail_mem = 39.56 GiB:  82%|█████████████   | 9/11 [00:34<00:04,  2.32s/batch]Capturing graphs: bs = 1   | avail_mem = 39.55 GiB:  82%|█████████████   | 9/11 [00:34<00:04,  2.32s/batch]Capturing graphs: bs = 1   | avail_mem = 39.55 GiB: 100%|███████████████| 11/11 [00:34<00:00,  1.53s/batch]Capturing graphs: bs = 1   | avail_mem = 39.55 GiB: 100%|███████████████| 11/11 [00:34<00:00,  3.16s/batch]
+[1m[2026-11-17|15:58:56|core|rank=0][0m [32mINFO    [0m GDN graphs hold 22 pinned FLA index tensors
+[1m[2026-11-17|15:58:56|core|rank=0][0m [32mINFO    [0m Free GPU memory after capturing CUDA graphs: 39.55 GiB
+[1m[2026-11-17|15:58:57|core|rank=0][0m [32mINFO    [0m Captured prefill CUDA graph for complete chunks (0,) (64 rows)
+[1m[2026-11-17|15:58:57|core|rank=0][0m [32mINFO    [0m Captured prefill CUDA graph for complete chunks (1,) (128 rows)
+[1m[2026-11-17|15:58:57|core|rank=0][0m [32mINFO    [0m Captured prefill CUDA graph for complete chunks (2,) (192 rows)
+[1m[2026-11-17|15:58:57|core|rank=0][0m [32mINFO    [0m Captured prefill CUDA graph for complete chunks (3,) (256 rows)
+[1m[2026-11-17|15:58:57|core|rank=0][0m [32mINFO    [0m Captured prefill CUDA graph for complete chunks (4,) (320 rows)
+[1m[2026-11-17|15:58:57|core|rank=0][0m [32mINFO    [0m Captured prefill CUDA graph for complete chunks (5,) (384 rows)
+[1m[2026-11-17|15:58:57|core|rank=0][0m [32mINFO    [0m Prefill CUDA graphs: up to 512 rows, 16 graphs; prewarmed (0,), (1,), (2,), (3,), (4,), (5,)
+[1m[2026-11-17|15:58:57|core|rank=0][0m [32mINFO    [0m TTS Scheduler is idle, waiting for new reqs...
+[1m[2026-11-17|15:58:57|initializer][0m [32mINFO    [0m Scheduler is ready
+[1m[2026-11-17|15:58:57|FrontendAPI][0m [32mINFO    [0m API server is ready to serve on 127.0.0.1:1919
+INFO:     Started server process [18657]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:1919 (Press CTRL+C to quit)
+INFO:     127.0.0.1:47920 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47928 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47938 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47950 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47960 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47972 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47986 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48002 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48018 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48022 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48028 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48040 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48046 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48062 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48072 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48074 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48086 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48100 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48104 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48110 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48118 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48130 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48134 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48146 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48162 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48166 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48178 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48194 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48198 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48208 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48224 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48226 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48236 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48244 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48246 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48260 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48262 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48278 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48292 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48304 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48308 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48324 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48332 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48338 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48348 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48362 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48378 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48380 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48386 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48390 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48406 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48422 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48430 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48442 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48454 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48458 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48464 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48476 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48490 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48506 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48510 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48518 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48526 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48536 - "POST /v1/audio/speech HTTP/1.1" 200 OK
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=0: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=1: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=2: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=3: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|core|rank=0][0m [32mINFO    [0m TTS Prefill: reqs=1, extend_frames=50, waiting=0, decode_running=0
+[1m[2026-11-17|15:59:07|core|rank=0][0m [32mINFO    [0m TTS Throughput (9.6s window): batches=1, decode_steps=1, 0.1 frames/s, decode_running=0, waiting=0
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=4: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=5: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=6: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=7: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=8: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=9: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=10: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=11: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=12: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=13: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=14: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=15: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=16: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=17: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=18: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=19: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=20: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=21: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=22: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=23: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=24: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=25: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=26: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=27: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=28: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=29: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=30: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=31: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=32: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=33: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=34: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=35: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=36: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=37: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=38: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=39: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=40: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=41: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=42: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=43: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=44: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=45: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=46: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=47: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=48: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=49: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=50: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=51: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=52: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=53: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=54: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=55: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=56: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=57: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=58: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=59: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=60: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=61: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=62: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|tokenizer_0][0m [32mINFO    [0m decode context uid=63: prefill rows 3, context frames 0 (decode_context=False, reference frames None)
+[1m[2026-11-17|15:59:07|core|rank=0][0m [32mINFO    [0m TTS Prefill: reqs=10, extend_frames=500, waiting=53, decode_running=1
+INFO:     127.0.0.1:48546 - "GET /v2/health HTTP/1.1" 200 OK
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 0: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=0 TTS TTFB=1366.090ms
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS Prefill: reqs=10, extend_frames=500, waiting=43, decode_running=11
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 1: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 2: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 3: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 4: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 5: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 6: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 7: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 8: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 9: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 10: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS Prefill: reqs=10, extend_frames=500, waiting=33, decode_running=21
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=1 TTS TTFB=1447.685ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=2 TTS TTFB=1447.388ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=3 TTS TTFB=1447.020ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=4 TTS TTFB=1446.619ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=5 TTS TTFB=1445.716ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=6 TTS TTFB=1445.328ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=7 TTS TTFB=1444.950ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=8 TTS TTFB=1444.575ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=9 TTS TTFB=1444.206ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=10 TTS TTFB=1443.851ms
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 11: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 12: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 13: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 14: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 15: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 16: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 17: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 18: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 19: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 20: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS Prefill: reqs=10, extend_frames=500, waiting=23, decode_running=31
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 21: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 22: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 23: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 24: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 25: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 26: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 27: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 28: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 29: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 30: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=11 TTS TTFB=1495.295ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=12 TTS TTFB=1495.004ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=13 TTS TTFB=1494.645ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=14 TTS TTFB=1494.302ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=15 TTS TTFB=1493.874ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=16 TTS TTFB=1493.518ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=17 TTS TTFB=1493.179ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=18 TTS TTFB=1492.839ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=19 TTS TTFB=1492.498ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=20 TTS TTFB=1492.157ms
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS Prefill: reqs=10, extend_frames=500, waiting=13, decode_running=41
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 31: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 32: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 33: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 34: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 35: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 36: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 37: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 38: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 39: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 40: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=21 TTS TTFB=1537.065ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=22 TTS TTFB=1536.813ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=23 TTS TTFB=1536.485ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=24 TTS TTFB=1536.291ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=25 TTS TTFB=1535.962ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=26 TTS TTFB=1535.533ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=27 TTS TTFB=1535.177ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=28 TTS TTFB=1534.846ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=29 TTS TTFB=1534.503ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=30 TTS TTFB=1534.164ms
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS Prefill: reqs=10, extend_frames=500, waiting=3, decode_running=51
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 41: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 42: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 43: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 44: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 45: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 46: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 47: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 48: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 49: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 50: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=31 TTS TTFB=1578.176ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=32 TTS TTFB=1577.916ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=33 TTS TTFB=1577.583ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=34 TTS TTFB=1577.246ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=35 TTS TTFB=1576.915ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=36 TTS TTFB=1576.470ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=37 TTS TTFB=1576.125ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=38 TTS TTFB=1575.785ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=39 TTS TTFB=1575.453ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=40 TTS TTFB=1575.128ms
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS Prefill: reqs=3, extend_frames=150, waiting=0, decode_running=61
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=41 TTS TTFB=1615.469ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=42 TTS TTFB=1615.162ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=43 TTS TTFB=1614.805ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=44 TTS TTFB=1614.426ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=45 TTS TTFB=1614.056ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=46 TTS TTFB=1613.688ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=47 TTS TTFB=1613.234ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=48 TTS TTFB=1612.867ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=49 TTS TTFB=1612.491ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=50 TTS TTFB=1612.117ms
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m Captured prefill CUDA graph for complete chunks (0, 0, 0) (192 rows)
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 51: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 52: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 53: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 54: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 55: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 56: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 57: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 58: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 59: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 60: decode context sent with generated row 1 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=51 TTS TTFB=1696.760ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=52 TTS TTFB=1696.540ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=53 TTS TTFB=1696.204ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=54 TTS TTFB=1695.839ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=55 TTS TTFB=1695.476ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=56 TTS TTFB=1695.132ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=57 TTS TTFB=1694.675ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=58 TTS TTFB=1694.274ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=59 TTS TTFB=1693.834ms
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 61: decode context sent with generated row 2 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=60 TTS TTFB=1693.440ms
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 62: decode context sent with generated row 2 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|core|rank=0][0m [32mINFO    [0m TTS 63: decode context sent with generated row 2 (context None, prefill (3, 11))
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=61 TTS TTFB=1707.042ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=62 TTS TTFB=1706.705ms
+[1m[2026-11-17|15:59:08|FrontendAPI][0m [32mINFO    [0m uid=63 TTS TTFB=1706.343ms
+[1m[2026-11-17|15:59:12|core|rank=0][0m [32mINFO    [0m TTS Throughput (5.0s window): batches=154, decode_steps=9471, 1892.8 frames/s, decode_running=64, waiting=0
+[1m[2026-11-17|15:59:12|core|rank=0][0m [32mINFO    [0m TTS Scheduler is idle, waiting for new reqs...
+[1m[2026-11-17|15:59:15|FrontendAPI][0m [32mINFO    [0m uid=11 TTS completed: E2E=8415.713ms, audio=9.80s, chunks=13, RTF=1.16x
+[1m[2026-11-17|15:59:15|FrontendAPI][0m [33mWARNING [0m Aborting request for user 11
+[1m[2026-11-17|15:59:15|FrontendAPI][0m [32mINFO    [0m uid=36 TTS completed: E2E=8835.235ms, audio=10.07s, chunks=14, RTF=1.14x
+[1m[2026-11-17|15:59:15|FrontendAPI][0m [32mINFO    [0m uid=28 TTS completed: E2E=8838.910ms, audio=10.07s, chunks=14, RTF=1.14x
+[1m[2026-11-17|15:59:15|FrontendAPI][0m [32mINFO    [0m uid=12 TTS completed: E2E=8883.047ms, audio=10.20s, chunks=14, RTF=1.15x
+[1m[2026-11-17|15:59:15|FrontendAPI][0m [32mINFO    [0m uid=50 TTS completed: E2E=8866.670ms, audio=10.20s, chunks=14, RTF=1.15x
+[1m[2026-11-17|15:59:15|FrontendAPI][0m [32mINFO    [0m uid=40 TTS completed: E2E=8898.203ms, audio=10.33s, chunks=14, RTF=1.16x
+[1m[2026-11-17|15:59:15|FrontendAPI][0m [33mWARNING [0m Aborting request for user 36
+[1m[2026-11-17|15:59:15|FrontendAPI][0m [33mWARNING [0m Aborting request for user 28
+[1m[2026-11-17|15:59:15|FrontendAPI][0m [32mINFO    [0m uid=14 TTS completed: E2E=8949.323ms, audio=10.40s, chunks=14, RTF=1.16x
+[1m[2026-11-17|15:59:15|FrontendAPI][0m [32mINFO    [0m uid=31 TTS completed: E2E=8942.015ms, audio=10.40s, chunks=14, RTF=1.16x
+[1m[2026-11-17|15:59:15|FrontendAPI][0m [33mWARNING [0m Aborting request for user 12
+[1m[2026-11-17|15:59:15|FrontendAPI][0m [33mWARNING [0m Aborting request for user 50
+[1m[2026-11-17|15:59:15|FrontendAPI][0m [32mINFO    [0m uid=52 TTS completed: E2E=8978.910ms, audio=10.47s, chunks=14, RTF=1.17x
+[1m[2026-11-17|15:59:15|FrontendAPI][0m [32mINFO    [0m uid=15 TTS completed: E2E=8995.010ms, audio=10.47s, chunks=14, RTF=1.16x
+[1m[2026-11-17|15:59:15|FrontendAPI][0m [33mWARNING [0m Aborting request for user 40
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=1 TTS completed: E2E=9042.686ms, audio=10.53s, chunks=14, RTF=1.16x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=33 TTS completed: E2E=9028.385ms, audio=10.53s, chunks=14, RTF=1.17x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 14
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 31
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=10 TTS completed: E2E=9066.405ms, audio=10.60s, chunks=14, RTF=1.17x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=29 TTS completed: E2E=9085.315ms, audio=10.67s, chunks=14, RTF=1.17x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 52
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 15
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 1
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 33
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 10
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=39 TTS completed: E2E=9179.276ms, audio=10.73s, chunks=14, RTF=1.17x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=23 TTS completed: E2E=9186.369ms, audio=10.73s, chunks=14, RTF=1.17x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=47 TTS completed: E2E=9175.993ms, audio=10.73s, chunks=14, RTF=1.17x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=17 TTS completed: E2E=9189.040ms, audio=10.73s, chunks=14, RTF=1.17x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=55 TTS completed: E2E=9172.705ms, audio=10.73s, chunks=14, RTF=1.17x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 29
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 39
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 23
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 47
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 17
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 55
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=16 TTS completed: E2E=9529.934ms, audio=10.87s, chunks=14, RTF=1.14x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=21 TTS completed: E2E=9528.061ms, audio=10.87s, chunks=14, RTF=1.14x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=37 TTS completed: E2E=9521.207ms, audio=10.87s, chunks=14, RTF=1.14x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=34 TTS completed: E2E=9522.778ms, audio=10.87s, chunks=14, RTF=1.14x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=42 TTS completed: E2E=9519.347ms, audio=10.87s, chunks=14, RTF=1.14x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=53 TTS completed: E2E=9585.743ms, audio=10.93s, chunks=14, RTF=1.14x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=32 TTS completed: E2E=9594.997ms, audio=10.93s, chunks=14, RTF=1.14x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=60 TTS completed: E2E=9582.816ms, audio=10.93s, chunks=14, RTF=1.14x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=38 TTS completed: E2E=9596.276ms, audio=11.00s, chunks=15, RTF=1.15x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=46 TTS completed: E2E=9592.990ms, audio=11.00s, chunks=15, RTF=1.15x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=3 TTS completed: E2E=9612.205ms, audio=11.00s, chunks=15, RTF=1.14x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=48 TTS completed: E2E=9592.205ms, audio=11.00s, chunks=15, RTF=1.15x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 16
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 21
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 37
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 34
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 42
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=8 TTS completed: E2E=9675.058ms, audio=11.07s, chunks=15, RTF=1.14x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=26 TTS completed: E2E=9667.376ms, audio=11.07s, chunks=15, RTF=1.14x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=45 TTS completed: E2E=9659.269ms, audio=11.07s, chunks=15, RTF=1.15x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 53
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 32
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 60
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 38
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 46
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 3
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 48
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 8
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 26
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 45
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=51 TTS completed: E2E=9789.497ms, audio=11.13s, chunks=15, RTF=1.14x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=6 TTS completed: E2E=9809.106ms, audio=11.13s, chunks=15, RTF=1.13x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=56 TTS completed: E2E=9787.583ms, audio=11.13s, chunks=15, RTF=1.14x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=61 TTS completed: E2E=9785.335ms, audio=11.13s, chunks=15, RTF=1.14x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=54 TTS completed: E2E=9788.583ms, audio=11.13s, chunks=15, RTF=1.14x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=18 TTS completed: E2E=9804.205ms, audio=11.13s, chunks=15, RTF=1.14x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=4 TTS completed: E2E=9810.913ms, audio=11.13s, chunks=15, RTF=1.13x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=2 TTS completed: E2E=9872.180ms, audio=11.20s, chunks=15, RTF=1.13x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=27 TTS completed: E2E=9860.920ms, audio=11.20s, chunks=15, RTF=1.14x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=24 TTS completed: E2E=9862.398ms, audio=11.20s, chunks=15, RTF=1.14x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 51
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 6
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 56
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 61
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 54
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 18
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 4
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=19 TTS completed: E2E=9931.009ms, audio=11.33s, chunks=15, RTF=1.14x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=25 TTS completed: E2E=9928.591ms, audio=11.33s, chunks=15, RTF=1.14x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=22 TTS completed: E2E=9929.933ms, audio=11.33s, chunks=15, RTF=1.14x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=7 TTS completed: E2E=9936.513ms, audio=11.33s, chunks=15, RTF=1.14x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=13 TTS completed: E2E=9952.802ms, audio=11.40s, chunks=15, RTF=1.15x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 2
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 27
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [33mWARNING [0m Aborting request for user 24
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=30 TTS completed: E2E=9986.152ms, audio=11.60s, chunks=15, RTF=1.16x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=20 TTS completed: E2E=9990.570ms, audio=11.60s, chunks=15, RTF=1.16x
+[1m[2026-11-17|15:59:16|FrontendAPI][0m [32mINFO    [0m uid=0 TTS completed: E2E=10019.329ms, audio=11.67s, chunks=15, RTF=1.16x
+[1m[2026-11-17|15:59:17|FrontendAPI][0m [33mWARNING [0m Aborting request for user 19
+[1m[2026-11-17|15:59:17|FrontendAPI][0m [33mWARNING [0m Aborting request for user 25
+[1m[2026-11-17|15:59:17|FrontendAPI][0m [33mWARNING [0m Aborting request for user 22
+[1m[2026-11-17|15:59:17|FrontendAPI][0m [33mWARNING [0m Aborting request for user 7
+[1m[2026-11-17|15:59:17|FrontendAPI][0m [32mINFO    [0m uid=35 TTS completed: E2E=10039.315ms, audio=11.73s, chunks=15, RTF=1.17x
+[1m[2026-11-17|15:59:17|FrontendAPI][0m [32mINFO    [0m uid=58 TTS completed: E2E=10029.367ms, audio=11.73s, chunks=15, RTF=1.17x
+[1m[2026-11-17|15:59:17|FrontendAPI][0m [33mWARNING [0m Aborting request for user 13
+[1m[2026-11-17|15:59:17|FrontendAPI][0m [33mWARNING [0m Aborting request for user 30
+[1m[2026-11-17|15:59:17|FrontendAPI][0m [33mWARNING [0m Aborting request for user 20
+[1m[2026-11-17|15:59:17|FrontendAPI][0m [33mWARNING [0m Aborting request for user 0
+[1m[2026-11-17|15:59:17|FrontendAPI][0m [32mINFO    [0m uid=44 TTS completed: E2E=10119.259ms, audio=11.87s, chunks=15, RTF=1.17x
+[1m[2026-11-17|15:59:17|FrontendAPI][0m [32mINFO    [0m uid=9 TTS completed: E2E=10134.550ms, audio=11.87s, chunks=15, RTF=1.17x
+[1m[2026-11-17|15:59:17|FrontendAPI][0m [33mWARNING [0m Aborting request for user 35
+[1m[2026-11-17|15:59:17|FrontendAPI][0m [33mWARNING [0m Aborting request for user 58
+[1m[2026-11-17|15:59:17|FrontendAPI][0m [32mINFO    [0m uid=62 TTS completed: E2E=10130.044ms, audio=11.93s, chunks=15, RTF=1.18x
+[1m[2026-11-17|15:59:17|FrontendAPI][0m [32mINFO    [0m uid=43 TTS completed: E2E=10155.096ms, audio=12.13s, chunks=16, RTF=1.19x
+[1m[2026-11-17|15:59:17|FrontendAPI][0m [32mINFO    [0m uid=57 TTS completed: E2E=10184.241ms, audio=12.20s, chunks=16, RTF=1.20x
+[1m[2026-11-17|15:59:17|FrontendAPI][0m [32mINFO    [0m uid=59 TTS completed: E2E=10183.469ms, audio=12.20s, chunks=16, RTF=1.20x
+[1m[2026-11-17|15:59:17|FrontendAPI][0m [32mINFO    [0m uid=41 TTS completed: E2E=10209.260ms, audio=12.27s, chunks=16, RTF=1.20x
+[1m[2026-11-17|15:59:17|FrontendAPI][0m [33mWARNING [0m Aborting request for user 44
+[1m[2026-11-17|15:59:17|FrontendAPI][0m [33mWARNING [0m Aborting request for user 9
+[1m[2026-11-17|15:59:17|FrontendAPI][0m [32mINFO    [0m uid=63 TTS completed: E2E=10217.305ms, audio=12.33s, chunks=16, RTF=1.21x
+[1m[2026-11-17|15:59:17|FrontendAPI][0m [33mWARNING [0m Aborting request for user 62
+[1m[2026-11-17|15:59:17|FrontendAPI][0m [32mINFO    [0m uid=5 TTS completed: E2E=10261.092ms, audio=12.60s, chunks=16, RTF=1.23x
+[1m[2026-11-17|15:59:17|FrontendAPI][0m [33mWARNING [0m Aborting request for user 43
+[1m[2026-11-17|15:59:17|FrontendAPI][0m [32mINFO    [0m uid=49 TTS completed: E2E=10265.437ms, audio=13.07s, chunks=17, RTF=1.27x
+[1m[2026-11-17|15:59:17|FrontendAPI][0m [33mWARNING [0m Aborting request for user 57
+[1m[2026-11-17|15:59:17|FrontendAPI][0m [33mWARNING [0m Aborting request for user 59
+[1m[2026-11-17|15:59:17|FrontendAPI][0m [33mWARNING [0m Aborting request for user 41
+[1m[2026-11-17|15:59:17|FrontendAPI][0m [33mWARNING [0m Aborting request for user 63
+[1m[2026-11-17|15:59:17|FrontendAPI][0m [33mWARNING [0m Aborting request for user 5
+[1m[2026-11-17|15:59:17|FrontendAPI][0m [33mWARNING [0m Aborting request for user 49
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [18657]
+/opt/conda/lib/python3.12/multiprocessing/resource_tracker.py:279: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '

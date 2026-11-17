@@ -1,0 +1,656 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "protocol": "client-speech-pcm-stream-v1",
+    "speech_workload": {
+      "id": "speech-concurrent-v1",
+      "definition": {
+        "schema": "akas.speech-workload.v1",
+        "id": "speech-concurrent-v1",
+        "protocol": "client-speech-pcm-stream-v1",
+        "warmup": 0,
+        "repeats": 1,
+        "request": {
+          "language": "en_us",
+          "temperature": null,
+          "topk": null,
+          "top_p": null,
+          "min_p": null,
+          "repetition_penalty": null,
+          "max_tokens": 384,
+          "stream": true,
+          "stream_decode": "prefix",
+          "response_format": "pcm",
+          "sample_rate_hz": 44100,
+          "channels": 1,
+          "sample_format": "float32",
+          "decoder": "keep2_plain"
+        },
+        "utterances": [
+          {
+            "id": "delivery",
+            "text": "Your order has been confirmed and will arrive tomorrow between nine and noon. You can change the delivery address, contact the courier, or track your package online at any time."
+          }
+        ]
+      },
+      "sha256": "1c20af0128f13554cdf2b79aa714cbba646b4bf03f9399f21c185e8a7cdb3602"
+    },
+    "text": "Your order has been confirmed and will arrive tomorrow between nine and noon. You can change the delivery address, contact the courier, or track your package online at any time.",
+    "words": 30,
+    "utf8_bytes": 177,
+    "model": "Zyphra/ZONOS3-Mini",
+    "model_revision": "d2d142a86b1e6aeb4252679673c86ecd86177bf8",
+    "runtime": "zonos3-sgl",
+    "provider": "cuda",
+    "device": {
+      "name": "NVIDIA L40S",
+      "memory_total_mib": 46068
+    },
+    "model_definition_sha256": "e84617ab992c8bac2d4301f39f61a85b5d18002f397628a4359ac01e80591035",
+    "weight_format": "bf16",
+    "purpose": "native-capacity-diagnostic",
+    "configuration": {
+      "max_running_requests": 16,
+      "num_pages": 8192,
+      "max_frames": 512,
+      "request_bucketing": false,
+      "weight_mmap": true,
+      "codec": "keep2_plain",
+      "safe_slot_lifecycle": true
+    },
+    "stream": true,
+    "sample_rate_hz": 44100,
+    "default_sampling": true,
+    "default_voice_or_unconditioned": true,
+    "decoder": "keep2_plain",
+    "max_tokens": 384,
+    "stream_decode": "prefix",
+    "server_pid": 29957,
+    "gpu_memory_before": {
+      "memory_used_mib": 4938,
+      "memory_total_mib": 46068
+    },
+    "concurrencies": [
+      1,
+      16
+    ],
+    "requests_per_concurrency": 0,
+    "warmup": 0,
+    "started_unix_s": 1794932314.3453455
+  },
+  "results": [
+    {
+      "status": "ok",
+      "case": {
+        "id": "delivery",
+        "text": "Your order has been confirmed and will arrive tomorrow between nine and noon. You can change the delivery address, contact the courier, or track your package online at any time.",
+        "concurrency": 1,
+        "requests": 1
+      },
+      "runtime": "native",
+      "concurrency": 1,
+      "requests": 1,
+      "completed": 1,
+      "failed": 0,
+      "wall_s": 0.6995682870001474,
+      "throughput_qps": 1.4294530192158201,
+      "audio_seconds_per_second": 15.533389475478579,
+      "latency_s": {
+        "mean": 0.6954058500014071,
+        "p50": 0.6954058500014071,
+        "p95": 0.6954058500014071,
+        "p99": 0.6954058500014071
+      },
+      "ttfa_s": {
+        "mean": 0.15033511700130475,
+        "p50": 0.15033511700130475,
+        "p95": 0.15033511700130475,
+        "p99": 0.15033511700130475
+      },
+      "rtf": {
+        "mean": 0.06399440337436262,
+        "p50": 0.06399440337436262,
+        "p95": 0.06399440337436262,
+        "p99": 0.06399440337436262
+      },
+      "audio_duration_s": {
+        "mean": 10.866666666666667,
+        "p50": 10.866666666666667,
+        "p95": 10.866666666666667,
+        "p99": 10.866666666666667
+      },
+      "results": [
+        {
+          "ok": true,
+          "seed": 1000,
+          "started_s": 11577.737914274,
+          "completed_s": 11578.433320124,
+          "latency_s": 0.6954058500014071,
+          "ttfa_s": 0.15033511700130475,
+          "audio_duration_s": 10.866666666666667,
+          "rtf": 0.06399440337436262,
+          "audio_bytes": 1916880,
+          "sample_rate": 44100,
+          "sample_width_bytes": 4,
+          "audio_peak": 0.939467191696167,
+          "chunks": 35,
+          "audio_sha256": "5472a5721c3c1254c02ff052ff6a7a4a62e21cd19241525e606ddbbf7105fe0f",
+          "headers": {
+            "date": "Tue, 17 Nov 2026 16:18:34 GMT",
+            "server": "uvicorn",
+            "x-audio-sample-rate": "44100",
+            "x-audio-channels": "1",
+            "x-audio-format": "float32",
+            "x-seed": "1000",
+            "x-decoder": "keep2_plain",
+            "content-type": "audio/pcm",
+            "transfer-encoding": "chunked"
+          }
+        }
+      ],
+      "gpu_memory_initial": {
+        "memory_used_mib": 4938,
+        "memory_total_mib": 46068
+      },
+      "gpu_memory_peak": {
+        "memory_used_mib": 4944,
+        "memory_total_mib": 46068
+      },
+      "server_processes_rss_mib": {
+        "29957": 744,
+        "29969": 13,
+        "29970": 1924,
+        "29971": 1595
+      }
+    },
+    {
+      "status": "ok",
+      "case": {
+        "id": "delivery",
+        "text": "Your order has been confirmed and will arrive tomorrow between nine and noon. You can change the delivery address, contact the courier, or track your package online at any time.",
+        "concurrency": 16,
+        "requests": 16
+      },
+      "runtime": "native",
+      "concurrency": 16,
+      "requests": 16,
+      "completed": 16,
+      "failed": 0,
+      "wall_s": 3.596231710000211,
+      "throughput_qps": 4.449101529111165,
+      "audio_seconds_per_second": 47.809303514907064,
+      "latency_s": {
+        "mean": 2.816169146999755,
+        "p50": 2.799072959500336,
+        "p95": 3.569735307249175,
+        "p99": 3.5832311030497292
+      },
+      "ttfa_s": {
+        "mean": 1.3790537619373708,
+        "p50": 0.7216913620004561,
+        "p95": 2.9632802689993696,
+        "p99": 2.963432966599794
+      },
+      "rtf": {
+        "mean": 0.26351779363369954,
+        "p50": 0.24964371455916484,
+        "p95": 0.35354288291967306,
+        "p99": 0.35470831408720227
+      },
+      "audio_duration_s": {
+        "mean": 10.745833333333334,
+        "p50": 10.533333333333333,
+        "p95": 11.95,
+        "p99": 12.469999999999999
+      },
+      "results": [
+        {
+          "ok": true,
+          "seed": 1000,
+          "started_s": 11578.499409145,
+          "completed_s": 11579.080685101,
+          "latency_s": 0.5812759559994447,
+          "ttfa_s": 0.04321767299916246,
+          "audio_duration_s": 10.866666666666667,
+          "rtf": 0.053491652392586936,
+          "audio_bytes": 1916880,
+          "sample_rate": 44100,
+          "sample_width_bytes": 4,
+          "audio_peak": 0.939467191696167,
+          "chunks": 36,
+          "audio_sha256": "5472a5721c3c1254c02ff052ff6a7a4a62e21cd19241525e606ddbbf7105fe0f",
+          "headers": {
+            "date": "Tue, 17 Nov 2026 16:18:34 GMT",
+            "server": "uvicorn",
+            "x-audio-sample-rate": "44100",
+            "x-audio-channels": "1",
+            "x-audio-format": "float32",
+            "x-seed": "1000",
+            "x-decoder": "keep2_plain",
+            "content-type": "audio/pcm",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "ok": true,
+          "seed": 1001,
+          "started_s": 11578.500173414,
+          "completed_s": 11580.972239827,
+          "latency_s": 2.472066412999993,
+          "ttfa_s": 0.7218819889985753,
+          "audio_duration_s": 10.2,
+          "rtf": 0.2423594522549013,
+          "audio_bytes": 1799280,
+          "sample_rate": 44100,
+          "sample_width_bytes": 4,
+          "audio_peak": 0.8979602456092834,
+          "chunks": 33,
+          "audio_sha256": "9027eddd2575ee7e002e46d189b80939142fba73068f976de7ac4fac3664df54",
+          "headers": {
+            "date": "Tue, 17 Nov 2026 16:18:34 GMT",
+            "server": "uvicorn",
+            "x-audio-sample-rate": "44100",
+            "x-audio-channels": "1",
+            "x-audio-format": "float32",
+            "x-seed": "1001",
+            "x-decoder": "keep2_plain",
+            "content-type": "audio/pcm",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "ok": true,
+          "seed": 1002,
+          "started_s": 11578.500619322,
+          "completed_s": 11581.31292152,
+          "latency_s": 2.812302198000907,
+          "ttfa_s": 0.7217472709999129,
+          "audio_duration_s": 11.533333333333333,
+          "rtf": 0.2438412310405411,
+          "audio_bytes": 2034480,
+          "sample_rate": 44100,
+          "sample_width_bytes": 4,
+          "audio_peak": 0.28795355558395386,
+          "chunks": 37,
+          "audio_sha256": "fc68ade91b18c5fab285db4fa03d1846f37c9fd6ce9bdfa102db2b949b5cb8f1",
+          "headers": {
+            "date": "Tue, 17 Nov 2026 16:18:34 GMT",
+            "server": "uvicorn",
+            "x-audio-sample-rate": "44100",
+            "x-audio-channels": "1",
+            "x-audio-format": "float32",
+            "x-seed": "1002",
+            "x-decoder": "keep2_plain",
+            "content-type": "audio/pcm",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "ok": true,
+          "seed": 1003,
+          "started_s": 11578.501083972,
+          "completed_s": 11581.037426209,
+          "latency_s": 2.5363422370010085,
+          "ttfa_s": 0.7215356470005645,
+          "audio_duration_s": 10.333333333333334,
+          "rtf": 0.24545247454848468,
+          "audio_bytes": 1822800,
+          "sample_rate": 44100,
+          "sample_width_bytes": 4,
+          "audio_peak": 0.5599468946456909,
+          "chunks": 33,
+          "audio_sha256": "50aa07da896a828a06a90638616206d873532ee0955b58fd367b40d0b2432f3e",
+          "headers": {
+            "date": "Tue, 17 Nov 2026 16:18:34 GMT",
+            "server": "uvicorn",
+            "x-audio-sample-rate": "44100",
+            "x-audio-channels": "1",
+            "x-audio-format": "float32",
+            "x-seed": "1003",
+            "x-decoder": "keep2_plain",
+            "content-type": "audio/pcm",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "ok": true,
+          "seed": 1004,
+          "started_s": 11578.50151957,
+          "completed_s": 11581.378645749,
+          "latency_s": 2.8771261790006974,
+          "ttfa_s": 0.7216354530009994,
+          "audio_duration_s": 11.733333333333333,
+          "rtf": 0.24520961752846854,
+          "audio_bytes": 2069760,
+          "sample_rate": 44100,
+          "sample_width_bytes": 4,
+          "audio_peak": 0.9256758689880371,
+          "chunks": 38,
+          "audio_sha256": "c026bee423750c125222724504a7ba5bd11798ffab1f4566b383431440f1a48b",
+          "headers": {
+            "date": "Tue, 17 Nov 2026 16:18:34 GMT",
+            "server": "uvicorn",
+            "x-audio-sample-rate": "44100",
+            "x-audio-channels": "1",
+            "x-audio-format": "float32",
+            "x-seed": "1004",
+            "x-decoder": "keep2_plain",
+            "content-type": "audio/pcm",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "ok": true,
+          "seed": 1005,
+          "started_s": 11578.501947727,
+          "completed_s": 11581.287791448,
+          "latency_s": 2.7858437209997646,
+          "ttfa_s": 0.7220654220000142,
+          "audio_duration_s": 11.133333333333333,
+          "rtf": 0.25022548392213456,
+          "audio_bytes": 1963920,
+          "sample_rate": 44100,
+          "sample_width_bytes": 4,
+          "audio_peak": 0.8187207579612732,
+          "chunks": 36,
+          "audio_sha256": "83b912ff24235ea76597f200535bb81195ad8d38a47a0ceb0e13e2207f97c7ae",
+          "headers": {
+            "date": "Tue, 17 Nov 2026 16:18:34 GMT",
+            "server": "uvicorn",
+            "x-audio-sample-rate": "44100",
+            "x-audio-channels": "1",
+            "x-audio-format": "float32",
+            "x-seed": "1005",
+            "x-decoder": "keep2_plain",
+            "content-type": "audio/pcm",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "ok": true,
+          "seed": 1006,
+          "started_s": 11578.502999405,
+          "completed_s": 11581.164326684,
+          "latency_s": 2.6613272790000337,
+          "ttfa_s": 0.7211413120003272,
+          "audio_duration_s": 10.466666666666667,
+          "rtf": 0.25426693748407964,
+          "audio_bytes": 1846320,
+          "sample_rate": 44100,
+          "sample_width_bytes": 4,
+          "audio_peak": 0.7420012354850769,
+          "chunks": 34,
+          "audio_sha256": "3466fdae419f1a18aade38f58c9f940690958de15ce3d7287dd9654108603a08",
+          "headers": {
+            "date": "Tue, 17 Nov 2026 16:18:34 GMT",
+            "server": "uvicorn",
+            "x-audio-sample-rate": "44100",
+            "x-audio-channels": "1",
+            "x-audio-format": "float32",
+            "x-seed": "1006",
+            "x-decoder": "keep2_plain",
+            "content-type": "audio/pcm",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "ok": true,
+          "seed": 1007,
+          "started_s": 11578.503625355,
+          "completed_s": 11581.417489662,
+          "latency_s": 2.91386430700004,
+          "ttfa_s": 0.720634428998892,
+          "audio_duration_s": 12.6,
+          "rtf": 0.23125907198413015,
+          "audio_bytes": 2222640,
+          "sample_rate": 44100,
+          "sample_width_bytes": 4,
+          "audio_peak": 0.6999847292900085,
+          "chunks": 40,
+          "audio_sha256": "71901c58f8b3d8f015157f69efd04e63eb3b50806413eb7867b705396f3f4874",
+          "headers": {
+            "date": "Tue, 17 Nov 2026 16:18:34 GMT",
+            "server": "uvicorn",
+            "x-audio-sample-rate": "44100",
+            "x-audio-channels": "1",
+            "x-audio-format": "float32",
+            "x-seed": "1007",
+            "x-decoder": "keep2_plain",
+            "content-type": "audio/pcm",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "ok": true,
+          "seed": 1008,
+          "started_s": 11578.504068263,
+          "completed_s": 11581.267275581,
+          "latency_s": 2.7632073179993313,
+          "ttfa_s": 0.7203187699997216,
+          "audio_duration_s": 11.066666666666666,
+          "rtf": 0.24968740825295163,
+          "audio_bytes": 1952160,
+          "sample_rate": 44100,
+          "sample_width_bytes": 4,
+          "audio_peak": 0.6423248648643494,
+          "chunks": 36,
+          "audio_sha256": "fdc9f9de58bc6445a51ff2986123eeb8c7946a71037b2644d2eb73de2b115f1d",
+          "headers": {
+            "date": "Tue, 17 Nov 2026 16:18:34 GMT",
+            "server": "uvicorn",
+            "x-audio-sample-rate": "44100",
+            "x-audio-channels": "1",
+            "x-audio-format": "float32",
+            "x-seed": "1008",
+            "x-decoder": "keep2_plain",
+            "content-type": "audio/pcm",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "ok": true,
+          "seed": 1009,
+          "started_s": 11578.504474619,
+          "completed_s": 11581.100314836,
+          "latency_s": 2.5958402169999317,
+          "ttfa_s": 0.7200297609997506,
+          "audio_duration_s": 10.4,
+          "rtf": 0.24960002086537805,
+          "audio_bytes": 1834560,
+          "sample_rate": 44100,
+          "sample_width_bytes": 4,
+          "audio_peak": 0.9283632636070251,
+          "chunks": 34,
+          "audio_sha256": "89b25ebbda39a440661489dfe0b83ecfbbf5243a9c9da540b8f5768791125a60",
+          "headers": {
+            "date": "Tue, 17 Nov 2026 16:18:34 GMT",
+            "server": "uvicorn",
+            "x-audio-sample-rate": "44100",
+            "x-audio-channels": "1",
+            "x-audio-format": "float32",
+            "x-seed": "1009",
+            "x-decoder": "keep2_plain",
+            "content-type": "audio/pcm",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "ok": true,
+          "seed": 1010,
+          "started_s": 11578.504878805,
+          "completed_s": 11582.068990864,
+          "latency_s": 3.564112058998944,
+          "ttfa_s": 2.9634711409999,
+          "audio_duration_s": 10.6,
+          "rtf": 0.3362369866980136,
+          "audio_bytes": 1869840,
+          "sample_rate": 44100,
+          "sample_width_bytes": 4,
+          "audio_peak": 0.9343901872634888,
+          "chunks": 34,
+          "audio_sha256": "1215ac718e1ab7c11a570fdd6e2316f91826106090db7d4628676bcb38e26510",
+          "headers": {
+            "date": "Tue, 17 Nov 2026 16:18:34 GMT",
+            "server": "uvicorn",
+            "x-audio-sample-rate": "44100",
+            "x-audio-channels": "1",
+            "x-audio-format": "float32",
+            "x-seed": "1010",
+            "x-decoder": "keep2_plain",
+            "content-type": "audio/pcm",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "ok": true,
+          "seed": 1011,
+          "started_s": 11578.505289451,
+          "completed_s": 11582.051085905,
+          "latency_s": 3.545796453998264,
+          "ttfa_s": 2.963216644999193,
+          "audio_duration_s": 10.133333333333333,
+          "rtf": 0.3499141237498287,
+          "audio_bytes": 1787520,
+          "sample_rate": 44100,
+          "sample_width_bytes": 4,
+          "audio_peak": 0.7069615721702576,
+          "chunks": 33,
+          "audio_sha256": "069c745bdad4c001c5c33bb17bea8a2eb99f81a0bcd3a353d06c4771cce71ede",
+          "headers": {
+            "date": "Tue, 17 Nov 2026 16:18:34 GMT",
+            "server": "uvicorn",
+            "x-audio-sample-rate": "44100",
+            "x-audio-channels": "1",
+            "x-audio-format": "float32",
+            "x-seed": "1011",
+            "x-decoder": "keep2_plain",
+            "content-type": "audio/pcm",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "ok": true,
+          "seed": 1012,
+          "started_s": 11578.505692977,
+          "completed_s": 11580.811786999,
+          "latency_s": 2.306094022000252,
+          "ttfa_s": 0.7172088200004509,
+          "audio_duration_s": 9.6,
+          "rtf": 0.24021812729169295,
+          "audio_bytes": 1693440,
+          "sample_rate": 44100,
+          "sample_width_bytes": 4,
+          "audio_peak": 0.429107129573822,
+          "chunks": 31,
+          "audio_sha256": "c5cbe429602bd4cc40729aefd9a92927d95b4d7cf4feca92387486b1ed088c51",
+          "headers": {
+            "date": "Tue, 17 Nov 2026 16:18:34 GMT",
+            "server": "uvicorn",
+            "x-audio-sample-rate": "44100",
+            "x-audio-channels": "1",
+            "x-audio-format": "float32",
+            "x-seed": "1012",
+            "x-decoder": "keep2_plain",
+            "content-type": "audio/pcm",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "ok": true,
+          "seed": 1013,
+          "started_s": 11578.506106284,
+          "completed_s": 11582.092711336,
+          "latency_s": 3.586605051999868,
+          "ttfa_s": 2.962548482000784,
+          "audio_duration_s": 11.333333333333334,
+          "rtf": 0.31646515164704714,
+          "audio_bytes": 1999200,
+          "sample_rate": 44100,
+          "sample_width_bytes": 4,
+          "audio_peak": 0.960434079170227,
+          "chunks": 36,
+          "audio_sha256": "2f1b8fef9e0186de68ce90ad2344ffbb490c32a50856215547e4c6baec2945c7",
+          "headers": {
+            "date": "Tue, 17 Nov 2026 16:18:34 GMT",
+            "server": "uvicorn",
+            "x-audio-sample-rate": "44100",
+            "x-audio-channels": "1",
+            "x-audio-format": "float32",
+            "x-seed": "1013",
+            "x-decoder": "keep2_plain",
+            "content-type": "audio/pcm",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "ok": true,
+          "seed": 1014,
+          "started_s": 11578.50650927,
+          "completed_s": 11582.037082136,
+          "latency_s": 3.5305728659986926,
+          "ttfa_s": 2.962241761999394,
+          "audio_duration_s": 10.0,
+          "rtf": 0.35305728659986924,
+          "audio_bytes": 1764000,
+          "sample_rate": 44100,
+          "sample_width_bytes": 4,
+          "audio_peak": 0.5738536715507507,
+          "chunks": 33,
+          "audio_sha256": "70058d6dc292f0aa010efc33f1a6bc43a3d2dc8808ac8dfe9bfa6675baf86b8e",
+          "headers": {
+            "date": "Tue, 17 Nov 2026 16:18:34 GMT",
+            "server": "uvicorn",
+            "x-audio-sample-rate": "44100",
+            "x-audio-channels": "1",
+            "x-audio-format": "float32",
+            "x-seed": "1014",
+            "x-decoder": "keep2_plain",
+            "content-type": "audio/pcm",
+            "transfer-encoding": "chunked"
+          }
+        },
+        {
+          "ok": true,
+          "seed": 1015,
+          "started_s": 11578.506902355,
+          "completed_s": 11582.033232429,
+          "latency_s": 3.5263300739989063,
+          "ttfa_s": 2.9619656140002917,
+          "audio_duration_s": 9.933333333333334,
+          "rtf": 0.35499967187908454,
+          "audio_bytes": 1752240,
+          "sample_rate": 44100,
+          "sample_width_bytes": 4,
+          "audio_peak": 0.5580026507377625,
+          "chunks": 32,
+          "audio_sha256": "98a2ba0767d44253436ceea97da1d6649f3ea0c05d0ea2b196bc24d6fe6f9556",
+          "headers": {
+            "date": "Tue, 17 Nov 2026 16:18:34 GMT",
+            "server": "uvicorn",
+            "x-audio-sample-rate": "44100",
+            "x-audio-channels": "1",
+            "x-audio-format": "float32",
+            "x-seed": "1015",
+            "x-decoder": "keep2_plain",
+            "content-type": "audio/pcm",
+            "transfer-encoding": "chunked"
+          }
+        }
+      ],
+      "gpu_memory_initial": {
+        "memory_used_mib": 4944,
+        "memory_total_mib": 46068
+      },
+      "gpu_memory_peak": {
+        "memory_used_mib": 5266,
+        "memory_total_mib": 46068
+      },
+      "server_processes_rss_mib": {
+        "29957": 750,
+        "29969": 13,
+        "29970": 1931,
+        "29971": 1605
+      }
+    }
+  ]
+}

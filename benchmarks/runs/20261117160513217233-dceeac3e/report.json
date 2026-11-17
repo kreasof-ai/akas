@@ -1,0 +1,59 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "protocol": "client-speech-pcm-stream-v1",
+    "text": "Your order has been confirmed and will arrive tomorrow between nine and noon. You can change the delivery address, contact the courier, or track your package online at any time.",
+    "words": 30,
+    "utf8_bytes": 177,
+    "model": "Zyphra/ZONOS3-Mini",
+    "model_revision": "d2d142a86b1e6aeb4252679673c86ecd86177bf8",
+    "runtime": "zonos3-sgl",
+    "stream": true,
+    "sample_rate_hz": 44100,
+    "default_sampling": true,
+    "default_voice_or_unconditioned": true,
+    "decoder": "keep2_plain",
+    "max_tokens": 384,
+    "stream_decode": "prefix",
+    "server_pid": 18065,
+    "gpu_memory_before": {
+      "memory_used_mib": 4906,
+      "memory_total_mib": 46068
+    },
+    "concurrencies": [
+      4
+    ],
+    "requests_per_concurrency": 0,
+    "warmup": 0,
+    "started_unix_s": 1794931073.503851,
+    "provider": "cuda",
+    "device": {
+      "name": "NVIDIA L40S",
+      "memory_total_mib": 46068
+    },
+    "weight_format": "bf16",
+    "purpose": "native-capacity-diagnostic",
+    "model_definition_sha256": "e84617ab992c8bac2d4301f39f61a85b5d18002f397628a4359ac01e80591035",
+    "configuration": {
+      "max_running_requests": 4,
+      "num_pages": 2048,
+      "max_frames": 512,
+      "request_bucketing": false,
+      "weight_mmap": true,
+      "codec": "keep2_plain",
+      "safe_slot_lifecycle": false
+    },
+    "error": "Client was interrupted before a completed measurement was recorded; no valid result retained."
+  },
+  "results": [
+    {
+      "status": "error",
+      "case": {
+        "id": "delivery",
+        "concurrency": 4,
+        "requests": 4
+      },
+      "error": "Client was interrupted before a completed measurement was recorded; no valid result retained."
+    }
+  ]
+}
