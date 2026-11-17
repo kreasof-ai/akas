@@ -1,0 +1,1499 @@
+0.00.087.865 I srv  llama_server: initializing ...
+0.00.087.882 I cmn  common_param: common_params_print_info: build 12424 (7ae3c6b23) with Clang 20.1.8 for Windows x86_64
+0.00.087.883 I cmn  common_param: common_params_print_info: verbosity = 4 (adjust with the `-lv N` CLI arg)
+0.00.087.886 I cmn  common_param: device_info:
+0.00.089.591 I cmn  common_param:   - Vulkan0 : AMD Radeon RX 6700 XT (12272 MiB, 11474 MiB free)
+0.00.089.606 I cmn  common_param:   - CPU     : AMD Ryzen 5 5600 6-Core Processor               (32693 MiB, 18993 MiB free)
+0.00.089.660 I cmn  common_param: system_info: n_threads = 6 (n_threads_batch = 6) / 12 | CPU : SSE3 = 1 | SSSE3 = 1 | AVX = 1 | AVX2 = 1 | F16C = 1 | FMA = 1 | BMI2 = 1 | LLAMAFILE = 1 | OPENMP = 1 | REPACK = 1 | 
+0.00.089.758 I srv  init_listene: running without SSL
+0.00.089.834 I srv  init_listene: The UI is disabled
+0.00.089.834 I srv  init_listene: Use --ui/--no-ui (or deprecated --webui/--no-webui) to enable/disable
+0.00.089.870 I srv          init: using 11 threads for HTTP server
+0.00.089.959 W srv  server_setup: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)
+0.00.099.030 I mtmd_model_loader: model name:   ZONOS3-Mini
+0.00.099.037 I mtmd_model_loader: description:  
+0.00.099.039 I mtmd_model_loader: GGUF version: 3
+0.00.099.041 I mtmd_model_loader: alignment:    32
+0.00.099.042 I mtmd_model_loader: n_tensors:    1158
+0.00.099.043 I mtmd_model_loader: n_kv:         28
+0.00.099.043 I 
+0.00.099.045 I mtmd_model_loader: has audio encoder
+0.00.099.046 I mtmd_model_loader: has audio generation (gen) encoder
+0.00.099.166 I srv    load_model: loading model 'D:\Workspace\kreasof-ai\github\akas\build\checkpoints\zonos3-mini\ZONOS3-Mini-Q8_0.gguf'
+0.00.099.171 I srv    load_model: local path 'D:\Workspace\kreasof-ai\github\akas\build\checkpoints\zonos3-mini\ZONOS3-Mini-Q8_0.gguf'
+0.00.370.069 I srv    load_model: [mtmd] estimated worst-case memory usage of mmproj is 1300.38 MiB (took 270.58 ms)
+0.00.370.093 I cmn  common_fit_a: fitting params to device memory ...
+0.00.370.094 I cmn  common_fit_a: (for bugs during this step try to reproduce them with -fit off, or provide --verbose logs if the bug only occurs with -fit on)
+0.00.370.137 I common_params_fit_impl: getting device memory data for initial parameters:
+0.00.406.984 I common_memory_breakdown_print: | memory breakdown [MiB]   | total    free    self   model   context   compute    unaccounted |
+0.00.406.991 I common_memory_breakdown_print: |   - Vulkan0 (RX 6700 XT) | 12272 = 11474 + ( 952 =   814 +       3 +     134) +        -154 |
+0.00.406.992 I common_memory_breakdown_print: |   - Host                 |                    59 =     8 +       0 +      51                |
+0.00.409.377 I common_params_fit_impl: projected to use 952 MiB of device memory vs. 11474 MiB of free device memory
+0.00.409.425 I common_params_fit_impl: will leave 10521 >= 2324 MiB of free device memory, no changes needed
+0.00.409.448 I common_fit_params: successfully fit params to free device memory
+0.00.409.477 I common_fit_params: fitting params to free memory took 0.04 seconds
+0.00.416.937 I llama_model_loader: loaded meta data with 43 key-value pairs and 213 tensors from D:\Workspace\kreasof-ai\github\akas\build\checkpoints\zonos3-mini\ZONOS3-Mini-Q8_0.gguf (version GGUF V3 (latest))
+0.00.416.957 I llama_model_loader: Dumping metadata keys/values. Note: KV overrides do not apply in this output.
+0.00.416.960 I llama_model_loader: - kv   0:                       general.architecture str              = zonos3
+0.00.416.962 I llama_model_loader: - kv   1:                               general.type str              = model
+0.00.416.963 I llama_model_loader: - kv   2:                               general.name str              = ZONOS3-Mini
+0.00.416.964 I llama_model_loader: - kv   3:                         general.size_label str              = 64x59M
+0.00.416.965 I llama_model_loader: - kv   4:                            general.license str              = apache-2.0
+0.00.416.971 I llama_model_loader: - kv   5:                               general.tags arr[str,10]      = ["text-to-speech", "tts", "speech-syn...
+0.00.416.975 I llama_model_loader: - kv   6:                          general.languages arr[str,43]      = ["en", "fr", "es", "de", "it", "pt", ...
+0.00.416.977 I llama_model_loader: - kv   7:                         zonos3.block_count u32              = 11
+0.00.416.978 I llama_model_loader: - kv   8:                      zonos3.context_length u32              = 32768
+0.00.416.979 I llama_model_loader: - kv   9:                    zonos3.embedding_length u32              = 1024
+0.00.416.980 I llama_model_loader: - kv  10:                 zonos3.feed_forward_length u32              = 2048
+0.00.416.981 I llama_model_loader: - kv  11:                zonos3.attention.head_count u32              = 16
+0.00.416.982 I llama_model_loader: - kv  12:             zonos3.attention.head_count_kv u32              = 4
+0.00.416.983 I llama_model_loader: - kv  13:                zonos3.attention.key_length u32              = 32
+0.00.416.984 I llama_model_loader: - kv  14:              zonos3.attention.value_length u32              = 32
+0.00.416.985 I llama_model_loader: - kv  15:                zonos3.rope.dimension_count u32              = 32
+0.00.416.989 I llama_model_loader: - kv  16:                      zonos3.rope.freq_base f32              = 10000.000000
+0.00.416.992 I llama_model_loader: - kv  17:    zonos3.attention.layer_norm_rms_epsilon f32              = 0.000010
+0.00.416.993 I llama_model_loader: - kv  18:             zonos3.full_attention_interval u32              = 4
+0.00.416.994 I llama_model_loader: - kv  19:                     zonos3.ssm.conv_kernel u32              = 4
+0.00.416.995 I llama_model_loader: - kv  20:                      zonos3.ssm.inner_size u32              = 512
+0.00.416.996 I llama_model_loader: - kv  21:                      zonos3.ssm.state_size u32              = 128
+0.00.416.997 I llama_model_loader: - kv  22:                  zonos3.ssm.time_step_rank u32              = 4
+0.00.416.998 I llama_model_loader: - kv  23:                     zonos3.ssm.group_count u32              = 4
+0.00.416.999 I llama_model_loader: - kv  24:           zonos3.leading_dense_block_count u32              = 1
+0.00.417.000 I llama_model_loader: - kv  25:                        zonos3.expert_count u32              = 64
+0.00.417.001 I llama_model_loader: - kv  26:                   zonos3.expert_used_count u32              = 2
+0.00.417.002 I llama_model_loader: - kv  27:          zonos3.expert_feed_forward_length u32              = 1536
+0.00.417.003 I llama_model_loader: - kv  28:                     zonos3.moe_latent_size u32              = 256
+0.00.417.004 I llama_model_loader: - kv  29:                       tokenizer.ggml.model str              = gpt2
+0.00.417.005 I llama_model_loader: - kv  30:                         tokenizer.ggml.pre str              = zonos3
+0.00.417.009 I llama_model_loader: - kv  31:                      tokenizer.ggml.tokens arr[str,8250]    = ["<|unused_0|>", "<|unused_1|>", "<|b...
+0.00.417.013 I llama_model_loader: - kv  32:                  tokenizer.ggml.token_type arr[i32,8250]    = [3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, ...
+0.00.417.016 I llama_model_loader: - kv  33:                      tokenizer.ggml.merges arr[str,7934]    = ["ã ģ", "Ġ t", "Ġ a", "h e", "i n...
+0.00.417.017 I llama_model_loader: - kv  34:                tokenizer.ggml.bos_token_id u32              = 2
+0.00.417.018 I llama_model_loader: - kv  35:                tokenizer.ggml.eos_token_id u32              = 3
+0.00.417.019 I llama_model_loader: - kv  36:            tokenizer.ggml.padding_token_id u32              = 5
+0.00.417.020 I llama_model_loader: - kv  37:               tokenizer.ggml.add_bos_token bool             = true
+0.00.417.021 I llama_model_loader: - kv  38:               tokenizer.ggml.add_eos_token bool             = true
+0.00.417.029 I llama_model_loader: - kv  39:                tokenizer.chat_template.tts str              = {#- ZONOS3 "tts" template: the text t...
+0.00.417.031 I llama_model_loader: - kv  40:                   tokenizer.chat_templates arr[str,1]       = ["tts"]
+0.00.417.032 I llama_model_loader: - kv  41:               general.quantization_version u32              = 2
+0.00.417.033 I llama_model_loader: - kv  42:                          general.file_type u32              = 7
+0.00.417.034 I llama_model_loader: - type  f32:  104 tensors
+0.00.417.035 I llama_model_loader: - type q8_0:  109 tensors
+0.00.417.036 I print_info: file format = GGUF V3 (latest)
+0.00.417.037 I print_info: file type   = Q8_0
+0.00.417.040 I print_info: file size   = 814.82 MiB (8.52 BPW) 
+0.00.419.663 I llama_prepare_model_devices: using device Vulkan0 (AMD Radeon RX 6700 XT) (unknown id) - 11474 MiB free
+0.00.423.076 I load: 2 unused tokens
+0.00.424.136 W load: special_eos_id is not in special_eog_ids - the tokenizer config may be incorrect
+0.00.424.141 I load: printing all EOG tokens:
+0.00.424.141 I load:   - 3 ('<|eos|>')
+0.00.424.142 I load:   - 4 ('<|endoftext|>')
+0.00.424.156 I load: special tokens cache size = 60
+0.00.425.191 I load: token to piece cache size = 0.0364 MB
+0.00.425.202 I print_info: arch                  = zonos3
+0.00.425.202 I print_info: vocab_only            = 0
+0.00.425.204 I print_info: no_alloc              = 0
+0.00.425.204 I print_info: n_ctx_train           = 32768
+0.00.425.205 I print_info: n_embd_inp            = 1024
+0.00.425.206 I print_info: n_embd                = 1024
+0.00.425.206 I print_info: n_embd_out            = 1024
+0.00.425.207 I print_info: n_layer               = 11
+0.00.425.207 I print_info: n_layer_all           = 11
+0.00.425.215 I print_info: n_head                = 16
+0.00.425.217 I print_info: n_head_kv             = 4
+0.00.425.217 I print_info: n_rot                 = 32
+0.00.425.218 I print_info: n_swa                 = 0
+0.00.425.218 I print_info: is_swa_any            = 0
+0.00.425.219 I print_info: non_causal_type       = 0
+0.00.425.219 I print_info: n_embd_head_k         = 32
+0.00.425.220 I print_info: n_embd_head_v         = 32
+0.00.425.221 I print_info: n_gqa                 = 4
+0.00.425.223 I print_info: n_embd_k_gqa          = 128
+0.00.425.224 I print_info: n_embd_v_gqa          = 128
+0.00.425.225 I print_info: f_norm_eps            = 0.0e+00
+0.00.425.227 I print_info: f_norm_rms_eps        = 1.0e-05
+0.00.425.227 I print_info: f_clamp_kqv           = 0.0e+00
+0.00.425.228 I print_info: f_max_alibi_bias      = 0.0e+00
+0.00.425.228 I print_info: f_logit_scale         = 0.0e+00
+0.00.425.229 I print_info: f_attn_scale          = 0.0e+00
+0.00.425.230 I print_info: f_attn_value_scale    = 0.0000
+0.00.425.231 I print_info: n_ff                  = 2048
+0.00.425.232 I print_info: n_expert              = 64
+0.00.425.232 I print_info: n_expert_used         = 2
+0.00.425.233 I print_info: n_expert_groups       = 0
+0.00.425.233 I print_info: n_group_used          = 0
+0.00.425.233 I print_info: causal attn           = 1
+0.00.425.234 I print_info: pooling type          = -1
+0.00.425.234 I print_info: rope type             = 0
+0.00.425.235 I print_info: rope scaling          = linear
+0.00.425.236 I print_info: freq_base_train       = 10000.0
+0.00.425.237 I print_info: freq_scale_train      = 1
+0.00.425.237 I print_info: n_ctx_orig_yarn       = 32768
+0.00.425.238 I print_info: rope_yarn_log_mul     = 0.0000
+0.00.425.238 I print_info: rope_finetuned        = unknown
+0.00.425.239 I print_info: ssm_d_conv            = 4
+0.00.425.239 I print_info: ssm_d_inner           = 512
+0.00.425.240 I print_info: ssm_d_state           = 128
+0.00.425.240 I print_info: ssm_dt_rank           = 4
+0.00.425.241 I print_info: ssm_n_group           = 4
+0.00.425.241 I print_info: ssm_dt_b_c_rms        = 0
+0.00.425.242 I print_info: model type            = 0.8B
+0.00.425.243 I print_info: model params          = 802.04 M
+0.00.425.243 I print_info: general.name          = ZONOS3-Mini
+0.00.425.244 I print_info: vocab type            = BPE
+0.00.425.245 I print_info: n_vocab               = 8250
+0.00.425.245 I print_info: n_merges              = 7934
+0.00.425.246 I print_info: BOS token             = 2 '<|bos|>'
+0.00.425.247 I print_info: EOS token             = 3 '<|eos|>'
+0.00.425.247 I print_info: EOT token             = 4 '<|endoftext|>'
+0.00.425.248 I print_info: PAD token             = 5 '<|pad|>'
+0.00.425.248 I print_info: LF token              = 204 'Ċ'
+0.00.425.249 I print_info: EOG token             = 3 '<|eos|>'
+0.00.425.249 I print_info: EOG token             = 4 '<|endoftext|>'
+0.00.425.250 I print_info: max token length      = 192
+0.00.427.410 I load_tensors: loading model tensors, this can take a while... (load_mode = mmap)
+0.00.618.932 I load_tensors: offloading output layer to GPU
+0.00.618.939 I load_tensors: offloading 10 repeating layers to GPU
+0.00.618.940 I load_tensors: offloaded 12/12 layers to GPU
+0.00.618.944 I load_tensors:   CPU_Mapped model buffer size =     8.56 MiB
+0.00.618.945 I load_tensors:      Vulkan0 model buffer size =   814.82 MiB
+0.01.034.706 I cmn  common_init_: added <|eos|> logit bias = -inf
+0.01.034.714 I cmn  common_init_: added <|endoftext|> logit bias = -inf
+0.01.034.830 I llama_context: constructing llama_context
+0.01.034.841 I llama_context: n_seq_max             = 1
+0.01.034.841 I llama_context: n_ctx                 = 1024
+0.01.034.842 I llama_context: n_ctx_seq             = 1024
+0.01.034.842 I llama_context: n_batch               = 1024
+0.01.034.843 I llama_context: n_ubatch              = 512
+0.01.034.843 I llama_context: causal_attn           = 1
+0.01.034.844 I llama_context: flash_attn            = auto
+0.01.034.844 I llama_context: kv_unified            = false
+0.01.034.847 I llama_context: freq_base             = 10000.0
+0.01.034.849 I llama_context: freq_scale            = 1
+0.01.034.849 I llama_context: n_rs_seq              = 0
+0.01.034.850 I llama_context: n_outputs_max         = 2048
+0.01.034.850 I llama_context: n_outputs_max_per_seq = 2048
+0.01.034.851 I llama_context: n_ctx_seq (1024) < n_ctx_train (32768) -- the full capacity of the model will not be utilized
+0.01.035.991 I llama_context: Vulkan_Host  output buffer size =     0.03 MiB
+0.01.039.203 I llama_kv_cache:    Vulkan0 KV buffer size =     1.00 MiB
+0.01.039.211 I llama_kv_cache: size =    1.00 MiB (  1024 cells,   2 layers,  1/1 seqs), K (f16):    0.50 MiB, V (f16):    0.50 MiB
+0.01.039.216 I llama_kv_cache: n_rot_k = 0, n_embd_head_k_all = 32
+0.01.039.217 I llama_kv_cache: n_rot_v = 0, n_embd_head_k_all = 32
+0.01.040.842 I llama_memory_recurrent:    Vulkan0 RS buffer size =     2.41 MiB
+0.01.040.853 I llama_memory_recurrent: size =    2.41 MiB (     1 cells,  11 layers,  1 seqs  0 rs_seq), R (f32):    0.16 MiB, S (f32):    2.25 MiB, P (f32):    0.00 MiB
+0.01.040.860 I sched_reserve: reserving ...
+0.01.042.776 I resolve_fused_ops: Flash Attention enabled
+0.01.042.781 I resolve_fused_ops: resolving fused DeepSeek V4 HC support:
+0.01.044.187 I resolve_fused_ops: fused DeepSeek V4 HC pre enabled
+0.01.045.566 I resolve_fused_ops: fused DeepSeek V4 HC comb enabled
+0.01.046.912 I resolve_fused_ops: fused DeepSeek V4 HC post enabled
+0.01.082.535 I sched_reserve:    Vulkan0 compute buffer size =   134.00 MiB
+0.01.082.543 I sched_reserve: Vulkan_Host compute buffer size =    51.02 MiB
+0.01.082.545 I sched_reserve: graph: nodes = 1014, splits = 46, input objects = 4, input tensors = 10
+0.01.082.547 I sched_reserve: reserve took 41.69 ms, sched copies = 1
+0.01.082.573 I cmn          init: llama threadpool init, n_threads = 6
+0.01.082.586 I cmn  common_init_: warming up the model with an empty run - please wait ... (--no-warmup to disable)
+0.01.136.516 I mtmd_model_loader: model name:   ZONOS3-Mini
+0.01.136.524 I mtmd_model_loader: description:  
+0.01.136.525 I mtmd_model_loader: GGUF version: 3
+0.01.136.525 I mtmd_model_loader: alignment:    32
+0.01.136.526 I mtmd_model_loader: n_tensors:    1158
+0.01.136.526 I mtmd_model_loader: n_kv:         28
+0.01.136.527 I 
+0.01.136.529 I mtmd_model_loader: has audio encoder
+0.01.136.531 I mtmd_model_loader: has audio generation (gen) encoder
+0.01.143.662 I load_hparams: projector:          zonos3_spkenc
+0.01.143.668 I load_hparams: n_embd:             192
+0.01.143.669 I load_hparams: n_head:             1
+0.01.143.669 I load_hparams: n_ff:               192
+0.01.143.670 I load_hparams: n_layer:            0
+0.01.143.671 I load_hparams: ffn_op:             gelu_quick
+0.01.143.671 I load_hparams: projection_dim:     1024
+0.01.143.672 I 
+--- audio hparams ---
+0.01.143.673 I load_hparams: n_mel_bins:         80
+0.01.143.673 I load_hparams: proj_stack_factor:  0
+0.01.143.674 I load_hparams: audio_chunk_len:    -1
+0.01.143.674 I load_hparams: audio_sample_rate:  16000
+0.01.143.675 I load_hparams: audio_n_fft:        512
+0.01.143.677 I load_hparams: audio_window_len:   400
+0.01.143.677 I load_hparams: audio_hop_len:      160
+0.01.143.678 I 
+0.01.143.681 I load_hparams: model size:         1089.50 MiB
+0.01.143.683 I load_hparams: metadata size:      0.41 MiB
+0.01.210.830 I load_hparams: projector:          zonos3_gen
+0.01.210.838 I load_hparams: n_embd:             1024
+0.01.210.838 I load_hparams: n_head:             0
+0.01.210.839 I load_hparams: n_ff:               0
+0.01.210.840 I load_hparams: n_layer:            0
+0.01.210.840 I load_hparams: ffn_op:             gelu_quick
+0.01.210.841 I load_hparams: projection_dim:     1024
+0.01.210.841 I 
+0.01.210.845 I load_hparams: model size:         1089.50 MiB
+0.01.210.847 I load_hparams: metadata size:      0.41 MiB
+0.01.239.074 I load_tensors: 27 predefined voices
+0.02.387.443 I mtmd_backends: using Vulkan0 backend
+0.02.388.510 I get_dummy_batch: warmup with audio size = 1000
+0.02.441.923 I reserve_compute_meta: graph splits = 1, nodes = 2414
+0.02.442.212 I warmup: flash attention is enabled
+0.02.442.694 I get_dummy_batch: warmup with one gen-audio step
+0.02.442.763 I reserve_compute_meta: graph splits = 1, nodes = 10
+0.02.442.769 I warmup: flash attention is enabled
+0.02.442.773 I mtmd_context:    Vulkan0 compute buffer size =   234.68 MiB
+0.02.442.775 I mtmd_context:        CPU compute buffer size =     0.31 MiB
+0.02.442.782 W init_audio: audio input is in experimental stage and may have reduced quality:
+    https://github.com/ggml-org/llama.cpp/discussions/13759
+0.02.442.981 I srv    load_model: loaded multimodal model, 'D:\Workspace\kreasof-ai\github\akas\build\checkpoints\zonos3-mini\mmproj-ZONOS3-Mini-F32.gguf'
+0.02.456.540 I cmn  common_conte: the context does not support partial sequence removal
+0.02.457.033 I srv    load_model: speculative decoding will use checkpoints
+0.02.457.040 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 1024, kv_unified = 'false'
+0.02.457.057 I spec common_specu: no implementations specified for speculative decoding
+0.02.457.069 I slot   load_model: id  0 | task -1 | new slot, n_ctx = 1024
+0.02.457.099 I srv    load_model: prompt cache is disabled - use `--cache-ram N` to enable it
+0.02.457.099 I srv    load_model: for more info see https://github.com/ggml-org/llama.cpp/pull/16391
+0.02.457.100 I srv    load_model: context checkpoints enabled, max = 32, min spacing = 8192
+0.02.457.127 W srv          init: --cache-idle-slots requires --cache-ram, disabling
+0.02.475.190 I srv          init: init: chat template, example_format: '<|im_start|>system
+You are a helpful assistant<|im_end|>
+<|im_start|>user
+Hello<|im_end|>
+<|im_start|>assistant
+Hi there<|im_end|>
+<|im_start|>user
+How are you?<|im_end|>
+<|im_start|>assistant
+'
+0.02.475.392 I srv          init: init: chat template, thinking = 0
+0.02.475.425 I srv          init: preserve_reasoning kwarg: not supported by template
+0.02.475.475 I srv  server_run_i: model loaded
+0.02.475.492 I srv  server_on_li: listening on http://127.0.0.1:55091
+0.02.475.562 I srv  update_slots: all slots are idle
+0.02.636.648 I srv  server_strea: conv_id= (empty=1)
+0.02.637.658 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.02.637.666 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = -1
+0.02.637.679 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.02.652.098 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.02.652.119 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.02.652.122 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0
+0.02.652.687 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.02.652.729 I sched_reserve: reserving ...
+0.02.658.192 I sched_reserve:    Vulkan0 compute buffer size =   134.00 MiB
+0.02.658.199 I sched_reserve: Vulkan_Host compute buffer size =    51.02 MiB
+0.02.658.202 I sched_reserve: graph: nodes = 1014, splits = 46, input objects = 4, input tensors = 10
+0.02.658.204 I sched_reserve: reserve took 5.47 ms, sched copies = 1
+0.02.756.178 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.02.782.020 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.03.306.715 I slot      release: id  0 | task 0 | stop processing: n_tokens = 0, truncated = 0
+0.03.306.724 I slot prompt_clear: id  0 | task 0 | clearing prompt with 0 tokens
+0.03.307.643 I srv  update_slots: all slots are idle
+0.03.309.930 I srv  server_strea: conv_id= (empty=1)
+0.03.310.768 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.03.310.773 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 3229438
+0.03.310.777 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.03.315.947 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.03.315.964 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.03.315.966 I slot launch_slot_: id  0 | task 30 | processing task, is_child = 0
+0.03.316.538 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.03.412.407 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.03.436.659 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.04.086.228 I slot      release: id  0 | task 30 | stop processing: n_tokens = 0, truncated = 0
+0.04.086.239 I slot prompt_clear: id  0 | task 30 | clearing prompt with 0 tokens
+0.04.087.626 I srv  update_slots: all slots are idle
+0.04.120.096 I srv  server_strea: conv_id= (empty=1)
+0.04.120.957 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.04.120.963 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 4008953
+0.04.120.967 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.04.126.589 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.04.126.610 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.04.126.613 I slot launch_slot_: id  0 | task 60 | processing task, is_child = 0
+0.04.127.255 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.04.213.305 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.04.234.941 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.04.704.379 I slot      release: id  0 | task 60 | stop processing: n_tokens = 0, truncated = 0
+0.04.704.386 I slot prompt_clear: id  0 | task 60 | clearing prompt with 0 tokens
+0.04.705.791 I srv  update_slots: all slots are idle
+0.04.724.110 I srv  server_strea: conv_id= (empty=1)
+0.04.725.342 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.04.725.352 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 4627101
+0.04.725.357 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.04.731.564 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.04.731.581 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.04.731.584 I slot launch_slot_: id  0 | task 90 | processing task, is_child = 0
+0.04.732.189 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.04.817.575 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.04.838.944 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.05.280.285 I slot      release: id  0 | task 90 | stop processing: n_tokens = 0, truncated = 0
+0.05.280.291 I slot prompt_clear: id  0 | task 90 | clearing prompt with 0 tokens
+0.05.281.323 I srv  update_slots: all slots are idle
+0.05.299.362 I srv  server_strea: conv_id= (empty=1)
+0.05.300.453 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.05.300.461 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 5203006
+0.05.300.464 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.05.306.205 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.05.306.222 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.05.306.224 I slot launch_slot_: id  0 | task 120 | processing task, is_child = 0
+0.05.306.805 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.05.391.504 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.05.413.618 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.05.869.554 I slot      release: id  0 | task 120 | stop processing: n_tokens = 0, truncated = 0
+0.05.869.563 I slot prompt_clear: id  0 | task 120 | clearing prompt with 0 tokens
+0.05.870.924 I srv  update_slots: all slots are idle
+0.05.889.073 I srv  server_strea: conv_id= (empty=1)
+0.05.889.917 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.05.889.924 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 5792278
+0.05.889.928 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.05.895.566 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.05.895.583 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.05.895.585 I slot launch_slot_: id  0 | task 150 | processing task, is_child = 0
+0.05.896.133 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.05.984.440 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.06.006.815 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.06.492.862 I slot      release: id  0 | task 150 | stop processing: n_tokens = 0, truncated = 0
+0.06.492.868 I slot prompt_clear: id  0 | task 150 | clearing prompt with 0 tokens
+0.06.494.119 I srv  update_slots: all slots are idle
+0.06.509.158 I srv  server_strea: conv_id= (empty=1)
+0.06.510.392 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.06.510.400 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 6415583
+0.06.510.404 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.06.515.668 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.06.515.686 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.06.515.688 I slot launch_slot_: id  0 | task 180 | processing task, is_child = 0
+0.06.516.173 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.06.602.974 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.06.624.761 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.07.086.977 I slot      release: id  0 | task 180 | stop processing: n_tokens = 0, truncated = 0
+0.07.086.987 I slot prompt_clear: id  0 | task 180 | clearing prompt with 0 tokens
+0.07.088.038 I srv  update_slots: all slots are idle
+0.07.109.160 I srv  server_strea: conv_id= (empty=1)
+0.07.109.966 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.07.109.973 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 7009701
+0.07.109.979 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.07.116.047 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.07.116.065 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.07.116.069 I slot launch_slot_: id  0 | task 210 | processing task, is_child = 0
+0.07.116.607 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.07.204.270 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.07.226.472 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.07.706.285 I slot      release: id  0 | task 210 | stop processing: n_tokens = 0, truncated = 0
+0.07.706.293 I slot prompt_clear: id  0 | task 210 | clearing prompt with 0 tokens
+0.07.707.733 I srv  update_slots: all slots are idle
+0.07.730.342 I srv  server_strea: conv_id= (empty=1)
+0.07.731.650 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.07.731.666 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 7629007
+0.07.731.671 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.07.737.442 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.07.737.462 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.07.737.466 I slot launch_slot_: id  0 | task 240 | processing task, is_child = 0
+0.07.738.002 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.07.827.216 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.07.850.689 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.08.401.146 I slot      release: id  0 | task 240 | stop processing: n_tokens = 0, truncated = 0
+0.08.401.154 I slot prompt_clear: id  0 | task 240 | clearing prompt with 0 tokens
+0.08.402.665 I srv  update_slots: all slots are idle
+0.08.405.285 I srv  server_strea: conv_id= (empty=1)
+0.08.406.618 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.08.406.626 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 8323868
+0.08.406.630 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.08.413.679 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.08.413.703 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.08.413.707 I slot launch_slot_: id  0 | task 272 | processing task, is_child = 0
+0.08.414.405 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.08.543.071 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.08.567.808 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.09.071.810 I slot      release: id  0 | task 272 | stop processing: n_tokens = 0, truncated = 0
+0.09.071.819 I slot prompt_clear: id  0 | task 272 | clearing prompt with 0 tokens
+0.09.073.183 I srv  update_slots: all slots are idle
+0.09.107.375 I srv  server_strea: conv_id= (empty=1)
+0.09.108.289 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.09.108.295 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 8994534
+0.09.108.299 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.09.113.425 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.09.113.442 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.09.113.445 I slot launch_slot_: id  0 | task 304 | processing task, is_child = 0
+0.09.113.926 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.09.195.690 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.09.215.543 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.09.694.899 I slot      release: id  0 | task 304 | stop processing: n_tokens = 0, truncated = 0
+0.09.694.905 I slot prompt_clear: id  0 | task 304 | clearing prompt with 0 tokens
+0.09.696.181 I srv  update_slots: all slots are idle
+0.09.733.910 I srv  server_strea: conv_id= (empty=1)
+0.09.734.789 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.09.734.795 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 9617620
+0.09.734.798 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.09.740.028 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.09.740.045 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.09.740.048 I slot launch_slot_: id  0 | task 336 | processing task, is_child = 0
+0.09.740.478 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.09.823.322 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.09.846.256 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.10.376.918 I slot      release: id  0 | task 336 | stop processing: n_tokens = 0, truncated = 0
+0.10.376.925 I slot prompt_clear: id  0 | task 336 | clearing prompt with 0 tokens
+0.10.378.026 I srv  update_slots: all slots are idle
+0.10.397.351 I srv  server_strea: conv_id= (empty=1)
+0.10.398.405 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.10.398.411 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 10299640
+0.10.398.415 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.10.404.451 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.10.404.468 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.10.404.471 I slot launch_slot_: id  0 | task 368 | processing task, is_child = 0
+0.10.404.995 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.10.492.504 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.10.519.767 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.11.479.233 I slot      release: id  0 | task 368 | stop processing: n_tokens = 0, truncated = 0
+0.11.479.240 I slot prompt_clear: id  0 | task 368 | clearing prompt with 0 tokens
+0.11.480.582 I srv  update_slots: all slots are idle
+0.11.484.363 I srv  server_strea: conv_id= (empty=1)
+0.11.485.192 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.11.485.199 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 11401955
+0.11.485.203 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.11.490.586 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.11.490.603 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.11.490.606 I slot launch_slot_: id  0 | task 421 | processing task, is_child = 0
+0.11.491.181 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.11.577.012 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.11.601.978 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.12.506.701 I slot      release: id  0 | task 421 | stop processing: n_tokens = 0, truncated = 0
+0.12.506.711 I slot prompt_clear: id  0 | task 421 | clearing prompt with 0 tokens
+0.12.507.728 I srv  update_slots: all slots are idle
+0.12.541.606 I srv  server_strea: conv_id= (empty=1)
+0.12.542.606 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.12.542.612 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 12429425
+0.12.542.616 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.12.547.760 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.12.547.778 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.12.547.781 I slot launch_slot_: id  0 | task 474 | processing task, is_child = 0
+0.12.548.294 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.12.631.627 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.12.655.896 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.13.537.507 I slot      release: id  0 | task 474 | stop processing: n_tokens = 0, truncated = 0
+0.13.537.518 I slot prompt_clear: id  0 | task 474 | clearing prompt with 0 tokens
+0.13.538.369 I srv  update_slots: all slots are idle
+0.13.556.030 I srv  server_strea: conv_id= (empty=1)
+0.13.556.925 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.13.556.931 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 13460232
+0.13.556.934 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.13.562.364 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.13.562.382 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.13.562.384 I slot launch_slot_: id  0 | task 527 | processing task, is_child = 0
+0.13.563.024 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.13.642.092 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.13.665.946 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.14.548.580 I slot      release: id  0 | task 527 | stop processing: n_tokens = 0, truncated = 0
+0.14.548.590 I slot prompt_clear: id  0 | task 527 | clearing prompt with 0 tokens
+0.14.549.462 I srv  update_slots: all slots are idle
+0.14.582.401 I srv  server_strea: conv_id= (empty=1)
+0.14.583.344 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.14.583.350 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 14471304
+0.14.583.354 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.14.588.537 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.14.588.555 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.14.588.558 I slot launch_slot_: id  0 | task 580 | processing task, is_child = 0
+0.14.589.240 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.14.677.057 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.14.698.821 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.15.319.411 I slot      release: id  0 | task 580 | stop processing: n_tokens = 0, truncated = 0
+0.15.319.419 I slot prompt_clear: id  0 | task 580 | clearing prompt with 0 tokens
+0.15.320.088 I srv  update_slots: all slots are idle
+0.15.336.683 I srv  server_strea: conv_id= (empty=1)
+0.15.337.573 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.15.337.581 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 15242134
+0.15.337.585 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.15.342.730 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.15.342.747 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.15.342.749 I slot launch_slot_: id  0 | task 619 | processing task, is_child = 0
+0.15.343.377 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.15.426.829 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.15.447.584 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.16.068.614 I slot      release: id  0 | task 619 | stop processing: n_tokens = 0, truncated = 0
+0.16.068.621 I slot prompt_clear: id  0 | task 619 | clearing prompt with 0 tokens
+0.16.069.811 I srv  update_slots: all slots are idle
+0.16.085.097 I srv  server_strea: conv_id= (empty=1)
+0.16.086.049 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.16.086.055 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 15991336
+0.16.086.059 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.16.091.281 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.16.091.299 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.16.091.302 I slot launch_slot_: id  0 | task 658 | processing task, is_child = 0
+0.16.091.943 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.16.176.420 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.16.198.946 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.16.839.055 I slot      release: id  0 | task 658 | stop processing: n_tokens = 0, truncated = 0
+0.16.839.062 I slot prompt_clear: id  0 | task 658 | clearing prompt with 0 tokens
+0.16.839.955 I srv  update_slots: all slots are idle
+0.16.856.189 I srv  server_strea: conv_id= (empty=1)
+0.16.857.039 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.16.857.045 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 16761777
+0.16.857.049 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.16.862.218 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.16.862.236 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.16.862.238 I slot launch_slot_: id  0 | task 697 | processing task, is_child = 0
+0.16.862.782 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.16.948.286 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.16.968.856 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.17.600.483 I slot      release: id  0 | task 697 | stop processing: n_tokens = 0, truncated = 0
+0.17.600.490 I slot prompt_clear: id  0 | task 697 | clearing prompt with 0 tokens
+0.17.601.697 I srv  update_slots: all slots are idle
+0.17.629.783 I srv  server_strea: conv_id= (empty=1)
+0.17.630.710 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.17.630.717 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 17523205
+0.17.630.721 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.17.636.016 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.17.636.033 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.17.636.036 I slot launch_slot_: id  0 | task 736 | processing task, is_child = 0
+0.17.636.582 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.17.723.294 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.17.745.945 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.18.354.462 I slot      release: id  0 | task 736 | stop processing: n_tokens = 0, truncated = 0
+0.18.354.468 I slot prompt_clear: id  0 | task 736 | clearing prompt with 0 tokens
+0.18.355.694 I srv  update_slots: all slots are idle
+0.18.357.885 I srv  server_strea: conv_id= (empty=1)
+0.18.358.733 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.18.358.739 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 18277183
+0.18.358.742 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.18.363.974 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.18.363.991 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.18.363.994 I slot launch_slot_: id  0 | task 774 | processing task, is_child = 0
+0.18.364.690 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.18.454.230 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.18.476.906 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.19.084.590 I slot      release: id  0 | task 774 | stop processing: n_tokens = 0, truncated = 0
+0.19.084.597 I slot prompt_clear: id  0 | task 774 | clearing prompt with 0 tokens
+0.19.085.728 I srv  update_slots: all slots are idle
+0.19.103.005 I srv  server_strea: conv_id= (empty=1)
+0.19.103.944 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.19.103.951 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 19007312
+0.19.103.955 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.19.109.787 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.19.109.808 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.19.109.812 I slot launch_slot_: id  0 | task 812 | processing task, is_child = 0
+0.19.110.470 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.19.208.977 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.19.233.922 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.19.853.883 I slot      release: id  0 | task 812 | stop processing: n_tokens = 0, truncated = 0
+0.19.853.890 I slot prompt_clear: id  0 | task 812 | clearing prompt with 0 tokens
+0.19.854.988 I srv  update_slots: all slots are idle
+0.19.882.949 I srv  server_strea: conv_id= (empty=1)
+0.19.883.848 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.19.883.854 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 19776605
+0.19.883.859 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.19.889.063 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.19.889.086 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.19.889.090 I slot launch_slot_: id  0 | task 850 | processing task, is_child = 0
+0.19.889.751 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.20.046.707 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.20.073.148 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.20.680.940 I slot      release: id  0 | task 850 | stop processing: n_tokens = 0, truncated = 0
+0.20.680.948 I slot prompt_clear: id  0 | task 850 | clearing prompt with 0 tokens
+0.20.682.033 I srv  update_slots: all slots are idle
+0.20.714.747 I srv  server_strea: conv_id= (empty=1)
+0.20.715.807 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.20.715.813 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 20603663
+0.20.715.817 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.20.721.253 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.20.721.270 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.20.721.273 I slot launch_slot_: id  0 | task 888 | processing task, is_child = 0
+0.20.721.852 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.20.809.018 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.20.835.844 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.22.037.834 I slot      release: id  0 | task 888 | stop processing: n_tokens = 0, truncated = 0
+0.22.037.841 I slot prompt_clear: id  0 | task 888 | clearing prompt with 0 tokens
+0.22.038.637 I srv  update_slots: all slots are idle
+0.22.045.009 I srv  server_strea: conv_id= (empty=1)
+0.22.046.001 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.22.046.007 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 21960556
+0.22.046.011 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.22.051.025 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.22.051.042 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.22.051.045 I slot launch_slot_: id  0 | task 958 | processing task, is_child = 0
+0.22.051.591 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.22.134.705 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.22.160.479 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.23.338.278 I slot      release: id  0 | task 958 | stop processing: n_tokens = 0, truncated = 0
+0.23.338.285 I slot prompt_clear: id  0 | task 958 | clearing prompt with 0 tokens
+0.23.339.306 I srv  update_slots: all slots are idle
+0.23.368.709 I srv  server_strea: conv_id= (empty=1)
+0.23.369.794 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.23.369.800 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 23261000
+0.23.369.803 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.23.375.005 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.23.375.023 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.23.375.026 I slot launch_slot_: id  0 | task 1028 | processing task, is_child = 0
+0.23.375.668 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.23.461.249 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.23.487.952 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.24.676.377 I slot      release: id  0 | task 1028 | stop processing: n_tokens = 0, truncated = 0
+0.24.676.384 I slot prompt_clear: id  0 | task 1028 | clearing prompt with 0 tokens
+0.24.677.384 I srv  update_slots: all slots are idle
+0.24.696.526 I srv  server_strea: conv_id= (empty=1)
+0.24.697.594 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.24.697.600 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 24599099
+0.24.697.603 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.24.703.272 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.24.703.289 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.24.703.292 I slot launch_slot_: id  0 | task 1098 | processing task, is_child = 0
+0.24.703.873 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.24.789.843 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.24.817.217 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.26.017.963 I slot      release: id  0 | task 1098 | stop processing: n_tokens = 0, truncated = 0
+0.26.017.970 I slot prompt_clear: id  0 | task 1098 | clearing prompt with 0 tokens
+0.26.018.972 I srv  update_slots: all slots are idle
+0.26.066.179 I srv  server_strea: conv_id= (empty=1)
+0.26.067.252 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.26.067.258 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 25940685
+0.26.067.262 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.26.072.419 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.26.072.436 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.26.072.438 I slot launch_slot_: id  0 | task 1168 | processing task, is_child = 0
+0.26.072.905 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.26.160.264 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.26.186.369 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.27.381.205 I slot      release: id  0 | task 1168 | stop processing: n_tokens = 0, truncated = 0
+0.27.381.213 I slot prompt_clear: id  0 | task 1168 | clearing prompt with 0 tokens
+0.27.382.601 I srv  update_slots: all slots are idle
+0.27.409.153 I srv  server_strea: conv_id= (empty=1)
+0.27.410.264 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.27.410.270 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 27303928
+0.27.410.274 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.27.415.861 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.27.415.879 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.27.415.882 I slot launch_slot_: id  0 | task 1238 | processing task, is_child = 0
+0.27.416.552 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.27.502.731 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.27.529.857 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.28.761.627 I slot      release: id  0 | task 1238 | stop processing: n_tokens = 0, truncated = 0
+0.28.761.634 I slot prompt_clear: id  0 | task 1238 | clearing prompt with 0 tokens
+0.28.762.793 I srv  update_slots: all slots are idle
+0.28.782.612 I srv  server_strea: conv_id= (empty=1)
+0.28.783.652 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.28.783.659 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 28684348
+0.28.783.662 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.28.789.583 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.28.789.601 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.28.789.603 I slot launch_slot_: id  0 | task 1308 | processing task, is_child = 0
+0.28.790.296 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.28.877.169 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.28.904.611 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.30.096.867 I slot      release: id  0 | task 1308 | stop processing: n_tokens = 0, truncated = 0
+0.30.096.873 I slot prompt_clear: id  0 | task 1308 | clearing prompt with 0 tokens
+0.30.098.020 I srv  update_slots: all slots are idle
+0.30.137.760 I srv  server_strea: conv_id= (empty=1)
+0.30.138.828 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.30.138.835 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 30019588
+0.30.138.839 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.30.144.066 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.30.144.083 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.30.144.086 I slot launch_slot_: id  0 | task 1378 | processing task, is_child = 0
+0.30.144.681 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.30.230.805 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.30.257.915 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.31.460.437 I slot      release: id  0 | task 1378 | stop processing: n_tokens = 0, truncated = 0
+0.31.460.443 I slot prompt_clear: id  0 | task 1378 | clearing prompt with 0 tokens
+0.31.461.476 I srv  update_slots: all slots are idle
+0.31.486.547 I srv  server_strea: conv_id= (empty=1)
+0.31.488.375 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.31.488.383 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 31383158
+0.31.488.389 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.31.494.539 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.31.494.556 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.31.494.559 I slot launch_slot_: id  0 | task 1448 | processing task, is_child = 0
+0.31.495.195 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.31.578.069 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.31.605.233 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.33.485.104 I slot      release: id  0 | task 1448 | stop processing: n_tokens = 0, truncated = 0
+0.33.485.111 I slot prompt_clear: id  0 | task 1448 | clearing prompt with 0 tokens
+0.33.486.152 I srv  update_slots: all slots are idle
+0.33.494.064 I srv  server_strea: conv_id= (empty=1)
+0.33.495.172 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.33.495.178 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 33407826
+0.33.495.181 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.33.500.535 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.33.500.552 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.33.500.555 I slot launch_slot_: id  0 | task 1532 | processing task, is_child = 0
+0.33.501.283 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.33.583.412 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.33.608.776 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.35.146.440 I slot      release: id  0 | task 1532 | stop processing: n_tokens = 0, truncated = 0
+0.35.146.447 I slot prompt_clear: id  0 | task 1532 | clearing prompt with 0 tokens
+0.35.147.544 I srv  update_slots: all slots are idle
+0.35.169.367 I srv  server_strea: conv_id= (empty=1)
+0.35.170.477 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.35.170.483 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 35069162
+0.35.170.487 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.35.175.860 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.35.175.877 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.35.175.879 I slot launch_slot_: id  0 | task 1616 | processing task, is_child = 0
+0.35.176.569 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.35.261.793 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.35.287.369 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.36.774.084 I slot      release: id  0 | task 1616 | stop processing: n_tokens = 0, truncated = 0
+0.36.774.093 I slot prompt_clear: id  0 | task 1616 | clearing prompt with 0 tokens
+0.36.775.537 I srv  update_slots: all slots are idle
+0.36.797.745 I srv  server_strea: conv_id= (empty=1)
+0.36.798.868 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.36.798.875 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 36696807
+0.36.798.878 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.36.804.359 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.36.804.377 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.36.804.379 I slot launch_slot_: id  0 | task 1700 | processing task, is_child = 0
+0.36.804.989 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.36.892.743 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.36.919.605 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.38.481.743 I slot      release: id  0 | task 1700 | stop processing: n_tokens = 0, truncated = 0
+0.38.481.750 I slot prompt_clear: id  0 | task 1700 | clearing prompt with 0 tokens
+0.38.482.784 I srv  update_slots: all slots are idle
+0.38.509.495 I srv  server_strea: conv_id= (empty=1)
+0.38.511.457 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.38.511.464 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 38404465
+0.38.511.469 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.38.519.387 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.38.519.415 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.38.519.422 I slot launch_slot_: id  0 | task 1784 | processing task, is_child = 0
+0.38.520.635 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.38.618.425 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.38.647.852 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.40.313.860 I slot      release: id  0 | task 1784 | stop processing: n_tokens = 0, truncated = 0
+0.40.313.867 I slot prompt_clear: id  0 | task 1784 | clearing prompt with 0 tokens
+0.40.314.425 I srv  update_slots: all slots are idle
+0.40.333.131 I srv  server_strea: conv_id= (empty=1)
+0.40.334.254 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.40.334.260 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 40236582
+0.40.334.264 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.40.339.494 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.40.339.511 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.40.339.514 I slot launch_slot_: id  0 | task 1874 | processing task, is_child = 0
+0.40.340.198 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.40.418.903 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.40.445.177 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.42.003.422 I slot      release: id  0 | task 1874 | stop processing: n_tokens = 0, truncated = 0
+0.42.003.429 I slot prompt_clear: id  0 | task 1874 | clearing prompt with 0 tokens
+0.42.004.022 I srv  update_slots: all slots are idle
+0.42.047.014 I srv  server_strea: conv_id= (empty=1)
+0.42.048.077 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.42.048.083 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 41926144
+0.42.048.087 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.42.053.369 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.42.053.387 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.42.053.389 I slot launch_slot_: id  0 | task 1964 | processing task, is_child = 0
+0.42.054.081 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.42.137.410 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.42.164.589 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.43.717.242 I slot      release: id  0 | task 1964 | stop processing: n_tokens = 0, truncated = 0
+0.43.717.250 I slot prompt_clear: id  0 | task 1964 | clearing prompt with 0 tokens
+0.43.718.374 I srv  update_slots: all slots are idle
+0.43.740.094 I srv  server_strea: conv_id= (empty=1)
+0.43.741.142 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.43.741.148 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 43639964
+0.43.741.151 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.43.746.436 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.43.746.452 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.43.746.454 I slot launch_slot_: id  0 | task 2054 | processing task, is_child = 0
+0.43.747.072 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.43.828.139 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.43.855.157 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.45.413.872 I slot      release: id  0 | task 2054 | stop processing: n_tokens = 0, truncated = 0
+0.45.413.878 I slot prompt_clear: id  0 | task 2054 | clearing prompt with 0 tokens
+0.45.414.831 I srv  update_slots: all slots are idle
+0.45.442.725 I srv  server_strea: conv_id= (empty=1)
+0.45.444.045 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.45.444.051 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 45336593
+0.45.444.055 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.45.450.333 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.45.450.353 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.45.450.356 I slot launch_slot_: id  0 | task 2144 | processing task, is_child = 0
+0.45.451.058 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.45.535.668 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.45.563.800 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.46.813.178 I slot      release: id  0 | task 2144 | stop processing: n_tokens = 0, truncated = 0
+0.46.813.185 I slot prompt_clear: id  0 | task 2144 | clearing prompt with 0 tokens
+0.46.814.507 I srv  update_slots: all slots are idle
+0.46.838.682 I srv  server_strea: conv_id= (empty=1)
+0.46.839.720 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.46.839.728 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 46735900
+0.46.839.732 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.46.844.901 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.46.844.919 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.46.844.921 I slot launch_slot_: id  0 | task 2214 | processing task, is_child = 0
+0.46.845.478 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.46.928.945 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.46.954.151 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.48.119.891 I slot      release: id  0 | task 2214 | stop processing: n_tokens = 0, truncated = 0
+0.48.119.898 I slot prompt_clear: id  0 | task 2214 | clearing prompt with 0 tokens
+0.48.121.110 I srv  update_slots: all slots are idle
+0.48.141.077 I srv  server_strea: conv_id= (empty=1)
+0.48.142.135 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.48.142.142 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 48042612
+0.48.142.146 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.48.147.471 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.48.147.489 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.48.147.492 I slot launch_slot_: id  0 | task 2284 | processing task, is_child = 0
+0.48.148.049 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.48.226.281 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.48.250.303 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.49.453.283 I slot      release: id  0 | task 2284 | stop processing: n_tokens = 0, truncated = 0
+0.49.453.290 I slot prompt_clear: id  0 | task 2284 | clearing prompt with 0 tokens
+0.49.454.351 I srv  update_slots: all slots are idle
+0.49.473.809 I srv  server_strea: conv_id= (empty=1)
+0.49.474.874 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.49.474.880 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 49376004
+0.49.474.884 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.49.480.240 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.49.480.258 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.49.480.260 I slot launch_slot_: id  0 | task 2354 | processing task, is_child = 0
+0.49.480.820 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.49.563.628 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.49.588.105 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.50.795.232 I slot      release: id  0 | task 2354 | stop processing: n_tokens = 0, truncated = 0
+0.50.795.239 I slot prompt_clear: id  0 | task 2354 | clearing prompt with 0 tokens
+0.50.796.110 I srv  update_slots: all slots are idle
+0.50.831.139 I srv  server_strea: conv_id= (empty=1)
+0.50.832.232 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.50.832.238 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 50717954
+0.50.832.242 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.50.837.658 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.50.837.676 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.50.837.679 I slot launch_slot_: id  0 | task 2424 | processing task, is_child = 0
+0.50.838.263 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.50.925.535 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.50.951.643 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.52.495.118 I slot      release: id  0 | task 2424 | stop processing: n_tokens = 0, truncated = 0
+0.52.495.125 I slot prompt_clear: id  0 | task 2424 | clearing prompt with 0 tokens
+0.52.495.716 I srv  update_slots: all slots are idle
+0.52.504.141 I srv  server_strea: conv_id= (empty=1)
+0.52.505.243 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.52.505.251 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 52417839
+0.52.505.255 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.52.510.383 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.52.510.401 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.52.510.403 I slot launch_slot_: id  0 | task 2508 | processing task, is_child = 0
+0.52.511.110 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.52.589.573 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.52.615.355 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.54.099.255 I slot      release: id  0 | task 2508 | stop processing: n_tokens = 0, truncated = 0
+0.54.099.262 I slot prompt_clear: id  0 | task 2508 | clearing prompt with 0 tokens
+0.54.113.117 I srv  update_slots: all slots are idle
+0.54.123.506 I srv  server_strea: conv_id= (empty=1)
+0.54.124.686 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.54.124.695 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 54021976
+0.54.124.699 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.54.131.185 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.54.131.204 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.54.131.207 I slot launch_slot_: id  0 | task 2592 | processing task, is_child = 0
+0.54.131.893 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.54.217.850 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.54.244.473 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.55.738.274 I slot      release: id  0 | task 2592 | stop processing: n_tokens = 0, truncated = 0
+0.55.738.280 I slot prompt_clear: id  0 | task 2592 | clearing prompt with 0 tokens
+0.55.739.077 I srv  update_slots: all slots are idle
+0.55.761.085 I srv  server_strea: conv_id= (empty=1)
+0.55.762.205 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.55.762.211 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 55660995
+0.55.762.214 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.55.768.026 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.55.768.046 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.55.768.049 I slot launch_slot_: id  0 | task 2676 | processing task, is_child = 0
+0.55.768.840 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.55.852.099 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.55.878.618 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.57.381.893 I slot      release: id  0 | task 2676 | stop processing: n_tokens = 0, truncated = 0
+0.57.381.899 I slot prompt_clear: id  0 | task 2676 | clearing prompt with 0 tokens
+0.57.383.047 I srv  update_slots: all slots are idle
+0.57.408.986 I srv  server_strea: conv_id= (empty=1)
+0.57.410.847 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+0.57.410.854 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 57304614
+0.57.410.861 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+0.57.417.076 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+0.57.417.094 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+0.57.417.096 I slot launch_slot_: id  0 | task 2760 | processing task, is_child = 0
+0.57.417.676 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.57.503.995 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.57.536.819 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.00.362.764 I slot      release: id  0 | task 2760 | stop processing: n_tokens = 0, truncated = 0
+1.00.362.771 I slot prompt_clear: id  0 | task 2760 | clearing prompt with 0 tokens
+1.00.363.929 I srv  update_slots: all slots are idle
+1.00.398.042 I srv  server_strea: conv_id= (empty=1)
+1.00.399.444 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+1.00.399.452 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 60285486
+1.00.399.455 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+1.00.404.974 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+1.00.404.992 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+1.00.404.994 I slot launch_slot_: id  0 | task 2918 | processing task, is_child = 0
+1.00.405.669 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.00.490.341 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.00.524.995 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.03.374.461 I slot      release: id  0 | task 2918 | stop processing: n_tokens = 0, truncated = 0
+1.03.374.467 I slot prompt_clear: id  0 | task 2918 | clearing prompt with 0 tokens
+1.03.375.083 I srv  update_slots: all slots are idle
+1.03.416.420 I srv  server_strea: conv_id= (empty=1)
+1.03.417.767 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+1.03.417.773 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 63297182
+1.03.417.776 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+1.03.423.095 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+1.03.423.112 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+1.03.423.114 I slot launch_slot_: id  0 | task 3076 | processing task, is_child = 0
+1.03.423.783 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.03.501.202 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.03.533.267 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.06.441.226 I slot      release: id  0 | task 3076 | stop processing: n_tokens = 0, truncated = 0
+1.06.441.233 I slot prompt_clear: id  0 | task 3076 | clearing prompt with 0 tokens
+1.06.442.332 I srv  update_slots: all slots are idle
+1.06.474.533 I srv  server_strea: conv_id= (empty=1)
+1.06.475.956 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+1.06.475.963 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 66363947
+1.06.475.966 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+1.06.481.444 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+1.06.481.462 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+1.06.481.464 I slot launch_slot_: id  0 | task 3234 | processing task, is_child = 0
+1.06.482.115 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.06.568.362 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.06.603.118 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.09.523.308 I slot      release: id  0 | task 3234 | stop processing: n_tokens = 0, truncated = 0
+1.09.523.315 I slot prompt_clear: id  0 | task 3234 | clearing prompt with 0 tokens
+1.09.524.412 I srv  update_slots: all slots are idle
+1.09.561.265 I srv  server_strea: conv_id= (empty=1)
+1.09.563.044 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+1.09.563.050 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 69446030
+1.09.563.054 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+1.09.568.953 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+1.09.568.972 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+1.09.568.974 I slot launch_slot_: id  0 | task 3392 | processing task, is_child = 0
+1.09.569.634 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.09.656.707 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.09.696.723 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.12.237.030 I slot      release: id  0 | task 3392 | stop processing: n_tokens = 0, truncated = 0
+1.12.237.037 I slot prompt_clear: id  0 | task 3392 | clearing prompt with 0 tokens
+1.12.237.980 I srv  update_slots: all slots are idle
+1.12.251.871 I srv  server_strea: conv_id= (empty=1)
+1.12.253.184 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+1.12.253.190 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 72159751
+1.12.253.194 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+1.12.262.180 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+1.12.262.199 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+1.12.262.201 I slot launch_slot_: id  0 | task 3522 | processing task, is_child = 0
+1.12.262.938 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.12.350.885 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.12.386.375 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.14.836.802 I slot      release: id  0 | task 3522 | stop processing: n_tokens = 0, truncated = 0
+1.14.836.810 I slot prompt_clear: id  0 | task 3522 | clearing prompt with 0 tokens
+1.14.838.081 I srv  update_slots: all slots are idle
+1.14.866.011 I srv  server_strea: conv_id= (empty=1)
+1.14.867.292 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+1.14.867.298 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 74759525
+1.14.867.302 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+1.14.876.653 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+1.14.876.670 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+1.14.876.672 I slot launch_slot_: id  0 | task 3652 | processing task, is_child = 0
+1.14.877.442 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.14.963.690 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.14.999.071 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.17.462.391 I slot      release: id  0 | task 3652 | stop processing: n_tokens = 0, truncated = 0
+1.17.462.398 I slot prompt_clear: id  0 | task 3652 | clearing prompt with 0 tokens
+1.17.463.395 I srv  update_slots: all slots are idle
+1.17.492.072 I srv  server_strea: conv_id= (empty=1)
+1.17.493.360 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+1.17.493.367 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 77385113
+1.17.493.370 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+1.17.503.614 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+1.17.503.634 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+1.17.503.637 I slot launch_slot_: id  0 | task 3782 | processing task, is_child = 0
+1.17.504.333 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.17.588.581 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.17.623.420 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.20.171.663 I slot      release: id  0 | task 3782 | stop processing: n_tokens = 0, truncated = 0
+1.20.171.670 I slot prompt_clear: id  0 | task 3782 | clearing prompt with 0 tokens
+1.20.172.907 I srv  update_slots: all slots are idle
+1.20.204.549 I srv  server_strea: conv_id= (empty=1)
+1.20.206.223 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+1.20.206.230 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 80094385
+1.20.206.234 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+1.20.215.324 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+1.20.215.342 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+1.20.215.344 I slot launch_slot_: id  0 | task 3912 | processing task, is_child = 0
+1.20.216.170 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.20.300.889 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.20.333.903 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.22.790.939 I slot      release: id  0 | task 3912 | stop processing: n_tokens = 0, truncated = 0
+1.22.790.946 I slot prompt_clear: id  0 | task 3912 | clearing prompt with 0 tokens
+1.22.791.939 I srv  update_slots: all slots are idle
+1.22.823.911 I srv  server_strea: conv_id= (empty=1)
+1.22.825.230 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+1.22.825.236 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 82713661
+1.22.825.239 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+1.22.834.267 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+1.22.834.284 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+1.22.834.286 I slot launch_slot_: id  0 | task 4041 | processing task, is_child = 0
+1.22.834.990 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.22.921.168 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.22.956.233 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.25.352.676 I slot      release: id  0 | task 4041 | stop processing: n_tokens = 0, truncated = 0
+1.25.352.683 I slot prompt_clear: id  0 | task 4041 | clearing prompt with 0 tokens
+1.25.354.002 I srv  update_slots: all slots are idle
+1.25.382.541 I srv  server_strea: conv_id= (empty=1)
+1.25.383.867 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+1.25.383.873 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 85275397
+1.25.383.877 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+1.25.393.346 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+1.25.393.365 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+1.25.393.367 I slot launch_slot_: id  0 | task 4170 | processing task, is_child = 0
+1.25.394.035 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.25.479.974 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.25.515.032 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.27.845.256 I slot      release: id  0 | task 4170 | stop processing: n_tokens = 0, truncated = 0
+1.27.845.263 I slot prompt_clear: id  0 | task 4170 | clearing prompt with 0 tokens
+1.27.846.443 I srv  update_slots: all slots are idle
+1.27.873.255 I srv  server_strea: conv_id= (empty=1)
+1.27.874.624 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+1.27.874.633 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 87767978
+1.27.874.637 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+1.27.883.892 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+1.27.883.910 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+1.27.883.913 I slot launch_slot_: id  0 | task 4299 | processing task, is_child = 0
+1.27.884.588 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.27.967.940 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.28.001.646 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.30.322.019 I slot      release: id  0 | task 4299 | stop processing: n_tokens = 0, truncated = 0
+1.30.322.026 I slot prompt_clear: id  0 | task 4299 | clearing prompt with 0 tokens
+1.30.323.052 I srv  update_slots: all slots are idle
+1.30.354.450 I srv  server_strea: conv_id= (empty=1)
+1.30.356.191 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+1.30.356.197 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 90244741
+1.30.356.201 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+1.30.365.849 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+1.30.365.868 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+1.30.365.871 I slot launch_slot_: id  0 | task 4428 | processing task, is_child = 0
+1.30.366.546 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.30.454.119 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.30.489.257 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.33.684.395 I slot      release: id  0 | task 4428 | stop processing: n_tokens = 0, truncated = 0
+1.33.684.401 I slot prompt_clear: id  0 | task 4428 | clearing prompt with 0 tokens
+1.33.685.131 I srv  update_slots: all slots are idle
+1.33.700.768 I srv  server_strea: conv_id= (empty=1)
+1.33.702.123 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+1.33.702.129 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 93607116
+1.33.702.132 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+1.33.707.423 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+1.33.707.441 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+1.33.707.443 I slot launch_slot_: id  0 | task 4577 | processing task, is_child = 0
+1.33.708.116 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.33.791.972 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.33.827.729 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.36.500.027 I slot      release: id  0 | task 4577 | stop processing: n_tokens = 0, truncated = 0
+1.36.500.033 I slot prompt_clear: id  0 | task 4577 | clearing prompt with 0 tokens
+1.36.501.052 I srv  update_slots: all slots are idle
+1.36.531.108 I srv  server_strea: conv_id= (empty=1)
+1.36.532.534 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+1.36.532.540 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 96422748
+1.36.532.543 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+1.36.537.829 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+1.36.537.846 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+1.36.537.849 I slot launch_slot_: id  0 | task 4726 | processing task, is_child = 0
+1.36.538.505 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.36.621.079 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.36.654.601 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.39.349.798 I slot      release: id  0 | task 4726 | stop processing: n_tokens = 0, truncated = 0
+1.39.349.805 I slot prompt_clear: id  0 | task 4726 | clearing prompt with 0 tokens
+1.39.350.840 I srv  update_slots: all slots are idle
+1.39.401.050 I srv  server_strea: conv_id= (empty=1)
+1.39.402.461 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+1.39.402.467 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 99272519
+1.39.402.471 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+1.39.407.733 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+1.39.407.750 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+1.39.407.752 I slot launch_slot_: id  0 | task 4875 | processing task, is_child = 0
+1.39.408.412 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.39.489.366 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.39.522.741 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.42.381.698 I slot      release: id  0 | task 4875 | stop processing: n_tokens = 0, truncated = 0
+1.42.381.705 I slot prompt_clear: id  0 | task 4875 | clearing prompt with 0 tokens
+1.42.382.776 I srv  update_slots: all slots are idle
+1.42.421.083 I srv  server_strea: conv_id= (empty=1)
+1.42.423.155 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+1.42.423.162 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 102304420
+1.42.423.165 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+1.42.429.095 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+1.42.429.113 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+1.42.429.116 I slot launch_slot_: id  0 | task 5024 | processing task, is_child = 0
+1.42.429.791 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.42.515.620 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.42.557.487 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.45.820.453 I slot      release: id  0 | task 5024 | stop processing: n_tokens = 0, truncated = 0
+1.45.820.460 I slot prompt_clear: id  0 | task 5024 | clearing prompt with 0 tokens
+1.45.821.670 I srv  update_slots: all slots are idle
+1.45.839.309 I srv  server_strea: conv_id= (empty=1)
+1.45.840.828 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+1.45.840.833 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 105743175
+1.45.840.837 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+1.45.845.933 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+1.45.845.950 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+1.45.845.953 I slot launch_slot_: id  0 | task 5199 | processing task, is_child = 0
+1.45.846.605 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.45.932.623 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.45.969.539 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.49.148.644 I slot      release: id  0 | task 5199 | stop processing: n_tokens = 0, truncated = 0
+1.49.148.650 I slot prompt_clear: id  0 | task 5199 | clearing prompt with 0 tokens
+1.49.149.533 I srv  update_slots: all slots are idle
+1.49.181.153 I srv  server_strea: conv_id= (empty=1)
+1.49.182.591 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+1.49.182.597 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 109071365
+1.49.182.600 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+1.49.187.860 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+1.49.187.877 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+1.49.187.880 I slot launch_slot_: id  0 | task 5374 | processing task, is_child = 0
+1.49.188.526 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.49.264.593 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.49.299.159 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.52.450.096 I slot      release: id  0 | task 5374 | stop processing: n_tokens = 0, truncated = 0
+1.52.450.103 I slot prompt_clear: id  0 | task 5374 | clearing prompt with 0 tokens
+1.52.451.268 I srv  update_slots: all slots are idle
+1.52.483.571 I srv  server_strea: conv_id= (empty=1)
+1.52.485.003 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+1.52.485.009 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 112372818
+1.52.485.013 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+1.52.490.252 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+1.52.490.270 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+1.52.490.272 I slot launch_slot_: id  0 | task 5549 | processing task, is_child = 0
+1.52.490.921 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.52.573.756 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.52.610.172 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.55.892.344 I slot      release: id  0 | task 5549 | stop processing: n_tokens = 0, truncated = 0
+1.55.892.351 I slot prompt_clear: id  0 | task 5549 | clearing prompt with 0 tokens
+1.55.893.520 I srv  update_slots: all slots are idle
+1.55.931.493 I srv  server_strea: conv_id= (empty=1)
+1.55.932.998 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+1.55.933.004 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 115815066
+1.55.933.007 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+1.55.939.354 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+1.55.939.373 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+1.55.939.375 I slot launch_slot_: id  0 | task 5724 | processing task, is_child = 0
+1.55.940.043 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.56.024.831 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.56.058.897 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.58.551.323 I slot      release: id  0 | task 5724 | stop processing: n_tokens = 0, truncated = 0
+1.58.551.330 I slot prompt_clear: id  0 | task 5724 | clearing prompt with 0 tokens
+1.58.552.266 I srv  update_slots: all slots are idle
+1.58.566.330 I srv  server_strea: conv_id= (empty=1)
+1.58.567.573 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+1.58.567.578 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 118474045
+1.58.567.582 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+1.58.576.129 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+1.58.576.146 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+1.58.576.148 I slot launch_slot_: id  0 | task 5863 | processing task, is_child = 0
+1.58.576.795 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.58.659.025 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+1.58.690.821 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+2.01.144.558 I slot      release: id  0 | task 5863 | stop processing: n_tokens = 0, truncated = 0
+2.01.144.566 I slot prompt_clear: id  0 | task 5863 | clearing prompt with 0 tokens
+2.01.146.137 I srv  update_slots: all slots are idle
+2.01.182.854 I srv  server_strea: conv_id= (empty=1)
+2.01.185.065 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+2.01.185.072 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 121067280
+2.01.185.076 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+2.01.195.581 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+2.01.195.602 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+2.01.195.605 I slot launch_slot_: id  0 | task 6002 | processing task, is_child = 0
+2.01.196.338 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+2.01.285.698 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+2.01.321.586 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+2.03.811.325 I slot      release: id  0 | task 6002 | stop processing: n_tokens = 0, truncated = 0
+2.03.811.332 I slot prompt_clear: id  0 | task 6002 | clearing prompt with 0 tokens
+2.03.812.759 I srv  update_slots: all slots are idle
+2.03.839.465 I srv  server_strea: conv_id= (empty=1)
+2.03.840.733 I slot       select: id  0 | task -1 |  - skipping, slot is empty
+2.03.840.741 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 123734047
+2.03.840.745 I slot prompt_clear: id  0 | task -1 | clearing prompt with 0 tokens
+2.03.849.632 I slot launch_slot_: id  0 | task -1 | sampler chain: logits -> penalties -> ?dry -> ?top-n-sigma -> top-k -> ?typical -> top-p -> min-p -> ?xtc -> temp-ext -> dist 
+2.03.849.650 I slot launch_slot_: id  0 | task -1 | sampler params: 
+	repeat_last_n = 384, repeat_penalty = 1.050, frequency_penalty = 0.000, presence_penalty = 0.000
+	dry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64
+	top_k = 40, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.750
+	mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900
+2.03.849.652 I slot launch_slot_: id  0 | task 6141 | processing task, is_child = 0
+2.03.850.294 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+2.03.931.165 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+2.03.964.143 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+2.06.516.255 I slot      release: id  0 | task 6141 | stop processing: n_tokens = 0, truncated = 0
+2.06.516.262 I slot prompt_clear: id  0 | task 6141 | clearing prompt with 0 tokens
+2.06.517.849 I srv  update_slots: all slots are idle

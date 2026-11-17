@@ -1,0 +1,673 @@
+diff --git a/src/akas/benchmarking/history.py b/src/akas/benchmarking/history.py
+index 38f6346..ddab98b 100644
+--- a/src/akas/benchmarking/history.py
++++ b/src/akas/benchmarking/history.py
+@@ -103,6 +103,8 @@ def source_identity(root):
+ def shapes(report):
+     """Keep total-output and legacy additional-decode accounting distinguishable."""
+     protocol = report["metadata"].get("protocol")
++    if protocol == "client-speech-pcm-v1":
++        return []
+     result = []
+     for row in report["results"]:
+         case = row["case"]
+@@ -385,6 +387,8 @@ class Recorder:
+         self.record["workload"] = dict(
+             id="standard-v1" if standard else "custom", shapes=observed
+         )
++        if report["metadata"].get("protocol") == "client-speech-pcm-v1":
++            self.record["workload"].update(report["metadata"]["speech_workload"])
+         if standard:
+             self.record["workload"]["definition"] = STANDARD
+             self.record["workload"]["sha256"] = STANDARD_SHA256
+@@ -523,7 +527,7 @@ def rebuild_index(root):
+     write(root / "index.json", dict(schema="akas.benchmark-index.v1", runs=entries), compact_entries=True)
+     guide = root.parent / "docs/benchmarking.md"
+     guide_link = (
+-        os.path.relpath(guide, root)
++        Path(os.path.relpath(guide, root)).as_posix()
+         if guide.is_file()
+         else "https://github.com/kreasof-ai/akas/blob/main/docs/benchmarking.md"
+     )
+diff --git a/src/akas/ops/attention/definition.py b/src/akas/ops/attention/definition.py
+index 1dbaa31..ebf43ff 100644
+--- a/src/akas/ops/attention/definition.py
++++ b/src/akas/ops/attention/definition.py
+@@ -1692,6 +1692,28 @@ IMPLEMENTATIONS += (
+ 
+ OUTPUT_ARGUMENTS["reference"]["rotary_compact"] = OutputABI((1,), ("out",))
+ VALIDATIONS["rotary_compact"] = rotary_compact_validation
++from akas.ops.attention.validation import (
++    causal_grouped_validation,
++    head_rms_rotary_validation,
++)
++
++OUTPUT_ARGUMENTS["reference"]["head_rms_rotary"] = OutputABI((-1,), ("out",))
++VALIDATIONS["head_rms_rotary"] = head_rms_rotary_validation
++OUTPUT_ARGUMENTS["reference"]["causal_grouped"] = OutputABI((-1,), ("out",))
++VALIDATIONS["causal_grouped"] = causal_grouped_validation
++IMPLEMENTATIONS += tuple(
++    Implementation(
++        "head_rms_rotary", "akas.ops.attention.kernel", "reference",
++        provider=provider, factory="head_rms_rotary",
++    )
++    for provider in ("cuda", "webgpu")
++)
++IMPLEMENTATIONS += (
++    Implementation(
++        "causal_grouped", "akas.ops.attention.kernel", "reference",
++        provider="webgpu", factory="causal_grouped",
++    ),
++)
+ IMPLEMENTATIONS += (
+     Implementation(
+         "rotary_compact",
+diff --git a/src/akas/ops/attention/kernel.py b/src/akas/ops/attention/kernel.py
+index 066e59a..df290c9 100644
+--- a/src/akas/ops/attention/kernel.py
++++ b/src/akas/ops/attention/kernel.py
+@@ -1673,3 +1673,93 @@ def window_cache_tail(spec, schedule):
+         return kc, vc
+ 
+     return compute
++def head_rms_rotary(spec, schedule):
++    """Scale and rotate adjacent coordinate pairs with optional RMS normalization."""
++    import tilelang.language as T
++
++    p = {**spec.parameters, **schedule}
++    r, h, d, cap, scale_heads = (p[k] for k in ("r", "h", "d", "capacity", "scale_heads"))
++    normalize, eps = p.get("normalize", True), p.get("eps", 1e-6)
++
++    @kernel
++    def compute(
++        x: Tensor((r, h * d), "float32"),
++        scale: Tensor((scale_heads * d,), "float32"),
++        table: Tensor((cap, d), "float32"),
++        positions: Tensor((r,), "int32"),
++    ) -> Tensor((r, h * d), "float32"):
++        out = output((r, h * d), "float32")
++        with T.Kernel(r, h, threads=64) as (row, head):
++            total = T.alloc_fragment((1,), "float32")
++            if normalize:
++                squares = T.alloc_fragment((d,), "float32")
++                for j in T.Parallel(d):
++                    value = x[row, head * d + j]
++                    squares[j] = value * value
++                T.reduce_sum(squares, total)
++            for j in T.Parallel(d // 2):
++                position = positions[row]
++                a = T.alloc_var("float32")
++                b = T.alloc_var("float32")
++                a = x[row, head * d + 2 * j] * scale[(head % scale_heads) * d + 2 * j]
++                b = x[row, head * d + 2 * j + 1] * scale[(head % scale_heads) * d + 2 * j + 1]
++                if normalize:
++                    a *= T.rsqrt(total[0] / d + eps)
++                    b *= T.rsqrt(total[0] / d + eps)
++                cosine = table[position, j]
++                sine = table[position, j + d // 2]
++                out[row, head * d + 2 * j] = a * cosine - b * sine
++                out[row, head * d + 2 * j + 1] = a * sine + b * cosine
++        return out
++
++    return compute
++def causal_grouped(spec, schedule):
++    """Reference grouped-query attention for short native F16 caches."""
++    import tilelang.language as T
++
++    p = {**spec.parameters, **schedule}
++    r, h, kh, d, cap, chunk = (p[key] for key in ("r", "h", "kh", "d", "capacity", "chunk"))
++    cache = (r // chunk, kh, cap, d)
++
++    @kernel
++    def compute(
++        q: Tensor((r, h * d), "float32"),
++        kc: Tensor(cache, "float16"),
++        vc: Tensor(cache, "float16"),
++        positions: Tensor((r,), "int32"),
++        enabled: Tensor((r,), "int32"),
++    ) -> Tensor((r * h * d,), "float32"):
++        out = output((r * h * d,), "float32")
++        with T.Kernel(r, h, threads=128) as (row, head):
++            slot, kv = row // chunk, head // (h // kh)
++            scores = T.alloc_fragment((cap,), "float32")
++            probs = T.alloc_fragment((cap,), "float32")
++            weights = T.alloc_shared((cap,), "float32")
++            maximum = T.alloc_fragment((1,), "float32")
++            denominator = T.alloc_fragment((1,), "float32")
++            for i in T.Parallel(cap):
++                dot = T.alloc_var("float32")
++                dot = 0
++                if i <= positions[row]:
++                    for j in T.serial(d):
++                        dot += q[row, head * d + j] * T.cast(kc[slot, kv, i, j], "float32")
++                    scores[i] = dot * d ** (-0.5)
++                else:
++                    scores[i] = T.float32(-1e30)
++            T.reduce_max(scores, maximum)
++            for i in T.Parallel(cap):
++                probs[i] = T.if_then_else(i <= positions[row], T.exp(scores[i] - maximum[0]), 0)
++            T.reduce_sum(probs, denominator)
++            for i in T.Parallel(cap):
++                weights[i] = probs[i] / T.max(denominator[0], T.float32(1e-20))
++            T.sync_threads()
++            for j in T.Parallel(d):
++                total = T.alloc_var("float32")
++                total = 0
++                if enabled[row] != 0:
++                    for i in T.serial(positions[row] + 1):
++                        total += weights[i] * T.cast(vc[slot, kv, i, j], "float32")
++                out[row * h * d + head * d + j] = total
++        return out
++
++    return compute
+diff --git a/src/akas/ops/attention/validation.py b/src/akas/ops/attention/validation.py
+index 7d3f8ca..3e9d5c3 100644
+--- a/src/akas/ops/attention/validation.py
++++ b/src/akas/ops/attention/validation.py
+@@ -1505,3 +1505,43 @@ def projected_gate_validation(kind, p, signature):
+         raw = v["w"].view("uint8").reshape(-1)
+         raw[:] = repack_host(raw)
+     return ValidationCase(v, expected, rtol=0.002, atol=2e-5)
++def head_rms_rotary_validation(kind, p, signature):
++    import numpy as np
++    from akas.kernels.contracts import ValidationCase, sample_arguments
++
++    values = sample_arguments(signature)
++    r, h, d = (p[key] for key in ("r", "h", "d"))
++    values["positions"][:] = np.arange(r) % p["capacity"]
++    x = values["x"].reshape(r, h, d).astype("float64")
++    if p.get("normalize", True):
++        x /= np.sqrt(np.mean(x * x, axis=-1, keepdims=True) + p.get("eps", 1e-6))
++    scales = values["scale"].reshape(p["scale_heads"], d)
++    x *= scales[np.arange(h) % p["scale_heads"]]
++    table = values["table"][values["positions"]]
++    real, imag = x[..., 0::2], x[..., 1::2]
++    rotation = table[:, None, :d // 2] + 1j * table[:, None, d // 2:]
++    rotated = (real + 1j * imag) * rotation
++    out = np.stack((rotated.real, rotated.imag), axis=-1).reshape(r, h * d)
++    return ValidationCase(values, {**values, "out": out.astype("float32")})
++def causal_grouped_validation(kind, p, signature):
++    import numpy as np
++    from akas.kernels.contracts import ValidationCase, sample_arguments
++
++    values = sample_arguments(signature)
++    r, h, kh, d, cap, chunk = (p[key] for key in ("r", "h", "kh", "d", "capacity", "chunk"))
++    values["positions"][:] = np.arange(r) % cap
++    values["enabled"][:] = 1
++    if r > 1:
++        values["enabled"][-1] = 0
++    q = values["q"].reshape(r, h, d).astype("float64")
++    kc, vc = (values[name].astype("float64") for name in ("kc", "vc"))
++    out = np.zeros_like(q)
++    for row, position in enumerate(values["positions"]):
++        if values["enabled"][row]:
++            keys = np.repeat(kc[row // chunk, :, :position + 1], h // kh, axis=0)
++            vals = np.repeat(vc[row // chunk, :, :position + 1], h // kh, axis=0)
++            scores = np.einsum("hd,htd->ht", q[row], keys) * d ** (-0.5)
++            probabilities = np.exp(scores - scores.max(axis=-1, keepdims=True))
++            probabilities /= probabilities.sum(axis=-1, keepdims=True)
++            out[row] = np.einsum("ht,htd->hd", probabilities, vals)
++    return ValidationCase(values, {**values, "out": out.astype("float32").reshape(-1)})
+diff --git a/src/akas/ops/gdn/definition.py b/src/akas/ops/gdn/definition.py
+index 0a6eacc..ab6a815 100644
+--- a/src/akas/ops/gdn/definition.py
++++ b/src/akas/ops/gdn/definition.py
+@@ -487,6 +487,7 @@ OUTPUT_ARGUMENTS = {
+         "restore": OutputABI((1,), ("state",)),
+     },
+ }
++OUTPUT_ARGUMENTS["reference"] = OUTPUT_ARGUMENTS["bf16"]
+ IMPLEMENTATIONS = (
+     Implementation(
+         "conv_commit",
+@@ -754,3 +755,25 @@ IMPLEMENTATIONS = (
+         name="gdn.cuda.bf16_batch",
+     ),
+ )
++
++IMPLEMENTATIONS += tuple(
++    Implementation(
++        kind,
++        "akas.ops.gdn.kernel",
++        "reference",
++        provider=provider,
++        defaults=(("dtype", "float32"),)
++        + (
++            (("webgpu_tile", 8),) if kind == "gdn_scan" and provider == "webgpu" else ()
++        ),
++        factory=factory,
++        name=f"gdn.{provider}.reference",
++    )
++    for provider in ("cuda", "webgpu")
++    for kind, factory in (
++        ("gdn_conv", "mapped_conv_f16"),
++        ("gdn_prepare", "mapped_prepare_f16"),
++        ("gdn_norm", "mapped_norm_f16"),
++        ("gdn_scan", "mapped_scan"),
++    )
++)
+diff --git a/src/akas/ops/gdn/validation.py b/src/akas/ops/gdn/validation.py
+index 5851eee..5226253 100644
+--- a/src/akas/ops/gdn/validation.py
++++ b/src/akas/ops/gdn/validation.py
+@@ -100,6 +100,8 @@ def validation(kind, p, signature):
+     )
+ 
+     def rounded(x):
++        if p.get("dtype") == "float32":
++            return np.asarray(x, dtype="float32")
+         if f16:
+             return np.asarray(x, dtype="float16").astype("float32")
+         return decode_bfloat16(encode_bfloat16(x))
+diff --git a/src/akas/ops/moe/definition.py b/src/akas/ops/moe/definition.py
+index 47d8e3d..bcce7c0 100644
+--- a/src/akas/ops/moe/definition.py
++++ b/src/akas/ops/moe/definition.py
+@@ -39,14 +39,17 @@ def routed_moe(
+     scale=1.0,
+     normalize=True,
+     provider="cuda",
++    router="biased_router",
+ ):
+-    """Sigmoid/bias routing over encoded experts without a shared branch."""
++    """Biased routing over encoded experts without a shared branch."""
++    if router not in ("biased_router", "biased_softmax_router"):
++        raise ValueError("unknown routed expert scoring")
+     rows, width = x.shape
+     experts, hidden, _ = weights["gate"].shape
+     ids = graph.buffer(prefix + "ids", (rows, top), "int32")
+     probability = graph.buffer(prefix + "probability", (rows, top), "float32")
+     graph(
+-        "biased_router",
++        router,
+         dict(r=rows, experts=experts, top=top, scale=scale, normalize=normalize),
+         logits,
+         bias,
+@@ -2425,6 +2428,18 @@ OUTPUT_ARGUMENTS["reference"]["expert_pack"] = OutputABI(
+     (-3, -2, -1), ("packed", "packed_scales", "expert_offsets")
+ )
+ VALIDATIONS["expert_pack"] = pack_validation
++
++from akas.ops.moe.validation import biased_softmax_validation
++
++OUTPUT_ARGUMENTS["reference"]["biased_softmax_router"] = OutputABI((2, 3), ("ids", "weights"))
++VALIDATIONS["biased_softmax_router"] = biased_softmax_validation
++IMPLEMENTATIONS += tuple(
++    Implementation(
++        "biased_softmax_router", "akas.ops.moe.kernel", "reference",
++        provider=provider, factory="biased_softmax_router",
++    )
++    for provider in ("cuda", "webgpu")
++)
+ IMPLEMENTATIONS += (
+     Implementation(
+         "expert_pack",
+diff --git a/src/akas/ops/moe/kernel.py b/src/akas/ops/moe/kernel.py
+index 5f39b43..818120e 100644
+--- a/src/akas/ops/moe/kernel.py
++++ b/src/akas/ops/moe/kernel.py
+@@ -438,3 +438,55 @@ def _packed_float_experts(spec, schedule, *, provider):
+         return out
+ 
+     return compute
++def biased_softmax_router(spec, schedule):
++    """Select using biased logits and normalize the selected unbiased logits."""
++    import tilelang.language as T
++    from akas.kernels.kernel import Tensor, kernel, output
++
++    p = {**spec.parameters, **schedule}
++    rows, experts, top = (p[name] for name in ("r", "experts", "top"))
++
++    @kernel
++    def compute(
++        logits: Tensor((rows, experts), "float32"), bias: Tensor((experts,), "float32")
++    ) -> tuple[Tensor((rows, top), "int32"), Tensor((rows, top), "float32")]:
++        ids = output((rows, top), "int32")
++        weights = output((rows, top), "float32")
++        with T.Kernel(rows, threads=128) as row:
++            scores = T.alloc_fragment((experts,), "float32")
++            candidates = T.alloc_fragment((experts,), "float32")
++            maximum = T.alloc_fragment((1,), "float32")
++            winner = T.alloc_fragment((1,), "float32")
++            chosen = T.alloc_shared((top,), "float32")
++            peak = T.alloc_shared((1,), "float32")
++            for i in T.Parallel(experts):
++                scores[i] = logits[row, i] + bias[i]
++            for rank in T.serial(top):
++                T.reduce_max(scores, maximum, dim=0)
++                for i in T.Parallel(experts):
++                    candidates[i] = T.if_then_else(
++                        scores[i] == maximum[0], -T.cast(i, "float32"), -T.cast(experts, "float32")
++                    )
++                T.reduce_max(candidates, winner, dim=0)
++                for i in T.Parallel(1):
++                    index = T.cast(-winner[0], "int32")
++                    ids[row, rank] = index
++                    chosen[rank] = logits[row, index]
++                T.sync_threads()
++                for i in T.Parallel(experts):
++                    if i == T.cast(-winner[0], "int32"):
++                        scores[i] = -T.infinity("float32")
++            for i in T.Parallel(1):
++                peak[0] = chosen[0]
++                for rank in T.serial(1, top):
++                    peak[0] = T.max(peak[0], chosen[rank])
++            T.sync_threads()
++            for rank in T.Parallel(top):
++                total = T.alloc_var("float32")
++                total = 0
++                for i in T.serial(top):
++                    total += T.exp(chosen[i] - peak[0])
++                weights[row, rank] = p.get("scale", 1.0) * T.exp(chosen[rank] - peak[0]) / total
++        return ids, weights
++
++    return compute
+diff --git a/src/akas/ops/moe/validation.py b/src/akas/ops/moe/validation.py
+index 7c0881a..5d50200 100644
+--- a/src/akas/ops/moe/validation.py
++++ b/src/akas/ops/moe/validation.py
+@@ -703,3 +703,19 @@ def packed_validation(kind, p, signature):
+                     row, rank = divmod(int(route), top)
+                     expected[name][begin + local] = old[row, rank]
+     return ValidationCase(values, expected, rtol=baseline.rtol, atol=baseline.atol)
++def biased_softmax_validation(kind, p, signature):
++    import numpy as np
++    from akas.kernels.contracts import ValidationCase, sample_arguments
++
++    values = sample_arguments(signature)
++    logits, bias = values["logits"], values["bias"]
++    # Force a tied row to qualify the lower-ID selection rule.
++    logits[0, 1] = logits[0, 0]
++    bias[1] = bias[0]
++    indices = np.argsort(-(logits + bias), axis=1, kind="stable")[:, :p["top"]]
++    selected = np.take_along_axis(logits.astype("float64"), indices, axis=1)
++    probabilities = np.exp(selected - selected.max(axis=1, keepdims=True))
++    probabilities *= p.get("scale", 1.0) / probabilities.sum(axis=1, keepdims=True)
++    return ValidationCase(values, {
++        **values, "ids": indices.astype("int32"), "weights": probabilities.astype("float32"),
++    })
+diff --git a/src/akas/ops/residual/definition.py b/src/akas/ops/residual/definition.py
+index dca8082..30b86df 100644
+--- a/src/akas/ops/residual/definition.py
++++ b/src/akas/ops/residual/definition.py
+@@ -3,6 +3,7 @@
+ from akas.kernels.contracts import OutputABI
+ from akas.kernels.contracts import Implementation
+ from akas.ops.residual.validation import validation
++from akas.ops.residual.validation import bank_validation
+ 
+ 
+ OUTPUT_ARGUMENTS = {"reference": {"add": (-1,)}}
+@@ -11,6 +12,8 @@ for _contract in ("reference", "packed", "packed-baseline", "bf16", "block-fp8")
+         {"add": OutputABI((-1,), ("out",))}
+     )
+ VALIDATIONS = {"add": validation}
++OUTPUT_ARGUMENTS["*"] = {"attention_residual": OutputABI((0, -1), ("bank", "out"))}
++VALIDATIONS["attention_residual"] = bank_validation
+ IMPLEMENTATIONS = (
+     Implementation(
+         "add",
+@@ -52,3 +55,14 @@ IMPLEMENTATIONS = (
+         name="residual.kernel",
+     ),
+ )
++
++IMPLEMENTATIONS += tuple(
++    Implementation(
++        "attention_residual",
++        "akas.ops.residual.kernel",
++        "*",
++        provider=provider,
++        factory="attention_residual",
++    )
++    for provider in ("cuda", "webgpu")
++)
+diff --git a/src/akas/ops/residual/kernel.py b/src/akas/ops/residual/kernel.py
+index def40db..a46b944 100644
+--- a/src/akas/ops/residual/kernel.py
++++ b/src/akas/ops/residual/kernel.py
+@@ -34,3 +34,77 @@ def add(spec: KernelSpec, schedule: Mapping[str, object]):
+         return out
+ 
+     return compute
++
++
++def attention_residual(spec, schedule):
++    """Append one source and attend over the valid prefix of a residual bank."""
++    import tilelang.language as T
++    from akas.kernels.reductions import tree_reduce
++
++    p = {**spec.parameters, **schedule}
++    rows, width, capacity, index, epsilon = (
++        p[key] for key in ("r", "c", "capacity", "index", "eps")
++    )
++    threads = 128
++    reduce = tree_reduce(threads)
++
++    @kernel
++    def compute(
++        bank: Tensor((capacity, rows, width), "float32"),
++        source: Tensor((rows, width), "float32"),
++        query: Tensor((width,), "float32"),
++    ) -> tuple[
++        Tensor((capacity, rows, width), "float32"), Tensor((rows, width), "float32")
++    ]:
++        out = output((rows, width), "float32")
++        with T.Kernel(rows, threads=threads) as row:
++            lane = T.get_thread_binding()
++            scores = T.alloc_shared((index + 1,), "float32")
++            norm = T.alloc_shared((threads,), "float32")
++            score = T.alloc_shared((threads,), "float32")
++            peak = T.alloc_shared((1,), "float32")
++            denominator = T.alloc_shared((1,), "float32")
++            for stripe in T.serial(T.ceildiv(width, threads)):
++                column = stripe * threads + lane
++                if column < width:
++                    bank[index, row, column] = source[row, column]
++            T.sync_threads()
++            for i in T.serial(index + 1):
++                sum_sq = T.alloc_var("float32")
++                dot = T.alloc_var("float32")
++                sum_sq = 0
++                dot = 0
++                for stripe in T.serial(T.ceildiv(width, threads)):
++                    column = stripe * threads + lane
++                    if column < width:
++                        entry = bank[i, row, column]
++                        sum_sq += entry * entry
++                        dot += entry * query[column]
++                norm[lane] = sum_sq
++                score[lane] = dot
++                T.sync_threads()
++                reduce(norm, lane)
++                reduce(score, lane)
++                if lane == 0:
++                    scores[i] = score[0] * T.rsqrt(norm[0] / width + epsilon)
++                T.sync_threads()
++            if lane == 0:
++                peak[0] = scores[0]
++                for i in T.serial(1, index + 1):
++                    peak[0] = T.max(peak[0], scores[i])
++                denominator[0] = 0
++                for i in T.serial(index + 1):
++                    scores[i] = T.exp(scores[i] - peak[0])
++                    denominator[0] += scores[i]
++            T.sync_threads()
++            for stripe in T.serial(T.ceildiv(width, threads)):
++                column = stripe * threads + lane
++                if column < width:
++                    total = T.alloc_var("float32")
++                    total = 0
++                    for i in T.serial(index + 1):
++                        total += bank[i, row, column] * (scores[i] / denominator[0])
++                    out[row, column] = total
++        return bank, out
++
++    return compute
+diff --git a/src/akas/ops/residual/validation.py b/src/akas/ops/residual/validation.py
+index 36022eb..bde2d49 100644
+--- a/src/akas/ops/residual/validation.py
++++ b/src/akas/ops/residual/validation.py
+@@ -17,3 +17,21 @@ def validation(kind, p, signature):
+         result = result.astype("float16")
+     expected["out"][:] = result
+     return ValidationCase(values, expected, rtol=1e-06, atol=1e-07)
++
++
++def bank_validation(kind, p, signature):
++    import numpy as np
++
++    from akas.kernels.contracts import ValidationCase, sample_arguments
++
++    values = sample_arguments(signature)
++    index = p["index"]
++    bank = values["bank"].copy()
++    bank[index] = values["source"]
++    prefix = bank[: index + 1].astype("float64")
++    inverse_rms = 1 / np.sqrt(np.mean(prefix**2, axis=-1) + p["eps"])
++    scores = (prefix @ values["query"].astype("float64")) * inverse_rms
++    weights = np.exp(scores - np.max(scores, axis=0, keepdims=True))
++    weights /= weights.sum(axis=0, keepdims=True)
++    out = np.einsum("ir,irc->rc", weights, prefix).astype("float32")
++    return ValidationCase(values, {**values, "bank": bank, "out": out})
+diff --git a/src/akas/text/profiles.json b/src/akas/text/profiles.json
+index 2f24a1d..172bb76 100644
+--- a/src/akas/text/profiles.json
++++ b/src/akas/text/profiles.json
+@@ -20,6 +20,10 @@
+       "normalization": "NFC",
+       "add_bos": false
+     },
++    "zonos3": {
++      "model": "gpt2",
++      "pattern": "\\p{N}{1,3}| ?[^\\s\\p{L}\\p{N}]{2,}[\\r\\n/]*| +(?!\\S)"
++    },
+     "spark2_5": {
+       "model": "gpt2",
+       "pattern": "\\p{N}{1,3}",
+diff --git a/tests/test_baseline_formats.py b/tests/test_baseline_formats.py
+index 7ee1043..2cc1db9 100644
+--- a/tests/test_baseline_formats.py
++++ b/tests/test_baseline_formats.py
+@@ -18,3 +18,8 @@ def test_existing_defaults_and_incompatible_native_encodings():
+     assert select_weight_format(model, "llama") == "q4_k_m"
+     with pytest.raises(ValueError, match="safetensors"):
+         select_weight_format(model, "sglang", "q4_k_m")
++
++
++def test_speech_default_uses_declared_q8_weights():
++    model = {"modes": ["tts"], "weights": {"q8_0": {}}}
++    assert select_weight_format(model, "llama") == "q8_0"
+diff --git a/tests/test_benchmark_history.py b/tests/test_benchmark_history.py
+index 9953b4c..048e001 100644
+--- a/tests/test_benchmark_history.py
++++ b/tests/test_benchmark_history.py
+@@ -110,6 +110,23 @@ def test_changed_sources_invalidate_run_and_legacy_accounting_stays_separate(
+     assert record["workload"]["id"] == "custom"
+ 
+ 
++def test_speech_records_preserve_utterances_without_token_shapes(tmp_path, source):
++    from akas.benchmarking.workload import load
++
++    workload = load("speech-demo-v1")
++    speech_report = report(workload["protocol"])
++    metadata = speech_report["metadata"]
++    metadata["speech_workload"] = dict(id=workload["id"], definition=workload)
++    speech_report["results"] = [
++        dict(status="ok", case=utterance) for utterance in workload["utterances"]
++    ]
++    run = Recorder(tmp_path / "history", metadata, source_root=source)
++    record = run.update(speech_report, final=True)
++    assert record["status"] == "passed"
++    assert record["workload"] == dict(id=workload["id"], definition=workload, shapes=[])
++    assert [row["case"] for row in record["results"]] == workload["utterances"]
++
++
+ def program(root):
+     profile = dict(
+         schema="tensor.schedule-profile.v1",
+diff --git a/tools/baselines/README.md b/tools/baselines/README.md
+index 653ee57..20ae5be 100644
+--- a/tools/baselines/README.md
++++ b/tools/baselines/README.md
+@@ -53,6 +53,34 @@ safetensors checkpoint with llama.cpp `--outtype f16 --no-mtp`; a vision project
+ is not the text model. The other GGUF variants reference their pinned repositories.
+ Use identical resulting bytes when measuring AKAS and llama.cpp.
+ 
++## Speech synthesis demo
++
++The [ZONOS3-Mini declaration](../../benchmarks/models/zonos3-mini.json) pins
++the Q8_0 backbone, F32 audio projector, and llama.cpp b12424 revision.
++Place both GGUF files at their declared paths and extract the
++[Windows Vulkan release](https://github.com/ggml-org/llama.cpp/releases/tag/b12424)
++under `build/baselines/llama-b12424-vulkan`. Supply `--binary` to use a build
++from the same revision elsewhere.
++
++```sh
++uv run --no-sync python -m tools.baselines llama zonos3-mini --format q8_0 --provider vulkan
++uv run --no-sync python -m tools.baselines llama zonos3-mini --format q8_0 --provider cpu
++```
++
++[`speech-demo-v1`](../../src/akas/benchmarking/workloads/speech-demo-v1.json)
++uses two English utterances, a fixed seed and the same predefined voice on both
++backends. Each utterance gets one warmup and three measured requests. Timing
++starts at the localhost request and ends when the client has read all PCM16
++samples. It includes text conditioning, audio generation, codec decoding and
++delivery. The real-time factor is elapsed seconds divided by returned audio
++seconds. Model loading and WAV writing are outside this interval.
++
++The run retains the workload, the server log and a WAV per measured repeat
++under `benchmarks/runs/<run-id>/`. Compare the per-utterance medians using
++the real-time factor when the synthesized durations differ. These are speech
++demonstrations with PCM checks. AKAS currently has no native ZONOS3 model or
++audio decoder, so both runs use llama.cpp.
++
+ ## Measure the complete workload
+ 
+ Add `--optimized` to enable graph execution for the native engines, provision the
+diff --git a/tools/baselines/__main__.py b/tools/baselines/__main__.py
+index 050f016..243e799 100644
+--- a/tools/baselines/__main__.py
++++ b/tools/baselines/__main__.py
+@@ -30,6 +30,8 @@ def select_weight_format(model, runtime, requested=None):
+     """Select declared checkpoint bytes independently from execution dtype."""
+     if requested is not None:
+         selected = requested
++    elif runtime == "llama" and model.get("modes") == ["tts"]:
++        selected = "q8_0"
+     elif runtime == "llama":
+         selected = "q4_k_m"
+     elif "bf16" in model["weights"]:
+@@ -52,8 +54,9 @@ def main():
+     parser.add_argument("model", help="ID or alias from benchmarks/models")
+     parser.add_argument("--models", type=Path, default=Path("benchmarks/models"))
+     parser.add_argument("--mtp", action="store_true")
+-    parser.add_argument("--provider", choices=("cuda", "vulkan"), default="cuda")
+-    parser.add_argument("--format", choices=("bf16", "fp8", "f16", "q4_0", "q4_k_m"))
++    parser.add_argument("--provider", choices=("cpu", "cuda", "vulkan"), default="cuda")
++    parser.add_argument("--format", choices=("bf16", "fp8", "f16", "q4_0", "q4_k_m", "q8_0"))
++    parser.add_argument("--binary", type=Path, help="override the speech server executable")
+     parser.add_argument("--history", type=Path, default=Path("benchmarks"))
+     parser.add_argument("--seconds", type=int, default=600)
+     parser.add_argument(
+@@ -79,6 +82,20 @@ def main():
+     if args.streaming and args.runtime == "llama":
+         parser.error("streamed native timing currently supports vLLM and SGLang")
+     definition_path, model = model_definition(args.models, args.model)
++    speech = model.get("runtime_options", {}).get("llama", {}).get("speech")
++    if speech and args.runtime == "llama":
++        if args.mtp or args.optimized or args.streaming or args.provider == "cuda":
++            parser.error("the speech probe supports CPU or Vulkan and its own workload")
++        from tools.baselines.speech import run
++
++        weight_format = select_weight_format(model, args.runtime, args.format)
++        record = run(args, definition_path, model, speech, weight_format)
++        print(record["id"], record["status"], flush=True)
++        if record["status"] != "passed":
++            raise SystemExit(1)
++        return
++    if args.provider == "cpu" or args.binary is not None:
++        parser.error("--provider cpu and --binary are available for speech probes")
+     mode = "mtp" if args.mtp else "ar"
+     if mode not in model["modes"]:
+         parser.error("the model definition does not declare this generation mode")

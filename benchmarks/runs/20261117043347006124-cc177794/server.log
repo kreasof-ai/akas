@@ -1,0 +1,63 @@
+0.00.115.102 I srv  llama_server: initializing ...
+0.00.115.114 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.115.403 I srv  init_listene: The UI is disabled
+0.00.115.407 I srv  init_listene: Use --ui/--no-ui (or deprecated --webui/--no-webui) to enable/disable
+0.00.115.579 W srv  server_setup: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)
+0.00.121.184 I srv    load_model: loading model 'D:\Workspace\kreasof-ai\github\akas\build\checkpoints\zonos3-mini\ZONOS3-Mini-Q8_0.gguf'
+0.00.694.228 W load: special_eos_id is not in special_eog_ids - the tokenizer config may be incorrect
+0.01.448.450 I cmn          init: llama threadpool init, n_threads = 6
+0.06.716.364 W init_audio: audio input is in experimental stage and may have reduced quality:
+    https://github.com/ggml-org/llama.cpp/discussions/13759
+0.06.716.570 I srv    load_model: loaded multimodal model, 'D:\Workspace\kreasof-ai\github\akas\build\checkpoints\zonos3-mini\mmproj-ZONOS3-Mini-F32.gguf'
+0.06.730.442 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 1024, kv_unified = 'false'
+0.06.730.567 W srv          init: --cache-idle-slots requires --cache-ram, disabling
+0.06.749.265 I srv  server_run_i: model loaded
+0.06.749.285 I srv  server_on_li: listening on http://127.0.0.1:64551
+0.06.791.325 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = -1
+0.06.834.813 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0
+0.06.835.617 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.07.778.299 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.07.995.826 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.10.582.176 I slot      release: id  0 | task 0 | stop processing: n_tokens = 0, truncated = 0
+0.10.586.113 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 10478066
+0.10.591.709 I slot launch_slot_: id  0 | task 30 | processing task, is_child = 0
+0.10.592.383 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.10.682.201 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.10.705.254 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.11.231.106 I slot      release: id  0 | task 30 | stop processing: n_tokens = 0, truncated = 0
+0.11.269.268 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 11126991
+0.11.276.470 I slot launch_slot_: id  0 | task 60 | processing task, is_child = 0
+0.11.277.176 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.11.539.223 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.11.570.256 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.12.330.545 I slot      release: id  0 | task 60 | stop processing: n_tokens = 0, truncated = 0
+0.12.350.333 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 12226430
+0.12.355.736 I slot launch_slot_: id  0 | task 90 | processing task, is_child = 0
+0.12.356.248 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.12.448.806 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.12.473.021 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.13.009.145 I slot      release: id  0 | task 90 | stop processing: n_tokens = 0, truncated = 0
+0.13.041.780 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 12905031
+0.13.048.093 I slot launch_slot_: id  0 | task 120 | processing task, is_child = 0
+0.13.048.746 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.13.139.336 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.13.170.771 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.15.418.318 I slot      release: id  0 | task 120 | stop processing: n_tokens = 0, truncated = 0
+0.15.427.556 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 15314203
+0.15.436.771 I slot launch_slot_: id  0 | task 190 | processing task, is_child = 0
+0.15.437.334 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.15.526.294 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.15.556.398 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.16.927.375 I slot      release: id  0 | task 190 | stop processing: n_tokens = 0, truncated = 0
+0.16.948.875 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 16823261
+0.16.954.585 I slot launch_slot_: id  0 | task 260 | processing task, is_child = 0
+0.16.955.074 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.17.044.174 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.17.071.951 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.18.385.293 I slot      release: id  0 | task 260 | stop processing: n_tokens = 0, truncated = 0
+0.18.408.960 I slot       select: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = 18281178
+0.18.414.995 I slot launch_slot_: id  0 | task 330 | processing task, is_child = 0
+0.18.415.695 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.18.506.874 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.18.536.904 W init: embeddings required but some input tokens were not marked as outputs -> overriding
+0.19.882.369 I slot      release: id  0 | task 330 | stop processing: n_tokens = 0, truncated = 0

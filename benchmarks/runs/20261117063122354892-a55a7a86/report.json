@@ -1,0 +1,1221 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "protocol": "client-speech-pcm-v1",
+    "speech_workload": {
+      "id": "speech-english-v1",
+      "definition": {
+        "schema": "akas.speech-workload.v1",
+        "id": "speech-english-v1",
+        "protocol": "client-speech-pcm-v1",
+        "warmup": 1,
+        "repeats": 3,
+        "request": {
+          "lang": "en",
+          "seed": 17,
+          "temperature": 0.75,
+          "n_predict": 384,
+          "stream": false,
+          "response_format": "pcm16"
+        },
+        "utterances": [
+          {
+            "id": "hello",
+            "tier": "short",
+            "text": "Hello world."
+          },
+          {
+            "id": "question",
+            "tier": "short",
+            "text": "Are you ready?"
+          },
+          {
+            "id": "warning",
+            "tier": "short",
+            "text": "Watch your step!"
+          },
+          {
+            "id": "numbers",
+            "tier": "short",
+            "text": "Seven, fourteen, twenty-one."
+          },
+          {
+            "id": "reply",
+            "tier": "short",
+            "text": "Yes, that sounds right."
+          },
+          {
+            "id": "time",
+            "tier": "short",
+            "text": "Please call me at noon."
+          },
+          {
+            "id": "lighthouse",
+            "tier": "medium",
+            "text": "The old lighthouse keeper climbed the spiral stairs every evening."
+          },
+          {
+            "id": "directions",
+            "tier": "medium",
+            "text": "Turn left at the bakery, then cross the bridge and follow the river."
+          },
+          {
+            "id": "announcement",
+            "tier": "medium",
+            "text": "The next train leaves from platform three. Please stand behind the yellow line."
+          },
+          {
+            "id": "names",
+            "tier": "medium",
+            "text": "Maya and Oliver brought warm bread, ripe pears, and a jar of honey."
+          },
+          {
+            "id": "dialogue",
+            "tier": "medium",
+            "text": "Did you hear that knock? Wait, I think it came from the kitchen."
+          },
+          {
+            "id": "technical",
+            "tier": "medium",
+            "text": "The sensor takes five readings and reports the average when the light turns green."
+          },
+          {
+            "id": "story",
+            "tier": "long",
+            "text": "When the rain finally stopped, we opened the windows and listened. Water dripped from the trees, and somewhere beyond the fence a blackbird began to sing."
+          },
+          {
+            "id": "instructions",
+            "tier": "long",
+            "text": "Before you leave, turn off the oven, check that the back door is locked, and put the spare key in the blue bowl beside the telephone."
+          },
+          {
+            "id": "conversation",
+            "tier": "long",
+            "text": "I thought we were meeting on Friday. Did something change? If Thursday works better for everyone, I can move my appointment and meet you after lunch."
+          },
+          {
+            "id": "explanation",
+            "tier": "long",
+            "text": "A compass needle aligns with the local magnetic field. Near a large steel object, that field can bend enough to make the needle point away from north."
+          },
+          {
+            "id": "announcement-long",
+            "tier": "long",
+            "text": "Good afternoon, passengers. Because of road repairs near the central station, this bus will follow a different route. The next stop is the library on Market Street."
+          },
+          {
+            "id": "recipe",
+            "tier": "long",
+            "text": "Stir the chopped apples into the batter, then pour it into a greased pan. Bake until the top is golden and a toothpick comes out clean."
+          }
+        ]
+      }
+    },
+    "runtime": "akas",
+    "provider": "webgpu",
+    "model": "Zyphra/ZONOS3-Mini",
+    "mode": "tts",
+    "purpose": "speech-demo",
+    "weight_format": "q8_0",
+    "checkpoint": "D:\\Workspace\\kreasof-ai\\github\\akas\\build\\checkpoints\\zonos3-mini\\ZONOS3-Mini-Q8_0.gguf",
+    "checkpoint_sha256": "60568efc88e2f9231f4f5c061e246421f575986642d72ab9ae68f77d6cf76be4",
+    "checkpoint_source": {
+      "repo": "ggml-org/ZONOS3-Mini-GGUF",
+      "revision": "2e7bc4126a2343787298e1a297a3d1c4a13165aa",
+      "file": "ZONOS3-Mini-Q8_0.gguf"
+    },
+    "projector": {
+      "path": "D:\\Workspace\\kreasof-ai\\github\\akas\\build\\checkpoints\\zonos3-mini\\mmproj-ZONOS3-Mini-F32.gguf",
+      "sha256": "aeeb92325b4b6927bef656390b78e1246148065f947d8b59c2663557a809414d",
+      "source": {
+        "repo": "ggml-org/ZONOS3-Mini-GGUF",
+        "revision": "2e7bc4126a2343787298e1a297a3d1c4a13165aa",
+        "file": "mmproj-ZONOS3-Mini-F32.gguf"
+      }
+    },
+    "model_definition_sha256": "e84617ab992c8bac2d4301f39f61a85b5d18002f397628a4359ac01e80591035",
+    "device": {
+      "ordinal": 0,
+      "provider": "webgpu",
+      "arch": "webgpu-portable-v1",
+      "name": "AMD Radeon RX 6700 XT",
+      "adapter": {
+        "vendor": "AMD proprietary driver",
+        "architecture": "",
+        "device": "AMD Radeon RX 6700 XT",
+        "description": "26.6.2 (AMD proprietary shader compiler)",
+        "stackgroup_min_size": 4,
+        "stackgroup_max_size": 128,
+        "vendor_id": 4098,
+        "device_id": 29663,
+        "adapter_type": "DiscreteGPU",
+        "backend_type": "Vulkan"
+      },
+      "features": [
+        "shader-f16",
+        "subgroup"
+      ],
+      "limits": {
+        "max-bind-groups": 8,
+        "max-bind-groups-plus-vertex-buffers": 0,
+        "max-bindings-per-bind-group": 1000,
+        "max-buffer-size": 1073741824,
+        "max-color-attachment-bytes-per-sample": 0,
+        "max-color-attachments": 0,
+        "max-compute-invocations-per-workgroup": 1024,
+        "max-compute-workgroup-size-x": 1024,
+        "max-compute-workgroup-size-y": 1024,
+        "max-compute-workgroup-size-z": 1024,
+        "max-compute-workgroup-storage-size": 32768,
+        "max-compute-workgroups-per-dimension": 65535,
+        "max-dynamic-storage-buffers-per-pipeline-layout": 8,
+        "max-dynamic-uniform-buffers-per-pipeline-layout": 8,
+        "max-inter-stage-shader-variables": 0,
+        "max-non-sampler-bindings": 1000000,
+        "max-push-constant-size": 256,
+        "max-sampled-textures-per-shader-stage": 16,
+        "max-samplers-per-shader-stage": 16,
+        "max-storage-buffer-binding-size": 1073741824,
+        "max-storage-buffers-per-shader-stage": 32,
+        "max-storage-textures-per-shader-stage": 4,
+        "max-texture-array-layers": 8192,
+        "max-texture-dimension-1d": 16384,
+        "max-texture-dimension-2d": 16384,
+        "max-texture-dimension-3d": 8192,
+        "max-uniform-buffer-binding-size": 2147483647,
+        "max-uniform-buffers-per-shader-stage": 12,
+        "max-vertex-attributes": 64,
+        "max-vertex-buffer-array-stride": 16383,
+        "max-vertex-buffers": 16,
+        "min-storage-buffer-offset-alignment": 32,
+        "min-uniform-buffer-offset-alignment": 32
+      },
+      "adapter_storage_buffers_reported": 4294967295,
+      "prepared_encoding": "native",
+      "prepared_submission": "native"
+    },
+    "voice": "Savannah_en-American_F_1",
+    "sample_rate_hz": 44100,
+    "warmup": 1,
+    "repeats": 3,
+    "configuration": [
+      "D:\\Workspace\\kreasof-ai\\github\\akas\\.venv\\Scripts\\python.exe",
+      "-u",
+      "-m",
+      "akas.cli",
+      "serve",
+      "--speech",
+      "--factory",
+      "akas.models.zonos3.model:service",
+      "--config",
+      "{\"checkpoint\": \"D:\\\\Workspace\\\\kreasof-ai\\\\github\\\\akas\\\\build\\\\checkpoints\\\\zonos3-mini\\\\ZONOS3-Mini-Q8_0.gguf\", \"projector\": \"D:\\\\Workspace\\\\kreasof-ai\\\\github\\\\akas\\\\build\\\\checkpoints\\\\zonos3-mini\\\\mmproj-ZONOS3-Mini-F32.gguf\", \"bundle\": \"D:\\\\Workspace\\\\kreasof-ai\\\\github\\\\akas\\\\build\\\\zonos3-mini\\\\speech\"}",
+      "--host",
+      "127.0.0.1",
+      "--port",
+      "63795"
+    ],
+    "deadline_seconds": 480,
+    "environment": {
+      "WGPU_BACKEND_TYPE": "Vulkan"
+    },
+    "runtime_revision": "9ce5ef8870fce8bd1bd59034ef9c78ff666ec858",
+    "program_sha256": "4b341f36cf415766c8d1edec5e514256a333d865c006b6e81bcb5e350511f139",
+    "reference": {
+      "run_id": "20261117054849877205-93674201",
+      "report_sha256": "8961166afe90c317e6e84f959ab8b02b24fd3182f4b774c57370393378477bf4"
+    }
+  },
+  "results": [
+    {
+      "case": {
+        "id": "hello",
+        "tier": "short",
+        "text": "Hello world."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 47040,
+          "audio_seconds": 1.0666666666666667,
+          "peak_pcm16": 7599,
+          "audio_frames": 16,
+          "wall_seconds": 0.5709849999984726,
+          "real_time_factor": 0.5352984374985681,
+          "wav": "audio/01-01.wav",
+          "wav_sha256": "a471f64ab59e9a778c6013f08cb15e23c3f8ae2133f33651ad2aee2929e6d0d4"
+        },
+        {
+          "samples": 47040,
+          "audio_seconds": 1.0666666666666667,
+          "peak_pcm16": 7599,
+          "audio_frames": 16,
+          "wall_seconds": 0.5796777000068687,
+          "real_time_factor": 0.5434478437564394,
+          "wav": "audio/01-02.wav",
+          "wav_sha256": "a471f64ab59e9a778c6013f08cb15e23c3f8ae2133f33651ad2aee2929e6d0d4"
+        },
+        {
+          "samples": 47040,
+          "audio_seconds": 1.0666666666666667,
+          "peak_pcm16": 7599,
+          "audio_frames": 16,
+          "wall_seconds": 0.5352549000090221,
+          "real_time_factor": 0.5018014687584582,
+          "wav": "audio/01-03.wav",
+          "wav_sha256": "a471f64ab59e9a778c6013f08cb15e23c3f8ae2133f33651ad2aee2929e6d0d4"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.5709849999984726,
+        "audio_seconds": 1.0666666666666667,
+        "real_time_factor": 0.5352984374985681
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.6463850357041727,
+        "speedup": 1.2075227395108954,
+        "wall_speedup": 1.0565823970720334
+      }
+    },
+    {
+      "case": {
+        "id": "question",
+        "tier": "short",
+        "text": "Are you ready?"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 38220,
+          "audio_seconds": 0.8666666666666667,
+          "peak_pcm16": 7442,
+          "audio_frames": 13,
+          "wall_seconds": 0.4999175999982981,
+          "real_time_factor": 0.5768279999980362,
+          "wav": "audio/02-01.wav",
+          "wav_sha256": "65d97c518603d8fbbe9a8f75cc5a5537df454b3a7aa73a0aeadd32b8cb76b8fc"
+        },
+        {
+          "samples": 38220,
+          "audio_seconds": 0.8666666666666667,
+          "peak_pcm16": 7442,
+          "audio_frames": 13,
+          "wall_seconds": 0.5165267000120366,
+          "real_time_factor": 0.5959923461677346,
+          "wav": "audio/02-02.wav",
+          "wav_sha256": "65d97c518603d8fbbe9a8f75cc5a5537df454b3a7aa73a0aeadd32b8cb76b8fc"
+        },
+        {
+          "samples": 38220,
+          "audio_seconds": 0.8666666666666667,
+          "peak_pcm16": 7442,
+          "audio_frames": 13,
+          "wall_seconds": 0.5273348000046099,
+          "real_time_factor": 0.6084632307745498,
+          "wav": "audio/02-03.wav",
+          "wav_sha256": "65d97c518603d8fbbe9a8f75cc5a5537df454b3a7aa73a0aeadd32b8cb76b8fc"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.5165267000120366,
+        "audio_seconds": 0.8666666666666667,
+        "real_time_factor": 0.5959923461677346
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.6416903571360828,
+        "speedup": 1.0766754997143657,
+        "wall_speedup": 1.159496692000086
+      }
+    },
+    {
+      "case": {
+        "id": "warning",
+        "tier": "short",
+        "text": "Watch your step!"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 47040,
+          "audio_seconds": 1.0666666666666667,
+          "peak_pcm16": 6740,
+          "audio_frames": 16,
+          "wall_seconds": 0.5128891000058502,
+          "real_time_factor": 0.48083353125548456,
+          "wav": "audio/03-01.wav",
+          "wav_sha256": "587d0b913d0ae13c1bc76efea016f47157dff0f2dbd94a7a92e57058aaf3dde1"
+        },
+        {
+          "samples": 47040,
+          "audio_seconds": 1.0666666666666667,
+          "peak_pcm16": 6740,
+          "audio_frames": 16,
+          "wall_seconds": 0.4933440999884624,
+          "real_time_factor": 0.4625100937391835,
+          "wav": "audio/03-02.wav",
+          "wav_sha256": "587d0b913d0ae13c1bc76efea016f47157dff0f2dbd94a7a92e57058aaf3dde1"
+        },
+        {
+          "samples": 47040,
+          "audio_seconds": 1.0666666666666667,
+          "peak_pcm16": 6740,
+          "audio_frames": 16,
+          "wall_seconds": 0.48867439999594353,
+          "real_time_factor": 0.45813224999619706,
+          "wav": "audio/03-03.wav",
+          "wav_sha256": "587d0b913d0ae13c1bc76efea016f47157dff0f2dbd94a7a92e57058aaf3dde1"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.4933440999884624,
+        "audio_seconds": 1.0666666666666667,
+        "real_time_factor": 0.4625100937391835
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.6255054375105829,
+        "speedup": 1.35241467370724,
+        "wall_speedup": 1.35241467370724
+      }
+    },
+    {
+      "case": {
+        "id": "numbers",
+        "tier": "short",
+        "text": "Seven, fourteen, twenty-one."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 102900,
+          "audio_seconds": 2.3333333333333335,
+          "peak_pcm16": 9352,
+          "audio_frames": 35,
+          "wall_seconds": 0.7825058000016725,
+          "real_time_factor": 0.3353596285721453,
+          "wav": "audio/04-01.wav",
+          "wav_sha256": "7fd9aa7af5db82ec242fb0623f6201016a7bab618b9e0fc885a85754b434894e"
+        },
+        {
+          "samples": 102900,
+          "audio_seconds": 2.3333333333333335,
+          "peak_pcm16": 9352,
+          "audio_frames": 35,
+          "wall_seconds": 0.8767477000073995,
+          "real_time_factor": 0.3757490142888855,
+          "wav": "audio/04-02.wav",
+          "wav_sha256": "7fd9aa7af5db82ec242fb0623f6201016a7bab618b9e0fc885a85754b434894e"
+        },
+        {
+          "samples": 102900,
+          "audio_seconds": 2.3333333333333335,
+          "peak_pcm16": 9352,
+          "audio_frames": 35,
+          "wall_seconds": 0.7339267000061227,
+          "real_time_factor": 0.3145400142883383,
+          "wav": "audio/04-03.wav",
+          "wav_sha256": "7fd9aa7af5db82ec242fb0623f6201016a7bab618b9e0fc885a85754b434894e"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.7825058000016725,
+        "audio_seconds": 2.3333333333333335,
+        "real_time_factor": 0.3353596285721453
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.41121470269776966,
+        "speedup": 1.2261902377712879,
+        "wall_speedup": 1.2962582513582186
+      }
+    },
+    {
+      "case": {
+        "id": "reply",
+        "tier": "short",
+        "text": "Yes, that sounds right."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 85260,
+          "audio_seconds": 1.9333333333333333,
+          "peak_pcm16": 9846,
+          "audio_frames": 29,
+          "wall_seconds": 0.6231852999917464,
+          "real_time_factor": 0.32233722413366195,
+          "wav": "audio/05-01.wav",
+          "wav_sha256": "ad02f748fcab73f9feb26c622bbcb1fdbaef46eac560e25d5e4d465a8fd8e5cf"
+        },
+        {
+          "samples": 85260,
+          "audio_seconds": 1.9333333333333333,
+          "peak_pcm16": 9846,
+          "audio_frames": 29,
+          "wall_seconds": 0.7010385999892605,
+          "real_time_factor": 0.3626061724082382,
+          "wav": "audio/05-02.wav",
+          "wav_sha256": "ad02f748fcab73f9feb26c622bbcb1fdbaef46eac560e25d5e4d465a8fd8e5cf"
+        },
+        {
+          "samples": 85260,
+          "audio_seconds": 1.9333333333333333,
+          "peak_pcm16": 9846,
+          "audio_frames": 29,
+          "wall_seconds": 0.6215675999992527,
+          "real_time_factor": 0.3215004827582342,
+          "wav": "audio/05-03.wav",
+          "wav_sha256": "ad02f748fcab73f9feb26c622bbcb1fdbaef46eac560e25d5e4d465a8fd8e5cf"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.6231852999917464,
+        "audio_seconds": 1.9333333333333333,
+        "real_time_factor": 0.32233722413366195
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.4868911956557143,
+        "speedup": 1.5105025395820173,
+        "wall_speedup": 1.1979847727719448
+      }
+    },
+    {
+      "case": {
+        "id": "time",
+        "tier": "short",
+        "text": "Please call me at noon."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 64680,
+          "audio_seconds": 1.4666666666666666,
+          "peak_pcm16": 6758,
+          "audio_frames": 22,
+          "wall_seconds": 0.5951632999931462,
+          "real_time_factor": 0.4057931590862361,
+          "wav": "audio/06-01.wav",
+          "wav_sha256": "ec99646b950e8b3928ee2f7bda21ec02a79c4bdb1f4fda850d000d45646e5dce"
+        },
+        {
+          "samples": 64680,
+          "audio_seconds": 1.4666666666666666,
+          "peak_pcm16": 6758,
+          "audio_frames": 22,
+          "wall_seconds": 0.5947529999975814,
+          "real_time_factor": 0.40551340908926004,
+          "wav": "audio/06-02.wav",
+          "wav_sha256": "ec99646b950e8b3928ee2f7bda21ec02a79c4bdb1f4fda850d000d45646e5dce"
+        },
+        {
+          "samples": 64680,
+          "audio_seconds": 1.4666666666666666,
+          "peak_pcm16": 6758,
+          "audio_frames": 22,
+          "wall_seconds": 0.5978526000108104,
+          "real_time_factor": 0.4076267727346435,
+          "wav": "audio/06-03.wav",
+          "wav_sha256": "ec99646b950e8b3928ee2f7bda21ec02a79c4bdb1f4fda850d000d45646e5dce"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.5951632999931462,
+        "audio_seconds": 1.4666666666666666,
+        "real_time_factor": 0.4057931590862361
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.5129937272729215,
+        "speedup": 1.2641753952384986,
+        "wall_speedup": 1.2641753952384986
+      }
+    },
+    {
+      "case": {
+        "id": "lighthouse",
+        "tier": "medium",
+        "text": "The old lighthouse keeper climbed the spiral stairs every evening."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 173460,
+          "audio_seconds": 3.933333333333333,
+          "peak_pcm16": 8924,
+          "audio_frames": 59,
+          "wall_seconds": 1.1166632000094978,
+          "real_time_factor": 0.2838974237312283,
+          "wav": "audio/07-01.wav",
+          "wav_sha256": "605e27648e5975873202de5860ae03ab7c79b4dc1e077937a0fba36366d95947"
+        },
+        {
+          "samples": 173460,
+          "audio_seconds": 3.933333333333333,
+          "peak_pcm16": 8924,
+          "audio_frames": 59,
+          "wall_seconds": 1.143331399987801,
+          "real_time_factor": 0.2906774745731698,
+          "wav": "audio/07-02.wav",
+          "wav_sha256": "605e27648e5975873202de5860ae03ab7c79b4dc1e077937a0fba36366d95947"
+        },
+        {
+          "samples": 173460,
+          "audio_seconds": 3.933333333333333,
+          "peak_pcm16": 8924,
+          "audio_frames": 59,
+          "wall_seconds": 1.1243982000014512,
+          "real_time_factor": 0.28586394915291136,
+          "wav": "audio/07-03.wav",
+          "wav_sha256": "605e27648e5975873202de5860ae03ab7c79b4dc1e077937a0fba36366d95947"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.1243982000014512,
+        "audio_seconds": 3.933333333333333,
+        "real_time_factor": 0.28586394915291136
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.36668161111366415,
+        "speedup": 1.282713725183733,
+        "wall_speedup": 1.174009172202061
+      }
+    },
+    {
+      "case": {
+        "id": "directions",
+        "tier": "medium",
+        "text": "Turn left at the bakery, then cross the bridge and follow the river."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 167580,
+          "audio_seconds": 3.8,
+          "peak_pcm16": 10377,
+          "audio_frames": 57,
+          "wall_seconds": 1.0954068999999436,
+          "real_time_factor": 0.2882649736841957,
+          "wav": "audio/08-01.wav",
+          "wav_sha256": "0e248385619e2d33b308c0770d9cc59ef20d4256304ecf63ed0979e62ebd14a0"
+        },
+        {
+          "samples": 167580,
+          "audio_seconds": 3.8,
+          "peak_pcm16": 10377,
+          "audio_frames": 57,
+          "wall_seconds": 0.9671431000024313,
+          "real_time_factor": 0.254511342105903,
+          "wav": "audio/08-02.wav",
+          "wav_sha256": "0e248385619e2d33b308c0770d9cc59ef20d4256304ecf63ed0979e62ebd14a0"
+        },
+        {
+          "samples": 167580,
+          "audio_seconds": 3.8,
+          "peak_pcm16": 10377,
+          "audio_frames": 57,
+          "wall_seconds": 0.9445292999880621,
+          "real_time_factor": 0.24856034210212163,
+          "wav": "audio/08-03.wav",
+          "wav_sha256": "0e248385619e2d33b308c0770d9cc59ef20d4256304ecf63ed0979e62ebd14a0"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.9671431000024313,
+        "audio_seconds": 3.8,
+        "real_time_factor": 0.254511342105903
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3737788055554524,
+        "speedup": 1.4686135496465296,
+        "wall_speedup": 1.391318099665133
+      }
+    },
+    {
+      "case": {
+        "id": "announcement",
+        "tier": "medium",
+        "text": "The next train leaves from platform three. Please stand behind the yellow line."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 202860,
+          "audio_seconds": 4.6,
+          "peak_pcm16": 8790,
+          "audio_frames": 69,
+          "wall_seconds": 1.09915579999506,
+          "real_time_factor": 0.2389469130424044,
+          "wav": "audio/09-01.wav",
+          "wav_sha256": "e97a8e9967d77594767b375781703e7891d49f8609e9cdd91f6ffe5e44b53df8"
+        },
+        {
+          "samples": 202860,
+          "audio_seconds": 4.6,
+          "peak_pcm16": 8790,
+          "audio_frames": 69,
+          "wall_seconds": 1.275513399988995,
+          "real_time_factor": 0.27728552173673804,
+          "wav": "audio/09-02.wav",
+          "wav_sha256": "e97a8e9967d77594767b375781703e7891d49f8609e9cdd91f6ffe5e44b53df8"
+        },
+        {
+          "samples": 202860,
+          "audio_seconds": 4.6,
+          "peak_pcm16": 8790,
+          "audio_frames": 69,
+          "wall_seconds": 1.4330856000015046,
+          "real_time_factor": 0.3115403478264141,
+          "wav": "audio/09-03.wav",
+          "wav_sha256": "e97a8e9967d77594767b375781703e7891d49f8609e9cdd91f6ffe5e44b53df8"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.275513399988995,
+        "audio_seconds": 4.6,
+        "real_time_factor": 0.27728552173673804
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3650338897055275,
+        "speedup": 1.3164549213359218,
+        "wall_speedup": 1.2973758645049664
+      }
+    },
+    {
+      "case": {
+        "id": "names",
+        "tier": "medium",
+        "text": "Maya and Oliver brought warm bread, ripe pears, and a jar of honey."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 202860,
+          "audio_seconds": 4.6,
+          "peak_pcm16": 6282,
+          "audio_frames": 69,
+          "wall_seconds": 1.3103014000080293,
+          "real_time_factor": 0.2848481304365281,
+          "wav": "audio/10-01.wav",
+          "wav_sha256": "a40e7615ed426f84c0149965ec189caef49d01122ca889ab6f4a4e6db14d9fae"
+        },
+        {
+          "samples": 202860,
+          "audio_seconds": 4.6,
+          "peak_pcm16": 6282,
+          "audio_frames": 69,
+          "wall_seconds": 1.2973434000014095,
+          "real_time_factor": 0.2820311739133499,
+          "wav": "audio/10-02.wav",
+          "wav_sha256": "a40e7615ed426f84c0149965ec189caef49d01122ca889ab6f4a4e6db14d9fae"
+        },
+        {
+          "samples": 202860,
+          "audio_seconds": 4.6,
+          "peak_pcm16": 6282,
+          "audio_frames": 69,
+          "wall_seconds": 1.1097779999981867,
+          "real_time_factor": 0.24125608695612757,
+          "wav": "audio/10-03.wav",
+          "wav_sha256": "a40e7615ed426f84c0149965ec189caef49d01122ca889ab6f4a4e6db14d9fae"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.2973434000014095,
+        "audio_seconds": 4.6,
+        "real_time_factor": 0.2820311739133499
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3410718648651586,
+        "speedup": 1.2093410105435654,
+        "wall_speedup": 1.2969744171046935
+      }
+    },
+    {
+      "case": {
+        "id": "dialogue",
+        "tier": "medium",
+        "text": "Did you hear that knock? Wait, I think it came from the kitchen."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 167580,
+          "audio_seconds": 3.8,
+          "peak_pcm16": 7019,
+          "audio_frames": 57,
+          "wall_seconds": 0.9845156999945175,
+          "real_time_factor": 0.2590830789459257,
+          "wav": "audio/11-01.wav",
+          "wav_sha256": "7e5c62abbe3127be95a9aee8bd6317bcc13379f4f8112a2b04cab8f469078497"
+        },
+        {
+          "samples": 167580,
+          "audio_seconds": 3.8,
+          "peak_pcm16": 7019,
+          "audio_frames": 57,
+          "wall_seconds": 0.9279618000000482,
+          "real_time_factor": 0.24420047368422323,
+          "wav": "audio/11-02.wav",
+          "wav_sha256": "7e5c62abbe3127be95a9aee8bd6317bcc13379f4f8112a2b04cab8f469078497"
+        },
+        {
+          "samples": 167580,
+          "audio_seconds": 3.8,
+          "peak_pcm16": 7019,
+          "audio_frames": 57,
+          "wall_seconds": 0.9315615999948932,
+          "real_time_factor": 0.2451477894723403,
+          "wav": "audio/11-03.wav",
+          "wav_sha256": "7e5c62abbe3127be95a9aee8bd6317bcc13379f4f8112a2b04cab8f469078497"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.9315615999948932,
+        "audio_seconds": 3.8,
+        "real_time_factor": 0.2451477894723403
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3651397777785961,
+        "speedup": 1.4894679595705442,
+        "wall_speedup": 1.4110749090668315
+      }
+    },
+    {
+      "case": {
+        "id": "technical",
+        "tier": "medium",
+        "text": "The sensor takes five readings and reports the average when the light turns green."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 199920,
+          "audio_seconds": 4.533333333333333,
+          "peak_pcm16": 10086,
+          "audio_frames": 68,
+          "wall_seconds": 1.1038000999978976,
+          "real_time_factor": 0.24348531617600683,
+          "wav": "audio/12-01.wav",
+          "wav_sha256": "2a717b653e9b54d65b15417c0e14cfc60c97afbeaf4ccfe02386d0cf926a6f1f"
+        },
+        {
+          "samples": 199920,
+          "audio_seconds": 4.533333333333333,
+          "peak_pcm16": 10086,
+          "audio_frames": 68,
+          "wall_seconds": 1.14405619999161,
+          "real_time_factor": 0.25236533823344337,
+          "wav": "audio/12-02.wav",
+          "wav_sha256": "2a717b653e9b54d65b15417c0e14cfc60c97afbeaf4ccfe02386d0cf926a6f1f"
+        },
+        {
+          "samples": 199920,
+          "audio_seconds": 4.533333333333333,
+          "peak_pcm16": 10086,
+          "audio_frames": 68,
+          "wall_seconds": 1.1603841000032844,
+          "real_time_factor": 0.25596708088307746,
+          "wav": "audio/12-03.wav",
+          "wav_sha256": "2a717b653e9b54d65b15417c0e14cfc60c97afbeaf4ccfe02386d0cf926a6f1f"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.14405619999161,
+        "audio_seconds": 4.533333333333333,
+        "real_time_factor": 0.25236533823344337
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.35677930147036985,
+        "speedup": 1.4137413004805808,
+        "wall_speedup": 1.4137413004805808
+      }
+    },
+    {
+      "case": {
+        "id": "story",
+        "tier": "long",
+        "text": "When the rain finally stopped, we opened the windows and listened. Water dripped from the trees, and somewhere beyond the fence a blackbird began to sing."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 402780,
+          "audio_seconds": 9.133333333333333,
+          "peak_pcm16": 9515,
+          "audio_frames": 137,
+          "wall_seconds": 1.870546899997862,
+          "real_time_factor": 0.204804405109255,
+          "wav": "audio/13-01.wav",
+          "wav_sha256": "9c106d6fc397d7018a0ba8b0f1d2521723620584066ddfcccde99745197a272e"
+        },
+        {
+          "samples": 402780,
+          "audio_seconds": 9.133333333333333,
+          "peak_pcm16": 9515,
+          "audio_frames": 137,
+          "wall_seconds": 2.3005281000077957,
+          "real_time_factor": 0.25188263868698496,
+          "wav": "audio/13-02.wav",
+          "wav_sha256": "9c106d6fc397d7018a0ba8b0f1d2521723620584066ddfcccde99745197a272e"
+        },
+        {
+          "samples": 402780,
+          "audio_seconds": 9.133333333333333,
+          "peak_pcm16": 9515,
+          "audio_frames": 137,
+          "wall_seconds": 2.203041300002951,
+          "real_time_factor": 0.24120890146017715,
+          "wav": "audio/13-03.wav",
+          "wav_sha256": "9c106d6fc397d7018a0ba8b0f1d2521723620584066ddfcccde99745197a272e"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 2.203041300002951,
+        "audio_seconds": 9.133333333333333,
+        "real_time_factor": 0.24120890146017715
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3199869823952789,
+        "speedup": 1.3265969060769003,
+        "wall_speedup": 1.3750128515541595
+      }
+    },
+    {
+      "case": {
+        "id": "instructions",
+        "tier": "long",
+        "text": "Before you leave, turn off the oven, check that the back door is locked, and put the spare key in the blue bowl beside the telephone."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 320460,
+          "audio_seconds": 7.266666666666667,
+          "peak_pcm16": 7828,
+          "audio_frames": 109,
+          "wall_seconds": 1.635898400010774,
+          "real_time_factor": 0.2251236330290056,
+          "wav": "audio/14-01.wav",
+          "wav_sha256": "200b6c22c00d23c5be1bd93743d4b07fecc1f1e7207e2aac83aa53ad5d3b55fb"
+        },
+        {
+          "samples": 320460,
+          "audio_seconds": 7.266666666666667,
+          "peak_pcm16": 7828,
+          "audio_frames": 109,
+          "wall_seconds": 1.7162606999918353,
+          "real_time_factor": 0.23618266513649108,
+          "wav": "audio/14-02.wav",
+          "wav_sha256": "200b6c22c00d23c5be1bd93743d4b07fecc1f1e7207e2aac83aa53ad5d3b55fb"
+        },
+        {
+          "samples": 320460,
+          "audio_seconds": 7.266666666666667,
+          "peak_pcm16": 7828,
+          "audio_frames": 109,
+          "wall_seconds": 1.4858529999910388,
+          "real_time_factor": 0.20447518348500535,
+          "wav": "audio/14-03.wav",
+          "wav_sha256": "200b6c22c00d23c5be1bd93743d4b07fecc1f1e7207e2aac83aa53ad5d3b55fb"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.635898400010774,
+        "audio_seconds": 7.266666666666667,
+        "real_time_factor": 0.2251236330290056
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3421656184218591,
+        "speedup": 1.5199009265178902,
+        "wall_speedup": 1.5896211525049495
+      }
+    },
+    {
+      "case": {
+        "id": "conversation",
+        "tier": "long",
+        "text": "I thought we were meeting on Friday. Did something change? If Thursday works better for everyone, I can move my appointment and meet you after lunch."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 382200,
+          "audio_seconds": 8.666666666666666,
+          "peak_pcm16": 5808,
+          "audio_frames": 130,
+          "wall_seconds": 1.9092758999904618,
+          "real_time_factor": 0.22030106538351482,
+          "wav": "audio/15-01.wav",
+          "wav_sha256": "e7abefee492b1ce51f7ebcdfd0014f8236140fcd5def28d137a9e18ecc34875f"
+        },
+        {
+          "samples": 382200,
+          "audio_seconds": 8.666666666666666,
+          "peak_pcm16": 5808,
+          "audio_frames": 130,
+          "wall_seconds": 1.8302942000009352,
+          "real_time_factor": 0.21118779230780024,
+          "wav": "audio/15-02.wav",
+          "wav_sha256": "e7abefee492b1ce51f7ebcdfd0014f8236140fcd5def28d137a9e18ecc34875f"
+        },
+        {
+          "samples": 382200,
+          "audio_seconds": 8.666666666666666,
+          "peak_pcm16": 5808,
+          "audio_frames": 130,
+          "wall_seconds": 1.930230499987374,
+          "real_time_factor": 0.22271890384469703,
+          "wav": "audio/15-03.wav",
+          "wav_sha256": "e7abefee492b1ce51f7ebcdfd0014f8236140fcd5def28d137a9e18ecc34875f"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.9092758999904618,
+        "audio_seconds": 8.666666666666666,
+        "real_time_factor": 0.22030106538351482
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3273826991152523,
+        "speedup": 1.486069522838315,
+        "wall_speedup": 1.2917373544671509
+      }
+    },
+    {
+      "case": {
+        "id": "explanation",
+        "tier": "long",
+        "text": "A compass needle aligns with the local magnetic field. Near a large steel object, that field can bend enough to make the needle point away from north."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 402780,
+          "audio_seconds": 9.133333333333333,
+          "peak_pcm16": 8350,
+          "audio_frames": 137,
+          "wall_seconds": 1.930998699986958,
+          "real_time_factor": 0.2114232153270392,
+          "wav": "audio/16-01.wav",
+          "wav_sha256": "7cc4db8515f48816a45d73266d54a2bd59fb762b9b63d2dc143317bdad23088d"
+        },
+        {
+          "samples": 402780,
+          "audio_seconds": 9.133333333333333,
+          "peak_pcm16": 8350,
+          "audio_frames": 137,
+          "wall_seconds": 1.9048969999857945,
+          "real_time_factor": 0.20856536496194833,
+          "wav": "audio/16-02.wav",
+          "wav_sha256": "7cc4db8515f48816a45d73266d54a2bd59fb762b9b63d2dc143317bdad23088d"
+        },
+        {
+          "samples": 402780,
+          "audio_seconds": 9.133333333333333,
+          "peak_pcm16": 8350,
+          "audio_frames": 137,
+          "wall_seconds": 1.9890728000027593,
+          "real_time_factor": 0.21778169343095907,
+          "wav": "audio/16-03.wav",
+          "wav_sha256": "7cc4db8515f48816a45d73266d54a2bd59fb762b9b63d2dc143317bdad23088d"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.930998699986958,
+        "audio_seconds": 9.133333333333333,
+        "real_time_factor": 0.2114232153270392
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3183305300747025,
+        "speedup": 1.5056555146145807,
+        "wall_speedup": 1.4616947696623301
+      }
+    },
+    {
+      "case": {
+        "id": "announcement-long",
+        "tier": "long",
+        "text": "Good afternoon, passengers. Because of road repairs near the central station, this bus will follow a different route. The next stop is the library on Market Street."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 532140,
+          "audio_seconds": 12.066666666666666,
+          "peak_pcm16": 13380,
+          "audio_frames": 181,
+          "wall_seconds": 2.315316399995936,
+          "real_time_factor": 0.19187704972342012,
+          "wav": "audio/17-01.wav",
+          "wav_sha256": "5d865b3223f2138e7c6538c24dc527f913b9749b51f954db978d771116f00710"
+        },
+        {
+          "samples": 532140,
+          "audio_seconds": 12.066666666666666,
+          "peak_pcm16": 13380,
+          "audio_frames": 181,
+          "wall_seconds": 2.294426199994632,
+          "real_time_factor": 0.19014581767911315,
+          "wav": "audio/17-02.wav",
+          "wav_sha256": "5d865b3223f2138e7c6538c24dc527f913b9749b51f954db978d771116f00710"
+        },
+        {
+          "samples": 532140,
+          "audio_seconds": 12.066666666666666,
+          "peak_pcm16": 13380,
+          "audio_frames": 181,
+          "wall_seconds": 2.3199928999965778,
+          "real_time_factor": 0.19226460497209208,
+          "wav": "audio/17-03.wav",
+          "wav_sha256": "5d865b3223f2138e7c6538c24dc527f913b9749b51f954db978d771116f00710"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 2.315316399995936,
+        "audio_seconds": 12.066666666666666,
+        "real_time_factor": 0.19187704972342012
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.31260734905581045,
+        "speedup": 1.629206564862323,
+        "wall_speedup": 1.431181457530991
+      }
+    },
+    {
+      "case": {
+        "id": "recipe",
+        "tier": "long",
+        "text": "Stir the chopped apples into the batter, then pour it into a greased pan. Bake until the top is golden and a toothpick comes out clean."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 358680,
+          "audio_seconds": 8.133333333333333,
+          "peak_pcm16": 6655,
+          "audio_frames": 122,
+          "wall_seconds": 1.797608200009563,
+          "real_time_factor": 0.22101740164052006,
+          "wav": "audio/18-01.wav",
+          "wav_sha256": "86d046b44510b5db75253e8b7881d9ef2dd0950079cdac625fafcb4095fec468"
+        },
+        {
+          "samples": 358680,
+          "audio_seconds": 8.133333333333333,
+          "peak_pcm16": 6655,
+          "audio_frames": 122,
+          "wall_seconds": 1.6067715999961365,
+          "real_time_factor": 0.19755388524542664,
+          "wav": "audio/18-02.wav",
+          "wav_sha256": "86d046b44510b5db75253e8b7881d9ef2dd0950079cdac625fafcb4095fec468"
+        },
+        {
+          "samples": 358680,
+          "audio_seconds": 8.133333333333333,
+          "peak_pcm16": 6655,
+          "audio_frames": 122,
+          "wall_seconds": 1.6663951999944402,
+          "real_time_factor": 0.20488465573702136,
+          "wav": "audio/18-03.wav",
+          "wav_sha256": "86d046b44510b5db75253e8b7881d9ef2dd0950079cdac625fafcb4095fec468"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.6663951999944402,
+        "audio_seconds": 8.133333333333333,
+        "real_time_factor": 0.20488465573702136
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.32102225609755475,
+        "speedup": 1.5668438172822527,
+        "wall_speedup": 1.5796867993911237
+      }
+    }
+  ]
+}

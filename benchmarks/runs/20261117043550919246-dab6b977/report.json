@@ -1,0 +1,228 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "protocol": "client-speech-pcm-v1",
+    "speech_workload": {
+      "id": "speech-demo-v1",
+      "definition": {
+        "schema": "akas.speech-workload.v1",
+        "id": "speech-demo-v1",
+        "protocol": "client-speech-pcm-v1",
+        "warmup": 1,
+        "repeats": 3,
+        "request": {
+          "lang": "en",
+          "seed": 17,
+          "temperature": 0.75,
+          "n_predict": 384,
+          "stream": false,
+          "response_format": "pcm16"
+        },
+        "utterances": [
+          {
+            "id": "hello",
+            "text": "Hello world."
+          },
+          {
+            "id": "lighthouse",
+            "text": "The old lighthouse keeper climbed the spiral stairs every evening."
+          }
+        ]
+      }
+    },
+    "runtime": "llama",
+    "runtime_revision": "7ae3c6b231e38057e825ff257bb734e456633d9a",
+    "provider": "cpu",
+    "model": "Zyphra/ZONOS3-Mini",
+    "mode": "tts",
+    "purpose": "speech-demo",
+    "weight_format": "q8_0",
+    "checkpoint": "D:\\Workspace\\kreasof-ai\\github\\akas\\build\\checkpoints\\zonos3-mini\\ZONOS3-Mini-Q8_0.gguf",
+    "checkpoint_sha256": "60568efc88e2f9231f4f5c061e246421f575986642d72ab9ae68f77d6cf76be4",
+    "checkpoint_source": {
+      "repo": "ggml-org/ZONOS3-Mini-GGUF",
+      "revision": "2e7bc4126a2343787298e1a297a3d1c4a13165aa",
+      "file": "ZONOS3-Mini-Q8_0.gguf"
+    },
+    "projector": {
+      "path": "D:\\Workspace\\kreasof-ai\\github\\akas\\build\\checkpoints\\zonos3-mini\\mmproj-ZONOS3-Mini-F32.gguf",
+      "sha256": "aeeb92325b4b6927bef656390b78e1246148065f947d8b59c2663557a809414d",
+      "source": {
+        "repo": "ggml-org/ZONOS3-Mini-GGUF",
+        "revision": "2e7bc4126a2343787298e1a297a3d1c4a13165aa",
+        "file": "mmproj-ZONOS3-Mini-F32.gguf"
+      }
+    },
+    "binary_sha256": "8e2b4893867479a410008a199ed41b707eb9b95b012599d6d3e54de7642162cb",
+    "runtime_files": {
+      "ggml-base.dll": "4810949cf1b9c6326d423458ee14b54f0af777e58eae2f684d9038d484c16a64",
+      "ggml-cpu-alderlake.dll": "95e4eecebfd09d0f77442e292cbc45e2534af4668a0d57297e625046416d05ce",
+      "ggml-cpu-cannonlake.dll": "37ea2e52ac4b6f6f161a4575deb90403688cc22be878b33bd8a5f62ac05610e7",
+      "ggml-cpu-cascadelake.dll": "d927dd2006b011c43894021155592bfa173fb4ad238cc2567123a9464d9bd169",
+      "ggml-cpu-cooperlake.dll": "01ab829a61a15a213b073eef69120ca48b8a1751bba358c45b19c2bbbf4d6e11",
+      "ggml-cpu-haswell.dll": "6b9e11eaaed1c5eb77084b4d6838024adea249b1b5f22a36e325d643a3d4d557",
+      "ggml-cpu-icelake.dll": "da7211ecdc8ac6cf95d099ee422f3164866217cb3ad17814ab1bbb55310c681d",
+      "ggml-cpu-ivybridge.dll": "ee5bd5b7ae0ce55a301c56ad96a12c3766c9930820032e7e7e2daeeacc121c6a",
+      "ggml-cpu-piledriver.dll": "9f5b5f2e3c406b8d247bba41f809967c723ff41aab114aa5e518bea55bea7280",
+      "ggml-cpu-sandybridge.dll": "096400c77f7df10fa41388c0a8ebdd5f43ccbbbca492d71f378e22d1e76111b5",
+      "ggml-cpu-sapphirerapids.dll": "88c01a8cdfb3c565b6f9d3f6810197dee1dad5273dea1eb320627a4a9bd93b2d",
+      "ggml-cpu-skylakex.dll": "30d0dbb86f945fbc5b25e4d4c1586faba9a83ed53acda91820cd65d93dd84a3b",
+      "ggml-cpu-sse42.dll": "9ad4bd36f3d6b4949ea6df41d7e4643d16ad8b8a6016f5bfb605e62fb10aee73",
+      "ggml-cpu-x64.dll": "d0d7c29fceb9f3f6e3721a1c3ba537753637fc8d7661cdca4c9888bba9066c5e",
+      "ggml-cpu-zen4.dll": "cc11c229770ac2e301b56b6b6987b6bcda3f81b0e62c658c21511e8100c036ee",
+      "ggml-rpc.dll": "fc25f3a60ec33ad5fc5365383d6d1cf812d0a2444fdb8f38783936a5db67546a",
+      "ggml-vulkan.dll": "1b5befd608c612b9bc150e66ad7bf0b6e6d1afb37abcec1ab6b911e830d959cb",
+      "ggml.dll": "62f1cda63634fcaf9659ee1ce8d48077f5497d4a69df1db1e6b4291b50dd3382",
+      "libomp.dll": "a12116ba72d1d6820407cf30be23da04ce79d6bb8a71a5ee71759c5a1faa6f1c",
+      "llama-batched-bench-impl.dll": "8fd2f276e6a6c59ee7afe09e73f642b19adb35671e001cf06d758868249cb489",
+      "llama-bench-impl.dll": "b5829a8cd828337894dc9fc73ee047c528a3712e8c98a73f80321db93dc942c5",
+      "llama-cli-impl.dll": "018b54fa8e6aa544e89e35edcc207395c9f3a45099fe7a6b0fd8e7bb275bbb43",
+      "llama-common.dll": "062b532e0c6483415be9f6a4e04aea2226175272d7adc3b1305cb0bec54a50f4",
+      "llama-completion-impl.dll": "37b1c9e2d981ec6e5f87c7f3da267f56bc1529beee359b454b735ca07c31c9db",
+      "llama-fit-params-impl.dll": "198e640b25e831dde5e563955739d31c5c8260ff2fcfe1d6461985c880d202f5",
+      "llama-perplexity-impl.dll": "333a7e382687e74d2234aaf7e43438ea255fda468fc89eda4e7692fa6ef3b960",
+      "llama-quantize-impl.dll": "91690a06731280ab0e3ad798efa9176717af374cb2840c51471b371f31061614",
+      "llama-server-impl.dll": "c3d31da73ec016730222c4992408399ca3f65410d87bc900265d5ae8ad469e61",
+      "llama.dll": "c53e169556ebc1b42874397985f6463c736d6406893b1bbeeba84cf30812867d",
+      "mtmd.dll": "2ed3748503fd129acd4022ea5b6af723e0c6ccb5b28d5c6d14d8cbe02f6e9762"
+    },
+    "model_definition_sha256": "66aa9a6e57b5ef55761b62fcafab0d61d5e9989ad029a74c4c2a834aa96bb5d5",
+    "device": {
+      "name": "AMD64 Family 25 Model 33 Stepping 2, AuthenticAMD"
+    },
+    "voice": "Savannah_en-American_F_1",
+    "sample_rate_hz": 44100,
+    "warmup": 1,
+    "repeats": 3,
+    "configuration": [
+      "D:\\Workspace\\kreasof-ai\\github\\akas\\build\\baselines\\llama-b12424-vulkan\\llama-server.exe",
+      "-m",
+      "D:\\Workspace\\kreasof-ai\\github\\akas\\build\\checkpoints\\zonos3-mini\\ZONOS3-Mini-Q8_0.gguf",
+      "-mm",
+      "D:\\Workspace\\kreasof-ai\\github\\akas\\build\\checkpoints\\zonos3-mini\\mmproj-ZONOS3-Mini-F32.gguf",
+      "--device",
+      "none",
+      "--mmproj-device",
+      "none",
+      "-ngl",
+      "0",
+      "--no-mmproj-offload",
+      "-np",
+      "1",
+      "-c",
+      "1024",
+      "-t",
+      "6",
+      "-tb",
+      "6",
+      "--no-cache-prompt",
+      "--cache-ram",
+      "0",
+      "--host",
+      "127.0.0.1",
+      "--port",
+      "61033",
+      "--no-ui",
+      "--offline",
+      "--verbosity",
+      "4"
+    ],
+    "deadline_seconds": 240,
+    "environment": {},
+    "runtime_version": "version: 1.0.0-dev (build 12424, commit 7ae3c6b23)\nbuilt with Clang 20.1.8 for Windows x86_64"
+  },
+  "results": [
+    {
+      "case": {
+        "id": "hello",
+        "text": "Hello world."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 49980,
+          "audio_seconds": 1.1333333333333333,
+          "peak_pcm16": 7423,
+          "wall_seconds": 0.8726927000025171,
+          "real_time_factor": 0.7700229705904563,
+          "wav": "audio/01-01.wav",
+          "wav_sha256": "8bb2357c2c74d492b09fe5ce43666ca196af87de8f3c813a179e978caf8dccce"
+        },
+        {
+          "samples": 49980,
+          "audio_seconds": 1.1333333333333333,
+          "peak_pcm16": 7423,
+          "wall_seconds": 0.8584276000037789,
+          "real_time_factor": 0.7574361176503932,
+          "wav": "audio/01-02.wav",
+          "wav_sha256": "8bb2357c2c74d492b09fe5ce43666ca196af87de8f3c813a179e978caf8dccce"
+        },
+        {
+          "samples": 49980,
+          "audio_seconds": 1.1333333333333333,
+          "peak_pcm16": 7423,
+          "wall_seconds": 0.85438989999966,
+          "real_time_factor": 0.7538734411761706,
+          "wav": "audio/01-03.wav",
+          "wav_sha256": "8bb2357c2c74d492b09fe5ce43666ca196af87de8f3c813a179e978caf8dccce"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.8584276000037789,
+        "audio_seconds": 1.1333333333333333,
+        "real_time_factor": 0.7574361176503932
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      }
+    },
+    {
+      "case": {
+        "id": "lighthouse",
+        "text": "The old lighthouse keeper climbed the spiral stairs every evening."
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 176400,
+          "audio_seconds": 4.0,
+          "peak_pcm16": 9746,
+          "wall_seconds": 1.8979446000012103,
+          "real_time_factor": 0.4744861500003026,
+          "wav": "audio/02-01.wav",
+          "wav_sha256": "69cbea0a8ebf9c34a2d5b9a02037913d4a9d671cd3f38012383946326d2b9a98"
+        },
+        {
+          "samples": 176400,
+          "audio_seconds": 4.0,
+          "peak_pcm16": 9746,
+          "wall_seconds": 1.9159655000039493,
+          "real_time_factor": 0.4789913750009873,
+          "wav": "audio/02-02.wav",
+          "wav_sha256": "69cbea0a8ebf9c34a2d5b9a02037913d4a9d671cd3f38012383946326d2b9a98"
+        },
+        {
+          "samples": 176400,
+          "audio_seconds": 4.0,
+          "peak_pcm16": 9746,
+          "wall_seconds": 1.9016164999993634,
+          "real_time_factor": 0.47540412499984086,
+          "wav": "audio/02-03.wav",
+          "wav_sha256": "69cbea0a8ebf9c34a2d5b9a02037913d4a9d671cd3f38012383946326d2b9a98"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.9016164999993634,
+        "audio_seconds": 4.0,
+        "real_time_factor": 0.47540412499984086
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      }
+    }
+  ]
+}
