@@ -412,7 +412,9 @@ def test_shared_entry_uses_supplied_checkpoint_reader_and_profile(
     tmp_path, monkeypatch
 ):
     calls = []
+    compose = object()
     definition = SimpleNamespace(
+        compose=compose,
         checkpoint_type=lambda path, **options: (
             calls.append((path, options)) or SimpleNamespace(config="geometry")
         )
@@ -431,7 +433,7 @@ def test_shared_entry_uses_supplied_checkpoint_reader_and_profile(
         rows=[1, 32],
     )
     assert calls == [("checkpoint", {"branch": "draft"})]
-    assert result == ("geometry", tmp_path, {"rows": [1, 32]})
+    assert result == ("geometry", tmp_path, {"rows": [1, 32], "definition": compose})
 
 
 def test_dependency_scans_reuse_unchanged_content_and_follow_edits(

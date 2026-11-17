@@ -94,7 +94,10 @@ def compose_backbone(
     else:
         chunk = 1 if chunk is None else chunk
         pool = slots if pool is None else pool
-        if any(type(v) is not int or v < 1 for v in (slots, chunk, pool)) or slots > pool:
+        if (
+            any(type(v) is not int or v < 1 for v in (slots, chunk, pool))
+            or slots > pool
+        ):
             raise ValueError("invalid ZONOS3 multi-slot backbone geometry")
         rows = slots * chunk
     if (
@@ -102,14 +105,19 @@ def compose_backbone(
         or type(context) is not int
         or not 1 <= chunk <= context <= c.max_context
     ):
-        raise ValueError("ZONOS3 backbone requires CUDA or WebGPU and a valid request context")
+        raise ValueError(
+            "ZONOS3 backbone requires CUDA or WebGPU and a valid request context"
+        )
     if c.conv_width != 4 or c.delta_dim % 32:
         raise ValueError("unsupported ZONOS3 recurrent geometry")
     if sample and not include_head:
         raise ValueError("ZONOS3 codebook sampling requires include_head=True")
     g = Graph(contract="reference")
     x = g.buffer(
-        "embedding", (rows, c.width), "float32", role="scratch" if embed_frames else "input"
+        "embedding",
+        (rows, c.width),
+        "float32",
+        role="scratch" if embed_frames else "input",
     )
     positions = g.buffer("positions", (rows,), "int32", role="input")
     lengths = g.buffer("lengths", (slots,), "int32", role="input")
@@ -307,7 +315,9 @@ def compose_backbone(
                 inner.view(flat),
             )
             return linear(inner, prefix + "ffn_down.weight", prefix + "dense")
-        route_scale = weight(prefix + "ffn_route_norm.weight") if c.router_norm else unit
+        route_scale = (
+            weight(prefix + "ffn_route_norm.weight") if c.router_norm else unit
+        )
         route_input = norm(x, route_scale, prefix + "route_norm")
         logits = linear(route_input, prefix + "ffn_gate_inp.weight", prefix + "logits")
         latent = linear(x, prefix + "ffn_latent_down.weight", prefix + "latent")

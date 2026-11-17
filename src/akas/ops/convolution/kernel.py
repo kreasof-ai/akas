@@ -400,9 +400,10 @@ def istft_mix_commit(spec, schedule):
         Tensor((slots, span), "float32"),
     ]:
         mid = output((slots, span), "float32")
-        with T.Kernel(
-            slots, T.ceildiv(T.max(span, state_width), 256), threads=256
-        ) as (slot, blk):
+        with T.Kernel(slots, T.ceildiv(T.max(span, state_width), 256), threads=256) as (
+            slot,
+            blk,
+        ):
             live_span = lengths[slot] * 16 * hop
             sh0 = T.alloc_shared((256 + fir_k,), "float32")
             sh1 = T.alloc_shared((256 + fir_k,), "float32")
@@ -496,7 +497,9 @@ def sinc_resample_limit(spec, schedule):
                     mag = T.abs(val)
                     if mag > T.float32(knee):
                         width = T.float32(1.0 - knee)
-                        lim = T.float32(knee) + width * T.tanh((mag - T.float32(knee)) / width)
+                        lim = T.float32(knee) + width * T.tanh(
+                            (mag - T.float32(knee)) / width
+                        )
                         val = T.if_then_else(val >= 0.0, lim, -lim)
                     pcm[slot, blk * new + o_idx] = val
                 else:

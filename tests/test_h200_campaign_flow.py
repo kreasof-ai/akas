@@ -8,6 +8,7 @@ import pytest
 
 
 def test_h200_uses_standard_campaign_and_no_redundant_tools():
+    from akas.benchmarking.archive import catalog
     from akas.optimization.context import workload
     from tools.campaign import modal_command
 
@@ -20,7 +21,9 @@ def test_h200_uses_standard_campaign_and_no_redundant_tools():
     assert requested["prefix_tokens"] == [2048]
     assert requested["output_tokens"] == 128
     assert spec["formats"] == ["fp8"] and spec["caches"] == ["float16"]
-    assert (root / spec["baseline_lock"]).is_file()
+    directory, kind, run, filename = Path(spec["baseline_lock"]).parts
+    assert (directory, kind) == ("benchmarks", "runs")
+    assert filename in catalog(root / directory)[kind][run]["files"]
     assert not (root / "benchmarks/configs").exists()
     args = modal_command(
         spec_path,

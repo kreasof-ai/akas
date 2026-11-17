@@ -12,10 +12,14 @@ def _modules(*owners):
         path = root / owner.replace(".", "/")
         if path.is_dir():
             names.update(
-                "akas." + p.relative_to(root).with_suffix("").as_posix().replace("/", ".")
+                "akas."
+                + p.relative_to(root).with_suffix("").as_posix().replace("/", ".")
                 for p in path.rglob("*.py")
                 if p.name != "__init__.py"
-                and all(part.isidentifier() for part in p.relative_to(root).with_suffix("").parts)
+                and all(
+                    part.isidentifier()
+                    for part in p.relative_to(root).with_suffix("").parts
+                )
             )
         else:
             names.add("akas." + owner)
@@ -72,8 +76,10 @@ def runtime_hashes(provider="cuda"):
         names.add("tensor.runtime.domain")
     if provider == "cuda":
         names.update(
-            "tensor.providers.cuda." + name for name in ("device", "driver", "graph", "tensor_map")
+            "tensor.providers.cuda." + name for name in ("device", "driver", "graph")
         )
+        if find_spec("tensor.providers.cuda.tensor_map") is not None:
+            names.add("tensor.providers.cuda.tensor_map")
     elif provider == "webgpu":
         names.update(
             "tensor.providers.webgpu." + name
@@ -100,8 +106,10 @@ def _compiler_identity(provider):
     if provider == "cuda":
         path = Path(find_spec("tensor.compiler.cuda.lowering").origin)
         result = {"lowering_sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
-        for module, key in (("tensor.compiler.frontend.signature", "signature_sha256"),
-                            ("tensor.compiler.cuda.tensor_map", "tensor_map_sha256")):
+        for module, key in (
+            ("tensor.compiler.frontend.signature", "signature_sha256"),
+            ("tensor.compiler.cuda.tensor_map", "tensor_map_sha256"),
+        ):
             spec = find_spec(module)
             if spec is not None:
                 result[key] = hashlib.sha256(Path(spec.origin).read_bytes()).hexdigest()

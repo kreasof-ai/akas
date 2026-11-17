@@ -414,7 +414,7 @@ def test_speech_request_uses_language_preset_and_respects_explicit_voice():
 
     from akas.serving.speech import SpeechService, create_app
 
-    checkpoint = Zonos3MiniCheckpoint.__new__(Zonos3MiniCheckpoint)
+    checkpoint = object.__new__(Zonos3MiniCheckpoint)
     checkpoint.config = SimpleNamespace(width=8)
     english, french = "Savannah_en-American_F_1", "Gaspard_fr_M_1"
     tensor = SimpleNamespace(type=0, shape=(1, 8))

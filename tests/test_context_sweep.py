@@ -32,7 +32,7 @@ def test_only_undefined_vulkan_binding_limit_is_capped(monkeypatch, limit, expec
     import tensor
 
     class Device:
-        def __init__(self, **options):
+        def __init__(self, index, **options):
             self.info = dict(adapter=dict(backend_type="Vulkan", adapter_type="DiscreteGPU"))
             values = {"max-storage-buffers-per-shader-stage": limit}
             self._adapter = SimpleNamespace(limits=values, _limits=values)

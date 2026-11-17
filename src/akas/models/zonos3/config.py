@@ -178,7 +178,9 @@ class Zonos3MiniConfig:
         latent_width = int(round(width * float(model["moe_alpha"])))
         spec = model.get("text_tokenizer_spec") or {}
         text_vocab = int(model["text_vocab"])
-        if spec.get("kind") != "superbpe" or text_vocab != int(spec.get("vocab_size", 0)) + int(spec.get("offset", 0)):
+        if spec.get("kind") != "superbpe" or text_vocab != int(
+            spec.get("vocab_size", 0)
+        ) + int(spec.get("offset", 0)):
             raise ValueError("unsupported ZONOS3 text tokenizer specification")
         buckets = tuple(int(n) for n in model.get("condition_bucket_counts", ()))
         if int(model.get("condition_count", 0)) != len(buckets):
@@ -190,7 +192,9 @@ class Zonos3MiniConfig:
             or model.get("moe_router_type") != "linear"
             or bool(model.get("moe_router_use_eda", False))
         ):
-            raise ValueError("unsupported ZONOS3 codebook, residual or router configuration")
+            raise ValueError(
+                "unsupported ZONOS3 codebook, residual or router configuration"
+            )
         return cls(
             width=width,
             vocab=text_vocab + 1 + int(model.get("text_extra_tokens", 0)),

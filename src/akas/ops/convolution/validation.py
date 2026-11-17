@@ -130,13 +130,17 @@ def istft_stream_validation(kind, p, signature):
         b0, b1 = n0 // 2 + 1, n1 // 2 + 1
         max_log = p.get("max_log_mag", 4.605170185988092)
         s = values["spectrum"].astype("float64")
-        for idx, (offset, bins, name) in enumerate(((0, b0, "spec0"), (2 * b0, b1, "spec1"))):
+        for idx, (offset, bins, name) in enumerate(
+            ((0, b0, "spec0"), (2 * b0, b1, "spec1"))
+        ):
             mag = np.exp(np.minimum(s[:, offset : offset + bins], max_log))
             ph = s[:, offset + bins : offset + 2 * bins]
             im = mag * np.sin(ph)
             im[:, 0] = 0.0
             im[:, -1] = 0.0
-            expected[name] = np.concatenate((mag * np.cos(ph), im), axis=1).astype("float32")
+            expected[name] = np.concatenate((mag * np.cos(ph), im), axis=1).astype(
+                "float32"
+            )
         return ValidationCase(values, expected)
 
     slots, frames = p["slots"], p["frames"]
@@ -175,13 +179,25 @@ def istft_stream_validation(kind, p, signature):
         for s in range(slots):
             live_span = int(values["lengths"][s]) * 16 * hop
             if live_span > 0:
-                w0 = np.lib.stride_tricks.sliding_window_view(cat0[s, : live_span + fir_k - 1], fir_k)
-                w1 = np.lib.stride_tricks.sliding_window_view(cat1[s, : live_span + fir_k - 1], fir_k)
+                w0 = np.lib.stride_tricks.sliding_window_view(
+                    cat0[s, : live_span + fir_k - 1], fir_k
+                )
+                w1 = np.lib.stride_tricks.sliding_window_view(
+                    cat1[s, : live_span + fir_k - 1], fir_k
+                )
                 mid[s, :live_span] = (w0 @ mixer[0] + w1 @ mixer[1]).astype("float32")
-                expected["state"][s, :t0] = cat0[s, m0_len + live_span : m0_len + live_span + t0]
-                expected["state"][s, t0 : t0 + t1] = cat1[s, m1_len + live_span : m1_len + live_span + t1]
-                expected["state"][s, t0 + t1 : t0 + t1 + m0_len] = cat0[s, live_span : live_span + m0_len]
-                expected["state"][s, t0 + t1 + m0_len :] = cat1[s, live_span : live_span + m1_len]
+                expected["state"][s, :t0] = cat0[
+                    s, m0_len + live_span : m0_len + live_span + t0
+                ]
+                expected["state"][s, t0 : t0 + t1] = cat1[
+                    s, m1_len + live_span : m1_len + live_span + t1
+                ]
+                expected["state"][s, t0 + t1 : t0 + t1 + m0_len] = cat0[
+                    s, live_span : live_span + m0_len
+                ]
+                expected["state"][s, t0 + t1 + m0_len :] = cat1[
+                    s, live_span : live_span + m1_len
+                ]
         expected["mid"] = mid
         return ValidationCase(values, expected)
     if kind == "sinc_resample_limit":
@@ -192,14 +208,17 @@ def istft_stream_validation(kind, p, signature):
         for s in range(slots):
             live_b = int(values["lengths"][s]) * 4
             if live_b > 0:
-                cat = np.concatenate((values["rs_state"][s], values["mid"][s])).astype("float64")
+                cat = np.concatenate((values["rs_state"][s], values["mid"][s])).astype(
+                    "float64"
+                )
                 win = np.lib.stride_tricks.sliding_window_view(cat, 770)[::736][:live_b]
                 raw = (win @ filt.T).reshape(-1).astype("float32") * np.float32(gain)
                 over = np.abs(raw) > np.float32(knee)
                 if over.any():
                     w = np.float32(1.0 - knee)
                     raw[over] = np.sign(raw[over]) * (
-                        np.float32(knee) + w * np.tanh((np.abs(raw[over]) - np.float32(knee)) / w)
+                        np.float32(knee)
+                        + w * np.tanh((np.abs(raw[over]) - np.float32(knee)) / w)
                     )
                 pcm[s, : live_b * 735] = raw
         expected["pcm"] = pcm

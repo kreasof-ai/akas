@@ -464,8 +464,7 @@ def zonos3_frame_embed(spec, schedule):
 
     p = {**spec.parameters, **schedule}
     rows, width, codebooks, code_vocab, text_vocab, cond_rows = (
-        p[k]
-        for k in ("r", "c", "codebooks", "code_vocab", "text_vocab", "cond_rows")
+        p[k] for k in ("r", "c", "codebooks", "code_vocab", "text_vocab", "cond_rows")
     )
     cols = codebooks + 1
     audio_bytes = codebooks * code_vocab * width * 2
@@ -594,8 +593,7 @@ def codebook_sample(spec, schedule):
                     for m in T.serial(per_thread):
                         tok = m * threads + tx
                         if (tok <= eoa) & (
-                            (vals[m] > best_v)
-                            | ((vals[m] == best_v) & (tok < best_i))
+                            (vals[m] > best_v) | ((vals[m] == best_v) & (tok < best_i))
                         ):
                             best_v = vals[m]
                             best_m = m
@@ -658,9 +656,7 @@ def codebook_sample(spec, schedule):
                         if picked < 0:
                             picked = top_ids[0]
                         chosen_tok = picked
-                    delayed_tok = T.if_then_else(
-                        cb > silence + step, pad, chosen_tok
-                    )
+                    delayed_tok = T.if_then_else(cb > silence + step, pad, chosen_tok)
                     out[slot, cb] = delayed_tok
                     history[slot, step % window, cb] = delayed_tok
                     if cb == 0:

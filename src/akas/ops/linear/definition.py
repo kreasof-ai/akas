@@ -376,9 +376,7 @@ def lower(graph, commit, settings, *, provider, target):
     ):
         raise ValueError("projection minimum split groups must be a positive integer")
     maximum_rows = settings.get("partition_maximum_rows")
-    if maximum_rows is not None and (
-        type(maximum_rows) is not int or maximum_rows < 1
-    ):
+    if maximum_rows is not None and (type(maximum_rows) is not int or maximum_rows < 1):
         raise ValueError("projection partition maximum rows must be a positive integer")
     recorder = Graph(contract=graph.contract, phase=graph.phase)
     recorder.buffers = graph.buffers
@@ -1865,13 +1863,23 @@ IMPLEMENTATIONS += tuple(
 )
 
 from dataclasses import replace as _with_algorithm_choice
+
 IMPLEMENTATIONS = tuple(
-    replace(item, space=(*item.space, ('mma_orientation', ('activation', 'weight'))))
-    if item.module_name == 'akas.ops.linear.cuda' and item.factory in ('fp8_inline','fp8_prequantized')
-    else item for item in IMPLEMENTATIONS
+    replace(item, space=(*item.space, ("mma_orientation", ("activation", "weight"))))
+    if item.module_name == "akas.ops.linear.cuda"
+    and item.factory in ("fp8_inline", "fp8_prequantized")
+    else item
+    for item in IMPLEMENTATIONS
 )
 IMPLEMENTATIONS = tuple(
-    _with_algorithm_choice(item, space=(*item.space, ("algorithm", ("auto", "mma", "gemv")), ("tma", (False, True))))
+    _with_algorithm_choice(
+        item,
+        space=(
+            *item.space,
+            ("algorithm", ("auto", "mma", "gemv")),
+            ("tma", (False, True)),
+        ),
+    )
     if item.provider == "cuda" and item.factory == "floating_linear"
     else item
     for item in IMPLEMENTATIONS

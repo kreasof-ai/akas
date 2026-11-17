@@ -223,9 +223,10 @@ def routed_combine(spec, schedule):
             active: Tensor((rows,), "int32"),
         ) -> Tensor((rows, width), "float32"):
             out = output((rows, width), "float32")
-            with T.Kernel(
-                T.ceildiv(width, threads * vec), rows, threads=threads
-            ) as (tile, row):
+            with T.Kernel(T.ceildiv(width, threads * vec), rows, threads=threads) as (
+                tile,
+                row,
+            ):
                 T.annotate_min_blocks_per_sm(p.get("min_blocks", 1))
                 acc = T.alloc_fragment((threads * vec,), "float32")
                 T.clear(acc)
@@ -438,6 +439,8 @@ def _packed_float_experts(spec, schedule, *, provider):
         return out
 
     return compute
+
+
 def biased_softmax_router(spec, schedule):
     """Select using biased logits and normalize the selected unbiased logits."""
     import tilelang.language as T

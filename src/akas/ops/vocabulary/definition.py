@@ -324,8 +324,11 @@ VALIDATIONS.update(
 
 
 from dataclasses import replace as _with_argmax_threads
+
 IMPLEMENTATIONS = tuple(
-    _with_argmax_threads(item, space=(*item.space, ("threads", (64, 128, 256, 512, 1024))))
+    _with_argmax_threads(
+        item, space=(*item.space, ("threads", (64, 128, 256, 512, 1024)))
+    )
     if item.provider == "cuda" and item.factory == "argmax"
     else item
     for item in IMPLEMENTATIONS

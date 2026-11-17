@@ -70,4 +70,3 @@ IMPLEMENTATIONS += tuple(
     for provider in ("cuda", "webgpu")
     for kind in ("attention_residual", "scaled_residual")
 )
-

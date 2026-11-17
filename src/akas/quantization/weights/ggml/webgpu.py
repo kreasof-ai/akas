@@ -74,7 +74,9 @@ def gemv_terms(p, *, fast_q4, lanes, row_count, dot_q4, dot_q6):
                     q6_vector(acc[slot][0], x, w, base, tile, logical_lane, half, scale)
             else:
                 for group in range(8):
-                    q6_scalar(acc[slot][0], x, w, base, tile, logical_lane, group, scale)
+                    q6_scalar(
+                        acc[slot][0], x, w, base, tile, logical_lane, group, scale
+                    )
 
     @T.macro
     def scalar_term(acc: T.Ref, x, index, scale, packed, shift, offset):

@@ -533,7 +533,9 @@ def window_decode(spec, schedule):
         raise ValueError("decode key unroll must be 1, 2, 4 or 8")
 
     @T.macro
-    def score_key(score: T.Ref, q0, q1, q2, q3, kc, row, head, token, lane, end, scratch, tx):
+    def score_key(
+        score: T.Ref, q0, q1, q2, q3, kc, row, head, token, lane, end, scratch, tx
+    ):
         physical = token % cap
         score = q0 * T.cast(
             kc[row, head // (heads // kh), physical, lane], "float32"
@@ -563,7 +565,19 @@ def window_decode(spec, schedule):
     def score_keys(scores, q0, q1, q2, q3, kc, row, head, base, lane, end, scratch, tx):
         for j in range(unroll):
             score_key(
-                scores[j,][0], q0, q1, q2, q3, kc, row, head, base + j * 4, lane, end, scratch, tx
+                scores[j,][0],
+                q0,
+                q1,
+                q2,
+                q3,
+                kc,
+                row,
+                head,
+                base + j * 4,
+                lane,
+                end,
+                scratch,
+                tx,
             )
 
     @T.macro
@@ -674,7 +688,9 @@ def window_decode(spec, schedule):
             for offset in T.serial(T.ceildiv(T.max(end - begin, 0), 4 * unroll)):
                 token = begin + offset * (4 * unroll) + warp
                 scores, probs = registers((unroll,)), registers((unroll,))
-                score_keys(scores, q0, q1, q2, q3, kc, row, head, token, lane, end, scratch, tx)
+                score_keys(
+                    scores, q0, q1, q2, q3, kc, row, head, token, lane, end, scratch, tx
+                )
                 next_max = T.alloc_var("float32")
                 next_max = maximum
                 max_keys(next_max, scores)

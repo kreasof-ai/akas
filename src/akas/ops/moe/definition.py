@@ -1060,28 +1060,66 @@ def _separate_expert_quantize(graph):
 
     calls = []
     for index, call in enumerate(graph.calls):
-        if call.kind != 'fp8_expert_swiglu':
+        if call.kind != "fp8_expert_swiglu":
             calls.append(call)
             continue
-        fields = ('x','activation_scales','w','scales','w2','scales2','counts',
-                  'routes','tile_experts','tile_offsets',
-                  *(('expert_offsets',) if call.parameters.get('packed_input') else ()),
-                  'out','output_scales')
-        names = dict(call.bindings) if call.bindings else dict(zip(fields,call.arguments))
+        fields = (
+            "x",
+            "activation_scales",
+            "w",
+            "scales",
+            "w2",
+            "scales2",
+            "counts",
+            "routes",
+            "tile_experts",
+            "tile_offsets",
+            *(("expert_offsets",) if call.parameters.get("packed_input") else ()),
+            "out",
+            "output_scales",
+        )
+        names = (
+            dict(call.bindings) if call.bindings else dict(zip(fields, call.arguments))
+        )
         p = call.parameters
-        dtype = p.get('activation_dtype','float32')
-        shape = graph.buffers[names['out']].shape
-        temporary = graph.buffer(f'pipeline.expert_unquantized.{index}', shape, dtype)
-        calls.append(replace(call, kind='expert_swiglu', arguments=(),
-            parameters={**p,'input_dtype':'uint8','weight_format':'fp8','output_dtype':dtype},
-            bindings={**{k:v for k,v in names.items() if k not in ('out','output_scales')},
-                      'out':temporary.name}, label=None))
-        quant = dict(r=shape[0], k=p['o'], input_dtype=dtype)
-        if len(shape)==3:
-            quant.update(top=p['top'],routed_input=True)
-        calls.append(Call('quantize', quant, (),
-            dict(x=temporary.name,out=names['out'],scales=names['output_scales']),label=call.label))
-    graph.calls=calls
+        dtype = p.get("activation_dtype", "float32")
+        shape = graph.buffers[names["out"]].shape
+        temporary = graph.buffer(f"pipeline.expert_unquantized.{index}", shape, dtype)
+        calls.append(
+            replace(
+                call,
+                kind="expert_swiglu",
+                arguments=(),
+                parameters={
+                    **p,
+                    "input_dtype": "uint8",
+                    "weight_format": "fp8",
+                    "output_dtype": dtype,
+                },
+                bindings={
+                    **{
+                        k: v
+                        for k, v in names.items()
+                        if k not in ("out", "output_scales")
+                    },
+                    "out": temporary.name,
+                },
+                label=None,
+            )
+        )
+        quant = dict(r=shape[0], k=p["o"], input_dtype=dtype)
+        if len(shape) == 3:
+            quant.update(top=p["top"], routed_input=True)
+        calls.append(
+            Call(
+                "quantize",
+                quant,
+                (),
+                dict(x=temporary.name, out=names["out"], scales=names["output_scales"]),
+                label=call.label,
+            )
+        )
+    graph.calls = calls
 
 
 def lower(graph, commit, settings, *, provider, target):
@@ -1119,10 +1157,14 @@ def lower(graph, commit, settings, *, provider, target):
         raise ValueError("unknown routed projection policy")
     if "fused_swiglu" in settings and type(settings["fused_swiglu"]) is not bool:
         raise ValueError("expert SwiGLU fusion must be a boolean")
-    if type(settings.get('separate_activation_quantize',False)) is not bool:
-        raise ValueError('expert quantization separation must be a boolean')
-    if settings.get('separate_activation_quantize') and (provider!='cuda' or graph.contract!='reference'):
-        raise ValueError('expert quantization separation requires CUDA reference arithmetic')
+    if type(settings.get("separate_activation_quantize", False)) is not bool:
+        raise ValueError("expert quantization separation must be a boolean")
+    if settings.get("separate_activation_quantize") and (
+        provider != "cuda" or graph.contract != "reference"
+    ):
+        raise ValueError(
+            "expert quantization separation requires CUDA reference arithmetic"
+        )
     if settings.get("intermediate_dtype", "float32") not in (
         "float32",
         "float16",
@@ -1252,7 +1294,7 @@ def lower(graph, commit, settings, *, provider, target):
             _partition_experts(graph, parts, maximum_rows)
         if settings.get("intermediate_dtype", "float32") != "float32":
             _contribution_storage(graph, settings["intermediate_dtype"])
-        if settings.get('separate_activation_quantize'):
+        if settings.get("separate_activation_quantize"):
             _separate_expert_quantize(graph)
         return graph, commit
     if graph.contract != "block-fp8":
@@ -2107,7 +2149,8 @@ IMPLEMENTATIONS += (
             and not p.get("routed_input")
             and p.get("partitions", 1) == 1
             and p["o"] % 128 == 0
-            and p.get("block_m", 16) // 16
+            and p.get("block_m", 16)
+            // 16
             * (p.get("columns", 64) // 8)
             * (2 if p.get("pair_layout", "wide") == "wide" else 1)
             >= p.get("threads", 128) // 32
@@ -2459,44 +2502,79 @@ IMPLEMENTATIONS += (
 
 # TMA is an optional compiler schedule; model arithmetic and layouts are unchanged.
 from dataclasses import replace as _with_tma
+
 IMPLEMENTATIONS = tuple(
     _with_tma(item, space=(*item.space, ("tma", (False, True))))
-    if item.provider == "cuda" and item.contract == "reference"
-       and item.factory in ("bucketed", "fp8_expert_swiglu", "fp8_paired_swiglu")
+    if item.provider == "cuda"
+    and item.contract == "reference"
+    and item.factory in ("bucketed", "fp8_expert_swiglu", "fp8_paired_swiglu")
     else item
     for item in IMPLEMENTATIONS
 )
 
 IMPLEMENTATIONS = tuple(
-    _with_tma(item, space=(*item.space,
-                          ("reuse_partial", (False, True)),
-                          ("inplace_epilogue", (False, True)),
-                          ("quantize_pair", (False, True)),
-                          ("packed_quantize", (False, True))))
-    if item.provider == "cuda" and item.factory in ("fp8_expert_swiglu", "fp8_paired_swiglu")
+    _with_tma(
+        item,
+        space=(
+            *item.space,
+            ("reuse_partial", (False, True)),
+            ("inplace_epilogue", (False, True)),
+            ("quantize_pair", (False, True)),
+            ("packed_quantize", (False, True)),
+        ),
+    )
+    if item.provider == "cuda"
+    and item.factory in ("fp8_expert_swiglu", "fp8_paired_swiglu")
     else item
     for item in IMPLEMENTATIONS
 )
 
 IMPLEMENTATIONS += (
     _with_tma(
-        next(item for item in IMPLEMENTATIONS if item.identifier == 'moe.cuda.fp8-swiglu:mapped'),
-        name='moe.cuda.fp8-swiglu:serial', factory='serial_fp8_expert_swiglu',
-        priority=-1, targets=('sm_90a',), defaults=(),
-        accepts=lambda p: bool(p.get('packed_input') and p.get('packed_output')
-                               and p.get('tile_map') and p.get('compact')
-                               and p.get('partitions',1)==1),
-        space=(('block_m',(64,128)),('threads',(128,256,512)),('stages',(1,2,3))),
+        next(
+            item
+            for item in IMPLEMENTATIONS
+            if item.identifier == "moe.cuda.fp8-swiglu:mapped"
+        ),
+        name="moe.cuda.fp8-swiglu:serial",
+        factory="serial_fp8_expert_swiglu",
+        priority=-1,
+        targets=("sm_90a",),
+        defaults=(),
+        accepts=lambda p: bool(
+            p.get("packed_input")
+            and p.get("packed_output")
+            and p.get("tile_map")
+            and p.get("compact")
+            and p.get("partitions", 1) == 1
+        ),
+        space=(
+            ("block_m", (64, 128)),
+            ("threads", (128, 256, 512)),
+            ("stages", (1, 2, 3)),
+        ),
     ),
 )
 
 IMPLEMENTATIONS = tuple(
-    _with_tma(item, space=(*item.space, ('min_blocks', (1, 2, 3, 4)),
-                          ('combined_scales', (False, True)),
-                          ('mma_orientation', ('activation', 'weight'))))
-    if item.provider == 'cuda' and item.factory in (
-        'bucketed', 'fp8_expert_swiglu', 'fp8_paired_swiglu',
-        'paired_partial', 'serial_fp8_expert_swiglu')
+    _with_tma(
+        item,
+        space=(
+            *item.space,
+            ("min_blocks", (1, 2, 3, 4)),
+            ("combined_scales", (False, True)),
+            ("mma_orientation", ("activation", "weight")),
+        ),
+    )
+    if item.provider == "cuda"
+    and item.factory
+    in (
+        "bucketed",
+        "fp8_expert_swiglu",
+        "fp8_paired_swiglu",
+        "paired_partial",
+        "serial_fp8_expert_swiglu",
+    )
     else item
     for item in IMPLEMENTATIONS
 )

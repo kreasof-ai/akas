@@ -113,10 +113,10 @@ def _mma(p, *, grouped, prequantized):
     stages = p.get("stages", 1)
     packed_copy = p.get("packed_copy", False)
     mma_dtype = p.get("mma_dtype", "float8_e4m3fn")
-    orientation = p.get('mma_orientation', 'activation')
-    if orientation not in ('activation', 'weight'):
-        raise ValueError('invalid FP8 projection operand orientation')
-    transposed = orientation == 'weight'
+    orientation = p.get("mma_orientation", "activation")
+    if orientation not in ("activation", "weight"):
+        raise ValueError("invalid FP8 projection operand orientation")
+    transposed = orientation == "weight"
     if mma_dtype not in ("float8_e4m3fn", "float16"):
         raise ValueError(
             "FP8 projection MMA operands must be FP8 or exactly promoted FP16"
@@ -163,7 +163,7 @@ def _mma(p, *, grouped, prequantized):
             absolute = T.alloc_fragment((m, 128), "float32")
             maxima = T.alloc_fragment((m,), "float32")
         activation_scales = T.alloc_shared((m,), "float32")
-        block = T.alloc_fragment((n,m) if transposed else (m,n), "float32")
+        block = T.alloc_fragment((n, m) if transposed else (m, n), "float32")
         total = T.alloc_fragment((m, n), "float32")
         T.clear(total)
         for local_tile in T.Pipelined(k // (128 * parts), num_stages=stages):
@@ -306,7 +306,7 @@ def _mma(p, *, grouped, prequantized):
             for b, j in T.Parallel(m, n):
                 if grouped:
                     total[b, j] += (
-                        (block[j,b] if transposed else block[b,j])
+                        (block[j, b] if transposed else block[b, j])
                         * activation_scales[b]
                         * T.cast(scales[expert, (bx * n + j) // 128, tile], "float32")
                     )
@@ -326,7 +326,7 @@ def _mma(p, *, grouped, prequantized):
                     )
                 else:
                     total[b, j] += (
-                        (block[j,b] if transposed else block[b,j])
+                        (block[j, b] if transposed else block[b, j])
                         * activation_scales[b]
                         * T.cast(scales[(bx * n + j) // 128, tile], "float32")
                     )
@@ -1671,7 +1671,9 @@ def _q4_q8(p, *, packed_output):
                 aw = T.meta_var(buffer_view(a, (bm, (bk + 16) // 4), dtype="uint32"))
                 bw = T.meta_var(buffer_view(b, (bn, (bk + 16) // 4), dtype="uint32"))
                 if paired:
-                    bw2 = T.meta_var(buffer_view(b2, (bn, (bk + 16) // 4), dtype="uint32"))
+                    bw2 = T.meta_var(
+                        buffer_view(b2, (bn, (bk + 16) // 4), dtype="uint32")
+                    )
                 for i, j in T.Parallel(bm, bk // 4):
                     aw[i, j] = T.if_then_else(
                         by * bm + i < r,
@@ -1734,7 +1736,9 @@ def _q4_q8(p, *, packed_output):
                         T.round(activated[i, group, lane] / scale), "int8"
                     )
                 T.sync_threads()
-                words = T.meta_var(buffer_view(quantized, (bm, bn // 4), dtype="uint32"))
+                words = T.meta_var(
+                    buffer_view(quantized, (bm, bn // 4), dtype="uint32")
+                )
                 for i, j in T.Parallel(bm, bn // 4):
                     if by * bm + i < r and bx * bn + j * 4 < o:
                         out[(by * bm + i) * (o // 4) + bx * (bn // 4) + j] = words[i, j]

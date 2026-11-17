@@ -796,7 +796,9 @@ def precise_rope(spec: KernelSpec, schedule: Mapping[str, object], *, force=Fals
     if d != 64:
         raise ValueError("portable reference attention requires 64-channel heads")
     h, theta = (p["h"], p["theta"])
-    precise = force or p.get("position_limit", 0) > 8192 or p.get("provider") == "webgpu"
+    precise = (
+        force or p.get("position_limit", 0) > 8192 or p.get("provider") == "webgpu"
+    )
     fma = "fma" if p.get("provider") == "webgpu" else "fmaf"
 
     def single(value):
@@ -1673,6 +1675,8 @@ def window_cache_tail(spec, schedule):
         return kc, vc
 
     return compute
+
+
 def head_rms_rotary(spec, schedule):
     """Scale and rotate adjacent coordinate pairs with optional RMS normalization."""
     import tilelang.language as T

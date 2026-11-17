@@ -166,7 +166,9 @@ class NativeZonos3MiniCheckpoint:
 
         self.directory = Path(directory).resolve()
         if not self.directory.is_dir():
-            raise ValueError(f"native ZONOS3 checkpoint directory not found: {directory}")
+            raise ValueError(
+                f"native ZONOS3 checkpoint directory not found: {directory}"
+            )
         params_raw = json.loads((self.directory / "params.json").read_text())
         self.params = params = params_raw["model"]
         self.config = c = Zonos3MiniConfig.from_zonos3(params_raw)
@@ -183,7 +185,9 @@ class NativeZonos3MiniCheckpoint:
         self.audio_pad_id = int(params["audio_pad_id"])
         self.text_vocab = int(params["text_vocab"])
 
-        codec_path = Path(codec or os.environ.get("ZONOS3_COMPACT_CODEC", "")).expanduser()
+        codec_path = Path(
+            codec or os.environ.get("ZONOS3_COMPACT_CODEC", "")
+        ).expanduser()
         if not codec_path.is_file():
             raise ValueError(
                 "native ZONOS3 requires the keep2_plain compact codec checkpoint path"
@@ -193,20 +197,30 @@ class NativeZonos3MiniCheckpoint:
         weight_file = self.directory / "model.pth"
         if not weight_file.is_file():
             raise ValueError(f"missing ZONOS3 consolidated weights: {weight_file}")
-        lm_raw = torch.load(weight_file, map_location="cpu", weights_only=False, mmap=True)
-        state = lm_raw["model"] if isinstance(lm_raw, dict) and "model" in lm_raw else lm_raw
+        lm_raw = torch.load(
+            weight_file, map_location="cpu", weights_only=False, mmap=True
+        )
+        state = (
+            lm_raw["model"]
+            if isinstance(lm_raw, dict) and "model" in lm_raw
+            else lm_raw
+        )
 
         def bf16_entry(tensor, expected_shape=None):
             t = tensor.detach().to(torch.bfloat16).contiguous()
             if expected_shape is not None and tuple(t.shape) != tuple(expected_shape):
-                raise ValueError(f"unexpected BF16 tensor shape {tuple(t.shape)} != {expected_shape}")
+                raise ValueError(
+                    f"unexpected BF16 tensor shape {tuple(t.shape)} != {expected_shape}"
+                )
             raw = np.frombuffer(t.view(torch.uint8).numpy().tobytes(), dtype=np.uint8)
             return (raw, tuple(t.shape), 30)
 
         def f32_entry(tensor, expected_shape=None):
             t = tensor.detach().to(torch.float32).contiguous()
             if expected_shape is not None and tuple(t.shape) != tuple(expected_shape):
-                raise ValueError(f"unexpected F32 tensor shape {tuple(t.shape)} != {expected_shape}")
+                raise ValueError(
+                    f"unexpected F32 tensor shape {tuple(t.shape)} != {expected_shape}"
+                )
             raw = np.frombuffer(t.numpy().tobytes(), dtype=np.uint8)
             return (raw, tuple(t.shape), 0)
 
@@ -278,13 +292,18 @@ class NativeZonos3MiniCheckpoint:
             if recurrent:
                 delta = c.delta_width
                 in_proj = state[src + "attention.in_proj.weight"]
-                if tuple(in_proj.shape) != (3 * delta + delta + 2 * c.delta_heads, c.width):
+                if tuple(in_proj.shape) != (
+                    3 * delta + delta + 2 * c.delta_heads,
+                    c.width,
+                ):
                     raise ValueError(f"unexpected GDN in_proj shape at layer {idx}")
                 qkv_w, gate_w, alpha_w, beta_w = in_proj.split(
                     [3 * delta, delta, c.delta_heads, c.delta_heads], dim=0
                 )
                 backbone[p + "input.weight"] = bf16_entry(in_proj)
-                backbone[p + "attn_qkv.weight"] = bf16_entry(qkv_w, (3 * delta, c.width))
+                backbone[p + "attn_qkv.weight"] = bf16_entry(
+                    qkv_w, (3 * delta, c.width)
+                )
                 backbone[p + "attn_gate.weight"] = bf16_entry(gate_w, (delta, c.width))
                 backbone[p + "ssm_alpha.weight"] = bf16_entry(
                     alpha_w, (c.delta_heads, c.width)
@@ -350,8 +369,14 @@ class NativeZonos3MiniCheckpoint:
                 )
             else:
                 gate_up = state[src + "feed_forward.experts.gate_up_proj"]
-                if tuple(gate_up.shape) != (c.experts, 2 * c.expert_width, c.latent_width):
-                    raise ValueError(f"unexpected expert gate_up_proj shape at layer {idx}")
+                if tuple(gate_up.shape) != (
+                    c.experts,
+                    2 * c.expert_width,
+                    c.latent_width,
+                ):
+                    raise ValueError(
+                        f"unexpected expert gate_up_proj shape at layer {idx}"
+                    )
                 backbone[p + "ffn_route_norm.weight"] = f32_entry(
                     state[src + "feed_forward.router.rmsnorm_eda.weight"], (c.width,)
                 )
@@ -391,7 +416,9 @@ class NativeZonos3MiniCheckpoint:
             codec_blob.get("format") != "zonos3-istft-codec-v1"
             or codec_blob.get("decoder") != "keep2_plain"
         ):
-            raise ValueError("requires the keep2_plain zonos3-istft-codec-v1 checkpoint")
+            raise ValueError(
+                "requires the keep2_plain zonos3-istft-codec-v1 checkpoint"
+            )
         self.codec_config = codec_blob["config"]
         cs = codec_blob["state_dict"]
 
@@ -407,7 +434,9 @@ class NativeZonos3MiniCheckpoint:
         }
         sem_cb = cs["quantizer.semantic_quantizer.quantizers.0.codebook.weight"].float()
         sem_proj = _wn_matrix(cs, "quantizer.semantic_quantizer.quantizers.0.out_proj")
-        projector["a.gen.wav.sem.table"] = f32_entry(sem_cb @ sem_proj.T, (c.codes, 768))
+        projector["a.gen.wav.sem.table"] = f32_entry(
+            sem_cb @ sem_proj.T, (c.codes, 768)
+        )
         projector["a.gen.wav.sem.bias"] = f32_entry(
             cs["quantizer.semantic_quantizer.quantizers.0.out_proj.bias"], (768,)
         )
@@ -444,7 +473,9 @@ class NativeZonos3MiniCheckpoint:
         for stage in range(5):
             src_stage = f"stages.{2 * stage}."
             dst_stage = f"a.gen.wav.stage.{stage}."
-            projector[dst_stage + "in.weight"] = f32_entry(cs[src_stage + "input_proj.weight"])
+            projector[dst_stage + "in.weight"] = f32_entry(
+                cs[src_stage + "input_proj.weight"]
+            )
             for blk in range(2):
                 sb = f"{src_stage}layers.{blk}."
                 db = f"{dst_stage}blk.{blk}."
@@ -481,7 +512,9 @@ class NativeZonos3MiniCheckpoint:
         projector["a.gen.wav.head.out.bias"] = f32_entry(
             torch.cat([cs["head.outs.0.bias"], cs["head.outs.1.bias"]], dim=0)
         )
-        projector["a.gen.wav.mixer.weight"] = f32_entry(cs["head.mixer.weight"][0], (2, 127))
+        projector["a.gen.wav.mixer.weight"] = f32_entry(
+            cs["head.mixer.weight"][0], (2, 127)
+        )
         projector["a.gen.wav.resample.weight"] = f32_entry(
             cs["to_external.kernel"][:, 0, :], (735, 770)
         )
@@ -504,9 +537,13 @@ class NativeZonos3MiniCheckpoint:
                 basis, (n_fft, 2 * bins)
             )
         rope_pos = np.arange(8192, dtype=np.float64)[:, None]
-        rope_ang = rope_pos * (10000.0 ** (-np.arange(0, 64, 2, dtype=np.float64) / 64.0))
+        rope_ang = rope_pos * (
+            10000.0 ** (-np.arange(0, 64, 2, dtype=np.float64) / 64.0)
+        )
         codec_rope = torch.from_numpy(
-            np.concatenate((np.cos(rope_ang), np.sin(rope_ang)), axis=1).astype(np.float32)
+            np.concatenate((np.cos(rope_ang), np.sin(rope_ang)), axis=1).astype(
+                np.float32
+            )
         )
         projector["codec_rope.weight"] = f32_entry(codec_rope, (8192, 64))
 
@@ -548,11 +585,17 @@ class NativeZonos3MiniCheckpoint:
             if not 0 <= val <= c.condition_buckets[idx]:
                 raise ValueError(f"out-of-range condition bucket {val} at row {idx}")
         text_ids = self.text_token_ids(text)
-        cond_rows = np.full((len(cond_vals), c.codebooks + 1), self.audio_pad_id, dtype="int32")
+        cond_rows = np.full(
+            (len(cond_vals), c.codebooks + 1), self.audio_pad_id, dtype="int32"
+        )
         cond_rows[:, c.codebooks] = self.text_vocab
-        txt_rows = np.full((len(text_ids), c.codebooks + 1), self.audio_pad_id, dtype="int32")
+        txt_rows = np.full(
+            (len(text_ids), c.codebooks + 1), self.audio_pad_id, dtype="int32"
+        )
         txt_rows[:, c.codebooks] = np.asarray(text_ids, dtype="int32")
-        sil_rows = np.full((silence_frames, c.codebooks + 1), self.audio_pad_id, dtype="int32")
+        sil_rows = np.full(
+            (silence_frames, c.codebooks + 1), self.audio_pad_id, dtype="int32"
+        )
         sil_rows[:, c.codebooks] = self.text_vocab
         for r in range(silence_frames):
             limit = min(r + 1, c.codebooks)
@@ -610,7 +653,8 @@ class NativeZonos3MiniCheckpoint:
         regular = [
             name
             for name in names
-            if name not in ("rope", "unit.weight", "head_unit.weight", "codec_unit.weight")
+            if name
+            not in ("rope", "unit.weight", "head_unit.weight", "codec_unit.weight")
         ]
         weights = {}
         with ExitStack() as cleanup:
@@ -644,7 +688,9 @@ class NativeZonos3MiniCheckpoint:
                 elif name == "rope":
                     c = self.config
                     if type(context) is not int or not 1 <= context <= c.max_context:
-                        raise ValueError("ZONOS3 rotary upload requires a valid context")
+                        raise ValueError(
+                            "ZONOS3 rotary upload requires a valid context"
+                        )
                     frequency = c.rope_theta ** (
                         -np.arange(0, c.head_dim, 2) / c.head_dim
                     )

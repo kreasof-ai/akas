@@ -164,7 +164,10 @@ def codebook_residual_masked_validation(kind, p, signature):
 
     values = sample_arguments(signature)
     groups, vocab, width = (p[key] for key in ("groups", "vocab", "c"))
-    ids = np.arange(values["ids"].size, dtype="int32").reshape(values["ids"].shape) % vocab
+    ids = (
+        np.arange(values["ids"].size, dtype="int32").reshape(values["ids"].shape)
+        % vocab
+    )
     if ids.size > 1:
         ids.reshape(-1)[::3] = -1
     values["ids"][:] = ids
@@ -186,20 +189,27 @@ def zonos3_frame_embed_validation(kind, p, signature):
 
     values = sample_arguments(signature)
     rows, width, codebooks, code_vocab, text_vocab, cond_rows = (
-        p[k]
-        for k in ("r", "c", "codebooks", "code_vocab", "text_vocab", "cond_rows")
+        p[k] for k in ("r", "c", "codebooks", "code_vocab", "text_vocab", "cond_rows")
     )
     rng = np.random.default_rng(71)
-    audio_f = rng.standard_normal((codebooks * code_vocab, width)).astype("float32") * 0.25
+    audio_f = (
+        rng.standard_normal((codebooks * code_vocab, width)).astype("float32") * 0.25
+    )
     text_f = rng.standard_normal((text_vocab, width)).astype("float32") * 0.25
     values["audio_w"][:] = encode_bfloat16(audio_f).view("uint8").reshape(-1)
     values["text_w"][:] = encode_bfloat16(text_f).view("uint8").reshape(-1)
     audio_dec = decode_bfloat16(values["audio_w"].view("uint16")).reshape(
         codebooks, code_vocab, width
     )
-    text_dec = decode_bfloat16(values["text_w"].view("uint16")).reshape(text_vocab, width)
-    frames = rng.integers(0, min(code_vocab, 64), size=(rows, codebooks + 1), dtype="int32")
-    frames[:, codebooks] = rng.integers(0, min(text_vocab, 64), size=(rows,), dtype="int32")
+    text_dec = decode_bfloat16(values["text_w"].view("uint16")).reshape(
+        text_vocab, width
+    )
+    frames = rng.integers(
+        0, min(code_vocab, 64), size=(rows, codebooks + 1), dtype="int32"
+    )
+    frames[:, codebooks] = rng.integers(
+        0, min(text_vocab, 64), size=(rows,), dtype="int32"
+    )
     if rows > 1:
         frames[0, codebooks] = -1
     if rows > 2:
@@ -210,7 +220,9 @@ def zonos3_frame_embed_validation(kind, p, signature):
         if frames[r, 0] < 0:
             out[r] = 0.0
         elif frames[r, codebooks] < 0:
-            out[r] = values["cond_w"][min(max(-1 - int(frames[r, codebooks]), 0), cond_rows - 1)]
+            out[r] = values["cond_w"][
+                min(max(-1 - int(frames[r, codebooks]), 0), cond_rows - 1)
+            ]
         else:
             acc = text_dec[int(frames[r, codebooks])].astype("float64")
             for cb in range(codebooks):
@@ -241,14 +253,18 @@ def codebook_sample_validation(kind, p, signature):
     # Distinct well-separated logits so float32 vs float64 boundary ties cannot flip discrete picks
     base_logits = rng.standard_normal((slots, codebooks, vocab)).astype("float32") * 3.0
     values["projection"][:] = base_logits.reshape(slots, codebooks * vocab)
-    values["history"][:] = rng.integers(0, min(eoa, 128), size=(slots, window, codebooks), dtype="int32")
+    values["history"][:] = rng.integers(
+        0, min(eoa, 128), size=(slots, window, codebooks), dtype="int32"
+    )
     values["steps"][:] = np.arange(slots, dtype="int32") * 37
     if slots > 1:
         values["steps"][-1] = -1
     values["temperatures"][:] = 0.75
     if slots > 2:
         values["temperatures"][0] = 0.0
-    values["uniforms"][:] = np.linspace(0.11, 0.89, slots * codebooks, dtype="float32").reshape(slots, codebooks)
+    values["uniforms"][:] = np.linspace(
+        0.11, 0.89, slots * codebooks, dtype="float32"
+    ).reshape(slots, codebooks)
 
     expected = {k: v.copy() for k, v in values.items()}
     out = np.full((slots, codebooks + 1), pad, dtype="int32")
@@ -259,7 +275,9 @@ def codebook_sample_validation(kind, p, signature):
             continue
         temp = float(values["temperatures"][s])
         for cb in range(codebooks):
-            raw = values["projection"][s, cb * vocab : (cb + 1) * vocab].astype("float64")[: eoa + 1]
+            raw = values["projection"][s, cb * vocab : (cb + 1) * vocab].astype(
+                "float64"
+            )[: eoa + 1]
             v = softcap * np.tanh(raw / softcap)
             if cb < rep_cbs and step > 0:
                 used = np.unique(values["history"][s, : min(step, window), cb])
