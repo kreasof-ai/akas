@@ -1,0 +1,3814 @@
+{
+  "schema": "akas.benchmark.v1",
+  "metadata": {
+    "protocol": "client-speech-pcm-v1",
+    "speech_workload": {
+      "id": "speech-language-voices-v1",
+      "definition": {
+        "schema": "akas.speech-workload.v1",
+        "id": "speech-language-voices-v1",
+        "protocol": "client-speech-pcm-v1",
+        "warmup": 1,
+        "repeats": 2,
+        "request": {
+          "seed": 17,
+          "temperature": 0.75,
+          "n_predict": 384,
+          "stream": false,
+          "response_format": "pcm16"
+        },
+        "language_source": "https://huggingface.co/Zyphra/ZONOS3-Mini#languages",
+        "corpus": {
+          "name": "FLORES-200 devtest",
+          "url": "https://github.com/facebookresearch/flores/tree/main/flores200",
+          "download_url": "https://dl.fbaipublicfiles.com/nllb/flores200_dataset.tar.gz",
+          "archive_sha256": "b8b0b76783024b85797e5cc75064eb83fc5288b41e9654dabc7be6ae944011f6",
+          "license": "CC BY-SA 4.0",
+          "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+          "split": "devtest",
+          "selection": "Six aligned one-based rows, two per length tier by English character count. Rows use translated text as distributed and exclude digits across the selected languages."
+        },
+        "languages": {
+          "en": {
+            "name": "English",
+            "locale": "eng_Latn"
+          },
+          "fr": {
+            "name": "French",
+            "locale": "fra_Latn"
+          },
+          "es": {
+            "name": "Spanish",
+            "locale": "spa_Latn"
+          },
+          "de": {
+            "name": "German",
+            "locale": "deu_Latn"
+          },
+          "it": {
+            "name": "Italian",
+            "locale": "ita_Latn"
+          },
+          "pt": {
+            "name": "Portuguese",
+            "locale": "por_Latn"
+          },
+          "zh": {
+            "name": "Mandarin Chinese",
+            "locale": "zho_Hans"
+          },
+          "ko": {
+            "name": "Korean",
+            "locale": "kor_Hang"
+          },
+          "hi": {
+            "name": "Hindi",
+            "locale": "hin_Deva"
+          },
+          "te": {
+            "name": "Telugu",
+            "locale": "tel_Telu"
+          }
+        },
+        "utterances": [
+          {
+            "id": "en-0007",
+            "lang": "en",
+            "tier": "short",
+            "source_row": 7,
+            "text": "He built a WiFi door bell, he said.",
+            "voice": "Savannah_en-American_F_1"
+          },
+          {
+            "id": "en-0320",
+            "lang": "en",
+            "tier": "short",
+            "source_row": 320,
+            "text": "Fellow wrestlers also paid tribute to Luna.",
+            "voice": "Savannah_en-American_F_1"
+          },
+          {
+            "id": "en-0942",
+            "lang": "en",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "The major religion in Moldova is Orthodox Christian.",
+            "voice": "Savannah_en-American_F_1"
+          },
+          {
+            "id": "en-0030",
+            "lang": "en",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "The find also grants insight into the evolution of feathers in birds.",
+            "voice": "Savannah_en-American_F_1"
+          },
+          {
+            "id": "en-0082",
+            "lang": "en",
+            "tier": "long",
+            "source_row": 82,
+            "text": "The National Hurricane Center (NHC) says that at this point Jerry poses no threat to land.",
+            "voice": "Savannah_en-American_F_1"
+          },
+          {
+            "id": "en-0977",
+            "lang": "en",
+            "tier": "long",
+            "source_row": 977,
+            "text": "The main letters to watch out for are c and g, since their pronunciation varies based on the following vowel.",
+            "voice": "Savannah_en-American_F_1"
+          },
+          {
+            "id": "fr-0007",
+            "lang": "fr",
+            "tier": "short",
+            "source_row": 7,
+            "text": "Il dit avoir con\u00e7u une sonnette de porte Wi-Fi.",
+            "voice": "Gaspard_fr_M_1"
+          },
+          {
+            "id": "fr-0320",
+            "lang": "fr",
+            "tier": "short",
+            "source_row": 320,
+            "text": "Les autres lutteurs ont \u00e9galement rendu hommage \u00e0 Luna.",
+            "voice": "Gaspard_fr_M_1"
+          },
+          {
+            "id": "fr-0942",
+            "lang": "fr",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "La principale religion en Moldavie est le christianisme orthodoxe.",
+            "voice": "Gaspard_fr_M_1"
+          },
+          {
+            "id": "fr-0030",
+            "lang": "fr",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "Cette d\u00e9couverte permet \u00e9galement de mieux comprendre l'\u00e9volution des plumes chez les oiseaux.",
+            "voice": "Gaspard_fr_M_1"
+          },
+          {
+            "id": "fr-0082",
+            "lang": "fr",
+            "tier": "long",
+            "source_row": 82,
+            "text": "Le National Hurricane Center (NHC) affirme qu'\u00e0 ce stade, Jerry ne repr\u00e9sente aucune menace pour les terres.",
+            "voice": "Gaspard_fr_M_1"
+          },
+          {
+            "id": "fr-0977",
+            "lang": "fr",
+            "tier": "long",
+            "source_row": 977,
+            "text": "Les principales lettres \u00e0 surveiller sont le c et le g, car leur prononciation varie en fonction de la voyelle suivante.",
+            "voice": "Gaspard_fr_M_1"
+          },
+          {
+            "id": "es-0007",
+            "lang": "es",
+            "tier": "short",
+            "source_row": 7,
+            "text": "\u00c9l dijo que construy\u00f3 un timbre wifi.",
+            "voice": "Rodrigo_es_M_1"
+          },
+          {
+            "id": "es-0320",
+            "lang": "es",
+            "tier": "short",
+            "source_row": 320,
+            "text": "Los luchadores compa\u00f1eros de Luna tambi\u00e9n le rindieron homenaje.",
+            "voice": "Rodrigo_es_M_1"
+          },
+          {
+            "id": "es-0942",
+            "lang": "es",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "El cristianismo ortodoxo es la religi\u00f3n mayoritaria en Moldavia. ",
+            "voice": "Rodrigo_es_M_1"
+          },
+          {
+            "id": "es-0030",
+            "lang": "es",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "Asimismo, el hallazgo permite comprender mejor la evoluci\u00f3n de las plumas de las aves.",
+            "voice": "Rodrigo_es_M_1"
+          },
+          {
+            "id": "es-0082",
+            "lang": "es",
+            "tier": "long",
+            "source_row": 82,
+            "text": "El Centro Nacional de Huracanes (CNH) declar\u00f3 que por ahora est\u00e1 previsto que Jerry toque el suelo.",
+            "voice": "Rodrigo_es_M_1"
+          },
+          {
+            "id": "es-0977",
+            "lang": "es",
+            "tier": "long",
+            "source_row": 977,
+            "text": "La c y la g son las letras con las que se debe estar m\u00e1s atentos, dado que se pronuncian de diferente forma dependiendo de la vocal que les sigue.",
+            "voice": "Rodrigo_es_M_1"
+          },
+          {
+            "id": "de-0007",
+            "lang": "de",
+            "tier": "short",
+            "source_row": 7,
+            "text": "Er sagte, dass er eine WLAN-T\u00fcrklingel gebaut habe.",
+            "voice": "Liesel_de_F_1"
+          },
+          {
+            "id": "de-0320",
+            "lang": "de",
+            "tier": "short",
+            "source_row": 320,
+            "text": "Ringer-Kollegen zollten Luna ebenfalls Tribut.",
+            "voice": "Liesel_de_F_1"
+          },
+          {
+            "id": "de-0942",
+            "lang": "de",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "Die wichtigste Religion in Moldawien ist die christlich-orthodoxe.",
+            "voice": "Liesel_de_F_1"
+          },
+          {
+            "id": "de-0030",
+            "lang": "de",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "Der Fund gew\u00e4hrt auch Einblicke in die Evolution von Federn bei V\u00f6geln.",
+            "voice": "Liesel_de_F_1"
+          },
+          {
+            "id": "de-0082",
+            "lang": "de",
+            "tier": "long",
+            "source_row": 82,
+            "text": "Das National Hurricane Center (NHC) sagt, dass Jerry zu diesem Zeitpunkt keine Gefahr f\u00fcr die Landung darstellt.",
+            "voice": "Liesel_de_F_1"
+          },
+          {
+            "id": "de-0977",
+            "lang": "de",
+            "tier": "long",
+            "source_row": 977,
+            "text": "Die wichtigsten Buchstaben, auf die man achten muss, sind c und g, da ihre Aussprache je nach Folgevokal variiert.",
+            "voice": "Liesel_de_F_1"
+          },
+          {
+            "id": "it-0007",
+            "lang": "it",
+            "tier": "short",
+            "source_row": 7,
+            "text": "Ha detto di aver costruito un campanello Wi-Fi.",
+            "voice": "Ginevra_it_F_1"
+          },
+          {
+            "id": "it-0320",
+            "lang": "it",
+            "tier": "short",
+            "source_row": 320,
+            "text": "Anche i suoi compagni di wrestling hanno voluto rendere omaggio a Luna.",
+            "voice": "Ginevra_it_F_1"
+          },
+          {
+            "id": "it-0942",
+            "lang": "it",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "La religione predominante in Moldavia \u00e8 quella cristiano-ortodossa.",
+            "voice": "Ginevra_it_F_1"
+          },
+          {
+            "id": "it-0030",
+            "lang": "it",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "La scoperta permette inoltre di ottenere informazioni dettagliate in merito all'evoluzione delle piume degli uccelli.",
+            "voice": "Ginevra_it_F_1"
+          },
+          {
+            "id": "it-0082",
+            "lang": "it",
+            "tier": "long",
+            "source_row": 82,
+            "text": "Secondo il National Hurricane Center (NHC), Jerry a questo punto non costituisce una minaccia per la terraferma.",
+            "voice": "Ginevra_it_F_1"
+          },
+          {
+            "id": "it-0977",
+            "lang": "it",
+            "tier": "long",
+            "source_row": 977,
+            "text": "Le lettere principali a cui fare attenzione sono la c e la g, dal momento che la loro pronuncia cambia in base alla vocale che segue.",
+            "voice": "Ginevra_it_F_1"
+          },
+          {
+            "id": "pt-0007",
+            "lang": "pt",
+            "tier": "short",
+            "source_row": 7,
+            "text": "Ele montou uma campainha sem fio, disse.",
+            "voice": "Leonor_pt_F_1"
+          },
+          {
+            "id": "pt-0320",
+            "lang": "pt",
+            "tier": "short",
+            "source_row": 320,
+            "text": "Outros lutadores tamb\u00e9m prestaram homenagem a Luna.",
+            "voice": "Leonor_pt_F_1"
+          },
+          {
+            "id": "pt-0942",
+            "lang": "pt",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "A religi\u00e3o principal na Mold\u00e1via \u00e9 o cristianismo ortodoxo. ",
+            "voice": "Leonor_pt_F_1"
+          },
+          {
+            "id": "pt-0030",
+            "lang": "pt",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "A descoberta tamb\u00e9m concede pistas sobre a evolu\u00e7\u00e3o das penas nas aves.",
+            "voice": "Leonor_pt_F_1"
+          },
+          {
+            "id": "pt-0082",
+            "lang": "pt",
+            "tier": "long",
+            "source_row": 82,
+            "text": "O Centro Nacional de Furac\u00f5es (NHC) diz que, neste momento, Jerry n\u00e3o causa amea\u00e7as \u00e0 terra.",
+            "voice": "Leonor_pt_F_1"
+          },
+          {
+            "id": "pt-0977",
+            "lang": "pt",
+            "tier": "long",
+            "source_row": 977,
+            "text": "As principais letras a serem observadas s\u00e3o o C e G, pois sua pron\u00fancia varia de acordo com a vogal a seguir.",
+            "voice": "Leonor_pt_F_1"
+          },
+          {
+            "id": "zh-0007",
+            "lang": "zh",
+            "tier": "short",
+            "source_row": 7,
+            "text": "\u4ed6\u79f0\uff0c\u4ed6\u5236\u4f5c\u4e86\u4e00\u4e2a WiFi \u95e8\u94c3\u3002",
+            "voice": "Haoran_zh-energetic_M_1"
+          },
+          {
+            "id": "zh-0320",
+            "lang": "zh",
+            "tier": "short",
+            "source_row": 320,
+            "text": "\u5176\u4ed6\u6454\u8de4\u9009\u624b\u4e5f\u7eb7\u7eb7\u60bc\u5ff5\u9732\u5a1c (Luna) \u3002",
+            "voice": "Haoran_zh-energetic_M_1"
+          },
+          {
+            "id": "zh-0942",
+            "lang": "zh",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "\u6469\u5c14\u591a\u74e6 (Moldova) \u7684\u4e3b\u8981\u5b97\u6559\u662f\u4e1c\u6b63\u6559\u3002",
+            "voice": "Haoran_zh-energetic_M_1"
+          },
+          {
+            "id": "zh-0030",
+            "lang": "zh",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "\u8fd9\u4e00\u53d1\u73b0\u4e5f\u6709\u52a9\u4e8e\u6df1\u5165\u4e86\u89e3\u9e1f\u7c7b\u7fbd\u6bdb\u7684\u8fdb\u5316\u3002",
+            "voice": "Haoran_zh-energetic_M_1"
+          },
+          {
+            "id": "zh-0082",
+            "lang": "zh",
+            "tier": "long",
+            "source_row": 82,
+            "text": "\u56fd\u5bb6\u98d3\u98ce\u4e2d\u5fc3 (NHC) \u8868\u793a\uff0c\u76ee\u524d\u201c\u6770\u745e\u201d\u5bf9\u9646\u5730\u6ca1\u6709\u5a01\u80c1\u3002",
+            "voice": "Haoran_zh-energetic_M_1"
+          },
+          {
+            "id": "zh-0977",
+            "lang": "zh",
+            "tier": "long",
+            "source_row": 977,
+            "text": "\u9700\u8981\u6ce8\u610f\u7684\u4e3b\u8981\u5b57\u6bcd\u662f c \u548c g\uff0c\u56e0\u4e3a\u5b83\u4eec\u7684\u53d1\u97f3\u662f\u6839\u636e\u4ee5\u4e0b\u5143\u97f3\u53d8\u5316\u7684\u3002",
+            "voice": "Haoran_zh-energetic_M_1"
+          },
+          {
+            "id": "ko-0007",
+            "lang": "ko",
+            "tier": "short",
+            "source_row": 7,
+            "text": "\uadf8\ub294 \ubb34\uc120 \ub3c4\uc5b4\ubca8(Wi-Fi doorbell)\uc744 \ub9cc\ub4e4\uc5c8\ub2e4\uace0 \ub9d0\ud588\ub2e4.",
+            "voice": "Minjun_ko_M_1"
+          },
+          {
+            "id": "ko-0320",
+            "lang": "ko",
+            "tier": "short",
+            "source_row": 320,
+            "text": "\ub2e4\ub978 \ub3d9\ub8cc \ub808\uc2ac\ub9c1 \uc120\uc218\ub4e4\ub3c4 \ub8e8\ub098\uc5d0\uac8c \uacbd\uc758\ub97c \ud45c\ud588\uc2b5\ub2c8\ub2e4.",
+            "voice": "Minjun_ko_M_1"
+          },
+          {
+            "id": "ko-0942",
+            "lang": "ko",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "\ubab0\ub3c4\ubc14\uc758 \uc8fc\uc694 \uc885\uad50\ub294 \ub3d9\ubc29\uc815\uad50\uc785\ub2c8\ub2e4.",
+            "voice": "Minjun_ko_M_1"
+          },
+          {
+            "id": "ko-0030",
+            "lang": "ko",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "\uadf8\ub7ec\ud55c \ubc1c\uacac\uc740 \ub610\ud55c \uc870\ub958\uc5d0 \uc788\uc5b4\uc11c \uae43\ud138\uc758 \uc9c4\ud654\uc5d0 \ub300\ud55c \ud1b5\ucc30\uc744 \uc81c\uacf5\ud55c\ub2e4.",
+            "voice": "Minjun_ko_M_1"
+          },
+          {
+            "id": "ko-0082",
+            "lang": "ko",
+            "tier": "long",
+            "source_row": 82,
+            "text": "\ubbf8\uad6d \uad6d\ub9bd \ud5c8\ub9ac\ucf00\uc778 \uc13c\ud130 (NHC)\uc5d0 \uc758\ud558\uba74, \ud0dc\ud48d \uc81c\ub9ac\ub294 \ub354 \uc774\uc0c1 \uc704\ud611\uc774 \ub418\uc9c0 \uc54a\ub294\ub2e4.",
+            "voice": "Minjun_ko_M_1"
+          },
+          {
+            "id": "ko-0977",
+            "lang": "ko",
+            "tier": "long",
+            "source_row": 977,
+            "text": "\uc8fc\uc758\ud574\uc57c \ud560 \uc8fc\uc694 \ubb38\uc790\ub294 c\uc640 g\uc778\ub370, \uc774\ub294 \ubc1c\uc74c\uc774 \ub4a4\uc5d0 \uc624\ub294 \ubaa8\uc74c\uc5d0 \ub530\ub77c \ub2e4\uc591\ud558\uac8c \ubcc0\ud558\uae30 \ub54c\ubb38\uc774\ub2e4.",
+            "voice": "Minjun_ko_M_1"
+          },
+          {
+            "id": "hi-0007",
+            "lang": "hi",
+            "tier": "short",
+            "source_row": 7,
+            "text": "\u0909\u0928\u094d\u0939\u094b\u0902\u0928\u0947 (\u091c\u0947\u092e\u0940 \u0938\u093f\u092e\u093f\u0928\u0949\u092b\u093c) \u0915\u0939\u093e, \u0915\u093f \u0909\u0928\u094d\u0939\u094b\u0902\u0928\u0947 \u090f\u0915 \u0935\u093e\u0908\u092b\u093c\u093e\u0908 \u0921\u094b\u0930 \u092c\u0947\u0932 \u092c\u0928\u093e\u0908 \u0939\u0948.",
+            "voice": "Ananya_hi_F_1"
+          },
+          {
+            "id": "hi-0320",
+            "lang": "hi",
+            "tier": "short",
+            "source_row": 320,
+            "text": "\u0932\u0942\u0928\u093e \u0915\u094b \u0938\u093e\u0925\u0940 \u092a\u0939\u0932\u0935\u093e\u0928\u094b\u0902 \u0928\u0947 \u092d\u0940 \u0936\u094d\u0930\u0926\u094d\u0927\u093e\u0902\u091c\u0932\u093f \u0926\u0940.",
+            "voice": "Ananya_hi_F_1"
+          },
+          {
+            "id": "hi-0942",
+            "lang": "hi",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "\u092e\u094b\u0932\u094d\u0926\u094b\u0935\u093e \u092e\u0947\u0902 \u092a\u094d\u0930\u092e\u0941\u0916 \u0927\u0930\u094d\u092e \u0930\u0942\u0922\u093c\u093f\u0935\u093e\u0926\u0940 \u0908\u0938\u093e\u0908 \u0927\u0930\u094d\u092e \u0939\u0948\u0964",
+            "voice": "Ananya_hi_F_1"
+          },
+          {
+            "id": "hi-0030",
+            "lang": "hi",
+            "tier": "medium",
+            "source_row": 30,
+            "text": "\u092f\u0939 \u0916\u094b\u091c \u092a\u0915\u094d\u0937\u093f\u092f\u094b\u0902 \u092e\u0947\u0902 \u092a\u0902\u0916\u094b\u0902 \u0915\u0947 \u0935\u093f\u0915\u093e\u0938 \u0915\u0940 \u092a\u0942\u0930\u0940 \u091c\u093e\u0928\u0915\u093e\u0930\u0940 \u092d\u0940 \u092a\u094d\u0930\u0926\u093e\u0928 \u0915\u0930\u0924\u0940 \u0939\u0948.",
+            "voice": "Ananya_hi_F_1"
+          },
+          {
+            "id": "hi-0082",
+            "lang": "hi",
+            "tier": "long",
+            "source_row": 82,
+            "text": "\u0930\u093e\u0937\u094d\u091f\u094d\u0930\u0940\u092f \u0924\u0942\u095e\u093e\u0928 \u0915\u0947\u0902\u0926\u094d\u0930 (\u090f\u0928\u090f\u091a\u0938\u0940) \u0915\u093e \u0915\u0939\u0928\u093e \u0939\u0948 \u0915\u093f \u0907\u0938 \u0938\u092e\u092f \u091c\u0948\u0930\u0940 \u0915\u093e \u095b\u092e\u0940\u0928 \u0915\u094b \u0915\u094b\u0908 \u0916\u0924\u0930\u093e \u0928\u0939\u0940\u0902 \u0939\u0948\u0964",
+            "voice": "Ananya_hi_F_1"
+          },
+          {
+            "id": "hi-0977",
+            "lang": "hi",
+            "tier": "long",
+            "source_row": 977,
+            "text": "\u0927\u094d\u092f\u093e\u0928 \u0930\u0916\u0928\u0947 \u0935\u093e\u0932\u0947 \u092e\u0941\u0916\u094d\u092f \u0935\u0930\u094d\u0923 c \u0914\u0930 g \u0939\u0948, \u091a\u0942\u0901\u0915\u093f \u0909\u0928\u0915\u093e \u0909\u091a\u094d\u091a\u093e\u0930\u0923 \u0928\u093f\u092e\u094d\u0928 \u0938\u094d\u0935\u0930 \u0915\u0947 \u0906\u0927\u093e\u0930 \u092a\u0930 \u092d\u093f\u0928\u094d\u0928 \u0939\u094b\u0924\u093e \u0939\u0948.",
+            "voice": "Ananya_hi_F_1"
+          },
+          {
+            "id": "te-0007",
+            "lang": "te",
+            "tier": "short",
+            "source_row": 7,
+            "text": "\u0c05\u0c24\u0c28\u0c41 WiFi \u0c21\u0c4b\u0c30\u0c4d \u0c2c\u0c46\u0c32\u0c4d \u0c28\u0c3f\u0c30\u0c4d\u0c2e\u0c3f\u0c02\u0c1a\u0c3e\u0c21\u0c41. \u0c05\u0c28\u0c3f \u0c1a\u0c46\u0c2a\u0c4d\u0c2a\u0c3e\u0c21\u0c41.",
+            "voice": "Chaitanya_te_M_1"
+          },
+          {
+            "id": "te-0320",
+            "lang": "te",
+            "tier": "short",
+            "source_row": 320,
+            "text": "\u0c24\u0c4b\u0c1f\u0c3f \u0c2e\u0c32\u0c4d\u0c32 \u0c2f\u0c41\u0c26\u0c4d\u0c27\u0c15\u0c3e\u0c30\u0c41\u0c32\u0c41 \u0c15\u0c42\u0c21\u0c3e \u0c32\u0c42\u0c28\u0c3e\u0c15\u0c41 \u0c28\u0c3f\u0c35\u0c3e\u0c33\u0c41\u0c32\u0c41 \u0c05\u0c30\u0c4d\u0c2a\u0c3f\u0c02\u0c1a\u0c3e\u0c30\u0c41.",
+            "voice": "Chaitanya_te_M_1"
+          },
+          {
+            "id": "te-0942",
+            "lang": "te",
+            "tier": "medium",
+            "source_row": 942,
+            "text": "\u0c06\u0c30\u0c4d\u0c25\u0c4b\u0c21\u0c3e\u0c15\u0c4d\u0c38\u0c4d  \u0c15\u0c4d\u0c30\u0c3f\u0c38\u0c4d\u0c1f\u0c3f\u0c2f\u0c28\u0c4d \u0c2e\u0c4b\u0c32\u0c4d\u0c21\u0c4b\u0c35\u0c3e\u0c32\u0c4b \u0c2a\u0c4d\u0c30\u0c27\u0c3e\u0c28 \u0c2e\u0c24\u0c02\u0c17\u0c3e \u0c09\u0c02\u0c26\u0c3f.",
+            "voice": "Chaitanya_te_M_1"
+          },
+          {
+            "id": "te-0030",
+            "lang": "te",
+            "tier": "medium",
+            "source_row": 30,
+            "text": " \u0c36\u0c4b\u0c27\u0c28 \u0c15\u0c42\u0c21\u0c3e \u0c2a\u0c15\u0c4d\u0c37\u0c41\u0c32\u0c32\u0c4b \u0c08\u0c15\u0c32 \u0c2f\u0c4a\u0c15\u0c4d\u0c15 \u0c2a\u0c30\u0c3f\u0c23\u0c3e\u0c2e\u0c02\u0c2a\u0c48  \u0c32\u0c4b\u0c24\u0c41\u0c17\u0c3e \u0c24\u0c46\u0c32\u0c41\u0c38\u0c41\u0c15\u0c4b\u0c35\u0c21\u0c3e\u0c28\u0c3f\u0c15\u0c3f  \u0c35\u0c40\u0c32\u0c41 \u0c15\u0c32\u0c4d\u0c2a\u0c3f\u0c38\u0c4d\u0c24\u0c41\u0c02\u0c26\u0c3f. ",
+            "voice": "Chaitanya_te_M_1"
+          },
+          {
+            "id": "te-0082",
+            "lang": "te",
+            "tier": "long",
+            "source_row": 82,
+            "text": "\u0c08 \u0c38\u0c2e\u0c2f\u0c02\u0c32\u0c4b \u0c1c\u0c46\u0c30\u0c4d\u0c30\u0c40 \u0c35\u0c32\u0c4d\u0c32 \u0c2d\u0c42\u0c2e\u0c3f\u0c15\u0c3f \u0c0e\u0c1f\u0c41\u0c35\u0c02\u0c1f\u0c3f \u0c2e\u0c41\u0c2a\u0c4d\u0c2a\u0c41 \u0c32\u0c47\u0c26\u0c28\u0c3f \u0c28\u0c47\u0c37\u0c28\u0c32\u0c4d \u0c39\u0c30\u0c3f\u0c15\u0c47\u0c28\u0c4d \u0c38\u0c46\u0c02\u0c1f\u0c30\u0c4d (\u0c0e\u0c28\u0c4d\u200c\u0c39\u0c46\u0c1a\u0c4d\u200c\u0c38\u0c3f) \u0c2a\u0c47\u0c30\u0c4d\u0c15\u0c4a\u0c02\u0c26\u0c3f.",
+            "voice": "Chaitanya_te_M_1"
+          },
+          {
+            "id": "te-0977",
+            "lang": "te",
+            "tier": "long",
+            "source_row": 977,
+            "text": "\u0c2a\u0c4d\u0c30\u0c27\u0c3e\u0c28\u0c02\u0c17\u0c3e \u0c26\u0c43\u0c37\u0c4d\u0c1f\u0c3f \u0c38\u0c3e\u0c30\u0c3f\u0c02\u0c1a\u0c3e\u0c32\u0c4d\u0c38\u0c3f\u0c28 \u0c05\u0c15\u0c4d\u0c37\u0c30\u0c3e\u0c32\u0c41 c \u0c2e\u0c30\u0c3f\u0c2f\u0c41 g. \u0c0e\u0c02\u0c26\u0c41\u0c15\u0c02\u0c1f\u0c47, \u0c35\u0c3e\u0c1f\u0c3f \u0c2f\u0c4a\u0c15\u0c4d\u0c15 \u0c09\u0c1a\u0c4d\u0c1b\u0c3e\u0c30\u0c23, \u0c24\u0c30\u0c4d\u0c35\u0c3e\u0c24 \u0c35\u0c1a\u0c4d\u0c1a\u0c47 \u0c35\u0c4a\u0c35\u0c46\u0c32\u0c4d \u0c2e\u0c40\u0c26 \u0c06\u0c27\u0c3e\u0c30\u0c2a\u0c21\u0c3f \u0c09\u0c02\u0c1f\u0c41\u0c02\u0c26\u0c3f.",
+            "voice": "Chaitanya_te_M_1"
+          }
+        ]
+      }
+    },
+    "runtime": "akas",
+    "provider": "webgpu",
+    "model": "Zyphra/ZONOS3-Mini",
+    "mode": "tts",
+    "purpose": "speech-demo",
+    "weight_format": "q8_0",
+    "checkpoint": "D:\\Workspace\\kreasof-ai\\github\\akas\\build\\checkpoints\\zonos3-mini\\ZONOS3-Mini-Q8_0.gguf",
+    "checkpoint_sha256": "60568efc88e2f9231f4f5c061e246421f575986642d72ab9ae68f77d6cf76be4",
+    "checkpoint_source": {
+      "repo": "ggml-org/ZONOS3-Mini-GGUF",
+      "revision": "2e7bc4126a2343787298e1a297a3d1c4a13165aa",
+      "file": "ZONOS3-Mini-Q8_0.gguf"
+    },
+    "projector": {
+      "path": "D:\\Workspace\\kreasof-ai\\github\\akas\\build\\checkpoints\\zonos3-mini\\mmproj-ZONOS3-Mini-F32.gguf",
+      "sha256": "aeeb92325b4b6927bef656390b78e1246148065f947d8b59c2663557a809414d",
+      "source": {
+        "repo": "ggml-org/ZONOS3-Mini-GGUF",
+        "revision": "2e7bc4126a2343787298e1a297a3d1c4a13165aa",
+        "file": "mmproj-ZONOS3-Mini-F32.gguf"
+      }
+    },
+    "model_definition_sha256": "e84617ab992c8bac2d4301f39f61a85b5d18002f397628a4359ac01e80591035",
+    "device": {
+      "ordinal": 0,
+      "provider": "webgpu",
+      "arch": "webgpu-portable-v1",
+      "name": "AMD Radeon RX 6700 XT",
+      "adapter": {
+        "vendor": "AMD proprietary driver",
+        "architecture": "",
+        "device": "AMD Radeon RX 6700 XT",
+        "description": "26.6.2 (AMD proprietary shader compiler)",
+        "stackgroup_min_size": 4,
+        "stackgroup_max_size": 128,
+        "vendor_id": 4098,
+        "device_id": 29663,
+        "adapter_type": "DiscreteGPU",
+        "backend_type": "Vulkan"
+      },
+      "features": [
+        "shader-f16",
+        "subgroup"
+      ],
+      "limits": {
+        "max-bind-groups": 8,
+        "max-bind-groups-plus-vertex-buffers": 0,
+        "max-bindings-per-bind-group": 1000,
+        "max-buffer-size": 1073741824,
+        "max-color-attachment-bytes-per-sample": 0,
+        "max-color-attachments": 0,
+        "max-compute-invocations-per-workgroup": 1024,
+        "max-compute-workgroup-size-x": 1024,
+        "max-compute-workgroup-size-y": 1024,
+        "max-compute-workgroup-size-z": 1024,
+        "max-compute-workgroup-storage-size": 32768,
+        "max-compute-workgroups-per-dimension": 65535,
+        "max-dynamic-storage-buffers-per-pipeline-layout": 8,
+        "max-dynamic-uniform-buffers-per-pipeline-layout": 8,
+        "max-inter-stage-shader-variables": 0,
+        "max-non-sampler-bindings": 1000000,
+        "max-push-constant-size": 256,
+        "max-sampled-textures-per-shader-stage": 16,
+        "max-samplers-per-shader-stage": 16,
+        "max-storage-buffer-binding-size": 1073741824,
+        "max-storage-buffers-per-shader-stage": 32,
+        "max-storage-textures-per-shader-stage": 4,
+        "max-texture-array-layers": 8192,
+        "max-texture-dimension-1d": 16384,
+        "max-texture-dimension-2d": 16384,
+        "max-texture-dimension-3d": 8192,
+        "max-uniform-buffer-binding-size": 2147483647,
+        "max-uniform-buffers-per-shader-stage": 12,
+        "max-vertex-attributes": 64,
+        "max-vertex-buffer-array-stride": 16383,
+        "max-vertex-buffers": 16,
+        "min-storage-buffer-offset-alignment": 32,
+        "min-uniform-buffer-offset-alignment": 32
+      },
+      "adapter_storage_buffers_reported": 4294967295,
+      "prepared_encoding": "native",
+      "prepared_submission": "native"
+    },
+    "voice": "Savannah_en-American_F_1",
+    "sample_rate_hz": 44100,
+    "warmup": 1,
+    "repeats": 2,
+    "configuration": [
+      "D:\\Workspace\\kreasof-ai\\github\\akas\\.venv\\Scripts\\python.exe",
+      "-u",
+      "-m",
+      "akas.cli",
+      "serve",
+      "--speech",
+      "--factory",
+      "akas.models.zonos3.model:service",
+      "--config",
+      "{\"checkpoint\": \"D:\\\\Workspace\\\\kreasof-ai\\\\github\\\\akas\\\\build\\\\checkpoints\\\\zonos3-mini\\\\ZONOS3-Mini-Q8_0.gguf\", \"projector\": \"D:\\\\Workspace\\\\kreasof-ai\\\\github\\\\akas\\\\build\\\\checkpoints\\\\zonos3-mini\\\\mmproj-ZONOS3-Mini-F32.gguf\", \"bundle\": \"D:\\\\Workspace\\\\kreasof-ai\\\\github\\\\akas\\\\build\\\\zonos3-mini\\\\speech-prefill256\"}",
+      "--host",
+      "127.0.0.1",
+      "--port",
+      "63019"
+    ],
+    "deadline_seconds": 600,
+    "environment": {
+      "WGPU_BACKEND_TYPE": "Vulkan"
+    },
+    "runtime_revision": "9ce5ef8870fce8bd1bd59034ef9c78ff666ec858",
+    "program_sha256": "5b60eb5f09a777dd4343bb989c7a52e8305adea3a3b4f0d2aa08ee65df4ca5c6",
+    "default_voices": {
+      "en": "Savannah_en-American_F_1",
+      "fr": "Gaspard_fr_M_1",
+      "de": "Liesel_de_F_1",
+      "hi": "Ananya_hi_F_1",
+      "it": "Ginevra_it_F_1",
+      "ko": "Minjun_ko_M_1",
+      "zh": "Haoran_zh-energetic_M_1",
+      "pt": "Leonor_pt_F_1",
+      "es": "Rodrigo_es_M_1",
+      "te": "Chaitanya_te_M_1"
+    },
+    "fallback_voice": "Savannah_en-American_F_1",
+    "compiled_codec_frames": [
+      16,
+      32,
+      64,
+      128,
+      256,
+      384
+    ],
+    "reference": {
+      "run_id": "20261117075749615890-46300cb5",
+      "report_sha256": "332d2e60bda5b58e14025fca99e9bdd050d33f09dce8f270d85b885b5d9350e9"
+    }
+  },
+  "results": [
+    {
+      "case": {
+        "id": "en-0007",
+        "lang": "en",
+        "tier": "short",
+        "source_row": 7,
+        "text": "He built a WiFi door bell, he said.",
+        "voice": "Savannah_en-American_F_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 108780,
+          "audio_seconds": 2.466666666666667,
+          "peak_pcm16": 9717,
+          "terminated": true,
+          "audio_frames": 37,
+          "wall_seconds": 0.6436504000012064,
+          "real_time_factor": 0.26093935135184043,
+          "wav": "audio/01-01.wav",
+          "repeat": 1,
+          "wav_sha256": "8b38a8ca3c26e2249ef614841d3606d1fa14db193db1a2cba744c6835a8608f7"
+        },
+        {
+          "samples": 108780,
+          "audio_seconds": 2.466666666666667,
+          "peak_pcm16": 9717,
+          "terminated": true,
+          "audio_frames": 37,
+          "wall_seconds": 0.6244889999943553,
+          "real_time_factor": 0.2531712162139278,
+          "wav": "audio/01-02.wav",
+          "repeat": 2,
+          "wav_sha256": "8b38a8ca3c26e2249ef614841d3606d1fa14db193db1a2cba744c6835a8608f7"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.6340696999977808,
+        "audio_seconds": 2.466666666666667,
+        "real_time_factor": 0.2570552837828841
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.4479521691171292,
+        "speedup": 1.7426296885438923,
+        "wall_speedup": 1.6013353894727658
+      }
+    },
+    {
+      "case": {
+        "id": "en-0320",
+        "lang": "en",
+        "tier": "short",
+        "source_row": 320,
+        "text": "Fellow wrestlers also paid tribute to Luna.",
+        "voice": "Savannah_en-American_F_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 120540,
+          "audio_seconds": 2.7333333333333334,
+          "peak_pcm16": 8778,
+          "terminated": true,
+          "audio_frames": 41,
+          "wall_seconds": 0.6637005999946268,
+          "real_time_factor": 0.24281729268096103,
+          "wav": "audio/02-01.wav",
+          "repeat": 1,
+          "wav_sha256": "d2a53e3a182b402d341c7944fb3bfad9233acaf1e7cd6e0d651d296792c11dac"
+        },
+        {
+          "samples": 120540,
+          "audio_seconds": 2.7333333333333334,
+          "peak_pcm16": 8778,
+          "terminated": true,
+          "audio_frames": 41,
+          "wall_seconds": 0.6731468999932986,
+          "real_time_factor": 0.24627325609510922,
+          "wav": "audio/02-02.wav",
+          "repeat": 2,
+          "wav_sha256": "d2a53e3a182b402d341c7944fb3bfad9233acaf1e7cd6e0d651d296792c11dac"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.6684237499939627,
+        "audio_seconds": 2.7333333333333334,
+        "real_time_factor": 0.24454527438803514
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.4135560937502305,
+        "speedup": 1.6911228188119285,
+        "wall_speedup": 1.6498759207921254
+      }
+    },
+    {
+      "case": {
+        "id": "en-0942",
+        "lang": "en",
+        "tier": "medium",
+        "source_row": 942,
+        "text": "The major religion in Moldova is Orthodox Christian.",
+        "voice": "Savannah_en-American_F_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 149940,
+          "audio_seconds": 3.4,
+          "peak_pcm16": 10642,
+          "terminated": true,
+          "audio_frames": 51,
+          "wall_seconds": 0.7446233999944525,
+          "real_time_factor": 0.21900688235130955,
+          "wav": "audio/03-01.wav",
+          "repeat": 1,
+          "wav_sha256": "4ff4fdc4c0aab83fa07f6dbd7da8326347d56bf672f50c63a6cb5e62895a6b4c"
+        },
+        {
+          "samples": 149940,
+          "audio_seconds": 3.4,
+          "peak_pcm16": 10642,
+          "terminated": true,
+          "audio_frames": 51,
+          "wall_seconds": 0.7478221999917878,
+          "real_time_factor": 0.2199477058799376,
+          "wav": "audio/03-02.wav",
+          "repeat": 2,
+          "wav_sha256": "4ff4fdc4c0aab83fa07f6dbd7da8326347d56bf672f50c63a6cb5e62895a6b4c"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.7462227999931201,
+        "audio_seconds": 3.4,
+        "real_time_factor": 0.21947729411562356
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3969465750000381,
+        "speedup": 1.8085997305530903,
+        "wall_speedup": 1.7731369907383239
+      }
+    },
+    {
+      "case": {
+        "id": "en-0030",
+        "lang": "en",
+        "tier": "medium",
+        "source_row": 30,
+        "text": "The find also grants insight into the evolution of feathers in birds.",
+        "voice": "Savannah_en-American_F_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 194040,
+          "audio_seconds": 4.4,
+          "peak_pcm16": 11098,
+          "terminated": true,
+          "audio_frames": 66,
+          "wall_seconds": 0.9359901999996509,
+          "real_time_factor": 0.2127250454544661,
+          "wav": "audio/04-01.wav",
+          "repeat": 1,
+          "wav_sha256": "f46ed7bfd660549e32589ea0c9474f5cff9109b703c8d52626bac08b4e0a5425"
+        },
+        {
+          "samples": 194040,
+          "audio_seconds": 4.4,
+          "peak_pcm16": 11098,
+          "terminated": true,
+          "audio_frames": 66,
+          "wall_seconds": 0.9440568999998504,
+          "real_time_factor": 0.21455838636360236,
+          "wav": "audio/04-02.wav",
+          "repeat": 2,
+          "wav_sha256": "f46ed7bfd660549e32589ea0c9474f5cff9109b703c8d52626bac08b4e0a5425"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.9400235499997507,
+        "audio_seconds": 4.4,
+        "real_time_factor": 0.21364171590903425
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3789789880950897,
+        "speedup": 1.7738997577441935,
+        "wall_speedup": 1.6932679505740027
+      }
+    },
+    {
+      "case": {
+        "id": "en-0082",
+        "lang": "en",
+        "tier": "long",
+        "source_row": 82,
+        "text": "The National Hurricane Center (NHC) says that at this point Jerry poses no threat to land.",
+        "voice": "Savannah_en-American_F_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 267540,
+          "audio_seconds": 6.066666666666666,
+          "peak_pcm16": 10823,
+          "terminated": true,
+          "audio_frames": 91,
+          "wall_seconds": 1.1947925999993458,
+          "real_time_factor": 0.19694383516472735,
+          "wav": "audio/05-01.wav",
+          "repeat": 1,
+          "wav_sha256": "30cde1111028b77309a4324bd55bef15c31b676532a448b6e94b2daa7047397e"
+        },
+        {
+          "samples": 267540,
+          "audio_seconds": 6.066666666666666,
+          "peak_pcm16": 10823,
+          "terminated": true,
+          "audio_frames": 91,
+          "wall_seconds": 1.1753441999899223,
+          "real_time_factor": 0.1937380549433938,
+          "wav": "audio/05-02.wav",
+          "repeat": 2,
+          "wav_sha256": "30cde1111028b77309a4324bd55bef15c31b676532a448b6e94b2daa7047397e"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.185068399994634,
+        "audio_seconds": 6.066666666666666,
+        "real_time_factor": 0.19534094505406058
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.34036720878977755,
+        "speedup": 1.7424263443364676,
+        "wall_speedup": 1.7424263443364678
+      }
+    },
+    {
+      "case": {
+        "id": "en-0977",
+        "lang": "en",
+        "tier": "long",
+        "source_row": 977,
+        "text": "The main letters to watch out for are c and g, since their pronunciation varies based on the following vowel.",
+        "voice": "Savannah_en-American_F_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 285180,
+          "audio_seconds": 6.466666666666667,
+          "peak_pcm16": 9746,
+          "terminated": true,
+          "audio_frames": 97,
+          "wall_seconds": 1.2619348000007449,
+          "real_time_factor": 0.1951445567011461,
+          "wav": "audio/06-01.wav",
+          "repeat": 1,
+          "wav_sha256": "7570e3f484dc57419c047fc19b8a84cfc46a0dc42063e627bb7b2bfc826ee945"
+        },
+        {
+          "samples": 285180,
+          "audio_seconds": 6.466666666666667,
+          "peak_pcm16": 9746,
+          "terminated": true,
+          "audio_frames": 97,
+          "wall_seconds": 1.314145099997404,
+          "real_time_factor": 0.20321831443258825,
+          "wav": "audio/06-02.wav",
+          "repeat": 2,
+          "wav_sha256": "7570e3f484dc57419c047fc19b8a84cfc46a0dc42063e627bb7b2bfc826ee945"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.2880399499990745,
+        "audio_seconds": 6.466666666666667,
+        "real_time_factor": 0.19918143556686718
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3494860263159162,
+        "speedup": 1.7546114441904916,
+        "wall_speedup": 1.718433888640172
+      }
+    },
+    {
+      "case": {
+        "id": "fr-0007",
+        "lang": "fr",
+        "tier": "short",
+        "source_row": 7,
+        "text": "Il dit avoir con\u00e7u une sonnette de porte Wi-Fi.",
+        "voice": "Gaspard_fr_M_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 252840,
+          "audio_seconds": 5.733333333333333,
+          "peak_pcm16": 8511,
+          "terminated": true,
+          "audio_frames": 86,
+          "wall_seconds": 1.251136699997005,
+          "real_time_factor": 0.21822151744133808,
+          "wav": "audio/07-01.wav",
+          "repeat": 1,
+          "wav_sha256": "97dec941dcea155d397fb57c1c35148b043844a0fb90d42e3908078766b059e1"
+        },
+        {
+          "samples": 252840,
+          "audio_seconds": 5.733333333333333,
+          "peak_pcm16": 8511,
+          "terminated": true,
+          "audio_frames": 86,
+          "wall_seconds": 1.2536887000023853,
+          "real_time_factor": 0.21866663372134626,
+          "wav": "audio/07-02.wav",
+          "repeat": 2,
+          "wav_sha256": "97dec941dcea155d397fb57c1c35148b043844a0fb90d42e3908078766b059e1"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.2524126999996952,
+        "audio_seconds": 5.733333333333333,
+        "real_time_factor": 0.21844407558134216
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3697622536770616,
+        "speedup": 1.6927090043207558,
+        "wall_speedup": 1.3384210731838533
+      }
+    },
+    {
+      "case": {
+        "id": "fr-0320",
+        "lang": "fr",
+        "tier": "short",
+        "source_row": 320,
+        "text": "Les autres lutteurs ont \u00e9galement rendu hommage \u00e0 Luna.",
+        "voice": "Gaspard_fr_M_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 276360,
+          "audio_seconds": 6.266666666666667,
+          "peak_pcm16": 10770,
+          "terminated": true,
+          "audio_frames": 94,
+          "wall_seconds": 1.4678518999862717,
+          "real_time_factor": 0.2342316861680221,
+          "wav": "audio/08-01.wav",
+          "repeat": 1,
+          "wav_sha256": "ac8078701849f1716abfd359a5ba2d72a1135568f778faca51a427f559ab9ee3"
+        },
+        {
+          "samples": 276360,
+          "audio_seconds": 6.266666666666667,
+          "peak_pcm16": 10770,
+          "terminated": true,
+          "audio_frames": 94,
+          "wall_seconds": 1.3886433000006946,
+          "real_time_factor": 0.22159201595755765,
+          "wav": "audio/08-02.wav",
+          "repeat": 2,
+          "wav_sha256": "ac8078701849f1716abfd359a5ba2d72a1135568f778faca51a427f559ab9ee3"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.4282475999934832,
+        "audio_seconds": 6.266666666666667,
+        "real_time_factor": 0.22791185106278988
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.34261899999910383,
+        "speedup": 1.5032961138326766,
+        "wall_speedup": 1.4393260664355416
+      }
+    },
+    {
+      "case": {
+        "id": "fr-0942",
+        "lang": "fr",
+        "tier": "medium",
+        "source_row": 942,
+        "text": "La principale religion en Moldavie est le christianisme orthodoxe.",
+        "voice": "Gaspard_fr_M_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 305760,
+          "audio_seconds": 6.933333333333334,
+          "peak_pcm16": 16996,
+          "terminated": true,
+          "audio_frames": 104,
+          "wall_seconds": 1.491606600000523,
+          "real_time_factor": 0.21513556730776773,
+          "wav": "audio/09-01.wav",
+          "repeat": 1,
+          "wav_sha256": "6551c3ac52bbc5a918cdbcac69b99a3b7d46311269345899c5da52bc9986b151"
+        },
+        {
+          "samples": 305760,
+          "audio_seconds": 6.933333333333334,
+          "peak_pcm16": 16996,
+          "terminated": true,
+          "audio_frames": 104,
+          "wall_seconds": 1.528474600010668,
+          "real_time_factor": 0.22045306730923095,
+          "wav": "audio/09-02.wav",
+          "repeat": 2,
+          "wav_sha256": "6551c3ac52bbc5a918cdbcac69b99a3b7d46311269345899c5da52bc9986b151"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.5100406000055955,
+        "audio_seconds": 6.933333333333334,
+        "real_time_factor": 0.21779431730849935
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3319988839280086,
+        "speedup": 1.5243689001202991,
+        "wall_speedup": 1.641628046283399
+      }
+    },
+    {
+      "case": {
+        "id": "fr-0030",
+        "lang": "fr",
+        "tier": "medium",
+        "source_row": 30,
+        "text": "Cette d\u00e9couverte permet \u00e9galement de mieux comprendre l'\u00e9volution des plumes chez les oiseaux.",
+        "voice": "Gaspard_fr_M_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 402780,
+          "audio_seconds": 9.133333333333333,
+          "peak_pcm16": 10151,
+          "terminated": true,
+          "audio_frames": 137,
+          "wall_seconds": 1.9076795000000857,
+          "real_time_factor": 0.20887001824818457,
+          "wav": "audio/10-01.wav",
+          "repeat": 1,
+          "wav_sha256": "13f6b5c63f1bf8f90f7b4bd1686cd3ab574a3be98a1c9bf156a0eb606e8ffab9"
+        },
+        {
+          "samples": 402780,
+          "audio_seconds": 9.133333333333333,
+          "peak_pcm16": 10151,
+          "terminated": true,
+          "audio_frames": 137,
+          "wall_seconds": 2.0108596999925794,
+          "real_time_factor": 0.22016712043714373,
+          "wav": "audio/10-02.wav",
+          "repeat": 2,
+          "wav_sha256": "13f6b5c63f1bf8f90f7b4bd1686cd3ab574a3be98a1c9bf156a0eb606e8ffab9"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.9592695999963325,
+        "audio_seconds": 9.133333333333333,
+        "real_time_factor": 0.21451856934266417
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.333110364000604,
+        "speedup": 1.552827641081764,
+        "wall_speedup": 1.4168135411329965
+      }
+    },
+    {
+      "case": {
+        "id": "fr-0082",
+        "lang": "fr",
+        "tier": "long",
+        "source_row": 82,
+        "text": "Le National Hurricane Center (NHC) affirme qu'\u00e0 ce stade, Jerry ne repr\u00e9sente aucune menace pour les terres.",
+        "voice": "Gaspard_fr_M_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 493920,
+          "audio_seconds": 11.2,
+          "peak_pcm16": 10735,
+          "terminated": true,
+          "audio_frames": 168,
+          "wall_seconds": 2.210232299999916,
+          "real_time_factor": 0.19734216964284965,
+          "wav": "audio/11-01.wav",
+          "repeat": 1,
+          "wav_sha256": "c406ede665d0b8c5c0a526c1279d42e2995240c3880696b5d1581f471d71020a"
+        },
+        {
+          "samples": 493920,
+          "audio_seconds": 11.2,
+          "peak_pcm16": 10735,
+          "terminated": true,
+          "audio_frames": 168,
+          "wall_seconds": 2.634342099991045,
+          "real_time_factor": 0.23520911607062903,
+          "wav": "audio/11-02.wav",
+          "repeat": 2,
+          "wav_sha256": "c406ede665d0b8c5c0a526c1279d42e2995240c3880696b5d1581f471d71020a"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 2.4222871999954805,
+        "audio_seconds": 11.2,
+        "real_time_factor": 0.21627564285673934
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3138947227264659,
+        "speedup": 1.4513641877573302,
+        "wall_speedup": 1.4254469701188066
+      }
+    },
+    {
+      "case": {
+        "id": "fr-0977",
+        "lang": "fr",
+        "tier": "long",
+        "source_row": 977,
+        "text": "Les principales lettres \u00e0 surveiller sont le c et le g, car leur prononciation varie en fonction de la voyelle suivante.",
+        "voice": "Gaspard_fr_M_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 493920,
+          "audio_seconds": 11.2,
+          "peak_pcm16": 13259,
+          "terminated": true,
+          "audio_frames": 168,
+          "wall_seconds": 2.6807079999998678,
+          "real_time_factor": 0.2393489285714168,
+          "wav": "audio/12-01.wav",
+          "repeat": 1,
+          "wav_sha256": "055e96df0d8de819a1bef8023943fc1cbc0d59ce4af7e48e623273798755d580"
+        },
+        {
+          "samples": 493920,
+          "audio_seconds": 11.2,
+          "peak_pcm16": 13259,
+          "terminated": true,
+          "audio_frames": 168,
+          "wall_seconds": 2.5772494999982882,
+          "real_time_factor": 0.23011156249984718,
+          "wav": "audio/12-02.wav",
+          "repeat": 2,
+          "wav_sha256": "055e96df0d8de819a1bef8023943fc1cbc0d59ce4af7e48e623273798755d580"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 2.628978749999078,
+        "audio_seconds": 11.2,
+        "real_time_factor": 0.234730245535632
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3217117011832702,
+        "speedup": 1.3705592155333661,
+        "wall_speedup": 1.3787173061020175
+      }
+    },
+    {
+      "case": {
+        "id": "es-0007",
+        "lang": "es",
+        "tier": "short",
+        "source_row": 7,
+        "text": "\u00c9l dijo que construy\u00f3 un timbre wifi.",
+        "voice": "Rodrigo_es_M_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 99960,
+          "audio_seconds": 2.2666666666666666,
+          "peak_pcm16": 15745,
+          "terminated": true,
+          "audio_frames": 34,
+          "wall_seconds": 0.710621699996409,
+          "real_time_factor": 0.3135095735278275,
+          "wav": "audio/13-01.wav",
+          "repeat": 1,
+          "wav_sha256": "85cbc6c149279713d97a5bc9ef345b5b39c1fb6fc08acb2ecdaeeb05594b8ba1"
+        },
+        {
+          "samples": 99960,
+          "audio_seconds": 2.2666666666666666,
+          "peak_pcm16": 15745,
+          "terminated": true,
+          "audio_frames": 34,
+          "wall_seconds": 0.6924340999976266,
+          "real_time_factor": 0.3054856323518941,
+          "wav": "audio/13-02.wav",
+          "repeat": 2,
+          "wav_sha256": "85cbc6c149279713d97a5bc9ef345b5b39c1fb6fc08acb2ecdaeeb05594b8ba1"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.7015278999970178,
+        "audio_seconds": 2.2666666666666666,
+        "real_time_factor": 0.3094976029398608
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3749700652176967,
+        "speedup": 1.2115443275034283,
+        "wall_speedup": 1.639148207798756
+      }
+    },
+    {
+      "case": {
+        "id": "es-0320",
+        "lang": "es",
+        "tier": "short",
+        "source_row": 320,
+        "text": "Los luchadores compa\u00f1eros de Luna tambi\u00e9n le rindieron homenaje.",
+        "voice": "Rodrigo_es_M_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 167580,
+          "audio_seconds": 3.8,
+          "peak_pcm16": 19814,
+          "terminated": true,
+          "audio_frames": 57,
+          "wall_seconds": 1.0000786000018707,
+          "real_time_factor": 0.26317857894786073,
+          "wav": "audio/14-01.wav",
+          "repeat": 1,
+          "wav_sha256": "d6309050da52785203caa14cda28df4578506e439bbad3eccf7e3eb470f77455"
+        },
+        {
+          "samples": 167580,
+          "audio_seconds": 3.8,
+          "peak_pcm16": 19814,
+          "terminated": true,
+          "audio_frames": 57,
+          "wall_seconds": 0.9774778999999398,
+          "real_time_factor": 0.25723102631577366,
+          "wav": "audio/14-02.wav",
+          "repeat": 2,
+          "wav_sha256": "d6309050da52785203caa14cda28df4578506e439bbad3eccf7e3eb470f77455"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.9887782500009052,
+        "audio_seconds": 3.8,
+        "real_time_factor": 0.2602048026318172
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3547281666659627,
+        "speedup": 1.3632652552070434,
+        "wall_speedup": 1.29151445230141
+      }
+    },
+    {
+      "case": {
+        "id": "es-0942",
+        "lang": "es",
+        "tier": "medium",
+        "source_row": 942,
+        "text": "El cristianismo ortodoxo es la religi\u00f3n mayoritaria en Moldavia. ",
+        "voice": "Rodrigo_es_M_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 194040,
+          "audio_seconds": 4.4,
+          "peak_pcm16": 22594,
+          "terminated": true,
+          "audio_frames": 66,
+          "wall_seconds": 0.9418771000055131,
+          "real_time_factor": 0.21406297727398022,
+          "wav": "audio/15-01.wav",
+          "repeat": 1,
+          "wav_sha256": "2e25394be25aac6bfca942a167a34f11bff1d728894f955dbc93057f4cd4c955"
+        },
+        {
+          "samples": 194040,
+          "audio_seconds": 4.4,
+          "peak_pcm16": 22594,
+          "terminated": true,
+          "audio_frames": 66,
+          "wall_seconds": 0.9292835999949602,
+          "real_time_factor": 0.21120081818067277,
+          "wav": "audio/15-02.wav",
+          "repeat": 2,
+          "wav_sha256": "2e25394be25aac6bfca942a167a34f11bff1d728894f955dbc93057f4cd4c955"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.9355803500002366,
+        "audio_seconds": 4.4,
+        "real_time_factor": 0.2126318977273265
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.38971972881218964,
+        "speedup": 1.8328375609568979,
+        "wall_speedup": 1.638445698431166
+      }
+    },
+    {
+      "case": {
+        "id": "es-0030",
+        "lang": "es",
+        "tier": "medium",
+        "source_row": 30,
+        "text": "Asimismo, el hallazgo permite comprender mejor la evoluci\u00f3n de las plumas de las aves.",
+        "voice": "Rodrigo_es_M_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 223440,
+          "audio_seconds": 5.066666666666666,
+          "peak_pcm16": 23647,
+          "terminated": true,
+          "audio_frames": 76,
+          "wall_seconds": 1.024974399988423,
+          "real_time_factor": 0.20229757894508352,
+          "wav": "audio/16-01.wav",
+          "repeat": 1,
+          "wav_sha256": "6c78a1c3cc3cbd7d6d71a8bf0449555da5b6ae10adcf381808a7ff97b5e53426"
+        },
+        {
+          "samples": 223440,
+          "audio_seconds": 5.066666666666666,
+          "peak_pcm16": 23647,
+          "terminated": true,
+          "audio_frames": 76,
+          "wall_seconds": 1.0283409000112442,
+          "real_time_factor": 0.20296201973906136,
+          "wav": "audio/16-02.wav",
+          "repeat": 2,
+          "wav_sha256": "6c78a1c3cc3cbd7d6d71a8bf0449555da5b6ae10adcf381808a7ff97b5e53426"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.0266576499998337,
+        "audio_seconds": 5.066666666666666,
+        "real_time_factor": 0.20262979934207243
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.33552911470563707,
+        "speedup": 1.655872511324007,
+        "wall_speedup": 1.8519626771386921
+      }
+    },
+    {
+      "case": {
+        "id": "es-0082",
+        "lang": "es",
+        "tier": "long",
+        "source_row": 82,
+        "text": "El Centro Nacional de Huracanes (CNH) declar\u00f3 que por ahora est\u00e1 previsto que Jerry toque el suelo.",
+        "voice": "Rodrigo_es_M_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 341040,
+          "audio_seconds": 7.733333333333333,
+          "peak_pcm16": 17975,
+          "terminated": true,
+          "audio_frames": 116,
+          "wall_seconds": 1.4434079000056954,
+          "real_time_factor": 0.18664757327659853,
+          "wav": "audio/17-01.wav",
+          "repeat": 1,
+          "wav_sha256": "456500791c2066e4a09c7be4083ecb729e09baf54b9636e00bf984ac814e7972"
+        },
+        {
+          "samples": 341040,
+          "audio_seconds": 7.733333333333333,
+          "peak_pcm16": 17975,
+          "terminated": true,
+          "audio_frames": 116,
+          "wall_seconds": 1.404031700003543,
+          "real_time_factor": 0.1815558232763202,
+          "wav": "audio/17-02.wav",
+          "repeat": 2,
+          "wav_sha256": "456500791c2066e4a09c7be4083ecb729e09baf54b9636e00bf984ac814e7972"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.4237198000046192,
+        "audio_seconds": 7.733333333333333,
+        "real_time_factor": 0.18410169827645936
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.32432617067325525,
+        "speedup": 1.7616685435797854,
+        "wall_speedup": 1.5794269701060144
+      }
+    },
+    {
+      "case": {
+        "id": "es-0977",
+        "lang": "es",
+        "tier": "long",
+        "source_row": 977,
+        "text": "La c y la g son las letras con las que se debe estar m\u00e1s atentos, dado que se pronuncian de diferente forma dependiendo de la vocal que les sigue.",
+        "voice": "Rodrigo_es_M_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 393960,
+          "audio_seconds": 8.933333333333334,
+          "peak_pcm16": 20450,
+          "terminated": true,
+          "audio_frames": 134,
+          "wall_seconds": 1.6868626999930711,
+          "real_time_factor": 0.18882791417832887,
+          "wav": "audio/18-01.wav",
+          "repeat": 1,
+          "wav_sha256": "4365dac64e514eeea9628ef5973a040265926995166ece7442b1921a7428d6d6"
+        },
+        {
+          "samples": 393960,
+          "audio_seconds": 8.933333333333334,
+          "peak_pcm16": 20450,
+          "terminated": true,
+          "audio_frames": 134,
+          "wall_seconds": 1.74067090000608,
+          "real_time_factor": 0.19485122014993433,
+          "wav": "audio/18-02.wav",
+          "repeat": 2,
+          "wav_sha256": "4365dac64e514eeea9628ef5973a040265926995166ece7442b1921a7428d6d6"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.7137667999995756,
+        "audio_seconds": 8.933333333333334,
+        "real_time_factor": 0.19183956716413159
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.31562494199926727,
+        "speedup": 1.645254660782408,
+        "wall_speedup": 1.534752482073142
+      }
+    },
+    {
+      "case": {
+        "id": "de-0007",
+        "lang": "de",
+        "tier": "short",
+        "source_row": 7,
+        "text": "Er sagte, dass er eine WLAN-T\u00fcrklingel gebaut habe.",
+        "voice": "Liesel_de_F_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 179340,
+          "audio_seconds": 4.066666666666666,
+          "peak_pcm16": 12725,
+          "terminated": true,
+          "audio_frames": 61,
+          "wall_seconds": 0.8404512999986764,
+          "real_time_factor": 0.20666835245869092,
+          "wav": "audio/19-01.wav",
+          "repeat": 1,
+          "wav_sha256": "3c2177a9261080ad2ed80a296610face483c581451f74ed99503a098ced6fb45"
+        },
+        {
+          "samples": 179340,
+          "audio_seconds": 4.066666666666666,
+          "peak_pcm16": 12725,
+          "terminated": true,
+          "audio_frames": 61,
+          "wall_seconds": 0.8391074999963166,
+          "real_time_factor": 0.20633790983515984,
+          "wav": "audio/19-02.wav",
+          "repeat": 2,
+          "wav_sha256": "3c2177a9261080ad2ed80a296610face483c581451f74ed99503a098ced6fb45"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.8397793999974965,
+        "audio_seconds": 4.066666666666666,
+        "real_time_factor": 0.20650313114692537
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.35973377631499287,
+        "speedup": 1.7420257713140683,
+        "wall_speedup": 1.627794573195113
+      }
+    },
+    {
+      "case": {
+        "id": "de-0320",
+        "lang": "de",
+        "tier": "short",
+        "source_row": 320,
+        "text": "Ringer-Kollegen zollten Luna ebenfalls Tribut.",
+        "voice": "Liesel_de_F_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 149940,
+          "audio_seconds": 3.4,
+          "peak_pcm16": 12033,
+          "terminated": true,
+          "audio_frames": 51,
+          "wall_seconds": 0.8130486000009114,
+          "real_time_factor": 0.23913194117673864,
+          "wav": "audio/20-01.wav",
+          "repeat": 1,
+          "wav_sha256": "0a487ed3f6c87be623c335714f753fee703d0e99e7921b37c46125a064a5a6b7"
+        },
+        {
+          "samples": 149940,
+          "audio_seconds": 3.4,
+          "peak_pcm16": 12033,
+          "terminated": true,
+          "audio_frames": 51,
+          "wall_seconds": 0.7666442000045208,
+          "real_time_factor": 0.2254835882366238,
+          "wav": "audio/20-02.wav",
+          "repeat": 2,
+          "wav_sha256": "0a487ed3f6c87be623c335714f753fee703d0e99e7921b37c46125a064a5a6b7"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.7898464000027161,
+        "audio_seconds": 3.4,
+        "real_time_factor": 0.2323077647066812
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.36455563889022513,
+        "speedup": 1.5692787511882096,
+        "wall_speedup": 1.6615892659639868
+      }
+    },
+    {
+      "case": {
+        "id": "de-0942",
+        "lang": "de",
+        "tier": "medium",
+        "source_row": 942,
+        "text": "Die wichtigste Religion in Moldawien ist die christlich-orthodoxe.",
+        "voice": "Liesel_de_F_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 188160,
+          "audio_seconds": 4.266666666666667,
+          "peak_pcm16": 17082,
+          "terminated": true,
+          "audio_frames": 64,
+          "wall_seconds": 0.9426430999883451,
+          "real_time_factor": 0.22093197655976837,
+          "wav": "audio/21-01.wav",
+          "repeat": 1,
+          "wav_sha256": "4b4850a9b68be52d3a22fce50c089222359dbc22e7b5730e95562c62b537cdb5"
+        },
+        {
+          "samples": 188160,
+          "audio_seconds": 4.266666666666667,
+          "peak_pcm16": 17082,
+          "terminated": true,
+          "audio_frames": 64,
+          "wall_seconds": 0.936379599996144,
+          "real_time_factor": 0.21946396874909624,
+          "wav": "audio/21-02.wav",
+          "repeat": 2,
+          "wav_sha256": "4b4850a9b68be52d3a22fce50c089222359dbc22e7b5730e95562c62b537cdb5"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.9395113499922445,
+        "audio_seconds": 4.266666666666667,
+        "real_time_factor": 0.2201979726544323
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3648433125005113,
+        "speedup": 1.6568877002018458,
+        "wall_speedup": 1.6568877002018458
+      }
+    },
+    {
+      "case": {
+        "id": "de-0030",
+        "lang": "de",
+        "tier": "medium",
+        "source_row": 30,
+        "text": "Der Fund gew\u00e4hrt auch Einblicke in die Evolution von Federn bei V\u00f6geln.",
+        "voice": "Liesel_de_F_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 205800,
+          "audio_seconds": 4.666666666666667,
+          "peak_pcm16": 14924,
+          "terminated": true,
+          "audio_frames": 70,
+          "wall_seconds": 1.0177809999877354,
+          "real_time_factor": 0.21809592856880045,
+          "wav": "audio/22-01.wav",
+          "repeat": 1,
+          "wav_sha256": "3f883d5fab069043f3240795f44b80cf0fba778aff556ef0fc357f01e45e83d5"
+        },
+        {
+          "samples": 205800,
+          "audio_seconds": 4.666666666666667,
+          "peak_pcm16": 14924,
+          "terminated": true,
+          "audio_frames": 70,
+          "wall_seconds": 1.0666288000065833,
+          "real_time_factor": 0.22856331428712498,
+          "wav": "audio/22-02.wav",
+          "repeat": 2,
+          "wav_sha256": "3f883d5fab069043f3240795f44b80cf0fba778aff556ef0fc357f01e45e83d5"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.0422048999971594,
+        "audio_seconds": 4.666666666666667,
+        "real_time_factor": 0.2233296214279627
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3882460477929913,
+        "speedup": 1.7384440331316469,
+        "wall_speedup": 1.6887742036135995
+      }
+    },
+    {
+      "case": {
+        "id": "de-0082",
+        "lang": "de",
+        "tier": "long",
+        "source_row": 82,
+        "text": "Das National Hurricane Center (NHC) sagt, dass Jerry zu diesem Zeitpunkt keine Gefahr f\u00fcr die Landung darstellt.",
+        "voice": "Liesel_de_F_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 379260,
+          "audio_seconds": 8.6,
+          "peak_pcm16": 13466,
+          "terminated": true,
+          "audio_frames": 129,
+          "wall_seconds": 1.7025598000036553,
+          "real_time_factor": 0.1979720697678669,
+          "wav": "audio/23-01.wav",
+          "repeat": 1,
+          "wav_sha256": "3865a36090fb383b5cf16e669d9ff6c232c810056d00b1ae48a097a392d135e3"
+        },
+        {
+          "samples": 379260,
+          "audio_seconds": 8.6,
+          "peak_pcm16": 13466,
+          "terminated": true,
+          "audio_frames": 129,
+          "wall_seconds": 1.7704877000069246,
+          "real_time_factor": 0.20587066279150287,
+          "wav": "audio/23-02.wav",
+          "repeat": 2,
+          "wav_sha256": "3865a36090fb383b5cf16e669d9ff6c232c810056d00b1ae48a097a392d135e3"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.73652375000529,
+        "audio_seconds": 8.6,
+        "real_time_factor": 0.20192136627968488
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3361490214842888,
+        "speedup": 1.6647521145369175,
+        "wall_speedup": 1.6518470593854686
+      }
+    },
+    {
+      "case": {
+        "id": "de-0977",
+        "lang": "de",
+        "tier": "long",
+        "source_row": 977,
+        "text": "Die wichtigsten Buchstaben, auf die man achten muss, sind c und g, da ihre Aussprache je nach Folgevokal variiert.",
+        "voice": "Liesel_de_F_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 382200,
+          "audio_seconds": 8.666666666666666,
+          "peak_pcm16": 20413,
+          "terminated": true,
+          "audio_frames": 130,
+          "wall_seconds": 1.7046657000028063,
+          "real_time_factor": 0.19669219615416997,
+          "wav": "audio/24-01.wav",
+          "repeat": 1,
+          "wav_sha256": "61ab142c9d775b458814b88c568dc2c0b17eea56d435e5272a1491e27351be35"
+        },
+        {
+          "samples": 382200,
+          "audio_seconds": 8.666666666666666,
+          "peak_pcm16": 20413,
+          "terminated": true,
+          "audio_frames": 130,
+          "wall_seconds": 2.0904599000059534,
+          "real_time_factor": 0.24120691153914847,
+          "wav": "audio/24-02.wav",
+          "repeat": 2,
+          "wav_sha256": "61ab142c9d775b458814b88c568dc2c0b17eea56d435e5272a1491e27351be35"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.8975628000043798,
+        "audio_seconds": 8.666666666666666,
+        "real_time_factor": 0.2189495538466592
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3515825437498279,
+        "speedup": 1.6057696285421887,
+        "wall_speedup": 1.4822488878850972
+      }
+    },
+    {
+      "case": {
+        "id": "it-0007",
+        "lang": "it",
+        "tier": "short",
+        "source_row": 7,
+        "text": "Ha detto di aver costruito un campanello Wi-Fi.",
+        "voice": "Ginevra_it_F_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 141120,
+          "audio_seconds": 3.2,
+          "peak_pcm16": 15403,
+          "terminated": true,
+          "audio_frames": 48,
+          "wall_seconds": 0.8289478000078816,
+          "real_time_factor": 0.259046187502463,
+          "wav": "audio/25-01.wav",
+          "repeat": 1,
+          "wav_sha256": "f6c52920749e64300626469e13d090b38d447724e17930b2b23bf724553e3d57"
+        },
+        {
+          "samples": 141120,
+          "audio_seconds": 3.2,
+          "peak_pcm16": 15403,
+          "terminated": true,
+          "audio_frames": 48,
+          "wall_seconds": 0.8498344999970868,
+          "real_time_factor": 0.26557328124908963,
+          "wav": "audio/25-02.wav",
+          "repeat": 2,
+          "wav_sha256": "f6c52920749e64300626469e13d090b38d447724e17930b2b23bf724553e3d57"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.8393911500024842,
+        "audio_seconds": 3.2,
+        "real_time_factor": 0.2623097343757763
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.39230380434832035,
+        "speedup": 1.4955747078235335,
+        "wall_speedup": 1.433259094997553
+      }
+    },
+    {
+      "case": {
+        "id": "it-0320",
+        "lang": "it",
+        "tier": "short",
+        "source_row": 320,
+        "text": "Anche i suoi compagni di wrestling hanno voluto rendere omaggio a Luna.",
+        "voice": "Ginevra_it_F_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 199920,
+          "audio_seconds": 4.533333333333333,
+          "peak_pcm16": 17941,
+          "terminated": true,
+          "audio_frames": 68,
+          "wall_seconds": 1.1732328999933088,
+          "real_time_factor": 0.258801374998524,
+          "wav": "audio/26-01.wav",
+          "repeat": 1,
+          "wav_sha256": "35065dbfe4a835bcee91e54db6bbb4c2af626ab15a3461fe69e85d1579bd301d"
+        },
+        {
+          "samples": 199920,
+          "audio_seconds": 4.533333333333333,
+          "peak_pcm16": 17941,
+          "terminated": true,
+          "audio_frames": 68,
+          "wall_seconds": 1.161003899993375,
+          "real_time_factor": 0.2561038014691268,
+          "wav": "audio/26-02.wav",
+          "repeat": 2,
+          "wav_sha256": "35065dbfe4a835bcee91e54db6bbb4c2af626ab15a3461fe69e85d1579bd301d"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.1671183999933419,
+        "audio_seconds": 4.533333333333333,
+        "real_time_factor": 0.25745258823382544
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.34834757954410056,
+        "speedup": 1.3530552632383008,
+        "wall_speedup": 1.3132595202018804
+      }
+    },
+    {
+      "case": {
+        "id": "it-0942",
+        "lang": "it",
+        "tier": "medium",
+        "source_row": 942,
+        "text": "La religione predominante in Moldavia \u00e8 quella cristiano-ortodossa.",
+        "voice": "Ginevra_it_F_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 194040,
+          "audio_seconds": 4.4,
+          "peak_pcm16": 16467,
+          "terminated": true,
+          "audio_frames": 66,
+          "wall_seconds": 1.1599890000070445,
+          "real_time_factor": 0.26363386363796465,
+          "wav": "audio/27-01.wav",
+          "repeat": 1,
+          "wav_sha256": "1b63141dbf41372c36395a43a0185940eee5d8b10d191b7b86d947a98953b270"
+        },
+        {
+          "samples": 194040,
+          "audio_seconds": 4.4,
+          "peak_pcm16": 16467,
+          "terminated": true,
+          "audio_frames": 66,
+          "wall_seconds": 1.0339825000119163,
+          "real_time_factor": 0.23499602272998096,
+          "wav": "audio/27-02.wav",
+          "repeat": 2,
+          "wav_sha256": "1b63141dbf41372c36395a43a0185940eee5d8b10d191b7b86d947a98953b270"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.0969857500094804,
+        "audio_seconds": 4.4,
+        "real_time_factor": 0.2493149431839728
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3571652460942687,
+        "speedup": 1.4325865972289986,
+        "wall_speedup": 1.3891748821614531
+      }
+    },
+    {
+      "case": {
+        "id": "it-0030",
+        "lang": "it",
+        "tier": "medium",
+        "source_row": 30,
+        "text": "La scoperta permette inoltre di ottenere informazioni dettagliate in merito all'evoluzione delle piume degli uccelli.",
+        "voice": "Ginevra_it_F_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 302820,
+          "audio_seconds": 6.866666666666666,
+          "peak_pcm16": 17957,
+          "terminated": true,
+          "audio_frames": 103,
+          "wall_seconds": 1.2964906999986852,
+          "real_time_factor": 0.18880932524252697,
+          "wav": "audio/28-01.wav",
+          "repeat": 1,
+          "wav_sha256": "77ab88e2935843de3b41b61f147f2908b5a279c1a310f92bd8a647dbf405c3a9"
+        },
+        {
+          "samples": 302820,
+          "audio_seconds": 6.866666666666666,
+          "peak_pcm16": 17957,
+          "terminated": true,
+          "audio_frames": 103,
+          "wall_seconds": 1.3079639000061434,
+          "real_time_factor": 0.19048017961254515,
+          "wav": "audio/28-02.wav",
+          "repeat": 2,
+          "wav_sha256": "77ab88e2935843de3b41b61f147f2908b5a279c1a310f92bd8a647dbf405c3a9"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.3022273000024143,
+        "audio_seconds": 6.866666666666666,
+        "real_time_factor": 0.18964475242753606
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3220055659082639,
+        "speedup": 1.697940817167105,
+        "wall_speedup": 1.8133348532852578
+      }
+    },
+    {
+      "case": {
+        "id": "it-0082",
+        "lang": "it",
+        "tier": "long",
+        "source_row": 82,
+        "text": "Secondo il National Hurricane Center (NHC), Jerry a questo punto non costituisce una minaccia per la terraferma.",
+        "voice": "Ginevra_it_F_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 346920,
+          "audio_seconds": 7.866666666666666,
+          "peak_pcm16": 18230,
+          "terminated": true,
+          "audio_frames": 118,
+          "wall_seconds": 1.414647599987802,
+          "real_time_factor": 0.17982808474421214,
+          "wav": "audio/29-01.wav",
+          "repeat": 1,
+          "wav_sha256": "c9e92ee0792fc58cb216b5701c845f87a0d3b7b90ae2823ccfd13054a86e0596"
+        },
+        {
+          "samples": 346920,
+          "audio_seconds": 7.866666666666666,
+          "peak_pcm16": 18230,
+          "terminated": true,
+          "audio_frames": 118,
+          "wall_seconds": 1.3966803000075743,
+          "real_time_factor": 0.17754410593316622,
+          "wav": "audio/29-02.wav",
+          "repeat": 2,
+          "wav_sha256": "c9e92ee0792fc58cb216b5701c845f87a0d3b7b90ae2823ccfd13054a86e0596"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.4056639499976882,
+        "audio_seconds": 7.866666666666666,
+        "real_time_factor": 0.17868609533868918
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3261519000006956,
+        "speedup": 1.8252785667653295,
+        "wall_speedup": 1.856215491625759
+      }
+    },
+    {
+      "case": {
+        "id": "it-0977",
+        "lang": "it",
+        "tier": "long",
+        "source_row": 977,
+        "text": "Le lettere principali a cui fare attenzione sono la c e la g, dal momento che la loro pronuncia cambia in base alla vocale che segue.",
+        "voice": "Ginevra_it_F_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 382200,
+          "audio_seconds": 8.666666666666666,
+          "peak_pcm16": 15309,
+          "terminated": true,
+          "audio_frames": 130,
+          "wall_seconds": 1.6455191999993986,
+          "real_time_factor": 0.1898675999999306,
+          "wav": "audio/30-01.wav",
+          "repeat": 1,
+          "wav_sha256": "b171ec31b85fc198cb083a351b7f4df859f777915ab06e26d5cf8e055f797219"
+        },
+        {
+          "samples": 382200,
+          "audio_seconds": 8.666666666666666,
+          "peak_pcm16": 15309,
+          "terminated": true,
+          "audio_frames": 130,
+          "wall_seconds": 1.675033200008329,
+          "real_time_factor": 0.19327306153942259,
+          "wav": "audio/30-02.wav",
+          "repeat": 2,
+          "wav_sha256": "b171ec31b85fc198cb083a351b7f4df859f777915ab06e26d5cf8e055f797219"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.6602762000038638,
+        "audio_seconds": 8.666666666666666,
+        "real_time_factor": 0.1915703307696766
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3343536720005795,
+        "speedup": 1.7453311828467328,
+        "wall_speedup": 1.678203060429551
+      }
+    },
+    {
+      "case": {
+        "id": "pt-0007",
+        "lang": "pt",
+        "tier": "short",
+        "source_row": 7,
+        "text": "Ele montou uma campainha sem fio, disse.",
+        "voice": "Leonor_pt_F_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 152880,
+          "audio_seconds": 3.466666666666667,
+          "peak_pcm16": 15345,
+          "terminated": true,
+          "audio_frames": 52,
+          "wall_seconds": 0.752525500007323,
+          "real_time_factor": 0.21707466346365087,
+          "wav": "audio/31-01.wav",
+          "repeat": 1,
+          "wav_sha256": "38e61311837b685032bafbd64330cf8f69f667841a3ac76f685e98150cb87f70"
+        },
+        {
+          "samples": 152880,
+          "audio_seconds": 3.466666666666667,
+          "peak_pcm16": 15345,
+          "terminated": true,
+          "audio_frames": 52,
+          "wall_seconds": 0.7585356999916257,
+          "real_time_factor": 0.21880837499758435,
+          "wav": "audio/31-02.wav",
+          "repeat": 2,
+          "wav_sha256": "38e61311837b685032bafbd64330cf8f69f667841a3ac76f685e98150cb87f70"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.7555305999994744,
+        "audio_seconds": 3.466666666666667,
+        "real_time_factor": 0.2179415192306176
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3857949951928346,
+        "speedup": 1.7701766811334407,
+        "wall_speedup": 1.7701766811334407
+      }
+    },
+    {
+      "case": {
+        "id": "pt-0320",
+        "lang": "pt",
+        "tier": "short",
+        "source_row": 320,
+        "text": "Outros lutadores tamb\u00e9m prestaram homenagem a Luna.",
+        "voice": "Leonor_pt_F_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 152880,
+          "audio_seconds": 3.466666666666667,
+          "peak_pcm16": 14062,
+          "terminated": true,
+          "audio_frames": 52,
+          "wall_seconds": 0.7615616999974009,
+          "real_time_factor": 0.21968125961463486,
+          "wav": "audio/32-01.wav",
+          "repeat": 1,
+          "wav_sha256": "98ad7e9b57d45182ff33c65ecf5956ed4eabc9292bf5dad328ba53fe3152511c"
+        },
+        {
+          "samples": 152880,
+          "audio_seconds": 3.466666666666667,
+          "peak_pcm16": 14062,
+          "terminated": true,
+          "audio_frames": 52,
+          "wall_seconds": 0.7599251000065124,
+          "real_time_factor": 0.219209163463417,
+          "wav": "audio/32-02.wav",
+          "repeat": 2,
+          "wav_sha256": "98ad7e9b57d45182ff33c65ecf5956ed4eabc9292bf5dad328ba53fe3152511c"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.7607434000019566,
+        "audio_seconds": 3.466666666666667,
+        "real_time_factor": 0.21944521153902594
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3562746052634075,
+        "speedup": 1.6235241715449686,
+        "wall_speedup": 1.7796322649627543
+      }
+    },
+    {
+      "case": {
+        "id": "pt-0942",
+        "lang": "pt",
+        "tier": "medium",
+        "source_row": 942,
+        "text": "A religi\u00e3o principal na Mold\u00e1via \u00e9 o cristianismo ortodoxo. ",
+        "voice": "Leonor_pt_F_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 188160,
+          "audio_seconds": 4.266666666666667,
+          "peak_pcm16": 14128,
+          "terminated": true,
+          "audio_frames": 64,
+          "wall_seconds": 0.9448975999985123,
+          "real_time_factor": 0.22146037499965132,
+          "wav": "audio/33-01.wav",
+          "repeat": 1,
+          "wav_sha256": "b8a163eeea46edfeee747abd16e58aa68075e5a9965217a6c1f52aa8604709a4"
+        },
+        {
+          "samples": 188160,
+          "audio_seconds": 4.266666666666667,
+          "peak_pcm16": 14128,
+          "terminated": true,
+          "audio_frames": 64,
+          "wall_seconds": 0.9362657000019681,
+          "real_time_factor": 0.21943727343796127,
+          "wav": "audio/33-02.wav",
+          "repeat": 2,
+          "wav_sha256": "b8a163eeea46edfeee747abd16e58aa68075e5a9965217a6c1f52aa8604709a4"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.9405816500002402,
+        "audio_seconds": 4.266666666666667,
+        "real_time_factor": 0.2204488242188063
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3432969816180155,
+        "speedup": 1.557263835879099,
+        "wall_speedup": 1.6545928256215425
+      }
+    },
+    {
+      "case": {
+        "id": "pt-0030",
+        "lang": "pt",
+        "tier": "medium",
+        "source_row": 30,
+        "text": "A descoberta tamb\u00e9m concede pistas sobre a evolu\u00e7\u00e3o das penas nas aves.",
+        "voice": "Leonor_pt_F_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 235200,
+          "audio_seconds": 5.333333333333333,
+          "peak_pcm16": 13856,
+          "terminated": true,
+          "audio_frames": 80,
+          "wall_seconds": 1.0928886000037892,
+          "real_time_factor": 0.20491661250071047,
+          "wav": "audio/34-01.wav",
+          "repeat": 1,
+          "wav_sha256": "9dc9c2102b41f461d8d8ffd23153f38bbdf6ee22c0003316b4afb76c46be9519"
+        },
+        {
+          "samples": 235200,
+          "audio_seconds": 5.333333333333333,
+          "peak_pcm16": 13856,
+          "terminated": true,
+          "audio_frames": 80,
+          "wall_seconds": 1.100320700003067,
+          "real_time_factor": 0.20631013125057507,
+          "wav": "audio/34-02.wav",
+          "repeat": 2,
+          "wav_sha256": "9dc9c2102b41f461d8d8ffd23153f38bbdf6ee22c0003316b4afb76c46be9519"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.096604650003428,
+        "audio_seconds": 5.333333333333333,
+        "real_time_factor": 0.20561337187564277
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3552504375013661,
+        "speedup": 1.727759407185956,
+        "wall_speedup": 1.641371436826658
+      }
+    },
+    {
+      "case": {
+        "id": "pt-0082",
+        "lang": "pt",
+        "tier": "long",
+        "source_row": 82,
+        "text": "O Centro Nacional de Furac\u00f5es (NHC) diz que, neste momento, Jerry n\u00e3o causa amea\u00e7as \u00e0 terra.",
+        "voice": "Leonor_pt_F_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 373380,
+          "audio_seconds": 8.466666666666667,
+          "peak_pcm16": 16143,
+          "terminated": true,
+          "audio_frames": 127,
+          "wall_seconds": 1.6432015000027604,
+          "real_time_factor": 0.19407891732316068,
+          "wav": "audio/35-01.wav",
+          "repeat": 1,
+          "wav_sha256": "b8d6365238b8af1e3db307932d73ad025599671eff475e8e3d97adc9eff59cac"
+        },
+        {
+          "samples": 373380,
+          "audio_seconds": 8.466666666666667,
+          "peak_pcm16": 16143,
+          "terminated": true,
+          "audio_frames": 127,
+          "wall_seconds": 1.6790133000031346,
+          "real_time_factor": 0.19830865748068519,
+          "wav": "audio/35-02.wav",
+          "repeat": 2,
+          "wav_sha256": "b8d6365238b8af1e3db307932d73ad025599671eff475e8e3d97adc9eff59cac"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.6611074000029475,
+        "audio_seconds": 8.466666666666667,
+        "real_time_factor": 0.19619378740192295
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.328118413865105,
+        "speedup": 1.672419999685928,
+        "wall_speedup": 1.5670707083671294
+      }
+    },
+    {
+      "case": {
+        "id": "pt-0977",
+        "lang": "pt",
+        "tier": "long",
+        "source_row": 977,
+        "text": "As principais letras a serem observadas s\u00e3o o C e G, pois sua pron\u00fancia varia de acordo com a vogal a seguir.",
+        "voice": "Leonor_pt_F_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 408660,
+          "audio_seconds": 9.266666666666667,
+          "peak_pcm16": 17218,
+          "terminated": true,
+          "audio_frames": 139,
+          "wall_seconds": 1.7896667000022717,
+          "real_time_factor": 0.19312950000024512,
+          "wav": "audio/36-01.wav",
+          "repeat": 1,
+          "wav_sha256": "ec4e5da65ece3d28a66bd6530b1cccf333ddb1f0e76b62f789b49734bb4dedc7"
+        },
+        {
+          "samples": 408660,
+          "audio_seconds": 9.266666666666667,
+          "peak_pcm16": 17218,
+          "terminated": true,
+          "audio_frames": 139,
+          "wall_seconds": 1.7975772000063444,
+          "real_time_factor": 0.1939831510798213,
+          "wav": "audio/36-02.wav",
+          "repeat": 2,
+          "wav_sha256": "ec4e5da65ece3d28a66bd6530b1cccf333ddb1f0e76b62f789b49734bb4dedc7"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.793621950004308,
+        "audio_seconds": 9.266666666666667,
+        "real_time_factor": 0.19355632554003321
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.34087740756256285,
+        "speedup": 1.7611277059093542,
+        "wall_speedup": 1.5077280359943392
+      }
+    },
+    {
+      "case": {
+        "id": "zh-0007",
+        "lang": "zh",
+        "tier": "short",
+        "source_row": 7,
+        "text": "\u4ed6\u79f0\uff0c\u4ed6\u5236\u4f5c\u4e86\u4e00\u4e2a WiFi \u95e8\u94c3\u3002",
+        "voice": "Haoran_zh-energetic_M_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 123480,
+          "audio_seconds": 2.8,
+          "peak_pcm16": 18077,
+          "terminated": true,
+          "audio_frames": 42,
+          "wall_seconds": 0.6773530000064056,
+          "real_time_factor": 0.24191178571657346,
+          "wav": "audio/37-01.wav",
+          "repeat": 1,
+          "wav_sha256": "77b91be0a6b4b93a004457aa0af1065711c22866f3b3bb5572fc018fbca248ce"
+        },
+        {
+          "samples": 123480,
+          "audio_seconds": 2.8,
+          "peak_pcm16": 18077,
+          "terminated": true,
+          "audio_frames": 42,
+          "wall_seconds": 0.716958799996064,
+          "real_time_factor": 0.2560567142843086,
+          "wav": "audio/37-02.wav",
+          "repeat": 2,
+          "wav_sha256": "77b91be0a6b4b93a004457aa0af1065711c22866f3b3bb5572fc018fbca248ce"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.6971559000012348,
+        "audio_seconds": 2.8,
+        "real_time_factor": 0.24898425000044103
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.40931639188882496,
+        "speedup": 1.643944915745072,
+        "wall_speedup": 1.4482371876801825
+      }
+    },
+    {
+      "case": {
+        "id": "zh-0320",
+        "lang": "zh",
+        "tier": "short",
+        "source_row": 320,
+        "text": "\u5176\u4ed6\u6454\u8de4\u9009\u624b\u4e5f\u7eb7\u7eb7\u60bc\u5ff5\u9732\u5a1c (Luna) \u3002",
+        "voice": "Haoran_zh-energetic_M_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 170520,
+          "audio_seconds": 3.8666666666666667,
+          "peak_pcm16": 20439,
+          "terminated": true,
+          "audio_frames": 58,
+          "wall_seconds": 0.8238739999942482,
+          "real_time_factor": 0.21307086206747797,
+          "wav": "audio/38-01.wav",
+          "repeat": 1,
+          "wav_sha256": "342820371296262077da446e6e3530a8f04967a599969bb77dbb466ed6974d08"
+        },
+        {
+          "samples": 170520,
+          "audio_seconds": 3.8666666666666667,
+          "peak_pcm16": 20439,
+          "terminated": true,
+          "audio_frames": 58,
+          "wall_seconds": 0.8286309999966761,
+          "real_time_factor": 0.21430112068879553,
+          "wav": "audio/38-02.wav",
+          "repeat": 2,
+          "wav_sha256": "342820371296262077da446e6e3530a8f04967a599969bb77dbb466ed6974d08"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.8262524999954621,
+        "audio_seconds": 3.8666666666666667,
+        "real_time_factor": 0.21368599137813676
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3746330518841651,
+        "speedup": 1.753194252313985,
+        "wall_speedup": 1.602056816769676
+      }
+    },
+    {
+      "case": {
+        "id": "zh-0942",
+        "lang": "zh",
+        "tier": "medium",
+        "source_row": 942,
+        "text": "\u6469\u5c14\u591a\u74e6 (Moldova) \u7684\u4e3b\u8981\u5b97\u6559\u662f\u4e1c\u6b63\u6559\u3002",
+        "voice": "Haoran_zh-energetic_M_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 147000,
+          "audio_seconds": 3.3333333333333335,
+          "peak_pcm16": 21116,
+          "terminated": true,
+          "audio_frames": 50,
+          "wall_seconds": 0.775428600012674,
+          "real_time_factor": 0.23262858000380218,
+          "wav": "audio/39-01.wav",
+          "repeat": 1,
+          "wav_sha256": "6d2dd0e44fb3bc18e81295fe5a2bdb656599d3132523728c6e687fb1b5686809"
+        },
+        {
+          "samples": 147000,
+          "audio_seconds": 3.3333333333333335,
+          "peak_pcm16": 21116,
+          "terminated": true,
+          "audio_frames": 50,
+          "wall_seconds": 0.7528121000068495,
+          "real_time_factor": 0.22584363000205485,
+          "wav": "audio/39-02.wav",
+          "repeat": 2,
+          "wav_sha256": "6d2dd0e44fb3bc18e81295fe5a2bdb656599d3132523728c6e687fb1b5686809"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.7641203500097618,
+        "audio_seconds": 3.3333333333333335,
+        "real_time_factor": 0.22923610500292851
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3797549843739034,
+        "speedup": 1.6566106999988157,
+        "wall_speedup": 1.590346271998863
+      }
+    },
+    {
+      "case": {
+        "id": "zh-0030",
+        "lang": "zh",
+        "tier": "medium",
+        "source_row": 30,
+        "text": "\u8fd9\u4e00\u53d1\u73b0\u4e5f\u6709\u52a9\u4e8e\u6df1\u5165\u4e86\u89e3\u9e1f\u7c7b\u7fbd\u6bdb\u7684\u8fdb\u5316\u3002",
+        "voice": "Haoran_zh-energetic_M_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 152880,
+          "audio_seconds": 3.466666666666667,
+          "peak_pcm16": 19364,
+          "terminated": true,
+          "audio_frames": 52,
+          "wall_seconds": 0.8389575999899535,
+          "real_time_factor": 0.24200699999710196,
+          "wav": "audio/40-01.wav",
+          "repeat": 1,
+          "wav_sha256": "f11676e37ea4acd2069fc7c22955aa236f48278e144ac835146eb0197b6ae379"
+        },
+        {
+          "samples": 152880,
+          "audio_seconds": 3.466666666666667,
+          "peak_pcm16": 19364,
+          "terminated": true,
+          "audio_frames": 52,
+          "wall_seconds": 0.7577314000081969,
+          "real_time_factor": 0.2185763653869799,
+          "wav": "audio/40-02.wav",
+          "repeat": 2,
+          "wav_sha256": "f11676e37ea4acd2069fc7c22955aa236f48278e144ac835146eb0197b6ae379"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.7983444999990752,
+        "audio_seconds": 3.466666666666667,
+        "real_time_factor": 0.23029168269204092
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.37100764062643066,
+        "speedup": 1.6110336087237813,
+        "wall_speedup": 1.4871079465142596
+      }
+    },
+    {
+      "case": {
+        "id": "zh-0082",
+        "lang": "zh",
+        "tier": "long",
+        "source_row": 82,
+        "text": "\u56fd\u5bb6\u98d3\u98ce\u4e2d\u5fc3 (NHC) \u8868\u793a\uff0c\u76ee\u524d\u201c\u6770\u745e\u201d\u5bf9\u9646\u5730\u6ca1\u6709\u5a01\u80c1\u3002",
+        "voice": "Haoran_zh-energetic_M_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 211680,
+          "audio_seconds": 4.8,
+          "peak_pcm16": 19010,
+          "terminated": true,
+          "audio_frames": 72,
+          "wall_seconds": 0.9986681000009412,
+          "real_time_factor": 0.20805585416686276,
+          "wav": "audio/41-01.wav",
+          "repeat": 1,
+          "wav_sha256": "677ad321122331f558e27159a717d05d1e0ffe4cdde04a53adfe88802f581945"
+        },
+        {
+          "samples": 211680,
+          "audio_seconds": 4.8,
+          "peak_pcm16": 19010,
+          "terminated": true,
+          "audio_frames": 72,
+          "wall_seconds": 1.014213499991456,
+          "real_time_factor": 0.2112944791648867,
+          "wav": "audio/41-02.wav",
+          "repeat": 2,
+          "wav_sha256": "677ad321122331f558e27159a717d05d1e0ffe4cdde04a53adfe88802f581945"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.0064407999961986,
+        "audio_seconds": 4.8,
+        "real_time_factor": 0.2096751666658747
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.34751918661845915,
+        "speedup": 1.6574170043333938,
+        "wall_speedup": 1.6343973237176521
+      }
+    },
+    {
+      "case": {
+        "id": "zh-0977",
+        "lang": "zh",
+        "tier": "long",
+        "source_row": 977,
+        "text": "\u9700\u8981\u6ce8\u610f\u7684\u4e3b\u8981\u5b57\u6bcd\u662f c \u548c g\uff0c\u56e0\u4e3a\u5b83\u4eec\u7684\u53d1\u97f3\u662f\u6839\u636e\u4ee5\u4e0b\u5143\u97f3\u53d8\u5316\u7684\u3002",
+        "voice": "Haoran_zh-energetic_M_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 267540,
+          "audio_seconds": 6.066666666666666,
+          "peak_pcm16": 23847,
+          "terminated": true,
+          "audio_frames": 91,
+          "wall_seconds": 1.16756250000617,
+          "real_time_factor": 0.19245535714387418,
+          "wav": "audio/42-01.wav",
+          "repeat": 1,
+          "wav_sha256": "f38759d31e43fd7dc74f898ca895af22d697b9a3bad0cb8abe1b488ee197b3a6"
+        },
+        {
+          "samples": 267540,
+          "audio_seconds": 6.066666666666666,
+          "peak_pcm16": 23847,
+          "terminated": true,
+          "audio_frames": 91,
+          "wall_seconds": 1.4335234000027413,
+          "real_time_factor": 0.2362950659345178,
+          "wav": "audio/42-02.wav",
+          "repeat": 2,
+          "wav_sha256": "f38759d31e43fd7dc74f898ca895af22d697b9a3bad0cb8abe1b488ee197b3a6"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.3005429500044556,
+        "audio_seconds": 6.066666666666666,
+        "real_time_factor": 0.21437521153919598
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3261657187514092,
+        "speedup": 1.5214712391865028,
+        "wall_speedup": 1.4713128466858487
+      }
+    },
+    {
+      "case": {
+        "id": "ko-0007",
+        "lang": "ko",
+        "tier": "short",
+        "source_row": 7,
+        "text": "\uadf8\ub294 \ubb34\uc120 \ub3c4\uc5b4\ubca8(Wi-Fi doorbell)\uc744 \ub9cc\ub4e4\uc5c8\ub2e4\uace0 \ub9d0\ud588\ub2e4.",
+        "voice": "Minjun_ko_M_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 176400,
+          "audio_seconds": 4.0,
+          "peak_pcm16": 24818,
+          "terminated": true,
+          "audio_frames": 60,
+          "wall_seconds": 0.9881354999961331,
+          "real_time_factor": 0.2470338749990333,
+          "wav": "audio/43-01.wav",
+          "repeat": 1,
+          "wav_sha256": "2bfc049cd6972a7a3bfd193ace868b04f9abc43dfd74779cf5320370ddd2522d"
+        },
+        {
+          "samples": 176400,
+          "audio_seconds": 4.0,
+          "peak_pcm16": 24818,
+          "terminated": true,
+          "audio_frames": 60,
+          "wall_seconds": 1.094279099997948,
+          "real_time_factor": 0.273569774999487,
+          "wav": "audio/43-02.wav",
+          "repeat": 2,
+          "wav_sha256": "2bfc049cd6972a7a3bfd193ace868b04f9abc43dfd74779cf5320370ddd2522d"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.0412072999970405,
+        "audio_seconds": 4.0,
+        "real_time_factor": 0.26030182499926013
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3580096071423863,
+        "speedup": 1.3753634156940846,
+        "wall_speedup": 1.444131586478789
+      }
+    },
+    {
+      "case": {
+        "id": "ko-0320",
+        "lang": "ko",
+        "tier": "short",
+        "source_row": 320,
+        "text": "\ub2e4\ub978 \ub3d9\ub8cc \ub808\uc2ac\ub9c1 \uc120\uc218\ub4e4\ub3c4 \ub8e8\ub098\uc5d0\uac8c \uacbd\uc758\ub97c \ud45c\ud588\uc2b5\ub2c8\ub2e4.",
+        "voice": "Minjun_ko_M_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 188160,
+          "audio_seconds": 4.266666666666667,
+          "peak_pcm16": 22132,
+          "terminated": true,
+          "audio_frames": 64,
+          "wall_seconds": 1.1213349000026938,
+          "real_time_factor": 0.26281286718813135,
+          "wav": "audio/44-01.wav",
+          "repeat": 1,
+          "wav_sha256": "79a6a10d6e97beaa7f4ec783c7e2821d4defc2868db48809be1dd908007055d1"
+        },
+        {
+          "samples": 188160,
+          "audio_seconds": 4.266666666666667,
+          "peak_pcm16": 22132,
+          "terminated": true,
+          "audio_frames": 64,
+          "wall_seconds": 1.0794653000048129,
+          "real_time_factor": 0.252999679688628,
+          "wav": "audio/44-02.wav",
+          "repeat": 2,
+          "wav_sha256": "79a6a10d6e97beaa7f4ec783c7e2821d4defc2868db48809be1dd908007055d1"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.1004001000037533,
+        "audio_seconds": 4.266666666666667,
+        "real_time_factor": 0.2579062734383797
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.374055783089823,
+        "speedup": 1.4503555035825617,
+        "wall_speedup": 1.5410027225564717
+      }
+    },
+    {
+      "case": {
+        "id": "ko-0942",
+        "lang": "ko",
+        "tier": "medium",
+        "source_row": 942,
+        "text": "\ubab0\ub3c4\ubc14\uc758 \uc8fc\uc694 \uc885\uad50\ub294 \ub3d9\ubc29\uc815\uad50\uc785\ub2c8\ub2e4.",
+        "voice": "Minjun_ko_M_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 149940,
+          "audio_seconds": 3.4,
+          "peak_pcm16": 22136,
+          "terminated": true,
+          "audio_frames": 51,
+          "wall_seconds": 0.9740872999973362,
+          "real_time_factor": 0.2864962647050989,
+          "wav": "audio/45-01.wav",
+          "repeat": 1,
+          "wav_sha256": "7a49f58ca2bb544fb5af97e6879a6ffb2cad2792540b257620cef60787060668"
+        },
+        {
+          "samples": 149940,
+          "audio_seconds": 3.4,
+          "peak_pcm16": 22136,
+          "terminated": true,
+          "audio_frames": 51,
+          "wall_seconds": 0.8809796999994433,
+          "real_time_factor": 0.2591116764704245,
+          "wav": "audio/45-02.wav",
+          "repeat": 2,
+          "wav_sha256": "7a49f58ca2bb544fb5af97e6879a6ffb2cad2792540b257620cef60787060668"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.9275334999983897,
+        "audio_seconds": 3.4,
+        "real_time_factor": 0.27280397058776173
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.36305498610899023,
+        "speedup": 1.3308273531605161,
+        "wall_speedup": 1.4091113151111347
+      }
+    },
+    {
+      "case": {
+        "id": "ko-0030",
+        "lang": "ko",
+        "tier": "medium",
+        "source_row": 30,
+        "text": "\uadf8\ub7ec\ud55c \ubc1c\uacac\uc740 \ub610\ud55c \uc870\ub958\uc5d0 \uc788\uc5b4\uc11c \uae43\ud138\uc758 \uc9c4\ud654\uc5d0 \ub300\ud55c \ud1b5\ucc30\uc744 \uc81c\uacf5\ud55c\ub2e4.",
+        "voice": "Minjun_ko_M_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 47040,
+          "audio_seconds": 1.0666666666666667,
+          "peak_pcm16": 16239,
+          "terminated": true,
+          "audio_frames": 16,
+          "wall_seconds": 0.4794588999939151,
+          "real_time_factor": 0.4494927187442954,
+          "wav": "audio/46-01.wav",
+          "repeat": 1,
+          "wav_sha256": "24b51855ea7089f9eb479f4e50bd1eb532d54d73757a1968b75b3202fc96e03a"
+        },
+        {
+          "samples": 47040,
+          "audio_seconds": 1.0666666666666667,
+          "peak_pcm16": 16239,
+          "terminated": true,
+          "audio_frames": 16,
+          "wall_seconds": 0.4713551000022562,
+          "real_time_factor": 0.4418954062521152,
+          "wav": "audio/46-02.wav",
+          "repeat": 2,
+          "wav_sha256": "24b51855ea7089f9eb479f4e50bd1eb532d54d73757a1968b75b3202fc96e03a"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.47540699999808567,
+        "audio_seconds": 1.0666666666666667,
+        "real_time_factor": 0.4456940624982053
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.4900954687536796,
+        "speedup": 1.0996230598330061,
+        "wall_speedup": 1.6494345897495093
+      }
+    },
+    {
+      "case": {
+        "id": "ko-0082",
+        "lang": "ko",
+        "tier": "long",
+        "source_row": 82,
+        "text": "\ubbf8\uad6d \uad6d\ub9bd \ud5c8\ub9ac\ucf00\uc778 \uc13c\ud130 (NHC)\uc5d0 \uc758\ud558\uba74, \ud0dc\ud48d \uc81c\ub9ac\ub294 \ub354 \uc774\uc0c1 \uc704\ud611\uc774 \ub418\uc9c0 \uc54a\ub294\ub2e4.",
+        "voice": "Minjun_ko_M_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 291060,
+          "audio_seconds": 6.6,
+          "peak_pcm16": 18057,
+          "terminated": true,
+          "audio_frames": 99,
+          "wall_seconds": 1.6238023999903817,
+          "real_time_factor": 0.24603066666520937,
+          "wav": "audio/47-01.wav",
+          "repeat": 1,
+          "wav_sha256": "635d9dd76ae320f5aaed81542ea2b6234035cb952335e50942726492e74edb0b"
+        },
+        {
+          "samples": 291060,
+          "audio_seconds": 6.6,
+          "peak_pcm16": 18057,
+          "terminated": true,
+          "audio_frames": 99,
+          "wall_seconds": 1.4995994000055362,
+          "real_time_factor": 0.22721203030386913,
+          "wav": "audio/47-02.wav",
+          "repeat": 2,
+          "wav_sha256": "635d9dd76ae320f5aaed81542ea2b6234035cb952335e50942726492e74edb0b"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.561700899997959,
+        "audio_seconds": 6.6,
+        "real_time_factor": 0.23662134848453925
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3323212978718034,
+        "speedup": 1.404443428288201,
+        "wall_speedup": 1.3335119420110193
+      }
+    },
+    {
+      "case": {
+        "id": "ko-0977",
+        "lang": "ko",
+        "tier": "long",
+        "source_row": 977,
+        "text": "\uc8fc\uc758\ud574\uc57c \ud560 \uc8fc\uc694 \ubb38\uc790\ub294 c\uc640 g\uc778\ub370, \uc774\ub294 \ubc1c\uc74c\uc774 \ub4a4\uc5d0 \uc624\ub294 \ubaa8\uc74c\uc5d0 \ub530\ub77c \ub2e4\uc591\ud558\uac8c \ubcc0\ud558\uae30 \ub54c\ubb38\uc774\ub2e4.",
+        "voice": "Minjun_ko_M_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 370440,
+          "audio_seconds": 8.4,
+          "peak_pcm16": 18297,
+          "terminated": true,
+          "audio_frames": 126,
+          "wall_seconds": 1.7205544000025839,
+          "real_time_factor": 0.20482790476221235,
+          "wav": "audio/48-01.wav",
+          "repeat": 1,
+          "wav_sha256": "1d7406c29f8ed147925c2a82212441b78590446dc5f0297a1ae56c4c962774da"
+        },
+        {
+          "samples": 370440,
+          "audio_seconds": 8.4,
+          "peak_pcm16": 18297,
+          "terminated": true,
+          "audio_frames": 126,
+          "wall_seconds": 1.6403347000014037,
+          "real_time_factor": 0.19527794047635758,
+          "wav": "audio/48-02.wav",
+          "repeat": 2,
+          "wav_sha256": "1d7406c29f8ed147925c2a82212441b78590446dc5f0297a1ae56c4c962774da"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.6804445500019938,
+        "audio_seconds": 8.4,
+        "real_time_factor": 0.20005292261928498
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3721727554935509,
+        "speedup": 1.8603714988049551,
+        "wall_speedup": 1.343601638025801
+      }
+    },
+    {
+      "case": {
+        "id": "hi-0007",
+        "lang": "hi",
+        "tier": "short",
+        "source_row": 7,
+        "text": "\u0909\u0928\u094d\u0939\u094b\u0902\u0928\u0947 (\u091c\u0947\u092e\u0940 \u0938\u093f\u092e\u093f\u0928\u0949\u092b\u093c) \u0915\u0939\u093e, \u0915\u093f \u0909\u0928\u094d\u0939\u094b\u0902\u0928\u0947 \u090f\u0915 \u0935\u093e\u0908\u092b\u093c\u093e\u0908 \u0921\u094b\u0930 \u092c\u0947\u0932 \u092c\u0928\u093e\u0908 \u0939\u0948.",
+        "voice": "Ananya_hi_F_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 244020,
+          "audio_seconds": 5.533333333333333,
+          "peak_pcm16": 13407,
+          "terminated": true,
+          "audio_frames": 83,
+          "wall_seconds": 1.224695700002485,
+          "real_time_factor": 0.22133054819322018,
+          "wav": "audio/49-01.wav",
+          "repeat": 1,
+          "wav_sha256": "72f5460f6b3de86dd22f48a4cc646953a99803cf246b33748eda7f9b04d8d057"
+        },
+        {
+          "samples": 244020,
+          "audio_seconds": 5.533333333333333,
+          "peak_pcm16": 13407,
+          "terminated": true,
+          "audio_frames": 83,
+          "wall_seconds": 1.4523250000056578,
+          "real_time_factor": 0.2624683734949984,
+          "wav": "audio/49-02.wav",
+          "repeat": 2,
+          "wav_sha256": "72f5460f6b3de86dd22f48a4cc646953a99803cf246b33748eda7f9b04d8d057"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.3385103500040714,
+        "audio_seconds": 5.533333333333333,
+        "real_time_factor": 0.2418994608441093
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.35834492647058247,
+        "speedup": 1.4813795996904506,
+        "wall_speedup": 1.5170754936588953
+      }
+    },
+    {
+      "case": {
+        "id": "hi-0320",
+        "lang": "hi",
+        "tier": "short",
+        "source_row": 320,
+        "text": "\u0932\u0942\u0928\u093e \u0915\u094b \u0938\u093e\u0925\u0940 \u092a\u0939\u0932\u0935\u093e\u0928\u094b\u0902 \u0928\u0947 \u092d\u0940 \u0936\u094d\u0930\u0926\u094d\u0927\u093e\u0902\u091c\u0932\u093f \u0926\u0940.",
+        "voice": "Ananya_hi_F_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 179340,
+          "audio_seconds": 4.066666666666666,
+          "peak_pcm16": 12723,
+          "terminated": true,
+          "audio_frames": 61,
+          "wall_seconds": 0.993184699997073,
+          "real_time_factor": 0.2442257459009196,
+          "wav": "audio/50-01.wav",
+          "repeat": 1,
+          "wav_sha256": "9dffd01bfde0c568916121ee7598a49d109d3e95ae64f88f79113112daa8cbee"
+        },
+        {
+          "samples": 179340,
+          "audio_seconds": 4.066666666666666,
+          "peak_pcm16": 12723,
+          "terminated": true,
+          "audio_frames": 61,
+          "wall_seconds": 1.027058899999247,
+          "real_time_factor": 0.2525554672129296,
+          "wav": "audio/50-02.wav",
+          "repeat": 2,
+          "wav_sha256": "9dffd01bfde0c568916121ee7598a49d109d3e95ae64f88f79113112daa8cbee"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.01012179999816,
+        "audio_seconds": 4.066666666666666,
+        "real_time_factor": 0.2483906065569246
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.37114743396193933,
+        "speedup": 1.4942088153276525,
+        "wall_speedup": 1.2982470034814029
+      }
+    },
+    {
+      "case": {
+        "id": "hi-0942",
+        "lang": "hi",
+        "tier": "medium",
+        "source_row": 942,
+        "text": "\u092e\u094b\u0932\u094d\u0926\u094b\u0935\u093e \u092e\u0947\u0902 \u092a\u094d\u0930\u092e\u0941\u0916 \u0927\u0930\u094d\u092e \u0930\u0942\u0922\u093c\u093f\u0935\u093e\u0926\u0940 \u0908\u0938\u093e\u0908 \u0927\u0930\u094d\u092e \u0939\u0948\u0964",
+        "voice": "Ananya_hi_F_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 164640,
+          "audio_seconds": 3.7333333333333334,
+          "peak_pcm16": 12230,
+          "terminated": true,
+          "audio_frames": 56,
+          "wall_seconds": 0.9355157999962103,
+          "real_time_factor": 0.2505845892846992,
+          "wav": "audio/51-01.wav",
+          "repeat": 1,
+          "wav_sha256": "6d783211b9345cc95ca1d7b17623ba9434903f396d2df2e291cd0767cab14081"
+        },
+        {
+          "samples": 164640,
+          "audio_seconds": 3.7333333333333334,
+          "peak_pcm16": 12230,
+          "terminated": true,
+          "audio_frames": 56,
+          "wall_seconds": 0.9460369999869727,
+          "real_time_factor": 0.2534027678536534,
+          "wav": "audio/51-02.wav",
+          "repeat": 2,
+          "wav_sha256": "6d783211b9345cc95ca1d7b17623ba9434903f396d2df2e291cd0767cab14081"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.9407763999915915,
+        "audio_seconds": 3.7333333333333334,
+        "real_time_factor": 0.2519936785691763
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3511026679666429,
+        "speedup": 1.393299506401148,
+        "wall_speedup": 1.5923422930298836
+      }
+    },
+    {
+      "case": {
+        "id": "hi-0030",
+        "lang": "hi",
+        "tier": "medium",
+        "source_row": 30,
+        "text": "\u092f\u0939 \u0916\u094b\u091c \u092a\u0915\u094d\u0937\u093f\u092f\u094b\u0902 \u092e\u0947\u0902 \u092a\u0902\u0916\u094b\u0902 \u0915\u0947 \u0935\u093f\u0915\u093e\u0938 \u0915\u0940 \u092a\u0942\u0930\u0940 \u091c\u093e\u0928\u0915\u093e\u0930\u0940 \u092d\u0940 \u092a\u094d\u0930\u0926\u093e\u0928 \u0915\u0930\u0924\u0940 \u0939\u0948.",
+        "voice": "Ananya_hi_F_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 238140,
+          "audio_seconds": 5.4,
+          "peak_pcm16": 10861,
+          "terminated": true,
+          "audio_frames": 81,
+          "wall_seconds": 1.2779201999946963,
+          "real_time_factor": 0.2366518888879067,
+          "wav": "audio/52-01.wav",
+          "repeat": 1,
+          "wav_sha256": "fc3d272cf9d659975beb4b566c06a9350af6da0667c46566bedde4649572b262"
+        },
+        {
+          "samples": 238140,
+          "audio_seconds": 5.4,
+          "peak_pcm16": 10861,
+          "terminated": true,
+          "audio_frames": 81,
+          "wall_seconds": 1.2766445000015665,
+          "real_time_factor": 0.2364156481484382,
+          "wav": "audio/52-02.wav",
+          "repeat": 2,
+          "wav_sha256": "fc3d272cf9d659975beb4b566c06a9350af6da0667c46566bedde4649572b262"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.2772823499981314,
+        "audio_seconds": 5.4,
+        "real_time_factor": 0.23653376851817245
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3532425258627286,
+        "speedup": 1.4934126660886884,
+        "wall_speedup": 1.6040358265397021
+      }
+    },
+    {
+      "case": {
+        "id": "hi-0082",
+        "lang": "hi",
+        "tier": "long",
+        "source_row": 82,
+        "text": "\u0930\u093e\u0937\u094d\u091f\u094d\u0930\u0940\u092f \u0924\u0942\u095e\u093e\u0928 \u0915\u0947\u0902\u0926\u094d\u0930 (\u090f\u0928\u090f\u091a\u0938\u0940) \u0915\u093e \u0915\u0939\u0928\u093e \u0939\u0948 \u0915\u093f \u0907\u0938 \u0938\u092e\u092f \u091c\u0948\u0930\u0940 \u0915\u093e \u095b\u092e\u0940\u0928 \u0915\u094b \u0915\u094b\u0908 \u0916\u0924\u0930\u093e \u0928\u0939\u0940\u0902 \u0939\u0948\u0964",
+        "voice": "Ananya_hi_F_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 379260,
+          "audio_seconds": 8.6,
+          "peak_pcm16": 11747,
+          "terminated": true,
+          "audio_frames": 129,
+          "wall_seconds": 2.0750884000008227,
+          "real_time_factor": 0.241289348837305,
+          "wav": "audio/53-01.wav",
+          "repeat": 1,
+          "wav_sha256": "dd88a7ed405c79dc1756b02e523602ff073ebc4d9eee97e080a8c80f74b3fb3c"
+        },
+        {
+          "samples": 379260,
+          "audio_seconds": 8.6,
+          "peak_pcm16": 11747,
+          "terminated": true,
+          "audio_frames": 129,
+          "wall_seconds": 2.179089800003567,
+          "real_time_factor": 0.2533825348841357,
+          "wav": "audio/53-02.wav",
+          "repeat": 2,
+          "wav_sha256": "dd88a7ed405c79dc1756b02e523602ff073ebc4d9eee97e080a8c80f74b3fb3c"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 2.1270891000021948,
+        "audio_seconds": 8.6,
+        "real_time_factor": 0.24733594186072033
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.34045503989313763,
+        "speedup": 1.3764883394296752,
+        "wall_speedup": 1.0030225109022441
+      }
+    },
+    {
+      "case": {
+        "id": "hi-0977",
+        "lang": "hi",
+        "tier": "long",
+        "source_row": 977,
+        "text": "\u0927\u094d\u092f\u093e\u0928 \u0930\u0916\u0928\u0947 \u0935\u093e\u0932\u0947 \u092e\u0941\u0916\u094d\u092f \u0935\u0930\u094d\u0923 c \u0914\u0930 g \u0939\u0948, \u091a\u0942\u0901\u0915\u093f \u0909\u0928\u0915\u093e \u0909\u091a\u094d\u091a\u093e\u0930\u0923 \u0928\u093f\u092e\u094d\u0928 \u0938\u094d\u0935\u0930 \u0915\u0947 \u0906\u0927\u093e\u0930 \u092a\u0930 \u092d\u093f\u0928\u094d\u0928 \u0939\u094b\u0924\u093e \u0939\u0948.",
+        "voice": "Ananya_hi_F_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 338100,
+          "audio_seconds": 7.666666666666667,
+          "peak_pcm16": 9137,
+          "terminated": true,
+          "audio_frames": 115,
+          "wall_seconds": 1.8638502999965567,
+          "real_time_factor": 0.24311090869520305,
+          "wav": "audio/54-01.wav",
+          "repeat": 1,
+          "wav_sha256": "ff9c6a229eec85f9a28e7956b9399f5a0d90723020a4c7363a8116b2b11c4e34"
+        },
+        {
+          "samples": 338100,
+          "audio_seconds": 7.666666666666667,
+          "peak_pcm16": 9137,
+          "terminated": true,
+          "audio_frames": 115,
+          "wall_seconds": 1.8475243000139017,
+          "real_time_factor": 0.24098143043659587,
+          "wav": "audio/54-02.wav",
+          "repeat": 2,
+          "wav_sha256": "ff9c6a229eec85f9a28e7956b9399f5a0d90723020a4c7363a8116b2b11c4e34"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.8556873000052292,
+        "audio_seconds": 7.666666666666667,
+        "real_time_factor": 0.24204616956589947
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.32634206547559835,
+        "speedup": 1.3482637054776794,
+        "wall_speedup": 1.4772280599146752
+      }
+    },
+    {
+      "case": {
+        "id": "te-0007",
+        "lang": "te",
+        "tier": "short",
+        "source_row": 7,
+        "text": "\u0c05\u0c24\u0c28\u0c41 WiFi \u0c21\u0c4b\u0c30\u0c4d \u0c2c\u0c46\u0c32\u0c4d \u0c28\u0c3f\u0c30\u0c4d\u0c2e\u0c3f\u0c02\u0c1a\u0c3e\u0c21\u0c41. \u0c05\u0c28\u0c3f \u0c1a\u0c46\u0c2a\u0c4d\u0c2a\u0c3e\u0c21\u0c41.",
+        "voice": "Chaitanya_te_M_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 161700,
+          "audio_seconds": 3.6666666666666665,
+          "peak_pcm16": 16425,
+          "terminated": true,
+          "audio_frames": 55,
+          "wall_seconds": 0.9411476999957813,
+          "real_time_factor": 0.2566766454533949,
+          "wav": "audio/55-01.wav",
+          "repeat": 1,
+          "wav_sha256": "a52c92ff9fba1d50a2e24650d82392f2ba21fc3cf36bc14f717c8970be7e8c3e"
+        },
+        {
+          "samples": 161700,
+          "audio_seconds": 3.6666666666666665,
+          "peak_pcm16": 16425,
+          "terminated": true,
+          "audio_frames": 55,
+          "wall_seconds": 0.9532122999953572,
+          "real_time_factor": 0.2599669909078247,
+          "wav": "audio/55-02.wav",
+          "repeat": 2,
+          "wav_sha256": "a52c92ff9fba1d50a2e24650d82392f2ba21fc3cf36bc14f717c8970be7e8c3e"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.9471799999955692,
+        "audio_seconds": 3.6666666666666665,
+        "real_time_factor": 0.25832181818060984
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.36673741666769877,
+        "speedup": 1.419691992146356,
+        "wall_speedup": 1.3938794104709682
+      }
+    },
+    {
+      "case": {
+        "id": "te-0320",
+        "lang": "te",
+        "tier": "short",
+        "source_row": 320,
+        "text": "\u0c24\u0c4b\u0c1f\u0c3f \u0c2e\u0c32\u0c4d\u0c32 \u0c2f\u0c41\u0c26\u0c4d\u0c27\u0c15\u0c3e\u0c30\u0c41\u0c32\u0c41 \u0c15\u0c42\u0c21\u0c3e \u0c32\u0c42\u0c28\u0c3e\u0c15\u0c41 \u0c28\u0c3f\u0c35\u0c3e\u0c33\u0c41\u0c32\u0c41 \u0c05\u0c30\u0c4d\u0c2a\u0c3f\u0c02\u0c1a\u0c3e\u0c30\u0c41.",
+        "voice": "Chaitanya_te_M_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 182280,
+          "audio_seconds": 4.133333333333334,
+          "peak_pcm16": 14484,
+          "terminated": true,
+          "audio_frames": 62,
+          "wall_seconds": 0.9129745999962324,
+          "real_time_factor": 0.2208809516119917,
+          "wav": "audio/56-01.wav",
+          "repeat": 1,
+          "wav_sha256": "0e0892150c3bca61da28e379f73789c1ab8f08cc8ad7b0db6f641e93ac5ea4fc"
+        },
+        {
+          "samples": 182280,
+          "audio_seconds": 4.133333333333334,
+          "peak_pcm16": 14484,
+          "terminated": true,
+          "audio_frames": 62,
+          "wall_seconds": 0.9372292000043672,
+          "real_time_factor": 0.22674900000105655,
+          "wav": "audio/56-02.wav",
+          "repeat": 2,
+          "wav_sha256": "0e0892150c3bca61da28e379f73789c1ab8f08cc8ad7b0db6f641e93ac5ea4fc"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.9251019000002998,
+        "audio_seconds": 4.133333333333334,
+        "real_time_factor": 0.22381497580652412
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.36819009722118307,
+        "speedup": 1.6450646159596727,
+        "wall_speedup": 1.4327982139003599
+      }
+    },
+    {
+      "case": {
+        "id": "te-0942",
+        "lang": "te",
+        "tier": "medium",
+        "source_row": 942,
+        "text": "\u0c06\u0c30\u0c4d\u0c25\u0c4b\u0c21\u0c3e\u0c15\u0c4d\u0c38\u0c4d  \u0c15\u0c4d\u0c30\u0c3f\u0c38\u0c4d\u0c1f\u0c3f\u0c2f\u0c28\u0c4d \u0c2e\u0c4b\u0c32\u0c4d\u0c21\u0c4b\u0c35\u0c3e\u0c32\u0c4b \u0c2a\u0c4d\u0c30\u0c27\u0c3e\u0c28 \u0c2e\u0c24\u0c02\u0c17\u0c3e \u0c09\u0c02\u0c26\u0c3f.",
+        "voice": "Chaitanya_te_M_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 152880,
+          "audio_seconds": 3.466666666666667,
+          "peak_pcm16": 16952,
+          "terminated": true,
+          "audio_frames": 52,
+          "wall_seconds": 0.7877974000002723,
+          "real_time_factor": 0.22724925000007853,
+          "wav": "audio/57-01.wav",
+          "repeat": 1,
+          "wav_sha256": "9a20372bae83041480b3f6c824b98965a0fabee7c02839bfd1294fecddd8ce8d"
+        },
+        {
+          "samples": 152880,
+          "audio_seconds": 3.466666666666667,
+          "peak_pcm16": 16952,
+          "terminated": true,
+          "audio_frames": 52,
+          "wall_seconds": 0.7605482000071788,
+          "real_time_factor": 0.21938890384822465,
+          "wav": "audio/57-02.wav",
+          "repeat": 2,
+          "wav_sha256": "9a20372bae83041480b3f6c824b98965a0fabee7c02839bfd1294fecddd8ce8d"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 0.7741728000037256,
+        "audio_seconds": 3.466666666666667,
+        "real_time_factor": 0.2233190769241516
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.36360301415217416,
+        "speedup": 1.6281771318429228,
+        "wall_speedup": 1.6594882305322096
+      }
+    },
+    {
+      "case": {
+        "id": "te-0030",
+        "lang": "te",
+        "tier": "medium",
+        "source_row": 30,
+        "text": " \u0c36\u0c4b\u0c27\u0c28 \u0c15\u0c42\u0c21\u0c3e \u0c2a\u0c15\u0c4d\u0c37\u0c41\u0c32\u0c32\u0c4b \u0c08\u0c15\u0c32 \u0c2f\u0c4a\u0c15\u0c4d\u0c15 \u0c2a\u0c30\u0c3f\u0c23\u0c3e\u0c2e\u0c02\u0c2a\u0c48  \u0c32\u0c4b\u0c24\u0c41\u0c17\u0c3e \u0c24\u0c46\u0c32\u0c41\u0c38\u0c41\u0c15\u0c4b\u0c35\u0c21\u0c3e\u0c28\u0c3f\u0c15\u0c3f  \u0c35\u0c40\u0c32\u0c41 \u0c15\u0c32\u0c4d\u0c2a\u0c3f\u0c38\u0c4d\u0c24\u0c41\u0c02\u0c26\u0c3f. ",
+        "voice": "Chaitanya_te_M_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 285180,
+          "audio_seconds": 6.466666666666667,
+          "peak_pcm16": 9900,
+          "terminated": true,
+          "audio_frames": 97,
+          "wall_seconds": 1.4270062999858055,
+          "real_time_factor": 0.2206710773173926,
+          "wav": "audio/58-01.wav",
+          "repeat": 1,
+          "wav_sha256": "6387fb87e477c078b08eb139807d9cf257fb9440b9d6d75f637995b4abab721b"
+        },
+        {
+          "samples": 285180,
+          "audio_seconds": 6.466666666666667,
+          "peak_pcm16": 9900,
+          "terminated": true,
+          "audio_frames": 97,
+          "wall_seconds": 1.3406821999960812,
+          "real_time_factor": 0.20732198969011564,
+          "wav": "audio/58-02.wav",
+          "repeat": 2,
+          "wav_sha256": "6387fb87e477c078b08eb139807d9cf257fb9440b9d6d75f637995b4abab721b"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.3838442499909434,
+        "audio_seconds": 6.466666666666667,
+        "real_time_factor": 0.21399653350375414
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.32320913532128026,
+        "speedup": 1.5103475277351173,
+        "wall_speedup": 1.6971946445683277
+      }
+    },
+    {
+      "case": {
+        "id": "te-0082",
+        "lang": "te",
+        "tier": "long",
+        "source_row": 82,
+        "text": "\u0c08 \u0c38\u0c2e\u0c2f\u0c02\u0c32\u0c4b \u0c1c\u0c46\u0c30\u0c4d\u0c30\u0c40 \u0c35\u0c32\u0c4d\u0c32 \u0c2d\u0c42\u0c2e\u0c3f\u0c15\u0c3f \u0c0e\u0c1f\u0c41\u0c35\u0c02\u0c1f\u0c3f \u0c2e\u0c41\u0c2a\u0c4d\u0c2a\u0c41 \u0c32\u0c47\u0c26\u0c28\u0c3f \u0c28\u0c47\u0c37\u0c28\u0c32\u0c4d \u0c39\u0c30\u0c3f\u0c15\u0c47\u0c28\u0c4d \u0c38\u0c46\u0c02\u0c1f\u0c30\u0c4d (\u0c0e\u0c28\u0c4d\u200c\u0c39\u0c46\u0c1a\u0c4d\u200c\u0c38\u0c3f) \u0c2a\u0c47\u0c30\u0c4d\u0c15\u0c4a\u0c02\u0c26\u0c3f.",
+        "voice": "Chaitanya_te_M_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 317520,
+          "audio_seconds": 7.2,
+          "peak_pcm16": 13822,
+          "terminated": true,
+          "audio_frames": 108,
+          "wall_seconds": 1.5387535000045318,
+          "real_time_factor": 0.2137157638895183,
+          "wav": "audio/59-01.wav",
+          "repeat": 1,
+          "wav_sha256": "6293bd539334b8c2262bbe083a993d3ec6ac435c550b4956dca0ca454fb8240b"
+        },
+        {
+          "samples": 317520,
+          "audio_seconds": 7.2,
+          "peak_pcm16": 13822,
+          "terminated": true,
+          "audio_frames": 108,
+          "wall_seconds": 1.446606099998462,
+          "real_time_factor": 0.20091751388867526,
+          "wav": "audio/59-02.wav",
+          "repeat": 2,
+          "wav_sha256": "6293bd539334b8c2262bbe083a993d3ec6ac435c550b4956dca0ca454fb8240b"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 1.492679800001497,
+        "audio_seconds": 7.2,
+        "real_time_factor": 0.2073166388890968
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.33502868973268307,
+        "speedup": 1.6160241239098292,
+        "wall_speedup": 1.675876869239823
+      }
+    },
+    {
+      "case": {
+        "id": "te-0977",
+        "lang": "te",
+        "tier": "long",
+        "source_row": 977,
+        "text": "\u0c2a\u0c4d\u0c30\u0c27\u0c3e\u0c28\u0c02\u0c17\u0c3e \u0c26\u0c43\u0c37\u0c4d\u0c1f\u0c3f \u0c38\u0c3e\u0c30\u0c3f\u0c02\u0c1a\u0c3e\u0c32\u0c4d\u0c38\u0c3f\u0c28 \u0c05\u0c15\u0c4d\u0c37\u0c30\u0c3e\u0c32\u0c41 c \u0c2e\u0c30\u0c3f\u0c2f\u0c41 g. \u0c0e\u0c02\u0c26\u0c41\u0c15\u0c02\u0c1f\u0c47, \u0c35\u0c3e\u0c1f\u0c3f \u0c2f\u0c4a\u0c15\u0c4d\u0c15 \u0c09\u0c1a\u0c4d\u0c1b\u0c3e\u0c30\u0c23, \u0c24\u0c30\u0c4d\u0c35\u0c3e\u0c24 \u0c35\u0c1a\u0c4d\u0c1a\u0c47 \u0c35\u0c4a\u0c35\u0c46\u0c32\u0c4d \u0c2e\u0c40\u0c26 \u0c06\u0c27\u0c3e\u0c30\u0c2a\u0c21\u0c3f \u0c09\u0c02\u0c1f\u0c41\u0c02\u0c26\u0c3f.",
+        "voice": "Chaitanya_te_M_1"
+      },
+      "status": "ok",
+      "samples": [
+        {
+          "samples": 473340,
+          "audio_seconds": 10.733333333333333,
+          "peak_pcm16": 16591,
+          "terminated": true,
+          "audio_frames": 161,
+          "wall_seconds": 2.0904554999870015,
+          "real_time_factor": 0.19476293478139767,
+          "wav": "audio/60-01.wav",
+          "repeat": 1,
+          "wav_sha256": "2e5723a09eab4f7cc4c75ca8ebf599b18d0b706bdc19371d27736c1ff367dd74"
+        },
+        {
+          "samples": 473340,
+          "audio_seconds": 10.733333333333333,
+          "peak_pcm16": 16591,
+          "terminated": true,
+          "audio_frames": 161,
+          "wall_seconds": 2.1550637999898754,
+          "real_time_factor": 0.20078234161396355,
+          "wav": "audio/60-02.wav",
+          "repeat": 2,
+          "wav_sha256": "2e5723a09eab4f7cc4c75ca8ebf599b18d0b706bdc19371d27736c1ff367dd74"
+        }
+      ],
+      "summary": {
+        "wall_seconds": 2.1227596499884385,
+        "audio_seconds": 10.733333333333333,
+        "real_time_factor": 0.1977726381976806
+      },
+      "correctness": {
+        "non_silent_pcm": true,
+        "deterministic_pcm": true,
+        "full_model_reference": false
+      },
+      "comparison": {
+        "llama_vulkan_real_time_factor": 0.3086353611103766,
+        "speedup": 1.5605564244022718,
+        "wall_speedup": 1.5702493214482485
+      }
+    }
+  ]
+}
