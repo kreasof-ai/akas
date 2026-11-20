@@ -1,0 +1,2075 @@
+diff --git a/src/akas/benchmarking/history.py b/src/akas/benchmarking/history.py
+index 5c3243e1..d6881102 100644
+--- a/src/akas/benchmarking/history.py
++++ b/src/akas/benchmarking/history.py
+@@ -15,8 +15,10 @@ import uuid
+ 
+ from akas.benchmarking.workload import STANDARD, STANDARD_SHA256
+ from akas.benchmarking import archive
++from akas.benchmarking.transcription import PROTOCOL as ASR_PROTOCOL
+ 
+ SCHEMA = "akas.benchmark-run.v1"
++SPEECH_PROTOCOLS = ("client-speech-pcm-v1", "client-speech-pcm-stream-v1", ASR_PROTOCOL)
+ 
+ 
+ def utc():
+@@ -103,7 +105,7 @@ def source_identity(root):
+ def shapes(report):
+     """Keep total-output and legacy additional-decode accounting distinguishable."""
+     protocol = report["metadata"].get("protocol")
+-    if protocol in ("client-speech-pcm-v1", "client-speech-pcm-stream-v1"):
++    if protocol in SPEECH_PROTOCOLS:
+         return []
+     result = []
+     for row in report["results"]:
+@@ -387,10 +389,7 @@ class Recorder:
+         self.record["workload"] = dict(
+             id="standard-v1" if standard else "custom", shapes=observed
+         )
+-        if report["metadata"].get("protocol") in (
+-            "client-speech-pcm-v1",
+-            "client-speech-pcm-stream-v1",
+-        ):
++        if report["metadata"].get("protocol") in SPEECH_PROTOCOLS:
+             self.record["workload"].update(report["metadata"]["speech_workload"])
+         if standard:
+             self.record["workload"]["definition"] = STANDARD
+diff --git a/src/akas/ops/convolution/README.md b/src/akas/ops/convolution/README.md
+index ae6cf5d8..1911d41c 100644
+--- a/src/akas/ops/convolution/README.md
++++ b/src/akas/ops/convolution/README.md
+@@ -64,4 +64,18 @@ tests](../../../../tests/test_lfm2_reference.py).
+ 
+ The causal depthwise FIR uses a zero-padded input prefix and one bias per channel for full-utterance decoding, while `causal_depthwise_state` carries `(taps - 1)` per-channel history across multi-slot prefix-stream chunks. Streaming multi-resolution ZAC synthesis decomposes into `istft_polar` (log-magnitude/phase to real/imaginary spectrum), Fourier-Hann basis projections, `istft_ola` and `istft_mix_commit` (two-branch overlap-add and 127-tap FIR mixer with persistent overlap/mixer state), and `sinc_resample_limit` + `sinc_resample_commit` (44,160 -> 44,100 Hz sinc resampling, headroom gain, soft-knee limiter, and 322-sample resampler tail commit). CUDA and WebGPU share the portable computations.
+ 
++## Strided 2D convolution
++
++`image_patches` extracts zero-padded square patches from contiguous
++`(width, height, channels)` floats. It writes one row per output position in
++`(channel, kernel height, kernel width)` order for the existing tiled linear
++operation. CUDA and WebGPU share the gather. The audio frontend uses stride
++two and 3×3 filters.
++
++WebGPU `single_channel_conv2d` shares a short input patch across filters, avoiding
++a separate gather for the first audio convolution. `image_patches_half` stages
++the wider convolutions in tap-major channel groups to make the gathers
++contiguous and rounds to F16 before the tiled projection. Each gather uses a
++NumPy sliding-window reference.
++
+ Return to the [operation index](../README.md).
+diff --git a/src/akas/ops/convolution/definition.py b/src/akas/ops/convolution/definition.py
+index a946730f..5ff2aa99 100644
+--- a/src/akas/ops/convolution/definition.py
++++ b/src/akas/ops/convolution/definition.py
+@@ -149,7 +149,41 @@ def commit_histories(graph, commit):
+         )
+ 
+ 
+-from akas.ops.convolution.validation import causal_depthwise_validation
++from akas.ops.convolution.validation import (
++    causal_depthwise_validation,
++    image_patches_validation,
++    image_projection_validation,
++)
++
++OUTPUT_ARGUMENTS.setdefault("reference", {})["image_patches"] = OutputABI(
++    (-1,), ("out",)
++)
++VALIDATIONS["image_patches"] = image_patches_validation
++for _image_kind in ("image_patches_half", "single_channel_conv2d"):
++    OUTPUT_ARGUMENTS["reference"][_image_kind] = OutputABI((-1,), ("out",))
++    VALIDATIONS[_image_kind] = image_projection_validation
++    IMPLEMENTATIONS += (
++        Implementation(
++            _image_kind,
++            "akas.ops.convolution.webgpu",
++            "reference",
++            provider="webgpu",
++            factory=_image_kind,
++            space=(("sites", (4, 2, 8, 1)),)
++            if _image_kind == "single_channel_conv2d"
++            else (),
++        ),
++    )
++IMPLEMENTATIONS += tuple(
++    Implementation(
++        "image_patches",
++        "akas.ops.convolution.kernel",
++        "reference",
++        provider=provider,
++        factory="image_patches",
++    )
++    for provider in ("cuda", "webgpu")
++)
+ 
+ OUTPUT_ARGUMENTS.setdefault("reference", {})["causal_depthwise"] = OutputABI(
+     (-1,), ("out",)
+diff --git a/src/akas/ops/convolution/kernel.py b/src/akas/ops/convolution/kernel.py
+index 7884cb99..1bfae6ed 100644
+--- a/src/akas/ops/convolution/kernel.py
++++ b/src/akas/ops/convolution/kernel.py
+@@ -5,6 +5,41 @@ from akas.kernels.definition import KernelSpec
+ from akas.kernels.kernel import Tensor, kernel, output
+ 
+ 
++def image_patches(spec, schedule):
++    """Gather strided, zero-padded 2D patches for a matrix projection."""
++    import tilelang.language as T
++
++    p = {**spec.parameters, **schedule}
++    width, height, channels = (p[k] for k in ("width", "height", "channels"))
++    kernel_size, stride, padding = (p[k] for k in ("kernel", "stride", "padding"))
++    ow = (width + 2 * padding - kernel_size) // stride + 1
++    oh = (height + 2 * padding - kernel_size) // stride + 1
++    taps = kernel_size * kernel_size
++    depth = channels * taps
++    size = ow * oh * depth
++
++    @kernel
++    def compute(
++        image: Tensor((width, height, channels), "float32"),
++    ) -> Tensor((ow * oh, depth), "float32"):
++        out = output((ow * oh, depth), "float32")
++        with T.Kernel(T.ceildiv(size, 128), threads=128) as tile:
++            for lane in T.Parallel(128):
++                i = tile * 128 + lane
++                if i < size:
++                    row, col = i // depth, i % depth
++                    x = row // oh * stride + col % kernel_size - padding
++                    y = row % oh * stride + col % taps // kernel_size - padding
++                    out[row, col] = T.if_then_else(
++                        x >= 0 and x < width and y >= 0 and y < height,
++                        image[x, y, col // taps],
++                        0,
++                    )
++        return out
++
++    return compute
++
++
+ def convolution(spec: KernelSpec, schedule: Mapping[str, object]):
+     p = {**spec.parameters, **schedule}
+     import tilelang.language as T
+diff --git a/src/akas/ops/convolution/validation.py b/src/akas/ops/convolution/validation.py
+index 4a84854b..512bbb80 100644
+--- a/src/akas/ops/convolution/validation.py
++++ b/src/akas/ops/convolution/validation.py
+@@ -1,6 +1,43 @@
+ """Independent numerical and state qualification for convolution."""
+ 
+ 
++def image_patches_validation(kind, p, signature):
++    import numpy as np
++    from akas.kernels.contracts import ValidationCase, sample_arguments
++
++    values = sample_arguments(signature)
++    size, stride, padding = (p[k] for k in ("kernel", "stride", "padding"))
++    image = np.pad(values["image"], ((padding, padding), (padding, padding), (0, 0)))
++    patches = np.lib.stride_tricks.sliding_window_view(image, (size, size), axis=(0, 1))
++    # The input is time, frequency, channel, and the weight is channel, frequency, time.
++    expected = patches[::stride, ::stride].swapaxes(-1, -2)
++    return ValidationCase(
++        values, {"out": expected.reshape(values["out"].shape)}, rtol=0, atol=0
++    )
++
++
++def image_projection_validation(kind, p, signature):
++    import numpy as np
++    from akas.kernels.contracts import ValidationCase, sample_arguments
++
++    values = sample_arguments(signature)
++    size, stride, pad = (p[k] for k in ("kernel", "stride", "padding"))
++    image = values["image"].reshape(p["width"], p["height"], -1)
++    source = np.pad(image, ((pad, pad), (pad, pad), (0, 0)))
++    patches = np.lib.stride_tricks.sliding_window_view(
++        source, (size, size), axis=(0, 1)
++    )
++    rows = patches[::stride, ::stride].transpose(0, 1, 4, 3, 2)
++    rows = rows.reshape(-1, size * size * image.shape[-1]).astype("float16")
++    if kind == "image_patches_half":
++        return ValidationCase(values, dict(out=rows), rtol=0, atol=0)
++    weights = values["weights"].reshape(p["columns"], -1)
++    expected = rows.astype("float64") @ weights.astype("float64").T
++    return ValidationCase(
++        values, dict(out=expected.astype("float32")), rtol=2e-5, atol=2e-6
++    )
++
++
+ def validation(kind, p, signature):
+     import numpy as np
+     from akas.kernels.contracts import ValidationCase, sample_arguments
+diff --git a/src/akas/ops/convolution/webgpu.py b/src/akas/ops/convolution/webgpu.py
+index c25a2d2d..c03ece1c 100644
+--- a/src/akas/ops/convolution/webgpu.py
++++ b/src/akas/ops/convolution/webgpu.py
+@@ -2,5 +2,99 @@
+ 
+ from .kernel import convolution, convolution_flat, verify, commit
+ from .definition import IMPLEMENTATIONS as _CHOICES
++from akas.kernels.kernel import Tensor, kernel, output
+ 
+ IMPLEMENTATIONS = tuple((choice for choice in _CHOICES if choice.provider == "webgpu"))
++
++
++def image_patches_half(spec, schedule):
++    """Gather contiguous channel groups and round each patch element once."""
++    import tilelang.language as T
++    from akas.quantization._shared.rounding import round_half
++
++    p = spec.parameters
++    width, height, channels = (p[k] for k in ("width", "height", "channels"))
++    size, stride, pad = (p[k] for k in ("kernel", "stride", "padding"))
++    ow, oh = ((n + 2 * pad - size) // stride + 1 for n in (width, height))
++    groups = channels // 4
++    depth = size * size * channels
++    rounded = round_half()
++
++    @kernel
++    def compute(image: Tensor((width, height, groups, 4), "float32")) -> Tensor(
++        (ow * oh, depth), "float16"
++    ):
++        out = output((ow * oh, depth), "float16")
++        with T.Kernel(T.ceildiv(ow * oh * depth // 4, 128), threads=128) as tile:
++            for lane in T.Parallel(128):
++                i = tile * 128 + lane
++                if i < ow * oh * depth // 4:
++                    row, col = i // (depth // 4), i % (depth // 4)
++                    tap, channel = col // groups, col % groups
++                    x = row // oh * stride + tap % size - pad
++                    y = row % oh * stride + tap // size - pad
++                    if 0 <= x and x < width and 0 <= y and y < height:
++                        for j in T.unroll(4):
++                            out[row, col * 4 + j] = rounded(image[x, y, channel, j])
++                    else:
++                        for j in T.unroll(4):
++                            out[row, col * 4 + j] = 0
++        return out
++
++    return compute
++
++
++def single_channel_conv2d(spec, schedule):
++    """Share a short single-channel image patch across all output filters."""
++    import tilelang.language as T
++    from akas.quantization._shared.rounding import round_half
++
++    p = {**spec.parameters, **schedule}
++    width, height, columns = (p[k] for k in ("width", "height", "columns"))
++    size, stride, pad = (p[k] for k in ("kernel", "stride", "padding"))
++    ow, oh = ((n + 2 * pad - size) // stride + 1 for n in (width, height))
++    taps = size * size
++    sites = p.get("sites", 4)
++    if sites <= 0 or sites * taps > 128:
++        raise ValueError("single-channel convolution patch tile exceeds 128 lanes")
++    rounded = round_half()
++
++    @kernel
++    def compute(
++        image: Tensor((width, height, 1), "float32"),
++        weights: Tensor((columns * taps,), "float16"),
++    ) -> Tensor((ow * oh, columns), "float32"):
++        out = output((ow * oh, columns), "float32")
++        with T.Kernel(
++            T.ceildiv(ow * oh, sites), T.ceildiv(columns, 128), threads=128
++        ) as (
++            strip,
++            tile,
++        ):
++            samples = T.alloc_shared((sites, taps), "float32")
++            tx = T.get_thread_binding()
++            if tx < sites * taps:
++                site, tap = tx // taps, tx % taps
++                row = strip * sites + site
++                x = row // oh * stride + tap % size - pad
++                y = row % oh * stride + tap // size - pad
++                samples[site, tap] = 0
++                if row < ow * oh and 0 <= x and x < width and 0 <= y and y < height:
++                    samples[site, tap] = rounded(image[x, y, 0])
++            T.sync_threads()
++            column = tile * 128 + tx
++            if column < columns:
++                filter_values = T.alloc_local((taps,), "float32")
++                for i in T.unroll(taps):
++                    filter_values[i] = T.cast(weights[column * taps + i], "float32")
++                for row_offset in T.unroll(sites):
++                    row_id = strip * sites + row_offset
++                    if row_id < ow * oh:
++                        value = T.alloc_var("float32")
++                        value = 0
++                        for i in T.unroll(taps):
++                            value += samples[row_offset, i] * filter_values[i]
++                        out[row_id, column] = value
++        return out
++
++    return compute
+diff --git a/src/akas/ops/linear/README.md b/src/akas/ops/linear/README.md
+index b1e19d04..68b0c261 100644
+--- a/src/akas/ops/linear/README.md
++++ b/src/akas/ops/linear/README.md
+@@ -129,3 +129,10 @@ projections with SwiGLU. `q4_q8_ffn` additionally rounds that activation to FP16
+ and packs its block-32 Q8 values and scales before leaving the kernel. Neither
+ operation creates a floating weight copy. The independent reference includes
+ original GGML scales and the explicit activation rounding boundary.
++
++WebGPU Q8_0 projections can read aligned signed-byte words and the original
++block scales. The single-row floating path groups four coefficients per lane.
++The signed-byte paths use packed integer dot products, staging both operands
++for multirow tiles and sharing the packed activation when projecting Q, K
++and V. Accumulation across blocks is FP32. Independent references decode the
++original GGML blocks and use a floating matrix product for validation.
+diff --git a/src/akas/ops/linear/definition.py b/src/akas/ops/linear/definition.py
+index 7a686077..26512a65 100644
+--- a/src/akas/ops/linear/definition.py
++++ b/src/akas/ops/linear/definition.py
+@@ -1439,6 +1439,69 @@ IMPLEMENTATIONS += tuple(
+ )
+ # Packed prefill previously exposed only the register schedule to automatic
+ # search. Keep that incumbent and independently qualify staged weight reuse.
++IMPLEMENTATIONS += tuple(
++    Implementation(
++        kind,
++        "akas.ops.linear.webgpu",
++        "reference",
++        provider="webgpu",
++        priority=44,
++        factory="signed_q8_matrix",
++        space=(("q8_blocks", (2, 4, 1)), ("q8_layout", (0, 1, 2))),
++        accepts=lambda p: (
++            p.get("signed_q8_input", False)
++            and p.get("ggml", False)
++            and p["r"] > 1
++            and p["type"] == 8
++            and p["k"] % 64 == 0
++        ),
++        name="linear.webgpu.packed:q8-signed-matrix",
++    )
++    for kind in ("linear", "ffn", "linear_add")
++)
++
++IMPLEMENTATIONS += tuple(
++    Implementation(
++        kind,
++        "akas.ops.linear.webgpu",
++        "reference",
++        provider="webgpu",
++        priority=44,
++        factory="signed_q8_vector",
++        space=(("lanes", (16, 8, 32)), ("threads", (128, 256, 64))),
++        accepts=lambda p: (
++            p.get("signed_q8_input", False)
++            and p.get("ggml", False)
++            and p["r"] == 1
++            and p["type"] == 8
++            and p["k"] % 128 == 0
++        ),
++        name="linear.webgpu.packed:q8-signed-vector",
++    )
++    for kind in ("linear", "ffn", "linear_add")
++)
++
++IMPLEMENTATIONS += tuple(
++    Implementation(
++        kind,
++        "akas.ops.linear.webgpu",
++        "reference",
++        provider="webgpu",
++        priority=42,
++        factory="vector_q8",
++        space=(("lanes", (16, 8, 32)), ("threads", (128, 256, 64))),
++        accepts=lambda p: (
++            p.get("vector_q8_webgpu", False)
++            and p.get("ggml", False)
++            and p["r"] == 1
++            and p["type"] == 8
++            and p["k"] % 128 == 0
++        ),
++        name="linear.webgpu.packed:q8-vector",
++    )
++    for kind in ("linear", "ffn", "linear_add")
++)
++
+ IMPLEMENTATIONS += tuple(
+     Implementation(
+         kind,
+@@ -1479,7 +1542,7 @@ IMPLEMENTATIONS += tuple(
+             p.get("ggml", False)
+             and p.get("q16", False)
+             and p["r"] > 1
+-            and p["type"] == 2
++            and p["type"] in (2, 8)
+         ),
+         name="linear.webgpu.two_component",
+     )
+diff --git a/src/akas/ops/linear/validation.py b/src/akas/ops/linear/validation.py
+index 328c1444..95ebd8ed 100644
+--- a/src/akas/ops/linear/validation.py
++++ b/src/akas/ops/linear/validation.py
+@@ -79,6 +79,8 @@ def pipeline_validation(kind, p, signature):
+ 
+ 
+ def validation(kind, p, signature):
++    if p.get("signed_q8_input"):
++        return q8_signed_projection_validation(kind, p, signature)
+     if p.get("q16") or kind in ("linear_q16", "ffn_q16"):
+         return q16_projection_validation(kind, p, signature)
+     import numpy as np
+@@ -322,11 +324,58 @@ def quantized_validation(kind, parameters, signature):
+     )
+ 
+ 
++def _sample_projection_weight(buffer, encoding, width, depth, *, aligned, seed=31):
++    import numpy as np
++    from akas.quantization.weights.ggml.validation import sample_weight
++
++    if not aligned:
++        return sample_weight(buffer, encoding, seed=seed).reshape(width, depth)
++    from akas.quantization.weights.ggml.webgpu import q8_aligned_words
++
++    raw = np.empty(width * depth // 32 * 34, "uint8")
++    decoded = sample_weight(raw, encoding, seed=seed).reshape(width, depth)
++    buffer[:] = q8_aligned_words(raw)
++    return decoded
++
++
++def q8_signed_projection_validation(kind, parameters, signature):
++    import numpy as np
++    from akas.kernels.contracts import ValidationCase, sample_arguments
++
++    rows, depth, width = (parameters[n] for n in ("r", "k", "o"))
++    values = sample_arguments(signature)
++    rng = np.random.default_rng(43)
++    coefficients = rng.integers(-127, 128, size=(rows * depth // 32, 32), dtype="int8")
++    scales = rng.uniform(1e-4, 2e-3, size=(rows * depth // 32,)).astype("float32")
++    values["packed"][:] = coefficients.view("uint32").reshape(-1)
++    values["scales"][:] = scales
++    activation = (coefficients.astype("float64") * scales[:, None]).reshape(rows, depth)
++    aligned = parameters.get("q8_aligned", False)
++    expected = np.empty((rows, width), "float64")
++    stride = depth // 32 * (36 if aligned else 34) // 4
++    for start in range(0, width, 2048):
++        stop = min(start + 2048, width)
++        destination = values["w"][start * stride : stop * stride]
++        weights = _sample_projection_weight(
++            destination, 8, stop - start, depth, aligned=aligned, seed=31 + start
++        )
++        expected[:, start:stop] = activation @ weights.astype("float64").T
++    if kind == "ffn":
++        other = _sample_projection_weight(
++            values["w2"], 8, width, depth, aligned=aligned, seed=44
++        )
++        up = activation @ other.astype("float64").T
++        expected = expected / (1 + np.exp(-expected)) * up
++    expected = expected.reshape(-1)
++    if kind == "linear_add":
++        expected += values["residual"]
++    return ValidationCase(values, {**values, "out": expected.astype("float32")})
++
++
+ def q16_projection_validation(kind, parameters, signature):
+     import numpy as np
+     from akas.kernels.contracts import ValidationCase, sample_arguments
+     from akas.quantization.activations.q16.validation import encode, decode
+-    from akas.quantization.weights.ggml.validation import sample_weight
+ 
+     values = sample_arguments(signature)
+     rows, depth = parameters["r"], parameters["k"]
+@@ -338,11 +387,17 @@ def q16_projection_validation(kind, parameters, signature):
+     for name, value in (("packed", packed), ("scales", scales), ("sums", sums)):
+         values[name][:] = value.reshape(values[name].shape)
+     width = parameters["o"]
+-    weights = sample_weight(values["w"], 2).reshape(width, depth)
++    encoding = parameters.get("type", 2)
++    aligned = parameters.get("q8_aligned", False)
++    weights = _sample_projection_weight(
++        values["w"], encoding, width, depth, aligned=aligned
++    )
+     x = decode(values["packed"], values["scales"], rows=rows, depth=depth)
+     out = x @ weights.astype("float64").T
+     if kind in ("ffn", "ffn_q16"):
+-        other = sample_weight(values["w2"], 2, seed=44).reshape(width, depth)
++        other = _sample_projection_weight(
++            values["w2"], encoding, width, depth, aligned=aligned, seed=44
++        )
+         up = x @ other.astype("float64").T
+         out = out / (1 + np.exp(-out)) * up
+     if parameters.get("weight_layout", "raw") == "planar":
+diff --git a/src/akas/ops/linear/webgpu.py b/src/akas/ops/linear/webgpu.py
+index 91b2796b..66020ff7 100644
+--- a/src/akas/ops/linear/webgpu.py
++++ b/src/akas/ops/linear/webgpu.py
+@@ -143,16 +143,22 @@ def _integer(p, paired=False, add_residual=False):
+ 
+     r, k, o = (p.get("r", 1), p["k"], p["o"])
+     parts = 2 if paired else 1
+-    from akas.quantization.weights.ggml.webgpu import integer_rhs
++    from akas.quantization.weights.ggml.webgpu import integer_rhs, q8_integer_rhs
+ 
+     prepacked = p.get("q4_prepacked", False)
+-    storage, read_word, read_scale = integer_rhs(
+-        (o, k), prepacked=prepacked, layout=p.get("weight_layout", "raw")
+-    )
+-    count = storage.values.shape[0]
++    signed_q8 = p.get("type") == 8
++    if signed_q8:
++        count, read_word, read_scale = q8_integer_rhs(
++            (o, k), aligned=p.get("q8_aligned", False)
++        )
++    else:
++        storage, read_word, read_scale = integer_rhs(
++            (o, k), prepacked=prepacked, layout=p.get("weight_layout", "raw")
++        )
++        count = storage.values.shape[0]
+ 
+     config = dict(p.get("integer", {}))
+-    if prepacked:
++    if prepacked or signed_q8:
+         config["signed_rhs"] = True
+     algorithm = packed_integer_matmul(
+         r,
+@@ -194,6 +200,51 @@ def _integer(p, paired=False, add_residual=False):
+     return compute
+ 
+ 
++def _signed_q8_abi(rows, depth, columns, count, algorithm, *, paired, residual):
++    words, blocks, outputs = rows * depth // 4, rows * depth // 32, rows * columns
++    if paired:
++
++        @kernel
++        def compute(
++            packed: Tensor(words, "uint32"),
++            scales: Tensor(blocks, "float32"),
++            w: Tensor(count, "uint32"),
++            w2: Tensor(count, "uint32"),
++        ) -> Tensor(outputs, "float32"):
++            out = output(outputs, "float32")
++            algorithm(packed, scales, w, out, w2)
++            return out
++
++        return compute
++
++    if residual:
++
++        @kernel
++        def compute(
++            packed: Tensor(words, "uint32"),
++            scales: Tensor(blocks, "float32"),
++            w: Tensor(count, "uint32"),
++            residual: Tensor(outputs, "float32"),
++        ) -> Tensor(outputs, "float32"):
++            out = output(outputs, "float32")
++            algorithm(packed, scales, w, out, addend=residual)
++            return out
++
++        return compute
++
++    @kernel
++    def compute(
++        packed: Tensor(words, "uint32"),
++        scales: Tensor(blocks, "float32"),
++        w: Tensor(count, "uint32"),
++    ) -> Tensor(outputs, "float32"):
++        out = output(outputs, "float32")
++        algorithm(packed, scales, w, out)
++        return out
++
++    return compute
++
++
+ def gemv_packed(p, paired=False, add_residual=False):
+     import tilelang.language as T
+     from tensor.compiler.webgpu.schedules.gemv import streamed_gemv
+@@ -453,6 +504,245 @@ def archived_decode(spec: KernelSpec, schedule: Mapping[str, object]):
+     )
+ 
+ 
++def vector_q8(spec, schedule):
++    """Keep each vector's packed loads and the row reduction in a subgroup."""
++    import tilelang.language as T
++    from akas.kernels.webgpu import segmented_reduce
++    from akas.ops.linear.kernel import _epilogue, webgpu_abi
++    from akas.quantization.weights.ggml.webgpu import q8_vector_dot
++
++    p = {**spec.parameters, **schedule}
++    depth, columns = p["k"], p["o"]
++    lanes, threads = p.get("lanes", 16), p.get("threads", 128)
++    group_rows = threads // lanes
++    paired, residual = spec.kind == "ffn", spec.kind == "linear_add"
++    dot, reduce = q8_vector_dot(depth), segmented_reduce(lanes)
++    epilogue = _epilogue(paired=paired, add_residual=residual)
++
++    @T.macro
++    def gemv(x, w, out, w2=None, addend=None):
++        with T.Kernel(T.ceildiv(columns, group_rows), threads=threads) as tile:
++            tx = T.get_thread_binding()
++            column, lane = tile * group_rows + tx // lanes, tx % lanes
++            first, second = T.alloc_var("float32"), T.alloc_var("float32")
++            a, b = (
++                T.alloc_shared((threads,), "float32"),
++                T.alloc_shared((threads,), "float32"),
++            )
++            first, second = 0, 0
++            if column < columns:
++                for chunk in T.serial(depth // (4 * lanes)):
++                    index = (chunk * lanes + lane) * 4
++                    first += dot(x, w, column, index)
++                    if paired:
++                        second += dot(x, w2, column, index)
++            reduce(first, a, tx, lane)
++            if paired:
++                reduce(second, b, tx, lane)
++            if lane == 0 and column < columns:
++                epilogue(out, addend, column, a[tx], b[tx] if paired else 0)
++
++    return webgpu_abi(p, gemv, paired=paired, add_residual=residual)
++
++
++def signed_q8_vector(spec, schedule):
++    """Contract signed byte activation groups against signed Q8_0 weights."""
++    import tilelang.language as T
++
++    from akas.kernels.webgpu import segmented_reduce
++    from akas.ops.linear.kernel import _epilogue
++    from akas.quantization.weights.ggml.webgpu import q8_integer_rhs
++
++    p = {**spec.parameters, **schedule}
++    depth, columns = p["k"], p["o"]
++    lanes, threads = p.get("lanes", 16), p.get("threads", 128)
++    group_rows = threads // lanes
++    paired, residual = spec.kind == "ffn", spec.kind == "linear_add"
++    count, read_word, read_scale = q8_integer_rhs(
++        (columns, depth), aligned=p.get("q8_aligned", False)
++    )
++    reduce = segmented_reduce(lanes)
++    epilogue = _epilogue(paired=paired, add_residual=residual)
++
++    @T.macro
++    def dot(w, column, word, activation, scale):
++        block = word // 8
++        coefficients = read_word(w, column, block, word % 8)
++        value = T.call_extern("int32", "dot4I8Packed", activation, coefficients)
++        return T.cast(value, "float32") * (scale * read_scale(w, column, block))
++
++    @T.macro
++    def gemv(x, scales, w, out, w2=None, addend=None):
++        with T.Kernel(T.ceildiv(columns, group_rows), threads=threads) as tile:
++            tx = T.get_thread_binding()
++            column, lane = tile * group_rows + tx // lanes, tx % lanes
++            first, second = T.alloc_var("float32"), T.alloc_var("float32")
++            a = T.alloc_shared((threads,), "float32")
++            b = T.alloc_shared((threads,), "float32")
++            first, second = 0, 0
++            if column < columns:
++                for chunk in T.serial(depth // (4 * lanes)):
++                    word = chunk * lanes + lane
++                    activation, scale = x[word], scales[word // 8]
++                    first += dot(w, column, word, activation, scale)
++                    if paired:
++                        second += dot(w2, column, word, activation, scale)
++            reduce(first, a, tx, lane)
++            if paired:
++                reduce(second, b, tx, lane)
++            if lane == 0 and column < columns:
++                epilogue(out, addend, column, a[tx], b[tx] if paired else 0)
++
++    return _signed_q8_abi(
++        1, depth, columns, count, gemv, paired=paired, residual=residual
++    )
++
++
++def signed_q8_matrix(spec, schedule):
++    """Stage each signed activation block and weight block once per tile."""
++    from itertools import product
++    import tilelang.language as T
++    from tensor.compiler.webgpu.schedules.registers import registers, shared_buffers
++    from akas.ops.linear.kernel import _epilogue
++    from akas.quantization.weights.ggml.webgpu import q8_integer_rhs
++
++    p = {**spec.parameters, **schedule}
++    rows, depth, columns = (p[n] for n in ("r", "k", "o"))
++    paired, residual = spec.kind == "ffn", spec.kind == "linear_add"
++    parts = 2 if paired else 1
++    layouts = ((16, 32, 2, 2), (16, 64, 2, 4), (32, 32, 4, 2))
++    m, n, mm, mn = layouts[p.get("q8_layout", 0)]
++    rm, rn = m // mm, n // mn
++    threads = rm * rn
++    blocks = p.get("q8_blocks", 2)
++    if depth % (32 * blocks):
++        raise ValueError("signed-byte depth must divide into whole tiles")
++    words = blocks * 8
++    count, read_word, read_scale = q8_integer_rhs(
++        (columns, depth), aligned=p.get("q8_aligned", False)
++    )
++    epilogue = _epilogue(paired=paired, add_residual=residual)
++
++    @T.macro
++    def stage_b(w, rhs, scales, bx, tile, tx):
++        for step in T.serial(T.ceildiv(n * words, threads)):
++            index = step * threads + tx
++            col, word = index // words, index % words
++            if col < n:
++                column = bx * n + col
++                block = tile * blocks + word // 8
++                rhs[word, col] = T.if_then_else(
++                    column < columns, read_word(w, column, block, word % 8), T.uint32(0)
++                )
++                if word % 8 == 0:
++                    scales[word // 8, col] = T.if_then_else(
++                        column < columns, read_scale(w, column, block), 0
++                    )
++
++    @T.macro
++    def clear(value: T.Ref):
++        value = 0
++
++    @T.macro
++    def dot(value: T.Ref, left, right):
++        value += T.call_extern("int32", "dot4I8Packed", left, right)
++
++    @T.macro
++    def finish(total: T.Ref, value, lhs_scale, rhs_scale):
++        total += T.cast(value, "float32") * (lhs_scale * rhs_scale)
++
++    @T.macro
++    def store(out, addend, by, bx, row, col, gate, up):
++        r, c = by * m + row, bx * n + col
++        if (r < rows) & (c < columns):
++            epilogue(out, addend, r * columns + c, gate, up)
++
++    owners = tuple(product(range(parts), range(mm), range(mn)))
++
++    def reset(values):
++        for index in owners:
++            clear(values[index][0])
++
++    def multiply(dots, a, b, row, col, word):
++        left = [a[row + i * rm, word] for i in range(mm)]
++        right = [[b[s][word, col + j * rn] for j in range(mn)] for s in range(parts)]
++        for s, i, j in owners:
++            dot(dots[s, i, j][0], left[i], right[s][j])
++
++    def combine(total, dots, a, b, row, col, block):
++        for s, i, j in owners:
++            finish(
++                total[s, i, j][0],
++                dots[s, i, j][0],
++                a[row + i * rm, block],
++                b[s][block, col + j * rn],
++            )
++
++    def output_rows(out, addend, total, by, bx, row, col):
++        for i, j in product(range(mm), range(mn)):
++            store(
++                out,
++                addend,
++                by,
++                bx,
++                row + i * rm,
++                col + j * rn,
++                total[0, i, j][0],
++                total[1, i, j][0] if paired else 0,
++            )
++
++    @T.macro
++    def matrix(x, x_scale, w, out, w2=None, addend=None):
++        T.func_attr({"tensor.webgpu.loop_unroll": "explicit"})
++        with T.Kernel(T.ceildiv(rows, m), T.ceildiv(columns, n), threads=threads) as (
++            by,
++            bx,
++        ):
++            tx = T.get_thread_binding()
++            row, col = tx // rn, tx % rn
++            a = T.alloc_shared((m, words + 1), "uint32")
++            a_scale = T.alloc_shared((m, blocks), "float32")
++            b = shared_buffers((words, n + 1), "uint32", parts)
++            b_scale = shared_buffers((blocks, n + 1), "float32", parts)
++            totals = registers((parts, mm, mn))
++            dots = registers((parts, mm, mn), dtype="int32")
++            reset(totals)
++            for tile in T.serial(depth // (32 * blocks)):
++                for step in T.serial(T.ceildiv(m * words, threads)):
++                    index = step * threads + tx
++                    ar, word = index // words, index % words
++                    if ar < m:
++                        source = by * m + ar
++                        a[ar, word] = T.if_then_else(
++                            source < rows,
++                            x[source * (depth // 4) + tile * words + word],
++                            T.uint32(0),
++                        )
++                        if word % 8 == 0:
++                            a_scale[ar, word // 8] = T.if_then_else(
++                                source < rows,
++                                x_scale[
++                                    source * (depth // 32) + tile * blocks + word // 8
++                                ],
++                                0,
++                            )
++                stage_b(w, b[0], b_scale[0], bx, tile, tx)
++                if paired:
++                    stage_b(w2, b[1], b_scale[1], bx, tile, tx)
++                T.sync_threads()
++                for block in T.serial(blocks):
++                    reset(dots)
++                    for i in T.unroll(8):
++                        multiply(dots, a, b, row, col, block * 8 + i)
++                    combine(totals, dots, a_scale, b_scale, row, col, block)
++                T.sync_threads()
++            output_rows(out, addend, totals, by, bx, row, col)
++
++    return _signed_q8_abi(
++        rows, depth, columns, count, matrix, paired=paired, residual=residual
++    )
++
++
+ def q8(spec: KernelSpec, schedule: Mapping[str, object]):
+     from akas.quantization.weights.ggml.webgpu import q8_dot
+ 
+diff --git a/src/akas/ops/normalization/README.md b/src/akas/ops/normalization/README.md
+index 5ac45585..76d7c1ec 100644
+--- a/src/akas/ops/normalization/README.md
++++ b/src/akas/ops/normalization/README.md
+@@ -65,5 +65,7 @@ tests](../../../../tests/test_operation_writes.py).
+ ## ZONOS3 and ZAC
+ 
+ Affine layer normalization uses mean and centered variance in F32 with separate scale and bias weights on CUDA and WebGPU. ZAC uses this path.
++For complete aligned rows, the WebGPU specialization keeps centered values in
++registers and reduces the mean and variance with subgroups.
+ 
+ Return to the [operation index](../README.md).
+diff --git a/src/akas/ops/normalization/definition.py b/src/akas/ops/normalization/definition.py
+index 8feed390..add5371b 100644
+--- a/src/akas/ops/normalization/definition.py
++++ b/src/akas/ops/normalization/definition.py
+@@ -474,6 +474,21 @@ IMPLEMENTATIONS += tuple(
+     for provider in ("cuda", "webgpu")
+ )
+ 
++IMPLEMENTATIONS += (
++    Implementation(
++        "affine_layer_norm",
++        "akas.ops.normalization.webgpu",
++        "reference",
++        provider="webgpu",
++        priority=25,
++        factory="affine_layer_norm",
++        defaults=(("threads", 128),),
++        space=(("threads", (128, 64, 32, 256)),),
++        accepts=lambda p: p["c"] % 128 == 0,
++        name="normalization.webgpu.affine_layer_norm",
++    ),
++)
++
+ OUTPUT_ARGUMENTS["reference"]["post_add_rms"] = OutputABI((-2, -1), ("hidden", "out"))
+ IMPLEMENTATIONS += (
+     Implementation(
+diff --git a/src/akas/ops/normalization/webgpu.py b/src/akas/ops/normalization/webgpu.py
+index 5340d713..7c5e8705 100644
+--- a/src/akas/ops/normalization/webgpu.py
++++ b/src/akas/ops/normalization/webgpu.py
+@@ -61,3 +61,53 @@ def post_add_rms(spec, schedule):
+         return hidden, out
+ 
+     return compute
++
++
++def affine_layer_norm(spec, schedule):
++    """Use subgroup sums for centered variance and keep a row in registers."""
++    import tilelang.language as T
++
++    from akas.kernels.kernel import Tensor, kernel, output
++    from akas.kernels.webgpu import subgroup_reduce
++
++    p = {**spec.parameters, **schedule}
++    rows, width, eps = p["r"], p["c"], p["eps"]
++    threads = p.get("threads", 128)
++    if width % threads:
++        raise ValueError(
++            "layer normalization width must divide into complete lane groups"
++        )
++    count = width // threads
++    reduce = subgroup_reduce(threads)
++
++    @kernel
++    def compute(
++        x: Tensor((rows, width), "float32"),
++        scale: Tensor((width,), "float32"),
++        bias: Tensor((width,), "float32"),
++    ) -> Tensor((rows, width), "float32"):
++        out = output((rows, width), "float32")
++        with T.Kernel(rows, threads=threads) as row:
++            tx = T.get_thread_binding()
++            values = T.alloc_local((count,), "float32")
++            scratch = T.alloc_shared((threads,), "float32")
++            total = T.alloc_var("float32")
++            total = 0
++            for i in T.unroll(count):
++                values[i] = x[row, i * threads + tx]
++                total += values[i]
++            reduce(scratch, tx, total)
++            mean = scratch[0] / width
++            total = 0
++            for i in T.unroll(count):
++                values[i] -= mean
++                total += values[i] * values[i]
++            T.sync_threads()
++            reduce(scratch, tx, total)
++            inv_std = T.rsqrt(scratch[0] / width + eps)
++            for i in T.unroll(count):
++                column = i * threads + tx
++                out[row, column] = values[i] * inv_std * scale[column] + bias[column]
++        return out
++
++    return compute
+diff --git a/src/akas/quantization/weights/ggml/webgpu.py b/src/akas/quantization/weights/ggml/webgpu.py
+index 51daf8aa..222cefcc 100644
+--- a/src/akas/quantization/weights/ggml/webgpu.py
++++ b/src/akas/quantization/weights/ggml/webgpu.py
+@@ -251,6 +251,50 @@ def integer_rhs(shape, *, prepacked=False, layout="raw"):
+     return storage, read_word, read_scale
+ 
+ 
++def q8_aligned_words(raw):
++    """Keep signed coefficients and promote the block scale to aligned words."""
++    import numpy as np
++
++    blocks = raw.view("uint8").reshape(-1, 34)
++    aligned = np.empty((len(blocks), 9), dtype="uint32")
++    aligned[:, :8].view("uint8")[:] = blocks[:, 2:]
++    scales = np.ascontiguousarray(blocks[:, :2]).view("<f2").reshape(-1)
++    aligned[:, 8] = scales.astype("float32").view("uint32")
++    return aligned.reshape(-1)
++
++
++def q8_integer_rhs(shape, *, aligned=False):
++    """Expose the original signed Q8_0 words and half block scales."""
++    import tilelang.language as T
++
++    from akas.quantization._shared.packing import packed_loads
++    from .definition import weight_storage
++
++    columns, depth = shape
++    size = (
++        columns * depth // 32 * 9
++        if aligned
++        else weight_storage(8, columns * depth, packed_words=True)[0]
++    )
++    _, half_at, word_at = packed_loads()
++
++    @T.macro
++    def word(w, column, block, index):
++        if aligned:
++            return w[(column * (depth // 32) + block) * 9 + index]
++        else:
++            return word_at(w, (column * (depth // 32) + block) * 34 + 2 + index * 4)
++
++    @T.macro
++    def scale(w, column, block):
++        if aligned:
++            return T.reinterpret("float32", w[(column * (depth // 32) + block) * 9 + 8])
++        else:
++            return half_at(w, (column * (depth // 32) + block) * 34)
++
++    return size, word, scale
++
++
+ def q8_dot(k, o):
+     """Packed Q8 activation × Q4_0 weight dot with inline correction sums."""
+     if k <= 0 or k % 128:
+@@ -301,6 +345,37 @@ def q8_dot(k, o):
+     return dot
+ 
+ 
++def q8_vector_dot(depth):
++    """Four signed Q8_0 coefficients per lane with the original block scale."""
++    import tilelang.language as T
++    from akas.quantization._shared.packing import packed_loads
++
++    _, scale_at, word_at = packed_loads()
++
++    @T.macro
++    def signed(word, shift):
++        return T.cast(T.reinterpret("int32", word << shift) >> 24, "float32")
++
++    @T.macro
++    def product(x, w, column, index):
++        base = (column * (depth // 32) + index // 32) * 34
++        word = word_at(w, base + 2 + index % 32)
++        values = T.call_extern(
++            "float32x4", "vec4<f32>", x[index], x[index + 1], x[index + 2], x[index + 3]
++        )
++        coefficients = T.call_extern(
++            "float32x4",
++            "vec4<f32>",
++            signed(word, 24),
++            signed(word, 16),
++            signed(word, 8),
++            signed(word, 0),
++        )
++        return scale_at(w, base) * T.call_extern("float32", "dot", values, coefficients)
++
++    return product
++
++
+ def dequantize(spec, schedule):
+     from .kernel import dequantize
+ 
+diff --git a/src/akas/serving/speech.py b/src/akas/serving/speech.py
+index 2dae8a62..5c8455c2 100644
+--- a/src/akas/serving/speech.py
++++ b/src/akas/serving/speech.py
+@@ -13,6 +13,12 @@ class SpeechService:
+     languages: tuple[str, ...]
+ 
+ 
++@dataclass(frozen=True)
++class TranscriptionService:
++    transcribe: Callable
++    metadata: dict
++
++
+ def create_app(factory):
+     from aiohttp import web
+     import numpy as np
+@@ -43,7 +49,63 @@ def create_app(factory):
+     async def props(request):
+         return web.json_response(service.metadata)
+ 
++    async def transcribe(request):
++        from base64 import b64decode
++
++        if not isinstance(service, TranscriptionService):
++            raise web.HTTPNotImplemented(text="transcription requires an ASR service")
++        try:
++            payload = await request.clone(client_max_size=16 * 1024**2).json()
++            if (
++                payload.get("stream", False)
++                or payload.get("temperature", 0) != 0
++                or len(payload["messages"]) != 1
++            ):
++                raise ValueError("requires a single non-streaming greedy audio request")
++            message = payload["messages"][0]
++            parts = message["content"]
++            if (
++                message["role"] != "user"
++                or len(parts) != 1
++                or parts[0]["type"] != "input_audio"
++            ):
++                raise ValueError("requires one user input_audio part")
++            audio = parts[0]["input_audio"]
++            if audio["format"] != "wav":
++                raise ValueError("requires WAV audio")
++            wav = b64decode(audio["data"], validate=True)
++            language = payload["chat_template_kwargs"]["language"]
++            limit = payload.get("max_tokens", 128)
++
++            def recognize():
++                return service.transcribe(wav, language=language, limit=limit)
++
++            result = await asyncio.get_running_loop().run_in_executor(
++                executor, recognize
++            )
++        except (AttributeError, IndexError, KeyError, TypeError, ValueError) as error:
++            raise web.HTTPBadRequest(text=str(error)) from error
++        return web.json_response(
++            {
++                "choices": [
++                    {
++                        "index": 0,
++                        "message": {"role": "assistant", "content": result.text},
++                        "finish_reason": "stop" if result.terminated else "length",
++                    }
++                ],
++                "usage": {
++                    "prompt_tokens": result.prompt_tokens,
++                    "completion_tokens": len(result.token_ids),
++                    "total_tokens": result.prompt_tokens + len(result.token_ids),
++                },
++                "token_ids": result.token_ids,
++            }
++        )
++
+     async def tts(request):
++        if isinstance(service, TranscriptionService):
++            raise web.HTTPNotImplemented(text="synthesis requires a TTS service")
+         try:
+             payload = await request.json()
+             if (
+@@ -186,6 +248,7 @@ def create_app(factory):
+             web.get("/props", props),
+             web.post("/tts", tts),
+             web.post("/v1/audio/speech", speech_stream),
++            web.post("/v1/chat/completions", transcribe),
+         ]
+     )
+     return app
+diff --git a/src/akas/text/profiles.json b/src/akas/text/profiles.json
+index 172bb76b..a0b4ccff 100644
+--- a/src/akas/text/profiles.json
++++ b/src/akas/text/profiles.json
+@@ -14,6 +14,11 @@
+       "model": "gpt2",
+       "pattern": "'s|'t|'re|'ve|'m|'ll|'d| ?\\p{L}+| ?\\p{N}+| ?[^\\s\\p{L}\\p{N}]+|\\s+(?!\\S)|\\s+"
+     },
++    "qwen2": {
++      "model": "gpt2",
++      "pattern": "(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+",
++      "normalization": "NFC"
++    },
+     "qwen35": {
+       "model": "gpt2",
+       "pattern": "(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?[\\p{L}\\p{M}]+|\\p{N}| ?[^\\s\\p{L}\\p{M}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+",
+diff --git a/tests/test_benchmark_history.py b/tests/test_benchmark_history.py
+index 42c55555..3209baef 100644
+--- a/tests/test_benchmark_history.py
++++ b/tests/test_benchmark_history.py
+@@ -110,10 +110,13 @@ def test_changed_sources_invalidate_run_and_legacy_accounting_stays_separate(
+     assert record["workload"]["id"] == "custom"
+ 
+ 
+-def test_speech_records_preserve_utterances_without_token_shapes(tmp_path, source):
++@pytest.mark.parametrize("workload_id", ["speech-concurrent-v1", "asr-demo-v1"])
++def test_speech_records_preserve_utterances_without_token_shapes(
++    tmp_path, source, workload_id
++):
+     from akas.benchmarking.workload import load
+ 
+-    workload = load("speech-concurrent-v1")
++    workload = load(workload_id)
+     speech_report = report(workload["protocol"])
+     metadata = speech_report["metadata"]
+     metadata["speech_workload"] = dict(id=workload["id"], definition=workload)
+diff --git a/tools/baselines/README.md b/tools/baselines/README.md
+index 04245ba6..98b6ad70 100644
+--- a/tools/baselines/README.md
++++ b/tools/baselines/README.md
+@@ -101,6 +101,75 @@ under `benchmarks/runs/<run-id>/`. The comparison reports both wall latency
+ and the ratio of real-time factors. Seeded sampling can produce different clip
+ durations across runtimes.
+ 
++## Speech transcription demo
++
++[Qwen3 ASR](../../src/akas/models/qwen3_asr/README.md) uses the pinned
++Rumble-2-Flash Q8_0 decoder and Q8_0 audio projector. Extract the
++[llama.cpp b12521 Windows Vulkan release](https://github.com/ggml-org/llama.cpp/releases/tag/b12521)
++under `build/baselines/llama-b12521-vulkan` or pass a binary from that
++revision with `--binary`.
++
++```sh
++uv run --no-sync python -m tools.baselines llama qwen3-asr --provider vulkan
++uv run --no-sync python -m tools.baselines akas qwen3-asr --provider vulkan \
++  --bundle build/qwen3-asr/speech --reference-run LLAMA_RUN_ID
++uv run --no-sync python -m tools.campaign_report --runs AKAS_RUN_ID \
++  --model qwen3-asr --workload asr-demo-v1
++```
++
++Both runtimes read the same WAV, force the clip's language, and decode
++greedily. The launcher uses a persistent AKAS worker and the stock
++`llama-mtmd-cli` over local process pipes. Wall time includes reading each WAV
++through receipt of the complete transcript. It excludes model loading and
++context reset. The
++[`asr-demo-v1` workload](../../src/akas/benchmarking/workloads/asr-demo-v1.json)
++pins English, Indonesian and Japanese clips from the repository's ZONOS3-Mini
++showcase. Each clip gets one warmup and three measurements. The recorder
++retains the input, transcript and request latency, plus word or character
++error against the synthesis script. These three synthetic clips demonstrate
++the end-to-end path. Independent transcription quality requires a broader
++recorded speech workload.
++
++### ASR latency by input duration
++
++[`asr-length-v1`](../../src/akas/benchmarking/workloads/asr-length-v1.json) pins
++nine LibriSpeech dev-clean recordings from one reader. Its short, medium and
++long bands cover 1.91–4.23 s, 9.01–12.49 s and 15.12–29.40 s. It uses the
++same 512-token context on both runtimes with a 100-token output cap so the
++longest input stays within the compiled context.
++
++Download the Parquet archive pinned in the workload's `source.archive` and
++verify `source.sha256`. To recreate the input WAVs, use PyArrow and SoundFile
++in an audio preparation environment. Decode the selected FLAC rows as
++signed 16-bit PCM and write mono WAV headers with Python's `wave` module.
++
++```python
++import io
++import json
++import wave
++from hashlib import sha256
++from pathlib import Path
++
++import pyarrow.parquet as pq
++import soundfile as sf
++
++workload = json.loads(Path("src/akas/benchmarking/workloads/asr-length-v1.json").read_text())
++archive = Path("validation-00000-of-00001.parquet")
++assert sha256(archive.read_bytes()).hexdigest() == workload["source"]["sha256"]
++audio = {row["id"]: row["audio"]["bytes"] for row in pq.read_table(archive, columns=["id", "audio"]).to_pylist()}
++for clip in workload["utterances"]:
++    pcm, rate = sf.read(io.BytesIO(audio[clip["id"]]), dtype="int16")
++    path = Path(clip["path"])
++    path.parent.mkdir(parents=True, exist_ok=True)
++    with wave.open(str(path), "wb") as wav:
++        wav.setparams((1, 2, rate, 0, "NONE", "not compressed"))
++        wav.writeframes(pcm.astype("<i2", copy=False).tobytes())
++    assert sha256(path.read_bytes()).hexdigest() == clip["sha256"]
++```
++
++Use the existing ASR commands with `--workload asr-length-v1` on both
++runtimes and the report exporter. Freeze a new Vulkan run for this workload.
++
+ ## Measure the complete workload
+ 
+ Add `--optimized` to enable graph execution for the native engines, provision the
+diff --git a/tools/baselines/__main__.py b/tools/baselines/__main__.py
+index d949548a..e23c2ca6 100644
+--- a/tools/baselines/__main__.py
++++ b/tools/baselines/__main__.py
+@@ -30,7 +30,7 @@ def select_weight_format(model, runtime, requested=None):
+     """Select declared checkpoint bytes independently from execution dtype."""
+     if requested is not None:
+         selected = requested
+-    elif runtime == "llama" and model.get("modes") == ["tts"]:
++    elif runtime == "llama" and model.get("modes") in (["tts"], ["asr"]):
+         selected = "q8_0"
+     elif runtime == "llama":
+         selected = "q4_k_m"
+@@ -56,7 +56,7 @@ def main():
+     parser.add_argument("--mtp", action="store_true")
+     parser.add_argument("--provider", choices=("cpu", "cuda", "vulkan"), default="cuda")
+     parser.add_argument("--format", choices=("bf16", "fp8", "f16", "q4_0", "q4_k_m", "q8_0"))
+-    parser.add_argument("--binary", type=Path, help="override the speech server executable")
++    parser.add_argument("--binary", type=Path, help="override the speech runtime executable")
+     parser.add_argument("--bundle", type=Path, help="compiled AKAS speech bundle")
+     parser.add_argument("--reference-run", help="frozen llama.cpp Vulkan speech run")
+     parser.add_argument("--history", type=Path, default=Path("benchmarks"))
+diff --git a/tools/baselines/speech.py b/tools/baselines/speech.py
+index 1bb4c369..64d4aa44 100644
+--- a/tools/baselines/speech.py
++++ b/tools/baselines/speech.py
+@@ -1,22 +1,26 @@
+-"""Measure complete text-to-speech requests using the pinned llama.cpp server."""
++"""Measure complete speech requests on AKAS and the pinned llama.cpp server."""
+ 
+ from array import array
++from contextlib import contextmanager
+ from hashlib import sha256
+ import io
+ import json
+ import os
+ from pathlib import Path
+ import platform
++from queue import Empty, Queue
+ from socket import socket
+ from statistics import median
+ import subprocess
+ import sys
++from threading import Thread
+ import time
+ from urllib.error import HTTPError, URLError
+ from urllib.request import Request, urlopen
+ import wave
+ 
+ from akas.benchmarking.history import Recorder, digest
++from akas.benchmarking import transcription
+ from akas.benchmarking.workload import load
+ 
+ 
+@@ -158,6 +162,233 @@ def measure(url, deadline, recorder, report, workload, speech):
+         )
+ 
+ 
++@contextmanager
++def speech_server(command, env, log, url, deadline):
++    process = subprocess.Popen(command, stdout=log, stderr=subprocess.STDOUT, env=env)
++    try:
++        wait_for_server(process, url, deadline)
++        yield None
++    finally:
++        if process.poll() is None:
++            process.terminate()
++            try:
++                process.wait(timeout=5)
++            except subprocess.TimeoutExpired:
++                process.kill()
++                process.wait()
++
++
++@contextmanager
++def transcription_process(
++    command, env, log, transcript_log, deadline, *, native, limit
++):
++    with (
++        transcript_log.open("wb") as output,
++        subprocess.Popen(
++            command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=log, env=env
++        ) as process,
++    ):
++        chunks = Queue()
++
++        def read_stdout():
++            try:
++                while data := process.stdout.read1(8192):
++                    output.write(data)
++                    output.flush()
++                    chunks.put(data)
++            finally:
++                chunks.put(None)
++
++        def receive(marker):
++            data = bytearray()
++            while True:
++                remaining = deadline - time.monotonic()
++                if remaining <= 0:
++                    raise TimeoutError("transcription process deadline reached")
++                try:
++                    chunk = chunks.get(timeout=remaining)
++                except Empty as error:
++                    raise TimeoutError(
++                        "transcription process deadline reached"
++                    ) from error
++                if chunk is None:
++                    raise RuntimeError(
++                        f"transcription process closed its output ({process.poll()})"
++                    )
++                data.extend(chunk)
++                normalized = bytes(data).replace(b"\r\n", b"\n")
++                if normalized.endswith(marker):
++                    return normalized
++
++        def send(text):
++            process.stdin.write(text.encode("utf-8"))
++            process.stdin.flush()
++
++        def native_response():
++            for line in reversed(receive(b"\n").splitlines()):
++                if line.startswith(b"ASR "):
++                    return json.loads(line[4:])
++            raise ValueError("invalid native transcription response")
++
++        def invoke(path, language):
++            if native:
++                payload = json.dumps(
++                    dict(path=str(path), language=language, limit=limit)
++                )
++                start = time.perf_counter()
++                send(payload + "\n")
++                response = native_response()
++                return response, time.perf_counter() - start
++            # Start each request with an empty text and audio context.
++            send("/clear\n")
++            receive(b"\n> ")
++            start = time.perf_counter()
++            send(f"/audio {path}\n")
++            if b" loaded\n" not in receive(b"\n> "):
++                raise ValueError("llama.cpp did not load the WAV")
++            send(f"lang:{language}\n")
++            line = receive(b"\n> ")[:-3]
++            elapsed = time.perf_counter() - start
++            # b12521's mtmd CLI emits a newline on EOG, before its next prompt.
++            return dict(
++                text=line.decode("utf-8").strip(),
++                finish_reason="stop" if line.endswith(b"\n") else "length",
++            ), elapsed
++
++        reader = Thread(target=read_stdout, daemon=True)
++        reader.start()
++        try:
++            if native:
++                props = native_response()
++            else:
++                receive(b"\n> ")
++                props = {}
++            yield invoke, props
++        finally:
++            if process.poll() is None:
++                process.stdin.close()
++                try:
++                    process.wait(timeout=5)
++                except subprocess.TimeoutExpired:
++                    process.kill()
++                    process.wait()
++            reader.join()
++
++
++def transcription_worker(factory, configuration):
++    from importlib import import_module
++
++    module, name = factory.split(":")
++    with getattr(import_module(module), name)(**json.loads(configuration)) as service:
++        print("ASR " + json.dumps(service.metadata), flush=True)
++        for line in sys.stdin:
++            payload = json.loads(line)
++            try:
++                result = service.transcribe(
++                    Path(payload["path"]).read_bytes(),
++                    language=payload["language"],
++                    limit=payload["limit"],
++                    **(
++                        {"profile": True}
++                        if os.environ.get("AKAS_ASR_PROFILE") == "1"
++                        else {}
++                    ),
++                )
++                response = dict(
++                    text=result.text,
++                    token_ids=result.token_ids,
++                    prompt_tokens=result.prompt_tokens,
++                    finish_reason="stop" if result.terminated else "length",
++                )
++                if (timings := getattr(result, "timings", None)) is not None:
++                    response["phase_seconds"] = timings
++            except (OSError, ValueError) as error:
++                response = dict(error=str(error))
++            print("ASR " + json.dumps(response), flush=True)
++
++
++def measure_transcription(invoke, recorder, report, workload, root):
++    meta = report["metadata"]
++    for index, item in enumerate(workload["utterances"], 1):
++        path = (root / item["path"]).resolve()
++        audio = path.read_bytes()
++        if sha256(audio).hexdigest() != item["sha256"]:
++            raise ValueError(f"ASR input checksum mismatch: {path}")
++        with wave.open(io.BytesIO(audio), "rb") as wav:
++            audio_seconds = wav.getnframes() / wav.getframerate()
++        if audio_seconds <= 0:
++            raise ValueError(f"ASR input is empty: {path}")
++        recorder.artifact(path, f"audio/{index:02d}.wav")
++        row = dict(case=item, status="error", samples=[])
++        report["results"].append(row)
++        print(f"MEASURE {meta['provider']} {item['id']}", flush=True)
++        errors = []
++        for iteration in range(1, meta["warmup"] + meta["repeats"] + 1):
++            try:
++                response, elapsed = invoke(path, item["language"])
++                if "error" in response:
++                    raise ValueError(response["error"])
++                transcript = response["text"].strip()
++                finish = response["finish_reason"]
++                if not transcript or finish != "stop":
++                    raise ValueError(
++                        f"empty or incomplete transcript (finish reason {finish!r})"
++                    )
++            except (AttributeError, IndexError, KeyError, ValueError) as error:
++                errors.append(f"request {iteration}: {error}")
++                continue
++            if iteration <= meta["warmup"]:
++                continue
++            sample = dict(
++                repeat=iteration - meta["warmup"],
++                transcript=transcript,
++                finish_reason=finish,
++                prompt_tokens=response.get("prompt_tokens"),
++                wall_seconds=elapsed,
++                audio_seconds=audio_seconds,
++                real_time_factor=elapsed / audio_seconds,
++                error_rate=transcription.error_rate(
++                    item["text"], transcript, item["metric"]
++                ),
++            )
++            if "token_ids" in response:
++                sample["token_ids"] = response["token_ids"]
++            if "phase_seconds" in response:
++                sample["phase_seconds"] = response["phase_seconds"]
++            row["samples"].append(sample)
++        samples = row["samples"]
++        complete = len(samples) == meta["repeats"]
++        deterministic = complete and all(
++            (s["transcript"], s.get("token_ids"))
++            == (samples[0]["transcript"], samples[0].get("token_ids"))
++            for s in samples
++        )
++        row["correctness"] = dict(
++            complete=complete, deterministic=deterministic, full_model_reference=False
++        )
++        if samples:
++            row["summary"] = {
++                key: median(sample[key] for sample in samples)
++                for key in (
++                    "wall_seconds",
++                    "audio_seconds",
++                    "real_time_factor",
++                    "error_rate",
++                )
++            }
++        if errors or not deterministic:
++            row["error"] = " | ".join(
++                errors or ["greedy transcripts differed across repetitions"]
++            )
++        else:
++            row["status"] = "ok"
++        recorder.update(report)
++        print(
++            json.dumps(row.get("error", row.get("summary")), ensure_ascii=True),
++            flush=True,
++        )
++
++
+ def reference_report(args, metadata):
+     from akas.benchmarking.archive import read_file
+     from akas.benchmarking.history import load_record
+@@ -174,11 +405,11 @@ def reference_report(args, metadata):
+         "model",
+         "weight_format",
+         "checkpoint_sha256",
+-        "voice",
+         "sample_rate_hz",
+         "warmup",
+         "repeats",
+     )
++    match += ("context",) if metadata["mode"] == "asr" else ("voice",)
+     if (
+         left["status"] not in ("passed", "failed")
+         or reference["runtime"] != "llama"
+@@ -252,7 +483,11 @@ def llama_runtime(binary, speech, *, vulkan, device):
+ def run(args, definition_path, model, speech, weight_format):
+     root = Path(__file__).resolve().parents[2]
+     workload = load(args.workload or speech["workload"])
+-    if (
++    mode = model["modes"][0]
++    asr = mode == "asr"
++    if asr:
++        transcription.validate(workload)
++    elif (
+         workload["schema"] != "akas.speech-workload.v1"
+         or workload["protocol"] != "client-speech-pcm-v1"
+         or workload["request"]["response_format"] != "pcm16"
+@@ -267,10 +502,11 @@ def run(args, definition_path, model, speech, weight_format):
+     weight = checked_file(root, model["weights"][weight_format])
+     projector = checked_file(root, speech["projector"])
+     native = args.runtime == "akas"
+-    with socket() as listener:
+-        listener.bind(("127.0.0.1", 0))
+-        port = listener.getsockname()[1]
+-    url = f"http://127.0.0.1:{port}"
++    if not asr:
++        with socket() as listener:
++            listener.bind(("127.0.0.1", 0))
++            port = listener.getsockname()[1]
++        url = f"http://127.0.0.1:{port}"
+     vulkan = args.provider == "vulkan"
+     device = "Vulkan0" if vulkan else "none"
+     if native:
+@@ -283,22 +519,33 @@ def run(args, definition_path, model, speech, weight_format):
+                 bundle=str(bundle),
+             )
+         )
+-        command = [
+-            sys.executable,
+-            "-u",
+-            "-m",
+-            "akas.cli",
+-            "serve",
+-            "--speech",
+-            "--factory",
+-            factory,
+-            "--config",
+-            configuration,
+-            "--host",
+-            "127.0.0.1",
+-            "--port",
+-            str(port),
+-        ]
++        command = (
++            [
++                sys.executable,
++                "-u",
++                "-m",
++                "tools.baselines.speech",
++                factory,
++                configuration,
++            ]
++            if asr
++            else [
++                sys.executable,
++                "-u",
++                "-m",
++                "akas.cli",
++                "serve",
++                "--speech",
++                "--factory",
++                factory,
++                "--config",
++                configuration,
++                "--host",
++                "127.0.0.1",
++                "--port",
++                str(port),
++            ]
++        )
+     else:
+         binary = (args.binary or root / speech["binary"]).resolve(strict=True)
+         command = [
+@@ -314,33 +561,50 @@ def run(args, definition_path, model, speech, weight_format):
+             "-ngl",
+             "all" if vulkan else "0",
+             "--mmproj-offload" if vulkan else "--no-mmproj-offload",
+-            "-np",
+-            "1",
+             "-c",
+-            "1024",
++            str(speech.get("context", 1024)),
+             "-t",
+             "6",
+             "-tb",
+             "6",
+-            "--no-cache-prompt",
+-            "--cache-ram",
+-            "0",
+-            "--host",
+-            "127.0.0.1",
+-            "--port",
+-            str(port),
+-            "--no-ui",
+             "--offline",
+-            "--verbosity",
+-            "4",
+         ]
++        if asr:
++            command.extend(
++                (
++                    "-n",
++                    str(workload["request"]["max_tokens"]),
++                    "--temp",
++                    "0",
++                    "--jinja",
++                    "--log-colors",
++                    "off",
++                )
++            )
++        else:
++            command.extend(
++                (
++                    "-np",
++                    "1",
++                    "--no-cache-prompt",
++                    "--cache-ram",
++                    "0",
++                    "--host",
++                    "127.0.0.1",
++                    "--port",
++                    str(port),
++                    "--no-ui",
++                    "--verbosity",
++                    "4",
++                )
++            )
+     metadata = dict(
+         protocol=workload["protocol"],
+         speech_workload=dict(id=workload["id"], definition=workload),
+         runtime=args.runtime,
+         provider="webgpu" if native else args.provider,
+         model=model["model"],
+-        mode="tts",
++        mode=mode,
+         purpose="speech-demo",
+         weight_format=weight_format,
+         checkpoint=weight["path"],
+@@ -349,7 +613,6 @@ def run(args, definition_path, model, speech, weight_format):
+         projector=projector,
+         model_definition_sha256=digest(definition_path),
+         device=dict(name=platform.processor() or platform.machine()),
+-        voice=speech["voice"],
+         sample_rate_hz=speech["sample_rate_hz"],
+         warmup=workload["warmup"],
+         repeats=args.repeats or workload["repeats"],
+@@ -362,36 +625,66 @@ def run(args, definition_path, model, speech, weight_format):
+             and not any(secret in name for secret in ("KEY", "TOKEN", "PASSWORD"))
+         },
+     )
++    if asr:
++        metadata["context"] = speech["context"]
++    else:
++        metadata["voice"] = speech["voice"]
++    dependency_sources = None
++    if native:
++        import tensor
++
++        tensor_source = root.parent / "tensor"
++        if Path(tensor.__file__).resolve().is_relative_to(tensor_source):
++            dependency_sources = {"tensor": tensor_source}
+     recorder = Recorder(
+         args.history,
+         metadata,
+         kind="configuration" if native else "baseline",
+-        change="Measure warm speech synthesis",
++        change="Measure warm speech transcription"
++        if asr
++        else "Measure warm speech synthesis",
++        dependency_sources=dependency_sources,
+     )
+     recorder.artifact(definition_path, "model.json")
+     report = dict(schema="akas.benchmark.v1", metadata=metadata, results=[])
+-    log_path = recorder.directory / "server.log"
++    log_path = recorder.directory / ("runtime.log" if asr else "server.log")
++    transcript_log = recorder.directory / "transcripts.log"
+     deadline = time.monotonic() + args.seconds
+     status = "failed"
+     try:
+-        env = dict(os.environ)
++        env = dict(os.environ, PYTHONUTF8="1")
+         if native:
+             env["WGPU_BACKEND_TYPE"] = "Vulkan"
+             metadata["environment"]["WGPU_BACKEND_TYPE"] = "Vulkan"
++            if asr and env.get("AKAS_ASR_PROFILE") == "1":
++                metadata["environment"]["AKAS_ASR_PROFILE"] = "1"
+             metadata["runtime_revision"] = recorder.record["source"]["revision"]
+             recorder.artifact(bundle / "speech.json", "speech.json")
+         else:
+             metadata.update(llama_runtime(binary, speech, vulkan=vulkan, device=device))
+         with log_path.open("wb") as log:
+-            process = subprocess.Popen(
+-                command, stdout=log, stderr=subprocess.STDOUT, env=env
++            client = (
++                transcription_process(
++                    command,
++                    env,
++                    log,
++                    transcript_log,
++                    deadline,
++                    native=native,
++                    limit=workload["request"]["max_tokens"],
++                )
++                if asr
++                else speech_server(command, env, log, url, deadline)
+             )
+-            try:
+-                wait_for_server(process, url, deadline)
++            with client as session:
+                 reference = None
+                 if native:
+-                    _, props = request(url + "/props", deadline)
+-                    metadata.update(json.loads(props))
++                    props = (
++                        session[1]
++                        if asr
++                        else json.loads(request(url + "/props", deadline)[1])
++                    )
++                    metadata.update(props)
+                     if metadata["program_sha256"] != digest(bundle / "speech.json"):
+                         raise ValueError(
+                             "speech server loaded a different compiled bundle"
+@@ -408,7 +701,10 @@ def run(args, definition_path, model, speech, weight_format):
+                             recorder.artifact(bundle / entry["path"], entry["path"])
+                     if args.reference_run:
+                         reference = reference_report(args, metadata)
+-                measure(url, deadline, recorder, report, workload, speech)
++                if asr:
++                    measure_transcription(session[0], recorder, report, workload, root)
++                else:
++                    measure(url, deadline, recorder, report, workload, speech)
+                 if reference:
+                     for row in report["results"]:
+                         baseline_row = reference[row["case"]["id"]]
+@@ -422,6 +718,11 @@ def run(args, definition_path, model, speech, weight_format):
+                             wall_speedup=baseline["wall_seconds"]
+                             / row["summary"]["wall_seconds"],
+                         )
++                        if asr:
++                            row["comparison"]["transcript_match"] = (
++                                row["samples"][0]["transcript"]
++                                == baseline_row["samples"][0]["transcript"]
++                            )
+                         print(
+                             row["case"]["id"], json.dumps(row["comparison"]), flush=True
+                         )
+@@ -430,14 +731,6 @@ def run(args, definition_path, model, speech, weight_format):
+                     if all(row["status"] == "ok" for row in report["results"])
+                     else "failed"
+                 )
+-            finally:
+-                if process.poll() is None:
+-                    process.terminate()
+-                    try:
+-                        process.wait(timeout=5)
+-                    except subprocess.TimeoutExpired:
+-                        process.kill()
+-                        process.wait()
+     except (TimeoutError, subprocess.TimeoutExpired) as error:
+         metadata["error"] = str(error)
+         status = "budget_exhausted"
+@@ -447,9 +740,14 @@ def run(args, definition_path, model, speech, weight_format):
+     except Exception as error:
+         metadata["error"] = f"{type(error).__name__}: {error}"
+     finally:
+-        if log_path.is_file():
+-            recorder.artifact(log_path, "server.log")
++        for path in (log_path, transcript_log):
++            if path.is_file():
++                recorder.artifact(path, path.name)
+         record = recorder.update(report, final=True, status=status)
+     if metadata.get("error"):
+         print(metadata["error"], file=sys.stderr, flush=True)
+     return record
++
++
++if __name__ == "__main__":
++    transcription_worker(*sys.argv[1:])
+diff --git a/tools/campaign_report.py b/tools/campaign_report.py
+index 83e3a7bb..251e5ddd 100644
+--- a/tools/campaign_report.py
++++ b/tools/campaign_report.py
+@@ -16,6 +16,7 @@ import tempfile
+ 
+ from akas.benchmarking.history import digest, write
+ from akas.benchmarking import archive
++from akas.benchmarking import transcription
+ from akas.benchmarking.workload import prompt_digest
+ from akas.optimization.context import workload
+ 
+@@ -835,6 +836,8 @@ def render(data, out, history):
+     if data.get("schema") == NATIVE_STREAM_SCHEMA:
+         return render_native_stream_baseline(data, Path(out).resolve(), Path(history).resolve())
+     if data.get("schema") == SPEECH_SCHEMA:
++        if data["workload"].get("protocol") == transcription.PROTOCOL:
++            return render_transcription(data, Path(out).resolve(), Path(history).resolve())
+         return render_speech(data, Path(out).resolve(), Path(history).resolve())
+     validate(data)
+     out = Path(out).resolve()
+@@ -1788,6 +1791,8 @@ def export_speech(native, model, workload_id, history, out, baseline_lock=None):
+         raise ValueError("the frozen speech baseline is unavailable")
+     cpu = None
+     if baseline_lock is not None:
++        if workload["protocol"] == transcription.PROTOCOL:
++            raise ValueError("ASR export uses the Vulkan reference frozen in the AKAS run")
+         if (
+             not vulkan
+             or baseline_lock.get("schema") != "akas.baseline-lock.v1"
+@@ -1890,6 +1895,227 @@ def export_speech(native, model, workload_id, history, out, baseline_lock=None):
+     return destination
+ 
+ 
++def render_transcription(data, out, history):
++    state, workload, profiles = data["campaign"], data["workload"], data["profiles"]
++    transcription.validate(workload)
++    if [p["kind"] for p in profiles] not in (["akas"], ["akas", "baseline"]):
++        raise ValueError("invalid ASR profiles")
++    cases = {item["id"]: item for item in workload["utterances"]}
++    banded = all(item.get("duration_band") for item in cases.values())
++    nav = "[Overview](README.md) · [Comparison](COMPARISON.md) · [AKAS](AKAS.md) · [Baselines](BASELINES.md) · [Measurements](measurements.csv)"
++    notes = (
++        "Warm wall time covers the request through receipt of the complete transcript over local process pipes. "
++        "The timer includes WAV loading, feature extraction and greedy decoding. Model loading and context reset are outside the timer. "
++        "RTF is wall seconds per second of input audio. WER and CER use case-folded NFKC text with punctuation removed. "
++        + (
++            f"The clips are recorded speech from {clean(workload['source']['name'])}. "
++            if workload.get("source", {}).get("kind") == "recorded"
++            else "The demonstration uses synthesized speech. "
++        )
++        + "Both profiles are unqualified for independent full-model accuracy."
++    )
++    overview = [
++        "# Qwen3 ASR benchmark",
++        "",
++        nav,
++        "",
++        f"Workload `{workload['id']}` uses {len(cases)} fixed clips. Protocol `{transcription.PROTOCOL}`.",
++        "",
++        notes,
++        "",
++        "| Runtime | GPU | Complete and deterministic cases | Run |",
++        "| --- | --- | ---: | --- |",
++    ]
++    stats = {}
++    samples = []
++    baseline_page = ["# Baseline transcription measurements", "", nav, ""]
++    for profile in profiles:
++        meta = profile["metadata"]
++        if (
++            meta["speech_workload"]["definition"] != workload
++            or meta["protocol"] != transcription.PROTOCOL
++            or meta["mode"] != "asr"
++        ):
++            raise ValueError("ASR profile metadata differs from the workload")
++        kind = profile["kind"]
++        name = "AKAS" if kind == "akas" else "llama.cpp"
++        link = evidence_link(profile["run_id"], out, history)
++        rows = profile["measurements"]
++        indexed = {row["case"]["id"]: row for row in rows}
++        if len(indexed) != len(rows) or any(
++            cases.get(key) != row["case"] for key, row in indexed.items()
++        ):
++            raise ValueError("undeclared or duplicate ASR measurements")
++        stats[kind] = indexed
++        passed = sum(row["status"] == "ok" for row in rows)
++        overview.append(
++            f"| {name} ({meta['provider']}) | {clean(meta['device']['name'])} | {passed}/{len(cases)} | {link} |"
++        )
++        lines = [
++            f"# {name} transcription measurements",
++            "",
++            nav,
++            "",
++            notes,
++            "",
++            f"Run {link}. Report SHA-256 `{profile['report_sha256']}`.",
++            f"Model {meta['model']}. Format `{meta['weight_format']}`. Context {meta['context']} tokens.",
++            f"Decoder SHA-256 `{meta['checkpoint_sha256']}`. Projector SHA-256 `{meta['projector']['sha256']}`.",
++            f"Each clip has {meta['warmup']} warmup and {meta['repeats']} measured requests.",
++        ]
++        runtime = meta.get("runtime_version")
++        program = meta.get("program_sha256")
++        if runtime:
++            lines.append(f"Runtime `{clean(runtime)}`.")
++        if program:
++            lines.append(f"Compiled program SHA-256 `{program}`.")
++        lines.extend(
++            [
++                "",
++                "| Case | Status | Wall ms | Audio s | RTF | Error rate | Transcript |",
++                "| --- | --- | ---: | ---: | ---: | ---: | --- |",
++            ]
++        )
++        for case, item in cases.items():
++            row = indexed.get(case, {})
++            summary = row.get("summary", {})
++            retained = row.get("samples", [])
++            rate = summary.get("error_rate")
++            display_rate = (
++                "—" if rate is None else f"{item['metric'].upper()} {100 * rate:.1f}%"
++            )
++            display_text = (
++                retained[0]["transcript"] if retained else row.get("error", "—")
++            )
++            wall = summary.get("wall_seconds")
++            rtf = summary.get("real_time_factor")
++            display_rtf = "—" if rtf is None else f"{rtf:.3f}"
++            lines.append(
++                f"| {case} | {row.get('status', 'not measured')} | "
++                f"{fmt(wall * 1000 if wall is not None else None)} | {fmt(summary.get('audio_seconds'))} | "
++                f"{display_rtf} | {display_rate} | {clean(display_text)} |"
++            )
++            for sample in retained or ({},):
++                samples.append(
++                    dict(
++                        runtime=name,
++                        provider=meta["provider"],
++                        case=case,
++                        language=item["language"],
++                        reference=item["text"],
++                        metric=item["metric"],
++                        status=row.get("status", "not measured"),
++                        error=row.get("error"),
++                        **sample,
++                    )
++                )
++        if kind == "akas":
++            text(out / "AKAS.md", "\n".join(lines) + "\n")
++        else:
++            baseline_page = lines
++    comparison = [
++        "# Transcription comparison",
++        "",
++        nav,
++        "",
++        notes,
++        "",
++        "| Case | "
++        + ("Duration band | Audio s | " if banded else "")
++        + "AKAS wall ms | llama.cpp wall ms | llama.cpp / AKAS | Exact transcript match |",
++        "| --- | "
++        + ("--- | ---: | " if banded else "")
++        + "---: | ---: | ---: | --- |",
++    ]
++    ratios = []
++    bands = {}
++    for case, item in cases.items():
++        left, right = (
++            stats.get(kind, {}).get(case, {}) for kind in ("akas", "baseline")
++        )
++        native = left.get("summary", {}).get("wall_seconds")
++        baseline = right.get("summary", {}).get("wall_seconds")
++        duration = left.get("summary", {}).get("audio_seconds") or right.get(
++            "summary", {}
++        ).get("audio_seconds")
++        rows = bands.setdefault(item["duration_band"], []) if banded else None
++        ratio, match = None, "—"
++        if left.get("status") == right.get("status") == "ok":
++            ratio = baseline / native
++            ratios.append(ratio)
++            match = (
++                "yes"
++                if left["samples"][0]["transcript"] == right["samples"][0]["transcript"]
++                else "no"
++            )
++        display_ratio = "—" if ratio is None else f"{ratio:.3f}"
++        duration_cells = (
++            f"{clean(item['duration_band'])} | {fmt(duration)} | " if banded else ""
++        )
++        if rows is not None:
++            rows.append((duration, native, baseline, ratio))
++        comparison.append(
++            f"| {case} | {duration_cells}{fmt(native * 1000 if native is not None else None)} | "
++            f"{fmt(baseline * 1000 if baseline is not None else None)} | {display_ratio} | {match} |"
++        )
++    if bands:
++        comparison.extend(
++            (
++                "",
++                "Band medians use clips completed deterministically by both runtimes. "
++                "Ratios are geometric means of the paired per-clip ratios.",
++                "",
++                "| Duration band | Completed clips | Audio s | AKAS wall ms | llama.cpp wall ms | llama.cpp / AKAS |",
++                "| --- | ---: | --- | ---: | ---: | ---: |",
++            )
++        )
++        for band, rows in bands.items():
++            paired = [(a, b, ratio) for _, a, b, ratio in rows if ratio is not None]
++            durations = [duration for duration, *_ in rows if duration is not None]
++            span = f"{min(durations):.2f}–{max(durations):.2f}" if durations else "-"
++            a, b, speedups = zip(*paired) if paired else ((), (), ())
++            comparison.append(
++                f"| {clean(band)} | {len(paired)}/{len(rows)} | {span} | "
++                f"{fmt(1000 * statistics.median(a) if a else None)} | "
++                f"{fmt(1000 * statistics.median(b) if b else None)} | "
++                f"{fmt(statistics.geometric_mean(speedups) if speedups else None)} |"
++            )
++    if ratios:
++        comparison.extend(
++            [
++                "",
++                f"Geometric mean wall-time ratio across {len(ratios)} matched clips is {statistics.geometric_mean(ratios):.3f}×.",
++            ]
++        )
++    text(out / "README.md", "\n".join(overview) + "\n")
++    text(out / "BASELINES.md", "\n".join(baseline_page) + "\n")
++    text(out / "COMPARISON.md", "\n".join(comparison) + "\n")
++    csv_file(
++        out / "measurements.csv",
++        samples,
++        (
++            "runtime",
++            "provider",
++            "case",
++            "language",
++            "reference",
++            "metric",
++            "status",
++            "error",
++            "repeat",
++            "transcript",
++            "wall_seconds",
++            "audio_seconds",
++            "real_time_factor",
++            "error_rate",
++            "finish_reason",
++        ),
++    )
++    write(out / "campaign.json", state)
++    write(out / "report.json", data)
++    index(history)
++
++
+ def render_speech(data, out, history):
+     state, workload, profiles = data["campaign"], data["workload"], data["profiles"]
+     protocol = "client-speech-pcm-v1"
+@@ -2220,7 +2446,10 @@ def export_runs(run_ids, *, model_id, workload_id, history="benchmarks", out=Non
+         raise ValueError("retained native runs must exist")
+     if any(data["metadata"].get("runtime") != "akas" for data in runs):
+         raise ValueError("--runs accepts native AKAS records; baselines use normal selection")
+-    if any(run["metadata"].get("protocol") == "client-speech-pcm-v1" for run in runs):
++    if any(
++        run["metadata"].get("protocol") in ("client-speech-pcm-v1", transcription.PROTOCOL)
++        for run in runs
++    ):
+         if len(runs) != 1:
+             raise ValueError("speech export accepts one AKAS run with its frozen reference")
+         lock = read(baseline_lock) if isinstance(baseline_lock, (str, Path)) else baseline_lock

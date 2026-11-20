@@ -1,0 +1,2328 @@
+{
+  "schema": "akas.forward.v1",
+  "target": "webgpu-portable-v1",
+  "provider": "webgpu",
+  "forward": {
+    "contract": "reference",
+    "phase": "forward",
+    "buffers": [
+      {
+        "name": "mel",
+        "shape": [
+          100,
+          128,
+          1
+        ],
+        "dtype": "float32",
+        "role": "input"
+      },
+      {
+        "name": "a.conv2d.1.projected",
+        "shape": [
+          3200,
+          480
+        ],
+        "dtype": "float32",
+        "role": "scratch"
+      },
+      {
+        "name": "a.conv2d.1.weight",
+        "shape": [
+          4320
+        ],
+        "dtype": "float16",
+        "role": "weight"
+      },
+      {
+        "name": "a.conv2d.1.bias",
+        "shape": [
+          480
+        ],
+        "dtype": "float32",
+        "role": "weight"
+      },
+      {
+        "name": "a.conv2d.1.gelu",
+        "shape": [
+          3200,
+          480
+        ],
+        "dtype": "float16",
+        "role": "scratch"
+      },
+      {
+        "name": "a.conv2d.1.bias.view.5",
+        "shape": [
+          480
+        ],
+        "dtype": "float32",
+        "role": "weight",
+        "alias_of": "a.conv2d.1.bias"
+      },
+      {
+        "name": "a.conv2d.1.gelu.view.6",
+        "shape": [
+          50,
+          64,
+          480
+        ],
+        "dtype": "float16",
+        "role": "scratch",
+        "alias_of": "a.conv2d.1.gelu"
+      },
+      {
+        "name": "a.conv2d.2.projected",
+        "shape": [
+          800,
+          480
+        ],
+        "dtype": "float32",
+        "role": "scratch"
+      },
+      {
+        "name": "a.conv2d.2.weight.taps",
+        "shape": [
+          2073600
+        ],
+        "dtype": "float16",
+        "role": "weight"
+      },
+      {
+        "name": "a.conv2d.2.projected.view.9",
+        "shape": [
+          384000
+        ],
+        "dtype": "float32",
+        "role": "scratch",
+        "alias_of": "a.conv2d.2.projected"
+      },
+      {
+        "name": "a.conv2d.2.bias",
+        "shape": [
+          480
+        ],
+        "dtype": "float32",
+        "role": "weight"
+      },
+      {
+        "name": "a.conv2d.2.gelu",
+        "shape": [
+          800,
+          480
+        ],
+        "dtype": "float16",
+        "role": "scratch"
+      },
+      {
+        "name": "a.conv2d.2.bias.view.12",
+        "shape": [
+          480
+        ],
+        "dtype": "float32",
+        "role": "weight",
+        "alias_of": "a.conv2d.2.bias"
+      },
+      {
+        "name": "a.conv2d.2.gelu.view.13",
+        "shape": [
+          25,
+          32,
+          480
+        ],
+        "dtype": "float16",
+        "role": "scratch",
+        "alias_of": "a.conv2d.2.gelu"
+      },
+      {
+        "name": "a.conv2d.3.projected",
+        "shape": [
+          208,
+          480
+        ],
+        "dtype": "float32",
+        "role": "scratch"
+      },
+      {
+        "name": "a.conv2d.3.weight.taps",
+        "shape": [
+          2073600
+        ],
+        "dtype": "float16",
+        "role": "weight"
+      },
+      {
+        "name": "a.conv2d.3.projected.view.16",
+        "shape": [
+          99840
+        ],
+        "dtype": "float32",
+        "role": "scratch",
+        "alias_of": "a.conv2d.3.projected"
+      },
+      {
+        "name": "a.conv2d.3.bias",
+        "shape": [
+          480
+        ],
+        "dtype": "float32",
+        "role": "weight"
+      },
+      {
+        "name": "a.conv2d.3.gelu",
+        "shape": [
+          208,
+          480
+        ],
+        "dtype": "float32",
+        "role": "scratch"
+      },
+      {
+        "name": "a.conv2d.3.bias.view.19",
+        "shape": [
+          480
+        ],
+        "dtype": "float32",
+        "role": "weight",
+        "alias_of": "a.conv2d.3.bias"
+      },
+      {
+        "name": "a.conv2d.3.gelu.view.20",
+        "shape": [
+          13,
+          16,
+          480
+        ],
+        "dtype": "float32",
+        "role": "scratch",
+        "alias_of": "a.conv2d.3.gelu"
+      },
+      {
+        "name": "a.conv2d.3.gelu.view.20.view.21",
+        "shape": [
+          13,
+          7680
+        ],
+        "dtype": "float32",
+        "role": "scratch",
+        "alias_of": "a.conv2d.3.gelu.view.20"
+      },
+      {
+        "name": "a.conv_out.weight",
+        "shape": [
+          6881280
+        ],
+        "dtype": "float16",
+        "role": "weight"
+      },
+      {
+        "name": "projected",
+        "shape": [
+          13,
+          896
+        ],
+        "dtype": "float32",
+        "role": "scratch"
+      },
+      {
+        "name": "a.conv2d.3.gelu.view.20.view.21.view.24",
+        "shape": [
+          99840
+        ],
+        "dtype": "float32",
+        "role": "scratch",
+        "alias_of": "a.conv2d.3.gelu.view.20.view.21"
+      },
+      {
+        "name": "projected.view.25",
+        "shape": [
+          11648
+        ],
+        "dtype": "float32",
+        "role": "scratch",
+        "alias_of": "projected"
+      },
+      {
+        "name": "sinusoid",
+        "shape": [
+          13,
+          896
+        ],
+        "dtype": "float32",
+        "role": "weight"
+      },
+      {
+        "name": "features",
+        "shape": [
+          13,
+          896
+        ],
+        "dtype": "float32",
+        "role": "output"
+      },
+      {
+        "name": "projected.view.28",
+        "shape": [
+          11648
+        ],
+        "dtype": "float32",
+        "role": "scratch",
+        "alias_of": "projected"
+      },
+      {
+        "name": "sinusoid.view.29",
+        "shape": [
+          11648
+        ],
+        "dtype": "float32",
+        "role": "weight",
+        "alias_of": "sinusoid"
+      },
+      {
+        "name": "features.view.30",
+        "shape": [
+          11648
+        ],
+        "dtype": "float32",
+        "role": "output",
+        "alias_of": "features"
+      }
+    ],
+    "calls": [
+      {
+        "kind": "single_channel_conv2d",
+        "parameters": {
+          "width": 100,
+          "height": 128,
+          "channels": 1,
+          "kernel": 3,
+          "stride": 2,
+          "padding": 1,
+          "columns": 480
+        },
+        "arguments": [
+          "mel",
+          "a.conv2d.1.weight",
+          "a.conv2d.1.projected"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "gelu_bias",
+        "parameters": {
+          "r": 3200,
+          "c": 480,
+          "output_dtype": "float16"
+        },
+        "arguments": [
+          "a.conv2d.1.projected",
+          "a.conv2d.1.bias.view.5",
+          "a.conv2d.1.gelu"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "implicit_half_conv2d",
+        "parameters": {
+          "width": 50,
+          "height": 64,
+          "channels": 480,
+          "kernel": 3,
+          "stride": 2,
+          "padding": 1,
+          "columns": 480
+        },
+        "arguments": [
+          "a.conv2d.1.gelu.view.6",
+          "a.conv2d.2.weight.taps",
+          "a.conv2d.2.projected.view.9"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "gelu_bias",
+        "parameters": {
+          "r": 800,
+          "c": 480,
+          "output_dtype": "float16"
+        },
+        "arguments": [
+          "a.conv2d.2.projected",
+          "a.conv2d.2.bias.view.12",
+          "a.conv2d.2.gelu"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "implicit_half_conv2d",
+        "parameters": {
+          "width": 25,
+          "height": 32,
+          "channels": 480,
+          "kernel": 3,
+          "stride": 2,
+          "padding": 1,
+          "columns": 480
+        },
+        "arguments": [
+          "a.conv2d.2.gelu.view.13",
+          "a.conv2d.3.weight.taps",
+          "a.conv2d.3.projected.view.16"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "gelu_bias",
+        "parameters": {
+          "r": 208,
+          "c": 480
+        },
+        "arguments": [
+          "a.conv2d.3.projected",
+          "a.conv2d.3.bias.view.19",
+          "a.conv2d.3.gelu"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "linear",
+        "parameters": {
+          "r": 13,
+          "k": 7680,
+          "o": 896,
+          "ggml": true,
+          "type": 1,
+          "half_accum": true,
+          "input_dtype": "float32"
+        },
+        "arguments": [
+          "a.conv2d.3.gelu.view.20.view.21.view.24",
+          "a.conv_out.weight",
+          "projected.view.25"
+        ],
+        "bindings": {},
+        "label": null
+      },
+      {
+        "kind": "add",
+        "parameters": {
+          "r": 13,
+          "c": 896
+        },
+        "arguments": [
+          "projected.view.28",
+          "sinusoid.view.29",
+          "features.view.30"
+        ],
+        "bindings": {},
+        "label": null
+      }
+    ]
+  },
+  "allocations": [
+    [
+      "a.conv2d.1.projected"
+    ],
+    [
+      "a.conv2d.1.gelu"
+    ],
+    [
+      "a.conv2d.2.projected"
+    ],
+    [
+      "a.conv2d.2.gelu"
+    ],
+    [
+      "a.conv2d.3.projected"
+    ],
+    [
+      "a.conv2d.3.gelu"
+    ],
+    [
+      "projected"
+    ]
+  ],
+  "tuning": {
+    "identity": "fc555cc38a2553ef6d673be2faf44cb4e818c1b42dcfffaadda585b252e77832",
+    "context": {
+      "graph": {
+        "contract": "reference",
+        "phase": "forward",
+        "buffers": [
+          {
+            "name": "mel",
+            "shape": [
+              100,
+              128,
+              1
+            ],
+            "dtype": "float32",
+            "role": "input"
+          },
+          {
+            "name": "a.conv2d.1.projected",
+            "shape": [
+              3200,
+              480
+            ],
+            "dtype": "float32",
+            "role": "scratch"
+          },
+          {
+            "name": "a.conv2d.1.weight",
+            "shape": [
+              4320
+            ],
+            "dtype": "float16",
+            "role": "weight"
+          },
+          {
+            "name": "a.conv2d.1.bias",
+            "shape": [
+              480
+            ],
+            "dtype": "float32",
+            "role": "weight"
+          },
+          {
+            "name": "a.conv2d.1.gelu",
+            "shape": [
+              3200,
+              480
+            ],
+            "dtype": "float16",
+            "role": "scratch"
+          },
+          {
+            "name": "a.conv2d.1.bias.view.5",
+            "shape": [
+              480
+            ],
+            "dtype": "float32",
+            "role": "weight",
+            "alias_of": "a.conv2d.1.bias"
+          },
+          {
+            "name": "a.conv2d.1.gelu.view.6",
+            "shape": [
+              50,
+              64,
+              480
+            ],
+            "dtype": "float16",
+            "role": "scratch",
+            "alias_of": "a.conv2d.1.gelu"
+          },
+          {
+            "name": "a.conv2d.2.projected",
+            "shape": [
+              800,
+              480
+            ],
+            "dtype": "float32",
+            "role": "scratch"
+          },
+          {
+            "name": "a.conv2d.2.weight.taps",
+            "shape": [
+              2073600
+            ],
+            "dtype": "float16",
+            "role": "weight"
+          },
+          {
+            "name": "a.conv2d.2.projected.view.9",
+            "shape": [
+              384000
+            ],
+            "dtype": "float32",
+            "role": "scratch",
+            "alias_of": "a.conv2d.2.projected"
+          },
+          {
+            "name": "a.conv2d.2.bias",
+            "shape": [
+              480
+            ],
+            "dtype": "float32",
+            "role": "weight"
+          },
+          {
+            "name": "a.conv2d.2.gelu",
+            "shape": [
+              800,
+              480
+            ],
+            "dtype": "float16",
+            "role": "scratch"
+          },
+          {
+            "name": "a.conv2d.2.bias.view.12",
+            "shape": [
+              480
+            ],
+            "dtype": "float32",
+            "role": "weight",
+            "alias_of": "a.conv2d.2.bias"
+          },
+          {
+            "name": "a.conv2d.2.gelu.view.13",
+            "shape": [
+              25,
+              32,
+              480
+            ],
+            "dtype": "float16",
+            "role": "scratch",
+            "alias_of": "a.conv2d.2.gelu"
+          },
+          {
+            "name": "a.conv2d.3.projected",
+            "shape": [
+              208,
+              480
+            ],
+            "dtype": "float32",
+            "role": "scratch"
+          },
+          {
+            "name": "a.conv2d.3.weight.taps",
+            "shape": [
+              2073600
+            ],
+            "dtype": "float16",
+            "role": "weight"
+          },
+          {
+            "name": "a.conv2d.3.projected.view.16",
+            "shape": [
+              99840
+            ],
+            "dtype": "float32",
+            "role": "scratch",
+            "alias_of": "a.conv2d.3.projected"
+          },
+          {
+            "name": "a.conv2d.3.bias",
+            "shape": [
+              480
+            ],
+            "dtype": "float32",
+            "role": "weight"
+          },
+          {
+            "name": "a.conv2d.3.gelu",
+            "shape": [
+              208,
+              480
+            ],
+            "dtype": "float32",
+            "role": "scratch"
+          },
+          {
+            "name": "a.conv2d.3.bias.view.19",
+            "shape": [
+              480
+            ],
+            "dtype": "float32",
+            "role": "weight",
+            "alias_of": "a.conv2d.3.bias"
+          },
+          {
+            "name": "a.conv2d.3.gelu.view.20",
+            "shape": [
+              13,
+              16,
+              480
+            ],
+            "dtype": "float32",
+            "role": "scratch",
+            "alias_of": "a.conv2d.3.gelu"
+          },
+          {
+            "name": "a.conv2d.3.gelu.view.20.view.21",
+            "shape": [
+              13,
+              7680
+            ],
+            "dtype": "float32",
+            "role": "scratch",
+            "alias_of": "a.conv2d.3.gelu.view.20"
+          },
+          {
+            "name": "a.conv_out.weight",
+            "shape": [
+              6881280
+            ],
+            "dtype": "float16",
+            "role": "weight"
+          },
+          {
+            "name": "projected",
+            "shape": [
+              13,
+              896
+            ],
+            "dtype": "float32",
+            "role": "scratch"
+          },
+          {
+            "name": "a.conv2d.3.gelu.view.20.view.21.view.24",
+            "shape": [
+              99840
+            ],
+            "dtype": "float32",
+            "role": "scratch",
+            "alias_of": "a.conv2d.3.gelu.view.20.view.21"
+          },
+          {
+            "name": "projected.view.25",
+            "shape": [
+              11648
+            ],
+            "dtype": "float32",
+            "role": "scratch",
+            "alias_of": "projected"
+          },
+          {
+            "name": "sinusoid",
+            "shape": [
+              13,
+              896
+            ],
+            "dtype": "float32",
+            "role": "weight"
+          },
+          {
+            "name": "features",
+            "shape": [
+              13,
+              896
+            ],
+            "dtype": "float32",
+            "role": "output"
+          },
+          {
+            "name": "projected.view.28",
+            "shape": [
+              11648
+            ],
+            "dtype": "float32",
+            "role": "scratch",
+            "alias_of": "projected"
+          },
+          {
+            "name": "sinusoid.view.29",
+            "shape": [
+              11648
+            ],
+            "dtype": "float32",
+            "role": "weight",
+            "alias_of": "sinusoid"
+          },
+          {
+            "name": "features.view.30",
+            "shape": [
+              11648
+            ],
+            "dtype": "float32",
+            "role": "output",
+            "alias_of": "features"
+          }
+        ],
+        "calls": [
+          {
+            "kind": "single_channel_conv2d",
+            "parameters": {
+              "width": 100,
+              "height": 128,
+              "channels": 1,
+              "kernel": 3,
+              "stride": 2,
+              "padding": 1,
+              "columns": 480
+            },
+            "arguments": [
+              "mel",
+              "a.conv2d.1.weight",
+              "a.conv2d.1.projected"
+            ],
+            "bindings": {},
+            "label": null
+          },
+          {
+            "kind": "gelu_bias",
+            "parameters": {
+              "r": 3200,
+              "c": 480,
+              "output_dtype": "float16"
+            },
+            "arguments": [
+              "a.conv2d.1.projected",
+              "a.conv2d.1.bias.view.5",
+              "a.conv2d.1.gelu"
+            ],
+            "bindings": {},
+            "label": null
+          },
+          {
+            "kind": "implicit_half_conv2d",
+            "parameters": {
+              "width": 50,
+              "height": 64,
+              "channels": 480,
+              "kernel": 3,
+              "stride": 2,
+              "padding": 1,
+              "columns": 480
+            },
+            "arguments": [
+              "a.conv2d.1.gelu.view.6",
+              "a.conv2d.2.weight.taps",
+              "a.conv2d.2.projected.view.9"
+            ],
+            "bindings": {},
+            "label": null
+          },
+          {
+            "kind": "gelu_bias",
+            "parameters": {
+              "r": 800,
+              "c": 480,
+              "output_dtype": "float16"
+            },
+            "arguments": [
+              "a.conv2d.2.projected",
+              "a.conv2d.2.bias.view.12",
+              "a.conv2d.2.gelu"
+            ],
+            "bindings": {},
+            "label": null
+          },
+          {
+            "kind": "implicit_half_conv2d",
+            "parameters": {
+              "width": 25,
+              "height": 32,
+              "channels": 480,
+              "kernel": 3,
+              "stride": 2,
+              "padding": 1,
+              "columns": 480
+            },
+            "arguments": [
+              "a.conv2d.2.gelu.view.13",
+              "a.conv2d.3.weight.taps",
+              "a.conv2d.3.projected.view.16"
+            ],
+            "bindings": {},
+            "label": null
+          },
+          {
+            "kind": "gelu_bias",
+            "parameters": {
+              "r": 208,
+              "c": 480
+            },
+            "arguments": [
+              "a.conv2d.3.projected",
+              "a.conv2d.3.bias.view.19",
+              "a.conv2d.3.gelu"
+            ],
+            "bindings": {},
+            "label": null
+          },
+          {
+            "kind": "linear",
+            "parameters": {
+              "r": 13,
+              "k": 7680,
+              "o": 896,
+              "ggml": true,
+              "type": 1,
+              "half_accum": true,
+              "input_dtype": "float32"
+            },
+            "arguments": [
+              "a.conv2d.3.gelu.view.20.view.21.view.24",
+              "a.conv_out.weight",
+              "projected.view.25"
+            ],
+            "bindings": {},
+            "label": null
+          },
+          {
+            "kind": "add",
+            "parameters": {
+              "r": 13,
+              "c": 896
+            },
+            "arguments": [
+              "projected.view.28",
+              "sinusoid.view.29",
+              "features.view.30"
+            ],
+            "bindings": {},
+            "label": null
+          }
+        ]
+      },
+      "target": "webgpu-portable-v1",
+      "provider": "webgpu",
+      "device": {
+        "ordinal": "0",
+        "provider": "webgpu",
+        "arch": "webgpu-portable-v1",
+        "name": "AMD Radeon RX 6700 XT",
+        "adapter": "{'vendor': 'AMD proprietary driver', 'architecture': '', 'device': 'AMD Radeon RX 6700 XT', 'description': '26.6.2 (AMD proprietary shader compiler)', 'stackgroup_min_size': 4, 'stackgroup_max_size': 128, 'vendor_id': 4098, 'device_id': 29663, 'adapter_type': 'DiscreteGPU', 'backend_type': 'Vulkan'}",
+        "features": "['shader-f16', 'subgroup']",
+        "limits": "{'max-bind-groups': 8, 'max-bind-groups-plus-vertex-buffers': 0, 'max-bindings-per-bind-group': 1000, 'max-buffer-size': 1073741824, 'max-color-attachment-bytes-per-sample': 0, 'max-color-attachments': 0, 'max-compute-invocations-per-workgroup': 1024, 'max-compute-workgroup-size-x': 1024, 'max-compute-workgroup-size-y': 1024, 'max-compute-workgroup-size-z': 1024, 'max-compute-workgroup-storage-size': 32768, 'max-compute-workgroups-per-dimension': 65535, 'max-dynamic-storage-buffers-per-pipeline-layout': 8, 'max-dynamic-uniform-buffers-per-pipeline-layout': 8, 'max-inter-stage-shader-variables': 0, 'max-non-sampler-bindings': 1000000, 'max-push-constant-size': 256, 'max-sampled-textures-per-shader-stage': 16, 'max-samplers-per-shader-stage': 16, 'max-storage-buffer-binding-size': 1073741824, 'max-storage-buffers-per-shader-stage': 32, 'max-storage-textures-per-shader-stage': 4, 'max-texture-array-layers': 8192, 'max-texture-dimension-1d': 16384, 'max-texture-dimension-2d': 16384, 'max-texture-dimension-3d': 8192, 'max-uniform-buffer-binding-size': 2147483647, 'max-uniform-buffers-per-shader-stage': 12, 'max-vertex-attributes': 64, 'max-vertex-buffer-array-stride': 16383, 'max-vertex-buffers': 16, 'min-storage-buffer-offset-alignment': 32, 'min-uniform-buffer-offset-alignment': 32}",
+        "adapter_storage_buffers_reported": "4294967295"
+      },
+      "settings": {
+        "budget": 6,
+        "width": 4,
+        "warmup": 1,
+        "samples": 3,
+        "repeats": 3,
+        "cache_working_set_bytes": 0
+      },
+      "cache_working_set": null,
+      "sources": {
+        "akas.artifacts.fingerprint": "5c9bd5aaf8d405694b51e9b4f2f8b6bbd86cf59a7d1f48c964c7496ee2f9da42",
+        "akas.artifacts.read": "35f0412fbfee8f19821b68e82b54c7eb411130ab11a41882b69ab17ef8c240fa",
+        "akas.artifacts.schema": "fe06687ccea83f4f1654242ed5e9ef69541e01bc09a96043c99d56b31f8a0631",
+        "akas.checkpoints.upload": "c14e2a3c452f49a9e2917ef56f4e2567b68b1dfeca7f931593cbe0815186a724",
+        "akas.execution.batch": "59dda0fd6a5f14a46990548cf9f38e6d30ef5a2d4cc028ffba5e27113539a0c0",
+        "akas.execution.executor": "4d5eb78f097fce34b2c989c73e4975d936c128cf2c411cfc655c85c8fbfbe59f",
+        "akas.execution.forward": "8d13f3945990ef74d87d4e40e347bd0b15308e5823062fd2925b811b69bffad6",
+        "akas.execution.plan": "ae4aaf25b8da543cfe9362c461ade3348782bd8230fa7929808a379bc48d0b0e",
+        "akas.execution.replay": "a73ff42f0bc34efde341249654ce07e54a36ca33dcedb7b9be86627cc4acfcd6",
+        "akas.execution.state": "aecaad55ed49e44c0c70bb673812144f04fc3635d6a0eb0a99fcccd1d240c5d9",
+        "akas.execution.workspace": "8c48213dbd8bf99f3931cbf51c8a7896638788282f2854249615a2832aa65ee7",
+        "akas.graph": "f1579721f05384846c5b1fab32b13beba2c73a793e532f15182d643807fe656b",
+        "akas.kernels.contracts": "7d46801441613e6ad679bcd7ecc7939026f6ad52e7e00edabf05babb396b594d",
+        "akas.kernels.definition": "cdc83efd52482346bfe1824bcc8ea72ef9aa92f2ebaf0de0423503d454580bd5",
+        "akas.kernels.kernel": "9b523a5b7e6fb1c36259b71179d746800832286bfe7f8624b8fa087280415620",
+        "akas.kernels.reductions": "55acbdffa50842ee1a3a2a09c8da3728888b8f34bcc4a8dd590f2a8645e9980f",
+        "akas.kernels.registry": "1757ec20b20203f80a7dfba82aa3115d431596b099cafa446fdb7e8391700a85",
+        "akas.kernels.webgpu": "1a027b1aaf1c9fa8b8915384d87ee21a0fa3a2a28ca07cfd48d89f0bc4a416ae",
+        "akas.memory.arena": "cec14f3bb63c1b202dea8f7fae4a26c6b0746a017d4dbab9dda3344dfeac3a95",
+        "akas.memory.estimates": "2394fd2c3d0f10ff989c4614c872526eb9b144fb3ae4c1aa84f2d95d98eea045",
+        "akas.memory.layouts": "4124f20706929e06d6a3ffb3071d7d96c4ad64ded212b8498a4a7a5f0fdad26e",
+        "akas.memory.mapped": "ff02b70d9b95498d29b4a7eb9bb28f493c8b7b92b701818d1071d5d2a6aff85c",
+        "akas.memory.state": "51612949bb16c739793d08a368cd8fa557da5a8fa94508a7a33bc9aabacfc42e",
+        "akas.memory.transfer": "2b58111a2757f0ddeb608e327d671cc5498de6054c8ccff2cc75cc9c78ce62c1",
+        "akas.models.blocks": "6c59326e5cda4caff487be21c1b0c7fcdd28ecc7e0697b82cba5fb8f1d2e279a",
+        "akas.ops.activation.cuda": "2dbe556d54d85f65cf269cad1d280ab899ecfdcccf3955ccc91e6dc3631fa8a8",
+        "akas.ops.activation.definition": "c958532c078d32847a8f700137bfd5d8e15d7bf2e0222970aeff9804a96ded6a",
+        "akas.ops.activation.kernel": "faf0f73bd49797d4a962de496b15828d86dd49a6ed6bf5298910eeb824bf8949",
+        "akas.ops.activation.validation": "09fb36f89bc9ed4a23bdfd20a4aea89f5740a451191c4969dff57f344d175369",
+        "akas.ops.activation.webgpu": "97c478f034990044ca0f76a34ac552f7d204a4ef1173ea7f2af744ae1bc21b5d",
+        "akas.ops.attention.cuda": "3d27da0bf01941aad592b2b4178571088817fe51733ae8f347097e8a1e0013a3",
+        "akas.ops.attention.definition": "7a67dc80ddbcea1b0561b1c7e73b74c2ac133b79ca7699d3e540963668155aa5",
+        "akas.ops.attention.kernel": "6a4bf9f45ddd3061165fce8f6a52a6ffceab6a757a06debf01ee2e538bb78ab5",
+        "akas.ops.attention.validation": "8859eda10379c8372a4cf49cd391ee1686ee62c355d2ccf1e55112f46cf50fea",
+        "akas.ops.attention.webgpu": "ce0c9799a5e5ed43d6dc28c378e030c890d93470c471c07d30a814c68880d16b",
+        "akas.ops.control.cuda": "bbead5d1fa1743646e1c3c473b5b9e70e44c067eea63e25c7fd6983cc53da5e0",
+        "akas.ops.control.definition": "8b561656e8e5d0a2a9a896da53fd1afcbe733fabc6e87e438e8995563fe3028d",
+        "akas.ops.control.kernel": "c0eb7708e716ebb362f7476404870573f1c457817d104a8c49fd1645e2b642d8",
+        "akas.ops.control.validation": "70beaecfc80739d4dfcceac609de3c7c58a4cfe242c13ba36f4f07c760f08221",
+        "akas.ops.control.webgpu": "cf5ff9e264dacaaed3ce162718a096363f4b06dfe1ea97dcb9525d39ad99e820",
+        "akas.ops.convolution.cuda": "8f09f0b31588891a835b56fcb0fbc0789c0c8d67184011f7470193755977e746",
+        "akas.ops.convolution.definition": "682a3307c3289fbd09f222f0b6787c6321c9cdc2278224aa410beca11d90af98",
+        "akas.ops.convolution.kernel": "115d1e4fe837b25de2e2287c118b4ac22ef7bdc52a12e53494313e172370bc3d",
+        "akas.ops.convolution.validation": "fadb7dd456faa870da90747ccfb9a230c92e56f12cf866c460e39c7efc186022",
+        "akas.ops.convolution.webgpu": "b66d25ba1442bf43ea4bc02849792946dc9346413cd34c21dc89e24f5339ec53",
+        "akas.ops.gdn.cuda": "09d9eb8d3d0e30c3c8d798a614c9280a128f5c8565ea43f9562b9b7a256a9602",
+        "akas.ops.gdn.definition": "dcd1fdc1e9db88f3c017b77d308facd41eda4e465b9016763857738b09fdb00c",
+        "akas.ops.gdn.kernel": "930255782bf188fdf71323ddb1797aafc71aa76ea64104b658784d2e5f85d124",
+        "akas.ops.gdn.validation": "e43c24f566802a1befa0836c20d9ad6358358934121d1ed10f2e04c5732bbe47",
+        "akas.ops.gdn.webgpu": "8fa773b35f334a3985cf1a3d1b847ee163c34b4f9472f6befdf0fac1972f046a",
+        "akas.ops.indexing.cuda": "b3f484cf3329ad2033c09fa8efa3cf00a358f74bcac224975d143b0ceb6bed4b",
+        "akas.ops.indexing.definition": "edf3d4cba46f2f423502003f634d1a21a2082787b3cc5022d6372ced315ee721",
+        "akas.ops.indexing.kernel": "a40fcfb2ad12ee8a587d63032b90815e1780f139f54dc374dcc7aaad5037acf8",
+        "akas.ops.indexing.validation": "ceefab06f3359fb6f0c056f4610464a3dfa91d5c927f4635862dd90b57d89f6b",
+        "akas.ops.indexing.webgpu": "9fbd2332e7a368d0e17bd7874976cebda36ec1034aa4b3495019e246348945eb",
+        "akas.ops.linear.cuda": "fc969b9f9e3998033932904fbfe23e12a3ee0f11c2892e51871f36f5385b180f",
+        "akas.ops.linear.definition": "e03c7f6a8bdce5e764fe1a13aa34b57ab43235c18850f54f362c3f27d774114a",
+        "akas.ops.linear.kernel": "98323697e531e524b47bddd9c670a343be0a1b5b282cf6da49066fe71b482a2b",
+        "akas.ops.linear.validation": "206c31443e17dbe281eb6a5b7053a54309cf5a2b9c8a682059a5f0abbd73de8b",
+        "akas.ops.linear.webgpu": "132dece44893e8c346da4a57082e550e3f730456b88dd6f6d5eef51c62bd0c9a",
+        "akas.ops.moe.cuda": "9823e85b5fef7ec195feb8f44ed00f67735ef2706048f6b8d8f73d57b9cf37f1",
+        "akas.ops.moe.definition": "a679af5cc9f533a3a4739bce3e9542f5efc3c93231d98647605d40960d4bfab6",
+        "akas.ops.moe.kernel": "3fbb961be1d84ee2dc62f418d53a3decea3edb1080b19cbe47c8a916d452ef25",
+        "akas.ops.moe.validation": "1f71df1e330728ba96877b397bae9e93cb6254a44feccebac2ca1c25ab43ca8a",
+        "akas.ops.moe.webgpu": "dcfac483fca089d9f6b8f7bb05f53eece2e4bd583d4e4c5b80672b96c4138305",
+        "akas.ops.mtp.cuda": "c84c3bc5c99974103cdaaeddecd628dc7eec37222473b446fe3da0af40a3da30",
+        "akas.ops.mtp.definition": "cf92b7efc09d42b12835aebbfa2120172c8f9481671a2e63f6ac65b1f217e185",
+        "akas.ops.mtp.kernel": "5da8759e34454c6941d35dc811cb183c98a9c336b678a36a64ffa7fc4d95aa20",
+        "akas.ops.mtp.validation": "9b16bb88edb9ec1bdb79da2ceef78405aac62d5e41459f3cf457333175db188c",
+        "akas.ops.mtp.webgpu": "3380f2fa0e4ddd3760e2ee55528c13dc28cae86980d51ad6e35c1d0ec9e41a01",
+        "akas.ops.normalization.cuda": "fb556ea61bf3a4000ad89ceb22228d2250a44cf1b535e8f1bf6b952912e779ce",
+        "akas.ops.normalization.definition": "9aa05c63010ad9e718803baa889d56a75e85e933933d87268375fc8423f59214",
+        "akas.ops.normalization.kernel": "fc7408d1219e7f1d1d1810ec3479815b25382813167b6c036062bbbd3b9291eb",
+        "akas.ops.normalization.validation": "75d7652c724491f07ad8113b17c73e4790b38587306c999a5780233f4268021f",
+        "akas.ops.normalization.webgpu": "4e4f0ec98cfb71fa037fc5c0878d04e160cd8ae468a79f295f3889d8e04090de",
+        "akas.ops.residual.cuda": "2798558a61cbe4250c42c8fe12d8c2ac1b34980d57868b27c499145e547d481c",
+        "akas.ops.residual.definition": "2312bf3712944da7dd6057e53293a1710e2795800eeb930f77e1c6eb0b99eab5",
+        "akas.ops.residual.kernel": "42a1043db2bdb282a68fdc8d461a894149de810cb145fd1d0c07730818eb68f7",
+        "akas.ops.residual.validation": "9e12914685a3c133e12bd4260232fba83134cab6319267b46e4cd8e5fee8f732",
+        "akas.ops.residual.webgpu": "dc2777dd87302b229aa63c087e5769076b06f3579273be76c07e6a26611c0310",
+        "akas.ops.sequence.cuda": "bc94a4ea4347528e7578a19d441e84cd4ceb6042c426c1e29b862c17caab18d2",
+        "akas.ops.sequence.definition": "7d6e690dc571b65639ac1a8db44ceb02e7dfba9e358a66fe65e9c67584bc6e21",
+        "akas.ops.sequence.kernel": "1e7d754c824acbfe0a1ef8f276140e9d56df639149ea5599af73d9b9382f3778",
+        "akas.ops.sequence.validation": "f9ad226063a6666054cd56de97bb8d2eea6e8ce0dc4806ee10e886cd22b926da",
+        "akas.ops.sequence.webgpu": "7473e16be1c7e9ddb590a7bfc4062c16e868084a152287e784765c770e9016d9",
+        "akas.ops.vocabulary.cuda": "f7158cb567d0f1178902d4e6bae2e0052b9fda52f1622d65e96e5baae36fc166",
+        "akas.ops.vocabulary.definition": "b3bfdf63b5f1881ceb6dc0090a7042dfd79541a953f5d6c3a3005eba7613a732",
+        "akas.ops.vocabulary.kernel": "120aa716996f1a2dc6eab1b49f21f4647a14711eb80f5203bae3961b9cdd7c2f",
+        "akas.ops.vocabulary.validation": "00c0417769a87ece1c48032001ac12ebb6bc1252a64c096380113c1417482781",
+        "akas.ops.vocabulary.webgpu": "8f9ca3e74c2e1e658b7875b0c483e7918316fa68eedca11ec67582d84850273b",
+        "akas.quantization._shared.access": "0af7f47618be01f5d7caaed6e805f290dfc4339b151ad2c878f0a5d8f3f9a1d3",
+        "akas.quantization._shared.e4m3": "5174dffd51e7920687dcdc74e06069b050f2fb22149b9786073313dd090d42d7",
+        "akas.quantization._shared.fp8": "40057788ddeb9b1281d57ae1c09ee120be704ea45eaeb550ee85abbdd90aa955",
+        "akas.quantization._shared.packing": "829d6e3ac005656065ce062cff1b6866e4cb41a6e955a54ff11c2c371b7a96e4",
+        "akas.quantization._shared.rounding": "dfe93ebca46297e7d1fb8bd6cf3c59cf1419275dfda1378281d3126f5b87b169",
+        "akas.quantization.activations._shared.integer": "5e372ac88c2065d33c422983520da28fbf28a3ab141f36f16d76ada06ca0b2a2",
+        "akas.quantization.activations._shared.packing": "d8e8be52468dac3f05ca636ee87bc092c5bc114ce28aed733360b9a170cf53b0",
+        "akas.quantization.activations.fp8.cuda": "c730b01eb7490cb8a1df34e8e7d7c5c90677d9a010c036e9a877cada0992075d",
+        "akas.quantization.activations.fp8.definition": "3c90449f5441da28e28669d8ebe2ae445b38a6d06971a824d2dac11d6b6a316b",
+        "akas.quantization.activations.fp8.kernel": "108881c20fdef788bc953a64e04c84a23239cf1aa9159e861bc3530a309ceaa5",
+        "akas.quantization.activations.fp8.validation": "ab6198ff1956e25e07f6078f408f5949c22ee39a75e5a9dafbf694ad9032a828",
+        "akas.quantization.activations.fp8.webgpu": "22a1e7249084891b1b9023255bc7444bcd7ff5b57b60e31340fabf4f440e72bf",
+        "akas.quantization.activations.q16.cuda": "55f7f95882b9646babf9c5241461d2334c07f93ca869f6c3b107ef0d10973a82",
+        "akas.quantization.activations.q16.definition": "f41b9b27cc56432186c4308157911b84ced4d3447af2fca92686624537970c13",
+        "akas.quantization.activations.q16.kernel": "fafebb86df2a11e2ea5f236b67eba78e48a84ea64538bbe4efe91b39dba86567",
+        "akas.quantization.activations.q16.validation": "45882627f7f301fa5f24eb8024c5b24acc2f52d7d12beabeaa579e6aee815b61",
+        "akas.quantization.activations.q16.webgpu": "aa12f77c7322da2c2adcee8a89e2502468f6e341d4ab5f779a13ed7a2a1aee1d",
+        "akas.quantization.activations.q8.cuda": "369443c9d030e9592a1d2544207d63ebf0d423a52bb2a98591726024e2cc9c62",
+        "akas.quantization.activations.q8.definition": "3b427f9a2014e5a5e136154b3320df6bf334844fea1f20c6f0de24da952ac12e",
+        "akas.quantization.activations.q8.kernel": "02e0c98dab7a3e2625cdd90d55e37dcb1d01492bbb61c3fa807256fbd67f79b5",
+        "akas.quantization.activations.q8.validation": "55e4486c1f8672f1f03e04675bcb4ec3432355ef50eb81e79d24ceb5f9c66b18",
+        "akas.quantization.activations.q8.webgpu": "422a7e0c5327468c6101ebf3b6920eba1e627ca0dab19855c08fce653ae5c090",
+        "akas.quantization.formats": "18303fc87fe4b2000c755ac4327eacc6df2fafc908d04ce59cb8c37aa8f9d397",
+        "akas.quantization.kv.codec": "5bbc132fa8a805fb62919ead9a02dedca5cce768046e7eeaa9aa755f1e726365",
+        "akas.quantization.kv.fp8.cuda": "6f967eefbd4589bc4867e98b4391d01b46c04e2ec8a0b7c688f852ab276b097b",
+        "akas.quantization.kv.fp8.definition": "898d99769a5555830ed3b21044b4456b9adb5d477be883e8a36d6bf625c3c566",
+        "akas.quantization.kv.fp8.kernel": "9e46db97fa5415af6a66bca28359569b065ef9bb13dcb9f1a208b68d6dda65fb",
+        "akas.quantization.kv.fp8.validation": "b9f566491bc7aed1a5bae429f672a3ab712def02e944f4e56182953986bf55bf",
+        "akas.quantization.kv.fp8.webgpu": "2e22265d3dcddc6a42705409523da184a61e48224807f260beb382e9c1bd39c1",
+        "akas.quantization.weights.fp8.cuda": "168004b5bb4f8b474b4071bfba7447027f4159830ddbbeb61463c5bb0dfda9b6",
+        "akas.quantization.weights.fp8.definition": "b28d9579ee7d1313db610ce63ad52b4896c59e31085302544ce538800f8e9bdb",
+        "akas.quantization.weights.fp8.kernel": "94d4a088a2425874168e68e578b2c57deac6b65709fa2d9dfd636bb16041df48",
+        "akas.quantization.weights.fp8.validation": "c60bb081837c6d401d41acb225266e8c86fd7454e9402860017e077cc59ad0f8",
+        "akas.quantization.weights.fp8.webgpu": "8cb07840948bf06dfa9257e7896bff26c1c47aaf7afd53fde0e81d41e06c2dc8",
+        "akas.quantization.weights.ggml.cuda": "dff0cc1b2d63ba2d031a60b1c9170b9718c393c8506dbd0b785f139c7decf4ec",
+        "akas.quantization.weights.ggml.definition": "eee62286fe7d7c1200b9c93c00ead5ae3d6cc5b15583f49b820e8981f801b1f3",
+        "akas.quantization.weights.ggml.kernel": "54c552cdb1e1cb576242e456ae1178b57aa7d142de6c024917fbeb09c81828a9",
+        "akas.quantization.weights.ggml.validation": "dfb9ad19d6b40abb9f62b6a394dc6750319167779ab9615acc4297bdb38a4823",
+        "akas.quantization.weights.ggml.webgpu": "0fe467daa11bf58f0b2d923b538c5a2d071d1d2cd3ca0c36edccb6560d45e5f1",
+        "akas.quantization.weights.reference": "9d85261b20cac0a80733138c96ae004a8f02b255cbdb6e4c6d77cd73e867d9a0",
+        "akas.tensor.device": "fdfb240e85ede5840b5c56c0041f6d6291de75fe8a7c1449c17b2dd0c8cb8363",
+        "akas.tensor.executor": "dc1377a01f44c8f9daaef2e7ed65db50853bbbca773196e3d209ab62f63c557e",
+        "akas.tensor.graph": "48df1e4e8e70f53ce11b365dc6de4ce3805d736f007fd4fecc5f72b1efaea3bb"
+      },
+      "compiler": {
+        "lowering_sha256": "f25a875498c57187a109188b79dcbce36353f3334491c8f41f48c21fca792078",
+        "producer_sha256": "a54648b7be299f5f5f5d19b22367763fb895ee60754f5db4be56150f7d6cbf55"
+      },
+      "qualification_sources": {
+        "akas.compilation.selection": "020a0b8dbc064b3502c077c6c4e69f769990d9e775ddb48a756e918d6bac6c1e",
+        "akas.compilation.state": "5981b01f521502fe1ce986d3f8651e44db5e7c2f890fe72f7aeb5f59e176281a",
+        "akas.compilation.tuning": "720935997933478a49085de5055fdc0f10b19aab0f8a22f1fa901485d38a774c",
+        "akas.compilation.validate": "a1593fa668af1e709349908650256347df38dcf79e8bfb2ceb42542b31899fe0"
+      },
+      "tensor_search_sources": {
+        "tensor.compiler.search": "cb8420badaf7255362dac5b8726f20e195ea69f192753173c700ccd6f69ae255",
+        "tensor.compiler.tuning": "8c47ada3a16678ab18a16b4de7e48d4e122b4f861c00c1255b10330448010d49"
+      },
+      "baseline": [
+        {
+          "key": "c976c7837972ed52c74dd02e",
+          "schedule": {
+            "sites": 8,
+            "implementation": "akas.ops.convolution.webgpu:single_channel_conv2d"
+          }
+        },
+        {
+          "key": "59a1527178b0cf03e9c6aa05",
+          "schedule": {
+            "implementation": "akas.ops.activation.kernel:column_activation"
+          }
+        },
+        {
+          "key": "f299082357c79d5f67aa038c",
+          "schedule": {
+            "implementation": "akas.ops.convolution.webgpu:implicit_half_conv2d"
+          }
+        },
+        {
+          "key": "91658c01a582bf923f9de76e",
+          "schedule": {
+            "implementation": "akas.ops.activation.kernel:column_activation"
+          }
+        },
+        {
+          "key": "bb09d3b81bf5f8dd0503e7a1",
+          "schedule": {
+            "layout": 0,
+            "half_k": 16,
+            "implementation": "akas.ops.convolution.webgpu:implicit_half_conv2d"
+          }
+        },
+        {
+          "key": "4b88aa24dba814818701559b",
+          "schedule": {
+            "implementation": "akas.ops.activation.kernel:column_activation"
+          }
+        },
+        {
+          "key": "ce8e2a663ec27b4eb8017dd3",
+          "schedule": {
+            "half_layout": 0,
+            "half_pad": 1,
+            "half_native": true,
+            "half_k": 16,
+            "implementation": "linear.webgpu.short_half"
+          }
+        },
+        {
+          "key": "db808f5d3430e0b9647b5ca4",
+          "schedule": {
+            "implementation": "residual.kernel"
+          }
+        }
+      ],
+      "catalog": null
+    },
+    "profile": {
+      "schema": "tensor.schedule-profile.v1",
+      "provider": "webgpu",
+      "target": "webgpu-portable-v1",
+      "entries": [
+        {
+          "operation": "single_channel_conv2d",
+          "parameters": {
+            "width": 100,
+            "height": 128,
+            "channels": 1,
+            "kernel": 3,
+            "stride": 2,
+            "padding": 1,
+            "columns": 480
+          },
+          "schedule": {
+            "sites": 4,
+            "implementation": "akas.ops.convolution.webgpu:single_channel_conv2d"
+          }
+        },
+        {
+          "operation": "gelu_bias",
+          "parameters": {
+            "r": 3200,
+            "c": 480,
+            "output_dtype": "float16"
+          },
+          "schedule": {
+            "implementation": "akas.ops.activation.kernel:column_activation"
+          }
+        },
+        {
+          "operation": "implicit_half_conv2d",
+          "parameters": {
+            "width": 50,
+            "height": 64,
+            "channels": 480,
+            "kernel": 3,
+            "stride": 2,
+            "padding": 1,
+            "columns": 480
+          },
+          "schedule": {
+            "layout": 0,
+            "half_k": 32,
+            "implementation": "akas.ops.convolution.webgpu:implicit_half_conv2d"
+          }
+        },
+        {
+          "operation": "gelu_bias",
+          "parameters": {
+            "r": 800,
+            "c": 480,
+            "output_dtype": "float16"
+          },
+          "schedule": {
+            "implementation": "akas.ops.activation.kernel:column_activation"
+          }
+        },
+        {
+          "operation": "implicit_half_conv2d",
+          "parameters": {
+            "width": 25,
+            "height": 32,
+            "channels": 480,
+            "kernel": 3,
+            "stride": 2,
+            "padding": 1,
+            "columns": 480
+          },
+          "schedule": {
+            "layout": 0,
+            "half_k": 16,
+            "implementation": "akas.ops.convolution.webgpu:implicit_half_conv2d"
+          }
+        },
+        {
+          "operation": "gelu_bias",
+          "parameters": {
+            "r": 208,
+            "c": 480
+          },
+          "schedule": {
+            "implementation": "akas.ops.activation.kernel:column_activation"
+          }
+        },
+        {
+          "operation": "linear",
+          "parameters": {
+            "r": 13,
+            "k": 7680,
+            "o": 896,
+            "ggml": true,
+            "type": 1,
+            "half_accum": true,
+            "input_dtype": "float32"
+          },
+          "schedule": {
+            "half_layout": 1,
+            "half_pad": 1,
+            "half_native": true,
+            "half_k": 16,
+            "implementation": "linear.webgpu.short_half"
+          }
+        },
+        {
+          "operation": "add",
+          "parameters": {
+            "r": 13,
+            "c": 896
+          },
+          "schedule": {
+            "implementation": "residual.kernel"
+          }
+        }
+      ]
+    },
+    "operations": [
+      {
+        "key": "c976c7837972ed52c74dd02e",
+        "kind": "single_channel_conv2d",
+        "parameters": {
+          "width": 100,
+          "height": 128,
+          "channels": 1,
+          "kernel": 3,
+          "stride": 2,
+          "padding": 1,
+          "columns": 480
+        },
+        "selected": {
+          "implementation": "akas.ops.convolution.webgpu:single_channel_conv2d",
+          "schedule": {
+            "sites": 4
+          },
+          "score": 0.987678037080902,
+          "measurements": [
+            0.0014241000171750784
+          ],
+          "trials": 4
+        },
+        "candidates": [
+          {
+            "implementation": "akas.ops.convolution.webgpu",
+            "parameters": {
+              "width": 100,
+              "height": 128,
+              "channels": 1,
+              "kernel": 3,
+              "stride": 2,
+              "padding": 1,
+              "columns": 480,
+              "sites": 8
+            },
+            "status": "passed",
+            "timing": {
+              "metric": "completed_seconds",
+              "completed_seconds": [
+                0.001503133331425488,
+                0.0014418666445029278,
+                0.0014300000038929284
+              ],
+              "median_completed_seconds": 0.0014418666445029278,
+              "median_seconds": 0.0014418666445029278,
+              "warmup": 1,
+              "samples": 3,
+              "repeats": 3,
+              "execution": "prepared-plan"
+            }
+          },
+          {
+            "implementation": "akas.ops.convolution.webgpu",
+            "parameters": {
+              "width": 100,
+              "height": 128,
+              "channels": 1,
+              "kernel": 3,
+              "stride": 2,
+              "padding": 1,
+              "columns": 480,
+              "sites": 8
+            },
+            "status": "passed",
+            "timing": {
+              "metric": "completed_seconds",
+              "completed_seconds": [
+                0.0014329000065724056,
+                0.0014931333522933226,
+                0.001419066684320569
+              ],
+              "median_completed_seconds": 0.0014329000065724056,
+              "median_seconds": 0.0014329000065724056,
+              "warmup": 1,
+              "samples": 3,
+              "repeats": 3,
+              "execution": "prepared-plan"
+            }
+          },
+          {
+            "implementation": "akas.ops.convolution.webgpu",
+            "parameters": {
+              "width": 100,
+              "height": 128,
+              "channels": 1,
+              "kernel": 3,
+              "stride": 2,
+              "padding": 1,
+              "columns": 480,
+              "sites": 2
+            },
+            "status": "passed",
+            "timing": {
+              "metric": "completed_seconds",
+              "completed_seconds": [
+                0.0014731000216367345,
+                0.0015156666825835903,
+                0.001504633342847228
+              ],
+              "median_completed_seconds": 0.001504633342847228,
+              "median_seconds": 0.001504633342847228,
+              "warmup": 1,
+              "samples": 3,
+              "repeats": 3,
+              "execution": "prepared-plan"
+            }
+          },
+          {
+            "implementation": "akas.ops.convolution.webgpu",
+            "parameters": {
+              "width": 100,
+              "height": 128,
+              "channels": 1,
+              "kernel": 3,
+              "stride": 2,
+              "padding": 1,
+              "columns": 480,
+              "sites": 1
+            },
+            "status": "passed",
+            "timing": {
+              "metric": "completed_seconds",
+              "completed_seconds": [
+                0.0018699666834436357,
+                0.0016824333579279482,
+                0.0016859333263710141
+              ],
+              "median_completed_seconds": 0.0016859333263710141,
+              "median_seconds": 0.0016859333263710141,
+              "warmup": 1,
+              "samples": 3,
+              "repeats": 3,
+              "execution": "prepared-plan"
+            }
+          },
+          {
+            "implementation": "akas.ops.convolution.webgpu",
+            "parameters": {
+              "width": 100,
+              "height": 128,
+              "channels": 1,
+              "kernel": 3,
+              "stride": 2,
+              "padding": 1,
+              "columns": 480,
+              "sites": 4
+            },
+            "status": "passed",
+            "timing": {
+              "metric": "completed_seconds",
+              "completed_seconds": [
+                0.0014177333214320242,
+                0.0014241000171750784,
+                0.0014510666563486059
+              ],
+              "median_completed_seconds": 0.0014241000171750784,
+              "median_seconds": 0.0014241000171750784,
+              "warmup": 1,
+              "samples": 3,
+              "repeats": 3,
+              "execution": "prepared-plan"
+            }
+          }
+        ]
+      },
+      {
+        "key": "59a1527178b0cf03e9c6aa05",
+        "kind": "gelu_bias",
+        "parameters": {
+          "r": 3200,
+          "c": 480,
+          "output_dtype": "float16"
+        },
+        "selected": {
+          "implementation": "akas.ops.activation.kernel:column_activation",
+          "schedule": {},
+          "score": 1.0,
+          "measurements": [
+            0.0008731666603125632
+          ],
+          "trials": 0
+        },
+        "candidates": [
+          {
+            "implementation": "akas.ops.activation.kernel",
+            "parameters": {
+              "r": 3200,
+              "c": 480,
+              "output_dtype": "float16"
+            },
+            "status": "passed",
+            "timing": {
+              "metric": "completed_seconds",
+              "completed_seconds": [
+                0.0008847333374433219,
+                0.0008712333316604296,
+                0.0008731666603125632
+              ],
+              "median_completed_seconds": 0.0008731666603125632,
+              "median_seconds": 0.0008731666603125632,
+              "warmup": 1,
+              "samples": 3,
+              "repeats": 3,
+              "execution": "prepared-plan"
+            }
+          }
+        ]
+      },
+      {
+        "key": "f299082357c79d5f67aa038c",
+        "kind": "implicit_half_conv2d",
+        "parameters": {
+          "width": 50,
+          "height": 64,
+          "channels": 480,
+          "kernel": 3,
+          "stride": 2,
+          "padding": 1,
+          "columns": 480
+        },
+        "selected": {
+          "implementation": "akas.ops.convolution.webgpu:implicit_half_conv2d",
+          "schedule": {
+            "layout": 0,
+            "half_k": 32
+          },
+          "score": 0.9504575084127462,
+          "measurements": [
+            0.0016965666436590254
+          ],
+          "trials": 6
+        },
+        "candidates": [
+          {
+            "implementation": "akas.ops.convolution.webgpu",
+            "parameters": {
+              "width": 50,
+              "height": 64,
+              "channels": 480,
+              "kernel": 3,
+              "stride": 2,
+              "padding": 1,
+              "columns": 480
+            },
+            "status": "passed",
+            "timing": {
+              "metric": "completed_seconds",
+              "completed_seconds": [
+                0.00423346667472894,
+                0.0017849999906805654,
+                0.0017805999959819019
+              ],
+              "median_completed_seconds": 0.0017849999906805654,
+              "median_seconds": 0.0017849999906805654,
+              "warmup": 1,
+              "samples": 3,
+              "repeats": 3,
+              "execution": "prepared-plan"
+            }
+          },
+          {
+            "implementation": "akas.ops.convolution.webgpu",
+            "parameters": {
+              "width": 50,
+              "height": 64,
+              "channels": 480,
+              "kernel": 3,
+              "stride": 2,
+              "padding": 1,
+              "columns": 480,
+              "layout": 0,
+              "half_k": 16
+            },
+            "status": "passed",
+            "timing": {
+              "metric": "completed_seconds",
+              "completed_seconds": [
+                0.0048694666669083135,
+                0.0017773000096591811,
+                0.001688500012581547
+              ],
+              "median_completed_seconds": 0.0017773000096591811,
+              "median_seconds": 0.0017773000096591811,
+              "warmup": 1,
+              "samples": 3,
+              "repeats": 3,
+              "execution": "prepared-plan"
+            }
+          },
+          {
+            "implementation": "akas.ops.convolution.webgpu",
+            "parameters": {
+              "width": 50,
+              "height": 64,
+              "channels": 480,
+              "kernel": 3,
+              "stride": 2,
+              "padding": 1,
+              "columns": 480,
+              "layout": 1,
+              "half_k": 16
+            },
+            "status": "passed",
+            "timing": {
+              "metric": "completed_seconds",
+              "completed_seconds": [
+                0.004325033359540005,
+                0.0017365333236133058,
+                0.001709533331450075
+              ],
+              "median_completed_seconds": 0.0017365333236133058,
+              "median_seconds": 0.0017365333236133058,
+              "warmup": 1,
+              "samples": 3,
+              "repeats": 3,
+              "execution": "prepared-plan"
+            }
+          },
+          {
+            "implementation": "akas.ops.convolution.webgpu",
+            "parameters": {
+              "width": 50,
+              "height": 64,
+              "channels": 480,
+              "kernel": 3,
+              "stride": 2,
+              "padding": 1,
+              "columns": 480,
+              "layout": 0,
+              "half_k": 32
+            },
+            "status": "passed",
+            "timing": {
+              "metric": "completed_seconds",
+              "completed_seconds": [
+                0.00446409999858588,
+                0.0016965666436590254,
+                0.0016357999993488193
+              ],
+              "median_completed_seconds": 0.0016965666436590254,
+              "median_seconds": 0.0016965666436590254,
+              "warmup": 1,
+              "samples": 3,
+              "repeats": 3,
+              "execution": "prepared-plan"
+            }
+          },
+          {
+            "implementation": "akas.ops.convolution.webgpu",
+            "parameters": {
+              "width": 50,
+              "height": 64,
+              "channels": 480,
+              "kernel": 3,
+              "stride": 2,
+              "padding": 1,
+              "columns": 480,
+              "layout": 1,
+              "half_k": 32
+            },
+            "status": "passed",
+            "timing": {
+              "metric": "completed_seconds",
+              "completed_seconds": [
+                0.004347633318199466,
+                0.0016995333329153557,
+                0.0017126666498370469
+              ],
+              "median_completed_seconds": 0.0017126666498370469,
+              "median_seconds": 0.0017126666498370469,
+              "warmup": 1,
+              "samples": 3,
+              "repeats": 3,
+              "execution": "prepared-plan"
+            }
+          },
+          {
+            "implementation": "akas.ops.convolution.webgpu",
+            "parameters": {
+              "width": 50,
+              "height": 64,
+              "channels": 480,
+              "kernel": 3,
+              "stride": 2,
+              "padding": 1,
+              "columns": 480,
+              "layout": 2,
+              "half_k": 16
+            },
+            "status": "passed",
+            "timing": {
+              "metric": "completed_seconds",
+              "completed_seconds": [
+                0.003692233314116796,
+                0.0018828666652552783,
+                0.0018901333290462692
+              ],
+              "median_completed_seconds": 0.0018901333290462692,
+              "median_seconds": 0.0018901333290462692,
+              "warmup": 1,
+              "samples": 3,
+              "repeats": 3,
+              "execution": "prepared-plan"
+            }
+          },
+          {
+            "implementation": "akas.ops.convolution.webgpu",
+            "parameters": {
+              "width": 50,
+              "height": 64,
+              "channels": 480,
+              "kernel": 3,
+              "stride": 2,
+              "padding": 1,
+              "columns": 480,
+              "layout": 2,
+              "half_k": 32
+            },
+            "status": "passed",
+            "timing": {
+              "metric": "completed_seconds",
+              "completed_seconds": [
+                0.004380966691921155,
+                0.0018054000101983547,
+                0.001796933317867418
+              ],
+              "median_completed_seconds": 0.0018054000101983547,
+              "median_seconds": 0.0018054000101983547,
+              "warmup": 1,
+              "samples": 3,
+              "repeats": 3,
+              "execution": "prepared-plan"
+            }
+          }
+        ]
+      },
+      {
+        "key": "91658c01a582bf923f9de76e",
+        "kind": "gelu_bias",
+        "parameters": {
+          "r": 800,
+          "c": 480,
+          "output_dtype": "float16"
+        },
+        "selected": {
+          "implementation": "akas.ops.activation.kernel:column_activation",
+          "schedule": {},
+          "score": 1.0,
+          "measurements": [
+            0.00040056667057797313
+          ],
+          "trials": 0
+        },
+        "candidates": [
+          {
+            "implementation": "akas.ops.activation.kernel",
+            "parameters": {
+              "r": 800,
+              "c": 480,
+              "output_dtype": "float16"
+            },
+            "status": "passed",
+            "timing": {
+              "metric": "completed_seconds",
+              "completed_seconds": [
+                0.0003997000167146325,
+                0.00040056667057797313,
+                0.00040523333397383493
+              ],
+              "median_completed_seconds": 0.00040056667057797313,
+              "median_seconds": 0.00040056667057797313,
+              "warmup": 1,
+              "samples": 3,
+              "repeats": 3,
+              "execution": "prepared-plan"
+            }
+          }
+        ]
+      },
+      {
+        "key": "bb09d3b81bf5f8dd0503e7a1",
+        "kind": "implicit_half_conv2d",
+        "parameters": {
+          "width": 25,
+          "height": 32,
+          "channels": 480,
+          "kernel": 3,
+          "stride": 2,
+          "padding": 1,
+          "columns": 480
+        },
+        "selected": {
+          "implementation": "akas.ops.convolution.webgpu:implicit_half_conv2d",
+          "schedule": {
+            "layout": 0,
+            "half_k": 16
+          },
+          "score": 1.0,
+          "measurements": [
+            0.001101266670351227
+          ],
+          "trials": 6
+        },
+        "candidates": [
+          {
+            "implementation": "akas.ops.convolution.webgpu",
+            "parameters": {
+              "width": 25,
+              "height": 32,
+              "channels": 480,
+              "kernel": 3,
+              "stride": 2,
+              "padding": 1,
+              "columns": 480,
+              "layout": 0,
+              "half_k": 16
+            },
+            "status": "passed",
+            "timing": {
+              "metric": "completed_seconds",
+              "completed_seconds": [
+                0.00392279999020199,
+                0.001101266670351227,
+                0.0010467000150432189
+              ],
+              "median_completed_seconds": 0.001101266670351227,
+              "median_seconds": 0.001101266670351227,
+              "warmup": 1,
+              "samples": 3,
+              "repeats": 3,
+              "execution": "prepared-plan"
+            }
+          },
+          {
+            "implementation": "akas.ops.convolution.webgpu",
+            "parameters": {
+              "width": 25,
+              "height": 32,
+              "channels": 480,
+              "kernel": 3,
+              "stride": 2,
+              "padding": 1,
+              "columns": 480,
+              "layout": 0,
+              "half_k": 16
+            },
+            "status": "passed",
+            "timing": {
+              "metric": "completed_seconds",
+              "completed_seconds": [
+                0.004038433330909659,
+                0.001139533337360869,
+                0.0010689333430491388
+              ],
+              "median_completed_seconds": 0.001139533337360869,
+              "median_seconds": 0.001139533337360869,
+              "warmup": 1,
+              "samples": 3,
+              "repeats": 3,
+              "execution": "prepared-plan"
+            }
+          },
+          {
+            "implementation": "akas.ops.convolution.webgpu",
+            "parameters": {
+              "width": 25,
+              "height": 32,
+              "channels": 480,
+              "kernel": 3,
+              "stride": 2,
+              "padding": 1,
+              "columns": 480,
+              "layout": 1,
+              "half_k": 16
+            },
+            "status": "passed",
+            "timing": {
+              "metric": "completed_seconds",
+              "completed_seconds": [
+                0.0035951333314490816,
+                0.0017047333531081676,
+                0.0009896333212964237
+              ],
+              "median_completed_seconds": 0.0017047333531081676,
+              "median_seconds": 0.0017047333531081676,
+              "warmup": 1,
+              "samples": 3,
+              "repeats": 3,
+              "execution": "prepared-plan"
+            }
+          },
+          {
+            "implementation": "akas.ops.convolution.webgpu",
+            "parameters": {
+              "width": 25,
+              "height": 32,
+              "channels": 480,
+              "kernel": 3,
+              "stride": 2,
+              "padding": 1,
+              "columns": 480,
+              "layout": 0,
+              "half_k": 32
+            },
+            "status": "passed",
+            "timing": {
+              "metric": "completed_seconds",
+              "completed_seconds": [
+                0.004096466679281245,
+                0.0012093333255810041,
+                0.0011315666682397325
+              ],
+              "median_completed_seconds": 0.0012093333255810041,
+              "median_seconds": 0.0012093333255810041,
+              "warmup": 1,
+              "samples": 3,
+              "repeats": 3,
+              "execution": "prepared-plan"
+            }
+          },
+          {
+            "implementation": "akas.ops.convolution.webgpu",
+            "parameters": {
+              "width": 25,
+              "height": 32,
+              "channels": 480,
+              "kernel": 3,
+              "stride": 2,
+              "padding": 1,
+              "columns": 480,
+              "layout": 1,
+              "half_k": 32
+            },
+            "status": "passed",
+            "timing": {
+              "metric": "completed_seconds",
+              "completed_seconds": [
+                0.0036773000028915703,
+                0.0018633666719930868,
+                0.0009811000199988484
+              ],
+              "median_completed_seconds": 0.0018633666719930868,
+              "median_seconds": 0.0018633666719930868,
+              "warmup": 1,
+              "samples": 3,
+              "repeats": 3,
+              "execution": "prepared-plan"
+            }
+          },
+          {
+            "implementation": "akas.ops.convolution.webgpu",
+            "parameters": {
+              "width": 25,
+              "height": 32,
+              "channels": 480,
+              "kernel": 3,
+              "stride": 2,
+              "padding": 1,
+              "columns": 480,
+              "layout": 2,
+              "half_k": 16
+            },
+            "status": "passed",
+            "timing": {
+              "metric": "completed_seconds",
+              "completed_seconds": [
+                0.0036927666515111923,
+                0.001325766652977715,
+                0.0013025000031727056
+              ],
+              "median_completed_seconds": 0.001325766652977715,
+              "median_seconds": 0.001325766652977715,
+              "warmup": 1,
+              "samples": 3,
+              "repeats": 3,
+              "execution": "prepared-plan"
+            }
+          },
+          {
+            "implementation": "akas.ops.convolution.webgpu",
+            "parameters": {
+              "width": 25,
+              "height": 32,
+              "channels": 480,
+              "kernel": 3,
+              "stride": 2,
+              "padding": 1,
+              "columns": 480,
+              "layout": 2,
+              "half_k": 32
+            },
+            "status": "passed",
+            "timing": {
+              "metric": "completed_seconds",
+              "completed_seconds": [
+                0.0035529333205583193,
+                0.0013752000134748716,
+                0.0013455000007525086
+              ],
+              "median_completed_seconds": 0.0013752000134748716,
+              "median_seconds": 0.0013752000134748716,
+              "warmup": 1,
+              "samples": 3,
+              "repeats": 3,
+              "execution": "prepared-plan"
+            }
+          }
+        ]
+      },
+      {
+        "key": "4b88aa24dba814818701559b",
+        "kind": "gelu_bias",
+        "parameters": {
+          "r": 208,
+          "c": 480
+        },
+        "selected": {
+          "implementation": "akas.ops.activation.kernel:column_activation",
+          "schedule": {},
+          "score": 1.0,
+          "measurements": [
+            0.00033906664854536456
+          ],
+          "trials": 0
+        },
+        "candidates": [
+          {
+            "implementation": "akas.ops.activation.kernel",
+            "parameters": {
+              "r": 208,
+              "c": 480
+            },
+            "status": "passed",
+            "timing": {
+              "metric": "completed_seconds",
+              "completed_seconds": [
+                0.0003416333347558975,
+                0.00033906664854536456,
+                0.00033446667172635597
+              ],
+              "median_completed_seconds": 0.00033906664854536456,
+              "median_seconds": 0.00033906664854536456,
+              "warmup": 1,
+              "samples": 3,
+              "repeats": 3,
+              "execution": "prepared-plan"
+            }
+          }
+        ]
+      },
+      {
+        "key": "ce8e2a663ec27b4eb8017dd3",
+        "kind": "linear",
+        "parameters": {
+          "r": 13,
+          "k": 7680,
+          "o": 896,
+          "ggml": true,
+          "type": 1,
+          "half_accum": true,
+          "input_dtype": "float32"
+        },
+        "selected": {
+          "implementation": "linear.webgpu.short_half",
+          "schedule": {
+            "half_layout": 1,
+            "half_pad": 1,
+            "half_native": true,
+            "half_k": 16
+          },
+          "score": 0.898511358615053,
+          "measurements": [
+            0.0010260999745999773
+          ],
+          "trials": 6
+        },
+        "candidates": [
+          {
+            "implementation": "akas.ops.linear.webgpu",
+            "parameters": {
+              "r": 13,
+              "k": 7680,
+              "o": 896,
+              "ggml": true,
+              "type": 1,
+              "half_accum": true,
+              "input_dtype": "float32",
+              "half_layout": 0,
+              "half_pad": 1,
+              "half_native": true,
+              "half_k": 16
+            },
+            "status": "passed",
+            "timing": {
+              "metric": "completed_seconds",
+              "completed_seconds": [
+                0.003815199985789756,
+                0.001142000003407399,
+                0.0011064000039671857
+              ],
+              "median_completed_seconds": 0.001142000003407399,
+              "median_seconds": 0.001142000003407399,
+              "warmup": 1,
+              "samples": 3,
+              "repeats": 3,
+              "execution": "prepared-plan"
+            }
+          },
+          {
+            "implementation": "akas.ops.linear.webgpu",
+            "parameters": {
+              "r": 13,
+              "k": 7680,
+              "o": 896,
+              "ggml": true,
+              "type": 1,
+              "half_accum": true,
+              "input_dtype": "float32",
+              "half_layout": 0,
+              "half_pad": 1,
+              "half_native": true,
+              "half_k": 16
+            },
+            "status": "passed",
+            "timing": {
+              "metric": "completed_seconds",
+              "completed_seconds": [
+                0.0033101666873941817,
+                0.0011330666796614726,
+                0.001097499975003302
+              ],
+              "median_completed_seconds": 0.0011330666796614726,
+              "median_seconds": 0.0011330666796614726,
+              "warmup": 1,
+              "samples": 3,
+              "repeats": 3,
+              "execution": "prepared-plan"
+            }
+          },
+          {
+            "implementation": "akas.ops.linear.webgpu",
+            "parameters": {
+              "r": 13,
+              "k": 7680,
+              "o": 896,
+              "ggml": true,
+              "type": 1,
+              "half_accum": true,
+              "input_dtype": "float32"
+            },
+            "status": "rejected",
+            "reason": "WebGPU TIRx lowering failed: ValueError: short-half contract requires an outer schedule"
+          },
+          {
+            "implementation": "akas.ops.linear.webgpu",
+            "parameters": {
+              "r": 13,
+              "k": 7680,
+              "o": 896,
+              "ggml": true,
+              "type": 1,
+              "half_accum": true,
+              "input_dtype": "float32",
+              "outer_rows": 32
+            },
+            "status": "rejected",
+            "reason": "WebGPU TIRx lowering failed: ValueError: short-half contract requires a half-accumulating outer schedule"
+          },
+          {
+            "implementation": "akas.ops.linear.webgpu",
+            "parameters": {
+              "r": 13,
+              "k": 7680,
+              "o": 896,
+              "ggml": true,
+              "type": 1,
+              "half_accum": true,
+              "input_dtype": "float32",
+              "outer_layout": 0
+            },
+            "status": "rejected",
+            "reason": "WebGPU TIRx lowering failed: ValueError: short-half contract requires a half-accumulating outer schedule"
+          },
+          {
+            "implementation": "akas.ops.linear.webgpu",
+            "parameters": {
+              "r": 13,
+              "k": 7680,
+              "o": 896,
+              "ggml": true,
+              "type": 1,
+              "half_accum": true,
+              "input_dtype": "float32",
+              "outer_layout": 0
+            },
+            "status": "rejected",
+            "reason": "WebGPU TIRx lowering failed: ValueError: short-half contract requires a half-accumulating outer schedule"
+          },
+          {
+            "implementation": "akas.ops.linear.webgpu",
+            "parameters": {
+              "r": 13,
+              "k": 7680,
+              "o": 896,
+              "ggml": true,
+              "type": 1,
+              "half_accum": true,
+              "input_dtype": "float32",
+              "half_layout": 1,
+              "half_pad": 1,
+              "half_native": true,
+              "half_k": 16
+            },
+            "status": "passed",
+            "timing": {
+              "metric": "completed_seconds",
+              "completed_seconds": [
+                0.003585733318080505,
+                0.0010260999745999773,
+                0.0010236666809457045
+              ],
+              "median_completed_seconds": 0.0010260999745999773,
+              "median_seconds": 0.0010260999745999773,
+              "warmup": 1,
+              "samples": 3,
+              "repeats": 3,
+              "execution": "prepared-plan"
+            }
+          }
+        ]
+      },
+      {
+        "key": "db808f5d3430e0b9647b5ca4",
+        "kind": "add",
+        "parameters": {
+          "r": 13,
+          "c": 896
+        },
+        "selected": {
+          "implementation": "residual.kernel",
+          "schedule": {},
+          "score": 1.0,
+          "measurements": [
+            0.0002628666503975789
+          ],
+          "trials": 0
+        },
+        "candidates": [
+          {
+            "implementation": "akas.ops.residual.kernel",
+            "parameters": {
+              "r": 13,
+              "c": 896
+            },
+            "status": "passed",
+            "timing": {
+              "metric": "completed_seconds",
+              "completed_seconds": [
+                0.00025736666672552627,
+                0.0002628666503975789,
+                0.00027893332298845053
+              ],
+              "median_completed_seconds": 0.0002628666503975789,
+              "median_seconds": 0.0002628666503975789,
+              "warmup": 1,
+              "samples": 3,
+              "repeats": 3,
+              "execution": "prepared-plan"
+            }
+          }
+        ]
+      }
+    ],
+    "cache_hit": false
+  },
+  "kernels": {
+    "c976c7837972ed52c74dd02e": {
+      "kind": "single_channel_conv2d",
+      "parameters": {
+        "width": 100,
+        "height": 128,
+        "channels": 1,
+        "kernel": 3,
+        "stride": 2,
+        "padding": 1,
+        "columns": 480
+      },
+      "sha256": "4e5855050472d2b99d58fa68214557a3fd2bc958284486ea5e28901c35587d45",
+      "path": "phases/91d631f8d51a4d6f8628664a5dedf3a6/frontend-13/kernels/c976c7837972ed52c74dd02e.tbin",
+      "schedule": {
+        "sites": 4,
+        "implementation": "akas.ops.convolution.webgpu:single_channel_conv2d"
+      }
+    },
+    "59a1527178b0cf03e9c6aa05": {
+      "kind": "gelu_bias",
+      "parameters": {
+        "r": 3200,
+        "c": 480,
+        "output_dtype": "float16"
+      },
+      "sha256": "219829cbd6d747cd2184fa069eae9a087ac701dcf72a3fdfbbd1c208f8deeb85",
+      "path": "phases/91d631f8d51a4d6f8628664a5dedf3a6/frontend-13/kernels/59a1527178b0cf03e9c6aa05.tbin",
+      "schedule": {
+        "implementation": "akas.ops.activation.kernel:column_activation"
+      }
+    },
+    "f299082357c79d5f67aa038c": {
+      "kind": "implicit_half_conv2d",
+      "parameters": {
+        "width": 50,
+        "height": 64,
+        "channels": 480,
+        "kernel": 3,
+        "stride": 2,
+        "padding": 1,
+        "columns": 480
+      },
+      "sha256": "31e5e931b5c838c459b6a04797a7c9949a47cbd4d5a0f0a42988c14d6711fa08",
+      "path": "phases/91d631f8d51a4d6f8628664a5dedf3a6/frontend-13/kernels/f299082357c79d5f67aa038c.tbin",
+      "schedule": {
+        "layout": 0,
+        "half_k": 32,
+        "implementation": "akas.ops.convolution.webgpu:implicit_half_conv2d"
+      }
+    },
+    "91658c01a582bf923f9de76e": {
+      "kind": "gelu_bias",
+      "parameters": {
+        "r": 800,
+        "c": 480,
+        "output_dtype": "float16"
+      },
+      "sha256": "615284a824f8438d202e6d09afbc5c6735e0be5d9f0fa3927f804c776e2cb2f5",
+      "path": "phases/91d631f8d51a4d6f8628664a5dedf3a6/frontend-13/kernels/91658c01a582bf923f9de76e.tbin",
+      "schedule": {
+        "implementation": "akas.ops.activation.kernel:column_activation"
+      }
+    },
+    "bb09d3b81bf5f8dd0503e7a1": {
+      "kind": "implicit_half_conv2d",
+      "parameters": {
+        "width": 25,
+        "height": 32,
+        "channels": 480,
+        "kernel": 3,
+        "stride": 2,
+        "padding": 1,
+        "columns": 480
+      },
+      "sha256": "fbb01a91f99f89821bb933c7be8e19cfba6e7f250686f9ec447335271d0975ae",
+      "path": "phases/91d631f8d51a4d6f8628664a5dedf3a6/frontend-13/kernels/bb09d3b81bf5f8dd0503e7a1.tbin",
+      "schedule": {
+        "layout": 0,
+        "half_k": 16,
+        "implementation": "akas.ops.convolution.webgpu:implicit_half_conv2d"
+      }
+    },
+    "4b88aa24dba814818701559b": {
+      "kind": "gelu_bias",
+      "parameters": {
+        "r": 208,
+        "c": 480
+      },
+      "sha256": "960117af5e75bfb7d837159db39d0ce93207f63087d35fd8215cb8158febae7a",
+      "path": "phases/91d631f8d51a4d6f8628664a5dedf3a6/frontend-13/kernels/4b88aa24dba814818701559b.tbin",
+      "schedule": {
+        "implementation": "akas.ops.activation.kernel:column_activation"
+      }
+    },
+    "ce8e2a663ec27b4eb8017dd3": {
+      "kind": "linear",
+      "parameters": {
+        "r": 13,
+        "k": 7680,
+        "o": 896,
+        "ggml": true,
+        "type": 1,
+        "half_accum": true,
+        "input_dtype": "float32"
+      },
+      "sha256": "e16d92ece93a2f34e0a614c6ac68c842f5e73483d5f776db84fa53a67ad9416c",
+      "path": "phases/91d631f8d51a4d6f8628664a5dedf3a6/frontend-13/kernels/ce8e2a663ec27b4eb8017dd3.tbin",
+      "schedule": {
+        "half_layout": 1,
+        "half_pad": 1,
+        "half_native": true,
+        "half_k": 16,
+        "implementation": "linear.webgpu.short_half"
+      }
+    },
+    "db808f5d3430e0b9647b5ca4": {
+      "kind": "add",
+      "parameters": {
+        "r": 13,
+        "c": 896
+      },
+      "sha256": "7bfcde43990c05bd87bc5c3cf835c6a6f90af3100706f4eb635efbeafef2ef6c",
+      "path": "phases/91d631f8d51a4d6f8628664a5dedf3a6/frontend-13/kernels/db808f5d3430e0b9647b5ca4.tbin",
+      "schedule": {
+        "implementation": "residual.kernel"
+      }
+    }
+  }
+}

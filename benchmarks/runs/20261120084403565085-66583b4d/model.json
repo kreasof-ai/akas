@@ -1,0 +1,37 @@
+{
+  "id": "qwen3-asr",
+  "model": "Qwen3 ASR (Rumble-2-Flash)",
+  "modes": ["asr"],
+  "weights": {
+    "q8_0": {
+      "path": "build/checkpoints/qwen3-asr/Rumble-2-Flash-Q8_0.gguf",
+      "source": {
+        "repo": "AtomicChat/Rumble-2-Flash-GGUF",
+        "revision": "d036f2af3cd5229375714d7f1749792cce3c6a88",
+        "file": "Rumble-2-Flash-Q8_0.gguf"
+      },
+      "sha256": "600821d04cd1a7caa42f4622f6ac42b84e6db00f73196ed73493d06c221886bc"
+    }
+  },
+  "runtime_options": {
+    "akas": {"speech_factory": "akas.models.qwen3_asr:service"},
+    "llama": {
+      "speech": {
+        "workload": "asr-demo-v1",
+        "sample_rate_hz": 16000,
+        "context": 512,
+        "projector": {
+          "path": "build/checkpoints/qwen3-asr/mmproj-Rumble-2-Flash-Q8_0.gguf",
+          "source": {
+            "repo": "AtomicChat/Rumble-2-Flash-GGUF",
+            "revision": "d036f2af3cd5229375714d7f1749792cce3c6a88",
+            "file": "mmproj-Rumble-2-Flash-Q8_0.gguf"
+          },
+          "sha256": "97116d3656cbe4912ac9aee43eb4a887832121e2a2c07c5ee61617052bdd30f8"
+        },
+        "revision": "6f311d7ad63dce97a3ad1deaafb7cc044bb8c26c",
+        "binary": "build/baselines/llama-b12521-vulkan/llama-mtmd-cli.exe"
+      }
+    }
+  }
+}
