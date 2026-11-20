@@ -1,0 +1,27 @@
+{
+  "id": "voice-isolator-v1",
+  "model": "Inworld Voice Isolator v1 (offline)",
+  "modes": ["enhance"],
+  "weights": {
+    "f32": {
+      "path": "build/checkpoints/voice-isolator-v1/denoiser.safetensors",
+      "source": {
+        "repo": "inworld/voice-isolator",
+        "revision": "9b0285b3fe8403aa8e2f1dbb2165a80a4294c970",
+        "file": "denoiser.safetensors"
+      },
+      "sha256": "647335a6aeb4dc706b895532c209d51e0e84a4849d17b339f00d4392a050ae53"
+    }
+  },
+  "runtime_options": {
+    "akas": {"enhancement_factory": "akas.models.voice_isolator:service"},
+    "inworld": {
+      "enhancement": {
+        "workload": "voice-enhancement-demo-v1",
+        "sample_rate_hz": 48000,
+        "revision": "c73b3fab81a870410cbac50d2f05f25edc4d10aa",
+        "python": "build/baselines/voice-isolator/.venv/Scripts/python.exe"
+      }
+    }
+  }
+}
