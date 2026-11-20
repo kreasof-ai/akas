@@ -4,6 +4,7 @@ Each report contains the full requested matrix, all available AKAS and baseline 
 
 | Started UTC | Workload | Source | Qualified AKAS | Qualified baselines | Report |
 | --- | --- | --- | ---: | ---: | --- |
+| 2026-11-20T08:43:41.194215Z | asr-length-v1 | `d1c4d39f378e007e8dd87fd1d4a9a940733df847` | 0/1 | 0/1 | [full tables](https://github.com/kreasof-ai/akas/blob/415ff7dc9f59135e1fe0eb7674290b2a3fdeb94b/benchmarks/reports/20261120T084341Z-00a86639c319/README.md) |
 | 2026-11-17T22:44:39.048177Z | speech-concurrent-v1 | `a3f3cc4a9cbdafe266de7187cd2bbb645826370d` | 0/5 | 0/5 | [full tables](https://github.com/kreasof-ai/akas/blob/71eaf6e680f9d5ec85a5043cc5e35433ac144232/benchmarks/reports/20261117T224439Z-2426baf919b1/README.md) |
 | 2026-11-17T16:05:18.967887Z | speech-concurrent-v1 | `native-dependency-snapshots` | 0/0 | 5/5 | [full tables](https://github.com/kreasof-ai/akas/blob/1042dbbe1dee7c0e6ad519374ecfd8ef85183f65/benchmarks/reports/20261117T160518Z-59b3379b9d08/README.md) |
 | 2026-11-17T12:11:45.468578Z | speech-multilingual-v1 | `9ce5ef8870fce8bd1bd59034ef9c78ff666ec858` | 0/1 | 0/2 | [full tables](https://github.com/kreasof-ai/akas/blob/b45b707fb78c9333ed37a49f860a8d6d2103c625/benchmarks/reports/20261117T121145Z-48e3bd2d83ae/README.md) |

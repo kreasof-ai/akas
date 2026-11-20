@@ -30,7 +30,7 @@ def select_weight_format(model, runtime, requested=None):
     """Select declared checkpoint bytes independently from execution dtype."""
     if requested is not None:
         selected = requested
-    elif runtime == "llama" and model.get("modes") == ["tts"]:
+    elif runtime == "llama" and model.get("modes") in (["tts"], ["asr"]):
         selected = "q8_0"
     elif runtime == "llama":
         selected = "q4_k_m"
@@ -56,7 +56,7 @@ def main():
     parser.add_argument("--mtp", action="store_true")
     parser.add_argument("--provider", choices=("cpu", "cuda", "vulkan"), default="cuda")
     parser.add_argument("--format", choices=("bf16", "fp8", "f16", "q4_0", "q4_k_m", "q8_0"))
-    parser.add_argument("--binary", type=Path, help="override the speech server executable")
+    parser.add_argument("--binary", type=Path, help="override the speech runtime executable")
     parser.add_argument("--bundle", type=Path, help="compiled AKAS speech bundle")
     parser.add_argument("--reference-run", help="frozen llama.cpp Vulkan speech run")
     parser.add_argument("--history", type=Path, default=Path("benchmarks"))

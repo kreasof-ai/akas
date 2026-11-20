@@ -474,6 +474,21 @@ IMPLEMENTATIONS += tuple(
     for provider in ("cuda", "webgpu")
 )
 
+IMPLEMENTATIONS += (
+    Implementation(
+        "affine_layer_norm",
+        "akas.ops.normalization.webgpu",
+        "reference",
+        provider="webgpu",
+        priority=25,
+        factory="affine_layer_norm",
+        defaults=(("threads", 128),),
+        space=(("threads", (128, 64, 32, 256)),),
+        accepts=lambda p: p["c"] % 128 == 0,
+        name="normalization.webgpu.affine_layer_norm",
+    ),
+)
+
 OUTPUT_ARGUMENTS["reference"]["post_add_rms"] = OutputABI((-2, -1), ("hidden", "out"))
 IMPLEMENTATIONS += (
     Implementation(

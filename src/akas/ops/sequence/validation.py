@@ -150,3 +150,30 @@ def block_limit_validation(kind, p, signature):
         values["positions"] + values["lengths"] - 1, p["chunk"]
     ).astype("int32")
     return ValidationCase(values, expected, rtol=0, atol=0)
+
+
+def decode_feedback_validation(kind, p, signature):
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    values = sample_arguments(signature)
+    capacity = p["capacity"]
+    rows = p["r"]
+    values["stop_ids"][:] = (101, 102)
+    values["active"][:] = np.resize([1, 1, 1, 0, 1, 1], rows)
+    values["sampled"][:] = np.resize([42, 101, 102, 43, 44, 45], rows)
+    values["journal"][:, 0] = np.resize([0, 0, 0, 1, capacity - 1, capacity], rows)
+    expected = {name: value.copy() for name, value in values.items()}
+    for row in range(rows):
+        if not values["active"][row]:
+            continue
+        token = values["sampled"][row]
+        count = values["journal"][row, 0]
+        if token in values["stop_ids"] or count == capacity:
+            expected["active"][row] = 0
+            continue
+        expected["tokens"][row] = token
+        expected["positions"][row] += 1
+        expected["journal"][row, 0] = count + 1
+        expected["journal"][row, count + 1] = token
+    return ValidationCase(values, expected, rtol=0, atol=0)

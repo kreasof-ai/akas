@@ -108,4 +108,8 @@ def column_activation_validation(kind, p, signature):
     if kind != "column_bias":
         erf = np.frompyfunc(math.erf, 1, 1)
         x *= 0.5 * (1 + erf(x / math.sqrt(2)).astype("float64"))
+    if p.get("output_dtype") == "float16":
+        return ValidationCase(
+            values, {**values, "out": x.astype("float16")}, rtol=0.001, atol=2e-7
+        )
     return ValidationCase(values, {**values, "out": x.astype("float32")})

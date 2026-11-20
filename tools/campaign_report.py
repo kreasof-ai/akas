@@ -16,6 +16,7 @@ import tempfile
 
 from akas.benchmarking.history import digest, write
 from akas.benchmarking import archive
+from akas.benchmarking import transcription
 from akas.benchmarking.workload import prompt_digest
 from akas.optimization.context import workload
 
@@ -835,6 +836,8 @@ def render(data, out, history):
     if data.get("schema") == NATIVE_STREAM_SCHEMA:
         return render_native_stream_baseline(data, Path(out).resolve(), Path(history).resolve())
     if data.get("schema") == SPEECH_SCHEMA:
+        if data["workload"].get("protocol") == transcription.PROTOCOL:
+            return render_transcription(data, Path(out).resolve(), Path(history).resolve())
         return render_speech(data, Path(out).resolve(), Path(history).resolve())
     validate(data)
     out = Path(out).resolve()
@@ -1788,6 +1791,8 @@ def export_speech(native, model, workload_id, history, out, baseline_lock=None):
         raise ValueError("the frozen speech baseline is unavailable")
     cpu = None
     if baseline_lock is not None:
+        if workload["protocol"] == transcription.PROTOCOL:
+            raise ValueError("ASR export uses the Vulkan reference frozen in the AKAS run")
         if (
             not vulkan
             or baseline_lock.get("schema") != "akas.baseline-lock.v1"
@@ -1888,6 +1893,227 @@ def export_speech(native, model, workload_id, history, out, baseline_lock=None):
     destination = Path(out) if out else report_directory(state, history)
     render(data, destination, history)
     return destination
+
+
+def render_transcription(data, out, history):
+    state, workload, profiles = data["campaign"], data["workload"], data["profiles"]
+    transcription.validate(workload)
+    if [p["kind"] for p in profiles] not in (["akas"], ["akas", "baseline"]):
+        raise ValueError("invalid ASR profiles")
+    cases = {item["id"]: item for item in workload["utterances"]}
+    banded = all(item.get("duration_band") for item in cases.values())
+    nav = "[Overview](README.md) · [Comparison](COMPARISON.md) · [AKAS](AKAS.md) · [Baselines](BASELINES.md) · [Measurements](measurements.csv)"
+    notes = (
+        "Warm wall time covers the request through receipt of the complete transcript over local process pipes. "
+        "The timer includes WAV loading, feature extraction and greedy decoding. Model loading and context reset are outside the timer. "
+        "RTF is wall seconds per second of input audio. WER and CER use case-folded NFKC text with punctuation removed. "
+        + (
+            f"The clips are recorded speech from {clean(workload['source']['name'])}. "
+            if workload.get("source", {}).get("kind") == "recorded"
+            else "The demonstration uses synthesized speech. "
+        )
+        + "Both profiles are unqualified for independent full-model accuracy."
+    )
+    overview = [
+        "# Qwen3 ASR benchmark",
+        "",
+        nav,
+        "",
+        f"Workload `{workload['id']}` uses {len(cases)} fixed clips. Protocol `{transcription.PROTOCOL}`.",
+        "",
+        notes,
+        "",
+        "| Runtime | GPU | Complete and deterministic cases | Run |",
+        "| --- | --- | ---: | --- |",
+    ]
+    stats = {}
+    samples = []
+    baseline_page = ["# Baseline transcription measurements", "", nav, ""]
+    for profile in profiles:
+        meta = profile["metadata"]
+        if (
+            meta["speech_workload"]["definition"] != workload
+            or meta["protocol"] != transcription.PROTOCOL
+            or meta["mode"] != "asr"
+        ):
+            raise ValueError("ASR profile metadata differs from the workload")
+        kind = profile["kind"]
+        name = "AKAS" if kind == "akas" else "llama.cpp"
+        link = evidence_link(profile["run_id"], out, history)
+        rows = profile["measurements"]
+        indexed = {row["case"]["id"]: row for row in rows}
+        if len(indexed) != len(rows) or any(
+            cases.get(key) != row["case"] for key, row in indexed.items()
+        ):
+            raise ValueError("undeclared or duplicate ASR measurements")
+        stats[kind] = indexed
+        passed = sum(row["status"] == "ok" for row in rows)
+        overview.append(
+            f"| {name} ({meta['provider']}) | {clean(meta['device']['name'])} | {passed}/{len(cases)} | {link} |"
+        )
+        lines = [
+            f"# {name} transcription measurements",
+            "",
+            nav,
+            "",
+            notes,
+            "",
+            f"Run {link}. Report SHA-256 `{profile['report_sha256']}`.",
+            f"Model {meta['model']}. Format `{meta['weight_format']}`. Context {meta['context']} tokens.",
+            f"Decoder SHA-256 `{meta['checkpoint_sha256']}`. Projector SHA-256 `{meta['projector']['sha256']}`.",
+            f"Each clip has {meta['warmup']} warmup and {meta['repeats']} measured requests.",
+        ]
+        runtime = meta.get("runtime_version")
+        program = meta.get("program_sha256")
+        if runtime:
+            lines.append(f"Runtime `{clean(runtime)}`.")
+        if program:
+            lines.append(f"Compiled program SHA-256 `{program}`.")
+        lines.extend(
+            [
+                "",
+                "| Case | Status | Wall ms | Audio s | RTF | Error rate | Transcript |",
+                "| --- | --- | ---: | ---: | ---: | ---: | --- |",
+            ]
+        )
+        for case, item in cases.items():
+            row = indexed.get(case, {})
+            summary = row.get("summary", {})
+            retained = row.get("samples", [])
+            rate = summary.get("error_rate")
+            display_rate = (
+                "—" if rate is None else f"{item['metric'].upper()} {100 * rate:.1f}%"
+            )
+            display_text = (
+                retained[0]["transcript"] if retained else row.get("error", "—")
+            )
+            wall = summary.get("wall_seconds")
+            rtf = summary.get("real_time_factor")
+            display_rtf = "—" if rtf is None else f"{rtf:.3f}"
+            lines.append(
+                f"| {case} | {row.get('status', 'not measured')} | "
+                f"{fmt(wall * 1000 if wall is not None else None)} | {fmt(summary.get('audio_seconds'))} | "
+                f"{display_rtf} | {display_rate} | {clean(display_text)} |"
+            )
+            for sample in retained or ({},):
+                samples.append(
+                    dict(
+                        runtime=name,
+                        provider=meta["provider"],
+                        case=case,
+                        language=item["language"],
+                        reference=item["text"],
+                        metric=item["metric"],
+                        status=row.get("status", "not measured"),
+                        error=row.get("error"),
+                        **sample,
+                    )
+                )
+        if kind == "akas":
+            text(out / "AKAS.md", "\n".join(lines) + "\n")
+        else:
+            baseline_page = lines
+    comparison = [
+        "# Transcription comparison",
+        "",
+        nav,
+        "",
+        notes,
+        "",
+        "| Case | "
+        + ("Duration band | Audio s | " if banded else "")
+        + "AKAS wall ms | llama.cpp wall ms | llama.cpp / AKAS | Exact transcript match |",
+        "| --- | "
+        + ("--- | ---: | " if banded else "")
+        + "---: | ---: | ---: | --- |",
+    ]
+    ratios = []
+    bands = {}
+    for case, item in cases.items():
+        left, right = (
+            stats.get(kind, {}).get(case, {}) for kind in ("akas", "baseline")
+        )
+        native = left.get("summary", {}).get("wall_seconds")
+        baseline = right.get("summary", {}).get("wall_seconds")
+        duration = left.get("summary", {}).get("audio_seconds") or right.get(
+            "summary", {}
+        ).get("audio_seconds")
+        rows = bands.setdefault(item["duration_band"], []) if banded else None
+        ratio, match = None, "—"
+        if left.get("status") == right.get("status") == "ok":
+            ratio = baseline / native
+            ratios.append(ratio)
+            match = (
+                "yes"
+                if left["samples"][0]["transcript"] == right["samples"][0]["transcript"]
+                else "no"
+            )
+        display_ratio = "—" if ratio is None else f"{ratio:.3f}"
+        duration_cells = (
+            f"{clean(item['duration_band'])} | {fmt(duration)} | " if banded else ""
+        )
+        if rows is not None:
+            rows.append((duration, native, baseline, ratio))
+        comparison.append(
+            f"| {case} | {duration_cells}{fmt(native * 1000 if native is not None else None)} | "
+            f"{fmt(baseline * 1000 if baseline is not None else None)} | {display_ratio} | {match} |"
+        )
+    if bands:
+        comparison.extend(
+            (
+                "",
+                "Band medians use clips completed deterministically by both runtimes. "
+                "Ratios are geometric means of the paired per-clip ratios.",
+                "",
+                "| Duration band | Completed clips | Audio s | AKAS wall ms | llama.cpp wall ms | llama.cpp / AKAS |",
+                "| --- | ---: | --- | ---: | ---: | ---: |",
+            )
+        )
+        for band, rows in bands.items():
+            paired = [(a, b, ratio) for _, a, b, ratio in rows if ratio is not None]
+            durations = [duration for duration, *_ in rows if duration is not None]
+            span = f"{min(durations):.2f}–{max(durations):.2f}" if durations else "-"
+            a, b, speedups = zip(*paired) if paired else ((), (), ())
+            comparison.append(
+                f"| {clean(band)} | {len(paired)}/{len(rows)} | {span} | "
+                f"{fmt(1000 * statistics.median(a) if a else None)} | "
+                f"{fmt(1000 * statistics.median(b) if b else None)} | "
+                f"{fmt(statistics.geometric_mean(speedups) if speedups else None)} |"
+            )
+    if ratios:
+        comparison.extend(
+            [
+                "",
+                f"Geometric mean wall-time ratio across {len(ratios)} matched clips is {statistics.geometric_mean(ratios):.3f}×.",
+            ]
+        )
+    text(out / "README.md", "\n".join(overview) + "\n")
+    text(out / "BASELINES.md", "\n".join(baseline_page) + "\n")
+    text(out / "COMPARISON.md", "\n".join(comparison) + "\n")
+    csv_file(
+        out / "measurements.csv",
+        samples,
+        (
+            "runtime",
+            "provider",
+            "case",
+            "language",
+            "reference",
+            "metric",
+            "status",
+            "error",
+            "repeat",
+            "transcript",
+            "wall_seconds",
+            "audio_seconds",
+            "real_time_factor",
+            "error_rate",
+            "finish_reason",
+        ),
+    )
+    write(out / "campaign.json", state)
+    write(out / "report.json", data)
+    index(history)
 
 
 def render_speech(data, out, history):
@@ -2220,7 +2446,10 @@ def export_runs(run_ids, *, model_id, workload_id, history="benchmarks", out=Non
         raise ValueError("retained native runs must exist")
     if any(data["metadata"].get("runtime") != "akas" for data in runs):
         raise ValueError("--runs accepts native AKAS records; baselines use normal selection")
-    if any(run["metadata"].get("protocol") == "client-speech-pcm-v1" for run in runs):
+    if any(
+        run["metadata"].get("protocol") in ("client-speech-pcm-v1", transcription.PROTOCOL)
+        for run in runs
+    ):
         if len(runs) != 1:
             raise ValueError("speech export accepts one AKAS run with its frozen reference")
         lock = read(baseline_lock) if isinstance(baseline_lock, (str, Path)) else baseline_lock

@@ -57,4 +57,7 @@ the independent recipe; adding a registration does not prove a new dtype compile
 
 The F32 column-bias and GELU operations share a CUDA and WebGPU body. The GELU kernel uses an erf polynomial on both backends and is checked against a host erf.
 
+`gelu_bias` also supports an F16 output for consumers that read half
+activations. It applies bias and GELU in F32 and rounds the result once on store.
+
 Return to the [operation index](../README.md).

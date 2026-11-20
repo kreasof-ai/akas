@@ -72,10 +72,15 @@ def _plot_speech(data, plt, output):
     }
     shared = set.intersection(*(set(rows) for rows in successful.values()))
     cases = successful["akas"]
+    workload = data["workload"]
+    transcription = workload.get("protocol") == "warm-asr-request-v1"
+    tier_field = "duration_band" if transcription else "tier"
     tiers = ("short", "medium", "long")
     positions = range(len(tiers))
     grouped = [
-        sorted(case_id for case_id in shared if cases[case_id]["case"]["tier"] == tier)
+        sorted(
+            case_id for case_id in shared if cases[case_id]["case"][tier_field] == tier
+        )
         for tier in tiers
     ]
     if any(not group for group in grouped):
@@ -83,12 +88,16 @@ def _plot_speech(data, plt, output):
             "speech plot requires matched measurements in every length tier"
         )
     panels = [
-        ("wall_seconds", "Request latency", "Wall seconds", "{x:,.1f}"),
+        ("wall_seconds", "Request latency", "Wall milliseconds", "{x:,.0f}")
+        if transcription
+        else ("wall_seconds", "Request latency", "Wall seconds", "{x:,.1f}"),
         (
             "real_time_factor",
             "Real-time factor",
-            "Wall seconds / audio second",
-            "{x:.2f}",
+            "Wall seconds / input audio second"
+            if transcription
+            else "Wall seconds / audio second",
+            "{x:.3f}" if transcription else "{x:.2f}",
         ),
     ]
     if has_cpu:
@@ -111,6 +120,8 @@ def _plot_speech(data, plt, output):
                 successful["llama-cpu"][case_id]["summary"]["wall_seconds"]
                 / row["wall_seconds"]
             )
+        if transcription and key == "wall_seconds":
+            return row[key] * 1000
         return row[key]
 
     for axis, (key, title, unit, tick_format) in zip(axes, panels, strict=True):
@@ -139,9 +150,22 @@ def _plot_speech(data, plt, output):
                 capsize=3,
             )
         axis.set_title(title, loc="left", fontsize=14, fontweight="bold", pad=12)
-        axis.set_xticks(positions, [tier.title() for tier in tiers])
+        labels = [tier.title() for tier in tiers]
+        if transcription:
+            durations = [
+                [cases[case_id]["summary"]["audio_seconds"] for case_id in group]
+                for group in grouped
+            ]
+            labels = [
+                f"{label}\n{min(values):.1f}–{max(values):.1f} s"
+                for label, values in zip(labels, durations, strict=True)
+            ]
+        axis.set_xticks(positions, labels)
         axis.set_xlim(-0.2, len(tiers) - 0.8)
-        axis.set_xlabel("Prompt length tier", labelpad=10)
+        axis.set_xlabel(
+            "Input duration tier" if transcription else "Prompt length tier",
+            labelpad=10,
+        )
         axis.set_ylabel(unit)
         axis.yaxis.set_major_formatter(StrMethodFormatter(tick_format))
         axis.grid(axis="x", color="#e2e8f0", linewidth=0.8)
@@ -156,14 +180,16 @@ def _plot_speech(data, plt, output):
         title = f"{model} speech synthesis"
         cpu_name = profiles["llama-cpu"]["metadata"]["device"]["name"]
         hardware = f"{device} (Vulkan)  ·  {cpu_name} (CPU)"
-    workload = data["workload"]
     languages = len(
         {
-            item.get("lang", workload["request"].get("lang"))
+            item.get(
+                "language" if transcription else "lang", workload["request"].get("lang")
+            )
             for item in workload["utterances"]
         }
     )
     started = datetime.fromisoformat(data["campaign"]["created_at"])
+    language_label = "language" if languages == 1 else "languages"
     date = f"{started:%B} {started.day}, {started.year}"
     fig.suptitle(
         title,
@@ -177,7 +203,7 @@ def _plot_speech(data, plt, output):
     fig.text(
         0.07,
         0.895,
-        f"{metadata['weight_format'].upper()} weights  ·  {hardware}  ·  {languages} languages  ·  {date}",
+        f"{metadata['weight_format'].upper()} weights  ·  {hardware}  ·  {languages} {language_label}  ·  {date}",
         fontsize=11,
         color="#475569",
     )
@@ -196,19 +222,34 @@ def _plot_speech(data, plt, output):
         if has_cpu
         else "Lower is better on both panels."
     )
+    units = "clips" if transcription else "prompts"
+    unit = "clip" if transcription else "prompt"
+    completion = "complete transcript" if transcription else "complete PCM16"
     fig.text(
         0.07,
         0.045,
-        f"{direction} Points are tier medians with interquartile ranges across {len(shared)} matched prompts.\n"
-        f"Each prompt contributes the median of {metadata['repeats']} measured requests after {metadata['warmup']} warmup. "
-        "Timings end at receipt of complete PCM16.",
+        f"{direction} Points are tier medians with interquartile ranges across {len(shared)} matched {units}.\n"
+        f"Each {unit} contributes the median of {metadata['repeats']} measured requests after {metadata['warmup']} warmup. "
+        f"Timings end at receipt of {completion}.",
         fontsize=9,
         color="#475569",
         linespacing=1.5,
     )
-    fig.subplots_adjust(left=0.07, right=0.98, top=0.78, bottom=0.31, wspace=0.22)
+    fig.subplots_adjust(
+        left=0.07,
+        right=0.98,
+        top=0.78,
+        bottom=0.35 if transcription else 0.31,
+        wspace=0.22,
+    )
     try:
-        return _save(fig, output)
+        svg = _save(fig, output)
+        if transcription:
+            svg.write_bytes(
+                b"\n".join(line.rstrip() for line in svg.read_bytes().splitlines())
+                + b"\n"
+            )
+        return svg
     finally:
         plt.close(fig)
 

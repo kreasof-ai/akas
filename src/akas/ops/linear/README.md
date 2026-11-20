@@ -129,3 +129,10 @@ projections with SwiGLU. `q4_q8_ffn` additionally rounds that activation to FP16
 and packs its block-32 Q8 values and scales before leaving the kernel. Neither
 operation creates a floating weight copy. The independent reference includes
 original GGML scales and the explicit activation rounding boundary.
+
+WebGPU Q8_0 projections can read aligned signed-byte words and the original
+block scales. The single-row floating path groups four coefficients per lane.
+The signed-byte paths use packed integer dot products, staging both operands
+for multirow tiles and sharing the packed activation when projecting Q, K
+and V. Accumulation across blocks is FP32. Independent references decode the
+original GGML blocks and use a floating matrix product for validation.

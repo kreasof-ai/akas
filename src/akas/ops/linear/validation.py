@@ -79,6 +79,8 @@ def pipeline_validation(kind, p, signature):
 
 
 def validation(kind, p, signature):
+    if p.get("signed_q8_input"):
+        return q8_signed_projection_validation(kind, p, signature)
     if p.get("q16") or kind in ("linear_q16", "ffn_q16"):
         return q16_projection_validation(kind, p, signature)
     import numpy as np
@@ -322,11 +324,58 @@ def quantized_validation(kind, parameters, signature):
     )
 
 
+def _sample_projection_weight(buffer, encoding, width, depth, *, aligned, seed=31):
+    import numpy as np
+    from akas.quantization.weights.ggml.validation import sample_weight
+
+    if not aligned:
+        return sample_weight(buffer, encoding, seed=seed).reshape(width, depth)
+    from akas.quantization.weights.ggml.webgpu import q8_aligned_words
+
+    raw = np.empty(width * depth // 32 * 34, "uint8")
+    decoded = sample_weight(raw, encoding, seed=seed).reshape(width, depth)
+    buffer[:] = q8_aligned_words(raw)
+    return decoded
+
+
+def q8_signed_projection_validation(kind, parameters, signature):
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    rows, depth, width = (parameters[n] for n in ("r", "k", "o"))
+    values = sample_arguments(signature)
+    rng = np.random.default_rng(43)
+    coefficients = rng.integers(-127, 128, size=(rows * depth // 32, 32), dtype="int8")
+    scales = rng.uniform(1e-4, 2e-3, size=(rows * depth // 32,)).astype("float32")
+    values["packed"][:] = coefficients.view("uint32").reshape(-1)
+    values["scales"][:] = scales
+    activation = (coefficients.astype("float64") * scales[:, None]).reshape(rows, depth)
+    aligned = parameters.get("q8_aligned", False)
+    expected = np.empty((rows, width), "float64")
+    stride = depth // 32 * (36 if aligned else 34) // 4
+    for start in range(0, width, 2048):
+        stop = min(start + 2048, width)
+        destination = values["w"][start * stride : stop * stride]
+        weights = _sample_projection_weight(
+            destination, 8, stop - start, depth, aligned=aligned, seed=31 + start
+        )
+        expected[:, start:stop] = activation @ weights.astype("float64").T
+    if kind == "ffn":
+        other = _sample_projection_weight(
+            values["w2"], 8, width, depth, aligned=aligned, seed=44
+        )
+        up = activation @ other.astype("float64").T
+        expected = expected / (1 + np.exp(-expected)) * up
+    expected = expected.reshape(-1)
+    if kind == "linear_add":
+        expected += values["residual"]
+    return ValidationCase(values, {**values, "out": expected.astype("float32")})
+
+
 def q16_projection_validation(kind, parameters, signature):
     import numpy as np
     from akas.kernels.contracts import ValidationCase, sample_arguments
     from akas.quantization.activations.q16.validation import encode, decode
-    from akas.quantization.weights.ggml.validation import sample_weight
 
     values = sample_arguments(signature)
     rows, depth = parameters["r"], parameters["k"]
@@ -338,11 +387,17 @@ def q16_projection_validation(kind, parameters, signature):
     for name, value in (("packed", packed), ("scales", scales), ("sums", sums)):
         values[name][:] = value.reshape(values[name].shape)
     width = parameters["o"]
-    weights = sample_weight(values["w"], 2).reshape(width, depth)
+    encoding = parameters.get("type", 2)
+    aligned = parameters.get("q8_aligned", False)
+    weights = _sample_projection_weight(
+        values["w"], encoding, width, depth, aligned=aligned
+    )
     x = decode(values["packed"], values["scales"], rows=rows, depth=depth)
     out = x @ weights.astype("float64").T
     if kind in ("ffn", "ffn_q16"):
-        other = sample_weight(values["w2"], 2, seed=44).reshape(width, depth)
+        other = _sample_projection_weight(
+            values["w2"], encoding, width, depth, aligned=aligned, seed=44
+        )
         up = x @ other.astype("float64").T
         out = out / (1 + np.exp(-out)) * up
     if parameters.get("weight_layout", "raw") == "planar":

@@ -1445,6 +1445,69 @@ IMPLEMENTATIONS += tuple(
         "akas.ops.linear.webgpu",
         "reference",
         provider="webgpu",
+        priority=44,
+        factory="signed_q8_matrix",
+        space=(("q8_blocks", (2, 4, 1)), ("q8_layout", (0, 1, 2))),
+        accepts=lambda p: (
+            p.get("signed_q8_input", False)
+            and p.get("ggml", False)
+            and p["r"] > 1
+            and p["type"] == 8
+            and p["k"] % 64 == 0
+        ),
+        name="linear.webgpu.packed:q8-signed-matrix",
+    )
+    for kind in ("linear", "ffn", "linear_add")
+)
+
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        kind,
+        "akas.ops.linear.webgpu",
+        "reference",
+        provider="webgpu",
+        priority=44,
+        factory="signed_q8_vector",
+        space=(("lanes", (16, 8, 32)), ("threads", (128, 256, 64))),
+        accepts=lambda p: (
+            p.get("signed_q8_input", False)
+            and p.get("ggml", False)
+            and p["r"] == 1
+            and p["type"] == 8
+            and p["k"] % 128 == 0
+        ),
+        name="linear.webgpu.packed:q8-signed-vector",
+    )
+    for kind in ("linear", "ffn", "linear_add")
+)
+
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        kind,
+        "akas.ops.linear.webgpu",
+        "reference",
+        provider="webgpu",
+        priority=42,
+        factory="vector_q8",
+        space=(("lanes", (16, 8, 32)), ("threads", (128, 256, 64))),
+        accepts=lambda p: (
+            p.get("vector_q8_webgpu", False)
+            and p.get("ggml", False)
+            and p["r"] == 1
+            and p["type"] == 8
+            and p["k"] % 128 == 0
+        ),
+        name="linear.webgpu.packed:q8-vector",
+    )
+    for kind in ("linear", "ffn", "linear_add")
+)
+
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        kind,
+        "akas.ops.linear.webgpu",
+        "reference",
+        provider="webgpu",
         priority=39,
         factory="outer_prefill",
         defaults=(("outer_rows", 32),),
@@ -1479,7 +1542,7 @@ IMPLEMENTATIONS += tuple(
             p.get("ggml", False)
             and p.get("q16", False)
             and p["r"] > 1
-            and p["type"] == 2
+            and p["type"] in (2, 8)
         ),
         name="linear.webgpu.two_component",
     )

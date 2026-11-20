@@ -1,9 +1,15 @@
 # Benchmark results
 
-Generated from run records. See [the benchmark guide](../docs/benchmarking.md).
+Generated from run records. See [the benchmark guide](https://github.com/kreasof-ai/akas/blob/main/docs/benchmarking.md).
 
 | UTC | Hardware | Runtime / model | Backend / weights / mode / KV | Shapes (B/P/O) | Purpose | Status | Source | Record |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-20T08:44:03.565085Z | AMD Radeon RX 6700 XT | akas / Qwen3 ASR (Rumble-2-Flash) | webgpu / q8_0 / asr / unspecified |  | speech-demo | passed | d1c4d39f37 + snapshot | [run](https://github.com/kreasof-ai/akas/blob/29bc2bcf9e670cdd9ddb3f988bdf7626ebbd6cc8/benchmarks/runs/20261120084403565085-66583b4d/run.json) |
+| 2026-11-20T08:43:41.194215Z | AMD Radeon RX 6700 XT | akas / Qwen3 ASR (Rumble-2-Flash) | webgpu / q8_0 / asr / unspecified |  | speech-demo | passed | d1c4d39f37 + snapshot | [run](https://github.com/kreasof-ai/akas/blob/29bc2bcf9e670cdd9ddb3f988bdf7626ebbd6cc8/benchmarks/runs/20261120084341194215-d25a4c19/run.json) |
+| 2026-11-20T08:43:21.467772Z | AMD Radeon RX 6700 XT | akas / Qwen3 ASR (Rumble-2-Flash) | webgpu / q8_0 / asr / unspecified |  | speech-demo | passed | d1c4d39f37 + snapshot | [run](https://github.com/kreasof-ai/akas/blob/29bc2bcf9e670cdd9ddb3f988bdf7626ebbd6cc8/benchmarks/runs/20261120084321467772-50feb0aa/run.json) |
+| 2026-11-20T08:42:55.299002Z | AMD Radeon RX 6700 XT | akas / Qwen3 ASR (Rumble-2-Flash) | webgpu / q8_0 / asr / unspecified |  | speech-demo | passed | d1c4d39f37 + snapshot | [run](https://github.com/kreasof-ai/akas/blob/29bc2bcf9e670cdd9ddb3f988bdf7626ebbd6cc8/benchmarks/runs/20261120084255299002-0b492f35/run.json) |
+| 2026-11-20T08:42:43.614189Z | AMD Radeon RX 6700 XT | akas / qwen3-asr | webgpu / unspecified / ar / unspecified |  | frontend-output-parity | passed | d1c4d39f37 + snapshot | [run](https://github.com/kreasof-ai/akas/blob/29bc2bcf9e670cdd9ddb3f988bdf7626ebbd6cc8/benchmarks/runs/20261120084243614189-b08ae621/run.json) |
+| 2026-11-20T07:12:31.701250Z | AMD Radeon RX 6700 XT (12272 MiB, 11474 MiB free) | llama / Qwen3 ASR (Rumble-2-Flash) | vulkan / q8_0 / asr / unspecified |  | speech-demo | passed | d1c4d39f37 + snapshot | [run](https://github.com/kreasof-ai/akas/blob/29bc2bcf9e670cdd9ddb3f988bdf7626ebbd6cc8/benchmarks/runs/20261120071231701250-5ba2ac25/run.json) |
 | 2026-11-17T23:14:58.075664Z | NVIDIA L40S | akas /  | cuda / unspecified / ar / unspecified |  | kernel-qualification | passed | f5cdde58d1 + snapshot | [run](https://github.com/kreasof-ai/akas/blob/3ff3c48526286e49c8ca6236041a12aa34bc7736/benchmarks/runs/20261117231458075664-bc9db56b/run.json) |
 | 2026-11-17T23:10:16.345646Z | NVIDIA L40S | akas / Zyphra/ZONOS3-Mini | cuda / bf16 / ar / unspecified |  | streaming-speech-showcase-figure | passed | 1f240d0171 + snapshot | [run](https://github.com/kreasof-ai/akas/blob/45bc9c006efd1a00dfb76df133ab3b1dfb348e5a/benchmarks/runs/20261117231016345646-b1f74c89/run.json) |
 | 2026-11-17T22:52:29.028356Z | NVIDIA L40S | akas / Zyphra/ZONOS3-Mini | cuda / bf16 / ar / unspecified |  | streaming-speech-showcase-figure | passed | a3f3cc4a9c + snapshot | [run](https://github.com/kreasof-ai/akas/blob/e645f9653992ce14080f95994964b412fda6b7fe/benchmarks/runs/20261117225229028356-dbb5f541/run.json) |

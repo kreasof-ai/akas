@@ -40,3 +40,48 @@ def test_feedback_is_qualified_by_default_and_replays_without_host_tokens(tmp_pa
         finally:
             for buffer in buffers.values():
                 buffer.release()
+
+
+def test_decode_feedback_collects_tokens_and_preserves_eos(tmp_path):
+    if os.environ.get("AKAS_FORWARD_WEBGPU") != "1":
+        pytest.skip("enable native feedback qualification")
+    from akas.compilation.compile import produce
+    from akas.execution.forward import Forward
+    from akas.graph import Graph
+    from akas.memory.transfer import write_many
+    from akas.tensor.device import vulkan_device
+
+    arrays = {
+        "sampled": np.array([42, 101, 102, 43, 44, 45], dtype="int32"),
+        "stop_ids": np.array([101, 102], dtype="int32"),
+        "tokens": np.arange(6, dtype="int32"),
+        "positions": np.full(6, 12, dtype="int32"),
+        "active": np.array([1, 1, 1, 0, 1, 1], dtype="int32"),
+        "journal": np.zeros((6, 3), dtype="int32"),
+    }
+    arrays["journal"][4:, 0] = [1, 2]
+    graph = Graph(contract="reference")
+    arguments = [
+        graph.buffer(name, value.shape, "int32", role="input")
+        for name, value in arrays.items()
+    ]
+    graph("decode_feedback", dict(r=6, capacity=2), *arguments)
+    with vulkan_device() as device:
+        manifest = produce(graph, tmp_path, provider="webgpu", device=device)
+        with Forward(tmp_path, device, {}, manifest=manifest, allocate_io=True) as forward:
+            buffers = forward.buffers
+            write_many(device, ((buffers[name], value) for name, value in arrays.items()))
+            forward.run()
+            np.testing.assert_array_equal(buffers["active"].to_numpy(), [1, 0, 0, 0, 1, 0])
+            np.testing.assert_array_equal(buffers["positions"].to_numpy(), [13, 12, 12, 12, 13, 12])
+            np.testing.assert_array_equal(buffers["journal"].to_numpy()[:, 0], [1, 0, 0, 0, 2, 2])
+            write_many(
+                device,
+                (
+                    (buffers["sampled"], np.array([101, 12, 13, 14, 46, 15], dtype="int32")),
+                    (buffers["journal"], np.zeros_like(arrays["journal"])),
+                ),
+            )
+            forward.run()
+            np.testing.assert_array_equal(buffers["tokens"].to_numpy(), [42, 1, 2, 3, 46, 5])
+            np.testing.assert_array_equal(buffers["journal"].to_numpy()[4], [1, 46, 0])

@@ -495,3 +495,45 @@ def block_limits(spec, schedule):
         return out
 
     return compute
+
+
+def decode_feedback(spec, schedule):
+    """Append the next token and advance each live greedy decode lane."""
+    import tilelang.language as T
+
+    rows, capacity = (spec.parameters[key] for key in ("r", "capacity"))
+    shape = (rows,)
+    journal_shape = (rows, capacity + 1)
+
+    @kernel
+    def compute(
+        sampled: Tensor(shape, "int32"),
+        stop_ids: Tensor((2,), "int32"),
+        tokens: Tensor(shape, "int32"),
+        positions: Tensor(shape, "int32"),
+        active: Tensor(shape, "int32"),
+        journal: Tensor(journal_shape, "int32"),
+    ) -> tuple[
+        Tensor(shape, "int32"),
+        Tensor(shape, "int32"),
+        Tensor(shape, "int32"),
+        Tensor(journal_shape, "int32"),
+    ]:
+        with T.Kernel(T.ceildiv(rows, 32), threads=32) as block:
+            for lane in T.Parallel(32):
+                row = block * 32 + lane
+                if row < rows and active[row] != 0:
+                    next_id = sampled[row]
+                    count = journal[row, 0]
+                    if next_id == stop_ids[0] or next_id == stop_ids[1]:
+                        active[row] = 0
+                    elif count < capacity:
+                        journal[row, count + 1] = next_id
+                        journal[row, 0] = count + 1
+                        tokens[row] = next_id
+                        positions[row] += 1
+                    else:
+                        active[row] = 0
+        return tokens, positions, active, journal
+
+    return compute

@@ -61,3 +61,53 @@ def post_add_rms(spec, schedule):
         return hidden, out
 
     return compute
+
+
+def affine_layer_norm(spec, schedule):
+    """Use subgroup sums for centered variance and keep a row in registers."""
+    import tilelang.language as T
+
+    from akas.kernels.kernel import Tensor, kernel, output
+    from akas.kernels.webgpu import subgroup_reduce
+
+    p = {**spec.parameters, **schedule}
+    rows, width, eps = p["r"], p["c"], p["eps"]
+    threads = p.get("threads", 128)
+    if width % threads:
+        raise ValueError(
+            "layer normalization width must divide into complete lane groups"
+        )
+    count = width // threads
+    reduce = subgroup_reduce(threads)
+
+    @kernel
+    def compute(
+        x: Tensor((rows, width), "float32"),
+        scale: Tensor((width,), "float32"),
+        bias: Tensor((width,), "float32"),
+    ) -> Tensor((rows, width), "float32"):
+        out = output((rows, width), "float32")
+        with T.Kernel(rows, threads=threads) as row:
+            tx = T.get_thread_binding()
+            values = T.alloc_local((count,), "float32")
+            scratch = T.alloc_shared((threads,), "float32")
+            total = T.alloc_var("float32")
+            total = 0
+            for i in T.unroll(count):
+                values[i] = x[row, i * threads + tx]
+                total += values[i]
+            reduce(scratch, tx, total)
+            mean = scratch[0] / width
+            total = 0
+            for i in T.unroll(count):
+                values[i] -= mean
+                total += values[i] * values[i]
+            T.sync_threads()
+            reduce(scratch, tx, total)
+            inv_std = T.rsqrt(scratch[0] / width + eps)
+            for i in T.unroll(count):
+                column = i * threads + tx
+                out[row, column] = values[i] * inv_std * scale[column] + bias[column]
+        return out
+
+    return compute

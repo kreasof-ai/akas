@@ -264,6 +264,25 @@ def column_activation(spec, schedule):
         erf = 1 - poly * t * T.exp(-x * x)
         return 0.5 * value * (1 + T.if_then_else(x < 0, -erf, erf))
 
+    if spec.kind == "gelu_bias" and p.get("output_dtype") == "float16":
+        from akas.quantization._shared.rounding import round_half
+
+        rounded = round_half()
+
+        @kernel
+        def compute(
+            x: Tensor((r, c), "float32"), bias: Tensor((c,), "float32")
+        ) -> Tensor((r, c), "float16"):
+            out = output((r, c), "float16")
+            with T.Kernel(r, T.ceildiv(c, 128), threads=128) as (row, tile):
+                for lane in T.Parallel(128):
+                    col = tile * 128 + lane
+                    if col < c:
+                        out[row, col] = rounded(activate(x[row, col] + bias[col]))
+            return out
+
+        return compute
+
     if spec.kind == "gelu":
 
         @kernel

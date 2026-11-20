@@ -31,6 +31,12 @@ The [speech baseline launcher](../tools/baselines/README.md#speech-synthesis-dem
 records end-to-end latency, audio duration, and real-time factor against the
 frozen llama.cpp Vulkan run.
 
+[`asr-demo-v1`](../src/akas/benchmarking/workloads/asr-demo-v1.json) runs
+greedy Qwen3 ASR transcription on three fixed WAV clips. The
+[transcription baseline launcher](../tools/baselines/README.md#speech-transcription-demo)
+retains complete transcripts, per-clip error rates and warm request latency
+against the frozen llama.cpp Vulkan run.
+
 A prompt starts with an empty cache. Disable prefix sharing, early EOS and CPU
 offload. Use greedy sampling with repetition penalty 1 and presence/frequency
 penalties 0; set these explicitly rather than inheriting server defaults.

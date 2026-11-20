@@ -101,6 +101,75 @@ under `benchmarks/runs/<run-id>/`. The comparison reports both wall latency
 and the ratio of real-time factors. Seeded sampling can produce different clip
 durations across runtimes.
 
+## Speech transcription demo
+
+[Qwen3 ASR](../../src/akas/models/qwen3_asr/README.md) uses the pinned
+Rumble-2-Flash Q8_0 decoder and Q8_0 audio projector. Extract the
+[llama.cpp b12521 Windows Vulkan release](https://github.com/ggml-org/llama.cpp/releases/tag/b12521)
+under `build/baselines/llama-b12521-vulkan` or pass a binary from that
+revision with `--binary`.
+
+```sh
+uv run --no-sync python -m tools.baselines llama qwen3-asr --provider vulkan
+uv run --no-sync python -m tools.baselines akas qwen3-asr --provider vulkan \
+  --bundle build/qwen3-asr/speech --reference-run LLAMA_RUN_ID
+uv run --no-sync python -m tools.campaign_report --runs AKAS_RUN_ID \
+  --model qwen3-asr --workload asr-demo-v1
+```
+
+Both runtimes read the same WAV, force the clip's language, and decode
+greedily. The launcher uses a persistent AKAS worker and the stock
+`llama-mtmd-cli` over local process pipes. Wall time includes reading each WAV
+through receipt of the complete transcript. It excludes model loading and
+context reset. The
+[`asr-demo-v1` workload](../../src/akas/benchmarking/workloads/asr-demo-v1.json)
+pins English, Indonesian and Japanese clips from the repository's ZONOS3-Mini
+showcase. Each clip gets one warmup and three measurements. The recorder
+retains the input, transcript and request latency, plus word or character
+error against the synthesis script. These three synthetic clips demonstrate
+the end-to-end path. Independent transcription quality requires a broader
+recorded speech workload.
+
+### ASR latency by input duration
+
+[`asr-length-v1`](../../src/akas/benchmarking/workloads/asr-length-v1.json) pins
+nine LibriSpeech dev-clean recordings from one reader. Its short, medium and
+long bands cover 1.91–4.23 s, 9.01–12.49 s and 15.12–29.40 s. It uses the
+same 512-token context on both runtimes with a 100-token output cap so the
+longest input stays within the compiled context.
+
+Download the Parquet archive pinned in the workload's `source.archive` and
+verify `source.sha256`. To recreate the input WAVs, use PyArrow and SoundFile
+in an audio preparation environment. Decode the selected FLAC rows as
+signed 16-bit PCM and write mono WAV headers with Python's `wave` module.
+
+```python
+import io
+import json
+import wave
+from hashlib import sha256
+from pathlib import Path
+
+import pyarrow.parquet as pq
+import soundfile as sf
+
+workload = json.loads(Path("src/akas/benchmarking/workloads/asr-length-v1.json").read_text())
+archive = Path("validation-00000-of-00001.parquet")
+assert sha256(archive.read_bytes()).hexdigest() == workload["source"]["sha256"]
+audio = {row["id"]: row["audio"]["bytes"] for row in pq.read_table(archive, columns=["id", "audio"]).to_pylist()}
+for clip in workload["utterances"]:
+    pcm, rate = sf.read(io.BytesIO(audio[clip["id"]]), dtype="int16")
+    path = Path(clip["path"])
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with wave.open(str(path), "wb") as wav:
+        wav.setparams((1, 2, rate, 0, "NONE", "not compressed"))
+        wav.writeframes(pcm.astype("<i2", copy=False).tobytes())
+    assert sha256(path.read_bytes()).hexdigest() == clip["sha256"]
+```
+
+Use the existing ASR commands with `--workload asr-length-v1` on both
+runtimes and the report exporter. Freeze a new Vulkan run for this workload.
+
 ## Measure the complete workload
 
 Add `--optimized` to enable graph execution for the native engines, provision the

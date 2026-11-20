@@ -15,8 +15,10 @@ import uuid
 
 from akas.benchmarking.workload import STANDARD, STANDARD_SHA256
 from akas.benchmarking import archive
+from akas.benchmarking.transcription import PROTOCOL as ASR_PROTOCOL
 
 SCHEMA = "akas.benchmark-run.v1"
+SPEECH_PROTOCOLS = ("client-speech-pcm-v1", "client-speech-pcm-stream-v1", ASR_PROTOCOL)
 
 
 def utc():
@@ -103,7 +105,7 @@ def source_identity(root):
 def shapes(report):
     """Keep total-output and legacy additional-decode accounting distinguishable."""
     protocol = report["metadata"].get("protocol")
-    if protocol in ("client-speech-pcm-v1", "client-speech-pcm-stream-v1"):
+    if protocol in SPEECH_PROTOCOLS:
         return []
     result = []
     for row in report["results"]:
@@ -387,10 +389,7 @@ class Recorder:
         self.record["workload"] = dict(
             id="standard-v1" if standard else "custom", shapes=observed
         )
-        if report["metadata"].get("protocol") in (
-            "client-speech-pcm-v1",
-            "client-speech-pcm-stream-v1",
-        ):
+        if report["metadata"].get("protocol") in SPEECH_PROTOCOLS:
             self.record["workload"].update(report["metadata"]["speech_workload"])
         if standard:
             self.record["workload"]["definition"] = STANDARD

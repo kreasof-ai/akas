@@ -149,7 +149,53 @@ def commit_histories(graph, commit):
         )
 
 
-from akas.ops.convolution.validation import causal_depthwise_validation
+from akas.ops.convolution.validation import (
+    causal_depthwise_validation,
+    image_patches_validation,
+    image_projection_validation,
+)
+
+OUTPUT_ARGUMENTS.setdefault("reference", {})["image_patches"] = OutputABI(
+    (-1,), ("out",)
+)
+VALIDATIONS["image_patches"] = image_patches_validation
+OUTPUT_ARGUMENTS["reference"]["implicit_half_conv2d"] = OutputABI((-1,), ("out",))
+VALIDATIONS["implicit_half_conv2d"] = image_projection_validation
+IMPLEMENTATIONS += (
+    Implementation(
+        "implicit_half_conv2d",
+        "akas.ops.convolution.webgpu",
+        "reference",
+        provider="webgpu",
+        factory="implicit_half_conv2d",
+        space=(("layout", (0, 1, 2)), ("half_k", (16, 32))),
+    ),
+)
+for _image_kind in ("image_patches_half", "single_channel_conv2d"):
+    OUTPUT_ARGUMENTS["reference"][_image_kind] = OutputABI((-1,), ("out",))
+    VALIDATIONS[_image_kind] = image_projection_validation
+    IMPLEMENTATIONS += (
+        Implementation(
+            _image_kind,
+            "akas.ops.convolution.webgpu",
+            "reference",
+            provider="webgpu",
+            factory=_image_kind,
+            space=(("sites", (4, 2, 8, 1)),)
+            if _image_kind == "single_channel_conv2d"
+            else (),
+        ),
+    )
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        "image_patches",
+        "akas.ops.convolution.kernel",
+        "reference",
+        provider=provider,
+        factory="image_patches",
+    )
+    for provider in ("cuda", "webgpu")
+)
 
 OUTPUT_ARGUMENTS.setdefault("reference", {})["causal_depthwise"] = OutputABI(
     (-1,), ("out",)

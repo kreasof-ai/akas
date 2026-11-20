@@ -251,6 +251,50 @@ def integer_rhs(shape, *, prepacked=False, layout="raw"):
     return storage, read_word, read_scale
 
 
+def q8_aligned_words(raw):
+    """Keep signed coefficients and promote the block scale to aligned words."""
+    import numpy as np
+
+    blocks = raw.view("uint8").reshape(-1, 34)
+    aligned = np.empty((len(blocks), 9), dtype="uint32")
+    aligned[:, :8].view("uint8")[:] = blocks[:, 2:]
+    scales = np.ascontiguousarray(blocks[:, :2]).view("<f2").reshape(-1)
+    aligned[:, 8] = scales.astype("float32").view("uint32")
+    return aligned.reshape(-1)
+
+
+def q8_integer_rhs(shape, *, aligned=False):
+    """Expose the original signed Q8_0 words and half block scales."""
+    import tilelang.language as T
+
+    from akas.quantization._shared.packing import packed_loads
+    from .definition import weight_storage
+
+    columns, depth = shape
+    size = (
+        columns * depth // 32 * 9
+        if aligned
+        else weight_storage(8, columns * depth, packed_words=True)[0]
+    )
+    _, half_at, word_at = packed_loads()
+
+    @T.macro
+    def word(w, column, block, index):
+        if aligned:
+            return w[(column * (depth // 32) + block) * 9 + index]
+        else:
+            return word_at(w, (column * (depth // 32) + block) * 34 + 2 + index * 4)
+
+    @T.macro
+    def scale(w, column, block):
+        if aligned:
+            return T.reinterpret("float32", w[(column * (depth // 32) + block) * 9 + 8])
+        else:
+            return half_at(w, (column * (depth // 32) + block) * 34)
+
+    return size, word, scale
+
+
 def q8_dot(k, o):
     """Packed Q8 activation × Q4_0 weight dot with inline correction sums."""
     if k <= 0 or k % 128:
@@ -299,6 +343,37 @@ def q8_dot(k, o):
                 out[bx * 8 + row] = scratch[tx]
 
     return dot
+
+
+def q8_vector_dot(depth):
+    """Four signed Q8_0 coefficients per lane with the original block scale."""
+    import tilelang.language as T
+    from akas.quantization._shared.packing import packed_loads
+
+    _, scale_at, word_at = packed_loads()
+
+    @T.macro
+    def signed(word, shift):
+        return T.cast(T.reinterpret("int32", word << shift) >> 24, "float32")
+
+    @T.macro
+    def product(x, w, column, index):
+        base = (column * (depth // 32) + index // 32) * 34
+        word = word_at(w, base + 2 + index % 32)
+        values = T.call_extern(
+            "float32x4", "vec4<f32>", x[index], x[index + 1], x[index + 2], x[index + 3]
+        )
+        coefficients = T.call_extern(
+            "float32x4",
+            "vec4<f32>",
+            signed(word, 24),
+            signed(word, 16),
+            signed(word, 8),
+            signed(word, 0),
+        )
+        return scale_at(w, base) * T.call_extern("float32", "dot", values, coefficients)
+
+    return product
 
 
 def dequantize(spec, schedule):

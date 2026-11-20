@@ -1,6 +1,53 @@
 """Independent numerical and state qualification for convolution."""
 
 
+def image_patches_validation(kind, p, signature):
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    values = sample_arguments(signature)
+    size, stride, padding = (p[k] for k in ("kernel", "stride", "padding"))
+    image = np.pad(values["image"], ((padding, padding), (padding, padding), (0, 0)))
+    patches = np.lib.stride_tricks.sliding_window_view(image, (size, size), axis=(0, 1))
+    # The input is time, frequency, channel, and the weight is channel, frequency, time.
+    expected = patches[::stride, ::stride].swapaxes(-1, -2)
+    return ValidationCase(
+        values, {"out": expected.reshape(values["out"].shape)}, rtol=0, atol=0
+    )
+
+
+def image_projection_validation(kind, p, signature):
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    values = sample_arguments(signature)
+    size, stride, pad = (p[k] for k in ("kernel", "stride", "padding"))
+    if kind == "implicit_half_conv2d":
+        # Multiples of 1/16 in this range keep every eight-term half-FMA sum
+        # exact. Indexing, padding and filter ordering can be checked bitwise.
+        for name in ("image", "weights"):
+            data = values[name]
+            data[:] = np.rint(np.clip(data, -0.5, 0.5) * 16) / 16
+    image = values["image"].reshape(p["width"], p["height"], -1)
+    source = np.pad(image, ((pad, pad), (pad, pad), (0, 0)))
+    patches = np.lib.stride_tricks.sliding_window_view(
+        source, (size, size), axis=(0, 1)
+    )
+    rows = patches[::stride, ::stride].transpose(0, 1, 4, 3, 2)
+    rows = rows.reshape(-1, size * size * image.shape[-1]).astype("float16")
+    if kind == "image_patches_half":
+        return ValidationCase(values, dict(out=rows), rtol=0, atol=0)
+    weights = values["weights"].reshape(p["columns"], -1)
+    expected = rows.astype("float64") @ weights.astype("float64").T
+    if kind == "implicit_half_conv2d":
+        return ValidationCase(
+            values, dict(out=expected.reshape(-1).astype("float32")), rtol=0, atol=0
+        )
+    return ValidationCase(
+        values, dict(out=expected.astype("float32")), rtol=2e-5, atol=2e-6
+    )
+
+
 def validation(kind, p, signature):
     import numpy as np
     from akas.kernels.contracts import ValidationCase, sample_arguments

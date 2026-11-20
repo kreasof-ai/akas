@@ -7,6 +7,8 @@ sequences. Each callable declares the control or persistent-state buffers it cha
 `block_limits(positions, lengths) -> out` repeats the last live position across
 each token block, for attention within a bidirectional draft block. Rotary positions
 remain distinct from these attention limits.
+`decode_feedback` appends greedy IDs to a bounded device journal, updates the
+next-token input and position, and masks a lane when it encounters a stop ID.
 
 ## Backend choice
 

@@ -143,16 +143,22 @@ def _integer(p, paired=False, add_residual=False):
 
     r, k, o = (p.get("r", 1), p["k"], p["o"])
     parts = 2 if paired else 1
-    from akas.quantization.weights.ggml.webgpu import integer_rhs
+    from akas.quantization.weights.ggml.webgpu import integer_rhs, q8_integer_rhs
 
     prepacked = p.get("q4_prepacked", False)
-    storage, read_word, read_scale = integer_rhs(
-        (o, k), prepacked=prepacked, layout=p.get("weight_layout", "raw")
-    )
-    count = storage.values.shape[0]
+    signed_q8 = p.get("type") == 8
+    if signed_q8:
+        count, read_word, read_scale = q8_integer_rhs(
+            (o, k), aligned=p.get("q8_aligned", False)
+        )
+    else:
+        storage, read_word, read_scale = integer_rhs(
+            (o, k), prepacked=prepacked, layout=p.get("weight_layout", "raw")
+        )
+        count = storage.values.shape[0]
 
     config = dict(p.get("integer", {}))
-    if prepacked:
+    if prepacked or signed_q8:
         config["signed_rhs"] = True
     algorithm = packed_integer_matmul(
         r,
@@ -189,6 +195,51 @@ def _integer(p, paired=False, add_residual=False):
     ) -> Tensor(r * o, "float32"):
         out = output(r * o, "float32")
         algorithm(packed, scales, sums, w, out)
+        return out
+
+    return compute
+
+
+def _signed_q8_abi(rows, depth, columns, count, algorithm, *, paired, residual):
+    words, blocks, outputs = rows * depth // 4, rows * depth // 32, rows * columns
+    if paired:
+
+        @kernel
+        def compute(
+            packed: Tensor(words, "uint32"),
+            scales: Tensor(blocks, "float32"),
+            w: Tensor(count, "uint32"),
+            w2: Tensor(count, "uint32"),
+        ) -> Tensor(outputs, "float32"):
+            out = output(outputs, "float32")
+            algorithm(packed, scales, w, out, w2)
+            return out
+
+        return compute
+
+    if residual:
+
+        @kernel
+        def compute(
+            packed: Tensor(words, "uint32"),
+            scales: Tensor(blocks, "float32"),
+            w: Tensor(count, "uint32"),
+            residual: Tensor(outputs, "float32"),
+        ) -> Tensor(outputs, "float32"):
+            out = output(outputs, "float32")
+            algorithm(packed, scales, w, out, addend=residual)
+            return out
+
+        return compute
+
+    @kernel
+    def compute(
+        packed: Tensor(words, "uint32"),
+        scales: Tensor(blocks, "float32"),
+        w: Tensor(count, "uint32"),
+    ) -> Tensor(outputs, "float32"):
+        out = output(outputs, "float32")
+        algorithm(packed, scales, w, out)
         return out
 
     return compute
@@ -453,6 +504,245 @@ def archived_decode(spec: KernelSpec, schedule: Mapping[str, object]):
     )
 
 
+def vector_q8(spec, schedule):
+    """Keep each vector's packed loads and the row reduction in a subgroup."""
+    import tilelang.language as T
+    from akas.kernels.webgpu import segmented_reduce
+    from akas.ops.linear.kernel import _epilogue, webgpu_abi
+    from akas.quantization.weights.ggml.webgpu import q8_vector_dot
+
+    p = {**spec.parameters, **schedule}
+    depth, columns = p["k"], p["o"]
+    lanes, threads = p.get("lanes", 16), p.get("threads", 128)
+    group_rows = threads // lanes
+    paired, residual = spec.kind == "ffn", spec.kind == "linear_add"
+    dot, reduce = q8_vector_dot(depth), segmented_reduce(lanes)
+    epilogue = _epilogue(paired=paired, add_residual=residual)
+
+    @T.macro
+    def gemv(x, w, out, w2=None, addend=None):
+        with T.Kernel(T.ceildiv(columns, group_rows), threads=threads) as tile:
+            tx = T.get_thread_binding()
+            column, lane = tile * group_rows + tx // lanes, tx % lanes
+            first, second = T.alloc_var("float32"), T.alloc_var("float32")
+            a, b = (
+                T.alloc_shared((threads,), "float32"),
+                T.alloc_shared((threads,), "float32"),
+            )
+            first, second = 0, 0
+            if column < columns:
+                for chunk in T.serial(depth // (4 * lanes)):
+                    index = (chunk * lanes + lane) * 4
+                    first += dot(x, w, column, index)
+                    if paired:
+                        second += dot(x, w2, column, index)
+            reduce(first, a, tx, lane)
+            if paired:
+                reduce(second, b, tx, lane)
+            if lane == 0 and column < columns:
+                epilogue(out, addend, column, a[tx], b[tx] if paired else 0)
+
+    return webgpu_abi(p, gemv, paired=paired, add_residual=residual)
+
+
+def signed_q8_vector(spec, schedule):
+    """Contract signed byte activation groups against signed Q8_0 weights."""
+    import tilelang.language as T
+
+    from akas.kernels.webgpu import segmented_reduce
+    from akas.ops.linear.kernel import _epilogue
+    from akas.quantization.weights.ggml.webgpu import q8_integer_rhs
+
+    p = {**spec.parameters, **schedule}
+    depth, columns = p["k"], p["o"]
+    lanes, threads = p.get("lanes", 16), p.get("threads", 128)
+    group_rows = threads // lanes
+    paired, residual = spec.kind == "ffn", spec.kind == "linear_add"
+    count, read_word, read_scale = q8_integer_rhs(
+        (columns, depth), aligned=p.get("q8_aligned", False)
+    )
+    reduce = segmented_reduce(lanes)
+    epilogue = _epilogue(paired=paired, add_residual=residual)
+
+    @T.macro
+    def dot(w, column, word, activation, scale):
+        block = word // 8
+        coefficients = read_word(w, column, block, word % 8)
+        value = T.call_extern("int32", "dot4I8Packed", activation, coefficients)
+        return T.cast(value, "float32") * (scale * read_scale(w, column, block))
+
+    @T.macro
+    def gemv(x, scales, w, out, w2=None, addend=None):
+        with T.Kernel(T.ceildiv(columns, group_rows), threads=threads) as tile:
+            tx = T.get_thread_binding()
+            column, lane = tile * group_rows + tx // lanes, tx % lanes
+            first, second = T.alloc_var("float32"), T.alloc_var("float32")
+            a = T.alloc_shared((threads,), "float32")
+            b = T.alloc_shared((threads,), "float32")
+            first, second = 0, 0
+            if column < columns:
+                for chunk in T.serial(depth // (4 * lanes)):
+                    word = chunk * lanes + lane
+                    activation, scale = x[word], scales[word // 8]
+                    first += dot(w, column, word, activation, scale)
+                    if paired:
+                        second += dot(w2, column, word, activation, scale)
+            reduce(first, a, tx, lane)
+            if paired:
+                reduce(second, b, tx, lane)
+            if lane == 0 and column < columns:
+                epilogue(out, addend, column, a[tx], b[tx] if paired else 0)
+
+    return _signed_q8_abi(
+        1, depth, columns, count, gemv, paired=paired, residual=residual
+    )
+
+
+def signed_q8_matrix(spec, schedule):
+    """Stage each signed activation block and weight block once per tile."""
+    from itertools import product
+    import tilelang.language as T
+    from tensor.compiler.webgpu.schedules.registers import registers, shared_buffers
+    from akas.ops.linear.kernel import _epilogue
+    from akas.quantization.weights.ggml.webgpu import q8_integer_rhs
+
+    p = {**spec.parameters, **schedule}
+    rows, depth, columns = (p[n] for n in ("r", "k", "o"))
+    paired, residual = spec.kind == "ffn", spec.kind == "linear_add"
+    parts = 2 if paired else 1
+    layouts = ((16, 32, 2, 2), (16, 64, 2, 4), (32, 32, 4, 2))
+    m, n, mm, mn = layouts[p.get("q8_layout", 0)]
+    rm, rn = m // mm, n // mn
+    threads = rm * rn
+    blocks = p.get("q8_blocks", 2)
+    if depth % (32 * blocks):
+        raise ValueError("signed-byte depth must divide into whole tiles")
+    words = blocks * 8
+    count, read_word, read_scale = q8_integer_rhs(
+        (columns, depth), aligned=p.get("q8_aligned", False)
+    )
+    epilogue = _epilogue(paired=paired, add_residual=residual)
+
+    @T.macro
+    def stage_b(w, rhs, scales, bx, tile, tx):
+        for step in T.serial(T.ceildiv(n * words, threads)):
+            index = step * threads + tx
+            col, word = index // words, index % words
+            if col < n:
+                column = bx * n + col
+                block = tile * blocks + word // 8
+                rhs[word, col] = T.if_then_else(
+                    column < columns, read_word(w, column, block, word % 8), T.uint32(0)
+                )
+                if word % 8 == 0:
+                    scales[word // 8, col] = T.if_then_else(
+                        column < columns, read_scale(w, column, block), 0
+                    )
+
+    @T.macro
+    def clear(value: T.Ref):
+        value = 0
+
+    @T.macro
+    def dot(value: T.Ref, left, right):
+        value += T.call_extern("int32", "dot4I8Packed", left, right)
+
+    @T.macro
+    def finish(total: T.Ref, value, lhs_scale, rhs_scale):
+        total += T.cast(value, "float32") * (lhs_scale * rhs_scale)
+
+    @T.macro
+    def store(out, addend, by, bx, row, col, gate, up):
+        r, c = by * m + row, bx * n + col
+        if (r < rows) & (c < columns):
+            epilogue(out, addend, r * columns + c, gate, up)
+
+    owners = tuple(product(range(parts), range(mm), range(mn)))
+
+    def reset(values):
+        for index in owners:
+            clear(values[index][0])
+
+    def multiply(dots, a, b, row, col, word):
+        left = [a[row + i * rm, word] for i in range(mm)]
+        right = [[b[s][word, col + j * rn] for j in range(mn)] for s in range(parts)]
+        for s, i, j in owners:
+            dot(dots[s, i, j][0], left[i], right[s][j])
+
+    def combine(total, dots, a, b, row, col, block):
+        for s, i, j in owners:
+            finish(
+                total[s, i, j][0],
+                dots[s, i, j][0],
+                a[row + i * rm, block],
+                b[s][block, col + j * rn],
+            )
+
+    def output_rows(out, addend, total, by, bx, row, col):
+        for i, j in product(range(mm), range(mn)):
+            store(
+                out,
+                addend,
+                by,
+                bx,
+                row + i * rm,
+                col + j * rn,
+                total[0, i, j][0],
+                total[1, i, j][0] if paired else 0,
+            )
+
+    @T.macro
+    def matrix(x, x_scale, w, out, w2=None, addend=None):
+        T.func_attr({"tensor.webgpu.loop_unroll": "explicit"})
+        with T.Kernel(T.ceildiv(rows, m), T.ceildiv(columns, n), threads=threads) as (
+            by,
+            bx,
+        ):
+            tx = T.get_thread_binding()
+            row, col = tx // rn, tx % rn
+            a = T.alloc_shared((m, words + 1), "uint32")
+            a_scale = T.alloc_shared((m, blocks), "float32")
+            b = shared_buffers((words, n + 1), "uint32", parts)
+            b_scale = shared_buffers((blocks, n + 1), "float32", parts)
+            totals = registers((parts, mm, mn))
+            dots = registers((parts, mm, mn), dtype="int32")
+            reset(totals)
+            for tile in T.serial(depth // (32 * blocks)):
+                for step in T.serial(T.ceildiv(m * words, threads)):
+                    index = step * threads + tx
+                    ar, word = index // words, index % words
+                    if ar < m:
+                        source = by * m + ar
+                        a[ar, word] = T.if_then_else(
+                            source < rows,
+                            x[source * (depth // 4) + tile * words + word],
+                            T.uint32(0),
+                        )
+                        if word % 8 == 0:
+                            a_scale[ar, word // 8] = T.if_then_else(
+                                source < rows,
+                                x_scale[
+                                    source * (depth // 32) + tile * blocks + word // 8
+                                ],
+                                0,
+                            )
+                stage_b(w, b[0], b_scale[0], bx, tile, tx)
+                if paired:
+                    stage_b(w2, b[1], b_scale[1], bx, tile, tx)
+                T.sync_threads()
+                for block in T.serial(blocks):
+                    reset(dots)
+                    for i in T.unroll(8):
+                        multiply(dots, a, b, row, col, block * 8 + i)
+                    combine(totals, dots, a_scale, b_scale, row, col, block)
+                T.sync_threads()
+            output_rows(out, addend, totals, by, bx, row, col)
+
+    return _signed_q8_abi(
+        rows, depth, columns, count, matrix, paired=paired, residual=residual
+    )
+
+
 def q8(spec: KernelSpec, schedule: Mapping[str, object]):
     from akas.quantization.weights.ggml.webgpu import q8_dot
 
@@ -579,20 +869,22 @@ def padded_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
     )
 
 
+HALF_TILE_LAYOUTS = (
+    (32, 64, 4, 4, 128),
+    (64, 64, 4, 4, 256),
+    (64, 128, 4, 8, 256),
+    (32, 128, 4, 8, 128),
+    (64, 128, 8, 8, 128),
+    (128, 128, 8, 8, 256),
+    (16, 32, 2, 2, 128),
+    (16, 64, 2, 4, 128),
+)
+
+
 def half_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
     """Eight adjacent even/odd F16 FMAs followed by a complete-K F32 total."""
     p = {**spec.parameters, **schedule}
-    layouts = (
-        (32, 64, 4, 4, 128),
-        (64, 64, 4, 4, 256),
-        (64, 128, 4, 8, 256),
-        (32, 128, 4, 8, 128),
-        (64, 128, 8, 8, 128),
-        (128, 128, 8, 8, 256),
-        (16, 32, 2, 2, 128),
-        (16, 64, 2, 4, 128),
-    )
-    m, n, mm, mn, threads = layouts[p.get("half_layout", 0)]
+    m, n, mm, mn, threads = HALF_TILE_LAYOUTS[p.get("half_layout", 0)]
     if p["r"] <= 8:
         m, n, mm, mn, threads = 8, 64, 1, 4, 128
     pad = p.get("half_pad", 1)
@@ -655,11 +947,18 @@ def half_input(spec: KernelSpec, schedule: Mapping[str, object]):
 
 
 def native_half_pairs(p, paired=False, add_residual=False):
+    from akas.ops.linear.kernel import webgpu_abi
+
+    matmul = native_half_matmul(p, paired=paired, add_residual=add_residual)
+    return webgpu_abi(p, matmul, paired=paired, add_residual=add_residual)
+
+
+def native_half_matmul(p, *, paired=False, add_residual=False, stage_input=None):
     """Typed half-pair shared tiles avoid unpack/narrow conversions per FMA."""
     import tilelang.language as T
     from itertools import product
     from tensor.compiler.webgpu.schedules.registers import registers, shared_buffers
-    from akas.ops.linear.kernel import _epilogue, webgpu_abi
+    from akas.ops.linear.kernel import _epilogue
     from akas.quantization._shared.rounding import round_half
     from akas.quantization.weights.ggml.kernel import weight_decoder
 
@@ -713,6 +1012,9 @@ def native_half_pairs(p, paired=False, add_residual=False):
                     b = input_value(x, (by * m + row) * k + tile * bk + pair * 2 + 1)
                 lhs[pair, row, 0] = T.cast(a, "float16")
                 lhs[pair, row, 1] = T.cast(b, "float16")
+
+    if stage_input is not None:
+        stage_a = stage_input
 
     @T.macro
     def stage_b(w, rhs, bx, tile, tx):
@@ -808,7 +1110,7 @@ def native_half_pairs(p, paired=False, add_residual=False):
                 T.sync_threads()
             store_all(out, residual, total, by, bx, mr, nr)
 
-    return webgpu_abi(p, matmul, paired=paired, add_residual=add_residual)
+    return matmul
 
 
 def integer_prefill(spec: KernelSpec, schedule: Mapping[str, object]):

@@ -427,6 +427,52 @@ uv run --no-sync python -m tools.plot_comparison REPORT_DIRECTORY/report.json do
 
 Replace `REPORT_DIRECTORY` with the verified directory printed by the fetch command.
 
+### Qwen3 ASR transcription on AMD Radeon RX 6700 XT
+
+**Qwen3 ASR (Rumble-2-Flash)† · Q8_0 decoder and Q8_0 audio projector · Vulkan**
+
+The [November 20, 2026 benchmark](https://github.com/kreasof-ai/akas/blob/415ff7dc9f59135e1fe0eb7674290b2a3fdeb94b/benchmarks/reports/20261120T084341Z-00a86639c319/COMPARISON.md)
+compares AKAS WebGPU/Vulkan with llama.cpp b12521 Vulkan on nine English
+LibriSpeech dev-clean clips from reader 1272. Both runtimes use a 512-token
+context and greedy decoding. Each clip has three measured requests after one
+warmup.
+
+![Qwen3 ASR request latency and real-time factor by duration tier on the RX 6700 XT, comparing AKAS and llama.cpp Vulkan.](docs/assets/qwen3-asr/latency.svg)
+
+<details>
+<summary>Warm request latency for all nine clips</summary>
+
+| Input tier | Audio s | AKAS wall ms | llama.cpp Vulkan wall ms |
+| --- | ---: | ---: | ---: |
+| Short | 1.910 | 45.2 | 56.6 |
+| Short | 2.245 | 59.1 | 66.2 |
+| Short | 4.225 | 84.6 | 84.5 |
+| Medium | 9.010 | 158.6 | 131.6 |
+| Medium | 10.885 | 193.5 | 171.1 |
+| Medium | 12.485 | 202.9 | 177.3 |
+| Long | 15.115 | 250.3 | 201.0 |
+| Long | 18.290 | 294.4 | 243.5 |
+| Long | 29.400 | 490.5 | 377.5 |
+
+</details>
+
+AKAS finished the two shortest clips sooner. The 4.225-second clip was within
+0.15 ms, and llama.cpp Vulkan led on all six medium and long clips. All nine
+transcripts matched exactly.
+
+The plots show tier medians and interquartile ranges across the clip medians.
+RTF is wall seconds per second of input audio. Timings include WAV loading,
+feature extraction, and decoding through receipt of the complete transcript.
+Model loading and context reset are outside the measured interval. † Both
+profiles remain unqualified for independent full-model accuracy.
+
+Regenerate the plot from the archived report:
+
+```sh
+asr_report=$(uv run --no-sync python -m tools.benchmark_archive fetch reports 20261120T084341Z-00a86639c319)
+uv run --no-sync python -m tools.plot_comparison "$asr_report/report.json" build/qwen3-asr-latency.svg
+```
+
 ## Getting started
 
 Use Python 3.12. `uv.lock` pins Tensor to a published Git revision.

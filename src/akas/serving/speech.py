@@ -13,6 +13,12 @@ class SpeechService:
     languages: tuple[str, ...]
 
 
+@dataclass(frozen=True)
+class TranscriptionService:
+    transcribe: Callable
+    metadata: dict
+
+
 def create_app(factory):
     from aiohttp import web
     import numpy as np
@@ -43,7 +49,63 @@ def create_app(factory):
     async def props(request):
         return web.json_response(service.metadata)
 
+    async def transcribe(request):
+        from base64 import b64decode
+
+        if not isinstance(service, TranscriptionService):
+            raise web.HTTPNotImplemented(text="transcription requires an ASR service")
+        try:
+            payload = await request.clone(client_max_size=16 * 1024**2).json()
+            if (
+                payload.get("stream", False)
+                or payload.get("temperature", 0) != 0
+                or len(payload["messages"]) != 1
+            ):
+                raise ValueError("requires a single non-streaming greedy audio request")
+            message = payload["messages"][0]
+            parts = message["content"]
+            if (
+                message["role"] != "user"
+                or len(parts) != 1
+                or parts[0]["type"] != "input_audio"
+            ):
+                raise ValueError("requires one user input_audio part")
+            audio = parts[0]["input_audio"]
+            if audio["format"] != "wav":
+                raise ValueError("requires WAV audio")
+            wav = b64decode(audio["data"], validate=True)
+            language = payload["chat_template_kwargs"]["language"]
+            limit = payload.get("max_tokens", 128)
+
+            def recognize():
+                return service.transcribe(wav, language=language, limit=limit)
+
+            result = await asyncio.get_running_loop().run_in_executor(
+                executor, recognize
+            )
+        except (AttributeError, IndexError, KeyError, TypeError, ValueError) as error:
+            raise web.HTTPBadRequest(text=str(error)) from error
+        return web.json_response(
+            {
+                "choices": [
+                    {
+                        "index": 0,
+                        "message": {"role": "assistant", "content": result.text},
+                        "finish_reason": "stop" if result.terminated else "length",
+                    }
+                ],
+                "usage": {
+                    "prompt_tokens": result.prompt_tokens,
+                    "completion_tokens": len(result.token_ids),
+                    "total_tokens": result.prompt_tokens + len(result.token_ids),
+                },
+                "token_ids": result.token_ids,
+            }
+        )
+
     async def tts(request):
+        if isinstance(service, TranscriptionService):
+            raise web.HTTPNotImplemented(text="synthesis requires a TTS service")
         try:
             payload = await request.json()
             if (
@@ -186,6 +248,7 @@ def create_app(factory):
             web.get("/props", props),
             web.post("/tts", tts),
             web.post("/v1/audio/speech", speech_stream),
+            web.post("/v1/chat/completions", transcribe),
         ]
     )
     return app

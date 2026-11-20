@@ -1,0 +1,39 @@
+{
+  "schema": "akas.asr-workload.v1",
+  "id": "asr-demo-v1",
+  "protocol": "warm-asr-request-v1",
+  "warmup": 1,
+  "repeats": 3,
+  "request": {"temperature": 0, "max_tokens": 128, "stream": false},
+  "source": {
+    "name": "ZONOS3-Mini synthesis of FLORES-200 devtest row 942",
+    "url": "https://github.com/facebookresearch/flores/tree/main/flores200",
+    "license": "CC BY-SA 4.0"
+  },
+  "utterances": [
+    {
+      "id": "en-0942",
+      "language": "en",
+      "metric": "wer",
+      "text": "The major religion in Moldova is Orthodox Christian.",
+      "path": "docs/assets/zonos3-mini/english.wav",
+      "sha256": "d8a392e1db9b24c9f5e3f65bfeb92417b8b2a83ec6415c90a1bf9bb1720f7b43"
+    },
+    {
+      "id": "id-0942",
+      "language": "id",
+      "metric": "wer",
+      "text": "Agama utama di Moldova adalah Kristen Ortodoks.",
+      "path": "docs/assets/zonos3-mini/indonesian-fleurs.wav",
+      "sha256": "0e04715208e4d68ad164abdc1a05ac7cbf8570c02c3c83778f8d5555f249907b"
+    },
+    {
+      "id": "ja-0942",
+      "language": "ja",
+      "metric": "cer",
+      "text": "モルドバの主な宗教は正統派キリスト教です。",
+      "path": "docs/assets/zonos3-mini/japanese-fleurs.wav",
+      "sha256": "a252b98af3fc3ddf62d2c289eb42d4986a777479edc2d67bcf75424e5cf9e52e"
+    }
+  ]
+}

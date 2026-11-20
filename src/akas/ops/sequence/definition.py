@@ -3,7 +3,11 @@
 from akas.kernels.contracts import OutputABI
 from akas.kernels.contracts import Implementation
 from akas.ops.sequence.validation import tail_validation as tail_validation
-from akas.ops.sequence.validation import VALIDATIONS, block_limit_validation
+from akas.ops.sequence.validation import (
+    VALIDATIONS,
+    block_limit_validation,
+    decode_feedback_validation,
+)
 
 ROW_INDEPENDENT = ("add",)
 OUTPUT_ARGUMENTS = {
@@ -318,6 +322,20 @@ IMPLEMENTATIONS = (
 
 OUTPUT_ARGUMENTS["reference"]["block_limits"] = (-1,)
 VALIDATIONS["block_limits"] = block_limit_validation
+OUTPUT_ARGUMENTS["reference"]["decode_feedback"] = OutputABI(
+    (2, 3, 4, 5), ("tokens", "positions", "active", "journal")
+)
+VALIDATIONS["decode_feedback"] = decode_feedback_validation
+IMPLEMENTATIONS += (
+    Implementation(
+        "decode_feedback",
+        "akas.ops.sequence.kernel",
+        "reference",
+        provider="webgpu",
+        factory="decode_feedback",
+        required=("r", "capacity"),
+    ),
+)
 IMPLEMENTATIONS += tuple(
     Implementation(
         "block_limits",

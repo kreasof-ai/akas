@@ -64,4 +64,24 @@ tests](../../../../tests/test_lfm2_reference.py).
 
 The causal depthwise FIR uses a zero-padded input prefix and one bias per channel for full-utterance decoding, while `causal_depthwise_state` carries `(taps - 1)` per-channel history across multi-slot prefix-stream chunks. Streaming multi-resolution ZAC synthesis decomposes into `istft_polar` (log-magnitude/phase to real/imaginary spectrum), Fourier-Hann basis projections, `istft_ola` and `istft_mix_commit` (two-branch overlap-add and 127-tap FIR mixer with persistent overlap/mixer state), and `sinc_resample_limit` + `sinc_resample_commit` (44,160 -> 44,100 Hz sinc resampling, headroom gain, soft-knee limiter, and 322-sample resampler tail commit). CUDA and WebGPU share the portable computations.
 
+## Strided 2D convolution
+
+`image_patches` extracts zero-padded square patches from contiguous
+`(width, height, channels)` floats. It writes one row per output position in
+`(channel, kernel height, kernel width)` order for the existing tiled linear
+operation. CUDA and WebGPU share the gather. The audio frontend uses stride
+two and 3×3 filters.
+
+WebGPU `single_channel_conv2d` shares a short input patch across filters, avoiding
+a separate gather for the first audio convolution. `image_patches_half` stages
+the wider convolutions in tap-major channel groups to make the gathers
+contiguous and rounds to F16 before the tiled projection. Each gather uses a
+NumPy sliding-window reference.
+
+`implicit_half_conv2d` uses the same tap-major weights. It gathers the
+zero-padded F16 input directly into the shared tile of the half-precision
+matrix multiply. A tile covers channels from one spatial tap. The independent
+sliding-window reference exercises stride, padding and filter ordering using
+operands whose short F16 accumulations are exactly representable.
+
 Return to the [operation index](../README.md).

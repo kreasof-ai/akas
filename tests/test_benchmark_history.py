@@ -110,10 +110,13 @@ def test_changed_sources_invalidate_run_and_legacy_accounting_stays_separate(
     assert record["workload"]["id"] == "custom"
 
 
-def test_speech_records_preserve_utterances_without_token_shapes(tmp_path, source):
+@pytest.mark.parametrize("workload_id", ["speech-concurrent-v1", "asr-demo-v1"])
+def test_speech_records_preserve_utterances_without_token_shapes(
+    tmp_path, source, workload_id
+):
     from akas.benchmarking.workload import load
 
-    workload = load("speech-concurrent-v1")
+    workload = load(workload_id)
     speech_report = report(workload["protocol"])
     metadata = speech_report["metadata"]
     metadata["speech_workload"] = dict(id=workload["id"], definition=workload)

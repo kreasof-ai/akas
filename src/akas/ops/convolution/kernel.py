@@ -5,6 +5,41 @@ from akas.kernels.definition import KernelSpec
 from akas.kernels.kernel import Tensor, kernel, output
 
 
+def image_patches(spec, schedule):
+    """Gather strided, zero-padded 2D patches for a matrix projection."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    width, height, channels = (p[k] for k in ("width", "height", "channels"))
+    kernel_size, stride, padding = (p[k] for k in ("kernel", "stride", "padding"))
+    ow = (width + 2 * padding - kernel_size) // stride + 1
+    oh = (height + 2 * padding - kernel_size) // stride + 1
+    taps = kernel_size * kernel_size
+    depth = channels * taps
+    size = ow * oh * depth
+
+    @kernel
+    def compute(
+        image: Tensor((width, height, channels), "float32"),
+    ) -> Tensor((ow * oh, depth), "float32"):
+        out = output((ow * oh, depth), "float32")
+        with T.Kernel(T.ceildiv(size, 128), threads=128) as tile:
+            for lane in T.Parallel(128):
+                i = tile * 128 + lane
+                if i < size:
+                    row, col = i // depth, i % depth
+                    x = row // oh * stride + col % kernel_size - padding
+                    y = row % oh * stride + col % taps // kernel_size - padding
+                    out[row, col] = T.if_then_else(
+                        x >= 0 and x < width and y >= 0 and y < height,
+                        image[x, y, col // taps],
+                        0,
+                    )
+        return out
+
+    return compute
+
+
 def convolution(spec: KernelSpec, schedule: Mapping[str, object]):
     p = {**spec.parameters, **schedule}
     import tilelang.language as T

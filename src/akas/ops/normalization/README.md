@@ -65,5 +65,7 @@ tests](../../../../tests/test_operation_writes.py).
 ## ZONOS3 and ZAC
 
 Affine layer normalization uses mean and centered variance in F32 with separate scale and bias weights on CUDA and WebGPU. ZAC uses this path.
+For complete aligned rows, the WebGPU specialization keeps centered values in
+registers and reduces the mean and variance with subgroups.
 
 Return to the [operation index](../README.md).

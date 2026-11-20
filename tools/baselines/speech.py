@@ -1,22 +1,26 @@
-"""Measure complete text-to-speech requests using the pinned llama.cpp server."""
+"""Measure complete speech requests on AKAS and the pinned llama.cpp server."""
 
 from array import array
+from contextlib import contextmanager
 from hashlib import sha256
 import io
 import json
 import os
 from pathlib import Path
 import platform
+from queue import Empty, Queue
 from socket import socket
 from statistics import median
 import subprocess
 import sys
+from threading import Thread
 import time
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 import wave
 
 from akas.benchmarking.history import Recorder, digest
+from akas.benchmarking import transcription
 from akas.benchmarking.workload import load
 
 
@@ -158,6 +162,233 @@ def measure(url, deadline, recorder, report, workload, speech):
         )
 
 
+@contextmanager
+def speech_server(command, env, log, url, deadline):
+    process = subprocess.Popen(command, stdout=log, stderr=subprocess.STDOUT, env=env)
+    try:
+        wait_for_server(process, url, deadline)
+        yield None
+    finally:
+        if process.poll() is None:
+            process.terminate()
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait()
+
+
+@contextmanager
+def transcription_process(
+    command, env, log, transcript_log, deadline, *, native, limit
+):
+    with (
+        transcript_log.open("wb") as output,
+        subprocess.Popen(
+            command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=log, env=env
+        ) as process,
+    ):
+        chunks = Queue()
+
+        def read_stdout():
+            try:
+                while data := process.stdout.read1(8192):
+                    output.write(data)
+                    output.flush()
+                    chunks.put(data)
+            finally:
+                chunks.put(None)
+
+        def receive(marker):
+            data = bytearray()
+            while True:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise TimeoutError("transcription process deadline reached")
+                try:
+                    chunk = chunks.get(timeout=remaining)
+                except Empty as error:
+                    raise TimeoutError(
+                        "transcription process deadline reached"
+                    ) from error
+                if chunk is None:
+                    raise RuntimeError(
+                        f"transcription process closed its output ({process.poll()})"
+                    )
+                data.extend(chunk)
+                normalized = bytes(data).replace(b"\r\n", b"\n")
+                if normalized.endswith(marker):
+                    return normalized
+
+        def send(text):
+            process.stdin.write(text.encode("utf-8"))
+            process.stdin.flush()
+
+        def native_response():
+            for line in reversed(receive(b"\n").splitlines()):
+                if line.startswith(b"ASR "):
+                    return json.loads(line[4:])
+            raise ValueError("invalid native transcription response")
+
+        def invoke(path, language):
+            if native:
+                payload = json.dumps(
+                    dict(path=str(path), language=language, limit=limit)
+                )
+                start = time.perf_counter()
+                send(payload + "\n")
+                response = native_response()
+                return response, time.perf_counter() - start
+            # Start each request with an empty text and audio context.
+            send("/clear\n")
+            receive(b"\n> ")
+            start = time.perf_counter()
+            send(f"/audio {path}\n")
+            if b" loaded\n" not in receive(b"\n> "):
+                raise ValueError("llama.cpp did not load the WAV")
+            send(f"lang:{language}\n")
+            line = receive(b"\n> ")[:-3]
+            elapsed = time.perf_counter() - start
+            # b12521's mtmd CLI emits a newline on EOG, before its next prompt.
+            return dict(
+                text=line.decode("utf-8").strip(),
+                finish_reason="stop" if line.endswith(b"\n") else "length",
+            ), elapsed
+
+        reader = Thread(target=read_stdout, daemon=True)
+        reader.start()
+        try:
+            if native:
+                props = native_response()
+            else:
+                receive(b"\n> ")
+                props = {}
+            yield invoke, props
+        finally:
+            if process.poll() is None:
+                process.stdin.close()
+                try:
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait()
+            reader.join()
+
+
+def transcription_worker(factory, configuration):
+    from importlib import import_module
+
+    module, name = factory.split(":")
+    with getattr(import_module(module), name)(**json.loads(configuration)) as service:
+        print("ASR " + json.dumps(service.metadata), flush=True)
+        for line in sys.stdin:
+            payload = json.loads(line)
+            try:
+                result = service.transcribe(
+                    Path(payload["path"]).read_bytes(),
+                    language=payload["language"],
+                    limit=payload["limit"],
+                    **(
+                        {"profile": True}
+                        if os.environ.get("AKAS_ASR_PROFILE") == "1"
+                        else {}
+                    ),
+                )
+                response = dict(
+                    text=result.text,
+                    token_ids=result.token_ids,
+                    prompt_tokens=result.prompt_tokens,
+                    finish_reason="stop" if result.terminated else "length",
+                )
+                if (timings := getattr(result, "timings", None)) is not None:
+                    response["phase_seconds"] = timings
+            except (OSError, ValueError) as error:
+                response = dict(error=str(error))
+            print("ASR " + json.dumps(response), flush=True)
+
+
+def measure_transcription(invoke, recorder, report, workload, root):
+    meta = report["metadata"]
+    for index, item in enumerate(workload["utterances"], 1):
+        path = (root / item["path"]).resolve()
+        audio = path.read_bytes()
+        if sha256(audio).hexdigest() != item["sha256"]:
+            raise ValueError(f"ASR input checksum mismatch: {path}")
+        with wave.open(io.BytesIO(audio), "rb") as wav:
+            audio_seconds = wav.getnframes() / wav.getframerate()
+        if audio_seconds <= 0:
+            raise ValueError(f"ASR input is empty: {path}")
+        recorder.artifact(path, f"audio/{index:02d}.wav")
+        row = dict(case=item, status="error", samples=[])
+        report["results"].append(row)
+        print(f"MEASURE {meta['provider']} {item['id']}", flush=True)
+        errors = []
+        for iteration in range(1, meta["warmup"] + meta["repeats"] + 1):
+            try:
+                response, elapsed = invoke(path, item["language"])
+                if "error" in response:
+                    raise ValueError(response["error"])
+                transcript = response["text"].strip()
+                finish = response["finish_reason"]
+                if not transcript or finish != "stop":
+                    raise ValueError(
+                        f"empty or incomplete transcript (finish reason {finish!r})"
+                    )
+            except (AttributeError, IndexError, KeyError, ValueError) as error:
+                errors.append(f"request {iteration}: {error}")
+                continue
+            if iteration <= meta["warmup"]:
+                continue
+            sample = dict(
+                repeat=iteration - meta["warmup"],
+                transcript=transcript,
+                finish_reason=finish,
+                prompt_tokens=response.get("prompt_tokens"),
+                wall_seconds=elapsed,
+                audio_seconds=audio_seconds,
+                real_time_factor=elapsed / audio_seconds,
+                error_rate=transcription.error_rate(
+                    item["text"], transcript, item["metric"]
+                ),
+            )
+            if "token_ids" in response:
+                sample["token_ids"] = response["token_ids"]
+            if "phase_seconds" in response:
+                sample["phase_seconds"] = response["phase_seconds"]
+            row["samples"].append(sample)
+        samples = row["samples"]
+        complete = len(samples) == meta["repeats"]
+        deterministic = complete and all(
+            (s["transcript"], s.get("token_ids"))
+            == (samples[0]["transcript"], samples[0].get("token_ids"))
+            for s in samples
+        )
+        row["correctness"] = dict(
+            complete=complete, deterministic=deterministic, full_model_reference=False
+        )
+        if samples:
+            row["summary"] = {
+                key: median(sample[key] for sample in samples)
+                for key in (
+                    "wall_seconds",
+                    "audio_seconds",
+                    "real_time_factor",
+                    "error_rate",
+                )
+            }
+        if errors or not deterministic:
+            row["error"] = " | ".join(
+                errors or ["greedy transcripts differed across repetitions"]
+            )
+        else:
+            row["status"] = "ok"
+        recorder.update(report)
+        print(
+            json.dumps(row.get("error", row.get("summary")), ensure_ascii=True),
+            flush=True,
+        )
+
+
 def reference_report(args, metadata):
     from akas.benchmarking.archive import read_file
     from akas.benchmarking.history import load_record
@@ -174,11 +405,11 @@ def reference_report(args, metadata):
         "model",
         "weight_format",
         "checkpoint_sha256",
-        "voice",
         "sample_rate_hz",
         "warmup",
         "repeats",
     )
+    match += ("context",) if metadata["mode"] == "asr" else ("voice",)
     if (
         left["status"] not in ("passed", "failed")
         or reference["runtime"] != "llama"
@@ -252,7 +483,11 @@ def llama_runtime(binary, speech, *, vulkan, device):
 def run(args, definition_path, model, speech, weight_format):
     root = Path(__file__).resolve().parents[2]
     workload = load(args.workload or speech["workload"])
-    if (
+    mode = model["modes"][0]
+    asr = mode == "asr"
+    if asr:
+        transcription.validate(workload)
+    elif (
         workload["schema"] != "akas.speech-workload.v1"
         or workload["protocol"] != "client-speech-pcm-v1"
         or workload["request"]["response_format"] != "pcm16"
@@ -267,10 +502,11 @@ def run(args, definition_path, model, speech, weight_format):
     weight = checked_file(root, model["weights"][weight_format])
     projector = checked_file(root, speech["projector"])
     native = args.runtime == "akas"
-    with socket() as listener:
-        listener.bind(("127.0.0.1", 0))
-        port = listener.getsockname()[1]
-    url = f"http://127.0.0.1:{port}"
+    if not asr:
+        with socket() as listener:
+            listener.bind(("127.0.0.1", 0))
+            port = listener.getsockname()[1]
+        url = f"http://127.0.0.1:{port}"
     vulkan = args.provider == "vulkan"
     device = "Vulkan0" if vulkan else "none"
     if native:
@@ -283,22 +519,33 @@ def run(args, definition_path, model, speech, weight_format):
                 bundle=str(bundle),
             )
         )
-        command = [
-            sys.executable,
-            "-u",
-            "-m",
-            "akas.cli",
-            "serve",
-            "--speech",
-            "--factory",
-            factory,
-            "--config",
-            configuration,
-            "--host",
-            "127.0.0.1",
-            "--port",
-            str(port),
-        ]
+        command = (
+            [
+                sys.executable,
+                "-u",
+                "-m",
+                "tools.baselines.speech",
+                factory,
+                configuration,
+            ]
+            if asr
+            else [
+                sys.executable,
+                "-u",
+                "-m",
+                "akas.cli",
+                "serve",
+                "--speech",
+                "--factory",
+                factory,
+                "--config",
+                configuration,
+                "--host",
+                "127.0.0.1",
+                "--port",
+                str(port),
+            ]
+        )
     else:
         binary = (args.binary or root / speech["binary"]).resolve(strict=True)
         command = [
@@ -314,33 +561,50 @@ def run(args, definition_path, model, speech, weight_format):
             "-ngl",
             "all" if vulkan else "0",
             "--mmproj-offload" if vulkan else "--no-mmproj-offload",
-            "-np",
-            "1",
             "-c",
-            "1024",
+            str(speech.get("context", 1024)),
             "-t",
             "6",
             "-tb",
             "6",
-            "--no-cache-prompt",
-            "--cache-ram",
-            "0",
-            "--host",
-            "127.0.0.1",
-            "--port",
-            str(port),
-            "--no-ui",
             "--offline",
-            "--verbosity",
-            "4",
         ]
+        if asr:
+            command.extend(
+                (
+                    "-n",
+                    str(workload["request"]["max_tokens"]),
+                    "--temp",
+                    "0",
+                    "--jinja",
+                    "--log-colors",
+                    "off",
+                )
+            )
+        else:
+            command.extend(
+                (
+                    "-np",
+                    "1",
+                    "--no-cache-prompt",
+                    "--cache-ram",
+                    "0",
+                    "--host",
+                    "127.0.0.1",
+                    "--port",
+                    str(port),
+                    "--no-ui",
+                    "--verbosity",
+                    "4",
+                )
+            )
     metadata = dict(
         protocol=workload["protocol"],
         speech_workload=dict(id=workload["id"], definition=workload),
         runtime=args.runtime,
         provider="webgpu" if native else args.provider,
         model=model["model"],
-        mode="tts",
+        mode=mode,
         purpose="speech-demo",
         weight_format=weight_format,
         checkpoint=weight["path"],
@@ -349,7 +613,6 @@ def run(args, definition_path, model, speech, weight_format):
         projector=projector,
         model_definition_sha256=digest(definition_path),
         device=dict(name=platform.processor() or platform.machine()),
-        voice=speech["voice"],
         sample_rate_hz=speech["sample_rate_hz"],
         warmup=workload["warmup"],
         repeats=args.repeats or workload["repeats"],
@@ -362,36 +625,66 @@ def run(args, definition_path, model, speech, weight_format):
             and not any(secret in name for secret in ("KEY", "TOKEN", "PASSWORD"))
         },
     )
+    if asr:
+        metadata["context"] = speech["context"]
+    else:
+        metadata["voice"] = speech["voice"]
+    dependency_sources = None
+    if native:
+        import tensor
+
+        tensor_source = root.parent / "tensor"
+        if Path(tensor.__file__).resolve().is_relative_to(tensor_source):
+            dependency_sources = {"tensor": tensor_source}
     recorder = Recorder(
         args.history,
         metadata,
         kind="configuration" if native else "baseline",
-        change="Measure warm speech synthesis",
+        change="Measure warm speech transcription"
+        if asr
+        else "Measure warm speech synthesis",
+        dependency_sources=dependency_sources,
     )
     recorder.artifact(definition_path, "model.json")
     report = dict(schema="akas.benchmark.v1", metadata=metadata, results=[])
-    log_path = recorder.directory / "server.log"
+    log_path = recorder.directory / ("runtime.log" if asr else "server.log")
+    transcript_log = recorder.directory / "transcripts.log"
     deadline = time.monotonic() + args.seconds
     status = "failed"
     try:
-        env = dict(os.environ)
+        env = dict(os.environ, PYTHONUTF8="1")
         if native:
             env["WGPU_BACKEND_TYPE"] = "Vulkan"
             metadata["environment"]["WGPU_BACKEND_TYPE"] = "Vulkan"
+            if asr and env.get("AKAS_ASR_PROFILE") == "1":
+                metadata["environment"]["AKAS_ASR_PROFILE"] = "1"
             metadata["runtime_revision"] = recorder.record["source"]["revision"]
             recorder.artifact(bundle / "speech.json", "speech.json")
         else:
             metadata.update(llama_runtime(binary, speech, vulkan=vulkan, device=device))
         with log_path.open("wb") as log:
-            process = subprocess.Popen(
-                command, stdout=log, stderr=subprocess.STDOUT, env=env
+            client = (
+                transcription_process(
+                    command,
+                    env,
+                    log,
+                    transcript_log,
+                    deadline,
+                    native=native,
+                    limit=workload["request"]["max_tokens"],
+                )
+                if asr
+                else speech_server(command, env, log, url, deadline)
             )
-            try:
-                wait_for_server(process, url, deadline)
+            with client as session:
                 reference = None
                 if native:
-                    _, props = request(url + "/props", deadline)
-                    metadata.update(json.loads(props))
+                    props = (
+                        session[1]
+                        if asr
+                        else json.loads(request(url + "/props", deadline)[1])
+                    )
+                    metadata.update(props)
                     if metadata["program_sha256"] != digest(bundle / "speech.json"):
                         raise ValueError(
                             "speech server loaded a different compiled bundle"
@@ -408,7 +701,10 @@ def run(args, definition_path, model, speech, weight_format):
                             recorder.artifact(bundle / entry["path"], entry["path"])
                     if args.reference_run:
                         reference = reference_report(args, metadata)
-                measure(url, deadline, recorder, report, workload, speech)
+                if asr:
+                    measure_transcription(session[0], recorder, report, workload, root)
+                else:
+                    measure(url, deadline, recorder, report, workload, speech)
                 if reference:
                     for row in report["results"]:
                         baseline_row = reference[row["case"]["id"]]
@@ -422,6 +718,11 @@ def run(args, definition_path, model, speech, weight_format):
                             wall_speedup=baseline["wall_seconds"]
                             / row["summary"]["wall_seconds"],
                         )
+                        if asr:
+                            row["comparison"]["transcript_match"] = (
+                                row["samples"][0]["transcript"]
+                                == baseline_row["samples"][0]["transcript"]
+                            )
                         print(
                             row["case"]["id"], json.dumps(row["comparison"]), flush=True
                         )
@@ -430,14 +731,6 @@ def run(args, definition_path, model, speech, weight_format):
                     if all(row["status"] == "ok" for row in report["results"])
                     else "failed"
                 )
-            finally:
-                if process.poll() is None:
-                    process.terminate()
-                    try:
-                        process.wait(timeout=5)
-                    except subprocess.TimeoutExpired:
-                        process.kill()
-                        process.wait()
     except (TimeoutError, subprocess.TimeoutExpired) as error:
         metadata["error"] = str(error)
         status = "budget_exhausted"
@@ -447,9 +740,14 @@ def run(args, definition_path, model, speech, weight_format):
     except Exception as error:
         metadata["error"] = f"{type(error).__name__}: {error}"
     finally:
-        if log_path.is_file():
-            recorder.artifact(log_path, "server.log")
+        for path in (log_path, transcript_log):
+            if path.is_file():
+                recorder.artifact(path, path.name)
         record = recorder.update(report, final=True, status=status)
     if metadata.get("error"):
         print(metadata["error"], file=sys.stderr, flush=True)
     return record
+
+
+if __name__ == "__main__":
+    transcription_worker(*sys.argv[1:])
