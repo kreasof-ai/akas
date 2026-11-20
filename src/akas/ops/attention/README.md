@@ -124,6 +124,15 @@ staging without changing stored values; other cache formats use FP32 staging.
 The launch stays within 32 KiB of workgroup storage. Decode and ineligible
 prefill shapes continue through their registered attention implementations.
 
+`full_attention` is a separate WebGPU operation for two-sided fixed-shape
+attention. It reads F32 Q, K, and V directly and returns normalized F32
+attention, with no cache, causal mask, padding, or split/merge stage. The
+single-query implementation remains the default. For 64-channel heads, search
+can choose a query-tiled implementation that stages 32 keys and values once per
+tile and reuses them across several queries. Its online softmax masks the
+incomplete final key tile, and incomplete query tiles never cross into the
+next sequence. The same independent NumPy reference qualifies both schedules.
+
 Long-context RoPE declares `position_limit`. Beyond 8K, it uses split inverse
 frequencies and compensated angle reduction before sine/cosine. CUDA uses fused
 multiply-add for product errors; WebGPU splits operands because fused rounding

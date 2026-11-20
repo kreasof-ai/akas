@@ -1,0 +1,28 @@
+{
+  "schema": "akas.voice-enhancement-workload.v1",
+  "id": "voice-enhancement-golden-3s-v1",
+  "protocol": "warm-voice-enhancement-v1",
+  "warmup": 1,
+  "repeats": 3,
+  "request": {
+    "mode": "offline",
+    "sample_rate": 48000,
+    "chunk_seconds": 8,
+    "overlap_seconds": 2,
+    "passes": 1
+  },
+  "source": {
+    "name": "Inworld Voice Isolator public demo and golden audio (not VIBE)",
+    "revision": "c73b3fab81a870410cbac50d2f05f25edc4d10aa",
+    "license": "CC BY 4.0 for LibriSpeech-derived clips; see upstream fixture notices"
+  },
+  "clips": [
+    {
+      "id": "golden-3s",
+      "path": "build/datasets/voice-isolator-golden/input.wav",
+      "sha256": "ba34cb451867fd3bb5b2c4e18f314d22e8379556d7a9dabb73bbf8ac2c45443b",
+      "golden": "build/datasets/voice-isolator-golden/expected.npy",
+      "source": "https://github.com/inworld-ai/voice-isolator/blob/v1.0.0/tests/fixtures/offline_3s/input.wav"
+    }
+  ]
+}

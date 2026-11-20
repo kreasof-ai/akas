@@ -16,7 +16,7 @@ import tempfile
 
 from akas.benchmarking.history import digest, write
 from akas.benchmarking import archive
-from akas.benchmarking import transcription
+from akas.benchmarking import enhancement, transcription
 from akas.benchmarking.workload import prompt_digest
 from akas.optimization.context import workload
 
@@ -790,12 +790,17 @@ def clean(value):
     return str(value or "").replace("|", "\\|").replace("\n", " ").strip()
 
 
+def evidence_path(run_id, out, history, name):
+    return (
+        archive.link(history, "runs", run_id, name)
+        or Path(os.path.relpath(Path(history) / "runs" / run_id / name, out)).as_posix()
+    )
+
+
 def evidence_link(run_id, out, history, *, name="run.json", label=None):
     if not run_id:
         return "—"
-    path = (archive.link(history, "runs", run_id, name) or
-            Path(os.path.relpath(Path(history) / "runs" / run_id / name, out)).as_posix())
-    return f"[{label or run_id}]({path})"
+    return f"[{label or run_id}]({evidence_path(run_id, out, history, name)})"
 
 
 def csv_file(path, rows, fields):
@@ -838,6 +843,8 @@ def render(data, out, history):
     if data.get("schema") == SPEECH_SCHEMA:
         if data["workload"].get("protocol") == transcription.PROTOCOL:
             return render_transcription(data, Path(out).resolve(), Path(history).resolve())
+        if data["workload"].get("protocol") == enhancement.PROTOCOL:
+            return render_enhancement(data, Path(out).resolve(), Path(history).resolve())
         return render_speech(data, Path(out).resolve(), Path(history).resolve())
     validate(data)
     out = Path(out).resolve()
@@ -1771,7 +1778,50 @@ def render_native_stream_comparison(data, out, history):
     return out
 
 
-def export_speech(native, model, workload_id, history, out, baseline_lock=None):
+def enhancement_memory(history, run_id, native):
+    """Import a sealed, bitwise-checked memory A/B on the measured binary."""
+    retained = record(history, run_id)
+    if retained is None or retained["status"] != "passed":
+        raise ValueError("enhancement memory run must be sealed and passed")
+    raw = archive.read_file(history, "runs", run_id, "report.json")
+    checksum = hashlib.sha256(raw).hexdigest()
+    evidence = json.loads(raw)["metadata"]
+    if (
+        checksum != next(a["sha256"] for a in retained["artifacts"] if a["path"] == "report.json")
+        or evidence != retained["metadata"]
+        or not evidence.get("checks")
+        or not all(check["bitwise"] for check in evidence["checks"])
+    ):
+        raise ValueError("enhancement memory run lacks sealed bitwise checks")
+    profiles = {row["label"]: row for row in evidence["profiles"]}
+    if set(profiles) != {"separate", "shared"}:
+        raise ValueError("expected separate and shared scratch memory profiles")
+    measured = native["metadata"]
+    rows = {}
+    for label, profile in profiles.items():
+        model = profile["model"]
+        sample = profile["memory_peak_by_stage"]["golden-11s"]
+        shared = model["buffer_bytes"]["shared_scratch"]
+        if (
+            profile["program_sha256"] != measured["program_sha256"]
+            or model["device"]["adapter"] != measured["device"]["adapter"]
+            or not profile["qualified"]
+            or bool(shared) != (label == "shared")
+            or (shared and model["buffer_bytes"] != measured["buffer_bytes"])
+            or not sample["gpu_samples"]
+        ):
+            raise ValueError("enhancement memory profile differs from the measured program")
+        rows[label] = dict(
+            dedicated_gpu_bytes=sample["dedicated_gpu_bytes"],
+            host_working_set_bytes=sample["host_working_set_bytes"],
+            buffer_bytes=model["buffer_bytes"],
+            checks=profile["checks"],
+        )
+    return dict(run_id=run_id, report_sha256=checksum, profiles=rows)
+
+
+def export_speech(native, model, workload_id, history, out, baseline_lock=None, *,
+                  memory_run=None):
     from akas.benchmarking.workload import load
 
     metadata = native["metadata"]
@@ -1789,6 +1839,13 @@ def export_speech(native, model, workload_id, history, out, baseline_lock=None):
     vulkan = record(history, reference["run_id"]) if reference else None
     if reference and vulkan is None:
         raise ValueError("the frozen speech baseline is unavailable")
+    if workload["protocol"] == enhancement.PROTOCOL and reference:
+        raw, _ = enhancement.reference_report(
+            history, reference["run_id"], workload, metadata["checkpoint_sha256"],
+            golden_only=True,
+        )
+        if hashlib.sha256(raw).hexdigest() != reference["report_sha256"]:
+            raise ValueError("the frozen enhancement baseline checksum differs")
     cpu = None
     if baseline_lock is not None:
         if workload["protocol"] == transcription.PROTOCOL:
@@ -1884,6 +1941,10 @@ def export_speech(native, model, workload_id, history, out, baseline_lock=None):
             updated_at=max(state["updated_at"], cpu["completed_at"]),
             baseline_lock=baseline_lock,
         )
+    if memory_run:
+        if workload["protocol"] != enhancement.PROTOCOL:
+            raise ValueError("--memory-run applies only to voice enhancement")
+        state["memory"] = enhancement_memory(history, memory_run, native)
     state["identity"] = hashlib.sha256(
         json.dumps(state, sort_keys=True).encode()
     ).hexdigest()
@@ -2114,6 +2175,265 @@ def render_transcription(data, out, history):
     write(out / "campaign.json", state)
     write(out / "report.json", data)
     index(history)
+
+
+def render_enhancement(data, out, history):
+    def number(value):
+        return "—" if value is None else f"{value:.3f}"
+
+    state, workload, profiles = data["campaign"], data["workload"], data["profiles"]
+    enhancement.validate(workload)
+    out = Path(out).resolve()
+    history = Path(history).resolve()
+    out.mkdir(parents=True, exist_ok=True)
+    cases = {item["id"]: item for item in workload["clips"]}
+    nav = "[Overview](README.md) · [Comparison](COMPARISON.md) · [AKAS](AKAS.md) · [Baselines](BASELINES.md) · [Measurements](measurements.csv)"
+    notes = (
+        "Warm wall time covers WAV decoding and complete offline enhancement. "
+        "Model loading and WAV writing are excluded. RTF is wall seconds per input audio second. "
+        "These public Inworld demo/golden clips are not the private VIBE evaluation set. "
+        "Golden error is against the independent training-reference output; other errors are against the upstream CPU runtime. "
+        "Operation and golden checks are not an independent VIBE quality evaluation. "
+        "The upstream CPU comparison covers only cases completed and validated by both runtimes."
+    )
+    overview = [
+        "# Inworld Voice Isolator: offline enhancement",
+        "",
+        nav,
+        "",
+        f"Workload `{workload['id']}` uses {len(cases)} fixed clips. Protocol `{enhancement.PROTOCOL}`.",
+        "",
+        notes,
+        "",
+        "| Runtime | Device | Complete and deterministic cases | Golden parity | Run |",
+        "| --- | --- | ---: | ---: | --- |",
+    ]
+    stats, samples = {}, []
+    baseline_page = []
+    for profile in profiles:
+        meta = profile["metadata"]
+        is_native = profile["kind"] == "akas"
+        if is_native and meta["speech_workload"]["definition"] == workload and meta["protocol"] == enhancement.PROTOCOL:
+            expected_cases = set(cases)
+        else:
+            evidence = dict(metadata=meta, results=profile["measurements"])
+            checkpoint = profiles[0]["metadata"]["checkpoint_sha256"]
+            if is_native:
+                raise ValueError("enhancement profile metadata differs from workload")
+            if enhancement.reference_matches(evidence, workload, checkpoint, golden_only=True):
+                expected_cases = {key for key, item in cases.items() if item.get("golden")}
+            elif enhancement.reference_matches(evidence, workload, checkpoint):
+                expected_cases = set(cases)
+            else:
+                raise ValueError("enhancement baseline differs from workload")
+        name = "AKAS" if is_native else "Inworld upstream"
+        rows = profile["measurements"]
+        indexed = {row["case"]["id"]: row for row in rows}
+        if len(indexed) != len(rows) or any(cases.get(key) != row["case"] for key, row in indexed.items()):
+            raise ValueError("undeclared or duplicate enhancement measurements")
+        stats[profile["id"]] = (indexed, profile)
+        golden = sum(row.get("correctness", {}).get("full_model_reference", False) for row in rows)
+        passed = sum(row["status"] == "ok" for row in rows)
+        qualified = profile["status"] == "passed" and passed == len(expected_cases) and golden == 1
+        link = evidence_link(profile["run_id"], out, history)
+        overview.append(
+            f"| {name} ({meta['provider']}) | {clean(meta['device']['name'])} | {passed}/{len(expected_cases)} | {golden}/1 | {link} |"
+        )
+        lines = [
+            f"# {name} enhancement measurements",
+            "",
+            nav,
+            "",
+            notes,
+            "",
+            f"Run {link}. Report SHA-256 `{profile['report_sha256']}`.",
+            f"Model {meta['model']}. Source checkpoint `{meta['weight_format']}`. Execution storage `{meta.get('weight_dtype', meta['weight_format'])}`.",
+            f"Checkpoint SHA-256 `{meta['checkpoint_sha256']}`. Each clip has {meta['warmup']} warmup and {meta['repeats']} measured requests.",
+        ]
+        runtime_version = meta.get("runtime_version") or meta.get("inworld-voice-isolation")
+        if runtime_version:
+            lines.append(f"Upstream runtime `{runtime_version}`; Torch `{meta.get('torch_version', 'unrecorded')}`.")
+        if meta.get("cpu_threads"):
+            lines.append(f"CPU threads: {meta['cpu_threads']}.")
+        if meta.get("upstream_revision"):
+            lines.append(f"Upstream source revision `{meta['upstream_revision']}`.")
+        if meta.get("program_sha256"):
+            lines.append(f"Compiled program SHA-256 `{meta['program_sha256']}`.")
+        lines.extend(
+            [
+                "",
+                "| Case | Audio s | Wall s | RTF | Deterministic | Golden max abs | Upstream RMS | Repeats |",
+                "| --- | ---: | ---: | ---: | --- | ---: | ---: | ---: |",
+            ]
+        )
+        audio_links = []
+        for case in cases:
+            if case not in expected_cases:
+                continue
+            row = indexed.get(case, {})
+            summary = row.get("summary", {})
+            repeats = row.get("samples", [])
+            golden_errors = [s["golden"]["max_abs_error"] for s in repeats if s.get("golden", {}).get("finite")]
+            upstream_errors = [s["upstream_comparison"]["rms_error"] for s in repeats if s.get("upstream_comparison", {}).get("finite")]
+            golden_text = f"{max(golden_errors):.3e}" if golden_errors else "—"
+            upstream_text = f"{max(upstream_errors):.3e}" if upstream_errors else "—"
+            lines.append(
+                f"| {case} | {number(summary.get('audio_seconds'))} | "
+                f"{number(summary.get('wall_seconds') if qualified else None)} | "
+                f"{number(summary.get('real_time_factor') if qualified else None)} | {'yes' if row.get('correctness', {}).get('deterministic') else 'no'} | "
+                f"{golden_text} | {upstream_text} | {len(repeats)} |"
+            )
+            if repeats:
+                wav = repeats[0]
+                paths = [
+                    evidence_link(profile["run_id"], out, history, name=wav[f"{part}_wav"], label=part)
+                    for part in ("voice", "background")
+                ]
+                audio_links.append(f"- `{case}`: " + " · ".join(paths))
+            for repeat, sample in enumerate(repeats, 1):
+                samples.append(
+                    dict(
+                        runtime=profile["id"],
+                        provider=meta["provider"],
+                        run_id=profile["run_id"],
+                        case_id=case,
+                        repeat=repeat,
+                        wall_seconds=sample["wall_seconds"] if qualified else None,
+                        audio_seconds=sample["audio_seconds"],
+                        real_time_factor=sample["real_time_factor"] if qualified else None,
+                        voice_sha256=sample["voice_sha256"],
+                        golden_max_abs=sample.get("golden", {}).get("max_abs_error"),
+                        upstream_rms=sample.get("upstream_comparison", {}).get("rms_error"),
+                        voice_wav=evidence_path(profile["run_id"], out, history, sample["voice_wav"]),
+                        background_wav=evidence_path(profile["run_id"], out, history, sample["background_wav"]),
+                    )
+                )
+        if audio_links:
+            lines.extend(["", "## Retained audio (first measured repeat)", "", *audio_links])
+        if is_native:
+            text(out / "AKAS.md", "\n".join(lines))
+        else:
+            baseline_page.append("\n".join(lines))
+    text(
+        out / "BASELINES.md",
+        "\n\n---\n\n".join(baseline_page)
+        if baseline_page
+        else f"# Upstream enhancement measurements\n\n{nav}\n\nNo CPU run attached.",
+    )
+    comparison = [
+        "# Offline enhancement comparison",
+        "",
+        nav,
+        "",
+        notes,
+        "",
+    ]
+    baseline, cpu_profile = stats.get("inworld", ({}, {}))
+    native, gpu_profile = stats.get("akas", ({}, {}))
+    if baseline and set(baseline) != set(cases) and workload["id"] == "voice-enhancement-demo-v1":
+        comparison.extend([
+            "",
+            "CPU timing is reported only for the 3-second golden. Upstream ran out of "
+            "memory on the 10.77-second clip; the 24.73-second CPU clip had no valid "
+            "measurement. See [upstream issue #5](https://github.com/inworld-ai/voice-isolator/issues/5).",
+        ])
+    comparison.extend([
+        "",
+        "| Case | Audio s | Upstream wall s | AKAS wall s | Wall speedup | Upstream RTF | AKAS RTF | Golden parity |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |",
+    ])
+    gpu_qualified = (
+        gpu_profile.get("status") == "passed"
+        and set(native) == set(cases)
+        and all(row["status"] == "ok" for row in native.values())
+        and any(row.get("correctness", {}).get("full_model_reference") for row in native.values())
+    )
+    for case in cases:
+        old, new = baseline.get(case, {}), native.get(case, {})
+        left = old.get("summary", {}) if cpu_profile.get("status") == "passed" and old.get("status") == "ok" else {}
+        right = new.get("summary", {}) if gpu_qualified else {}
+        ratio = (
+            number(left["wall_seconds"] / right["wall_seconds"]) + "×"
+            if left and right and left["audio_seconds"] == right["audio_seconds"]
+            else "—"
+        )
+        golden = (
+            "yes" if new.get("correctness", {}).get("full_model_reference")
+            else "no" if cases[case].get("golden") else "not checked"
+        )
+        comparison.append(
+            f"| {case} | {number(right.get('audio_seconds', left.get('audio_seconds')))} | "
+            f"{number(left.get('wall_seconds'))} | {number(right.get('wall_seconds'))} | {ratio} | "
+            f"{number(left.get('real_time_factor'))} | {number(right.get('real_time_factor'))} | {golden} |"
+        )
+    if memory := state.get("memory"):
+        separate, shared = (memory["profiles"][name] for name in ("separate", "shared"))
+        before, after = (row["dedicated_gpu_bytes"] for row in (separate, shared))
+        details = evidence_link(memory["run_id"], out, history, name="report.json", label="Memory run")
+        comparison.extend([
+            "", "## Peak memory on the 11-second golden", "",
+            "Separate from latency timing: Windows per-process GPU memory counters, "
+            "with both exact-length graphs loaded. Identical compiled kernels and "
+            "bit-for-bit identical voice and background WAVs across short → long → short.",
+            "",
+            "| Runtime allocation | Dedicated GPU peak (GiB) | Host working-set peak (MiB) |",
+            "| --- | ---: | ---: |",
+            *(
+                f"| {label} | {row['dedicated_gpu_bytes'] / 2**30:.3f} | {row['host_working_set_bytes'] / 2**20:.1f} |"
+                for label, row in (("Separate scratch", separate), ("Shared scratch", shared))
+            ),
+            "",
+            f"Dedicated GPU memory fell by {100 * (1 - after / before):.1f}%. {details}.",
+            "",
+            "The shared-scratch build passed the independent 3-second and 11-second "
+            "golden checks at `1e-4`. These checks do not establish accuracy on VIBE.",
+        ])
+        overview.extend(["", "See [Comparison](COMPARISON.md#peak-memory-on-the-11-second-golden) for memory and golden evidence."])
+    if workload["id"] in {"voice-enhancement-demo-v1", "voice-enhancement-golden-3s-v1"}:
+        upstream = "https://github.com/inworld-ai/voice-isolator/blob/" + workload["source"]["revision"]
+        overview.extend([
+            "",
+            "## Audio sources and license",
+            "",
+            "The 3-second golden and the hiss demo are derived from LibriSpeech "
+            "dev-clean utterance `2277-149896-0032` (*Sister Carrie*, read by zinniz; "
+            "LibriSpeech © 2014 Vassil Panayotov, "
+            "[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)). "
+            "Inworld added hiss and prepared the golden fixture. The retained outputs "
+            "are the voice and background separated by each runtime.",
+            "",
+            f"[Source recording notice]({upstream}/demo/examples/sources/LICENSE.txt) · "
+            f"[Demo mix recipes]({upstream}/demo/build_examples.py) · "
+            f"[Golden fixture attribution]({upstream}/tests/fixtures/README.md) · "
+            f"[Upstream notices]({upstream}/NOTICE)",
+            "",
+            *(f"- [{case}]({item['source']})" for case, item in cases.items()),
+        ])
+    text(out / "README.md", "\n".join(overview))
+    text(out / "COMPARISON.md", "\n".join(comparison))
+    csv_file(
+        out / "measurements.csv",
+        samples,
+        (
+            "runtime",
+            "provider",
+            "run_id",
+            "case_id",
+            "repeat",
+            "wall_seconds",
+            "audio_seconds",
+            "real_time_factor",
+            "voice_sha256",
+            "golden_max_abs",
+            "upstream_rms",
+            "voice_wav",
+            "background_wav",
+        ),
+    )
+    write(out / "report.json", data)
+    write(out / "campaign.json", state)
+    index(history)
+    return out
 
 
 def render_speech(data, out, history):
@@ -2432,7 +2752,7 @@ def render_speech(data, out, history):
 
 
 def export_runs(run_ids, *, model_id, workload_id, history="benchmarks", out=None,
-                baseline_lock=None):
+                baseline_lock=None, memory_run=None):
     """Render retained native measurements through the existing campaign exporter.
 
     Importing a run does not create a qualified deployment or mutate its evidence.
@@ -2447,13 +2767,18 @@ def export_runs(run_ids, *, model_id, workload_id, history="benchmarks", out=Non
     if any(data["metadata"].get("runtime") != "akas" for data in runs):
         raise ValueError("--runs accepts native AKAS records; baselines use normal selection")
     if any(
-        run["metadata"].get("protocol") in ("client-speech-pcm-v1", transcription.PROTOCOL)
+        run["metadata"].get("protocol")
+        in ("client-speech-pcm-v1", transcription.PROTOCOL, enhancement.PROTOCOL)
         for run in runs
     ):
         if len(runs) != 1:
             raise ValueError("speech export accepts one AKAS run with its frozen reference")
         lock = read(baseline_lock) if isinstance(baseline_lock, (str, Path)) else baseline_lock
-        return export_speech(runs[0], model, workload_id, history, out, lock)
+        return export_speech(
+            runs[0], model, workload_id, history, out, lock, memory_run=memory_run
+        )
+    if memory_run:
+        raise ValueError("--memory-run applies only to voice enhancement")
     requested = workload(workload_id)
     runs.sort(key=lambda data: data["started_at"])
     formats = set()
@@ -2678,7 +3003,10 @@ def main():
     parser.add_argument("--history", type=Path, default=Path("benchmarks"))
     parser.add_argument("--out", type=Path)
     parser.add_argument("--baseline-lock", type=Path, help="freeze baseline IDs and verify their recorded checksums for --runs")
+    parser.add_argument("--memory-run", help="sealed Voice Isolator memory A/B run to include with --runs")
     args = parser.parse_args()
+    if args.memory_run and not args.runs:
+        parser.error("--memory-run requires --runs")
     if args.check:
         check(args.history)
         print("Benchmark report format and generated content verified.")
@@ -2688,7 +3016,7 @@ def main():
             parser.error("--runs requires --model and --workload")
         destination = export_runs(args.runs, model_id=args.model, workload_id=args.workload,
                                   history=args.history, out=args.out,
-                                  baseline_lock=args.baseline_lock)
+                                  baseline_lock=args.baseline_lock, memory_run=args.memory_run)
     elif args.native_stream_comparison:
         destination = export_native_stream_comparison(
             *args.native_stream_comparison, history=args.history, out=args.out,

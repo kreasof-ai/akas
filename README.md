@@ -473,6 +473,39 @@ asr_report=$(uv run --no-sync python -m tools.benchmark_archive fetch reports 20
 uv run --no-sync python -m tools.plot_comparison "$asr_report/report.json" build/qwen3-asr-latency.svg
 ```
 
+### Inworld Voice Isolator on AMD Radeon RX 6700 XT
+
+AKAS runs the released offline model in FP32 over WebGPU/Vulkan. On the
+matched 3-second clip, it was **14.3× faster** than upstream FP32 on a
+6-thread Ryzen 5 5600.
+
+| Audio length | Upstream CPU | AKAS WebGPU | AKAS RTF |
+| ---: | ---: | ---: | ---: |
+| 3.00 s | 10.154 s | **0.710 s** | 0.237 |
+| 10.77 s | — | **5.768 s** | 0.536 |
+| 24.73 s | — | **11.521 s** | 0.466 |
+
+RTF is wall seconds per second of audio; below 1 means faster than real time.
+Times are warm medians of three runs, including WAV decoding and enhancement
+but excluding model loading and WAV writing. The upstream CPU ran out of
+memory on the 10.77-second clip; no longer CPU result is reported
+([upstream issue #5](https://github.com/inworld-ai/voice-isolator/issues/5)).
+The 3- and 11-second golden waveforms passed at `1e-4`. On the 11-second
+golden, shared scratch reduced peak dedicated VRAM from 2.93 to 1.31 GiB
+without changing the output samples.
+
+**Listen (10.77 s):** [Noisy input](https://github.com/inworld-ai/voice-isolator/blob/v1.0.0/demo/examples/sample_14.wav) ·
+[Isolated voice](docs/assets/voice-isolator/isolated-voice.wav) ·
+[Removed background](docs/assets/voice-isolator/removed-background.wav)
+
+The example is LibriSpeech dev-clean utterance `2277-149896-0032` (*Sister
+Carrie*, read by zinniz; LibriSpeech © 2014 Vassil Panayotov) with generated
+hiss added by Inworld. The AKAS outputs are unedited 48 kHz FP32 WAVs.
+[Source and attribution](https://github.com/inworld-ai/voice-isolator/blob/v1.0.0/tests/fixtures/README.md) ·
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) ·
+[Archived benchmark report](https://github.com/kreasof-ai/akas/blob/3509655cbc7a2d69d909888bcb2e537e35673921/benchmarks/reports/20261120T144956Z-62830d583809/COMPARISON.md) ·
+[Benchmark instructions](tools/baselines/README.md#voice-enhancement-demo)
+
 ## Getting started
 
 Use Python 3.12. `uv.lock` pins Tensor to a published Git revision.

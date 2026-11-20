@@ -40,6 +40,39 @@ def projection_validation(kind, p, signature):
     return ValidationCase(values, expected, rtol=0.002, atol=0.002)
 
 
+def staged_projection_validation(kind, p, signature):
+    from math import erf, sqrt
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    values = sample_arguments(signature)
+    r, k, o = (p[name] for name in ("r", "k", "o"))
+    x = values["x"].reshape(r, k)
+    w = values["w"].reshape(o, k).astype("float64")
+    out = np.empty((r, o), dtype="float32")
+    activation = p.get("activation", "identity")
+    bias = values.get("bias", 0)
+    half = values["w"].dtype == np.float16
+    inv_sqrt2 = 1 / sqrt(2)
+    for start in range(0, r, 512):
+        stop = min(start + 512, r)
+        lhs = x[start:stop]
+        if half:
+            lhs = lhs.astype("float16")
+        result = lhs.astype("float64") @ w.T + bias
+        if activation == "gelu":
+            factors = np.fromiter(
+                (erf(v * inv_sqrt2) for v in result.flat),
+                dtype="float64",
+                count=result.size,
+            ).reshape(result.shape)
+            result *= 0.5 * (1 + factors)
+        elif activation == "softplus":
+            result = np.logaddexp(0, result)
+        out[start:stop] = result
+    return ValidationCase(values, {**values, "out": out.reshape(-1)}, 2e-4, 2e-5)
+
+
 def pipeline_validation(kind, p, signature):
     import numpy as np
     from akas.kernels.contracts import ValidationCase, sample_arguments

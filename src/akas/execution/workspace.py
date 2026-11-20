@@ -79,6 +79,85 @@ class ScratchPool:
         self.buffers.clear()
 
 
+def compact_scratch_slots(graph):
+    """Assign the largest buffers first, reusing typed storage across lifetimes."""
+    from math import prod
+    from tensor.runtime.dtypes import dtype
+
+    lifetimes = graph.lifetimes()
+    buffers = sorted(
+        (
+            spec for spec in graph.buffers.values()
+            if spec.role == "scratch" and spec.alias_of is None
+        ),
+        key=lambda spec: (
+            -prod(spec.shape) * dtype(spec.dtype).itemsize,
+            lifetimes.get(spec.name, (-1, -1))[0],
+        ),
+    )
+    slots = []
+    for spec in buffers:
+        begin, end = lifetimes.get(spec.name, (-1, -1))
+        size = prod(spec.shape)
+        choices = [
+            (count, index) for index, (kind, count, intervals, _) in enumerate(slots)
+            if kind == spec.dtype and count >= size
+            and all(last < begin or end < first for first, last in intervals)
+        ]
+        if choices:
+            _, index = min(choices)
+            slots[index][2].append((begin, end))
+            slots[index][3].append(spec.name)
+        else:
+            slots.append((spec.dtype, size, [(begin, end)], [spec.name]))
+    return tuple((kind, count, tuple(names)) for kind, count, _, names in slots)
+
+
+class CompactScratchPool:
+    """A typed, provider-backed prefix pool for serial forward graphs."""
+
+    def __init__(self, device, graphs):
+        from collections import defaultdict
+
+        if "capacity_prefix_views" not in device.capabilities:
+            raise ValueError("adapter does not support scratch buffer prefix views")
+        self.device, self.buffers, self.capacities = device, {}, {}
+        for graph in graphs:
+            ordinals = defaultdict(int)
+            for dtype, count, _ in compact_scratch_slots(graph):
+                key = dtype, ordinals[dtype]
+                ordinals[dtype] += 1
+                self.capacities[key] = max(self.capacities.get(key, 0), count)
+
+    def borrow(self, key, spec):
+        from math import prod
+
+        dtype, _ = key
+        capacity = self.capacities[key]
+        if spec.dtype != dtype or prod(spec.shape) > capacity:
+            raise ValueError("phase exceeds its compact scratch pool")
+        if key not in self.buffers:
+            self.buffers[key] = self.device.empty((capacity,), dtype)
+        return self.buffers[key].prefix(spec.shape)
+
+    def groups(self, graph):
+        from collections import defaultdict
+
+        ordinals = defaultdict(int)
+        for dtype, _, names in compact_scratch_slots(graph):
+            key = dtype, ordinals[dtype]
+            ordinals[dtype] += 1
+            yield key, names
+
+    @property
+    def nbytes(self):
+        return sum(buffer.nbytes for buffer in self.buffers.values())
+
+    def close(self):
+        release(buffers=reversed(tuple(self.buffers.values())))
+        self.buffers.clear()
+
+
 class Workspace:
     def __init__(
         self, graph, device, supplied, allocations, *, scratch_pool=None, allocate_io=False
@@ -94,14 +173,17 @@ class Workspace:
         try:
             seen = set()
             lifetimes = graph.lifetimes()
-            if scratch_pool is not None:
+            compact = isinstance(scratch_pool, CompactScratchPool)
+            if scratch_pool is not None and not compact:
                 from math import prod
                 from tensor.runtime.dtypes import dtype
 
                 groups = sorted(groups, key=lambda group: prod(graph.buffers[group[0]].shape)
                                 * dtype(graph.buffers[group[0]].dtype).itemsize if group else 0,
                                 reverse=True)
-            for slot, group in enumerate(groups):
+            for slot, group in (
+                scratch_pool.groups(graph) if compact else enumerate(groups)
+            ):
                 if not group:
                     raise ValueError("empty scratch allocation group")
                 for name in group:
@@ -114,6 +196,16 @@ class Workspace:
                     raise ValueError("scratch allocations have overlapping lifetimes")
                 names = [name for name in group if name not in self.buffers]
                 if not names:
+                    continue
+                if compact:
+                    views = {}
+                    for name in names:
+                        spec = graph.buffers[name]
+                        shape = spec.shape
+                        if shape not in views:
+                            views[shape] = scratch_pool.borrow(slot, spec)
+                            self.owned.append(views[shape])
+                        self.buffers[name] = views[shape]
                     continue
                 spec = graph.buffers[names[0]]
                 if any((graph.buffers[name].shape,graph.buffers[name].dtype) != (spec.shape,spec.dtype) for name in names):

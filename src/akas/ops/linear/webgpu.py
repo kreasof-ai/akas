@@ -1309,13 +1309,10 @@ def projection(spec, schedule):
 from .kernel import column_projection as column_projection
 
 
-def tiled_f32(spec, schedule):
-    """Cooperative FP32 projections without the mixed-precision staging path."""
+def _tiled_f32_algorithm(p, epilogue):
     import tilelang.language as T
-    from akas.ops.linear.kernel import _epilogue
     from tensor.compiler.webgpu.schedules.outer_product import outer_product_matmul
 
-    p = {**spec.parameters, **schedule}
     r, k, o = (p[key] for key in ("r", "k", "o"))
     tile_m, tile_n, micro_m, micro_n = p.get("tile_geometry", (32, 64, 4, 4))
     if (tile_m // micro_m) * (tile_n // micro_n) not in (64, 128, 256):
@@ -1330,13 +1327,13 @@ def tiled_f32(spec, schedule):
     def rhs(w, row, col):
         return w[row * k + col]
 
-    algorithm = outer_product_matmul(
+    return outer_product_matmul(
         r,
         k,
         o,
         lhs,
         rhs,
-        _epilogue(),
+        epilogue,
         tile_m=tile_m,
         tile_n=tile_n,
         tile_k=p.get("tile_k", 16),
@@ -1350,6 +1347,15 @@ def tiled_f32(spec, schedule):
         unroll=p.get("unroll", 4),
     )
 
+
+def tiled_f32(spec, schedule):
+    """Cooperative FP32 projections without the mixed-precision staging path."""
+    from akas.ops.linear.kernel import _epilogue
+
+    p = {**spec.parameters, **schedule}
+    r, k, o = (p[key] for key in ("r", "k", "o"))
+    algorithm = _tiled_f32_algorithm(p, _epilogue())
+
     @kernel
     def compute(
         x: Tensor((r * k,), "float32"),
@@ -1357,6 +1363,104 @@ def tiled_f32(spec, schedule):
     ) -> Tensor((r * o,), "float32"):
         out = output((r * o,), "float32")
         algorithm(x, w, out)
+        return out
+
+    return compute
+
+
+def tiled_f32_bias(spec, schedule):
+    """Store a biased or activated projection directly, without a temporary."""
+    return _tiled_bias(spec, schedule, _tiled_f32_algorithm, "float32")
+
+
+def _tiled_w16a16_algorithm(p, epilogue):
+    import tilelang.language as T
+    from akas.quantization._shared.rounding import round_half_branch
+    from tensor.compiler.webgpu.schedules.outer_product import outer_product_matmul
+
+    r, k, o = (p[key] for key in ("r", "k", "o"))
+    tile_m, tile_n, micro_m, micro_n = p.get("tile_geometry", (64, 128, 4, 8))
+
+    @T.macro
+    def rhs(w, row, col):
+        return w[row * k + col]
+
+    return outer_product_matmul(
+        r,
+        k,
+        o,
+        round_half_branch(),
+        rhs,
+        epilogue,
+        tile_m=tile_m,
+        tile_n=tile_n,
+        tile_k=p.get("tile_k", 32),
+        micro_m=micro_m,
+        micro_n=micro_n,
+        threads=(tile_m // micro_m) * (tile_n // micro_n),
+        dtype="float16",
+        dot_width=2,
+        packed_pairs=True,
+        unroll=p.get("unroll", 4),
+    )
+
+
+def tiled_w16a16(spec, schedule):
+    """Round operands for FP16 staging while accumulating into F32."""
+    from akas.ops.linear.kernel import _epilogue
+
+    p = {**spec.parameters, **schedule}
+    r, k, o = (p[key] for key in ("r", "k", "o"))
+    algorithm = _tiled_w16a16_algorithm(p, _epilogue())
+
+    @kernel
+    def compute(
+        x: Tensor((r * k,), "float32"),
+        w: Tensor((o * k,), "float16"),
+    ) -> Tensor((r * o,), "float32"):
+        out = output((r * o,), "float32")
+        algorithm(x, w, out)
+        return out
+
+    return compute
+
+
+def tiled_w16a16_bias(spec, schedule):
+    """Fuse the F32 bias and activation into the W16A16 output write."""
+    return _tiled_bias(spec, schedule, _tiled_w16a16_algorithm, "float16")
+
+
+def _tiled_bias(spec, schedule, build_algorithm, weight_dtype):
+    import tilelang.language as T
+    from akas.ops.activation.kernel import gelu_erf
+
+    p = {**spec.parameters, **schedule}
+    r, k, o = (p[key] for key in ("r", "k", "o"))
+    activation = p["activation"]
+    if activation not in ("identity", "gelu", "softplus"):
+        raise ValueError("unsupported projection activation")
+    gelu = gelu_erf()
+
+    @T.macro
+    def epilogue(out, bias, index, total, unused):
+        value = total + bias[index % o]
+        if activation == "gelu":
+            out[index] = gelu(value)
+        elif activation == "softplus":
+            out[index] = T.log(1 + T.exp(-T.abs(value))) + T.max(value, 0)
+        else:
+            out[index] = value
+
+    algorithm = build_algorithm(p, epilogue)
+
+    @kernel
+    def compute(
+        x: Tensor((r * k,), "float32"),
+        w: Tensor((o * k,), weight_dtype),
+        bias: Tensor((o,), "float32"),
+    ) -> Tensor((r * o,), "float32"):
+        out = output((r * o,), "float32")
+        algorithm(x, w, out, residual=bias)
         return out
 
     return compute

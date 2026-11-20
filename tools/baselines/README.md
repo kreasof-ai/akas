@@ -101,6 +101,37 @@ under `benchmarks/runs/<run-id>/`. The comparison reports both wall latency
 and the ratio of real-time factors. Seeded sampling can produce different clip
 durations across runtimes.
 
+## Voice enhancement demo
+
+The [offline Voice Isolator declaration](../../benchmarks/models/voice-isolator-v1.json)
+pins the released FP32 checkpoint. Place it at the declared path and use the
+public Inworld demo and golden clips declared in `voice-enhancement-demo-v1`.
+They are not samples from the private VIBE evaluation set.
+
+Compile the FP32 model with the [WebGPU guide](../../src/akas/models/voice_isolator/README.md).
+Use `voice-enhancement-golden-3s-v1` for the upstream FP32 CPU baseline and
+`voice-enhancement-demo-v1` for the full WebGPU run. Run them serially:
+
+```sh
+uv run --no-sync python -m tools.baselines inworld voice-isolator-v1 --provider cpu --workload voice-enhancement-golden-3s-v1 --history build/voice-isolator/history --seconds 300
+uv run --no-sync python -m tools.baselines akas voice-isolator-v1 --provider vulkan --bundle build/voice-isolator/f32 --workload voice-enhancement-demo-v1 --reference-run UPSTREAM_CPU_RUN_ID --history build/voice-isolator/history --seconds 300
+uv run --no-sync python -m tools.campaign_report --runs AKAS_RUN_ID --model voice-isolator-v1 --workload voice-enhancement-demo-v1 --history build/voice-isolator/history --out build/voice-isolator/report
+```
+
+The paired 3-second comparison uses identical input bytes, one warmup, and
+three measured repetitions. Timings cover WAV decoding and offline
+enhancement, excluding model loading and WAV writing. The reference is
+matched by workload case, timing protocol, and checkpoint hash. The upstream
+CPU run exhausted memory on the 10.77-second clip on a 32 GiB Windows machine
+([Inworld issue #5](https://github.com/inworld-ai/voice-isolator/issues/5)).
+There is no valid CPU measurement for either long clip.
+
+The report retains links to unnormalized FP32 voice/background WAVs and
+records golden errors and real-time factors. Pass `--memory-run MEMORY_RUN_ID`
+when exporting to include a sealed bitwise-checked memory A/B for the same
+compiled program and shared-scratch configuration. Peak VRAM is measured
+separately from wall time. No VIBE score is claimed.
+
 ## Speech transcription demo
 
 [Qwen3 ASR](../../src/akas/models/qwen3_asr/README.md) uses the pinned

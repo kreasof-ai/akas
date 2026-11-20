@@ -47,6 +47,8 @@ one public semantic contract, with explicit masks, precision and state effects.
 | [normalization](normalization/README.md) | Shared RMS/fusion with reduction strategy selection. |
 | [residual](residual/README.md) | Shared addition. |
 | [sequence](sequence/README.md) | Shared row, position and control computations. |
+| [spectral](spectral/README.md) | Fixed-size STFT/iSTFT, complex correction and band layouts. |
+| [mamba](mamba/README.md) | Selective-scan preparation, recurrence and bidirectional joins. |
 | [vocabulary](vocabulary/README.md) | Shared lookup/selection; accelerated fused-head specialization. |
 
 ## Write a callable computation

@@ -200,6 +200,18 @@ IMPLEMENTATIONS += tuple(
 OUTPUT_ARGUMENTS.setdefault("reference", {})["causal_depthwise"] = OutputABI(
     (-1,), ("out",)
 )
+OUTPUT_ARGUMENTS["reference"]["causal_depthwise_sequences"] = OutputABI((-1,), ("out",))
+VALIDATIONS["causal_depthwise_sequences"] = causal_depthwise_validation
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        "causal_depthwise_sequences",
+        "akas.ops.convolution.kernel",
+        "reference",
+        provider=provider,
+        factory="causal_depthwise_sequences",
+    )
+    for provider in ("cuda", "webgpu")
+)
 VALIDATIONS["causal_depthwise"] = causal_depthwise_validation
 IMPLEMENTATIONS += tuple(
     Implementation(

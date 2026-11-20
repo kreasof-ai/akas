@@ -1569,7 +1569,7 @@ IMPLEMENTATIONS += (
 )
 
 
-from akas.ops.attention.validation import window_validation
+from akas.ops.attention.validation import full_attention_validation, window_validation
 
 for _kind, _positions, _names, _module in (
     ("rotary_partial", (1,), ("out",), "kernel"),
@@ -1766,6 +1766,30 @@ IMPLEMENTATIONS += tuple(
         ("window_attention", "webgpu", "window_prefill"),
         ("window_grouped", "webgpu", "window_decode"),
     )
+)
+
+OUTPUT_ARGUMENTS["reference"]["full_attention"] = OutputABI((-1,), ("out",))
+VALIDATIONS["full_attention"] = full_attention_validation
+IMPLEMENTATIONS += (
+    Implementation(
+        "full_attention",
+        "akas.ops.attention.webgpu",
+        "reference",
+        provider="webgpu",
+        factory="full_attention",
+        name="attention.webgpu.full_attention",
+    ),
+    Implementation(
+        "full_attention",
+        "akas.ops.attention.webgpu",
+        "reference",
+        provider="webgpu",
+        priority=-1,
+        factory="full_attention_tiled",
+        name="attention.webgpu.full_attention_tiled",
+        accepts=lambda p: p["d"] == 64,
+        space=(("query_rows", (8, 16, 4)),),
+    ),
 )
 
 OUTPUT_ARGUMENTS["reference"]["qkv_rotary_cache"] = OutputABI(

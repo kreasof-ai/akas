@@ -123,6 +123,267 @@ def qk_norm_rotary_cache(spec, schedule):
     return compute
 
 
+def full_attention(spec, schedule):
+    """Attend to every key in a fixed-length, independent sequence."""
+    import tilelang.language as T
+    from akas.kernels.reductions import tree_reduce
+
+    p = {**spec.parameters, **schedule}
+    rows, heads, d, chunk = (p[n] for n in ("r", "h", "d", "chunk"))
+    if d not in (64, 128) or not 0 < chunk <= 1024 or rows % chunk:
+        raise ValueError("unsupported full attention geometry")
+    shape = (rows, heads * d)
+    reduce_max, reduce_sum = tree_reduce(d, "max"), tree_reduce(d)
+
+    @kernel
+    def compute(
+        q: Tensor(shape, "float32"),
+        k: Tensor(shape, "float32"),
+        v: Tensor(shape, "float32"),
+    ) -> Tensor(shape, "float32"):
+        out = output(shape, "float32")
+        with T.Kernel(heads, rows, threads=d) as (head, row):
+            lane = T.get_thread_binding()
+            base = row // chunk * chunk
+            query = T.alloc_shared((d,), "float32")
+            scores = T.alloc_shared((chunk,), "float32")
+            scratch = T.alloc_shared((d,), "float32")
+            peak = T.alloc_var("float32")
+            peak = -1e30
+            query[lane] = q[row, head * d + lane]
+            T.sync_threads()
+            for tile in T.serial(T.ceildiv(chunk, d)):
+                index = tile * d + lane
+                if index < chunk:
+                    score = T.alloc_var("float32")
+                    score = 0.0
+                    for channel in T.serial(d):
+                        score += query[channel] * k[base + index, head * d + channel]
+                    scaled = score * d**-0.5
+                    scores[index] = scaled
+                    peak = T.max(peak, scaled)
+            scratch[lane] = peak
+            T.sync_threads()
+            reduce_max(scratch, lane)
+            maximum = T.alloc_var("float32")
+            maximum = scratch[0]
+            T.sync_threads()
+            total = T.alloc_var("float32")
+            total = 0.0
+            for tile in T.serial(T.ceildiv(chunk, d)):
+                index = tile * d + lane
+                if index < chunk:
+                    probability = T.exp(scores[index] - maximum)
+                    scores[index] = probability
+                    total += probability
+            scratch[lane] = total
+            T.sync_threads()
+            reduce_sum(scratch, lane)
+            value = T.alloc_var("float32")
+            value = 0.0
+            for index in T.serial(chunk):
+                value += scores[index] * v[base + index, head * d + lane]
+            out[row, head * d + lane] = value / scratch[0]
+        return out
+
+    return compute
+
+
+def full_attention_tiled(spec, schedule):
+    """Reuse coalesced F32 key/value loads across nearby offline queries."""
+    import tilelang.language as T
+    from akas.kernels.reductions import tree_reduce
+    from tensor.compiler.webgpu.schedules.registers import registers
+
+    p = {**spec.parameters, **schedule}
+    rows, heads, d, chunk = (p[n] for n in ("r", "h", "d", "chunk"))
+    bm, bk = p.get("query_rows", 8), 32
+    if d != 64 or not 0 < chunk <= 1024 or rows % chunk or bm not in (4, 8, 16):
+        raise ValueError("unsupported tiled full attention geometry")
+    shape = (rows, heads * d)
+    query_tiles = (chunk + bm - 1) // bm
+
+    def reduction(maximum):
+        tree = tree_reduce(bk, "max" if maximum else "sum")
+
+        @T.macro
+        def reduce(value: T.Ref, scratch, lane):
+            if T.call_extern("uint32", "tensor_subgroup_size") >= bk:
+                for step in T.unroll(5):
+                    other = T.call_extern(
+                        "float32", "subgroupShuffleXor", value, T.uint32(16 >> step)
+                    )
+                    if maximum:
+                        value = T.max(value, other)
+                    else:
+                        value += other
+            else:
+                scratch[lane] = value
+                T.sync_threads()
+                tree(scratch, lane)
+                value = scratch[0]
+                T.sync_threads()
+
+        return reduce
+
+    reduce_max, reduce_sum = reduction(True), reduction(False)
+
+    @T.macro
+    def add_score(score: T.Ref, queries, i, channel, key_value):
+        score += queries[i, channel] * key_value
+
+    def score_rows(scores, queries, channel, key_value):
+        for i in range(bm):
+            add_score(scores[i,][0], queries, i, channel, key_value)
+
+    @T.macro
+    def prepare_row(
+        score,
+        maximum: T.Ref,
+        total: T.Ref,
+        left: T.Ref,
+        right: T.Ref,
+        probs,
+        scratch,
+        i,
+        lane,
+        live,
+    ):
+        scaled = T.if_then_else(live, score * 0.125, -1e30)
+        peak = T.alloc_var("float32")
+        peak = scaled
+        reduce_max(peak, scratch, lane)
+        next_maximum = T.max(maximum, peak)
+        factor = T.exp(maximum - next_maximum)
+        probability = T.if_then_else(live, T.exp(scaled - next_maximum), 0.0)
+        tile_total = T.alloc_var("float32")
+        tile_total = probability
+        reduce_sum(tile_total, scratch, lane)
+        maximum = next_maximum
+        total = total * factor + tile_total
+        left *= factor
+        right *= factor
+        probs[i, lane] = probability
+
+    def prepare_rows(scores, maxima, sums, accum, probs, scratch, lane, live):
+        for i in range(bm):
+            prepare_row(
+                scores[i,][0],
+                maxima[i,][0],
+                sums[i,][0],
+                accum[i, 0][0],
+                accum[i, 1][0],
+                probs,
+                scratch,
+                i,
+                lane,
+                live,
+            )
+
+    @T.macro
+    def add_value(left: T.Ref, right: T.Ref, probability, v0, v1):
+        left += probability * v0
+        right += probability * v1
+
+    def add_values(accum, probs, key, v0, v1):
+        for i in range(bm):
+            add_value(accum[i, 0][0], accum[i, 1][0], probs[i, key], v0, v1)
+
+    @T.macro
+    def store(out, left, right, total, base, tile_start, head, lane, i):
+        if tile_start + i < chunk:
+            row = base + tile_start + i
+            out[row, head * d + lane] = left / total
+            out[row, head * d + lane + bk] = right / total
+
+    def store_rows(out, accum, sums, base, tile_start, head, lane):
+        for i in range(bm):
+            store(
+                out,
+                accum[i, 0][0],
+                accum[i, 1][0],
+                sums[i,][0],
+                base,
+                tile_start,
+                head,
+                lane,
+                i,
+            )
+
+    @kernel
+    def compute(
+        q: Tensor(shape, "float32"),
+        k: Tensor(shape, "float32"),
+        v: Tensor(shape, "float32"),
+    ) -> Tensor(shape, "float32"):
+        out = output(shape, "float32")
+        with T.Kernel(heads, query_tiles, rows // chunk, threads=bk) as (
+            head,
+            query_tile,
+            sequence,
+        ):
+            lane = T.get_thread_binding()
+            base = sequence * chunk
+            tile_start = query_tile * bm
+            queries = T.alloc_shared((bm, d), "float32")
+            keys = T.alloc_shared((d, bk + 1), "float32")
+            values = T.alloc_shared((bk, d), "float32")
+            probs = T.alloc_shared((bm, bk), "float32")
+            scratch = T.alloc_shared((bk,), "float32")
+            maxima, sums, accum = registers((bm,)), registers((bm,)), registers((bm, 2))
+            for query_row in T.unroll(bm):
+                local_row = tile_start + query_row
+                queries[query_row, lane] = T.if_then_else(
+                    local_row < chunk, q[base + local_row, head * d + lane], 0.0
+                )
+                queries[query_row, lane + bk] = T.if_then_else(
+                    local_row < chunk, q[base + local_row, head * d + lane + bk], 0.0
+                )
+            T.sync_threads()
+            for key_tile in T.serial(T.ceildiv(chunk, bk)):
+                key_start = key_tile * bk
+                for load in T.serial(d):
+                    key_offset = load // 2
+                    load_channel = lane + load % 2 * bk
+                    key_row = key_start + key_offset
+                    keys[load_channel, key_offset] = T.if_then_else(
+                        key_row < chunk, k[base + key_row, head * d + load_channel], 0.0
+                    )
+                    values[key_offset, load_channel] = T.if_then_else(
+                        key_row < chunk, v[base + key_row, head * d + load_channel], 0.0
+                    )
+                T.sync_threads()
+                scores = registers((bm,))
+                for score_channel in T.serial(d):
+                    score_rows(
+                        scores, queries, score_channel, keys[score_channel, lane]
+                    )
+                prepare_rows(
+                    scores,
+                    maxima,
+                    sums,
+                    accum,
+                    probs,
+                    scratch,
+                    lane,
+                    key_start + lane < chunk,
+                )
+                T.sync_threads()
+                for value_key in T.serial(bk):
+                    add_values(
+                        accum,
+                        probs,
+                        value_key,
+                        values[value_key, lane],
+                        values[value_key, lane + bk],
+                    )
+                T.sync_threads()
+            store_rows(out, accum, sums, base, tile_start, head, lane)
+        return out
+
+    return compute
+
+
 def window_prefill(spec, schedule):
     """Reuse circular KV tiles across four adjacent queries and all GQA heads."""
     import tilelang.language as T

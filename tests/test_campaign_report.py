@@ -12,6 +12,52 @@ from akas.benchmarking.history import digest, write
 from tools.campaign_report import check, export, read, render, speculative_baselines, validate
 
 
+def test_enhancement_report_pairs_only_the_identical_short_cpu_case(tmp_path):
+    from akas.benchmarking.workload import load
+    from tools.campaign_report import render_enhancement
+
+    def profile(runtime, provider, workload, seconds):
+        cases = workload["clips"]
+        results = []
+        for case, wall in zip(cases, seconds, strict=True):
+            summary = dict(wall_seconds=wall, audio_seconds=3, real_time_factor=wall / 3)
+            sample = dict(
+                **summary, voice_sha256="waveform",
+                voice_wav="audio/voice.wav", background_wav="audio/background.wav",
+            )
+            results.append(dict(
+                status="ok", case=case, samples=[sample] * 3, summary=summary,
+                correctness=dict(deterministic=True, full_model_reference="golden" in case),
+            ))
+        return dict(
+            id=runtime, kind="akas" if runtime == "akas" else "baseline",
+            status="passed", run_id=runtime, report_sha256="report",
+            metadata=dict(
+                runtime=runtime, provider=provider, protocol=workload["protocol"],
+                speech_workload=dict(definition=workload),
+                warmup=1, repeats=3, weight_format="f32", weight_dtype="float32",
+                checkpoint_sha256="weights", model="Voice Isolator", device=dict(name=provider),
+            ),
+            measurements=results,
+        )
+
+    full = load("voice-enhancement-demo-v1")
+    short = load("voice-enhancement-golden-3s-v1")
+    gpu = profile("akas", "webgpu", full, [1.0, 5.0, 11.0])
+    cpu = profile("inworld", "cpu", short, [10.0])
+    data = dict(campaign={}, workload=full, profiles=[gpu, cpu])
+    render_enhancement(data, tmp_path / "report", tmp_path / "history")
+    comparison = (tmp_path / "report/COMPARISON.md").read_text(encoding="utf-8")
+    assert "| golden-3s | 3.000 | 10.000 | 1.000 | 10.000× |" in comparison
+    assert "| demo-hiss-10s | 3.000 | — | 5.000 | — |" in comparison
+    assert "| demo-noisy-24s | 3.000 | — | 11.000 | — |" in comparison
+    baseline = (tmp_path / "report/BASELINES.md").read_text(encoding="utf-8")
+    assert "demo-hiss-10s" not in baseline
+    cpu["metadata"]["checkpoint_sha256"] = "mismatched"
+    with pytest.raises(ValueError, match="baseline differs"):
+        render_enhancement(data, tmp_path / "report", tmp_path / "history")
+
+
 def test_native_stream_baseline_export_preserves_dependency_provenance(tmp_path):
     from tools.campaign_report import NATIVE_STREAM_SCHEMA, export_native_stream_baseline
     from akas.benchmarking.workload import load

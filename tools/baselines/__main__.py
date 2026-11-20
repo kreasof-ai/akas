@@ -50,12 +50,12 @@ def select_weight_format(model, runtime, requested=None):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("runtime", choices=("vllm", "sglang", "llama", "akas"))
+    parser.add_argument("runtime", choices=("vllm", "sglang", "llama", "akas", "inworld"))
     parser.add_argument("model", help="ID or alias from benchmarks/models")
     parser.add_argument("--models", type=Path, default=Path("benchmarks/models"))
     parser.add_argument("--mtp", action="store_true")
     parser.add_argument("--provider", choices=("cpu", "cuda", "vulkan"), default="cuda")
-    parser.add_argument("--format", choices=("bf16", "fp8", "f16", "q4_0", "q4_k_m", "q8_0"))
+    parser.add_argument("--format", choices=("bf16", "fp8", "f16", "f32", "q4_0", "q4_k_m", "q8_0"))
     parser.add_argument("--binary", type=Path, help="override the speech runtime executable")
     parser.add_argument("--bundle", type=Path, help="compiled AKAS speech bundle")
     parser.add_argument("--reference-run", help="frozen llama.cpp Vulkan speech run")
@@ -84,6 +84,29 @@ def main():
     if args.streaming and args.runtime == "llama":
         parser.error("streamed native timing currently supports vLLM and SGLang")
     definition_path, model = model_definition(args.models, args.model)
+    enhancement = model.get("runtime_options", {}).get("inworld", {}).get("enhancement")
+    if enhancement and args.runtime in ("inworld", "akas"):
+        if (
+            args.mtp
+            or args.optimized
+            or args.streaming
+            or args.binary is not None
+            or (args.runtime == "inworld" and args.provider != "cpu")
+            or (args.runtime == "akas" and (args.provider != "vulkan" or args.bundle is None))
+        ):
+            parser.error("voice enhancement uses upstream CPU or AKAS Vulkan")
+        if args.runtime == "inworld" and (args.bundle is not None or args.reference_run):
+            parser.error("--bundle and --reference-run apply to AKAS enhancement")
+        from tools.baselines.enhancement import run
+
+        weight_format = args.format or "f32"
+        record = run(args, definition_path, model, enhancement, weight_format)
+        print(record["id"], record["status"], flush=True)
+        if record["status"] != "passed":
+            raise SystemExit(1)
+        return
+    if args.runtime == "inworld":
+        parser.error("the upstream runtime requires an enhancement model")
     speech = model.get("runtime_options", {}).get("llama", {}).get("speech")
     if speech and args.runtime in ("llama", "akas"):
         if args.mtp or args.optimized or args.streaming or args.provider == "cuda":

@@ -77,7 +77,17 @@ conversion/projection/merge plans.
 
 ## ZONOS3 and ZAC
 
-The WebGPU `tiled_f32` choice uses Tensor's outer-product schedule with F32 shared storage and accumulation for wide ZAC projections. Its schedule search can select the default 32×64/4×4 geometry or alternative 64-row macro-tiles and 2×4, 4×8, or 8×8 micro-tiles while preserving F32 accumulation.
+The WebGPU `tiled_f32` choice uses Tensor's outer-product schedule with F32 shared storage and accumulation for wide ZAC projections and native-F32 fixed-shape audio projections. Its schedule search can select the default 32×64/4×4 geometry or alternative 64-row macro-tiles and 2×4, 4×8, or 8×8 micro-tiles while preserving F32 accumulation. Native F32 buffers are excluded from the packed-register path and retain their flattened ABI.
+
+`linear_bias_activation` uses the same WebGPU F32 tiling but adds the column
+bias and optional GELU or softplus in the output write. This avoids storing and
+rereading the unactivated projection. Its NumPy oracle uses an independent
+matrix product and activation.
+
+The W16A16 projection choices use native F16 weight storage and packed half
+operand pairs in shared memory. They round the F32 activation inputs during
+staging, then unpack and accumulate in F32 via Tensor's packed outer-product
+schedule. F32 bias and epilogues do not require a second output dispatch.
 
 Return to the [operation index](../README.md).
 

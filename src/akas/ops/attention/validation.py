@@ -982,6 +982,28 @@ def validation(kind, parameters, signature):
     return canonical_validation(kind, parameters, signature)
 
 
+def full_attention_validation(kind, p, signature):
+    import numpy as np
+    from akas.kernels.contracts import ValidationCase, sample_arguments
+
+    arguments = sample_arguments(signature)
+    rows, heads, d, chunk = (p[k] for k in ("r", "h", "d", "chunk"))
+    shape = (rows // chunk, chunk, heads, d)
+    q, k, v = (arguments[name].reshape(shape) for name in ("q", "k", "v"))
+    out = np.empty(shape, dtype="float32")
+    for slot in range(rows // chunk):
+        queries, keys, values = (
+            a[slot].transpose(1, 0, 2).astype("float64") for a in (q, k, v)
+        )
+        scores = (queries @ keys.swapaxes(-1, -2)) * d**-0.5
+        probabilities = np.exp(scores - scores.max(axis=-1, keepdims=True))
+        probabilities /= probabilities.sum(axis=-1, keepdims=True)
+        out[slot] = (probabilities @ values).transpose(1, 0, 2)
+    return ValidationCase(
+        arguments, {**arguments, "out": out.reshape(rows, heads * d)}, 2e-4, 2e-5
+    )
+
+
 def window_validation(kind, p, signature):
     """Independent NumPy rotary, ring addressing and grouped softmax oracles."""
     import numpy as np

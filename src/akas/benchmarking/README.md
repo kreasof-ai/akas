@@ -14,6 +14,7 @@ Start with [the measurement guide](../../../docs/benchmarking.md) and
 | `speculative.py` | Complete block-round measurements and committed-token accounting |
 | `runner.py` | Synchronized warmups, samples and token accounting |
 | `text.py` | Bounded real-text dataset reading, fixed splits and document crops |
+| `enhancement.py` | Fixed audio workload validation and waveform comparisons |
 | `report.py` | Reports and matched comparisons |
 | `history.py` | Source snapshots, run records, indexes and incumbent schedule exports |
 | `archive.py` | Commit-pinned artifact lookup, checksums and on-demand bundle retrieval |

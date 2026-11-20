@@ -7,6 +7,29 @@ import numpy as np
 import pytest
 
 
+def test_compact_scratch_reuses_larger_slots_without_aliasing_live_buffers():
+    from akas.execution.workspace import compact_scratch_slots
+    from akas.graph import Graph
+
+    graph = Graph(contract="reference")
+    x = graph.buffer("input", (16,), "float32", role="input")
+    a = graph.buffer("a", (16,), "float32")
+    b = graph.buffer("b", (8,), "float32")
+    c = graph.buffer("c", (2, 2), "float32")
+    alias = a.view((4, 4))
+    half = graph.buffer("half", (8,), "float16")
+    out = graph.buffer("out", (4,), "float32", role="output")
+    graph("test", {}, x, a)
+    graph("test", {}, alias, b, half)
+    graph("test", {}, b, c)
+    graph("test", {}, c, out)
+    assert compact_scratch_slots(graph) == (
+        ("float32", 16, ("a", "c")),
+        ("float32", 8, ("b",)),
+        ("float16", 8, ("half",)),
+    )
+
+
 def test_kernel_cache_keeps_integrity_checks(tmp_path):
     from akas.artifacts.read import load_kernels
 

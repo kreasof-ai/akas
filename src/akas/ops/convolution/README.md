@@ -64,6 +64,14 @@ tests](../../../../tests/test_lfm2_reference.py).
 
 The causal depthwise FIR uses a zero-padded input prefix and one bias per channel for full-utterance decoding, while `causal_depthwise_state` carries `(taps - 1)` per-channel history across multi-slot prefix-stream chunks. Streaming multi-resolution ZAC synthesis decomposes into `istft_polar` (log-magnitude/phase to real/imaginary spectrum), Fourier-Hann basis projections, `istft_ola` and `istft_mix_commit` (two-branch overlap-add and 127-tap FIR mixer with persistent overlap/mixer state), and `sinc_resample_limit` + `sinc_resample_commit` (44,160 -> 44,100 Hz sinc resampling, headroom gain, soft-knee limiter, and 322-sample resampler tail commit). CUDA and WebGPU share the portable computations.
 
+## Sequence-local depthwise FIR
+
+`causal_depthwise_sequences` applies the same zero-padded causal FIR independently
+to `(sequences, frames, channels)` inputs. Convolution history never crosses a
+sequence boundary; the bidirectional Mamba time and frequency axes use this to
+keep each band or frame sequence independent. Its host oracle exercises all
+three input dimensions and checks exact resets at those boundaries.
+
 ## Strided 2D convolution
 
 `image_patches` extracts zero-padded square patches from contiguous

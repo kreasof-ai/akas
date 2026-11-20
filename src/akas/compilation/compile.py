@@ -166,6 +166,10 @@ def compile_forwards(
     metadata, graphs = definition.forward_phases(
         checkpoint, provider=provider, **model_options
     )
+    from akas.compilation.tuning import SearchSettings
+
+    if isinstance(search_settings, dict):
+        search_settings = SearchSettings(**search_settings)
     scope = nullcontext(device)
     if device is None and provider == "webgpu":
         from akas.tensor.device import vulkan_device

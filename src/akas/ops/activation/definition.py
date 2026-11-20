@@ -15,7 +15,7 @@ for _contract in ("reference", "packed", "packed-baseline", "bf16", "block-fp8")
         }
     )
 VALIDATIONS = {name: validation for name in ("swiglu", "swiglu_experts")}
-for _kind in ("column_bias", "gelu", "gelu_bias"):
+for _kind in ("column_bias", "gelu", "gelu_bias", "silu", "softplus_bias"):
     OUTPUT_ARGUMENTS["reference"][_kind] = OutputABI((-1,), ("out",))
     VALIDATIONS[_kind] = column_activation_validation
 IMPLEMENTATIONS = (
@@ -138,7 +138,7 @@ IMPLEMENTATIONS += tuple(
         factory="column_activation",
     )
     for provider in ("cuda", "webgpu")
-    for kind in ("column_bias", "gelu", "gelu_bias")
+    for kind in ("column_bias", "gelu", "gelu_bias", "silu", "softplus_bias")
 )
 
 IMPLEMENTATIONS += tuple(

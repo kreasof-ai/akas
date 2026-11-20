@@ -251,6 +251,42 @@ def causal_depthwise(spec, schedule):
     return compute
 
 
+def causal_depthwise_sequences(spec, schedule):
+    """Finite channelwise FIR with independent sequence-local left padding."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    sequences, frames, width, taps = (
+        p[key] for key in ("sequences", "frames", "c", "taps")
+    )
+
+    @kernel
+    def compute(
+        x: Tensor((sequences, frames, width), "float32"),
+        w: Tensor((width, taps), "float32"),
+        bias: Tensor((width,), "float32"),
+    ) -> Tensor((sequences, frames, width), "float32"):
+        out = output((sequences, frames, width), "float32")
+        with T.Kernel(sequences, T.ceildiv(width, 128), threads=128) as (
+            sequence,
+            tile,
+        ):
+            for lane in T.Parallel(128):
+                column = tile * 128 + lane
+                if column < width:
+                    value = T.alloc_var("float32")
+                    for frame in T.serial(frames):
+                        value = bias[column]
+                        for j in T.unroll(taps):
+                            step = frame + j - taps + 1
+                            if step >= 0:
+                                value += x[sequence, step, column] * w[column, j]
+                        out[sequence, frame, column] = value
+        return out
+
+    return compute
+
+
 def causal_depthwise_state(spec, schedule):
     """Stateful channelwise causal FIR across multi-slot streaming chunks."""
     import tilelang.language as T

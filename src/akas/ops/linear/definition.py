@@ -1203,7 +1203,9 @@ IMPLEMENTATIONS = (
         provider="webgpu",
         priority=40,
         accepts=lambda p: (
-            p.get("ggml", False) and (p["r"] != 1 or p["type"] not in (2, 14))
+            p.get("ggml", False)
+            and (p["r"] != 1 or p["type"] not in (2, 14))
+            and p.get("type") != 0
         ),
         factory="kernel_linear",
         name="linear.webgpu.packed",
@@ -1215,7 +1217,9 @@ IMPLEMENTATIONS = (
         provider="webgpu",
         priority=40,
         accepts=lambda p: (
-            p.get("ggml", False) and (p["r"] != 1 or p["type"] not in (2, 14))
+            p.get("ggml", False)
+            and (p["r"] != 1 or p["type"] not in (2, 14))
+            and p.get("type") != 0
         ),
         factory="ffn",
         name="linear.webgpu.packed",
@@ -1227,7 +1231,9 @@ IMPLEMENTATIONS = (
         provider="webgpu",
         priority=40,
         accepts=lambda p: (
-            p.get("ggml", False) and (p["r"] != 1 or p["type"] not in (2, 14))
+            p.get("ggml", False)
+            and (p["r"] != 1 or p["type"] not in (2, 14))
+            and p.get("type") != 0
         ),
         factory="linear_add",
         name="linear.webgpu.packed",
@@ -1523,6 +1529,7 @@ IMPLEMENTATIONS += tuple(
 )
 
 OUTPUT_ARGUMENTS["*"] = {"quantized_projection": OutputABI((-1,), ("out",))}
+
 from .validation import projection_validation
 
 VALIDATIONS["quantized_projection"] = projection_validation
@@ -1955,7 +1962,8 @@ IMPLEMENTATIONS += (
         provider="webgpu",
         priority=50,
         factory="tiled_f32",
-        accepts=lambda p: p.get("tiled_f32", False),
+        accepts=lambda p: p.get("ggml", False) and p.get("type") == 0 and p["r"] > 1,
+        semantic_keys=("r", "k", "o", "type", "ggml"),
         space=(
             ("tile_k", (16, 32)),
             ("unroll", (4, 8)),
@@ -1972,4 +1980,49 @@ IMPLEMENTATIONS += (
             ),
         ),
     ),
+)
+
+from akas.ops.linear.validation import staged_projection_validation
+
+OUTPUT_ARGUMENTS["reference"]["linear_bias_activation"] = OutputABI((-1,), ("out",))
+VALIDATIONS["linear_bias_activation"] = staged_projection_validation
+IMPLEMENTATIONS += (
+    Implementation(
+        "linear_bias_activation",
+        "akas.ops.linear.webgpu",
+        "reference",
+        provider="webgpu",
+        factory="tiled_f32_bias",
+        name="linear.webgpu.tiled_f32_bias",
+        accepts=lambda p: p.get("weight_dtype", "float32") == "float32",
+        space=(
+            ("tile_k", (16, 32)),
+            ("unroll", (4, 8)),
+            ("dot_width", (1, 2, 4)),
+            ("tile_geometry", ((32, 64, 4, 4), (64, 64, 4, 4), (32, 64, 4, 8))),
+        ),
+    ),
+)
+
+OUTPUT_ARGUMENTS["reference"]["linear_w16a16"] = OutputABI((-1,), ("out",))
+VALIDATIONS["linear_w16a16"] = staged_projection_validation
+IMPLEMENTATIONS += tuple(
+    Implementation(
+        kind,
+        "akas.ops.linear.webgpu",
+        "reference",
+        provider="webgpu",
+        factory=factory,
+        name=f"linear.webgpu.{factory}",
+        accepts=lambda p: p.get("weight_dtype") == "float16",
+        space=(
+            ("tile_k", (32, 16)),
+            ("unroll", (4, 8)),
+            ("tile_geometry", ((64, 128, 4, 8), (32, 64, 4, 4), (64, 64, 4, 4))),
+        ),
+    )
+    for kind, factory in (
+        ("linear_w16a16", "tiled_w16a16"),
+        ("linear_bias_activation", "tiled_w16a16_bias"),
+    )
 )

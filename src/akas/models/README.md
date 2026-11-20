@@ -165,6 +165,15 @@ and block-scaled FP8 safetensors or packed GGUF. The [LFM3 guide](lfm3/README.md
 covers seven-tap convolution, sandwich norms, sliding attention, full-head
 partial RoPE, execution precision and the single-user Q4_0 llama.cpp comparison.
 
+## Inworld Voice Isolator
+
+`from akas.models.voice_isolator import VoiceIsolator` selects the released
+offline 48 kHz enhancement model. Its [guide](voice_isolator/README.md) covers
+checkpoint conversion, exact audio geometries, WebGPU compilation, public demo
+inputs, golden parity and the upstream CPU comparison. The token request
+lifecycle and `akas bench` are not the execution path for this fixed-shape
+audio-to-audio model; it uses the shared Forward compiler and bundle.
+
 ## ZONOS3-Mini
 
 `from akas.models.zonos3 import Zonos3MiniSynthesis` selects the speech model

@@ -129,9 +129,14 @@ def causal_depthwise_validation(kind, p, signature):
     from akas.kernels.contracts import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
-    padded = np.pad(values["x"].astype("float64"), ((p["taps"] - 1, 0), (0, 0)))
-    windows = np.lib.stride_tricks.sliding_window_view(padded, p["taps"], axis=0)
-    out = np.einsum("rct,ct->rc", windows, values["w"]) + values["bias"]
+    padding = (
+        ((0, 0), (p["taps"] - 1, 0), (0, 0))
+        if kind == "causal_depthwise_sequences"
+        else ((p["taps"] - 1, 0), (0, 0))
+    )
+    padded = np.pad(values["x"].astype("float64"), padding)
+    windows = np.lib.stride_tricks.sliding_window_view(padded, p["taps"], axis=-2)
+    out = np.einsum("...ct,ct->...c", windows, values["w"]) + values["bias"]
     return ValidationCase(values, {**values, "out": out.astype("float32")})
 
 

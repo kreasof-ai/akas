@@ -16,9 +16,15 @@ import uuid
 from akas.benchmarking.workload import STANDARD, STANDARD_SHA256
 from akas.benchmarking import archive
 from akas.benchmarking.transcription import PROTOCOL as ASR_PROTOCOL
+from akas.benchmarking.enhancement import PROTOCOL as ENHANCEMENT_PROTOCOL
 
 SCHEMA = "akas.benchmark-run.v1"
-SPEECH_PROTOCOLS = ("client-speech-pcm-v1", "client-speech-pcm-stream-v1", ASR_PROTOCOL)
+SPEECH_PROTOCOLS = (
+    "client-speech-pcm-v1",
+    "client-speech-pcm-stream-v1",
+    ASR_PROTOCOL,
+    ENHANCEMENT_PROTOCOL,
+)
 
 
 def utc():

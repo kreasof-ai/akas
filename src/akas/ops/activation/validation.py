@@ -105,6 +105,14 @@ def column_activation_validation(kind, p, signature):
 
     values = sample_arguments(signature)
     x = values["x"].astype("float64") + values.get("bias", 0)
+    if kind == "softplus_bias":
+        return ValidationCase(
+            values, {**values, "out": np.logaddexp(0, x).astype("float32")}
+        )
+    if kind == "silu":
+        return ValidationCase(
+            values, {**values, "out": (x / (1 + np.exp(-x))).astype("float32")}
+        )
     if kind != "column_bias":
         erf = np.frompyfunc(math.erf, 1, 1)
         x *= 0.5 * (1 + erf(x / math.sqrt(2)).astype("float64"))

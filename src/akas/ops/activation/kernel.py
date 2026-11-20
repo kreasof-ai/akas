@@ -246,12 +246,8 @@ def head_gate_half(spec, schedule):
     return compute
 
 
-def column_activation(spec, schedule):
+def gelu_erf():
     import tilelang.language as T
-
-    p = {**spec.parameters, **schedule}
-    r, c = (p[key] for key in ("r", "c"))
-    gelu = spec.kind != "column_bias"
 
     @T.macro
     def activate(value):
@@ -263,6 +259,17 @@ def column_activation(spec, schedule):
         ) * t + 0.254829592
         erf = 1 - poly * t * T.exp(-x * x)
         return 0.5 * value * (1 + T.if_then_else(x < 0, -erf, erf))
+
+    return activate
+
+
+def column_activation(spec, schedule):
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    r, c = (p[key] for key in ("r", "c"))
+    gelu = spec.kind != "column_bias"
+    activate = gelu_erf()
 
     if spec.kind == "gelu_bias" and p.get("output_dtype") == "float16":
         from akas.quantization._shared.rounding import round_half
@@ -279,6 +286,39 @@ def column_activation(spec, schedule):
                     col = tile * 128 + lane
                     if col < c:
                         out[row, col] = rounded(activate(x[row, col] + bias[col]))
+            return out
+
+        return compute
+
+    if spec.kind == "softplus_bias":
+
+        @kernel
+        def compute(
+            x: Tensor((r, c), "float32"), bias: Tensor((c,), "float32")
+        ) -> Tensor((r, c), "float32"):
+            out = output((r, c), "float32")
+            with T.Kernel(r, T.ceildiv(c, 128), threads=128) as (row, tile):
+                for lane in T.Parallel(128):
+                    col = tile * 128 + lane
+                    if col < c:
+                        value = x[row, col] + bias[col]
+                        out[row, col] = T.log(1 + T.exp(-T.abs(value))) + T.max(
+                            value, 0
+                        )
+            return out
+
+        return compute
+
+    if spec.kind == "silu":
+
+        @kernel
+        def compute(x: Tensor((r, c), "float32")) -> Tensor((r, c), "float32"):
+            out = output((r, c), "float32")
+            with T.Kernel(r, T.ceildiv(c, 128), threads=128) as (row, tile):
+                for lane in T.Parallel(128):
+                    col = tile * 128 + lane
+                    if col < c:
+                        out[row, col] = x[row, col] / (1 + T.exp(-x[row, col]))
             return out
 
         return compute
