@@ -1,7 +1,7 @@
 """Contracts for Mamba preparation, recurrence and bidirectional joins."""
 
-from akas.kernels.contracts import Implementation, OutputABI
-from akas.ops.mamba.validation import VALIDATIONS
+from akas.kernels.spec import Implementation, OutputABI
+from akas.ops.mamba.validation import VALIDATIONS as VALIDATIONS
 
 
 OUTPUT_ARGUMENTS = {

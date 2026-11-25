@@ -1,6 +1,6 @@
 """Independent NumPy selective-scan and bidirectional references."""
 
-from akas.kernels.contracts import ValidationCase, sample_arguments
+from akas.validation import ValidationCase, sample_arguments
 
 
 def selective_scan_validation(kind, p, signature):

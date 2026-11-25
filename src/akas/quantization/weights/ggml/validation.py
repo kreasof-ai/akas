@@ -36,7 +36,7 @@ def reference(options, shape, storage, *, seed=31):
 def sample_weight(storage, kind, *, seed=31, decode=True):
     """Fill resident bytes, including signed payloads and finite block scales."""
     import numpy as np
-    from akas.quantization.weights.ggml.definition import ENCODINGS as TYPES
+    from akas.quantization.storage.ggml import ENCODINGS as TYPES
     from akas.quantization.weights.ggml.kernel import decode_host
 
     rng = np.random.default_rng(seed)
@@ -93,7 +93,7 @@ def sample_weight(storage, kind, *, seed=31, decode=True):
 
 def decode_rows(storage, kind, depth, start, stop):
     """Decode only complete logical rows, keeping validation memory tile bounded."""
-    from .definition import ENCODINGS
+    from akas.quantization.storage.ggml import ENCODINGS
     from .kernel import decode_host
 
     _, block, size = ENCODINGS[kind]
@@ -107,7 +107,7 @@ def decode_rows(storage, kind, depth, start, stop):
 
 
 def validation(kind, parameters, signature):
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     decoded = sample_weight(values["w"], parameters["type"])

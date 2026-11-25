@@ -1,13 +1,13 @@
 """Infer legal program choices from declarations, operation policies and hardware."""
 
 from dataclasses import asdict
-import importlib.metadata
 import json
 import math
 from pathlib import Path
 import subprocess
 
 from akas.optimization.context import identity, symbol
+from akas.optimization.provenance import software
 
 
 def hardware(provider, ordinal):
@@ -67,56 +67,6 @@ def hardware(provider, ordinal):
     except (OSError, subprocess.SubprocessError):
         pass
     return result
-
-
-def software():
-    result = {}
-    for name in ("tensor-workspace", "tilelang", "apache-tvm-ffi", "wgpu", "numpy"):
-        try:
-            d = importlib.metadata.distribution(name)
-            result[name] = dict(
-                version=d.version, record=identity(d.read_text("RECORD"))
-            )
-        except importlib.metadata.PackageNotFoundError:
-            pass
-    return result
-
-
-def estimate(graph):
-    """Conservative raw buffer bounds, before scratch reuse and shared phases."""
-    from tensor.runtime.dtypes import dtype
-
-    sizes = [
-        math.prod(spec.shape) * dtype(spec.dtype).itemsize
-        for spec in graph.buffers.values()
-        if spec.alias_of is None
-    ]
-    return dict(graph_bytes=sum(sizes), largest_buffer_bytes=max(sizes, default=0))
-
-
-def memory_bound(graphs):
-    from akas.compilation.buffers import scratch_slots
-    from tensor.runtime.dtypes import dtype
-
-    persistent = {}
-    private = 0
-    for graph in graphs:
-        size = lambda spec: math.prod(spec.shape) * dtype(spec.dtype).itemsize
-        for name, spec in graph.buffers.items():
-            if spec.alias_of is None and spec.role in ("weight", "state"):
-                persistent[name] = max(persistent.get(name, 0), size(spec))
-        groups = scratch_slots(graph)
-        private += sum(size(graph.buffers[names[0]]) for names in groups)
-        private += sum(
-            size(spec)
-            for spec in graph.buffers.values()
-            if spec.alias_of is None and spec.role not in ("weight", "state", "scratch")
-        )
-    return dict(
-        persistent_bytes=sum(persistent.values()),
-        cached_frame_upper_bytes=private,
-        total_upper_bytes=sum(persistent.values()) + private,
-    )
 
 
 def probe(context, provider):

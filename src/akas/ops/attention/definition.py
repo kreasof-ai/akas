@@ -1,18 +1,15 @@
 """Contracts and implementation choices for attention."""
 
-from akas.kernels.contracts import OutputABI
-from akas.ops.attention.validation import validation
-from akas.ops.attention.validation import extent_validation
-from akas.ops.attention.validation import pad_validation
-from akas.kernels.contracts import Implementation
+from akas.kernels.spec import OutputABI
+from akas.ops.attention.validation import VALIDATIONS as VALIDATIONS
+from akas.kernels.spec import Implementation
 from akas.quantization.kv import is_quantized
-from akas.ops.attention.validation import pipeline_validation as pipeline_validation
 
 
 def cache_storage(p):
     from akas.memory.state import BufferSpec
     from akas.quantization.kv import get
-    from akas.quantization.kv.codec import Storage
+    from akas.quantization.formats import Storage
 
     padding = p.get("cache_padding", 0)
     if type(padding) is not int or not 0 <= padding <= 4096 or padding % 32:
@@ -755,34 +752,6 @@ OUTPUT_ARGUMENTS["block-fp8"].update(
         "attention": OutputABI((-1,), ("out",)),
     }
 )
-VALIDATIONS = {
-    name: validation
-    for name in (
-        "rope",
-        "cache_write",
-        "attention",
-        "attention_partial",
-        "attention_adaptive_partial",
-        "attention_merge",
-        "attention_qkv",
-        "attention_q",
-        "attention_kv",
-    )
-}
-VALIDATIONS["attention_cache_extent"] = extent_validation
-VALIDATIONS["attention_cache_pad"] = pad_validation
-VALIDATIONS.update(
-    {
-        name: pipeline_validation
-        for name in (
-            "attention_decode_workspace",
-            "attention_chunk_active",
-            "attention_chunk_partial",
-            "attention_chunk_merge",
-            "attention_chunk_hopper",
-        )
-    }
-)
 IMPLEMENTATIONS = (
     Implementation(
         "attention",
@@ -1165,7 +1134,7 @@ IMPLEMENTATIONS = (
 IMPLEMENTATIONS += tuple(
     Implementation(
         "attention_cache_pad",
-        f"akas.ops.attention.{provider}",
+        "akas.ops.attention.kernel",
         "reference",
         provider=provider,
         factory="cache_pad",
@@ -1177,7 +1146,7 @@ IMPLEMENTATIONS += tuple(
 IMPLEMENTATIONS += tuple(
     Implementation(
         "attention_cache_extent",
-        f"akas.ops.attention.{provider}",
+        "akas.ops.attention.kernel",
         "reference",
         provider=provider,
         factory="cache_extent",
@@ -1569,8 +1538,6 @@ IMPLEMENTATIONS += (
 )
 
 
-from akas.ops.attention.validation import full_attention_validation, window_validation
-
 for _kind, _positions, _names, _module in (
     ("rotary_partial", (1,), ("out",), "kernel"),
     ("qkv_split", (-3, -2, -1), ("q", "k", "v"), "kernel"),
@@ -1579,7 +1546,6 @@ for _kind, _positions, _names, _module in (
     ("window_merge", (1,), ("out",), "kernel"),
 ):
     OUTPUT_ARGUMENTS["reference"][_kind] = OutputABI(_positions, _names)
-    VALIDATIONS[_kind] = window_validation
     IMPLEMENTATIONS += (
         Implementation(
             _kind,
@@ -1591,12 +1557,8 @@ for _kind, _positions, _names, _module in (
     )
 
 
-from akas.ops.attention.validation import rotary_table_validation
-
 OUTPUT_ARGUMENTS["reference"]["rotary_table"] = OutputABI((1,), ("out",))
 OUTPUT_ARGUMENTS["reference"]["window_grouped"] = OutputABI((-1,), ("out",))
-VALIDATIONS["rotary_table"] = rotary_table_validation
-VALIDATIONS["window_grouped"] = window_validation
 IMPLEMENTATIONS += (
     Implementation(
         "rotary_table",
@@ -1616,17 +1578,7 @@ IMPLEMENTATIONS += (
 )
 
 
-from akas.ops.attention.validation import rotary_compact_validation
-from akas.ops.attention.validation import qk_norm_rotary_cache_validation
-from akas.ops.attention.validation import projected_gate_validation
-from akas.ops.attention.validation import (
-    scores_validation,
-    values_validation,
-    merge_validation,
-)
-
 OUTPUT_ARGUMENTS["reference"]["cooperative_merge"] = OutputABI((-1,), ("out",))
-VALIDATIONS["cooperative_merge"] = merge_validation
 IMPLEMENTATIONS += (
     Implementation(
         "cooperative_merge",
@@ -1638,12 +1590,9 @@ IMPLEMENTATIONS += (
     ),
 )
 
-for _kind, _validation in (
-    ("cooperative_scores", scores_validation),
-    ("cooperative_values", values_validation),
-):
+
+for _kind in ("cooperative_scores", "cooperative_values"):
     OUTPUT_ARGUMENTS["reference"][_kind] = OutputABI((-1,), ("out",))
-    VALIDATIONS[_kind] = _validation
     IMPLEMENTATIONS += (
         Implementation(
             _kind,
@@ -1663,7 +1612,6 @@ for _kind, _validation in (
     )
 
 OUTPUT_ARGUMENTS["reference"]["projected_gate_merge"] = OutputABI((3,), ("out",))
-VALIDATIONS["projected_gate_merge"] = projected_gate_validation
 IMPLEMENTATIONS += (
     Implementation(
         "projected_gate_merge",
@@ -1678,7 +1626,6 @@ IMPLEMENTATIONS += (
 OUTPUT_ARGUMENTS["reference"]["qk_norm_rotary_cache"] = OutputABI(
     (5, 6, 7), ("out", "kc", "vc")
 )
-VALIDATIONS["qk_norm_rotary_cache"] = qk_norm_rotary_cache_validation
 IMPLEMENTATIONS += (
     Implementation(
         "qk_norm_rotary_cache",
@@ -1691,16 +1638,9 @@ IMPLEMENTATIONS += (
 )
 
 OUTPUT_ARGUMENTS["reference"]["rotary_compact"] = OutputABI((1,), ("out",))
-VALIDATIONS["rotary_compact"] = rotary_compact_validation
-from akas.ops.attention.validation import (
-    causal_grouped_validation,
-    head_rms_rotary_validation,
-)
 
 OUTPUT_ARGUMENTS["reference"]["head_rms_rotary"] = OutputABI((-1,), ("out",))
-VALIDATIONS["head_rms_rotary"] = head_rms_rotary_validation
 OUTPUT_ARGUMENTS["reference"]["causal_grouped"] = OutputABI((-1,), ("out",))
-VALIDATIONS["causal_grouped"] = causal_grouped_validation
 IMPLEMENTATIONS += tuple(
     Implementation(
         "head_rms_rotary",
@@ -1731,7 +1671,6 @@ IMPLEMENTATIONS += (
     ),
 )
 
-from akas.ops.attention.validation import qkv_rotary_cache_validation
 
 IMPLEMENTATIONS += (
     Implementation(
@@ -1769,7 +1708,6 @@ IMPLEMENTATIONS += tuple(
 )
 
 OUTPUT_ARGUMENTS["reference"]["full_attention"] = OutputABI((-1,), ("out",))
-VALIDATIONS["full_attention"] = full_attention_validation
 IMPLEMENTATIONS += (
     Implementation(
         "full_attention",
@@ -1795,7 +1733,6 @@ IMPLEMENTATIONS += (
 OUTPUT_ARGUMENTS["reference"]["qkv_rotary_cache"] = OutputABI(
     (1, 2, 3), ("q", "kc", "vc")
 )
-VALIDATIONS["qkv_rotary_cache"] = qkv_rotary_cache_validation
 IMPLEMENTATIONS += (
     Implementation(
         "qkv_rotary_cache",
@@ -1806,15 +1743,9 @@ IMPLEMENTATIONS += (
     ),
 )
 
-from akas.ops.attention.validation import (
-    window_current_validation,
-    window_tail_validation,
-)
 
 OUTPUT_ARGUMENTS["reference"]["window_attention_current"] = OutputABI((-1,), ("out",))
 OUTPUT_ARGUMENTS["reference"]["window_cache_tail"] = OutputABI((2, 3), ("kc", "vc"))
-VALIDATIONS["window_attention_current"] = window_current_validation
-VALIDATIONS["window_cache_tail"] = window_tail_validation
 IMPLEMENTATIONS += (
     Implementation(
         "window_attention_current",

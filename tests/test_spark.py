@@ -140,7 +140,7 @@ def test_cuda_matches_independent_equations_across_wrap_reorder_and_reuse(
 
 def test_fp8_channel_scales_are_applied_and_layouts_fail_closed(tmp_path):
     from support.spark import fp8_fixture
-    from akas.quantization._shared.e4m3 import decode_storage
+    from akas.quantization.host import decode_storage
     from akas.checkpoints.safetensors import read_tensor, read_float_tensor
 
     checkpoint = SparkCheckpoint(fp8_fixture(tmp_path), tokenizer=False)
@@ -250,7 +250,7 @@ def test_packed_prefill_fusions_match_equations_and_keep_storage(tmp_path):
     program = json.loads((bundle / "program.json").read_text())
     state = next(p for p in program["phases"] if p["phase"] == "prefill_state")
     from akas.graph import Graph
-    from akas.kernels.registry import graph_outputs
+    from akas.ops.planning import graph_outputs
 
     derived = Graph.from_metadata(
         json.loads((bundle / state["path"]).read_text())["forward"]

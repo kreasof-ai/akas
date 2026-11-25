@@ -1,7 +1,7 @@
 """Shared TileLang computations for control."""
 
 from collections.abc import Mapping
-from akas.kernels.definition import KernelSpec
+from akas.kernels.spec import KernelSpec
 from akas.kernels.kernel import Tensor, kernel, output
 
 

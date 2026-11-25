@@ -13,16 +13,16 @@ def bind(shape, *, encoding, layout="raw"):
     if layout == "planar":
         return planar_binding(shape, encoding=encoding)
     from akas.quantization.formats import Codec
-    from akas.quantization._shared.access import matrix_reader, matrix_tile
+    from akas.quantization.storage.access import bind_reader
     from .definition import FORMAT
 
     storage = FORMAT.storage(shape, provider="webgpu", encoding=encoding)
-    read = matrix_reader(decoder(encoding, shape[-1]))
+    read, tile = bind_reader(decoder(encoding, shape[-1]), shape, separate=True)
 
     return Codec(
         storage,
         read,
-        matrix_tile(read, shape),
+        tile,
         dot_float=packed_dot_float(shape)
         if supports("dot_float", shape, encoding=encoding)
         else None,
@@ -32,7 +32,7 @@ def bind(shape, *, encoding, layout="raw"):
 def gemv_terms(p, *, fast_q4, lanes, row_count, dot_q4, dot_q6):
     """Format-specific lane products; the operation owns launch and reduction."""
     import tilelang.language as T
-    from akas.quantization._shared.packing import packed_loads
+    from akas.quantization.storage.packing import packed_loads
     from .kernel import weight_decoder
 
     k, q = p["k"], p["type"]
@@ -226,7 +226,7 @@ def integer_rhs(shape, *, prepacked=False, layout="raw"):
         raise ValueError("invalid Q4_0 integer consumer layout")
     storage = integer_layout(shape, prepacked=prepacked)
     import tilelang.language as T
-    from akas.quantization._shared.packing import packed_loads
+    from akas.quantization.storage.packing import packed_loads
 
     byte, half_value, word_value = packed_loads()
 
@@ -267,7 +267,7 @@ def q8_integer_rhs(shape, *, aligned=False):
     """Expose the original signed Q8_0 words and half block scales."""
     import tilelang.language as T
 
-    from akas.quantization._shared.packing import packed_loads
+    from akas.quantization.storage.packing import packed_loads
     from .definition import weight_storage
 
     columns, depth = shape
@@ -303,7 +303,7 @@ def q8_dot(k, o):
         )
     import tilelang.language as T
     from akas.kernels.webgpu import segmented_reduce
-    from akas.quantization._shared.packing import packed_loads
+    from akas.quantization.storage.packing import packed_loads
 
     lanes = 16
     segmented = segmented_reduce(lanes)
@@ -348,7 +348,7 @@ def q8_dot(k, o):
 def q8_vector_dot(depth):
     """Four signed Q8_0 coefficients per lane with the original block scale."""
     import tilelang.language as T
-    from akas.quantization._shared.packing import packed_loads
+    from akas.quantization.storage.packing import packed_loads
 
     _, scale_at, word_at = packed_loads()
 
@@ -391,7 +391,7 @@ def packed_dot_float(shape):
     """A 32-lane, 256-channel tile with original F32 coefficients/operands."""
     import tilelang.language as T
     from tensor.compiler.webgpu.schedules.registers import vector
-    from akas.quantization._shared.packing import packed_loads
+    from akas.quantization.storage.packing import packed_loads
 
     byte, half, word = packed_loads()
     depth = shape[-1]
@@ -442,7 +442,7 @@ def planar_dot_float(shape):
     from math import prod
     import tilelang.language as T
     from tensor.compiler.webgpu.schedules.registers import vector
-    from akas.quantization._shared.packing import packed_loads
+    from akas.quantization.storage.packing import packed_loads
 
     byte, half, word = packed_loads()
     depth = shape[-1]
@@ -479,7 +479,7 @@ def planar_dot_float(shape):
 
 def planar_binding(shape, *, encoding):
     from akas.quantization.formats import Codec
-    from akas.quantization._shared.access import matrix_tile
+    from akas.quantization.storage.access import bind_reader
     from .definition import FORMAT
     from .kernel import planar_reader
 
@@ -488,5 +488,5 @@ def planar_binding(shape, *, encoding):
     )
     read = planar_reader(shape)
     return Codec(
-        storage, read, matrix_tile(read, shape), dot_float=planar_dot_float(shape)
+        storage, read, bind_reader(read, shape)[1], dot_float=planar_dot_float(shape)
     )

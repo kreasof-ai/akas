@@ -1,20 +1,10 @@
 """Storage codec implementation and independent arithmetic."""
 
 
-def pack_words(data):
-    """Preserve bytes and zero-pad the final physical WebGPU storage word."""
-    import numpy as np
-
-    raw = np.ascontiguousarray(data, dtype="uint8").reshape(-1)
-    if raw.size % 4:
-        raw = np.pad(raw, (0, -raw.size % 4))
-    return raw.view("uint32")
-
-
 def packed_loads():
     import tilelang.language as T
 
-    from akas.quantization._shared.rounding import half_bits
+    from akas.quantization.storage.rounding import half_bits
 
     unpack = half_bits()
 

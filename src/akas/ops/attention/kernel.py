@@ -66,7 +66,7 @@ def cache_extent(spec, schedule):
 
 
 from collections.abc import Mapping
-from akas.kernels.definition import KernelSpec
+from akas.kernels.spec import KernelSpec
 from akas.kernels.kernel import Tensor, kernel, output
 
 
@@ -79,11 +79,11 @@ def cache_reader(p):
     if p["kv_dtype"] not in ("float16", "float32"):
         from akas.quantization.kv import get
 
-        from akas.quantization._shared.access import cache_arguments
+        from akas.quantization.storage.access import bind_arguments
 
         shape = (p["r"] // p.get("chunk", 1), p["kh"], p["capacity"], p["d"])
         codec = get(p["kv_dtype"]).bind(shape, provider=p["provider"])
-        read = cache_arguments(codec.read)
+        read = bind_arguments(codec, "read")
     elif p.get("unit_scales", False):
 
         @T.macro
@@ -118,7 +118,7 @@ def cache_arguments(p, storage):
 
 
 def merge_floating(spec: KernelSpec, schedule: Mapping[str, object]):
-    from akas.ops.attention.kernel import cache_arguments, cache_reader
+    from akas.ops.attention.kernel import cache_reader
 
     p = {**spec.parameters, **schedule}
     import tilelang.language as T
@@ -295,7 +295,7 @@ def tiled_partial_floating(spec: KernelSpec, schedule: Mapping[str, object]):
 
 
 def partial_floating(spec: KernelSpec, schedule: Mapping[str, object]):
-    from akas.ops.attention.kernel import cache_arguments, cache_reader
+    from akas.ops.attention.kernel import cache_reader
 
     p = {**spec.parameters, **schedule}
     import tilelang.language as T
@@ -607,17 +607,17 @@ def attention(spec: KernelSpec, schedule: Mapping[str, object]):
     if quantized:
         from akas.quantization.kv import get
 
-        from akas.quantization._shared.access import cache_arguments, writer_arguments
+        from akas.quantization.storage.access import bind_arguments
 
         codec = get(p["kv_dtype"]).bind(
             (r // chunk, kh, cap, d), provider=p["provider"], access={"chunk": chunk}
         )
-        encode = writer_arguments(codec.require("write"))
-        read = cache_arguments(codec.read)
+        encode = bind_arguments(codec, "write")
+        read = bind_arguments(codec, "read")
     else:
-        from akas.quantization._shared.rounding import round_half
+        from akas.quantization.storage.rounding import round_values
 
-        rounded = round_half()
+        rounded = round_values("float16")
 
         @T.macro
         def read(cache, metadata, slot, head, position, channel):
@@ -719,17 +719,17 @@ def cache_write(spec: KernelSpec, schedule: Mapping[str, object]):
     if quantized:
         from akas.quantization.kv import get
 
-        from akas.quantization._shared.access import cache_arguments, writer_arguments
+        from akas.quantization.storage.access import bind_arguments
 
         codec = get(p["kv_dtype"]).bind(
             (r // chunk, kh, cap, d), provider=p["provider"], access={"chunk": chunk}
         )
-        encode = writer_arguments(codec.require("write"))
-        read = cache_arguments(codec.read)
+        encode = bind_arguments(codec, "write")
+        read = bind_arguments(codec, "read")
     else:
-        from akas.quantization._shared.rounding import round_half
+        from akas.quantization.storage.rounding import round_values
 
-        rounded = round_half()
+        rounded = round_values("float16")
 
     @kernel
     def compute(
@@ -1222,7 +1222,7 @@ def chunk_active(spec: KernelSpec, schedule: Mapping[str, object]):
     return compute
 
 
-def _normalization(p, query):
+def cache_normalization(p, query):
     import math
     import tilelang.language as T
 
@@ -1346,9 +1346,9 @@ def window_cache(spec, schedule):
     r, kh, d, cap, chunk = (p[k] for k in ("r", "kh", "d", "capacity", "chunk"))
     shape = (r // chunk, kh, cap, d)
     if p.get("provider") == "webgpu":
-        from akas.quantization._shared.rounding import round_half
+        from akas.quantization.storage.rounding import round_values
 
-        rounded = round_half()
+        rounded = round_values("float16")
 
     @kernel
     def compute(
@@ -1780,3 +1780,6 @@ def causal_grouped(spec, schedule):
         return out
 
     return compute
+
+
+_normalization = cache_normalization

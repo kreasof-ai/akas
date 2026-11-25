@@ -10,9 +10,10 @@ import subprocess
 import sys
 import time
 
-from akas.benchmarking.history import Recorder, digest, write
+from akas.benchmarking.history import Recorder
+from akas.benchmarking.provenance import digest, write
 from akas.benchmarking.workload import STANDARD
-from akas.cli import checkpoint_digest
+from akas.checkpoints.identity import checkpoint_digest
 
 
 def model_definition(directory, name):

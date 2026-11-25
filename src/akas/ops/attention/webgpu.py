@@ -1,7 +1,7 @@
 """WebGPU specializations and shared bindings for attention."""
 
 from collections.abc import Mapping
-from akas.kernels.definition import KernelSpec
+from akas.kernels.spec import KernelSpec
 from akas.kernels.kernel import Tensor, kernel, output
 
 
@@ -9,7 +9,7 @@ def qk_norm_rotary_cache(spec, schedule):
     """Prepare normalized/rotated Q and the final FP16 KV in one dispatch."""
     import tilelang.language as T
     from akas.kernels.webgpu import subgroup_reduce
-    from akas.quantization._shared.rounding import round_half
+    from akas.quantization.storage.rounding import round_values
 
     p = {**spec.parameters, **schedule}
     rows, heads, kh, d, rot, cap, stride, blocks, cache_cap, chunk = (
@@ -32,7 +32,7 @@ def qk_norm_rotary_cache(spec, schedule):
     eps, half = p["eps"], rot // 2
     pair = d // 2 if p.get("full_head_pairs", False) else half
     shape = (rows, kh, cache_cap, d)
-    reduce, rounded = subgroup_reduce(d), round_half()
+    reduce, rounded = subgroup_reduce(d), round_values("float16")
 
     @T.macro
     def prepare(
@@ -1697,7 +1697,7 @@ def scores(spec: KernelSpec, schedule: Mapping[str, object]):
 
 def attention_scores(spec: KernelSpec, schedule: Mapping[str, object]):
     from akas.ops.attention.webgpu import scores as attention_scores_kernel
-    from akas.kernels.definition import KernelSpec
+    from akas.kernels.spec import KernelSpec
 
     p = {**spec.parameters, **schedule}
     return attention_scores_kernel(KernelSpec("scores", p), {})
@@ -1716,7 +1716,7 @@ def qkv_mapped_webgpu(spec: KernelSpec, schedule: Mapping[str, object]):
     projection = 2 * heads * d + 2 * kh * d
     if p.get("kv_dtype") == "fp8":
         from akas.kernels.reductions import tree_reduce
-        from akas.quantization._shared.e4m3 import portable_scaling
+        from akas.quantization.storage.e4m3 import portable_scaling
 
         portable_scale, encode_scaled = portable_scaling()
         maximum = tree_reduce(128, "max")
@@ -2058,18 +2058,6 @@ def mapped_webgpu(spec: KernelSpec, schedule: Mapping[str, object]):
     return compute
 
 
-from .kernel import (
-    attention as shared_attention,
-    attention_flat,
-    cache_extent,
-    cache_pad,
-    cache_write,
-    chunk_active,
-    merge_floating,
-    partial_floating,
-    prepare_flat,
-    rope,
-)
 from .definition import IMPLEMENTATIONS as _CHOICES
 
 IMPLEMENTATIONS = tuple((choice for choice in _CHOICES if choice.provider == "webgpu"))
@@ -3526,7 +3514,7 @@ def projected_gate_merge(spec, schedule):
     import tilelang.language as T
     from akas.kernels.webgpu import subgroup_reduce
     from akas.quantization.weights.ggml.definition import weight_storage
-    from akas.quantization._shared.packing import packed_loads
+    from akas.quantization.storage.packing import packed_loads
 
     p = {**spec.parameters, **schedule}
     r, h, d, splits, k = (p[n] for n in ("r", "h", "d", "splits", "k"))

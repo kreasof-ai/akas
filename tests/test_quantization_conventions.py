@@ -5,7 +5,6 @@ import subprocess
 import sys
 from importlib import import_module
 from types import SimpleNamespace
-import pytest
 from akas.memory.state import BufferSpec
 from akas.quantization import Format, Storage, get
 

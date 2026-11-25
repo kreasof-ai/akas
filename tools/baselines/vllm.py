@@ -1,11 +1,11 @@
 """vLLM eager preflight: the same input/output protocol as other baseline workers."""
 
-from tools.baselines.common import main, synthetic_prompts, measurements, phase_metrics, stream_burst
+from tools.baselines.common import main, synthetic_prompts, measurements
+from akas.benchmarking.streaming import phase_metrics, stream_burst
 
 
 def run(config):
     import dataclasses
-    import time
     import torch
     import vllm
     from vllm import LLM, SamplingParams

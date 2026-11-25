@@ -1,13 +1,13 @@
 """Run provenance, accounting, immutable history and safe incumbent reuse."""
 
 import json
-from pathlib import Path
 import subprocess
 import tarfile
 
 import pytest
 
-from akas.benchmarking.history import Recorder, digest, export_profile, records, write
+from akas.benchmarking.history import Recorder, export_profile, records
+from akas.benchmarking.provenance import digest, write
 
 
 @pytest.fixture

@@ -1,7 +1,7 @@
 """Contracts and implementation choices for vocabulary."""
 
-from akas.kernels.contracts import OutputABI
-from akas.kernels.contracts import Implementation
+from akas.kernels.spec import OutputABI
+from akas.kernels.spec import Implementation
 from akas.ops.vocabulary.validation import VALIDATIONS as VALIDATIONS
 
 
@@ -308,10 +308,11 @@ OUTPUT_ARGUMENTS["reference"].update(
 IMPLEMENTATIONS += tuple(
     Implementation(
         kind,
-        f"akas.ops.vocabulary.{provider}",
+        "akas.ops.vocabulary.kernel",
         "reference",
         provider=provider,
         factory=kind,
+        name=f"akas.ops.vocabulary.{provider}:{kind}",
     )
     for provider in ("cuda", "webgpu")
     for kind in ("argmax_partial", "argmax_merge")

@@ -6,7 +6,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from akas.benchmarking.history import digest, utc, write
+from akas.benchmarking.provenance import digest, utc, write
 from tools.campaign_report import (
     SCHEMA,
     measurement,

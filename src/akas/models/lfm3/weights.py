@@ -8,12 +8,11 @@ from pathlib import Path
 from akas.checkpoints.gguf import GGUF
 from akas.checkpoints.safetensors import (
     inspect_tensors,
-    json_document,
     tensor_index,
     read_float_tensor,
     read_tensor,
-    block_fp8_config,
 )
+from akas.checkpoints.metadata import json_document, block_fp8_config
 from akas.models.lfm3.config import LFM3Config
 from akas.text.tokenizer import Tokenizer
 
@@ -197,7 +196,7 @@ class LFM3Checkpoint:
             return read_float_tensor(self.tensors[hf]).reshape(
                 tensor_shapes(self.config)[name]
             )
-        from akas.quantization._shared.e4m3 import decode_storage
+        from akas.quantization.host import decode_storage
 
         bits = self._fp8_bits(hf)
         scale = read_float_tensor(self.tensors[self.scales[hf]])

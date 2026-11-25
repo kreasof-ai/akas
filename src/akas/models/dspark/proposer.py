@@ -16,7 +16,7 @@ def load(
 ):
     """Open a paired draft from deployment data, checking supplied identities."""
     from pathlib import Path
-    from akas.artifacts.write import checksum
+    from akas.benchmarking.provenance import digest as checksum
     from akas.models.dspark.model import DSparkDraft
 
     if (

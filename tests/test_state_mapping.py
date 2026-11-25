@@ -3,7 +3,6 @@
 import os
 import numpy as np
 import pytest
-from pathlib import Path
 from support.migration import source as export_kernel
 from akas.compilation.emit import build_artifact
 
@@ -190,7 +189,7 @@ def test_mapped_restore_flattens_view_indices_using_view_shape(
         accepted=accepted,
         lengths=accepted,
     )
-    from akas.kernels.contracts import Implementation
+    from akas.kernels.spec import Implementation
 
     catalog = (
         (
@@ -386,8 +385,7 @@ def test_cuda_reinterpreted_state_reads_reordered_slots(tmp_path):
     if os.environ.get("AKAS_LFM_MOE_CUDA") != "1":
         pytest.skip("opt-in FP8 view mapping qualification")
     import tensor
-    from tensor.artifacts.format import read_artifact
-    from akas.quantization._shared.e4m3 import decode_storage
+    from akas.quantization.host import decode_storage
 
     entry = tmp_path / "view.py"
     entry.write_text("""

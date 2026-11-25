@@ -1,5 +1,7 @@
 """Shared TileLang computations for ggml."""
 
+from akas.quantization.storage.ggml import ENCODINGS
+
 
 def weight_decoder(kind, depth, *, packed_words=False):
     """Inline the exact GGML scalar decoder into a caller's TIRx function."""
@@ -10,9 +12,8 @@ def weight_decoder(kind, depth, *, packed_words=False):
     if kind == 13:
         return q5_decoder(depth, packed_words=packed_words)
     import tilelang.language as T
-    from akas.quantization.weights.ggml.definition import ENCODINGS as TYPES
 
-    _, block, size = TYPES[kind]
+    _, block, size = ENCODINGS[kind]
 
     @T.macro
     def byte(w, base, offset):
@@ -163,7 +164,8 @@ def prepack_host(data):
 
 def decode_host(data, kind):
     import numpy as np
-    from .definition import ENCODINGS as TYPES
+
+    TYPES = ENCODINGS
 
     raw = np.asarray(data, dtype=np.uint8).reshape(-1)
     if kind not in TYPES:
@@ -241,12 +243,12 @@ def decode_host(data, kind):
 def dequantize(spec, schedule, *, provider):
     import tilelang.language as T
     from akas.kernels.kernel import Tensor, kernel, output
-    from .definition import FORMAT
+    from akas.quantization.formats import get
 
     p = {**spec.parameters, **schedule}
     rows, depth = p["r"], p["k"]
     encoding = p["type"]
-    binding = FORMAT.bind(
+    binding = get("weights", "ggml").bind(
         (rows, depth),
         provider=provider,
         encoding=encoding,
@@ -257,9 +259,9 @@ def dequantize(spec, schedule, *, provider):
     dtype = p.get("output_dtype", "float32")
     if dtype not in ("float16", "float32"):
         raise ValueError("dequantization output must be F16 or F32")
-    from akas.quantization._shared.rounding import round_half
+    from akas.quantization.storage.rounding import round_values
 
-    rounded = round_half()
+    rounded = round_values("float16")
 
     @kernel
     def compute(w: Tensor(values.shape, values.dtype)) -> Tensor((rows, depth), dtype):
@@ -354,7 +356,7 @@ def planar_reader(shape):
     """One shared F32 reader over separated Q4_0 bytes and unchanged F16 scales."""
     from math import prod
     import tilelang.language as T
-    from akas.quantization._shared.rounding import half_bits
+    from akas.quantization.storage.rounding import half_bits
 
     depth = shape[-1]
     blocks = prod(shape) // 32

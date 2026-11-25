@@ -131,7 +131,7 @@ A mutated state input must also appear in the explicit result tuple. See the
 In `validation.py`, compute expectations without calling the device kernel:
 
 ```python
-from akas.kernels.contracts import ValidationCase, sample_arguments
+from akas.validation import ValidationCase, sample_arguments
 
 
 def validation(kind, parameters, signature):
@@ -144,7 +144,7 @@ def validation(kind, parameters, signature):
 In `definition.py`, declare writes, qualification and both provider bindings:
 
 ```python
-from akas.kernels.contracts import Implementation, OutputABI
+from akas.kernels.spec import Implementation, OutputABI
 from akas.ops.square.validation import validation
 
 OUTPUT_ARGUMENTS = {"reference": {"square": OutputABI((-1,), ("out",))}}

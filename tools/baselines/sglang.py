@@ -1,10 +1,10 @@
 """SGLang eager preflight using the common worker protocol."""
 
-from tools.baselines.common import main, synthetic_prompts, measurements, phase_metrics, stream_burst
+from tools.baselines.common import main, synthetic_prompts, measurements
+from akas.benchmarking.streaming import phase_metrics, stream_burst
 
 
 def run(config):
-    import time
     import torch
     import sglang
 

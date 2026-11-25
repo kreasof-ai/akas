@@ -1,32 +1,8 @@
 """Definition definitions for kernels."""
 
-from collections.abc import Mapping
-from dataclasses import dataclass, field
 from importlib import import_module
 
-
-@dataclass(frozen=True)
-class KernelSpec:
-    kind: str
-    parameters: Mapping = field(default_factory=dict)
-    contract: str = "reference"
-    phase: str = "forward"
-
-    def __post_init__(self):
-        if not self.kind or not self.contract or (not self.phase):
-            raise ValueError("kernel kind, contract and phase must be nonempty")
-        if not isinstance(self.parameters, Mapping):
-            raise TypeError("kernel parameters must be a mapping")
-
-
-@dataclass(frozen=True)
-class Capabilities:
-    provider: str = "cuda"
-    target: str | None = None
-
-    def __post_init__(self):
-        if self.provider not in ("cuda", "webgpu"):
-            raise ValueError(f"unsupported kernel provider {self.provider!r}")
+from akas.kernels.spec import Capabilities, KernelSpec, _check_schedule
 
 
 def definition(spec, schedule=None, capabilities=None, *, preferred=None, catalog=None):
@@ -60,19 +36,6 @@ def definition(spec, schedule=None, capabilities=None, *, preferred=None, catalo
         tuple((name for name, _ in implementation.space)),
     )
     return (implementation, schedule)
-
-
-def _check_schedule(parameters, schedule, semantic_keys, axes):
-    protected = set(parameters) if semantic_keys is None else set(semantic_keys)
-    if set(schedule) & protected:
-        raise ValueError("schedule cannot override semantic parameters")
-    if (set(schedule) & set(parameters)) - set(axes):
-        raise ValueError("schedule cannot override semantic parameters")
-    unsupported = set(schedule) - set(axes)
-    if unsupported:
-        raise ValueError(
-            f"schedule contains undeclared kernel axes: {sorted(unsupported)}"
-        )
 
 
 def define(spec, schedule=None, capabilities=None, implementation=None):

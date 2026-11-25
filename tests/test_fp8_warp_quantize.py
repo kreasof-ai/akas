@@ -13,7 +13,7 @@ import pytest
 def test_warp_quantization_preserves_codes_and_scales(tmp_path, dtype, top):
     import tensor
     from akas.kernels.definition import definition, define
-    from akas.kernels.registry import validation
+    from akas.ops.planning import validation
     from akas.compilation.selection import selected_source
     from tensor.compiler.frontend.signature import frontend_arguments
 

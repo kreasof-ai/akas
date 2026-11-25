@@ -2,8 +2,7 @@
 
 
 def validation(kind, p, signature):
-    import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     expected = {name: value.copy() for name, value in values.items()}
@@ -22,7 +21,7 @@ def validation(kind, p, signature):
 def bank_validation(kind, p, signature):
     import numpy as np
 
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     index = p["index"]
@@ -38,7 +37,7 @@ def bank_validation(kind, p, signature):
 
 
 def scaled_residual_validation(kind, p, signature):
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     out = (

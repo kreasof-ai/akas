@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 import numpy as np
-from akas.benchmarking.history import digest
+from akas.benchmarking.provenance import digest
 from akas.benchmarking.state import RecurrentSnapshot
 from akas.benchmarking.workload import prompt_digest
 from tools.lfm3_vulkan_benchmark import PROFILE

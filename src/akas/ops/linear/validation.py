@@ -2,10 +2,9 @@
 
 
 def projection_validation(kind, p, signature):
-    import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
     from akas.quantization.weights.ggml.validation import sample_weight
-    from akas.quantization._shared.access import restore_order
+    from akas.quantization.host import restore_order
 
     values = sample_arguments(signature)
     depth = p["k"]
@@ -43,7 +42,7 @@ def projection_validation(kind, p, signature):
 def staged_projection_validation(kind, p, signature):
     from math import erf, sqrt
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     r, k, o = (p[name] for name in ("r", "k", "o"))
@@ -75,9 +74,9 @@ def staged_projection_validation(kind, p, signature):
 
 def pipeline_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
     from akas.ops.linear.validation import validation as reference
-    from akas.quantization._shared.e4m3 import decode_storage
+    from akas.quantization.host import decode_storage
 
     if kind == "projection_merge":
         values = sample_arguments(signature)
@@ -117,7 +116,7 @@ def validation(kind, p, signature):
     if p.get("q16") or kind in ("linear_q16", "ffn_q16"):
         return q16_projection_validation(kind, p, signature)
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     expected = {
@@ -204,7 +203,7 @@ def validation(kind, p, signature):
             )
         return ValidationCase(values, expected)
     if "scales" in values:
-        from akas.quantization._shared.e4m3 import decode_storage, encode_storage
+        from akas.quantization.host import decode_storage, encode_storage
 
         rng = np.random.default_rng(31)
         values["w"][:] = encode_storage(rng.normal(0, 1, values["w"].shape))
@@ -277,8 +276,8 @@ VALIDATIONS = {
 def quantized_validation(kind, parameters, signature):
     """Check encoded operands independently, including explicit FP16 staging."""
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
-    from akas.quantization._shared.e4m3 import encode_storage, decode_storage
+    from akas.validation import ValidationCase, sample_arguments
+    from akas.quantization.host import encode_storage, decode_storage
     from akas.quantization.activations.q16.validation import (
         encode as encode_q16,
         decode as decode_q16,
@@ -373,7 +372,7 @@ def _sample_projection_weight(buffer, encoding, width, depth, *, aligned, seed=3
 
 def q8_signed_projection_validation(kind, parameters, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     rows, depth, width = (parameters[n] for n in ("r", "k", "o"))
     values = sample_arguments(signature)
@@ -407,7 +406,7 @@ def q8_signed_projection_validation(kind, parameters, signature):
 
 def q16_projection_validation(kind, parameters, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
     from akas.quantization.activations.q16.validation import encode, decode
 
     values = sample_arguments(signature)
@@ -446,7 +445,7 @@ def q16_projection_validation(kind, parameters, signature):
 
 def half_input_validation(kind, parameters, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     edges = np.array(
@@ -478,7 +477,7 @@ def half_input_validation(kind, parameters, signature):
 def geglu_projection_validation(kind, p, signature):
     import math
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
     from akas.quantization.weights.ggml.validation import sample_weight, decode_rows
 
     values = sample_arguments(signature)
@@ -507,7 +506,7 @@ def geglu_projection_validation(kind, p, signature):
 
 def q4_q8_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
     from akas.quantization.weights.ggml.validation import sample_weight
 
     v = sample_arguments(signature)
@@ -537,7 +536,7 @@ def q4_q8_validation(kind, p, signature):
 
 def q4_q8_ffn_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase
+    from akas.validation import ValidationCase
 
     r, o = p["r"], p["o"]
     projection_signature = [
@@ -568,3 +567,17 @@ def q4_q8_ffn_validation(kind, p, signature):
         atol=1e-9,
         comparators={"out": packed},
     )
+
+
+VALIDATIONS["matmul"] = validation
+VALIDATIONS["linear_half_input"] = half_input_validation
+VALIDATIONS.update(
+    {name: pipeline_validation for name in ("projection_partial", "projection_merge")}
+)
+VALIDATIONS["quantized_linear"] = quantized_validation
+VALIDATIONS["quantized_projection"] = projection_validation
+VALIDATIONS["geglu_linear"] = geglu_projection_validation
+VALIDATIONS["q4_q8_linear"] = q4_q8_validation
+VALIDATIONS["q4_q8_ffn"] = q4_q8_ffn_validation
+VALIDATIONS["linear_bias_activation"] = staged_projection_validation
+VALIDATIONS["linear_w16a16"] = staged_projection_validation

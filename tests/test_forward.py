@@ -13,7 +13,7 @@ from akas.compilation.compile import plan as compile_plan
 from akas.compilation.tuning import Measurement
 from akas.compilation.tuning import Workload
 from akas.compilation.tuning import tune
-from akas.kernels.registry import Implementation
+from akas.kernels.spec import Implementation
 from akas.kernels.registry import select
 from examples.graphs.residual.config import Config
 from examples.graphs.residual.graph import compose
@@ -603,7 +603,7 @@ def test_beam_search_accepts_improvement_when_an_unchanged_workload_ties():
 
 def test_operation_owner_can_extend_row_pruning_and_fusion(monkeypatch):
     from akas.compilation.rewrites import optimize
-    from akas.kernels.registry import planning_rules
+    from akas.ops.planning import planning_rules
 
     original = planning_rules()
     forward = Graph(contract="reference")

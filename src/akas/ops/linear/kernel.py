@@ -2,14 +2,14 @@
 
 from akas.kernels.kernel import Tensor, kernel, output
 from collections.abc import Mapping
-from akas.kernels.definition import KernelSpec
+from akas.kernels.spec import KernelSpec
 
 
 def projection(spec, schedule, *, provider):
     """Tiled fused projection over independently encoded weight pieces."""
     import tilelang.language as T
     from akas.quantization import Codec, Storage
-    from akas.quantization._shared.access import matrix_tile
+    from akas.quantization.storage.access import bind_reader
     from akas.quantization.weights import bind_parts
     from akas.memory.state import BufferSpec
 
@@ -25,7 +25,7 @@ def projection(spec, schedule, *, provider):
     left = Codec(
         Storage(BufferSpec((rows, depth), dtype)),
         read_left,
-        matrix_tile(read_left, (rows, depth)),
+        bind_reader(read_left, (rows, depth))[1],
     )
     algorithm = _quantized_matmul(p, left, right, provider=provider)
     buffers = right.storage.buffers
@@ -187,7 +187,7 @@ def quantized_linear(spec: KernelSpec, schedule: Mapping[str, object], *, provid
     import tilelang.language as T
     from akas.memory.state import BufferSpec
     from akas.quantization import Codec, Storage, get
-    from akas.quantization._shared.access import matrix_tile
+    from akas.quantization.storage.access import bind_reader
     from akas.quantization.weights import bind
 
     p = {**spec.parameters, **schedule}
@@ -202,7 +202,7 @@ def quantized_linear(spec: KernelSpec, schedule: Mapping[str, object], *, provid
         left = Codec(
             Storage(BufferSpec((rows, depth), "float32")),
             read_float,
-            matrix_tile(read_float, (rows, depth)),
+            bind_reader(read_float, (rows, depth))[1],
         )
     else:
         left = get("activations", activation).bind((rows, depth), provider=provider)
@@ -297,7 +297,6 @@ def quantized_linear(spec: KernelSpec, schedule: Mapping[str, object], *, provid
 
 def cuda_abi(p, algorithm, paired=False, add_residual=False):
     """Select the fused operator ABI without generating Python signatures."""
-    import tilelang.language as T
     from akas.quantization.weights.ggml.definition import weight_storage
 
     r, k, o, q = (p[n] for n in ("r", "k", "o", "type"))
@@ -341,7 +340,6 @@ def cuda_abi(p, algorithm, paired=False, add_residual=False):
 
 
 def webgpu_abi(p, algorithm, paired=False, add_residual=False):
-    import tilelang.language as T
     from akas.quantization.weights.ggml.definition import weight_storage
 
     r, k, o, q = (p.get("r", 1), p["k"], p["o"], p["type"])

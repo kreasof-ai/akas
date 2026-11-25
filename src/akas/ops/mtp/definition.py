@@ -1,7 +1,7 @@
 """Contracts and implementation choices for mtp."""
 
-from akas.kernels.contracts import OutputABI
-from akas.kernels.contracts import Implementation
+from akas.kernels.spec import OutputABI
+from akas.kernels.spec import Implementation
 from akas.ops.mtp.validation import validation
 
 OUTPUT_ARGUMENTS = {}

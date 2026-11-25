@@ -216,7 +216,7 @@ def test_cuda_numerical_reference(tmp_path, kind, parameters):
     from tensor.artifacts.format import read_artifact
     from akas.compilation.emit import build_artifact
     from akas.compilation.selection import source
-    from akas.kernels.registry import validation
+    from akas.ops.planning import validation
 
     entry, artifact = tmp_path / "kernel.py", tmp_path / "kernel.tbin"
     entry.write_text(

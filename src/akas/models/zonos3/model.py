@@ -9,11 +9,11 @@ from types import SimpleNamespace
 import numpy as np
 
 from akas.artifacts.read import read_forward, read_forward_set
-from akas.artifacts.write import checksum
+from akas.benchmarking.provenance import digest as checksum
 from akas.execution.forward import Forward
 from akas.graph import Graph
 from akas.memory.transfer import write_many
-from akas.models.zonos3.config import LANGUAGES
+from akas.models.zonos3.config import LANGUAGES, SILENCE, SILENCE_FRAMES
 from akas.models.zonos3.weights import (
     CODEBOOK_EMBEDDING,
     CODEBOOK_HEAD,
@@ -132,7 +132,7 @@ def compose_backbone(
     def weight(name):
         if name not in g.buffers:
             checkpoint.graph_weight(g, name, provider=provider)
-        return g.buffers[name]
+        return g.buffer_at(name)
 
     if embed_frames:
         cond_rows = sum(b + 1 for b in c.condition_buckets)
@@ -449,7 +449,7 @@ def compose_codec(checkpoint, *, frames, provider):
             if table[name].type != 0:
                 raise ValueError(f"ZONOS3 codec weight must be F32: {name}")
             checkpoint.graph_weight(graph, name, provider=provider)
-        return graph.buffers[name]
+        return graph.buffer_at(name)
 
     def dense(x, name):
         tensor_name = name + ".weight"
@@ -768,10 +768,6 @@ class Zonos3Mini:
 
     def __exit__(self, *args):
         self.close()
-
-
-SILENCE = (1918, 746, 3544, 234, 1267, 2914, 3944, 2849, 326, 1337)
-SILENCE_FRAMES = 3
 
 
 @dataclass(frozen=True)

@@ -424,7 +424,7 @@ class Checkpoint:
     def read(self, name):
         """Decode a mapped tensor for inspection, restoring native Qwen ordering."""
         import numpy as np
-        from akas.quantization._shared.access import restore_order
+        from akas.quantization.host import restore_order
 
         sources = self.groups.get(name, (name,))
         arrays = []
@@ -457,7 +457,7 @@ class Checkpoint:
 
     def upload(self, device, *, branch="text"):
         import numpy as np
-        from akas.quantization._shared.packing import pack_words
+        from akas.quantization.host import pack_words
 
         if branch not in ("text", "mtp", "all"):
             raise GGUFError("invalid Qwen GGUF upload branch")

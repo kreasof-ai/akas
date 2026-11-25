@@ -95,7 +95,7 @@ def test_q5_k_has_independent_high_bits_scales_and_minima():
 
 def test_grouped_value_order_is_restored_for_rows_columns_and_vectors():
     # Use four V heads per K head, so the permutation is not the identity.
-    from akas.quantization._shared.access import restore_order
+    from akas.quantization.host import restore_order
 
     source = np.arange(8 * 3).reshape(8, 3)
     tiled = source.reshape(2, 4, 3).transpose(1, 0, 2).reshape(8, 3)
@@ -248,7 +248,7 @@ def test_encoded_consumer_native_qualification(tmp_path, provider, kind, paramet
     from tensor.artifacts.format import read_artifact
     from akas.compilation.emit import build_artifact
     from akas.compilation.selection import source
-    from akas.kernels.registry import validation
+    from akas.ops.planning import validation
 
     entry = tmp_path / "kernel.py"
     artifact = tmp_path / "kernel.tbin"

@@ -22,7 +22,7 @@ def resolve(policy, schedules, parameters, *, provider, target):
     )
     if not names:
         return options
-    from akas.kernels.registry import planning_rules
+    from akas.ops.planning import planning_rules
 
     families = {
         module.__name__.split(".")[-2]
@@ -52,7 +52,7 @@ def lower(graph, commit=None, *, policy=None, provider="cuda", target=None):
     """
     if not policy:
         return graph, commit
-    from akas.kernels.registry import planning_rules
+    from akas.ops.planning import planning_rules
 
     options = dict(policy or {})
     callbacks = {
@@ -84,7 +84,7 @@ def lower(graph, commit=None, *, policy=None, provider="cuda", target=None):
 
 def candidates(graph, *, provider, target, commit=None):
     """Ask operations for applicable pipeline alternatives, including a baseline."""
-    from akas.kernels.registry import planning_rules
+    from akas.ops.planning import planning_rules
 
     alternatives = [{}]
     combined = {}

@@ -5,7 +5,7 @@ import json
 
 import pytest
 
-from akas.benchmarking.history import write
+from akas.benchmarking.provenance import write
 from tools.vulkan_link import link
 
 

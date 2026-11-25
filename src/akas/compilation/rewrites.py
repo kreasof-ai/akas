@@ -34,7 +34,7 @@ def last_rows(plan):
     from math import prod
 
     from akas.graph import Call
-    from akas.kernels.registry import row_independent
+    from akas.ops.planning import row_independent
 
     last = next(
         (i for i, call in enumerate(plan.calls) if call.kind == "chunk_last"), None
@@ -132,7 +132,7 @@ def causal_tail(plan, *, tail=8):
     from math import prod
 
     from akas.graph import Call
-    from akas.kernels.registry import graph_outputs, row_independent
+    from akas.ops.planning import graph_outputs, row_independent
 
     caches = [i for i, call in enumerate(plan.calls) if call.kind == "cache_write"]
     selectors = [i for i, call in enumerate(plan.calls) if call.kind == "chunk_last"]
@@ -325,7 +325,7 @@ def causal_tail(plan, *, tail=8):
 
 def optimize(plan):
     """Apply row pruning and rewrites declared by operation owners."""
-    from akas.kernels.registry import rewrites
+    from akas.ops.planning import rewrites
 
     plan = last_rows(causal_tail(plan))
     for rewrite in rewrites():
@@ -356,8 +356,8 @@ def deferred_state(verification):
     banks = graph.buffer(prefix + "banks", (pool,), "int32", role="state")
     materialize = Graph(contract="bf16", phase="materialize")
     mapping = materialize.buffer("mapping", (slots,), "int32", role="input")
-    materialize.buffers.update(
-        {name: value for name, value in graph.buffers.items() if value.role == "state"}
+    materialize.attach_buffers(
+        value for value in graph.buffers.values() if value.role == "state"
     )
     commit = Graph(contract="bf16", phase="commit")
     replacement = {}
@@ -403,7 +403,7 @@ def deferred_state(verification):
             label=scan.label,
         )
         for value in saved:
-            materialize.buffers[value.name] = value
+            materialize.attach_buffers((value,))
         materialize(
             "gdn_materialize", params, mapping, names["state"], *saved, counts, banks
         )
@@ -412,35 +412,29 @@ def deferred_state(verification):
         for call in graph.calls
         if call.kind == "gdn_conv" and call.parameters.get("commit") is False
     ]
-    for conv in convs:
-        x, weight, request, lengths, state, out = conv.arguments
-        commit.calls.append(
-            Call(
-                "conv_commit",
-                dict(
-                    common,
-                    channels=conv.parameters["channels"],
-                    projection=conv.parameters["projection"],
-                ),
-                (x, request, lengths, state),
-            )
-        )
     scan = scans[0]
-    commit.calls.append(
-        Call(
-            "defer_accept",
-            common,
-            (scan.arguments[5], scan.arguments[6], counts.name, banks.name),
-        )
+    accept = (scan.arguments[5], scan.arguments[6], counts.name, banks.name)
+    controls = []
+    for call in convs:
+        x, _, request, lengths, state, _ = call.arguments
+        controls.append((call, (x, request, lengths, state)))
+    used = {name for _, bindings in controls for name in bindings} | set(accept)
+    commit.attach_buffers(
+        value for value in graph.buffers.values() if value.name in used
     )
+    for conv, bindings in controls:
+        commit(
+            "conv_commit",
+            dict(
+                common,
+                channels=conv.parameters["channels"],
+                projection=conv.parameters["projection"],
+            ),
+            *bindings,
+        )
+    commit("defer_accept", common, *accept)
     materialize("defer_clear", common, mapping, counts)
-    graph.calls = [replacement.get(id(call), call) for call in graph.calls]
-    used = {name for call in commit.calls for name in call.arguments}
-    commit.buffers = {
-        name: value for name, value in graph.buffers.items() if name in used
-    }
+    graph.replace_calls(replacement.get(id(call), call) for call in graph.calls)
     used = {name for call in materialize.calls for name in call.arguments}
-    materialize.buffers = {
-        name: value for name, value in materialize.buffers.items() if name in used
-    }
+    materialize.retain_buffers(used)
     return graph, commit, materialize, (counts.name, banks.name)

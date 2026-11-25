@@ -3,7 +3,7 @@
 
 def validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     p = {
@@ -65,7 +65,7 @@ def validation(kind, p, signature):
 
 def sigmoid_bias_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     expected = dict(values)
@@ -78,7 +78,7 @@ def sigmoid_bias_validation(kind, p, signature):
 def gated_validation(kind, p, signature):
     import math
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     expected = dict(values)
@@ -101,7 +101,7 @@ def gated_validation(kind, p, signature):
 def column_activation_validation(kind, p, signature):
     import math
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     x = values["x"].astype("float64") + values.get("bias", 0)

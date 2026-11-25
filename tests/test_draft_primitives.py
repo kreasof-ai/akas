@@ -1,7 +1,6 @@
 """Draft data movement remains functional, exact and shared across providers."""
 
 import os
-from pathlib import Path
 import numpy as np
 import pytest
 
@@ -27,7 +26,7 @@ def test_draft_primitive_gpu_matches_independent_numpy_and_preserves_sources(
     from akas.compilation.emit import build_artifact
     from akas.compilation.selection import selected_source
     from akas.kernels.definition import definition
-    from akas.kernels.registry import validation
+    from akas.ops.planning import validation
 
     spec = dict(kind=kind, parameters=p, contract="reference", phase="proposal")
     caps = dict(

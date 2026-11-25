@@ -1,7 +1,7 @@
 """WebGPU specializations and shared bindings for linear."""
 
 from collections.abc import Mapping
-from akas.kernels.definition import KernelSpec
+from akas.kernels.spec import KernelSpec
 from akas.kernels.kernel import Tensor, kernel, output
 
 
@@ -46,13 +46,17 @@ def _packed(p, paired=False, add_residual=False):
     from tensor.compiler.webgpu.schedules.register_matmul import register_matmul
     from akas.ops.linear.kernel import _epilogue as projection_epilogue
     from akas.ops.linear.kernel import webgpu_abi as projection_abi
-    from akas.quantization._shared.rounding import round_half, round_half_branch
+    from akas.quantization.storage.rounding import round_values
     from akas.quantization.weights.ggml.kernel import weight_decoder
 
     r, k, o, q = (p[n] for n in ("r", "k", "o", "type"))
     parts = 2 if paired else 1
     tm, tn, bk = p.get("tile", (16, 32, 64))
-    rounded = round_half_branch() if p.get("branch_staging", False) else round_half()
+    rounded = (
+        round_values("float16", fast_normal=True)
+        if p.get("branch_staging", False)
+        else round_values("float16")
+    )
     if p.get("weight_layout", "raw") == "planar":
         if q != 2:
             raise ValueError("planar dense projection requires Q4_0")
@@ -929,10 +933,10 @@ def half_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
 def half_input(spec: KernelSpec, schedule: Mapping[str, object]):
     """Round once before tiled reuse, including ties and half subnormals."""
     import tilelang.language as T
-    from akas.quantization._shared.rounding import round_half
+    from akas.quantization.storage.rounding import round_values
 
-    count = spec.parameters["r"] * spec.parameters["k"]
-    rounded = round_half()
+    count = spec.parameter("r") * spec.parameter("k")
+    rounded = round_values("float16")
 
     @kernel
     def compute(x: Tensor(count, "float32")) -> Tensor(count, "float16"):
@@ -959,7 +963,7 @@ def native_half_matmul(p, *, paired=False, add_residual=False, stage_input=None)
     from itertools import product
     from tensor.compiler.webgpu.schedules.registers import registers, shared_buffers
     from akas.ops.linear.kernel import _epilogue
-    from akas.quantization._shared.rounding import round_half
+    from akas.quantization.storage.rounding import round_values
     from akas.quantization.weights.ggml.kernel import weight_decoder
 
     r, k, o, q = (p[n] for n in ("r", "k", "o", "type"))
@@ -972,7 +976,7 @@ def native_half_matmul(p, *, paired=False, add_residual=False, stage_input=None)
     if pairs * 4 * (m + pad + parts * (n + pad)) > 32768:
         raise ValueError("short-half staging exceeds 32 KiB")
     rm, rn = m // mm, n // mn
-    rounded, decode = round_half(), weight_decoder(q, k, packed_words=True)
+    rounded, decode = round_values("float16"), weight_decoder(q, k, packed_words=True)
     if p.get("weight_layout", "raw") == "planar":
         from akas.quantization.weights.ggml.kernel import planar_reader
 
@@ -1184,7 +1188,6 @@ def kernel_linear(spec: KernelSpec, schedule: Mapping[str, object]):
 
 
 def linear_add(spec: KernelSpec, schedule: Mapping[str, object]):
-    from akas.ops.linear.webgpu import _integer as integer_prefill_kernel
     from akas.ops.linear.webgpu import _packed as prefill_kernel
     from akas.ops.linear.webgpu import gemv_packed as decode_kernel
 
@@ -1207,7 +1210,7 @@ def linear_q16(spec: KernelSpec, schedule: Mapping[str, object]):
 
 
 def linear_q8(spec: KernelSpec, schedule: Mapping[str, object]):
-    from akas.kernels.definition import KernelSpec
+    from akas.kernels.spec import KernelSpec
     from akas.ops.linear.webgpu import q8 as q8_kernel
 
     p = {**spec.parameters, **schedule}
@@ -1288,7 +1291,6 @@ def floating_linear(spec: KernelSpec, schedule: Mapping[str, object]):
 
 
 MINIMUM_MMA_GROUPS = 512
-from .kernel import linear as shared_linear, packed_linear
 from .definition import IMPLEMENTATIONS as _CHOICES
 
 IMPLEMENTATIONS = tuple((choice for choice in _CHOICES if choice.provider == "webgpu"))
@@ -1304,9 +1306,6 @@ def projection(spec, schedule):
     from .kernel import projection
 
     return projection(spec, schedule, provider="webgpu")
-
-
-from .kernel import column_projection as column_projection
 
 
 def _tiled_f32_algorithm(p, epilogue):
@@ -1375,7 +1374,7 @@ def tiled_f32_bias(spec, schedule):
 
 def _tiled_w16a16_algorithm(p, epilogue):
     import tilelang.language as T
-    from akas.quantization._shared.rounding import round_half_branch
+    from akas.quantization.storage.rounding import round_values
     from tensor.compiler.webgpu.schedules.outer_product import outer_product_matmul
 
     r, k, o = (p[key] for key in ("r", "k", "o"))
@@ -1389,7 +1388,7 @@ def _tiled_w16a16_algorithm(p, epilogue):
         r,
         k,
         o,
-        round_half_branch(),
+        round_values("float16", fast_normal=True),
         rhs,
         epilogue,
         tile_m=tile_m,

@@ -1,7 +1,7 @@
 """Contracts for fixed-size spectral and band-layout operations."""
 
-from akas.kernels.contracts import Implementation, OutputABI
-from akas.ops.spectral.validation import VALIDATIONS
+from akas.kernels.spec import Implementation, OutputABI
+from akas.ops.spectral.validation import VALIDATIONS as VALIDATIONS
 
 
 _OUTPUTS = {

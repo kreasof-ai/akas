@@ -52,7 +52,7 @@ def test_only_undefined_vulkan_binding_limit_is_capped(monkeypatch, limit, expec
 
 @pytest.mark.parametrize("mismatch", [None, "checkpoint", "tokens", "cache", "coverage", "ancestry_protocol"])
 def test_comparison_requires_matched_runs_and_regenerates(tmp_path, mismatch):
-    from akas.benchmarking.history import write
+    from akas.benchmarking.provenance import write
     from tools.campaign_report import check
     from tools.context_sweep import report
 

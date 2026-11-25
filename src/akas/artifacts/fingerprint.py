@@ -2,6 +2,7 @@
 
 import hashlib
 from importlib.util import find_spec
+from akas.benchmarking.provenance import source_hashes
 from pathlib import Path
 
 
@@ -26,16 +27,8 @@ def _modules(*owners):
     return names
 
 
-def _hashes(names):
-    # Resolve source paths without importing operation factories or compilers.
-    return {
-        name: hashlib.sha256(Path(find_spec(name).origin).read_bytes()).hexdigest()
-        for name in sorted(names)
-    }
-
-
 def backbone_hashes():
-    return _hashes(
+    return source_hashes(
         _modules(
             "artifacts.read",
             "artifacts.schema",
@@ -48,6 +41,7 @@ def backbone_hashes():
             "ops",
             "kernels",
             "quantization",
+            "validation",
             "checkpoints.upload",
         )
     )
@@ -88,7 +82,7 @@ def runtime_hashes(provider="cuda"):
         names.add("tensor.artifacts.webgpu")
     else:
         raise ValueError("unsupported fingerprint provider")
-    result = backbone_hashes() | _hashes(names)
+    result = backbone_hashes() | source_hashes(names)
     if provider == "webgpu":
         path = Path(find_spec("tensor").origin).parent / "native/webgpu_plan.c"
         result["tensor.native.webgpu_plan"] = hashlib.sha256(
@@ -102,22 +96,13 @@ def validate_implementation(manifest, expected):
         raise ValueError("program implementation changed; regenerate the AOT bundle")
 
 
-def _compiler_identity(provider):
-    if provider == "cuda":
-        path = Path(find_spec("tensor.compiler.cuda.lowering").origin)
-        result = {"lowering_sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
-        for module, key in (
-            ("tensor.compiler.frontend.signature", "signature_sha256"),
-            ("tensor.compiler.cuda.tensor_map", "tensor_map_sha256"),
-        ):
-            spec = find_spec(module)
-            if spec is not None:
-                result[key] = hashlib.sha256(Path(spec.origin).read_bytes()).hexdigest()
-        return result
-    from tensor.compiler.webgpu.identity import lowering_hash
+def compiler_identity(provider):
+    from akas.compilation.source import compiler_identity as compiler
 
-    producer = Path(find_spec("tensor.compiler.webgpu.build").origin)
-    return {
-        "lowering_sha256": lowering_hash(),
-        "producer_sha256": hashlib.sha256(producer.read_bytes()).hexdigest(),
-    }
+    return compiler(provider)
+
+
+_compiler_identity = compiler_identity
+
+
+_hashes = source_hashes

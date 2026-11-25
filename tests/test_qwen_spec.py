@@ -141,7 +141,6 @@ def test_recurrent_snapshots_restore_every_rejection_depth(tmp_path, chunk):
 )
 def test_convolution_history_restore_keeps_only_accepted_inputs(tmp_path):
     import tensor, torch
-    from support.migration import source as export_source
     from tensor.compiler.build import build_artifact
 
     slots, chunk, channels = 8, 4, 8192

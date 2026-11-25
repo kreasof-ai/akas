@@ -1943,7 +1943,7 @@
     "old_module": "akas.ops.linear.compose",
     "old_factory": "linear",
     "kind": null,
-    "module": "akas.ops.linear._composition",
+    "module": "akas.ops.linear.definition",
     "factory": "linear",
     "uniform": false
   },
@@ -1951,7 +1951,7 @@
     "old_module": "akas.ops.linear.compose",
     "old_factory": "packed_linear",
     "kind": null,
-    "module": "akas.ops.linear._composition",
+    "module": "akas.ops.linear.definition",
     "factory": "packed_linear",
     "uniform": false
   },
@@ -1959,7 +1959,7 @@
     "old_module": "akas.ops.linear.compose",
     "old_factory": "split_linear",
     "kind": null,
-    "module": "akas.ops.linear._composition",
+    "module": "akas.ops.linear.definition",
     "factory": "split_linear",
     "uniform": false
   },
@@ -2037,7 +2037,7 @@
     "old_module": "akas.quantization.weights.block_fp8",
     "old_factory": "decode_storage",
     "kind": null,
-    "module": "akas.quantization._shared.e4m3",
+    "module": "akas.quantization.host",
     "factory": "decode_storage",
     "uniform": false
   },
@@ -2045,7 +2045,7 @@
     "old_module": "akas.quantization.weights.block_fp8",
     "old_factory": "encode_storage",
     "kind": null,
-    "module": "akas.quantization._shared.e4m3",
+    "module": "akas.quantization.host",
     "factory": "encode_storage",
     "uniform": false
   },
@@ -2103,7 +2103,7 @@
     "old_module": "akas.quantization.weights.ggml",
     "old_factory": "pair_decoder",
     "kind": null,
-    "module": "akas.quantization.weights.ggml.kernel",
+    "module": "akas.quantization.weights.ggml.cuda",
     "factory": "pair_decoder",
     "uniform": false,
     "previous_module": "akas.quantization.weights.ggml.inline",
@@ -2143,7 +2143,7 @@
     "old_module": "akas.quantization.weights.storage",
     "old_factory": "half_bits",
     "kind": null,
-    "module": "akas.quantization._shared.rounding",
+    "module": "akas.quantization.storage.rounding",
     "factory": "half_bits",
     "uniform": false
   },
@@ -2151,7 +2151,7 @@
     "old_module": "akas.quantization.weights.storage",
     "old_factory": "round_half",
     "kind": null,
-    "module": "akas.quantization._shared.rounding",
+    "module": "akas.quantization.storage.rounding",
     "factory": "round_half",
     "uniform": false
   },
@@ -2159,7 +2159,7 @@
     "old_module": "akas.quantization.weights.storage",
     "old_factory": "packed_loads",
     "kind": null,
-    "module": "akas.quantization._shared.packing",
+    "module": "akas.quantization.storage.packing",
     "factory": "packed_loads",
     "uniform": false
   },

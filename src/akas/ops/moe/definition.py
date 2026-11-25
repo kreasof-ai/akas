@@ -1,29 +1,9 @@
 """Contracts and implementation choices for moe."""
 
-from akas.kernels.contracts import OutputABI
-from akas.kernels.contracts import Implementation
-from akas.ops.moe.validation import pipeline_validation as pipeline_validation
-from akas.ops.moe.validation import VALIDATIONS
-
-
-def tile_capacity(rows, top, experts, block_m):
-    """Bound nonempty expert tiles by both route count and partition overhead."""
-    if any(
-        type(value) is not int or value < 1 for value in (rows, top, experts, block_m)
-    ):
-        raise ValueError("expert tile geometry must contain positive integers")
-    routes = rows * top
-    return min(routes, (routes + block_m - 1) // block_m + experts - 1)
-
-
-def tile_layouts(parameters):
-    """Number of power-of-two row layouts declared by a shared route map."""
-    maximum = parameters.get("max_block_m", 64)
-    if type(maximum) is not int or maximum not in (4, 8, 16, 32, 64, 128):
-        raise ValueError(
-            "expert maximum row tile must be a supported power of two from 4 through 128"
-        )
-    return maximum.bit_length() - 2
+from akas.kernels.spec import OutputABI
+from akas.kernels.spec import Implementation
+from akas.ops.moe.validation import VALIDATIONS as VALIDATIONS
+from akas.ops.moe.kernel import tile_capacity, tile_layouts
 
 
 def routed_moe(
@@ -1123,7 +1103,6 @@ def _separate_expert_quantize(graph):
 
 
 def lower(graph, commit, settings, *, provider, target):
-    from akas.graph import Graph
     from akas.quantization import get
 
     allowed = {
@@ -1308,8 +1287,7 @@ def lower(graph, commit, settings, *, provider, target):
         (settings.get(name) for name in ("hopper", "compact", "resident_weights"))
     ):
         raise ValueError("fixed row groups use the native grouped projection layout")
-    recorder = Graph(contract=graph.contract, phase=graph.phase)
-    recorder.buffers = graph.buffers
+    recorder = graph.record_pass()
     calls = []
     maps = {}
     decode_routes = None
@@ -1333,8 +1311,7 @@ def lower(graph, commit, settings, *, provider, target):
                 experts,
                 routes,
             )
-            calls.extend(recorder.calls)
-            recorder.calls = []
+            calls.extend(recorder.take_calls())
             decode_routes = (experts, routes)
             quantized.clear()
             continue
@@ -1352,8 +1329,7 @@ def lower(graph, commit, settings, *, provider, target):
                 counts=counts,
                 routes=routes,
             )
-            calls.extend(recorder.calls)
-            recorder.calls = []
+            calls.extend(recorder.take_calls())
             decode_routes = (counts, routes)
             maps.clear()
             quantized.clear()
@@ -1490,8 +1466,7 @@ def lower(graph, commit, settings, *, provider, target):
                 out=output,
                 label=call.label,
             )
-        calls.extend(recorder.calls)
-        recorder.calls = []
+        calls.extend(recorder.take_calls())
     graph.calls = calls
     return (graph, commit)
 
@@ -1624,12 +1599,6 @@ for _contract in ("reference", "packed", "packed-baseline", "bf16", "block-fp8")
     )
 OUTPUT_ARGUMENTS["block-fp8"]["expert_tiles"] = OutputABI(
     (1, 2), ("tile_experts", "tile_offsets")
-)
-VALIDATIONS.update(
-    {
-        name: pipeline_validation
-        for name in ("expert_tiles", "expert_partial", "expert_merge")
-    }
 )
 IMPLEMENTATIONS = (
     Implementation(
@@ -1861,7 +1830,6 @@ IMPLEMENTATIONS += (
 OUTPUT_ARGUMENTS["reference"]["fp8_expert_swiglu"] = OutputABI(
     (-2, -1), ("out", "output_scales")
 )
-VALIDATIONS["fp8_expert_swiglu"] = pipeline_validation
 IMPLEMENTATIONS += (
     Implementation(
         "fp8_expert_swiglu",
@@ -1908,11 +1876,6 @@ OUTPUT_ARGUMENTS["bf16"].update(
         "quantized_experts": OutputABI((-1,), ("out",)),
     }
 )
-from .validation import encoded_validation
-
-VALIDATIONS.update(
-    {name: encoded_validation for name in ("quantized_routes", "quantized_experts")}
-)
 
 
 IMPLEMENTATIONS += tuple(
@@ -1937,12 +1900,7 @@ for _contract in ("reference",):
         }
     )
 
-from .validation import routed_validation, tile_validation
 
-VALIDATIONS.update(
-    {name: routed_validation for name in ("biased_router", "routed_combine")}
-)
-VALIDATIONS["expert_tile_map"] = tile_validation
 IMPLEMENTATIONS += tuple(
     Implementation(
         kind,
@@ -2098,7 +2056,6 @@ IMPLEMENTATIONS += tuple(
     for provider in ("cuda", "webgpu")
 )
 
-from .validation import expert_swiglu_validation
 
 IMPLEMENTATIONS += (
     Implementation(
@@ -2133,7 +2090,6 @@ IMPLEMENTATIONS += (
 )
 
 OUTPUT_ARGUMENTS["reference"]["expert_swiglu"] = OutputABI((-1,), ("out",))
-VALIDATIONS["expert_swiglu"] = expert_swiglu_validation
 
 IMPLEMENTATIONS += (
     Implementation(
@@ -2407,7 +2363,6 @@ IMPLEMENTATIONS += (
 )
 
 OUTPUT_ARGUMENTS["reference"]["expert_merge"] = OutputABI((-1,), ("out",))
-VALIDATIONS["expert_merge"] = pipeline_validation
 IMPLEMENTATIONS += (
     Implementation(
         "expert_merge",
@@ -2419,12 +2374,10 @@ IMPLEMENTATIONS += (
     ),
 )
 
-from .validation import paired_partial_validation
 
 OUTPUT_ARGUMENTS["reference"]["expert_pair_partial"] = OutputABI(
     (-2, -1), ("gate", "up")
 )
-VALIDATIONS["expert_pair_partial"] = paired_partial_validation
 IMPLEMENTATIONS += (
     Implementation(
         "expert_pair_partial",
@@ -2465,19 +2418,15 @@ IMPLEMENTATIONS += (
     ),
 )
 
-from .validation import pack_validation
 
 OUTPUT_ARGUMENTS["reference"]["expert_pack"] = OutputABI(
     (-3, -2, -1), ("packed", "packed_scales", "expert_offsets")
 )
-VALIDATIONS["expert_pack"] = pack_validation
 
-from akas.ops.moe.validation import biased_softmax_validation
 
 OUTPUT_ARGUMENTS["reference"]["biased_softmax_router"] = OutputABI(
     (2, 3), ("ids", "weights")
 )
-VALIDATIONS["biased_softmax_router"] = biased_softmax_validation
 IMPLEMENTATIONS += tuple(
     Implementation(
         "biased_softmax_router",

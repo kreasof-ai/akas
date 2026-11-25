@@ -1,8 +1,13 @@
 """Validate an LFM2 GGUF checkpoint and upload its packed weights."""
 
-from akas.checkpoints.gguf import GGUF, GGUFError
+from akas.checkpoints.gguf import GGUF
 from akas.checkpoints.upload import upload_packed
-from akas.models.lfm2.config import Config, LFM2MoEConfig
+from akas.models.lfm2.config import (
+    Config,
+    LFM2MoEConfig,
+    tensor_shapes,
+    validate_tensors,
+)
 from akas.text.tokenizer import Tokenizer
 
 
@@ -101,9 +106,8 @@ class NativeMoECheckpoint:
 
     def __init__(self, path, *, tokenizer=True):
         from pathlib import Path
+        from akas.checkpoints.metadata import json_document, block_fp8_config
         from akas.checkpoints.safetensors import (
-            json_document,
-            block_fp8_config,
             tensor_index,
             inspect_tensors,
             read_float_tensor,
@@ -275,78 +279,6 @@ class NativeWeights:
                 },
             ),
         )
-
-
-def tensor_shapes(config, *, output=False):
-    expected = {
-        "token_embd.weight": (config.vocab, config.width),
-        "token_embd_norm.weight": (config.width,),
-    }
-    for layer, kind in enumerate(config.layers):
-        p = f"blk.{layer}."
-        c = config.width
-        f = config.ff
-        d = config.head_dim
-        kh = config.kv_heads
-        expected.update(
-            {
-                p + "attn_norm.weight": (c,),
-                p + "ffn_norm.weight": (c,),
-            }
-        )
-        if isinstance(config, LFM2MoEConfig) and layer >= config.dense_layers:
-            e, f = config.experts, config.expert_width
-            expected.update(
-                {
-                    p + "ffn_gate_inp.weight": (e, c),
-                    p + "exp_probs_b.bias": (e,),
-                    p + "ffn_gate_exps.weight": (e, f, c),
-                    p + "ffn_up_exps.weight": (e, f, c),
-                    p + "ffn_down_exps.weight": (e, c, f),
-                }
-            )
-        else:
-            expected.update(
-                {
-                    p + "ffn_gate.weight": (f, c),
-                    p + "ffn_up.weight": (f, c),
-                    p + "ffn_down.weight": (c, f),
-                }
-            )
-        if kind == "conv":
-            expected.update(
-                {
-                    p + "shortconv.in_proj.weight": (3 * c, c),
-                    p + "shortconv.out_proj.weight": (c, c),
-                    p + "shortconv.conv.weight": (c, 3),
-                }
-            )
-        else:
-            expected.update(
-                {
-                    p + "attn_q.weight": (c, c),
-                    p + "attn_k.weight": (kh * d, c),
-                    p + "attn_v.weight": (kh * d, c),
-                    p + "attn_output.weight": (c, c),
-                    p + "attn_q_norm.weight": (d,),
-                    p + "attn_k_norm.weight": (d,),
-                }
-            )
-    if output:
-        expected["output.weight"] = (config.vocab, config.width)
-    return expected
-
-
-def validate_tensors(config, gguf):
-    expected = tensor_shapes(config, output="output.weight" in gguf.tensors)
-    if set(expected) != set(gguf.tensors):
-        raise GGUFError("unsupported/missing LFM2 tensor inventory")
-    for name, shape in expected.items():
-        if gguf.tensors[name].shape != shape:
-            raise GGUFError(f"{name}: incompatible LFM2 tensor shape")
-        if len(shape) == 1 or name.endswith(("conv.weight", "ffn_gate_inp.weight")):
-            if gguf.tensors[name].type != 0:
-                raise GGUFError(f"{name}: requires float32 auxiliary weights")
 
 
 class ReferenceCheckpoint:

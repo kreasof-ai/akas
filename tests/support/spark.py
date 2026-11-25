@@ -122,7 +122,7 @@ def oracle(checkpoint, tokens):
 
 
 def fp8_fixture(directory):
-    from akas.quantization._shared.e4m3 import encode_storage
+    from akas.quantization.host import encode_storage
     from akas.models.spark import SparkCheckpoint
 
     path = fixture(directory)

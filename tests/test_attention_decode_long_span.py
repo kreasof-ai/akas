@@ -14,8 +14,8 @@ def test_decode_full_groups(tmp_path,stages,mapped):
     from akas.compilation.emit import build_artifact
     from akas.compilation.selection import source
     from akas.compilation.state import mapped_source
-    from akas.kernels.registry import validation
-    from akas.kernels.contracts import mapped_validation
+    from akas.ops.planning import validation
+    from akas.validation import mapped_validation
     p=dict(r=2,h=8,kh=2,d=64,capacity=2176,splits=1,kv_dtype='float16',
            unit_scales=True,provider='cuda',optimized=True,key_rows=128,stages=stages,
            decode_precision='float16',copy_complete_tiles=True)
@@ -43,7 +43,7 @@ def test_rotary_short_context_precision(tmp_path):
     from tensor.artifacts.format import read_artifact
     from akas.compilation.emit import build_artifact
     from akas.compilation.selection import source
-    from akas.kernels.registry import validation
+    from akas.ops.planning import validation
     p=dict(r=256,h=32,d=64,theta=10000000.,provider='cuda',position_limit=2176)
     entry=tmp_path/'rope.py';artifact=tmp_path/'rope.tbin'
     entry.write_text(source('rope',p,contract='reference',target='sm_89').render())

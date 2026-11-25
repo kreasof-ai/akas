@@ -1,8 +1,8 @@
 """Contracts and implementation choices for sequence."""
 
-from akas.kernels.contracts import OutputABI
-from akas.kernels.contracts import Implementation
-from akas.ops.sequence.validation import tail_validation as tail_validation
+from akas.kernels.spec import OutputABI
+from akas.kernels.spec import Implementation
+from akas.ops.sequence.validation import tail_validation
 from akas.ops.sequence.validation import (
     VALIDATIONS,
     block_limit_validation,

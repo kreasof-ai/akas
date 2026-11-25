@@ -3,7 +3,7 @@
 import asyncio
 import pytest
 
-from tools.baselines.common import stream_burst
+from akas.benchmarking.streaming import stream_burst
 
 
 def test_streamed_burst_retains_each_request_and_delivery_chunks():

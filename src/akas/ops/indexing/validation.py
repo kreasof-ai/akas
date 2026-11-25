@@ -3,7 +3,7 @@
 
 def validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     values["mapping"][:] = np.arange(p["rows"]) % p["pool"]
@@ -18,7 +18,7 @@ def validation(kind, p, signature):
 
 def feature_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     expected = dict(values)
@@ -48,7 +48,7 @@ def feature_validation(kind, p, signature):
 
 
 def interleave_validation(kind, p, signature):
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     r, c, factor = (p[key] for key in ("r", "c", "factor"))

@@ -2,12 +2,12 @@
 
 import numpy as np
 import pytest
-from akas.kernels.contracts import ValidationCase, mapped_validation
+from akas.validation import ValidationCase, mapped_validation
 
 
 @pytest.mark.parametrize("corrupt", [None, "selected", "unused"])
 def test_mapped_comparator_gathers_local_rows_and_checks_unused_slots(monkeypatch, corrupt):
-    from akas.kernels import registry
+    from akas.ops import planning
 
     def reference(kind, parameters, signature):
         assert signature[0]["shape"] == [2, 3]
@@ -22,7 +22,7 @@ def test_mapped_comparator_gathers_local_rows_and_checks_unused_slots(monkeypatc
         return ValidationCase({"state": initial}, {"state": expected},
                               comparators={"state": compare})
 
-    monkeypatch.setattr(registry, "validation", reference)
+    monkeypatch.setattr(planning, "validation", reference)
     case = mapped_validation("example", {}, [
         dict(name="state", shape=[4, 3], dtype="float32"),
         dict(name="mapping", shape=[2], dtype="int32"),

@@ -19,7 +19,8 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 import wave
 
-from akas.benchmarking.history import Recorder, digest
+from akas.benchmarking.history import Recorder
+from akas.benchmarking.provenance import digest
 from akas.benchmarking import transcription
 from akas.benchmarking.workload import load
 

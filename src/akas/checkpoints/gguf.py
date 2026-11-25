@@ -131,6 +131,10 @@ class GGUF:
                 end = info.offset + info.nbytes
         self._bytes = np.memmap(self.path, mode="r", dtype=np.uint8)
 
+    @property
+    def architecture(self):
+        return self.metadata.get("general.architecture")
+
     def packed(self, name):
         info = self.tensors[name]
         begin = self.data_offset + info.offset

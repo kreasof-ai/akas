@@ -73,7 +73,7 @@ def test_q16_bytes_match_fused_reference_at_real_prefill_geometry(tmp_path, subg
     from contextlib import ExitStack
     from akas.compilation.selection import source
     from akas.compilation.emit import build_artifact
-    from akas.kernels.registry import validation
+    from akas.ops.planning import validation
     from tensor.artifacts.format import read_artifact
     from tools.context_sweep import vulkan_device
 

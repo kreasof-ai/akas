@@ -11,12 +11,12 @@ def dequantize(spec, schedule):
 
 def bind(shape):
     from akas.quantization.formats import Codec
-    from akas.quantization._shared.access import matrix_tile
+    from akas.quantization.storage.access import bind_reader
     from .kernel import reader
 
     storage = FORMAT.storage(shape, provider="webgpu")
     read = reader(shape, provider="webgpu")
-    return Codec(storage, read, matrix_tile(read, shape))
+    return Codec(storage, read, bind_reader(read, shape)[1])
 
 
 AVAILABLE = "webgpu" in dict(FORMAT.providers)

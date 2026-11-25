@@ -4,7 +4,7 @@
 def quantized_embedding_validation(kind, p, signature):
     import numpy as np
     from tensor.runtime.dtypes import encode_bfloat16, decode_bfloat16
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
     from akas.quantization.weights.ggml.validation import sample_weight
 
     values = sample_arguments(signature)
@@ -29,7 +29,7 @@ def quantized_embedding_validation(kind, p, signature):
 
 def validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     r, c = (p["r"], p.get("c", p.get("vocab")))
@@ -111,7 +111,7 @@ VALIDATIONS = {
 def parallel_argmax_validation(kind, p, signature):
     """Independent first-index reduction; NaNs and -inf retain the sentinel."""
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     rows, columns, block = p["r"], p["c"], p["block"]
@@ -144,7 +144,7 @@ def parallel_argmax_validation(kind, p, signature):
 
 def codebook_residual_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     groups, vocab, width = (p[key] for key in ("groups", "vocab", "c"))
@@ -160,7 +160,7 @@ def codebook_residual_validation(kind, p, signature):
 
 def codebook_residual_masked_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     groups, vocab, width = (p[key] for key in ("groups", "vocab", "c"))
@@ -185,7 +185,7 @@ def codebook_residual_masked_validation(kind, p, signature):
 def zonos3_frame_embed_validation(kind, p, signature):
     import numpy as np
     from tensor.runtime.dtypes import decode_bfloat16, encode_bfloat16
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     rows, width, codebooks, code_vocab, text_vocab, cond_rows = (
@@ -233,7 +233,7 @@ def zonos3_frame_embed_validation(kind, p, signature):
 
 def codebook_sample_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     slots = p["slots"]

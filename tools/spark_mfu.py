@@ -13,7 +13,7 @@ import json
 import math
 from pathlib import Path
 
-from akas.benchmarking.history import write
+from akas.benchmarking.provenance import write
 
 PEAK_SOURCE = "https://images.nvidia.com/aem-dam/Solutions/geforce/ada/nvidia-ada-gpu-architecture.pdf"
 

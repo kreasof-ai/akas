@@ -1,14 +1,13 @@
 """Campaign tables preserve missing shapes, failed baselines and portable evidence."""
 
 import csv
-import json
 from pathlib import Path
 import re
 import shutil
 
 import pytest
 
-from akas.benchmarking.history import digest, write
+from akas.benchmarking.provenance import digest, write
 from tools.campaign_report import check, export, read, render, speculative_baselines, validate
 
 

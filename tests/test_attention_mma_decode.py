@@ -39,7 +39,7 @@ def check_cuda_grouped_mma_decode(tmp_path, key_rows, kv_dtype, *, capacity=8192
     from akas.compilation.emit import build_artifact
     from akas.compilation.selection import source
     from akas.memory.transfer import write
-    from akas.kernels.registry import validation
+    from akas.ops.planning import validation
 
     p = dict(
         r=2,
@@ -89,7 +89,7 @@ def check_cuda_grouped_mma_decode(tmp_path, key_rows, kv_dtype, *, capacity=8192
             encoded_keys = case.arguments["kc"].copy()
             encoded_values = case.arguments["vc"].copy()
             if kv_dtype == "fp8":
-                from akas.quantization._shared.e4m3 import decode_storage
+                from akas.quantization.host import decode_storage
 
                 keys = (decode_storage(encoded_keys) * case.arguments["ks"]).astype(
                     "float16"
@@ -163,7 +163,7 @@ def test_tuning_rebuilds_mma_reference_for_key_tile(tmp_path, monkeypatch):
     from akas.graph import Graph
     from akas.compilation.compile import produce
     from akas.compilation.tuning import SearchSettings
-    from akas.kernels import registry
+    from akas.ops import planning
     from akas.ops.attention.definition import IMPLEMENTATIONS
 
     choice = next(
@@ -199,14 +199,14 @@ def test_tuning_rebuilds_mma_reference_for_key_tile(tmp_path, monkeypatch):
         for n, s, d in layout
     ]
     graph("attention_partial", p, *args)
-    original = registry.validation
+    original = planning.validation
     tiles = []
 
     def counted(kind, parameters, signature):
         tiles.append(parameters["key_rows"])
         return original(kind, parameters, signature)
 
-    monkeypatch.setattr(registry, "validation", counted)
+    monkeypatch.setattr(planning, "validation", counted)
     result = produce(
         graph,
         tmp_path,
@@ -232,7 +232,7 @@ def test_cuda_packed_prefill_masks_inactive_query_tiles(tmp_path, threads):
     from akas.compilation.emit import build_artifact
     from akas.compilation.selection import source
     from akas.memory.transfer import write
-    from akas.kernels.registry import validation
+    from akas.ops.planning import validation
 
     p = dict(
         r=66,

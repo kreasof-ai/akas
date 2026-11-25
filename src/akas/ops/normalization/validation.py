@@ -3,7 +3,7 @@
 
 def validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     written_names = ("out", "residual") if kind == "add_rms" else ("out",)
@@ -60,7 +60,7 @@ VALIDATIONS = {name: validation for name in ("rms", "add_rms")}
 
 def post_add_rms_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     x = values["x"].reshape(p["r"], p["c"]).astype("float64")
@@ -85,7 +85,7 @@ VALIDATIONS["post_add_rms"] = post_add_rms_validation
 
 def layer_norm_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     centered = values["x"].astype("float64")

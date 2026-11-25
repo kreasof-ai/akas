@@ -2,7 +2,6 @@
 
 import json
 import os
-from pathlib import Path
 import struct
 
 import numpy as np
@@ -14,8 +13,9 @@ from akas.models.lfm2.weights import LFM2MoECheckpoint
 
 
 def fixture(directory):
-    from akas.models.lfm2.weights import huggingface_names, tensor_shapes
-    from akas.quantization._shared.e4m3 import encode_storage
+    from akas.models.lfm2.weights import huggingface_names
+    from akas.models.lfm2.config import tensor_shapes
+    from akas.quantization.host import encode_storage
     from tensor.runtime.dtypes import encode_bfloat16
 
     directory.mkdir(parents=True)
@@ -274,7 +274,7 @@ def test_native_operations_match_independent_references(tmp_path, kind, p):
     import tensor
     from akas.compilation.selection import source
     from akas.kernels.definition import define
-    from akas.kernels.registry import validation
+    from akas.ops.planning import validation
     from tensor.compiler.frontend.signature import frontend_arguments
 
     primitive = define(dict(kind=kind, parameters=p, contract="reference"))
@@ -490,9 +490,9 @@ def test_compact_tile_capacity_bounds_routing_without_expert_count_padding():
 
 def test_fused_fp8_reference_rejects_encoding_outside_f32_rounding_interval():
     from akas.kernels.definition import define
-    from akas.kernels.registry import validation
+    from akas.ops.planning import validation
     from tensor.compiler.frontend.signature import frontend_arguments
-    from akas.quantization._shared.e4m3 import decode_storage
+    from akas.quantization.host import decode_storage
 
     p = dict(r=1, rows=1, k=128, o=128, experts=3, top=2,
              block_m=16, partitions=1, compact=True)

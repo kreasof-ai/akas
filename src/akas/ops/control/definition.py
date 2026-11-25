@@ -1,9 +1,9 @@
 """Contracts and implementation choices for control."""
 
-from akas.kernels.contracts import Implementation
-from akas.ops.control.validation import feedback_validation as feedback_validation
+from akas.kernels.spec import Implementation
+from akas.ops.control.validation import feedback_validation
 from akas.ops.control.validation import validation
-from akas.ops.control.validation import copy_validation as copy_validation
+from akas.ops.control.validation import copy_validation
 
 OUTPUT_ARGUMENTS = {}
 KINDS = (

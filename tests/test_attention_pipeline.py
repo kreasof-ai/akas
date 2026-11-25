@@ -101,7 +101,7 @@ def test_custom_hardware_factory_serialization_preserves_routing_and_arguments(
 ):
     import json
     from types import SimpleNamespace
-    from akas.kernels.contracts import Implementation
+    from akas.kernels.spec import Implementation
     from akas.compilation.selection import source
 
     choice = Implementation(

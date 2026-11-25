@@ -14,7 +14,6 @@ import pytest
 from akas import Engine
 from akas import EngineConfig
 from akas import LFM2
-from akas.benchmarking.session import Session
 
 
 @pytest.mark.parametrize("limit", [0, -1, True, 1.5])

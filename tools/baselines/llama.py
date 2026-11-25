@@ -1,9 +1,6 @@
 """llama.cpp localhost-server preflight using the common worker protocol."""
 
 import json
-import os
-from pathlib import Path
-import signal
 import subprocess
 import time
 import urllib.request

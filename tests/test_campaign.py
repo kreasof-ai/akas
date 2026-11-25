@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from akas.benchmarking.history import write
+from akas.benchmarking.provenance import write
 from akas.optimization.context import Context
 from akas.optimization.planning import recipes
 from tools.baselines import common
@@ -145,10 +145,9 @@ def test_matrix_resumes_without_repeating_completed_entries(tmp_path, monkeypatc
 
 def test_mtp_cannot_establish_its_own_ar_reference(tmp_path, monkeypatch):
     from akas.optimization import supervisor
-    import akas.cli
 
     calls = []
-    monkeypatch.setattr(akas.cli, "checkpoint_digest", lambda _: "weights")
+    monkeypatch.setenv("AKAS_CHECKPOINT_SHA256", "weights")
     monkeypatch.setattr(supervisor, "software", lambda: {})
     probe = dict(
         status="ok",

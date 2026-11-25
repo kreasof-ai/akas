@@ -133,7 +133,6 @@ def test_hopper_recipe_and_historical_seeding_match_verified_h200_schedules(monk
 
 
 def test_early_phase_regression_gate_rejects_degraded_candidate(monkeypatch):
-    from dataclasses import asdict
     import numpy as np
     from akas.optimization import evaluation
 

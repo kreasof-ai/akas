@@ -4,7 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
-from akas.benchmarking.history import write
+from akas.benchmarking.provenance import write
 from akas.compilation.compile import plan
 from akas.compilation.tuning import SearchSettings, qualify
 from akas.graph import Graph

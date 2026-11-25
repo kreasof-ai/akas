@@ -53,13 +53,9 @@ class Qwen35MoEConfig:
         return state_bytes(self, slots=slots, context=context, block=block)
 
     def expected_tensors(self):
-        from akas.models.qwen35.weights import expected_tensors
-
         return expected_tensors(self)
 
     def expected_mtp_tensors(self):
-        from akas.models.qwen35.weights import expected_mtp_tensors
-
         return expected_mtp_tensors(self)
 
 
@@ -98,8 +94,6 @@ class Qwen35DenseConfig:
         return self.value_heads * self.value_dim
 
     def expected_tensors(self):
-        from akas.models.qwen35.weights import expected_tensors
-
         return expected_tensors(self)
 
 
@@ -317,6 +311,168 @@ def parse_gguf(gguf, *, moe):
         theta,
         rotary,
         context,
+    )
+
+
+def expected_moe_tensors(config):
+    shapes = {
+        "model.language_model.embed_tokens.weight": (config.vocab, config.width),
+        "model.language_model.norm.weight": (config.width,),
+        "lm_head.weight": (config.vocab, config.width),
+    }
+
+    def vector(name, shape):
+        shapes[name] = shape
+
+    def fp8(name, rows, columns):
+        shapes[name + ".weight"] = (rows, columns)
+        shapes[name + ".weight_scale_inv"] = (
+            (rows + 127) // 128,
+            (columns + 127) // 128,
+        )
+
+    for layer, kind in enumerate(config.layers):
+        root = f"model.language_model.layers.{layer}."
+        for name in ("input_layernorm", "post_attention_layernorm"):
+            vector(root + name + ".weight", (config.width,))
+        if kind == "linear_attention":
+            prefix = root + "linear_attn."
+            vector(prefix + "A_log", (config.value_heads,))
+            vector(prefix + "dt_bias", (config.value_heads,))
+            vector(prefix + "conv1d.weight", (8192, 1, config.conv_width))
+            vector(prefix + "norm.weight", (config.value_dim,))
+            for name in ("a", "b"):
+                vector(
+                    prefix + "in_proj_" + name + ".weight",
+                    (config.value_heads, config.width),
+                )
+            for name, rows, columns in (
+                ("in_proj_qkv", 8192, config.width),
+                ("in_proj_z", 4096, config.width),
+                ("out_proj", config.width, 4096),
+            ):
+                fp8(prefix + name, rows, columns)
+        else:
+            prefix = root + "self_attn."
+            for name, rows, columns in (
+                ("q_proj", 8192, config.width),
+                ("k_proj", 512, config.width),
+                ("v_proj", 512, config.width),
+                ("o_proj", config.width, 4096),
+            ):
+                fp8(prefix + name, rows, columns)
+            for name in ("q_norm", "k_norm"):
+                vector(prefix + name + ".weight", (config.head_dim,))
+        prefix = root + "mlp."
+        vector(prefix + "gate.weight", (config.experts, config.width))
+        vector(prefix + "shared_expert_gate.weight", (1, config.width))
+        for expert in (
+            "shared_expert",
+            *(f"experts.{i}" for i in range(config.experts)),
+        ):
+            for name, rows, columns in (
+                ("gate_proj", config.expert_width, config.width),
+                ("up_proj", config.expert_width, config.width),
+                ("down_proj", config.width, config.expert_width),
+            ):
+                fp8(prefix + expert + "." + name, rows, columns)
+    return shapes
+
+
+def expected_dense_tensors(config):
+    shapes = {
+        "model.language_model.embed_tokens.weight": (config.vocab, config.width),
+        "model.language_model.norm.weight": (config.width,),
+    }
+    for layer, kind in enumerate(config.layers):
+        root = f"model.language_model.layers.{layer}."
+        shapes.update(
+            {
+                root + n + ".weight": (config.width,)
+                for n in ("input_layernorm", "post_attention_layernorm")
+            }
+        )
+        for name, shape in (
+            ("gate", (config.intermediate, config.width)),
+            ("up", (config.intermediate, config.width)),
+            ("down", (config.width, config.intermediate)),
+        ):
+            shapes[root + "mlp." + name + "_proj.weight"] = shape
+        if kind == "linear_attention":
+            prefix = root + "linear_attn."
+            shapes.update(
+                {
+                    prefix + "A_log": (config.value_heads,),
+                    prefix + "dt_bias": (config.value_heads,),
+                    prefix + "conv1d.weight": (config.qkv_width, 1, 4),
+                    prefix + "norm.weight": (config.value_dim,),
+                }
+            )
+            for name, shape in (
+                ("qkv", (config.qkv_width, config.width)),
+                ("z", (config.value_width, config.width)),
+                ("a", (config.value_heads, config.width)),
+                ("b", (config.value_heads, config.width)),
+            ):
+                shapes[prefix + "in_proj_" + name + ".weight"] = shape
+            shapes[prefix + "out_proj.weight"] = (config.width, config.value_width)
+        elif kind == "full_attention":
+            prefix = root + "self_attn."
+            for name, shape in (
+                ("q", (2 * config.heads * config.head_dim, config.width)),
+                ("k", (config.kv_heads * config.head_dim, config.width)),
+                ("v", (config.kv_heads * config.head_dim, config.width)),
+                ("o", (config.width, config.heads * config.head_dim)),
+            ):
+                shapes[prefix + name + "_proj.weight"] = shape
+            shapes.update(
+                {prefix + n + "_norm.weight": (config.head_dim,) for n in ("q", "k")}
+            )
+        else:
+            raise ValueError("unsupported dense layer type")
+    full = next((i for i, kind in enumerate(config.layers) if kind == "full_attention"))
+    prefix = f"model.language_model.layers.{full}."
+    shapes.update(
+        {
+            "mtp.layers.0." + name[len(prefix) :]: shape
+            for name, shape in tuple(shapes.items())
+            if name.startswith(prefix)
+        }
+    )
+    shapes.update(
+        {
+            "mtp." + n + ".weight": (config.width,)
+            for n in ("norm", "pre_fc_norm_embedding", "pre_fc_norm_hidden")
+        }
+    )
+    shapes["mtp.fc.weight"] = (config.width, 2 * config.width)
+    return shapes
+
+
+def expected_mtp_tensors(config):
+    """The official one-layer draft branch; embedding/head are shared."""
+    layer = next(i for i, kind in enumerate(config.layers) if kind == "full_attention")
+    prefix = f"model.language_model.layers.{layer}."
+    shapes = {
+        "mtp.layers.0." + name[len(prefix) :]: shape
+        for name, shape in expected_tensors(config).items()
+        if name.startswith(prefix)
+    }
+    shapes.update(
+        {
+            "mtp." + name + ".weight": (config.width,)
+            for name in ("norm", "pre_fc_norm_embedding", "pre_fc_norm_hidden")
+        }
+    )
+    shapes["mtp.fc.weight"] = (config.width, 2 * config.width)
+    return shapes
+
+
+def expected_tensors(config):
+    return (
+        expected_moe_tensors(config)
+        if isinstance(config, Qwen35MoEConfig)
+        else expected_dense_tensors(config)
     )
 
 

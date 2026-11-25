@@ -1,6 +1,6 @@
 """Independent NumPy references for spectral and band-layout operations."""
 
-from akas.kernels.contracts import ValidationCase, sample_arguments
+from akas.validation import ValidationCase, sample_arguments
 
 
 def _expect(values, name, result):

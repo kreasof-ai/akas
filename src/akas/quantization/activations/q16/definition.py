@@ -3,8 +3,8 @@
 from math import prod
 from akas.memory.state import BufferSpec
 from akas.quantization.formats import Format, Storage
-from akas.kernels.contracts import OutputABI
-from akas.kernels.contracts import Implementation
+from akas.kernels.spec import OutputABI
+from akas.kernels.spec import Implementation
 from akas.quantization.activations.q16.validation import validation
 
 BLOCK = 32

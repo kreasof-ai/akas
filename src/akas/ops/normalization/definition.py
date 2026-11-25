@@ -1,8 +1,8 @@
 """Contracts and implementation choices for normalization."""
 
-from akas.kernels.contracts import OutputABI
+from akas.kernels.spec import OutputABI
 from dataclasses import replace
-from akas.kernels.contracts import Implementation
+from akas.kernels.spec import Implementation
 from akas.ops.normalization.validation import VALIDATIONS as VALIDATIONS
 from akas.ops.normalization.validation import layer_norm_validation
 

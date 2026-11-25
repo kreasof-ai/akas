@@ -1,11 +1,10 @@
 """Contracts and implementation choices for linear."""
 
-from akas.kernels.contracts import OutputABI
+from akas.kernels.spec import OutputABI
 from collections import Counter
 from dataclasses import replace
-from akas.kernels.contracts import Implementation
-from akas.ops.linear.validation import pipeline_validation as pipeline_validation
-from akas.ops.linear.validation import VALIDATIONS
+from akas.kernels.spec import Implementation
+from akas.ops.linear.validation import VALIDATIONS as VALIDATIONS
 
 GEMV_ROW_CEILINGS = (31, 24, 8, 16, 25, 28, 32, 64)
 
@@ -40,7 +39,7 @@ def _projection_partitions(
     return next((value for value in choices if value >= required), choices[-1])
 
 
-def _floating_matmuls(graph, *, minimum_rows):
+def floating_matmuls(graph, *, minimum_rows):
     """Bind contiguous F32 projections through canonical matrix views."""
     from math import prod
     from akas.graph import Call
@@ -158,7 +157,6 @@ def search_policies(graph, commit, *, provider, target):
 
 
 def lower(graph, commit, settings, *, provider, target):
-    from akas.graph import Graph
     from akas.quantization import get
 
     allowed = {
@@ -378,10 +376,9 @@ def lower(graph, commit, settings, *, provider, target):
     maximum_rows = settings.get("partition_maximum_rows")
     if maximum_rows is not None and (type(maximum_rows) is not int or maximum_rows < 1):
         raise ValueError("projection partition maximum rows must be a positive integer")
-    recorder = Graph(contract=graph.contract, phase=graph.phase)
-    recorder.buffers = graph.buffers
+    recorder = graph.record_pass()
     quantized, valid = ({}, set())
-    from akas.kernels.registry import graph_outputs
+    from akas.ops.planning import graph_outputs
 
     def base(name):
         while graph.buffers[name].alias_of is not None:
@@ -454,8 +451,7 @@ def lower(graph, commit, settings, *, provider, target):
                     out=bits,
                     scales=scales,
                 )
-                calls.extend(recorder.calls)
-                recorder.calls = []
+                calls.extend(recorder.take_calls())
                 valid.add(key)
             names.update(x=bits.name, activation_scales=scales.name)
         original = graph.buffers[names["out"]]
@@ -503,8 +499,7 @@ def lower(graph, commit, settings, *, provider, target):
                 out=original,
                 label=call.label,
             )
-        calls.extend(recorder.calls)
-        recorder.calls = []
+        calls.extend(recorder.take_calls())
         invalidate(call)
     graph.calls = calls
     return (graph, commit)
@@ -738,13 +733,9 @@ REWRITES = (fuse_projections, fuse_residual_projection)
 ROW_INDEPENDENT = ("linear",)
 OUTPUT_ARGUMENTS = {"reference": {"linear": (-1,), "ffn": (-1,), "linear_add": (-1,)}}
 OUTPUT_ARGUMENTS["reference"]["matmul"] = OutputABI((-1,), ("out",))
-from akas.ops.linear.validation import validation as matrix_validation
 
-VALIDATIONS["matmul"] = matrix_validation
 OUTPUT_ARGUMENTS["reference"]["linear_half_input"] = OutputABI((-1,), ("out",))
-from .validation import half_input_validation
 
-VALIDATIONS["linear_half_input"] = half_input_validation
 for _contract in ("reference", "packed", "packed-baseline", "bf16", "block-fp8"):
     OUTPUT_ARGUMENTS.setdefault(_contract, {}).update(
         {
@@ -760,9 +751,6 @@ for _contract in ("reference", "packed", "packed-baseline", "bf16", "block-fp8")
             "projection_merge": OutputABI((-1,), ("out",)),
         }
     )
-VALIDATIONS.update(
-    {name: pipeline_validation for name in ("projection_partial", "projection_merge")}
-)
 IMPLEMENTATIONS = (
     Implementation(
         "linear_half_input",
@@ -1383,9 +1371,7 @@ IMPLEMENTATIONS += tuple(
     for provider in ("cuda", "webgpu")
 )
 OUTPUT_ARGUMENTS["quantized"] = {"quantized_linear": OutputABI((-1,), ("out",))}
-from akas.ops.linear.validation import quantized_validation
 
-VALIDATIONS["quantized_linear"] = quantized_validation
 OUTPUT_ARGUMENTS["reference"]["quantized_linear"] = OutputABI((-1,), ("out",))
 IMPLEMENTATIONS += (
     Implementation(
@@ -1530,9 +1516,6 @@ IMPLEMENTATIONS += tuple(
 
 OUTPUT_ARGUMENTS["*"] = {"quantized_projection": OutputABI((-1,), ("out",))}
 
-from .validation import projection_validation
-
-VALIDATIONS["quantized_projection"] = projection_validation
 
 IMPLEMENTATIONS += tuple(
     Implementation(
@@ -1721,7 +1704,7 @@ IMPLEMENTATIONS += (
 IMPLEMENTATIONS += tuple(
     Implementation(
         "linear",
-        f"akas.ops.linear.{provider}",
+        "akas.ops.linear.kernel",
         "reference",
         provider=provider,
         factory="column_projection",
@@ -1805,10 +1788,8 @@ IMPLEMENTATIONS += (
     ),
 )
 
-from akas.ops.linear.validation import geglu_projection_validation
 
 OUTPUT_ARGUMENTS["reference"]["geglu_linear"] = OutputABI((-1,), ("out",))
-VALIDATIONS["geglu_linear"] = geglu_projection_validation
 ROW_INDEPENDENT += ("geglu_linear",)
 IMPLEMENTATIONS += (
     Implementation(
@@ -1855,10 +1836,8 @@ IMPLEMENTATIONS += (
     ),
 )
 
-from akas.ops.linear.validation import q4_q8_validation
 
 OUTPUT_ARGUMENTS["reference"]["q4_q8_linear"] = OutputABI((-1,), ("out",))
-VALIDATIONS["q4_q8_linear"] = q4_q8_validation
 IMPLEMENTATIONS += (
     Implementation(
         "q4_q8_linear",
@@ -1871,10 +1850,8 @@ IMPLEMENTATIONS += (
     ),
 )
 
-from akas.ops.linear.validation import q4_q8_ffn_validation
 
 OUTPUT_ARGUMENTS["reference"]["q4_q8_ffn"] = OutputABI((-2, -1), ("out", "out_scales"))
-VALIDATIONS["q4_q8_ffn"] = q4_q8_ffn_validation
 IMPLEMENTATIONS += (
     Implementation(
         "q4_q8_ffn",
@@ -1982,10 +1959,8 @@ IMPLEMENTATIONS += (
     ),
 )
 
-from akas.ops.linear.validation import staged_projection_validation
 
 OUTPUT_ARGUMENTS["reference"]["linear_bias_activation"] = OutputABI((-1,), ("out",))
-VALIDATIONS["linear_bias_activation"] = staged_projection_validation
 IMPLEMENTATIONS += (
     Implementation(
         "linear_bias_activation",
@@ -2005,7 +1980,6 @@ IMPLEMENTATIONS += (
 )
 
 OUTPUT_ARGUMENTS["reference"]["linear_w16a16"] = OutputABI((-1,), ("out",))
-VALIDATIONS["linear_w16a16"] = staged_projection_validation
 IMPLEMENTATIONS += tuple(
     Implementation(
         kind,
@@ -2026,3 +2000,6 @@ IMPLEMENTATIONS += tuple(
         ("linear_bias_activation", "tiled_w16a16_bias"),
     )
 )
+
+
+_floating_matmuls = floating_matmuls

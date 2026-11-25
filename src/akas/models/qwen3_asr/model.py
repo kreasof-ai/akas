@@ -541,7 +541,7 @@ class Qwen3ASR:
 
 @contextmanager
 def service(checkpoint, projector, bundle, *, device=0):
-    from akas.benchmarking.history import digest
+    from akas.benchmarking.provenance import digest
     from akas.serving.speech import TranscriptionService
     from akas.tensor.device import vulkan_device
 

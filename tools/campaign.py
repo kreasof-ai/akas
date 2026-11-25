@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 import time
 
-from akas.benchmarking.history import source_identity, utc, write
+from akas.benchmarking.provenance import source_identity, utc, write
 from akas.optimization.context import (
     Context,
     discover,

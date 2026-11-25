@@ -2,12 +2,12 @@
 
 
 def reader(shape, *, provider):
-    from akas.quantization._shared.fp8 import reader
+    from akas.quantization.storage.fp8 import reader
 
     return reader(shape, role="activations", provider=provider)
 
 
 def dequantize(spec, schedule, *, provider):
-    from akas.quantization._shared.fp8 import dequantize
+    from akas.quantization.storage.fp8 import dequantize
 
     return dequantize(spec, schedule, role="activations", provider=provider)

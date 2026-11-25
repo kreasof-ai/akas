@@ -1,15 +1,10 @@
 """Atomic artifact publication and content checksums."""
 
-import hashlib
 import json
 import shutil
 from akas.artifacts.read import artifacts
+from akas.benchmarking.provenance import digest as checksum
 from pathlib import Path
-
-def checksum(path):
-    with Path(path).open("rb") as stream:
-        return hashlib.file_digest(stream, "sha256").hexdigest()
-
 
 def publish(path, value):
     """Expose a manifest only after every referenced artifact exists."""

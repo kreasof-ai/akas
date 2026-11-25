@@ -24,7 +24,7 @@ def argmax_graph(*, named=False, contract="reference"):
 @pytest.mark.parametrize("named", [False, True])
 def test_parallel_argmax_policy_preserves_output_and_feedback(provider, named):
     from akas.compilation.policy import lower
-    from akas.kernels.registry import graph_outputs
+    from akas.ops.planning import graph_outputs
 
     graph = argmax_graph(named=named)
     request = graph.request.copy()

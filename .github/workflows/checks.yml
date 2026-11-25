@@ -26,8 +26,10 @@ jobs:
         with:
           version: ${{ env.UV_VERSION }}
       - run: uv sync --locked
-      - run: uv run --no-sync ruff check src examples
+      - run: uv run --no-sync ruff check src examples tests tools
       - run: uv run --no-sync ruff format --check src/akas/ops src/akas/kernels src/akas/quantization src/akas/models src/akas/compilation
+      - name: Check Python architecture
+        run: uv run --no-sync python -m pytest tests/test_import_architecture.py
       - name: Verify benchmark report format and generated tables
         run: uv run --no-sync python -m tools.campaign_report --check
       - name: Verify benchmark archive catalog

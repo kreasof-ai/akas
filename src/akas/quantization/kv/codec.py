@@ -1,7 +1,5 @@
 """KV codec lookup using the shared quantization storage contract."""
 
-from akas.quantization.formats import Format as Format
-from akas.quantization.formats import Storage as Storage
 from akas.quantization.formats import get as _get
 
 

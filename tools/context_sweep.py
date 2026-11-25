@@ -16,7 +16,8 @@ import time
 import traceback
 import urllib.request
 
-from akas.benchmarking.history import Recorder, digest, utc, write
+from akas.benchmarking.history import Recorder
+from akas.benchmarking.provenance import digest, utc, write
 from akas.benchmarking.workload import prompt_digest
 from akas.tensor.device import vulkan_device
 

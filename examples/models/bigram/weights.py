@@ -2,7 +2,8 @@
 
 from pathlib import Path
 
-from akas.checkpoints.safetensors import inspect_tensors, json_document, read_tensor
+from akas.checkpoints.safetensors import inspect_tensors, read_tensor
+from akas.checkpoints.metadata import json_document
 from examples.models.bigram.config import Config
 
 

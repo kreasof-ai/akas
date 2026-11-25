@@ -13,7 +13,7 @@ def test_q6_sixteen_lanes_match_independent_reference(tmp_path, kind, vector):
     from akas.compilation.emit import build_artifact
     from akas.compilation.selection import selected_source
     from akas.kernels.definition import definition
-    from akas.kernels.registry import validation
+    from akas.ops.planning import validation
     from tensor.artifacts.format import read_artifact
     from tools.context_sweep import vulkan_device
 

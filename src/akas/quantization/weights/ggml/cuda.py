@@ -267,11 +267,11 @@ def packed_tile_half(shape, read):
     as scalar F32 decoding followed by an FP16 store.
     """
     from math import prod
-    from akas.quantization._shared.access import matrix_tile
+    from akas.quantization.storage.access import bind_reader
     import tilelang.language as T
 
     rows, depth = prod(shape[:-1]), shape[-1]
-    fallback = matrix_tile(read, shape)
+    fallback = bind_reader(read, shape)[1]
     row_bytes = depth // 32 * 18
     words_count = rows * row_bytes // 4
 
@@ -505,11 +505,16 @@ def bind(shape, *, encoding, layout="raw", vector_tiles=False):
         return planar_binding(shape, encoding=encoding)
     import tilelang.language as T
     from akas.quantization.formats import Codec
-    from akas.quantization._shared.access import matrix_reader, matrix_tile
+    from akas.quantization.storage.access import bind_reader
     from .definition import FORMAT, ENCODINGS
 
     storage = FORMAT.storage(shape, provider="cuda", encoding=encoding)
-    read = matrix_reader(decoder(encoding, shape[-1]))
+    read, tile = bind_reader(
+        decoder(encoding, shape[-1]),
+        shape,
+        separate=True,
+        stage=packed_tile_half if encoding == 2 else None,
+    )
     pair = pair_decoder(encoding, shape[-1]) if encoding in (1, 2, 12, 14) else None
     _, block, size = ENCODINGS[encoding]
     product = (
@@ -526,7 +531,6 @@ def bind(shape, *, encoding, layout="raw", vector_tiles=False):
     def dot(encoded, x, tile, lane, row):
         return product(x, encoded[0], tile, lane, row)
 
-    tile = packed_tile_half(shape, read) if encoding == 2 else matrix_tile(read, shape)
     if encoding in (0, 1):
         from math import prod
 
@@ -720,10 +724,10 @@ def planar_dot_half(shape):
 
 def planar_tile_half(shape, read):
     from math import prod
-    from akas.quantization._shared.access import matrix_tile
+    from akas.quantization.storage.access import bind_reader
 
     rows, depth = prod(shape[:-1]), shape[-1]
-    fallback = matrix_tile(read, shape)
+    fallback = bind_reader(read, shape)[1]
     import tilelang.language as T
 
     words_count = rows * depth // 32 * 18 // 4

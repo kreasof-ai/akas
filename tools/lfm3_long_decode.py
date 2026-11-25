@@ -12,7 +12,8 @@ import time
 import traceback
 import numpy as np
 
-from akas.benchmarking.history import Recorder, digest, write
+from akas.benchmarking.history import Recorder
+from akas.benchmarking.provenance import digest, write
 from akas.benchmarking.runner import summarize
 from akas.benchmarking.workload import prompt_digest
 from tools.lfm3_vulkan_benchmark import PROFILE

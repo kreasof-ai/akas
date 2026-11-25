@@ -1,7 +1,7 @@
 """Derive output-free token work from operation-owned write declarations."""
 
 from akas.graph import Graph
-from akas.kernels.registry import graph_outputs
+from akas.ops.planning import graph_outputs
 
 
 def prune_buffers(graph, *, preserve_roles=()):

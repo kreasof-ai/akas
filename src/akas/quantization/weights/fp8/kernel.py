@@ -2,7 +2,7 @@
 
 
 def reader(shape, *, provider, scale_layout="block"):
-    from akas.quantization._shared.fp8 import reader
+    from akas.quantization.storage.fp8 import reader
 
     if scale_layout == "channel":
         return channel_reader(shape, provider=provider)
@@ -26,7 +26,7 @@ def channel_reader(shape, *, provider):
 
 
 def dequantize(spec, schedule, *, provider):
-    from akas.quantization._shared.fp8 import dequantize
+    from akas.quantization.storage.fp8 import dequantize
 
     return dequantize(spec, schedule, role="weights", provider=provider)
 
@@ -40,7 +40,7 @@ def prepare_host(bits, scales, *, provider):
     """
     import numpy as np
     from tensor.runtime.dtypes import encode_bfloat16, decode_bfloat16
-    from akas.quantization._shared.packing import pack_words
+    from akas.quantization.host import pack_words
     from .definition import FORMAT
 
     bits = np.ascontiguousarray(bits, dtype="uint8")

@@ -2,7 +2,6 @@
 
 from akas.compilation.selection import source as kernel_source
 
-from pathlib import Path
 import pytest
 
 

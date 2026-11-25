@@ -2,8 +2,6 @@
 
 from dataclasses import dataclass, field
 from importlib import import_module
-import hashlib
-import json
 
 
 @dataclass(frozen=True)
@@ -19,7 +17,7 @@ class Source:
     def render(self):
         if not self.export:
             return getattr(import_module(self.module), self.factory)(*self.args)
-        from akas.compilation.emit import export_kernel
+        from akas.compilation.source import export_kernel
 
         return export_kernel(
             self.module, self.factory, *self.args, dependencies=self.dependencies
@@ -52,9 +50,3 @@ class Bundle:
     @property
     def target(self):
         return self.manifest.get("target", "sm_89")
-
-
-def identity(kind, parameters):
-    return hashlib.sha256(
-        json.dumps([kind, parameters], sort_keys=True).encode()
-    ).hexdigest()[:24]

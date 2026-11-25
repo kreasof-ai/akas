@@ -112,5 +112,5 @@ def round_controls(*, slots, window, width, dtype="bfloat16"):
     )
     graph("spec_result", common, fields["repair.predicted"], result, label="result")
     used = {name for call in graph.calls for name in call.arguments}
-    graph.buffers = {name: spec for name, spec in graph.buffers.items() if name in used}
+    graph.retain_buffers(used)
     return graph

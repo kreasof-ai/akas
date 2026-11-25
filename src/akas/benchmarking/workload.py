@@ -6,6 +6,9 @@ import json
 from pathlib import Path
 
 
+ENHANCEMENT_PROTOCOL = "warm-voice-enhancement-v1"
+
+
 def load(value):
     """Read a packaged workload by ID or a user-supplied JSON path."""
     path = Path(value)

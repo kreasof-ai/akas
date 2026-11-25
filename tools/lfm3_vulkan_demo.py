@@ -6,7 +6,7 @@ from pathlib import Path
 import subprocess
 import time
 
-from akas.benchmarking.history import digest, write
+from akas.benchmarking.provenance import digest, write
 from akas.benchmarking.session import Session
 from akas.models.lfm3 import LFM3, LFM3Checkpoint
 from tools.context_sweep import vulkan_device

@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 import tensor
 from akas import LFM2
-from akas.artifacts.schema import identity
+from akas.graph import identity
 
 pytestmark = pytest.mark.skipif(
     os.environ.get("TENSOR_LFM2_WEBGPU") != "1",

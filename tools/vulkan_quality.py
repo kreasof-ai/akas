@@ -11,7 +11,7 @@ from pathlib import Path
 
 import numpy as np
 
-from akas.benchmarking.history import digest, write
+from akas.benchmarking.provenance import digest, write
 from akas.benchmarking.session import Session
 from akas.models.lfm2.model import LFM2
 from tools.context_sweep import vulkan_device

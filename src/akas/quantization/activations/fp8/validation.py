@@ -3,8 +3,8 @@
 
 def validation(kind, parameters, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
-    from akas.quantization._shared.e4m3 import encode_storage, decode_storage
+    from akas.validation import ValidationCase, sample_arguments
+    from akas.quantization.host import encode_storage, decode_storage
 
     values = sample_arguments(signature)
     if kind == "dequantize_fp8":

@@ -1,7 +1,7 @@
 """Precision tables reject mismatched prompts and corrupted or failed evidence."""
 
 import pytest
-from akas.benchmarking.history import digest, write
+from akas.benchmarking.provenance import digest, write
 from tools.campaign_report import precision_comparisons
 
 

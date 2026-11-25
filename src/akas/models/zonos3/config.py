@@ -4,6 +4,10 @@ from dataclasses import dataclass
 import math
 
 
+SILENCE = (1918, 746, 3544, 234, 1267, 2914, 3944, 2849, 326, 1337)
+SILENCE_FRAMES = 3
+
+
 # Model card language coverage for already-normalized input.
 LANGUAGES = (
     "en",

@@ -22,7 +22,8 @@ ROOT = Path(__file__).resolve().parents[1]
     reason="requires both published ZONOS3 GGUF files and a hardware Vulkan adapter",
 )
 def test_zonos3_checkpoint_operations_on_vulkan(tmp_path):
-    from akas.benchmarking.history import Recorder, digest
+    from akas.benchmarking.history import Recorder
+    from akas.benchmarking.provenance import digest
     from akas.compilation.compile import produce
     from akas.compilation.tuning import SearchSettings
     from akas.execution.forward import Forward
@@ -184,7 +185,8 @@ def test_zonos3_checkpoint_operations_on_vulkan(tmp_path):
     reason="requires the published ZONOS3 GGUF pair and a hardware Vulkan adapter",
 )
 def test_zonos3_backbone_matches_reference_across_phases():
-    from akas.benchmarking.history import Recorder, digest
+    from akas.benchmarking.history import Recorder
+    from akas.benchmarking.provenance import digest
     from akas.benchmarking.workload import load
     from akas.compilation.compile import produce
     from akas.compilation.tuning import SearchSettings
@@ -294,7 +296,8 @@ def test_zonos3_synthesizes_speech_workload(tmp_path):
     from time import perf_counter
     import wave
 
-    from akas.benchmarking.history import Recorder, digest
+    from akas.benchmarking.history import Recorder
+    from akas.benchmarking.provenance import digest
     from akas.benchmarking.workload import load
     from akas.compilation import compile_checkpoint
     from akas.compilation.tuning import SearchSettings

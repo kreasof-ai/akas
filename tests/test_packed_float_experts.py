@@ -33,7 +33,8 @@ def test_registered_packed_f32_operation_against_independent_reference(
     from tensor.artifacts.format import read_artifact
     from akas.compilation.selection import source
     from akas.compilation.emit import build_artifact
-    from akas.kernels.registry import select, validation
+    from akas.kernels.registry import select
+    from akas.ops.planning import validation
     from akas.memory.transfer import write
 
     parameters = dict(

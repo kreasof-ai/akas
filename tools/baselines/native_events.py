@@ -1,6 +1,6 @@
 """Optional CUDA events around baseline execution; no scheduler modifications."""
 
-import functools, importlib.abc, importlib.machinery, json, os, time
+import functools, importlib.abc, importlib.machinery, json, os
 from pathlib import Path
 
 _pending = []

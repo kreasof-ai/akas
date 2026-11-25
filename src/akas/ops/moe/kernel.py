@@ -1,6 +1,26 @@
 """Shared TileLang computations for moe."""
 
 
+def tile_capacity(rows, top, experts, block_m):
+    """Bound nonempty expert tiles by both route count and partition overhead."""
+    if any(
+        type(value) is not int or value < 1 for value in (rows, top, experts, block_m)
+    ):
+        raise ValueError("expert tile geometry must contain positive integers")
+    routes = rows * top
+    return min(routes, (routes + block_m - 1) // block_m + experts - 1)
+
+
+def tile_layouts(parameters):
+    """Number of power-of-two row layouts declared by a shared route map."""
+    maximum = parameters.get("max_block_m", 64)
+    if type(maximum) is not int or maximum not in (4, 8, 16, 32, 64, 128):
+        raise ValueError(
+            "expert maximum row tile must be a supported power of two from 4 through 128"
+        )
+    return maximum.bit_length() - 2
+
+
 def expert_swiglu(spec, schedule):
     """Portable CUDA definition with the common operation factory signature."""
     return _expert_swiglu(spec, schedule, provider="cuda")
@@ -84,7 +104,6 @@ def expert_tile_map(spec, schedule):
     p = {**spec.parameters, **schedule}
     rows, top, experts = p["r"], p["top"], p["experts"]
     capacity = (rows * top + 3) // 4 + experts
-    from akas.ops.moe.definition import tile_layouts
 
     layout_count = tile_layouts(p)
 

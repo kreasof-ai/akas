@@ -1,6 +1,6 @@
 """Scheduling contracts independent of CUDA or checkpoint availability."""
 
-from akas.scheduling.scheduler import Request
+from akas.requests import Request
 from akas.scheduling.scheduler import Scheduler
 
 

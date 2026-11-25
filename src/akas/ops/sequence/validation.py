@@ -3,7 +3,7 @@
 
 def tail_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     rows, chunk, tail = (p["r"], p["chunk"], p["tail"])
@@ -36,7 +36,7 @@ def tail_validation(kind, p, signature):
 
 def validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     r, chunk = (p.get("r", p.get("slots", 1)), p.get("chunk", 1))
@@ -139,7 +139,7 @@ VALIDATIONS = {
 
 def block_limit_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     values["lengths"][:] = p["chunk"]
@@ -154,7 +154,7 @@ def block_limit_validation(kind, p, signature):
 
 def decode_feedback_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     capacity = p["capacity"]

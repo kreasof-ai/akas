@@ -22,7 +22,7 @@ def test_packed_half_rounding_boundaries(tmp_path):
     source.write_text(f'''
 import tilelang.language as T
 from akas.kernels.kernel import Tensor, kernel, output
-from akas.quantization._shared.rounding import round_half, round_half_branch
+from akas.quantization.storage.rounding import round_half, round_half_branch
 rounded = round_half()
 branched = round_half_branch()
 @kernel

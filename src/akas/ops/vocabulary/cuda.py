@@ -8,7 +8,7 @@ def quantized_embedding(spec, schedule):
 
 
 from collections.abc import Mapping
-from akas.kernels.definition import KernelSpec
+from akas.kernels.spec import KernelSpec
 from akas.kernels.kernel import Tensor, kernel, output
 
 
@@ -205,19 +205,6 @@ def speculative(spec: KernelSpec, schedule: Mapping[str, object]):
     return compute
 
 
-from .kernel import (
-    argmax,
-    argmax_packed,
-    embedding,
-    embedding_packed,
-    native_argmax,
-    native_embedding,
-    packed_word_argmax,
-    packed_word_embedding,
-)
 from .definition import IMPLEMENTATIONS as _CHOICES
 
 IMPLEMENTATIONS = tuple((choice for choice in _CHOICES if choice.provider == "cuda"))
-
-
-from .kernel import argmax_partial as argmax_partial, argmax_merge as argmax_merge

@@ -9,7 +9,7 @@ import argparse
 from collections import Counter
 from pathlib import Path
 
-from akas.benchmarking.history import digest, write
+from akas.benchmarking.provenance import digest, write
 from akas.execution.plan import ExecutionPlan
 from akas.models.lfm2.model import LFM2
 from tools.context_sweep import vulkan_device

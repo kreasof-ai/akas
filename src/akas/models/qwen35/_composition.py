@@ -470,21 +470,14 @@ def compose_moe_program(
     }
     controls = {
         name: graph.buffer(
-            name,
-            (max_requests if name == "positions" else rows,),
+            "proposal." + name if proposal else name,
+            (max_requests if not proposal and name == "positions" else rows,),
             "int32",
-            role="state" if name == "positions" else "input",
+            role="state" if not proposal and name == "positions" else "input",
         )
         for name in ("tokens", "positions", "active")
     }
-    if proposal:
-        for name in tuple(controls):
-            old = controls[name]
-            del graph.buffers[old.name]
-            controls[name] = graph.buffer(
-                "proposal." + name, (rows,), "int32", role="input"
-            )
-    elif verify:
+    if not proposal and verify:
         controls["positions"] = graph.buffer(
             "verify.positions", (rows,), "int32", role="input"
         )
@@ -661,7 +654,7 @@ def compose_moe_program(
             "gather_hidden",
             dict(slots=rows, chunk=chunk, pool=max_requests, c=config.width),
             saved_hidden,
-            graph.buffers["mapping"],
+            graph.buffer_at("mapping"),
             mode,
             hidden,
         )
@@ -731,7 +724,7 @@ def compose_moe_program(
             "store_hidden",
             dict(slots=rows, chunk=chunk, pool=max_requests, c=config.width),
             head_input,
-            graph.buffers["mapping"],
+            graph.buffer_at("mapping"),
             b["lengths"] if prefill else controls["active"],
             saved_hidden,
         )
@@ -816,7 +809,7 @@ def compose_moe_program(
     commit(
         "advance",
         small_parameters,
-        position=graph.buffers["positions"],
+        position=graph.buffer_at("positions"),
         lengths=b["lengths"],
         active=controls["active"],
     )

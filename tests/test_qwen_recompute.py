@@ -146,7 +146,6 @@ def test_recompute_matches_every_frozen_prefix(tmp_path, chunk):
 def test_c64_input_copy_at_int32_bitcount_boundary(tmp_path):
     import tensor
     from support.migration import source as export_source
-    from akas.compilation.selection import source as operation_source
     from tensor.compiler.build import build_artifact
     from tensor.runtime.dtypes import encode_bfloat16
     from tensor.runtime.dtypes import decode_bfloat16
@@ -190,7 +189,6 @@ def test_c64_input_copy_at_int32_bitcount_boundary(tmp_path):
 def test_c64_short_snapshot_restore_without_flat_bitcount_view(tmp_path):
     import tensor
     from support.migration import source as export_source
-    from akas.compilation.selection import source as operation_source
     from tensor.compiler.build import build_artifact
 
     source = tmp_path / "restore.py"

@@ -571,7 +571,7 @@ class NativeZonos3MiniCheckpoint:
         """Build the exact [condition_rows | text_rows | silence_rows] (N, 11) int32 prompt."""
         import numpy as np
 
-        from akas.models.zonos3.model import SILENCE
+        from akas.models.zonos3.config import SILENCE
 
         c = self.config
         cond_vals = (

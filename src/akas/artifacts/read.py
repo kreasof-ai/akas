@@ -4,6 +4,8 @@ import hashlib
 import json
 from pathlib import Path
 
+from akas.benchmarking.provenance import digest
+
 def artifact_path(directory, record):
     """Resolve and check a physical artifact for either manifest format."""
     directory = Path(directory).resolve()
@@ -13,9 +15,7 @@ def artifact_path(directory, record):
     ).resolve()
     if not path.is_relative_to(directory) or not path.is_file():
         raise ValueError("artifact path escapes its bundle or is missing")
-    with path.open("rb") as image:
-        checksum = hashlib.file_digest(image, "sha256").hexdigest()
-    if checksum != descriptor["sha256"]:
+    if digest(path) != descriptor["sha256"]:
         raise ValueError("artifact checksum/integrity mismatch")
     return path
 
@@ -65,7 +65,11 @@ def read_forward(path):
 
 
 def read_forward_set(directory, filename, *, schema, provider):
-    manifest = json.loads((Path(directory) / filename).read_text(encoding="utf-8"))
+    """Resolve a forward set from an index file or an in-memory manifest."""
+    manifest = (
+        filename if isinstance(filename, dict)
+        else json.loads((Path(directory) / filename).read_text(encoding="utf-8"))
+    )
     return validate_forward_set(directory, manifest, schema=schema, provider=provider)
 
 
@@ -91,12 +95,11 @@ def validate_forward_set(directory, manifest, *, schema, provider):
     return phases
 
 
-def read_program(directory):
-    """Read one inference program index and validate every phase manifest."""
-    import json
-
+def read_program(directory, *, manifest=None):
+    """Validate every phase of a stored or unpublished inference program."""
     root = Path(directory).resolve()
-    manifest = json.loads((root/"program.json").read_text())
+    if manifest is None:
+        manifest = json.loads((root / "program.json").read_text())
     return validate_program(root, manifest)
 
 

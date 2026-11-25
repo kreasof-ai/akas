@@ -13,7 +13,6 @@ GPU = pytest.mark.skipif(
 
 
 def build(tmp_path, kind, p):
-    from support.migration import source as export_source
     from tensor.compiler.build import build_artifact
 
     entry = tmp_path / (kind + ".py")

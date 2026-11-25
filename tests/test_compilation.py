@@ -12,7 +12,7 @@ from akas.compilation import compile_checkpoint
 from akas.compilation import PROFILES
 from support.migration import historical_source
 from akas.compilation.compile import build
-from akas.artifacts.write import checksum
+from akas.benchmarking.provenance import digest as checksum
 from akas.artifacts.write import copy
 from akas.artifacts.schema import Bundle
 from akas.artifacts.schema import Kernel
@@ -442,7 +442,8 @@ def test_dependency_scans_reuse_unchanged_content_and_follow_edits(
     import ast
     import importlib.util
     from types import SimpleNamespace
-    from akas.compilation.emit import dependency_closure, _source_imports
+    from akas.compilation.source import dependency_closure
+    from akas.compilation.emit import _source_imports
 
     paths = {name: tmp_path / (name + ".py") for name in ("a", "b", "c")}
     paths["a"].write_text("import akas.scan_b\n")

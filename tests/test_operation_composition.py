@@ -2,7 +2,7 @@
 
 from types import SimpleNamespace
 
-from akas.artifacts.schema import identity
+from akas.graph import identity
 from akas.execution.plan import KernelPlan
 from akas.ops.linear.definition import linear
 from akas.ops.linear.definition import split_linear

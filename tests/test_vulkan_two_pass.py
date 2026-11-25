@@ -19,7 +19,7 @@ def test_decode_partition_matches_independent_reference(tmp_path, capacity, key_
         pytest.skip("opt-in WebGPU qualification")
     from akas.compilation.emit import build_artifact
     from akas.compilation.selection import source
-    from akas.kernels.registry import validation
+    from akas.ops.planning import validation
     from tensor.artifacts.format import read_artifact
     from tools.context_sweep import vulkan_device
 
@@ -72,7 +72,7 @@ def test_packed_prefill_matches_independent_reference(tmp_path, chunk, capacity,
         pytest.skip("opt-in WebGPU qualification")
     from akas.compilation.emit import build_artifact
     from akas.compilation.selection import source
-    from akas.kernels.registry import validation
+    from akas.ops.planning import validation
     from tensor.artifacts.format import read_artifact
     from tools.context_sweep import vulkan_device
 
@@ -118,7 +118,7 @@ def test_stream_merge_matches_independent_reference(tmp_path, splits):
         pytest.skip("opt-in WebGPU qualification")
     from akas.compilation.emit import build_artifact
     from akas.compilation.selection import source
-    from akas.kernels.registry import validation
+    from akas.ops.planning import validation
     from tensor.artifacts.format import read_artifact
     from tools.context_sweep import vulkan_device
 

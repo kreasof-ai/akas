@@ -14,7 +14,7 @@ from pathlib import Path
 import statistics
 import tempfile
 
-from akas.benchmarking.history import digest, write
+from akas.benchmarking.provenance import digest, write
 from akas.benchmarking import archive
 from akas.benchmarking import enhancement, transcription
 from akas.benchmarking.workload import prompt_digest

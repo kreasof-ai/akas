@@ -27,7 +27,7 @@ def test_half_input_staging_is_declared_and_keeps_decode_abi():
 @pytest.mark.parametrize("kind", ["linear", "ffn"])
 @pytest.mark.parametrize("encoding", [1, 2])
 def test_short_half_gate_accepts_independent_fma_emulation_and_rejects_corruption(kind, encoding):
-    from akas.kernels.registry import validation
+    from akas.ops.planning import validation
     from akas.quantization.weights.ggml.validation import decode_rows
 
     r, k, o = 3, 128, 18

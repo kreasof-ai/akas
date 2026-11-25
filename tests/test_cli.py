@@ -135,7 +135,6 @@ def test_generate_routes_constructor_options_without_model_dispatch(
 
 def test_benchmark_compiles_one_program_bank_for_all_requested_batches(monkeypatch, tmp_path):
     import tensor
-    from types import SimpleNamespace
     from akas import cli
 
     compiled, opened = [], []
@@ -221,7 +220,7 @@ def test_benchmark_records_device_startup_failure(monkeypatch, tmp_path):
 
 def test_checkpoint_file_identity_depends_on_bytes_not_filename(tmp_path):
     import hashlib
-    from akas.cli import checkpoint_digest
+    from akas.checkpoints.identity import checkpoint_digest
 
     first, renamed = tmp_path / "original.gguf", tmp_path / "renamed.gguf"
     first.write_bytes(b"same checkpoint bytes")

@@ -1,7 +1,7 @@
 """CUDA specializations and shared bindings for attention."""
 
 from collections.abc import Mapping
-from akas.kernels.definition import KernelSpec
+from akas.kernels.spec import KernelSpec
 from akas.kernels.kernel import Tensor, kernel, output
 
 
@@ -22,7 +22,7 @@ def mma_partial(spec: KernelSpec, schedule: Mapping[str, object]):
     d = 64
     from akas.ops.attention.kernel import cache_reader
     from akas.quantization.kv.codec import get
-    from akas.quantization._shared.access import packed_arguments
+    from akas.quantization.storage.access import bind_arguments
 
     native_half = p.get("kv_dtype") == "float16" and p.get("unit_scales", False)
     storage, read = cache_reader({**p, "provider": "cuda"})
@@ -31,9 +31,7 @@ def mma_partial(spec: KernelSpec, schedule: Mapping[str, object]):
         if native_half
         else get(p["kv_dtype"]).bind((r, kh, cap, d), provider="cuda")
     )
-    decode = (
-        packed_arguments(codec.require("read_packed")) if codec is not None else None
-    )
+    decode = bind_arguments(codec, "read_packed") if codec is not None else None
     if (
         h % kh
         or group not in (2, 4, 8, 16)
@@ -228,7 +226,7 @@ def packed_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
     p = {**spec.parameters, **schedule}
     import tilelang.language as T
     from akas.quantization.kv.codec import get
-    from akas.quantization._shared.access import cache_arguments, packed_arguments
+    from akas.quantization.storage.access import bind_arguments
 
     r, h, kh, d, cap, chunk = (p[n] for n in ("r", "h", "kh", "d", "capacity", "chunk"))
     slots = r // chunk
@@ -264,7 +262,7 @@ def packed_prefill(spec: KernelSpec, schedule: Mapping[str, object]):
         if not native
         else None
     )
-    decode = packed_arguments(codec.require("read_packed")) if not native else None
+    decode = bind_arguments(codec, "read_packed") if not native else None
 
     @T.macro
     def consume(
@@ -781,12 +779,12 @@ def partial_quantized(spec: KernelSpec, schedule: Mapping[str, object]):
         ),
         provider="cuda",
     )
-    from akas.quantization._shared.access import cache_arguments, packed_arguments
+    from akas.quantization.storage.access import bind_arguments
 
-    decode = cache_arguments(codec.read)
+    decode = bind_arguments(codec, "read")
     packed_dtype = codec.packed_dtype
     decode_packed = (
-        packed_arguments(codec.require("read_packed"))
+        bind_arguments(codec, "read_packed")
         if p.get("packed_loads", False) and packed_dtype
         else None
     )
@@ -952,12 +950,12 @@ def attention(spec: KernelSpec, schedule: Mapping[str, object]):
         ),
         provider="cuda",
     )
-    from akas.quantization._shared.access import cache_arguments, packed_arguments
+    from akas.quantization.storage.access import bind_arguments
 
-    decode_scalar = cache_arguments(codec.read)
-    from akas.quantization._shared.access import packed_arguments
+    decode_scalar = bind_arguments(codec, "read")
+    from akas.quantization.storage.access import bind_arguments
 
-    decode_packed = packed_arguments(codec.require("read_packed"))
+    decode_packed = bind_arguments(codec, "read_packed")
     slots, chunk = (p["slots"], p["chunk"])
     rows = slots * chunk
     d, cap = (256, p["capacity"])
@@ -1364,12 +1362,12 @@ def hopper_prefill_split_partial(spec: KernelSpec, schedule: Mapping[str, object
         ),
         provider="cuda",
     )
-    from akas.quantization._shared.access import cache_arguments, packed_arguments
+    from akas.quantization.storage.access import bind_arguments
 
-    decode_scalar = cache_arguments(codec.read)
-    from akas.quantization._shared.access import packed_arguments
+    decode_scalar = bind_arguments(codec, "read")
+    from akas.quantization.storage.access import bind_arguments
 
-    decode_packed = packed_arguments(codec.require("read_packed"))
+    decode_packed = bind_arguments(codec, "read_packed")
     r, chunk, cap, splits, d = (
         p["slots"],
         p["chunk"],
@@ -1941,9 +1939,9 @@ def mapped_fp8(spec: KernelSpec, schedule: Mapping[str, object]):
         ),
         provider="cuda",
     )
-    from akas.quantization._shared.access import packed_arguments
+    from akas.quantization.storage.access import bind_arguments
 
-    decode_packed = packed_arguments(codec.require("read_packed"))
+    decode_packed = bind_arguments(codec, "read_packed")
     slots, chunk, pool = (p[name] for name in ("slots", "chunk", "pool"))
     rows = slots * chunk
     heads, kh, d, cap, eps = (
@@ -2038,7 +2036,7 @@ def mapped_fp8(spec: KernelSpec, schedule: Mapping[str, object]):
 def floating(spec: KernelSpec, schedule: Mapping[str, object]):
     p = {**spec.parameters, **schedule}
     import tilelang.language as T
-    from akas.ops.attention.kernel import cache_arguments, cache_reader
+    from akas.ops.attention.kernel import cache_reader
 
     r, h, kh, d, cap = (p[n] for n in ("r", "h", "kh", "d", "capacity"))
     if d != 64:
@@ -2186,10 +2184,10 @@ def mapped_bf16(spec: KernelSpec, schedule: Mapping[str, object]):
     projection = 2 * heads * d + 2 * kh * d
     if p.get("kv_dtype") == "fp8":
         from akas.quantization.kv import get
-        from akas.quantization._shared.access import cache_arguments
+        from akas.quantization.storage.access import bind_arguments
 
         codec = get("fp8").bind((pool, kh, cap, d), provider="cuda")
-        decode_scalar = cache_arguments(codec.read)
+        decode_scalar = bind_arguments(codec, "read")
 
         @kernel
         def compute(
@@ -2531,12 +2529,12 @@ def quantized(spec: KernelSpec, schedule: Mapping[str, object]):
         ),
         provider="cuda",
     )
-    from akas.quantization._shared.access import cache_arguments, packed_arguments
+    from akas.quantization.storage.access import bind_arguments
 
-    decode = cache_arguments(codec.read)
+    decode = bind_arguments(codec, "read")
     packed_dtype = codec.packed_dtype
     decode_packed = (
-        packed_arguments(codec.require("read_packed"))
+        bind_arguments(codec, "read_packed")
         if p.get("packed_loads", False) and packed_dtype
         else None
     )
@@ -2714,12 +2712,12 @@ def partial(spec: KernelSpec, schedule: Mapping[str, object]):
         ),
         provider="cuda",
     )
-    from akas.quantization._shared.access import cache_arguments, packed_arguments
+    from akas.quantization.storage.access import bind_arguments
 
-    decode_scalar = cache_arguments(codec.read)
-    from akas.quantization._shared.access import packed_arguments
+    decode_scalar = bind_arguments(codec, "read")
+    from akas.quantization.storage.access import bind_arguments
 
-    decode_packed = packed_arguments(codec.require("read_packed"))
+    decode_packed = bind_arguments(codec, "read_packed")
     r, chunk, cap, splits, d = (
         p["slots"],
         p["chunk"],
@@ -2885,9 +2883,9 @@ def prefill_split_mapped_fp8(spec: KernelSpec, schedule: Mapping[str, object]):
         ),
         provider="cuda",
     )
-    from akas.quantization._shared.access import packed_arguments
+    from akas.quantization.storage.access import bind_arguments
 
-    decode_packed = packed_arguments(codec.require("read_packed"))
+    decode_packed = bind_arguments(codec, "read_packed")
     slots, chunk, pool = (p[name] for name in ("slots", "chunk", "pool"))
     rows = slots * chunk
     heads, kh, d, cap, eps = (
@@ -3317,9 +3315,9 @@ def kv_quantized(spec: KernelSpec, schedule: Mapping[str, object]):
     chunk = p.get("chunk", 1)
     rows = slots * chunk
     d, cap, eps, theta = (256, p["capacity"], p["eps"], p["theta"])
-    from akas.quantization._shared.access import pair_arguments
+    from akas.quantization.storage.access import bind_arguments
 
-    encode_pair = pair_arguments(codec.require("write_pair"))
+    encode_pair = bind_arguments(codec, "write_pair")
     storage = codec.storage
     if len(storage.metadata) != 1:
         raise ValueError("this attention ABI requires one metadata buffer per cache")
@@ -3414,9 +3412,9 @@ def qkv_mapped_fp8(spec: KernelSpec, schedule: Mapping[str, object]):
         ),
         provider="cuda",
     )
-    from akas.quantization._shared.access import packed_arguments
+    from akas.quantization.storage.access import bind_arguments
 
-    decode_packed = packed_arguments(codec.require("read_packed"))
+    decode_packed = bind_arguments(codec, "read_packed")
     slots, chunk, pool = (p[name] for name in ("slots", "chunk", "pool"))
     rows = slots * chunk
     heads, kh, d, cap, eps = (
@@ -3424,7 +3422,7 @@ def qkv_mapped_fp8(spec: KernelSpec, schedule: Mapping[str, object]):
     )
     projection = 2 * heads * d + 2 * kh * d
     theta = p["theta"]
-    from akas.quantization._shared.access import pair_arguments
+    from akas.quantization.storage.access import bind_arguments
 
     codec = get("fp8").bind(
         (
@@ -3436,7 +3434,7 @@ def qkv_mapped_fp8(spec: KernelSpec, schedule: Mapping[str, object]):
         provider="cuda",
         access={"value_offset": 2 * heads * d + kh * d},
     )
-    encode_pair = pair_arguments(codec.require("write_pair"))
+    encode_pair = bind_arguments(codec, "write_pair")
 
     @kernel
     def compute(
@@ -3532,12 +3530,12 @@ def decode(spec: KernelSpec, schedule: Mapping[str, object]):
         ),
         provider="cuda",
     )
-    from akas.quantization._shared.access import cache_arguments, packed_arguments
+    from akas.quantization.storage.access import bind_arguments
 
-    decode_scalar = cache_arguments(codec.read)
-    from akas.quantization._shared.access import packed_arguments
+    decode_scalar = bind_arguments(codec, "read")
+    from akas.quantization.storage.access import bind_arguments
 
-    decode_packed = packed_arguments(codec.require("read_packed"))
+    decode_packed = bind_arguments(codec, "read_packed")
     slots, cap = (p["slots"], p["capacity"])
     d = 256
     block = 128
@@ -3590,18 +3588,6 @@ def decode(spec: KernelSpec, schedule: Mapping[str, object]):
     return compute
 
 
-from .kernel import (
-    attention as shared_attention,
-    attention_flat,
-    cache_extent,
-    cache_pad,
-    cache_write,
-    chunk_active,
-    merge_floating,
-    partial_floating,
-    prepare_flat,
-    rope,
-)
 from .definition import IMPLEMENTATIONS as _CHOICES
 
 IMPLEMENTATIONS = tuple((choice for choice in _CHOICES if choice.provider == "cuda"))
@@ -3610,7 +3596,7 @@ IMPLEMENTATIONS = tuple((choice for choice in _CHOICES if choice.provider == "cu
 def floating_ordered(spec: KernelSpec, schedule: Mapping[str, object]):
     p = {**spec.parameters, **schedule}
     import tilelang.language as T
-    from akas.ops.attention.kernel import cache_arguments, cache_reader
+    from akas.ops.attention.kernel import cache_reader
 
     policy = T.GemmWarpPolicy.FullRow
     r, h, kh, d, cap = (p[n] for n in ("r", "h", "kh", "d", "capacity"))

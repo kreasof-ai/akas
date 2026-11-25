@@ -1,6 +1,6 @@
 """Contracts and implementation choices for indexing."""
 
-from akas.kernels.contracts import Implementation, OutputABI
+from akas.kernels.spec import Implementation, OutputABI
 from akas.ops.indexing.validation import validation, feature_validation
 
 OUTPUT_ARGUMENTS = {}

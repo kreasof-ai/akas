@@ -1,7 +1,7 @@
 """Shared TileLang computations for activation."""
 
 from collections.abc import Mapping
-from akas.kernels.definition import KernelSpec
+from akas.kernels.spec import KernelSpec
 from akas.kernels.kernel import Tensor, kernel, output
 
 
@@ -272,9 +272,9 @@ def column_activation(spec, schedule):
     activate = gelu_erf()
 
     if spec.kind == "gelu_bias" and p.get("output_dtype") == "float16":
-        from akas.quantization._shared.rounding import round_half
+        from akas.quantization.storage.rounding import round_values
 
-        rounded = round_half()
+        rounded = round_values("float16")
 
         @kernel
         def compute(

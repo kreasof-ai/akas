@@ -65,7 +65,7 @@ def discover(checkpoint, definition=None):
     else:
         from akas.checkpoints.gguf import GGUF
 
-        architecture = GGUF(checkpoint).metadata.get("general.architecture")
+        architecture = GGUF(checkpoint).architecture
     found = set()
     for entry in iter_modules(akas.models.__path__):
         if entry.ispkg and not entry.name.startswith("_"):
@@ -145,6 +145,22 @@ class Context:
             ):
                 raise ValueError(f"{name} must be positive")
 
+    @classmethod
+    def from_options(cls, args):
+        checkpoint = args.model.resolve()
+        return cls(
+            str(checkpoint),
+            discover(checkpoint, args.definition),
+            workload(args.workload),
+            args.backend,
+            args.device,
+            None if args.memory_gib is None else args.memory_gib * 1024**3,
+            args.ttft_ms,
+            args.tpot_ms,
+            args.kv_cache,
+            args.mode,
+        )
+
     def metadata(self):
         return asdict(self)
 
@@ -156,78 +172,3 @@ def source_root():
         if (checkout / "src/akas").is_dir()
         else Path(__file__).resolve().parents[1]
     )
-
-
-def arguments(parser):
-    parser.add_argument(
-        "--model",
-        type=Path,
-        required=True,
-        help="local safetensors directory or GGUF checkpoint",
-    )
-    parser.add_argument(
-        "--workload",
-        default="standard-v1",
-        help="packaged workload ID or a workload JSON file",
-    )
-    parser.add_argument(
-        "--budget",
-        required=True,
-        help="additional wall-clock allowance, e.g. 30m or 4h; includes compilation",
-    )
-    parser.add_argument("--backend", choices=("auto", "cuda", "webgpu"), default="auto")
-    parser.add_argument("--device", type=int, default=0)
-    parser.add_argument(
-        "--mode",
-        choices=("auto", "ar", "mtp"),
-        default="auto",
-        help="required generation mode, or evaluate supported modes",
-    )
-    parser.add_argument(
-        "--kv-cache",
-        choices=("float16", "bfloat16", "fp8"),
-        help="required cache precision; defaults to the model declaration",
-    )
-    parser.add_argument("--out", type=Path, required=True)
-    parser.add_argument("--definition", help="optional module:class for a custom model")
-    parser.add_argument("--memory-gib", type=float, help="optional GPU memory ceiling")
-    parser.add_argument("--ttft-ms", type=float, help="optional maximum serving TTFT")
-    parser.add_argument(
-        "--tpot-ms",
-        type=float,
-        help="optional maximum serving time per subsequent output token",
-    )
-    parser.add_argument(
-        "--shape-timeout",
-        help="maximum duration per measurement repetition, including diagnostics, e.g. 2m",
-    )
-    parser.add_argument("--history", type=Path, default=Path("benchmarks"))
-    parser.set_defaults(run=command)
-
-
-def command(args):
-    from akas.optimization.supervisor import optimize
-
-    if args.shape_timeout is not None:
-        import os
-
-        os.environ["AKAS_SHAPE_TIMEOUT"] = str(duration(args.shape_timeout))
-    checkpoint = args.model.resolve()
-    context = Context(
-        str(checkpoint),
-        discover(checkpoint, args.definition),
-        workload(args.workload),
-        args.backend,
-        args.device,
-        None if args.memory_gib is None else args.memory_gib * 1024**3,
-        args.ttft_ms,
-        args.tpot_ms,
-        args.kv_cache,
-        args.mode,
-    )
-    result = optimize(
-        context, args.out, budget=duration(args.budget), history=args.history
-    )
-    print(json.dumps(result, indent=2))
-    if not result.get("deployment"):
-        raise SystemExit(1)

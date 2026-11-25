@@ -1,7 +1,7 @@
 """Shared TileLang computations for normalization."""
 
 from collections.abc import Mapping
-from akas.kernels.definition import KernelSpec
+from akas.kernels.spec import KernelSpec
 from akas.kernels.kernel import Tensor, kernel, output
 
 
@@ -23,7 +23,7 @@ def add_rms(spec: KernelSpec, schedule: Mapping[str, object]):
 
 
 def kvnorm(spec: KernelSpec, schedule: Mapping[str, object]):
-    from akas.ops.attention.kernel import _normalization as normalization_kernel
+    from akas.ops.attention.kernel import cache_normalization as normalization_kernel
 
     parameters = {**spec.parameters, **schedule}
     p = dict(parameters)
@@ -32,7 +32,7 @@ def kvnorm(spec: KernelSpec, schedule: Mapping[str, object]):
 
 
 def qnorm(spec: KernelSpec, schedule: Mapping[str, object]):
-    from akas.ops.attention.kernel import _normalization as normalization_kernel
+    from akas.ops.attention.kernel import cache_normalization as normalization_kernel
 
     parameters = {**spec.parameters, **schedule}
     p = dict(parameters)

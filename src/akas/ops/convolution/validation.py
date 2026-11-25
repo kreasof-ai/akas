@@ -3,7 +3,7 @@
 
 def image_patches_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     size, stride, padding = (p[k] for k in ("kernel", "stride", "padding"))
@@ -18,7 +18,7 @@ def image_patches_validation(kind, p, signature):
 
 def image_projection_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     size, stride, pad = (p[k] for k in ("kernel", "stride", "padding"))
@@ -50,7 +50,7 @@ def image_projection_validation(kind, p, signature):
 
 def validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     r, c, length, chunk = (p["r"], p["c"], p.get("length", 3), p.get("chunk", 1))
@@ -80,7 +80,7 @@ def validation(kind, p, signature):
 def verification_validation(kind, p, signature):
     """Independent history expectations include empty, partial and complete commits."""
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     rows, channels, length, chunk = (p[n] for n in ("r", "c", "length", "chunk"))
@@ -126,7 +126,7 @@ def verification_validation(kind, p, signature):
 
 def causal_depthwise_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     padding = (
@@ -142,7 +142,7 @@ def causal_depthwise_validation(kind, p, signature):
 
 def causal_depthwise_state_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     slots, chunk, width, taps = (p[k] for k in ("slots", "chunk", "c", "taps"))
@@ -173,7 +173,7 @@ def causal_depthwise_state_validation(kind, p, signature):
 
 def istft_stream_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     expected = {k: v.copy() for k, v in values.items()}

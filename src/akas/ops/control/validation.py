@@ -2,7 +2,7 @@
 
 
 def copy_validation(kind, p, signature):
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     expected = {name: value.copy() for name, value in values.items()}
@@ -11,7 +11,7 @@ def copy_validation(kind, p, signature):
 
 
 def feedback_validation(kind, parameters, signature):
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     arguments = sample_arguments(signature)
     arguments["lengths"][:] = 1
@@ -28,7 +28,7 @@ def feedback_validation(kind, parameters, signature):
 def validation(kind, p, signature):
     import numpy as np
     from akas.generation.speculative.acceptance import accepted_prefix
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     slots, window = (p["slots"], p["window"])

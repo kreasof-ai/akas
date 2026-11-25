@@ -145,13 +145,8 @@ def compose(
                 else {}
             ),
         )
-        if (
-            half
-            and g.calls
-            and g.calls[-1].kind == "add"
-            and g.calls[-1].arguments[-1] == x.name
-        ):
-            addition = g.calls.pop()
+        addition = g.pop_matching_tail("add", x.name) if half else None
+        if addition is not None:
             g("add_rms", parameters, *addition.arguments, weights[weight], out)
         else:
             g("rms", parameters, x, weights[weight], out)
@@ -373,9 +368,7 @@ def compose(
     hidden = norm("normalized_output", hidden, "output_norm.weight", rows)
     head = "token_embd.weight" if c.tied else "output.weight"
     logits = project("logits", hidden, head, w, c.vocab, rows)
-    from dataclasses import replace
-
-    g.buffers["logits"] = replace(logits, role="output")
+    logits = g.replace_buffer(logits.name, role="output")
     sampled = g.buffer("sampled", (rows,), "int32", role="output")
     g("argmax", dict(r=rows, c=c.vocab), logits, sampled, active)
     g("next_tokens", dict(r=rows), sampled, tokens)

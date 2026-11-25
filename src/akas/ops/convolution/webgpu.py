@@ -1,6 +1,5 @@
 """WebGPU specializations and shared bindings for convolution."""
 
-from .kernel import convolution, convolution_flat, verify, commit
 from .definition import IMPLEMENTATIONS as _CHOICES
 from akas.kernels.kernel import Tensor, kernel, output
 
@@ -74,7 +73,7 @@ def implicit_half_conv2d(spec, schedule):
 def image_patches_half(spec, schedule):
     """Gather contiguous channel groups and round each patch element once."""
     import tilelang.language as T
-    from akas.quantization._shared.rounding import round_half
+    from akas.quantization.storage.rounding import round_values
 
     p = spec.parameters
     width, height, channels = (p[k] for k in ("width", "height", "channels"))
@@ -82,7 +81,7 @@ def image_patches_half(spec, schedule):
     ow, oh = ((n + 2 * pad - size) // stride + 1 for n in (width, height))
     groups = channels // 4
     depth = size * size * channels
-    rounded = round_half()
+    rounded = round_values("float16")
 
     @kernel
     def compute(image: Tensor((width, height, groups, 4), "float32")) -> Tensor(
@@ -111,7 +110,7 @@ def image_patches_half(spec, schedule):
 def single_channel_conv2d(spec, schedule):
     """Share a short single-channel image patch across all output filters."""
     import tilelang.language as T
-    from akas.quantization._shared.rounding import round_half
+    from akas.quantization.storage.rounding import round_values
 
     p = {**spec.parameters, **schedule}
     width, height, columns = (p[k] for k in ("width", "height", "columns"))
@@ -121,7 +120,7 @@ def single_channel_conv2d(spec, schedule):
     sites = p.get("sites", 4)
     if sites <= 0 or sites * taps > 128:
         raise ValueError("single-channel convolution patch tile exceeds 128 lanes")
-    rounded = round_half()
+    rounded = round_values("float16")
 
     @kernel
     def compute(

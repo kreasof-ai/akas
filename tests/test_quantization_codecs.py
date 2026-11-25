@@ -171,7 +171,7 @@ def test_cuda_prefill_projection_uses_independent_codec_inputs(
     from tensor.artifacts.format import read_artifact
     from tensor.compiler.frontend.portable import export_spec
     from akas.compilation.emit import build_artifact
-    from akas.kernels.registry import validation
+    from akas.ops.planning import validation
 
     p = dict(r=33, k=256, o=65, type=encoding, ggml=True, packed_pairs=packed_pairs)
     entry, artifact = tmp_path / "projection.py", tmp_path / "projection.tbin"
@@ -289,7 +289,7 @@ def test_metadata_must_be_named_at_declaration():
 @pytest.mark.parametrize("rows,depth", [(3, 256), (1, 96)])
 def test_legacy_packed_q8_rejects_unsupported_geometry(rows, depth):
     from akas.kernels.registry import select
-    from akas.kernels.definition import KernelSpec
+    from akas.kernels.spec import KernelSpec
     from akas.ops.linear.webgpu import linear_q8
 
     p = dict(r=rows, k=depth, o=8, type=2)
@@ -300,7 +300,7 @@ def test_legacy_packed_q8_rejects_unsupported_geometry(rows, depth):
 
 
 def test_word_packing_preserves_odd_block_count_and_padding():
-    from akas.quantization._shared.packing import pack_words
+    from akas.quantization.host import pack_words
     from akas.quantization.weights.ggml.validation import sample_weight
 
     storage = get("weights", "ggml").storage((3, 256), provider="webgpu", encoding=14)
@@ -341,7 +341,7 @@ def test_kv_persistent_layout_keeps_provider_packing():
 
 
 def test_format_lookup_contributes_dynamic_codec_sources_to_artifacts():
-    from akas.compilation.emit import source_dependencies
+    from akas.compilation.source import source_dependencies
 
     dependencies = source_dependencies("akas.ops.vocabulary.kernel")
     for scope, name in CODECS:
@@ -368,7 +368,8 @@ def test_codecs_do_not_depend_on_checkpoint_parsing_or_operation_kernels():
 def test_factories_return_explicit_results_on_both_providers(
     provider, kind, parameters, contract
 ):
-    from akas.kernels.definition import KernelSpec, Capabilities, define
+    from akas.kernels.spec import KernelSpec, Capabilities
+    from akas.kernels.definition import define
 
     result = define(
         KernelSpec(kind, parameters, contract), capabilities=Capabilities(provider)
@@ -393,7 +394,7 @@ def test_native_codec_and_fused_consumer_qualification(
     from tensor.artifacts.format import read_artifact
     from akas.compilation.selection import source
     from akas.compilation.emit import build_artifact
-    from akas.kernels.registry import validation
+    from akas.ops.planning import validation
 
     entry = tmp_path / "kernel.py"
     artifact = tmp_path / "kernel.tbin"

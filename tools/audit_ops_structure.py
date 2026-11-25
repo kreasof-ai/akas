@@ -39,7 +39,7 @@ def is_kernel(node):
 
 
 def audit():
-    from akas.kernels.registry import definition_modules
+    from akas.ops.planning import definition_modules
 
     declarations = []
     for module in definition_modules():

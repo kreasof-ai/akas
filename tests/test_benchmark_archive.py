@@ -3,20 +3,13 @@
 from argparse import Namespace
 from copy import deepcopy
 import json
-from pathlib import Path
 import subprocess
 
 import pytest
 
 from akas.benchmarking import archive
-from akas.benchmarking.history import (
-    command,
-    digest,
-    load_record,
-    rebuild_index,
-    records,
-    write,
-)
+from akas.benchmarking.history import command, load_record, rebuild_index, records
+from akas.benchmarking.provenance import digest, write
 from tools.benchmark_archive import check, file_manifest, prune, publish, stored_size
 
 

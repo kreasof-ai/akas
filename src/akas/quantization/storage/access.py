@@ -32,23 +32,6 @@ def permuted_reader(read, row_order=None, column_order=None):
     return load
 
 
-def restore_order(values, axis, order):
-    """Host counterpart of grouped-to-tiled addressing for checkpoint inspection."""
-    import numpy as np
-
-    if order is None:
-        return values
-    start, groups, repeats, width = order
-    positions = np.arange(values.shape[axis])
-    tail = positions[start:] - start
-    positions[start:] = (
-        start
-        + (tail // width % repeats * groups + tail // (width * repeats)) * width
-        + tail % width
-    )
-    return np.take(values, positions, axis=axis)
-
-
 def matrix_reader(load):
     """Adapt an embedded-metadata reader without changing its arithmetic."""
     import tilelang.language as T
@@ -140,3 +123,25 @@ def writer_arguments(write):
         write(keys, values, row, head, position, (kc, ks), (vc, vs), tx, enabled)
 
     return store
+
+
+def bind_arguments(codec, operation):
+    """Bind a codec operation to an existing separate-values-and-scales ABI."""
+    if operation == "read":
+        return cache_arguments(codec.read)
+    adapters = {
+        "read_packed": packed_arguments,
+        "write": writer_arguments,
+        "write_pair": pair_arguments,
+    }
+    return adapters[operation](codec.require(operation))
+
+
+def bind_reader(load, shape=None, *, separate=False, stage=None):
+    """Pair scalar and staged access to a matrix or a request cache."""
+    if shape is None:
+        read = cache_reader(load) if separate else load
+        return read, cache_tile(read)
+    read = matrix_reader(load) if separate else load
+    tile = matrix_tile(read, shape) if stage is None else stage(shape, read)
+    return read, tile

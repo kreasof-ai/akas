@@ -150,7 +150,8 @@ def test_moe_kernel_device_qualification(tmp_path, provider, kind, parameters):
     import tensor
     from akas.compilation.selection import source
     from akas.compilation.emit import build_artifact
-    from akas.kernels.registry import validation, select
+    from akas.ops.planning import validation
+    from akas.kernels.registry import select
     from tensor.artifacts.format import read_artifact
 
     parameters = {**parameters, "round_inputs": provider == "cuda"}
@@ -376,7 +377,7 @@ def test_expert_search_reuses_reference_across_tiles(tmp_path, monkeypatch, prov
     from akas.graph import Graph
     from akas.compilation.compile import produce
     from akas.compilation.tuning import SearchSettings
-    from akas.kernels import registry
+    from akas.ops import planning
 
     rows, top, experts, depth, columns = 33, 2, 4, 256, 128
     parameters = dict(
@@ -415,14 +416,14 @@ def test_expert_search_reuses_reference_across_tiles(tmp_path, monkeypatch, prov
         for name, shape, dtype, role in layouts
     ]
     graph("quantized_experts", parameters, *buffers)
-    reference = registry.validation
+    reference = planning.validation
     constructions = []
 
     def counted(kind, p, signature):
         constructions.append((kind, dict(p)))
         return reference(kind, p, signature)
 
-    monkeypatch.setattr(registry, "validation", counted)
+    monkeypatch.setattr(planning, "validation", counted)
     result = produce(
         graph,
         tmp_path,
@@ -450,7 +451,7 @@ def test_attention_search_keeps_precision_references_distinct(tmp_path, monkeypa
     from akas.graph import Graph
     from akas.compilation.compile import produce
     from akas.compilation.tuning import SearchSettings
-    from akas.kernels import registry
+    from akas.ops import planning
 
     p = dict(
         r=8,
@@ -479,14 +480,14 @@ def test_attention_search_keeps_precision_references_distinct(tmp_path, monkeypa
         for n, s, d in layouts
     ]
     graph("attention", p, *args)
-    reference = registry.validation
+    reference = planning.validation
     precision = []
 
     def counted(kind, parameters, signature):
         precision.append(parameters.get("prefill_precision", "float32"))
         return reference(kind, parameters, signature)
 
-    monkeypatch.setattr(registry, "validation", counted)
+    monkeypatch.setattr(planning, "validation", counted)
     produce(
         graph,
         tmp_path,
@@ -544,7 +545,7 @@ def test_grouped_decode_partial_tail_scales_and_inactive(
     import tensor
     from akas.compilation.selection import source
     from akas.compilation.emit import build_artifact
-    from akas.kernels.registry import validation
+    from akas.ops.planning import validation
     from tensor.artifacts.format import read_artifact
 
     p = dict(
@@ -623,7 +624,7 @@ def test_cuda_pipelined_attention_tail_and_inactive(
     import tensor
     from akas.compilation.selection import source
     from akas.compilation.emit import build_artifact
-    from akas.kernels.registry import validation
+    from akas.ops.planning import validation
     from tensor.artifacts.format import read_artifact
 
     p = dict(
@@ -707,7 +708,7 @@ def test_cuda_packed_expert_preserves_continuous_accumulation(tmp_path):
     from tensor.artifacts.format import read_artifact
     from akas.compilation.emit import build_artifact
     from akas.compilation.selection import source
-    from akas.kernels.registry import validation
+    from akas.ops.planning import validation
     from akas.quantization.weights.ggml.validation import decode_rows
 
     p = dict(
@@ -781,7 +782,7 @@ def test_cuda_fp8_model_matches_independent_oracle_in_nonzero_slot(tmp_path):
     from akas.compilation.compile import compile_program
     from akas.compilation.tuning import SearchSettings
     from akas.execution.executor import Executor
-    from akas.quantization._shared.e4m3 import encode_storage, decode_storage
+    from akas.quantization.host import encode_storage, decode_storage
 
     path = fixture(tmp_path / "moe.gguf", dense_layers=0, context=8192)
     loaded = LFM2MoE.checkpoint_type(path, tokenizer=False)

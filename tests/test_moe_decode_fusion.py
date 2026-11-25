@@ -46,7 +46,7 @@ def graph_fixture(provider="cuda", rows=1):
 def test_fusion_is_searchable_and_preserves_the_activation_buffer(provider, named):
     from akas.graph import Call
     from akas.ops.moe.definition import lower, search_policies
-    from akas.kernels.registry import graph_outputs
+    from akas.ops.planning import graph_outputs
 
     graph = graph_fixture(provider)
     if named:
@@ -136,7 +136,7 @@ def test_fused_operation_with_independent_codecs_and_inactive_experts(
     from tensor.artifacts.format import read_artifact
     from akas.compilation.selection import source
     from akas.compilation.emit import build_artifact
-    from akas.kernels.registry import validation
+    from akas.ops.planning import validation
     from akas.memory.transfer import write
 
     p = dict(

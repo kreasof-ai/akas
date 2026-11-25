@@ -1,6 +1,5 @@
 """DSpark sidecar phases follow the same graph composition contract as targets."""
 
-from dataclasses import replace
 from akas.graph import Graph
 from akas.models.definition import Composition, Definition
 from akas.models.dspark.weights import DSparkDraftCheckpoint
@@ -361,11 +360,7 @@ def compose(
         features.update(
             tokens=predicted.name, confidence=confidence.name, logits=base.name
         )
-    for name, spec in tuple(graph.buffers.items()):
-        if spec.role == "state":
-            lifted = replace(spec, shape=(max_requests, *spec.shape[1:]))
-            object.__setattr__(lifted, "_graph", graph)
-            graph.buffers[name] = lifted
+    graph.resize_state_rows(max_requests)
     graph.bind_requests(
         inputs=dict(tokens=source.name, mapping=mapping.name, lengths=active.name),
         prediction=prediction,

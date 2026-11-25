@@ -4,7 +4,7 @@ from contextlib import contextmanager
 import json
 from pathlib import Path
 
-from akas.benchmarking.history import digest
+from akas.benchmarking.provenance import digest
 from akas.optimization.context import symbol
 
 
@@ -19,7 +19,7 @@ def load(path, *, candidate=False):
         raise ValueError("deployment has not passed qualification")
     if manifest.get("runtime_source") != runtime_source():
         raise ValueError("deployment runtime source changed; optimize again")
-    from akas.optimization.planning import software
+    from akas.optimization.provenance import software
 
     installed = software()
     if any(
@@ -45,7 +45,7 @@ def service(path, *, candidate=False):
     manifest = load(path, candidate=candidate)
     context, recipe = manifest["context"], manifest["recipe"]
     checkpoint = Path(context["checkpoint"])
-    from akas.cli import checkpoint_digest
+    from akas.checkpoints.identity import checkpoint_digest
 
     if checkpoint_digest(checkpoint) != manifest["checkpoint_sha256"]:
         raise ValueError("deployment checkpoint bytes have changed")
@@ -156,7 +156,7 @@ def describe(
     visit(manifest)
     # Paths are relative to the deployment directory, which is the program's parent.
     import os
-    from akas.optimization.planning import software
+    from akas.optimization.provenance import software
 
     base = program.parent
     recipe = dict(recipe)

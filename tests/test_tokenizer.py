@@ -239,7 +239,7 @@ def test_chat_template_with_thinking_branch_uses_non_thinking_default(
 
 
 def test_qwen_gguf_profile_normalizes_text_and_keeps_user_tokens_literal():
-    from akas.text.tokenizer import ENCODE_BYTE
+    from akas.text.formats import ENCODE_BYTE
 
     tokens = list(ENCODE_BYTE.values()) + ["<|im_start|>", "<|im_end|>", "<think>"]
     tokenizer = Tokenizer.from_gguf(
@@ -259,7 +259,7 @@ def test_qwen_gguf_profile_normalizes_text_and_keeps_user_tokens_literal():
 
 
 def test_ordered_isolated_splits_preserve_individual_digit_boundaries():
-    from akas.text.tokenizer import ENCODE_BYTE
+    from akas.text.formats import ENCODE_BYTE
 
     vocab = {char: i for i, char in enumerate(ENCODE_BYTE.values())}
     vocab["12"] = len(vocab)

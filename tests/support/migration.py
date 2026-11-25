@@ -22,7 +22,7 @@ def resolve(module, name, args):
 
 
 def build(module, name, kind, parameters):
-    from akas.kernels.definition import KernelSpec
+    from akas.kernels.spec import KernelSpec
 
     return getattr(import_module(module), name)(KernelSpec(kind, parameters), {})
 

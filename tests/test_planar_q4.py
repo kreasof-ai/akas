@@ -84,7 +84,8 @@ def test_planar_rejects_unsupported_dot_geometry_and_partial_blocks():
 def test_lfm_planar_option_changes_only_encoded_expert_storage():
     from types import SimpleNamespace
     from akas.models.lfm2.config import LFM2MoEConfig
-    from akas.models.lfm2.weights import LFM2MoECheckpoint, tensor_shapes
+    from akas.models.lfm2.weights import LFM2MoECheckpoint
+    from akas.models.lfm2.config import tensor_shapes
     from akas.models.lfm2.model import LFM2MoE
     from akas.ops.moe.definition import lower
 
@@ -222,7 +223,7 @@ def test_gpu_planar_experts_preserve_raw_outputs_and_inactive_contract(
     from tensor.artifacts.format import read_artifact
     from akas.compilation.emit import build_artifact
     from akas.compilation.selection import source
-    from akas.kernels.registry import validation
+    from akas.ops.planning import validation
     from akas.memory.transfer import write
     from akas.quantization.weights.ggml.kernel import repack_host
 

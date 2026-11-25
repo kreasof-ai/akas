@@ -43,7 +43,7 @@ def decode(packed, scales, *, rows, depth):
 
 def validation(kind, parameters, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
     from akas.quantization.activations.q16.validation import decode, encode
 
     values = sample_arguments(signature)

@@ -2,7 +2,7 @@
 
 from akas.kernels.kernel import Tensor, kernel, output
 from collections.abc import Mapping
-from akas.kernels.definition import KernelSpec
+from akas.kernels.spec import KernelSpec
 
 
 def buffer_view(*args, **kwargs):
@@ -84,7 +84,7 @@ def half_input(spec: KernelSpec, schedule: Mapping[str, object]):
     """Materialize the projection's existing FP16 operand precision once."""
     import tilelang.language as T
 
-    count = spec.parameters["r"] * spec.parameters["k"]
+    count = spec.parameter("r") * spec.parameter("k")
 
     @kernel
     def compute(x: Tensor(count, "float32")) -> Tensor(count, "float16"):
@@ -99,7 +99,7 @@ def half_input(spec: KernelSpec, schedule: Mapping[str, object]):
     return compute
 
 
-def _mma(p, *, grouped, prequantized):
+def mma_projection(p, *, grouped, prequantized):
     import tilelang.language as T
 
     r, k, o = (p["r"], p["k"], p["o"])
@@ -915,7 +915,7 @@ def gemv_packed(p, paired=False, add_residual=False):
 
 def _fused(p, paired=False, add_residual=False):
     import tilelang.language as T
-    from akas.kernels.definition import KernelSpec
+    from akas.kernels.spec import KernelSpec
     from akas.ops.linear.kernel import cuda_abi as projection_abi
     from akas.ops.linear.cuda import _packed as prefill_kernel
     from akas.ops.linear.kernel import packed_linear as _factory_packed_linear
@@ -1449,7 +1449,6 @@ MINIMUM_MMA_GROUPS = 32
 MAXIMUM_GEMV_ROWS = 31
 MINIMUM_MMA_GROUPS = 32
 MAXIMUM_GEMV_ROWS = 31
-from .kernel import linear as shared_linear, packed_linear
 from .definition import IMPLEMENTATIONS as _CHOICES
 
 IMPLEMENTATIONS = tuple((choice for choice in _CHOICES if choice.provider == "cuda"))
@@ -1465,9 +1464,6 @@ def projection(spec, schedule):
     from .kernel import projection
 
     return projection(spec, schedule, provider="cuda")
-
-
-from .kernel import column_projection as column_projection
 
 
 def short_packed_linear(spec, schedule):
@@ -1795,3 +1791,6 @@ def _q4_q8(p, *, packed_output):
             return out
 
     return compute
+
+
+_mma = mma_projection

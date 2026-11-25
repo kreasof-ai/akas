@@ -4,7 +4,8 @@ from pathlib import Path
 from uuid import uuid4
 
 from akas.artifacts.schema import Bundle
-from akas.artifacts.write import checksum, publish
+from akas.benchmarking.provenance import digest as checksum
+from akas.artifacts.write import publish
 from akas.compilation.emit import compile_kernel
 from akas.compilation.selection import kernels as assemble
 
@@ -160,7 +161,7 @@ def compile_forwards(
     """Build a model-declared set of forwards with an atomic, versioned index."""
     from contextlib import nullcontext
 
-    from akas.artifacts.read import validate_forward_set
+    from akas.artifacts.read import read_forward_set
 
     filename, schema = definition.forward_index
     metadata, graphs = definition.forward_phases(
@@ -194,7 +195,7 @@ def compile_forwards(
             build(bundle, folder, device=adapter, search_settings=search_settings)
             records[str(rows)] = {"path": path, "sha256": checksum(folder / path)}
     manifest = dict(metadata, schema=schema, provider=provider, phases=phases)
-    validate_forward_set(folder, manifest, schema=schema, provider=provider)
+    read_forward_set(folder, manifest, schema=schema, provider=provider)
     publish(folder / filename, manifest)
     return manifest
 
@@ -295,7 +296,7 @@ def compile_program(
     from dataclasses import asdict
     from uuid import uuid4
 
-    from akas.artifacts.write import checksum
+    from akas.benchmarking.provenance import digest as checksum
 
     out = Path(out)
     if any(
@@ -676,8 +677,8 @@ def compile_program(
         model_options=model_options,
         policy=dict(policy or {}),
     )
-    from akas.artifacts.read import validate_program
+    from akas.artifacts.read import read_program
 
-    validate_program(out, manifest)
+    read_program(out, manifest=manifest)
     publish(out / "program.json", manifest)
     return manifest

@@ -1,7 +1,7 @@
 """Contracts and implementation choices for gdn."""
 
-from akas.kernels.contracts import OutputABI
-from akas.kernels.contracts import Implementation
+from akas.kernels.spec import OutputABI
+from akas.kernels.spec import Implementation
 from akas.ops.gdn.validation import VALIDATIONS as VALIDATIONS
 
 
@@ -395,15 +395,13 @@ def journal_prefixes(graph, commit, *, slots, chunk, lengths, mode="snapshots"):
             continue
         if mode == "recompute":
             from math import prod
-            from akas.graph import Graph
 
-            copies = Graph(contract=graph.contract, phase=graph.phase)
-            copies.buffers = graph.buffers
+            copies = graph.record_pass()
             bindings = dict(call.bindings)
             for name in ("x", "q", "k", "v", "g", "beta"):
                 if name not in bindings:
                     continue
-                source = graph.buffers[bindings[name]]
+                source = graph.buffer_at(bindings[name])
                 saved = graph.buffer(
                     "verify.operands." + bindings["state"] + "." + name,
                     source.shape,

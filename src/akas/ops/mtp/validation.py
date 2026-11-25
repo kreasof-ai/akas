@@ -4,7 +4,7 @@
 def validation(kind, parameters, signature):
     import numpy as np
     from tensor.runtime.dtypes import decode_bfloat16, encode_bfloat16
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     f16 = any(row["dtype"] == "float16" for row in signature)
 

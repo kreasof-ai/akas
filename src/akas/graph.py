@@ -1,7 +1,8 @@
 """One ordered operation graph shared by producers and runtime binding."""
 
 from dataclasses import dataclass, field
-from akas.artifacts.schema import identity
+import hashlib
+import json
 
 
 @dataclass(frozen=True)
@@ -87,6 +88,54 @@ class Graph:
         if not isinstance(base, Buffer) or self.buffers.get(base.name) is not base:
             raise ValueError("view base belongs to another graph")
         return self.buffer(name, shape, base.dtype, role=base.role, alias_of=base.name)
+
+    def buffer_at(self, name):
+        """Look up a declared buffer by its ABI name."""
+        return self.buffers[name]
+
+    def replace_buffer(self, name, **changes):
+        """Revise a descriptor while retaining its views' graph owner."""
+        from dataclasses import replace
+
+        value = replace(self.buffers[name], **changes)
+        object.__setattr__(value, "_graph", self)
+        self.buffers[name] = value
+        return value
+
+    def retain_buffers(self, names):
+        """Keep selected declarations in their original order."""
+        self.buffers = {name: value for name, value in self.buffers.items() if name in names}
+
+    def resize_state_rows(self, rows):
+        """Lift each state descriptor's leading dimension to the slot count."""
+        for name, value in tuple(self.buffers.items()):
+            if value.role == "state":
+                self.replace_buffer(name, shape=(rows, *value.shape[1:]))
+
+    def attach_buffers(self, values):
+        """Share descriptors whose storage and views belong to another phase."""
+        self.buffers.update((value.name, value) for value in values)
+
+    def record_pass(self) -> "Graph":
+        """Record replacement calls against this phase's live declarations."""
+        recorder = Graph(contract=self.contract, phase=self.phase)
+        recorder.buffers = self.buffers
+        return recorder
+
+    def take_calls(self):
+        calls, self.calls = self.calls, []
+        return calls
+
+    def replace_calls(self, calls):
+        self.calls = list(calls)
+
+    def pop_matching_tail(self, kind, output):
+        """Remove an adjacent producer when it can be fused into its consumer."""
+        if self.calls:
+            tail = self.calls[-1]
+            if tail.kind == kind and tail.arguments[-1] == output:
+                return self.calls.pop()
+        return None
 
     def storage_owner(self, name):
         """Resolve a borrowed view to the buffer owning its complete storage."""
@@ -181,3 +230,9 @@ class Graph:
         if data.get("request") is not None:
             plan.bind_requests(**data["request"])
         return plan
+
+
+def identity(kind, parameters):
+    return hashlib.sha256(
+        json.dumps([kind, parameters], sort_keys=True).encode()
+    ).hexdigest()[:24]

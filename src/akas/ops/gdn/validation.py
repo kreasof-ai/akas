@@ -5,7 +5,7 @@ def journal_validation(kind, p, signature):
     """Independent delayed-update algebra and journal bookkeeping."""
     import numpy as np
     from tensor.runtime.dtypes import decode_bfloat16, encode_bfloat16
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     slots, window, pool = (p["slots"], p["window"], p["pool"])
@@ -91,7 +91,7 @@ def journal_validation(kind, p, signature):
 def validation(kind, p, signature):
     import numpy as np
     from tensor.runtime.dtypes import decode_bfloat16, encode_bfloat16
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     f16 = (

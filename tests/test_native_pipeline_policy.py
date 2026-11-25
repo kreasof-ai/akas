@@ -190,7 +190,7 @@ def test_reference_projection_pipeline_preserves_f32_inputs_and_split_results(tm
     from akas.compilation.policy import lower
     from akas.compilation.compile import produce
     from akas.execution.forward import Forward
-    from akas.kernels.registry import validation
+    from akas.ops.planning import validation
     from akas.kernels.definition import define
     from tensor.compiler.frontend.signature import frontend_arguments
 

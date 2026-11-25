@@ -11,12 +11,12 @@ def dequantize(spec, schedule):
 
 def bind(shape):
     from akas.quantization.formats import Codec
-    from akas.quantization._shared.access import matrix_tile
+    from akas.quantization.storage.access import bind_reader
     from .kernel import reader
 
     storage = FORMAT.storage(shape, provider="webgpu")
     read = reader(shape, provider="webgpu")
-    return Codec(storage, read, matrix_tile(read, shape))
+    return Codec(storage, read, bind_reader(read, shape)[1])
 
 
 def quantize(spec, schedule):
@@ -26,8 +26,8 @@ def quantize(spec, schedule):
     from akas.kernels.kernel import Tensor, kernel, output
     from akas.kernels.reductions import tree_reduce
     from akas.quantization import get
-    from akas.quantization._shared.e4m3 import portable_scaling
-    from akas.quantization._shared.rounding import round_bfloat
+    from akas.quantization.storage.e4m3 import portable_scaling
+    from akas.quantization.storage.rounding import round_values
 
     p = {**spec.parameters, **schedule}
     r, depth, top = p["r"], p["k"], p.get("top")
@@ -36,7 +36,7 @@ def quantize(spec, schedule):
     storage = get("activations", "fp8").storage(shape, provider="webgpu")
     values, scale_spec = storage.buffers
     maximum = tree_reduce(128, "max")
-    rounded = round_bfloat()
+    rounded = round_values("bfloat16")
     scale, encode = portable_scaling()
 
     @kernel

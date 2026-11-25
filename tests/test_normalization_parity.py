@@ -30,7 +30,7 @@ def test_normalization_before_after(tmp_path, monkeypatch, provider, contract, k
     from tensor.compiler.tuning import measure
     from akas.compilation.emit import build_artifact
     from akas.kernels.registry import select
-    from akas.kernels.contracts import sample_arguments
+    from akas.validation import sample_arguments
 
     helper = "normalization_baseline_helper"
     module = "normalization_baseline_" + old.replace("/", "_").removesuffix(".py")

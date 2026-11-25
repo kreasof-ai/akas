@@ -1,6 +1,5 @@
 """Small dense/MoE GGUFs with the published Qwen35 layout and mixed encodings."""
 
-import json
 from math import prod
 from pathlib import Path
 import struct

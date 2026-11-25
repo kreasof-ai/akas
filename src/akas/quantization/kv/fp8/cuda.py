@@ -3,7 +3,7 @@
 from .definition import FORMAT, IMPLEMENTATIONS as _CHOICES
 
 from collections.abc import Mapping
-from akas.kernels.definition import KernelSpec
+from akas.kernels.spec import KernelSpec
 from akas.kernels.kernel import Tensor, kernel, output
 from functools import partial
 from akas.quantization.kv.fp8.kernel import reference_decoder as _decoder
@@ -120,9 +120,9 @@ def kv_encode(spec: KernelSpec, schedule: Mapping[str, object]):
         from .kernel import quantize
 
         return quantize(spec, schedule, provider="cuda")
-    from akas.quantization._shared.access import pair_arguments
+    from akas.quantization.storage.access import bind_arguments
 
-    encode = pair_arguments(binding.require("write_pair"))
+    encode = bind_arguments(binding, "write_pair")
 
     @kernel
     def compute(
@@ -185,9 +185,9 @@ def kv_decode(spec: KernelSpec, schedule: Mapping[str, object]):
         storage.metadata[0].shape,
         storage.metadata[0].dtype,
     )
-    from akas.quantization._shared.access import cache_arguments
+    from akas.quantization.storage.access import bind_arguments
 
-    decode = cache_arguments(binding.read)
+    decode = bind_arguments(binding, "read")
 
     @kernel
     def compute(

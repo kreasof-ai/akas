@@ -11,7 +11,7 @@ import json
 from pathlib import Path
 import statistics
 
-from akas.benchmarking.history import digest, write
+from akas.benchmarking.provenance import digest, write
 from akas.benchmarking.research import definition
 from akas.benchmarking.state import RecurrentSnapshot
 from akas.benchmarking.workload import synthetic_prompts

@@ -5,7 +5,8 @@ import os
 from pathlib import Path
 import subprocess
 import sys
-from akas.benchmarking.history import Recorder, write
+from akas.benchmarking.history import Recorder
+from akas.benchmarking.provenance import write
 
 
 def main():

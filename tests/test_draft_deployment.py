@@ -5,8 +5,8 @@ from pathlib import Path
 from types import SimpleNamespace
 import pytest
 
-from akas.artifacts.write import checksum
-from akas.benchmarking.history import write
+from akas.benchmarking.provenance import digest as checksum
+from akas.benchmarking.provenance import write
 
 
 def program(root, content):

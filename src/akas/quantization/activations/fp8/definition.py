@@ -2,9 +2,9 @@
 
 from akas.memory.state import BufferSpec
 from akas.quantization.formats import Format, Storage
-from akas.kernels.contracts import Implementation
+from akas.kernels.spec import Implementation
 from akas.quantization.activations.fp8.validation import validation
-from akas.kernels.contracts import OutputABI
+from akas.kernels.spec import OutputABI
 
 BLOCK = 128
 

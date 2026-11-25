@@ -73,7 +73,7 @@ def upload_packed(device, checkpoint, *, layouts=None, placements=None, arena=Fa
                 if info.type in (0, 1):
                     raw = raw.view(np.float32 if info.type == 0 else np.float16)
                 elif device.info["provider"] == "webgpu":
-                    from akas.quantization._shared.packing import pack_words
+                    from akas.quantization.host import pack_words
 
                     raw = pack_words(raw)
                 if placements.get(name) == "host":
@@ -100,7 +100,7 @@ def convert_storage(raw, source_dtype, target_dtype):
     if target_dtype not in ("float16", "float32"):
         raise ValueError("numeric weight conversion requires float16 or float32")
     if source_dtype == "F8_E4M3":
-        from akas.quantization._shared.e4m3 import decode_storage
+        from akas.quantization.host import decode_storage
 
         if np.any(raw & 127 == 127):
             raise ValueError("resident FP8 storage must be finite")

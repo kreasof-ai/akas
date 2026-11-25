@@ -3,8 +3,8 @@
 
 def validation(kind, parameters, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
-    from akas.quantization._shared.e4m3 import encode_storage, decode_storage
+    from akas.validation import ValidationCase, sample_arguments
+    from akas.quantization.host import encode_storage, decode_storage
     from tensor.runtime.dtypes import encode_bfloat16, decode_bfloat16
 
     if kind == "kv_stage":
@@ -67,8 +67,8 @@ def validation(kind, parameters, signature):
 def stage_validation(p, signature):
     """Independent bounded conversion, including poisoned unused cache rows."""
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
-    from akas.quantization._shared.e4m3 import decode_storage
+    from akas.validation import ValidationCase, sample_arguments
+    from akas.quantization.host import decode_storage
 
     values = sample_arguments(signature)
     slots, heads, capacity, depth = (

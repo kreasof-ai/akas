@@ -3,7 +3,8 @@
 import json
 from pathlib import Path
 
-from akas.benchmarking.history import digest, records
+from akas.benchmarking.provenance import digest
+from akas.benchmarking.history import records
 from akas.benchmarking.archive import directory
 from akas.optimization.context import identity
 

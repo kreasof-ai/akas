@@ -140,7 +140,6 @@ from akas.kernels.kernel import Tensor, kernel, output, lower
 
 
 def test_specialization_preserves_ir_and_is_safe_across_threads():
-    import tilelang
     import tilelang.language as T
     import tvm
     from akas.kernels.kernel import Tensor, kernel, output
@@ -208,7 +207,7 @@ def test_attention_merge_takes_partials_as_input_and_returns_only_merged_output(
 
 
 def test_position_advance_declares_existing_positions_as_mutated_input():
-    from akas.kernels.definition import KernelSpec
+    from akas.kernels.spec import KernelSpec
     from akas.ops.sequence.kernel import advance
 
     result = advance(KernelSpec("advance", dict(r=4)), {})
@@ -218,7 +217,7 @@ def test_position_advance_declares_existing_positions_as_mutated_input():
 
 
 def test_quantized_results_include_all_metadata_in_the_format_owned_definition():
-    from akas.kernels.definition import KernelSpec
+    from akas.kernels.spec import KernelSpec
     from akas.quantization.activations.q16.webgpu import quantize
 
     result = quantize(KernelSpec("quantize_q16", dict(r=4, k=64)), {})

@@ -1,15 +1,15 @@
 """Shared TileLang computations for fp8."""
 
-from akas.quantization._shared.e4m3 import helpers, portable_scaling
+from akas.quantization.storage.e4m3 import helpers, portable_scaling
 
 
 def reference_writer(head_dim, *, provider="cuda", chunk=1, round_inputs=False):
     import tilelang.language as T
     from akas.kernels.reductions import tree_reduce
 
-    from akas.quantization._shared.rounding import round_bfloat
+    from akas.quantization.storage.rounding import round_values
 
-    rounded = round_bfloat()
+    rounded = round_values("bfloat16")
 
     @T.macro
     def input_value(buffer, row, column):
@@ -129,7 +129,7 @@ def binding(shape, *, provider, chunk=1, value_offset=0):
     """Bind uniform cache access; preserve the qualified CUDA pair writer."""
     import tilelang.language as T
     from akas.quantization.formats import Codec
-    from akas.quantization._shared.access import cache_reader, cache_tile
+    from akas.quantization.storage.access import bind_reader
     from .definition import FORMAT
 
     if len(shape) != 4:
@@ -140,7 +140,7 @@ def binding(shape, *, provider, chunk=1, value_offset=0):
     native = provider == "cuda"
     backend = FORMAT.backend(provider)
     scalar = backend.decoder() if native else reference_decoder(provider=provider)
-    read = cache_reader(scalar)
+    read, tile = bind_reader(scalar, separate=True)
     writer = reference_writer(shape[-1], provider=provider, chunk=chunk)
 
     @T.macro
@@ -193,7 +193,7 @@ def binding(shape, *, provider, chunk=1, value_offset=0):
     return Codec(
         storage,
         read,
-        cache_tile(read),
+        tile,
         write=write,
         write_pair=write_pair if pair is not None else None,
         read_packed=read_packed if packed is not None else None,
@@ -246,7 +246,7 @@ def quantize(spec, schedule, *, provider="webgpu"):
 def dequantize(spec, schedule):
     import tilelang.language as T
     from akas.kernels.kernel import Tensor, kernel, output
-    from akas.quantization._shared.rounding import round_bfloat
+    from akas.quantization.storage.rounding import round_values
     from .definition import FORMAT
 
     p = {**spec.parameters, **schedule}
@@ -256,7 +256,7 @@ def dequantize(spec, schedule):
     shape = (slots, heads, capacity, depth)
     binding = FORMAT.bind(shape, provider="webgpu")
     payload, scale = binding.storage.buffers
-    read, rounded = binding.read, round_bfloat()
+    read, rounded = binding.read, round_values("bfloat16")
 
     @kernel
     def compute(

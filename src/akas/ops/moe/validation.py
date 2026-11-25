@@ -6,7 +6,7 @@ def expert_swiglu_validation(kind, p, signature):
     if p.get("weight_format") == "fp8":
         return fp8_expert_swiglu_validation(kind, p, signature)
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
     from akas.quantization.weights.reference import sample_parts
 
     values = sample_arguments(signature)
@@ -55,7 +55,7 @@ def tile_tables(counts, capacity, layouts=5):
 
 def tile_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     ids = (np.arange(p["r"])[:, None] + np.arange(p["top"])[None, :]) % p["experts"]
@@ -74,7 +74,7 @@ def tile_validation(kind, p, signature):
 
 def encoded_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
     from akas.quantization.weights.ggml.validation import sample_weight, decode_rows
 
     values = sample_arguments(signature)
@@ -132,7 +132,7 @@ def encoded_validation(kind, p, signature):
 
 def routed_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     if kind == "biased_router":
@@ -177,9 +177,9 @@ def pipeline_validation(kind, p, signature):
     if p.get("packed_input"):
         return packed_validation(kind, p, signature)
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
     from akas.ops.moe.validation import validation as reference
-    from akas.quantization._shared.e4m3 import decode_storage
+    from akas.quantization.host import decode_storage
 
     if kind == "fp8_expert_swiglu":
         return fp8_expert_swiglu_validation(kind, p, signature)
@@ -253,7 +253,7 @@ def pipeline_validation(kind, p, signature):
 
 def _partial_products(values, expected, p):
     import numpy as np
-    from akas.quantization._shared.e4m3 import decode_storage
+    from akas.quantization.host import decode_storage
 
     shape = (p["r"], p["top"], p["partitions"], p["o"])
     values["out"] = np.zeros(shape, dtype="float32")
@@ -299,7 +299,7 @@ def _partial_products(values, expected, p):
 def paired_partial_validation(kind, p, signature):
     """Evaluate both partitioned products independently from decoded operands."""
     import numpy as np
-    from akas.kernels.contracts import ValidationCase
+    from akas.validation import ValidationCase
 
     adapted = [
         dict(spec, name="out") if spec["name"] == "gate" else spec
@@ -334,8 +334,8 @@ def fp8_expert_swiglu_validation(kind, p, signature):
     if p.get("packed_input"):
         return packed_validation(kind, p, signature)
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
-    from akas.quantization._shared.e4m3 import decode_storage, encode_storage
+    from akas.validation import ValidationCase, sample_arguments
+    from akas.quantization.host import decode_storage, encode_storage
 
     values = sample_arguments(signature)
     quantized_output = kind == "fp8_expert_swiglu"
@@ -444,8 +444,8 @@ def validation(kind, p, signature):
     """Independent routing, grouped projection and weighted-combine reference."""
     import numpy as np
     from tensor.runtime.dtypes import decode_bfloat16, encode_bfloat16
-    from akas.kernels.contracts import ValidationCase, sample_arguments
-    from akas.quantization._shared.e4m3 import decode_storage, encode_storage
+    from akas.validation import ValidationCase, sample_arguments
+    from akas.quantization.host import decode_storage, encode_storage
 
     def rounded(x):
         return decode_bfloat16(encode_bfloat16(x))
@@ -594,8 +594,7 @@ VALIDATIONS = {
 
 def pack_validation(kind, p, signature):
     """Byte-for-byte routed packing, aligned padding and reusable offsets."""
-    import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     rows, top, experts = (p[name] for name in ("r", "top", "experts"))
@@ -644,9 +643,9 @@ def pack_reference(values, p):
 
 def packed_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.registry import validation
-    from akas.kernels.contracts import ValidationCase
-    from akas.ops.moe.definition import tile_capacity
+    from akas.ops.planning import validation
+    from akas.validation import ValidationCase
+    from akas.ops.moe.kernel import tile_capacity
 
     rows, top, experts, depth, columns = (
         p[name] for name in ("r", "top", "experts", "k", "o")
@@ -707,7 +706,7 @@ def packed_validation(kind, p, signature):
 
 def biased_softmax_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     logits, bias = values["logits"], values["bias"]
@@ -726,3 +725,24 @@ def biased_softmax_validation(kind, p, signature):
             "weights": probabilities.astype("float32"),
         },
     )
+
+
+VALIDATIONS.update(
+    {
+        name: pipeline_validation
+        for name in ("expert_tiles", "expert_partial", "expert_merge")
+    }
+)
+VALIDATIONS["fp8_expert_swiglu"] = pipeline_validation
+VALIDATIONS.update(
+    {name: encoded_validation for name in ("quantized_routes", "quantized_experts")}
+)
+VALIDATIONS.update(
+    {name: routed_validation for name in ("biased_router", "routed_combine")}
+)
+VALIDATIONS["expert_tile_map"] = tile_validation
+VALIDATIONS["expert_swiglu"] = expert_swiglu_validation
+VALIDATIONS["expert_merge"] = pipeline_validation
+VALIDATIONS["expert_pair_partial"] = paired_partial_validation
+VALIDATIONS["expert_pack"] = pack_validation
+VALIDATIONS["biased_softmax_router"] = biased_softmax_validation

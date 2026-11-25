@@ -4,7 +4,8 @@ import ast
 from importlib import import_module
 from pathlib import Path
 
-from akas.kernels.registry import definition_modules, implementations
+from akas.ops.planning import definition_modules
+from akas.kernels.registry import implementations
 
 
 ROOT = Path(__file__).parents[1] / "src" / "akas"
@@ -53,13 +54,11 @@ def test_discovery_reads_only_family_definitions_and_keeps_backend_inventories()
         assert callable(getattr(import_module(choice.module_name), choice.factory))
 
 
-def test_flattening_does_not_shadow_a_specialized_kernel_with_a_shared_binding():
+def test_specialized_linear_factories_remain_distinct_from_the_shared_kernel():
     from akas.ops.linear import cuda, webgpu, kernel
 
     assert cuda.linear is not kernel.linear
     assert webgpu.linear is not kernel.linear
-    assert cuda.shared_linear is kernel.linear
-    assert webgpu.shared_linear is kernel.linear
 
 
 def test_no_duplicate_factories_or_checkpoint_imports_in_operations():

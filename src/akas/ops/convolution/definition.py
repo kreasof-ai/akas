@@ -1,6 +1,6 @@
 """Contracts and implementation choices for convolution."""
 
-from akas.kernels.contracts import Implementation
+from akas.kernels.spec import Implementation
 from akas.ops.convolution.validation import validation
 
 OUTPUT_ARGUMENTS = {"reference": {"conv": (2, 3)}}
@@ -102,7 +102,7 @@ IMPLEMENTATIONS = (
 )
 
 
-from akas.kernels.contracts import OutputABI
+from akas.kernels.spec import OutputABI
 from akas.ops.convolution.validation import verification_validation
 
 OUTPUT_ARGUMENTS["reference"].update(

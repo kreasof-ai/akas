@@ -3,7 +3,7 @@
 
 def pad_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     lengths = np.resize(
@@ -21,7 +21,7 @@ def pad_validation(kind, p, signature):
 
 def extent_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     slots, chunk, capacity = (p[name] for name in ("slots", "chunk", "capacity"))
@@ -44,8 +44,8 @@ def extent_validation(kind, p, signature):
 def pipeline_validation(kind, p, signature):
     import numpy as np
     from tensor.runtime.dtypes import decode_bfloat16, encode_bfloat16
-    from akas.kernels.contracts import ValidationCase, sample_arguments
-    from akas.quantization._shared.e4m3 import decode_storage, encode_storage
+    from akas.validation import ValidationCase, sample_arguments
+    from akas.quantization.host import decode_storage, encode_storage
 
     def rounded(x):
         return decode_bfloat16(encode_bfloat16(x))
@@ -184,8 +184,8 @@ def reference_dtype(rows, heads, capacity, chunk):
 
 def canonical_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
-    from akas.quantization._shared.e4m3 import decode_storage, encode_storage
+    from akas.validation import ValidationCase, sample_arguments
+    from akas.quantization.host import decode_storage, encode_storage
 
     values = sample_arguments(signature)
     r, d = (p["r"], p["d"])
@@ -545,8 +545,8 @@ def canonical_validation(kind, p, signature):
 def mapped_validation(kind, p, signature, *, mapping=None):
     import numpy as np
     from tensor.runtime.dtypes import decode_bfloat16, encode_bfloat16
-    from akas.kernels.contracts import ValidationCase, sample_arguments
-    from akas.quantization._shared.e4m3 import decode_storage, encode_storage
+    from akas.validation import ValidationCase, sample_arguments
+    from akas.quantization.host import decode_storage, encode_storage
 
     f16 = any(row["dtype"] == "float16" for row in signature)
 
@@ -787,8 +787,8 @@ def split_validation(kind, p, signature):
     """Split projection preparation and partitioned BF16/FP8 attention."""
     import numpy as np
     from tensor.runtime.dtypes import decode_bfloat16, encode_bfloat16
-    from akas.kernels.contracts import ValidationCase, sample_arguments
-    from akas.quantization._shared.e4m3 import decode_storage, encode_storage
+    from akas.validation import ValidationCase, sample_arguments
+    from akas.quantization.host import decode_storage, encode_storage
 
     def rounded(x):
         return decode_bfloat16(encode_bfloat16(x))
@@ -952,7 +952,7 @@ def validation(kind, parameters, signature):
         and any((row["name"] == "projection" for row in signature))
     ):
         import numpy as np
-        from akas.kernels.contracts import ValidationCase
+        from akas.validation import ValidationCase
 
         specs = {row["name"]: row for row in signature}
         heads, d = specs["q"]["shape"][1:]
@@ -984,7 +984,7 @@ def validation(kind, parameters, signature):
 
 def full_attention_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     arguments = sample_arguments(signature)
     rows, heads, d, chunk = (p[k] for k in ("r", "h", "d", "chunk"))
@@ -1007,7 +1007,7 @@ def full_attention_validation(kind, p, signature):
 def window_validation(kind, p, signature):
     """Independent NumPy rotary, ring addressing and grouped softmax oracles."""
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     v = sample_arguments(signature)
     expected = {k: a.copy() for k, a in v.items()}
@@ -1128,7 +1128,7 @@ def window_validation(kind, p, signature):
 
 def rotary_table_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     v = sample_arguments(signature)
     r, h, d, rot, cap = (p[n] for n in ("r", "h", "d", "rotary", "capacity"))
@@ -1155,7 +1155,7 @@ def rotary_table_validation(kind, p, signature):
 
 def rotary_compact_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     v = sample_arguments(signature)
     r, h, d, rot, cap, stride, blocks = (
@@ -1193,7 +1193,7 @@ def rotary_compact_validation(kind, p, signature):
 def qk_norm_rotary_cache_validation(kind, p, signature):
     """FP64 head normalization and absolute-angle rotations with masked KV writes."""
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     v = sample_arguments(signature)
     r, h, kh, d, rot, cap, stride, blocks, cache_cap = (
@@ -1273,7 +1273,7 @@ def qk_norm_rotary_cache_validation(kind, p, signature):
 
 def qkv_rotary_cache_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     v = sample_arguments(signature)
     r, h, kh, d, cap, chunk, rot, context, stride, blocks = (
@@ -1354,7 +1354,7 @@ def qkv_rotary_cache_validation(kind, p, signature):
 
 def window_current_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     cap, chunk = p["capacity"], p["chunk"]
     combined = cap + chunk
@@ -1392,7 +1392,7 @@ def window_current_validation(kind, p, signature):
 
 def window_tail_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     v = sample_arguments(signature)
     r, cap, chunk = p["r"], p["capacity"], p["chunk"]
@@ -1428,7 +1428,7 @@ def _controls(values, p):
 
 def merge_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     v = sample_arguments(signature)
     r, h, d, splits, groups = (p[n] for n in ("r", "h", "d", "splits", "merge_splits"))
@@ -1450,7 +1450,7 @@ def merge_validation(kind, p, signature):
 
 def scores_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     v = sample_arguments(signature)
     _controls(v, p)
@@ -1472,7 +1472,7 @@ def scores_validation(kind, p, signature):
 
 def values_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     v = sample_arguments(signature)
     _controls(v, p)
@@ -1504,7 +1504,7 @@ def values_validation(kind, p, signature):
 
 def projected_gate_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase
+    from akas.validation import ValidationCase
     from akas.ops.attention.validation import window_validation
     from akas.quantization.weights.ggml.validation import sample_weight
     from akas.quantization.weights.ggml.kernel import repack_host
@@ -1531,7 +1531,7 @@ def projected_gate_validation(kind, p, signature):
 
 def head_rms_rotary_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     r, h, d = (p[key] for key in ("r", "h", "d"))
@@ -1551,7 +1551,7 @@ def head_rms_rotary_validation(kind, p, signature):
 
 def causal_grouped_validation(kind, p, signature):
     import numpy as np
-    from akas.kernels.contracts import ValidationCase, sample_arguments
+    from akas.validation import ValidationCase, sample_arguments
 
     values = sample_arguments(signature)
     r, h, kh, d, cap, chunk = (
@@ -1573,3 +1573,60 @@ def causal_grouped_validation(kind, p, signature):
             probabilities /= probabilities.sum(axis=-1, keepdims=True)
             out[row] = np.einsum("ht,htd->hd", probabilities, vals)
     return ValidationCase(values, {**values, "out": out.astype("float32").reshape(-1)})
+
+
+VALIDATIONS = {
+    name: validation
+    for name in (
+        "rope",
+        "cache_write",
+        "attention",
+        "attention_partial",
+        "attention_adaptive_partial",
+        "attention_merge",
+        "attention_qkv",
+        "attention_q",
+        "attention_kv",
+    )
+}
+VALIDATIONS["attention_cache_extent"] = extent_validation
+VALIDATIONS["attention_cache_pad"] = pad_validation
+VALIDATIONS.update(
+    {
+        name: pipeline_validation
+        for name in (
+            "attention_decode_workspace",
+            "attention_chunk_active",
+            "attention_chunk_partial",
+            "attention_chunk_merge",
+            "attention_chunk_hopper",
+        )
+    }
+)
+VALIDATIONS.update(
+    {
+        name: window_validation
+        for name in (
+            "rotary_partial",
+            "qkv_split",
+            "window_cache",
+            "window_attention",
+            "window_merge",
+        )
+    }
+)
+VALIDATIONS["rotary_table"] = rotary_table_validation
+VALIDATIONS["window_grouped"] = window_validation
+VALIDATIONS["cooperative_merge"] = merge_validation
+VALIDATIONS.update(
+    cooperative_scores=scores_validation, cooperative_values=values_validation
+)
+VALIDATIONS["projected_gate_merge"] = projected_gate_validation
+VALIDATIONS["qk_norm_rotary_cache"] = qk_norm_rotary_cache_validation
+VALIDATIONS["rotary_compact"] = rotary_compact_validation
+VALIDATIONS["head_rms_rotary"] = head_rms_rotary_validation
+VALIDATIONS["causal_grouped"] = causal_grouped_validation
+VALIDATIONS["full_attention"] = full_attention_validation
+VALIDATIONS["qkv_rotary_cache"] = qkv_rotary_cache_validation
+VALIDATIONS["window_attention_current"] = window_current_validation
+VALIDATIONS["window_cache_tail"] = window_tail_validation

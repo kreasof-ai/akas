@@ -4,7 +4,7 @@
 def packing(p, *, components, provider="webgpu"):
     import tilelang.language as T
     from akas.kernels.reductions import tree_reduce
-    from akas.quantization._shared.rounding import round_half
+    from akas.quantization.storage.rounding import round_values
 
     if components not in (1, 2):
         raise ValueError("activation packing supports one or two components")
@@ -15,7 +15,7 @@ def packing(p, *, components, provider="webgpu"):
     maximum, total_reduce, rounded = (
         tree_reduce(32, "max"),
         tree_reduce(32),
-        round_half(),
+        round_values("float16"),
     )
 
     @T.macro

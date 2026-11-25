@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from akas.compilation.policy import lower
-from akas.kernels.registry import validation
+from akas.ops.planning import validation
 from akas.models.lfm2.model import LFM2
 from support.diagnostic import fixture
 

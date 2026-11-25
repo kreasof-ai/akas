@@ -203,7 +203,6 @@ def test_lfm_state_layout_and_zero_initialization_are_preserved():
 def test_shared_kernel_preserves_each_existing_adapter_abi(
     module, kind, parameters, contract
 ):
-    import importlib
 
     pytest.importorskip("tilelang")
     from akas.ops import define
@@ -225,7 +224,6 @@ def test_shared_kernel_preserves_each_existing_adapter_abi(
 def test_shared_operator_change_invalidates_producer_source(
     monkeypatch, tmp_path, module
 ):
-    import importlib
     from pathlib import Path
     from tensor.compiler.frontend import source as entry
 

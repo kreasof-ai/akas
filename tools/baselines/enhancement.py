@@ -282,7 +282,8 @@ def measure(session, recorder, report, workload, root, meta, reference):
 
 def run(args, definition_path, model, enhancement_options, weight_format):
     from akas.benchmarking import enhancement
-    from akas.benchmarking.history import Recorder, digest
+    from akas.benchmarking.history import Recorder
+    from akas.benchmarking.provenance import digest
     from akas.benchmarking.workload import load
     from tools.baselines.speech import checked_file
 

@@ -44,7 +44,7 @@ def bind_parts(parts, depth, *, provider):
     """Compose format readers for a logical concatenation of encoded matrices."""
     import tilelang.language as T
     from akas.quantization import Codec, Storage
-    from akas.quantization._shared.access import matrix_tile, permuted_reader
+    from akas.quantization.storage.access import bind_reader, permuted_reader
 
     codecs = tuple(
         bind(
@@ -117,7 +117,7 @@ def bind_parts(parts, depth, *, provider):
     return Codec(
         storage,
         read,
-        direct.read_tile if direct else matrix_tile(read, (bounds[-1], depth)),
+        direct.read_tile if direct else bind_reader(read, (bounds[-1], depth))[1],
         read_pair=direct.read_pair if direct else None,
         dot=direct.dot if direct else None,
         dot_half=direct.dot_half if direct else None,

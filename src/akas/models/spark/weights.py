@@ -7,11 +7,11 @@ from pathlib import Path
 from akas.checkpoints.gguf import GGUF
 from akas.checkpoints.safetensors import (
     inspect_tensors,
-    json_document,
     read_float_tensor,
     read_tensor,
     tensor_index,
 )
+from akas.checkpoints.metadata import json_document
 from akas.models.spark.config import SparkConfig
 from akas.text.tokenizer import Tokenizer
 
@@ -190,7 +190,7 @@ class SparkCheckpoint:
         if name not in self.scales:
             return read_float_tensor(self.tensors[name])
         import numpy as np
-        from akas.quantization._shared.e4m3 import decode_storage
+        from akas.quantization.host import decode_storage
 
         bits = read_tensor(self.tensors[name])
         if np.any((bits & 127) == 127):

@@ -1,98 +1,6 @@
-"""Contracts definitions for kernels."""
+"""Host-side reference inputs, comparators and state mapping shared by operations."""
 
 from dataclasses import dataclass, field
-from importlib import import_module
-from typing import Callable
-
-
-@dataclass(frozen=True)
-class Implementation:
-    """One lazy named kernel factory and the conditions under which it is valid.
-
-    Factories always accept (KernelSpec, schedule). Registration does not import
-    the factory or its compiler. Names are stable schedule-profile identities.
-    """
-
-    kind: str
-    module: str
-    contract: str
-    factory: str = field(kw_only=True)
-    provider: str = "cuda"
-    phase: str = "forward"
-    priority: int = 10
-    targets: tuple[str, ...] = ()
-    required: tuple[str, ...] = ()
-    accepts: Callable[[dict], bool] | None = None
-    defaults: tuple[tuple[str, object], ...] = ()
-    space: tuple[tuple[str, tuple], ...] = ()
-    semantic_keys: tuple[str, ...] | None = None
-    reference_keys: tuple[str, ...] = ()
-    variant: str | None = None
-    name: str | None = None
-
-    @property
-    def identifier(self):
-        if self.name is not None:
-            return self.name
-        symbol = f"{self.module_name}:{self.factory}"
-        return symbol if self.variant is None else f"{symbol}:{self.variant}"
-
-    @property
-    def module_name(self):
-        return (
-            self.module
-            if self.module.startswith("akas.")
-            else "akas.ops." + self.module
-        )
-
-    def compatible(self, kind, parameters, *, contract, provider, phase, target):
-        return (
-            (self.kind, self.provider) == (kind, provider)
-            and self.contract in ("*", contract)
-            and (self.phase in ("forward", phase))
-            and (not self.targets or target in self.targets)
-            and all((name in parameters for name in self.required))
-            and (self.accepts is None or self.accepts(parameters))
-        )
-
-    def declaration(self):
-        """Serializable routing; exported sources need no registry discovery."""
-        return dict(
-            identifier=self.identifier,
-            module=self.module_name,
-            factory=self.factory,
-            kind=self.kind,
-            contract=self.contract,
-            provider=self.provider,
-            phase=self.phase,
-            targets=self.targets,
-            defaults=dict(self.defaults),
-            semantic_keys=self.semantic_keys,
-            axes=tuple((name for name, _ in self.space)),
-        )
-
-    def make(self, parameters, schedule=None):
-        from akas.kernels.definition import KernelSpec, _check_schedule
-
-        schedule = dict(schedule or {})
-        _check_schedule(
-            parameters,
-            schedule,
-            self.semantic_keys,
-            tuple((name for name, _ in self.space)),
-        )
-        spec = KernelSpec(
-            self.kind, {**dict(self.defaults), **parameters}, self.contract, self.phase
-        )
-        return getattr(import_module(self.module_name), self.factory)(spec, schedule)
-
-
-@dataclass(frozen=True)
-class OutputABI:
-    """Potential writes for ordered and named graph calls of an operation."""
-
-    positions: tuple[int, ...]
-    names: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -158,7 +66,7 @@ def mapped_validation(kind, parameters, signature, mapping):
     qualification checks both arithmetic and request isolation.
     """
     import numpy as np
-    from akas.kernels.registry import validation
+    from akas.ops.planning import validation
 
     indexes, rows, capacity = mapping
     original = [dict(spec) for spec in signature if spec["name"] != "mapping"]

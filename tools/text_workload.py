@@ -4,7 +4,7 @@ import argparse
 from pathlib import Path
 import urllib.request
 
-from akas.benchmarking.history import digest, write
+from akas.benchmarking.provenance import digest, write
 from akas.benchmarking.text import prompt, records, split
 from akas.models.lfm2.model import LFM2MoE
 

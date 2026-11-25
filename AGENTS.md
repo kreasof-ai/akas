@@ -63,6 +63,16 @@ README.md         concrete backend specialization reasons and supported contract
   - Prefer adding new schedule/policy parameters or a separate factory while keeping the default computation AST unchanged.
   - If an existing computation body is intentionally replaced, it **must** preserve default bitwise behavior, be verified by a sealed qualification run in `benchmarks/runs/<run-id>/` where `report.json` has `all(check["bitwise"] for check in report["metadata"]["checks"])`, and be registered under `qualified_replacements` in `tests/fixtures/kernel-computations.json`.
 
+### E. Architecture (`tests/test_import_architecture.py`)
+- **Module cycle.** Keep the import-time module graph acyclic. The runtime graph also includes function-local imports. Imports inside `if TYPE_CHECKING:` and `if typing.TYPE_CHECKING:` bodies are outside the runtime graph.
+- **Tangle.** Keep dependencies between functions, classes, and module bindings acyclic across modules. Within one module, a cycle involving more than seven symbols also fails. Methods and fields belong to their class for this check.
+- **Field leak.** Keep representation-dependent operations inside the class or its group of mutually dependent symbols. The check flags external writes, indexing, and method calls on fields of classes that work with their own state and keep some of it internal. It follows simple getters and properties that return a stored field.
+- **Shallow module.** Keep the externally used interface narrow. A module or package fails when it exposes more than seven functions, exposes at least as many as it hides, and exposes more than seven symbol groups or more than seven functions in one group.
+- Keep private modules and symbols within their owning packages. Use an interface exposed by the owner for cross-package dependencies.
+- Import symbols from their owning modules. When moving a definition, update its callers and remove unused forwarding imports. Keep explicit exports for package and registration contracts.
+- The checks analyze `src/akas` statically. Symbol resolution covers explicit imports and re-exports, annotations, constructor calls, and simple aliases. Dynamic dispatch and reflection are outside its scope.
+- `tests/fixtures/import-architecture.json` records existing findings by dependency, field consumer, or exposed function. Fix new violations at the boundary and remove baseline entries as the underlying violations are resolved.
+
 ---
 
 ## 4. Forensic Benchmarking & Qualification Standards
@@ -98,7 +108,7 @@ Run these checks locally before declaring any code or report change complete:
 
 ```sh
 # 1. Lint and format check
-uv run --no-sync ruff check src examples
+uv run --no-sync ruff check src examples tests tools
 uv run --no-sync ruff format --check src/akas/ops src/akas/kernels src/akas/quantization src/akas/models src/akas/compilation
 
 # 2. Structural, convention, and forensic hash-lock tests
@@ -106,6 +116,7 @@ uv run --no-sync python -m pytest \
   tests/test_ops_structure.py \
   tests/test_engine_layout.py \
   tests/test_functional_kernels.py \
+  tests/test_import_architecture.py \
   tests/test_quantization_conventions.py \
   tests/test_model_conventions.py \
   tests/test_program_contracts.py \

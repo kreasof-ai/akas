@@ -32,7 +32,7 @@ def quantized_embedding(spec, schedule, *, provider):
 
 
 from collections.abc import Mapping
-from akas.kernels.definition import KernelSpec
+from akas.kernels.spec import KernelSpec
 from akas.kernels.kernel import Tensor, kernel, output
 
 

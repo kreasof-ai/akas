@@ -6,7 +6,7 @@ from collections.abc import Mapping
 import numpy as np
 
 from akas.checkpoints.safetensors import read_tensor, read_float_tensor
-from akas.quantization._shared.e4m3 import decode_storage, encode_storage
+from akas.quantization.host import decode_storage, encode_storage
 from support.numpy_reference import Reference
 
 

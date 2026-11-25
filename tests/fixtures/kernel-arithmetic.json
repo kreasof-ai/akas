@@ -824,13 +824,13 @@
       "origin": "akas.ops.reductions.webgpu"
     },
     {
-      "module": "akas.quantization._shared.e4m3",
+      "module": "akas.quantization.host",
       "factory": "decode_storage",
       "sha256": "1ee806e4d4aab11f30e63215c4b25ea0dc8a08b258b59e5e536ffe7a59cbd6de",
       "origin": "akas.quantization.weights.block_fp8"
     },
     {
-      "module": "akas.quantization._shared.e4m3",
+      "module": "akas.quantization.host",
       "factory": "encode_storage",
       "sha256": "466c2468d882fba812c679d184c79da5aa51f487dd4668575597f7f569cc46f0",
       "origin": "akas.quantization.weights.block_fp8"
@@ -854,7 +854,7 @@
       "origin": "akas.quantization.weights.ggml"
     },
     {
-      "module": "akas.quantization.weights.ggml.kernel",
+      "module": "akas.quantization.weights.ggml.cuda",
       "factory": "pair_decoder",
       "sha256": "f94a6b67ff071b0dfc70286f84dff625237e7a78c7445dbf5b67352441660650",
       "origin": "akas.quantization.weights.ggml"
@@ -878,19 +878,19 @@
       "origin": "akas.quantization.weights.ggml"
     },
     {
-      "module": "akas.quantization._shared.rounding",
+      "module": "akas.quantization.storage.rounding",
       "factory": "half_bits",
       "sha256": "6347b82792066dcb0e4f287cb526f5a7f5d9f94cf8e70e7ea7dab55506e6f90e",
       "origin": "akas.quantization.weights.storage"
     },
     {
-      "module": "akas.quantization._shared.rounding",
+      "module": "akas.quantization.storage.rounding",
       "factory": "round_half",
       "sha256": "d4a791e5ad103bbd2e2127d200f19e654ddce13685d64ce3b1e3549d5a9539cf",
       "origin": "akas.quantization.weights.storage"
     },
     {
-      "module": "akas.quantization._shared.packing",
+      "module": "akas.quantization.storage.packing",
       "factory": "packed_loads",
       "sha256": "0eb6a06eea8ef2432fe9d90ef241c7190db7a6687ae86747e9be579448a4cd37",
       "origin": "akas.quantization.weights.storage"

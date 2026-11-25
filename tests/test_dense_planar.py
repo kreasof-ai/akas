@@ -67,7 +67,7 @@ def test_dense_planar_device_reference(tmp_path, kind, rows, preferred):
     import tensor
     from akas.compilation.selection import source
     from akas.compilation.emit import build_artifact
-    from akas.kernels.registry import validation
+    from akas.ops.planning import validation
     from tensor.artifacts.format import read_artifact
 
     p = dict(r=rows, k=256, o=258, type=2, ggml=True, optimized=True, weight_layout="planar")
@@ -95,7 +95,7 @@ def test_staged_weight_device_reference(tmp_path, encoding, layout):
     import tensor
     from akas.compilation.selection import source
     from akas.compilation.emit import build_artifact
-    from akas.kernels.registry import validation
+    from akas.ops.planning import validation
     from tensor.artifacts.format import read_artifact
 
     p = dict(r=258, k=256, type=encoding, output_dtype="float16", weight_layout=layout)

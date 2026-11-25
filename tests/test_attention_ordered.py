@@ -95,7 +95,7 @@ def test_registered_ordered_attention_gpu_f64_reference_bitwise_tails_and_masks(
     from akas.compilation.emit import build_artifact
     from akas.compilation.selection import selected_source
     from akas.kernels.definition import definition
-    from akas.kernels.registry import validation
+    from akas.ops.planning import validation
     from akas.memory.transfer import write
 
     p = parameters()

@@ -9,7 +9,7 @@ import numpy as np
 def fixture(directory, *, fp8=False, width=128, head_dim=64, max_context=128):
     from akas.models.lfm3.config import LFM3Config
     from akas.models.lfm3.weights import tensor_shapes, hf_names
-    from akas.quantization._shared.e4m3 import encode_storage
+    from akas.quantization.host import encode_storage
 
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)

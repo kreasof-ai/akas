@@ -21,8 +21,7 @@ def compose(
 ):
     """Compose a chunk of tokens per slot with masked, persistent state."""
     from akas.graph import Graph
-    from akas.models.lfm2.weights import tensor_shapes
-    from akas.models.lfm2.config import LFM2MoEConfig
+    from akas.models.lfm2.config import LFM2MoEConfig, tensor_shapes
     from akas.ops.attention.definition import cache_storage
 
     capacity = min(4096, config.max_context) if capacity is None else capacity
@@ -355,11 +354,7 @@ def compose(
             )
         hidden = residual(p + "output", hidden, mixed)
         if i in auxiliary_layers:
-            from dataclasses import replace
-
-            hidden = replace(hidden, role="output")
-            object.__setattr__(hidden, "_graph", plan)
-            plan.buffers[hidden.name] = hidden
+            hidden = plan.replace_buffer(hidden.name, role="output")
     if chunk > 1 and not verify:
         final = scratch("last_hidden", c, rows=batch)
         plan("chunk_last", dict(r=batch, c=c, chunk=chunk), hidden, final, active)

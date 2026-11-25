@@ -12,7 +12,8 @@ import tempfile
 from urllib.parse import quote
 
 from akas.benchmarking import archive
-from akas.benchmarking.history import digest, index_entries, rebuild_index, write
+from akas.benchmarking.provenance import digest, write
+from akas.benchmarking.history import index_entries, rebuild_index
 
 
 def file_manifest(directory):

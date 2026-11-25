@@ -1,34 +1,6 @@
 """Storage codec implementation and independent arithmetic."""
 
 
-def decode_storage(bits):
-    import numpy as np
-
-    bits = np.asarray(bits, dtype="uint8")
-    exponent = (bits >> 3 & 15).astype("int32")
-    fraction = (bits & 7).astype("float32")
-    magnitude = np.where(
-        exponent == 0, fraction / 512, (1 + fraction / 8) * np.exp2(exponent - 7)
-    ).astype("float32")
-    return np.where(bits & 128, -magnitude, magnitude).astype("float32")
-
-
-def encode_storage(values):
-    """Nearest-even E4M3 with finite saturation after explicit F32 rounding."""
-    import numpy as np
-
-    values = np.asarray(values, dtype="float32")
-    bits = values.view("uint32")
-    magnitude = np.abs(values)
-    rounded = (bits & np.uint32(2147483647)) + np.uint32(524287) + (bits >> 20 & 1)
-    normal = (rounded >> 20).astype("int32") - 960
-    subnormal = np.rint(magnitude * np.float32(512)).astype("int32")
-    code = np.clip(
-        np.where(magnitude < np.float32(0.015625), subnormal, normal), 0, 126
-    )
-    return code.astype("uint8") | (bits >> 24 & 128).astype("uint8")
-
-
 def helpers():
     import tilelang.language as T
 

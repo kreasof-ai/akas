@@ -11,9 +11,11 @@ import sys
 import tempfile
 import time
 
-from akas.benchmarking.history import digest, source_identity, utc, write, rebuild_index
+from akas.benchmarking.provenance import digest, source_identity, utc, write
+from akas.benchmarking.history import rebuild_index
 from akas.optimization.context import Context, identity, measurement_limits, source_root
-from akas.optimization.planning import recipes, refine, score, search_order, software
+from akas.optimization.planning import recipes, refine, score, search_order
+from akas.optimization.provenance import software
 
 
 @contextmanager
@@ -245,7 +247,7 @@ def verify_result(result):
 
 
 def optimize(context: Context, out, *, budget, history="benchmarks"):
-    from akas.cli import checkpoint_digest
+    from akas.checkpoints.identity import checkpoint_digest
 
     if not math.isfinite(budget) or budget <= 0:
         raise ValueError("optimization budget must be positive")

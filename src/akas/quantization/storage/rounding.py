@@ -81,3 +81,12 @@ def round_half_branch():
         return result
 
     return rounded
+
+
+def round_values(dtype, *, fast_normal=False):
+    """Select the rounding macro for the requested operand precision."""
+    if dtype == "float16":
+        return round_half_branch() if fast_normal else round_half()
+    if dtype == "bfloat16":
+        return round_bfloat()
+    raise ValueError(f"unsupported rounding precision: {dtype!r}")

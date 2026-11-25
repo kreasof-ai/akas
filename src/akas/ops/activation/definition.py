@@ -1,9 +1,9 @@
 """Contracts and implementation choices for activation."""
 
-from akas.kernels.contracts import OutputABI
+from akas.kernels.spec import OutputABI
 from akas.ops.activation.validation import validation, sigmoid_bias_validation
 from akas.ops.activation.validation import column_activation_validation
-from akas.kernels.contracts import Implementation
+from akas.kernels.spec import Implementation
 
 ROW_INDEPENDENT = ("swiglu",)
 OUTPUT_ARGUMENTS = {"reference": {"swiglu": (-1,)}}

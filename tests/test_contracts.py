@@ -1,7 +1,6 @@
 """Tokenizer control boundaries and architecture rejection before GPU allocation."""
 
 from types import SimpleNamespace
-import numpy as np
 import pytest
 from akas.models.lfm2.config import Config
 from akas.checkpoints.gguf import GGUFError

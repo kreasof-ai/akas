@@ -5,7 +5,7 @@ import json
 from types import SimpleNamespace
 import numpy as np
 import pytest
-from akas.benchmarking.history import digest
+from akas.benchmarking.provenance import digest
 from akas.benchmarking.workload import prompt_digest
 from tools.lfm3_state_cache import load
 from tools.lfm3_vulkan_benchmark import PROFILE

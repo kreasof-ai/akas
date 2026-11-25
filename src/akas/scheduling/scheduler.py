@@ -3,7 +3,6 @@
 from collections import deque
 from queue import Empty, Queue
 from threading import Event
-from akas.requests import Request
 
 
 class Scheduler:

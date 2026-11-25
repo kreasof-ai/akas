@@ -1,7 +1,7 @@
 """CUDA specializations and shared bindings for moe."""
 
 from collections.abc import Mapping
-from akas.kernels.definition import KernelSpec
+from akas.kernels.spec import KernelSpec
 from akas.kernels.kernel import Tensor, kernel, output
 
 
@@ -423,14 +423,14 @@ def decode_moe_combine(spec: KernelSpec, schedule: Mapping[str, object]):
 
 
 def fp8_inline(spec: KernelSpec, schedule: Mapping[str, object]):
-    from akas.ops.linear.cuda import _mma
+    from akas.ops.linear.cuda import mma_projection as _mma
 
     p = {**spec.parameters, **schedule}
     return _mma(p, grouped=True, prequantized=False)
 
 
 def fp8_prequantized(spec: KernelSpec, schedule: Mapping[str, object]):
-    from akas.ops.linear.cuda import _mma
+    from akas.ops.linear.cuda import mma_projection as _mma
 
     p = {**spec.parameters, **schedule}
     return _mma(p, grouped=True, prequantized=True)
@@ -1549,12 +1549,7 @@ def partial(spec: KernelSpec, schedule: Mapping[str, object]):
 
 
 def split(spec: KernelSpec, schedule: Mapping[str, object]):
-    from dataclasses import replace
-
-    return partial(
-        replace(spec, parameters={**spec.parameters, "rows": spec.parameters["r"]}),
-        schedule,
-    )
+    return partial(spec.with_parameters(rows=spec.parameter("r")), schedule)
 
 
 def hopper_experts_partial(spec: KernelSpec, schedule: Mapping[str, object]):
@@ -2176,12 +2171,7 @@ def _tile_map(p, *, layouts):
 
 
 def tiles(spec: KernelSpec, schedule: Mapping[str, object]):
-    from dataclasses import replace
-
-    return tile_map(
-        replace(spec, parameters={**spec.parameters, "rows": spec.parameters["r"]}),
-        schedule,
-    )
+    return tile_map(spec.with_parameters(rows=spec.parameter("r")), schedule)
 
 
 def parallel_routes(spec: KernelSpec, schedule: Mapping[str, object]):

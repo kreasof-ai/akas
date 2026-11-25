@@ -11,18 +11,14 @@ from threading import Condition, Event, Thread
 import numpy as np
 
 from akas.artifacts.read import artifact_path, read_forward
-from akas.artifacts.write import checksum, publish
+from akas.benchmarking.provenance import digest as checksum
+from akas.artifacts.write import publish
 from akas.execution.forward import Forward
 from akas.execution.state import StatePool
 from akas.graph import Graph
 from akas.memory.transfer import write_many
-from akas.models.zonos3.model import (
-    HEAD_DIM,
-    SILENCE,
-    SILENCE_FRAMES,
-    STAGE_WINDOWS,
-    compose_backbone,
-)
+from akas.models.zonos3.model import HEAD_DIM, STAGE_WINDOWS, compose_backbone
+from akas.models.zonos3.config import SILENCE, SILENCE_FRAMES
 from akas.models.zonos3.weights import Zonos3MiniCheckpoint
 
 STAGE_CAPACITIES = (256, 512, 768, 768, 768)
@@ -51,7 +47,7 @@ def compose_lm_step(
 
 def compose_codec_stream(checkpoint, *, slots, frames, pool=256, provider="cuda"):
     """Compose stateful multi-slot keep2_plain prefix codec + streaming GPU synthesis."""
-    from akas.ops.linear.definition import _floating_matmuls
+    from akas.ops.linear.definition import floating_matmuls as _floating_matmuls
 
     if (
         provider not in ("cuda", "webgpu")
@@ -80,7 +76,7 @@ def compose_codec_stream(checkpoint, *, slots, frames, pool=256, provider="cuda"
             if table[name].type != 0:
                 raise ValueError(f"ZONOS3 codec weight must be F32: {name}")
             checkpoint.graph_weight(g, name, provider=provider)
-        return g.buffers[name]
+        return g.buffer_at(name)
 
     codec_rope = weight("codec_rope.weight").view((8192, HEAD_DIM))
 

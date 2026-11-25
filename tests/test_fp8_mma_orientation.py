@@ -12,7 +12,7 @@ import pytest
 def test_weight_major_fp8_matches_independent_reference(tmp_path, kind):
     import tensor
     from akas.kernels.definition import definition, define
-    from akas.kernels.registry import validation
+    from akas.ops.planning import validation
     from akas.compilation.selection import selected_source
     from tensor.compiler.frontend.signature import frontend_arguments
 

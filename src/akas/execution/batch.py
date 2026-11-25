@@ -18,6 +18,9 @@ class Batch:
         if "tokens" not in self.inputs or "lengths" not in self.inputs:
             raise ValueError("token phases require token and length bindings")
 
+    def attach_commit(self, forward):
+        self.commit_forward = forward
+
     def prepare(self, slots, sequences, positions):
         if not slots or len(slots) != len(sequences) or len(slots) > self.rows or len(set(slots)) != len(slots):
             raise ValueError("invalid request-row batch")
@@ -246,9 +249,9 @@ class BatchBank:
                 from akas.graph import Graph
                 commit_manifest = json.loads((root/record["commit"]["path"]).read_text())
                 commit_graph = Graph.from_metadata(commit_manifest["forward"])
-                frame.commit_forward = Forward(root,self.device,
+                frame.attach_commit(Forward(root,self.device,
                     {name:forward.buffers[name] for name in commit_graph.buffers},
-                    filename=record["commit"]["path"],graphs=self.graphs)
+                    filename=record["commit"]["path"],graphs=self.graphs))
             self._adopt_states(forward)
             self.owned_controls.extend(controls)
             return frame

@@ -3,9 +3,7 @@
 import json
 
 import numpy as np
-
-
-PROTOCOL = "warm-voice-enhancement-v1"
+from akas.benchmarking.workload import ENHANCEMENT_PROTOCOL as PROTOCOL
 
 
 def validate(workload):

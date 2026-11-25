@@ -55,7 +55,7 @@ def reference_graph(*, chunk=256, capacity=4096, layers=2):
 
 def test_staging_is_a_searchable_pipeline_with_one_shared_scratch_pair():
     from akas.ops.attention.definition import lower, search_policies
-    from akas.kernels.registry import graph_outputs
+    from akas.ops.planning import graph_outputs
 
     graph = reference_graph()
     assert dict(splits=64, decoded_kv=True) in search_policies(
@@ -132,7 +132,7 @@ def test_standalone_staging_and_extent(tmp_path, provider, depth):
     from tensor.artifacts.format import read_artifact
     from akas.compilation.emit import build_artifact
     from akas.compilation.selection import source
-    from akas.kernels.registry import validation
+    from akas.ops.planning import validation
 
     target = "sm_89" if provider == "cuda" else "webgpu-portable-v1"
     parameters = {
@@ -167,7 +167,7 @@ def test_mapped_staging_preserves_unselected_request_slots(tmp_path):
     from akas.compilation.emit import build_artifact
     from akas.compilation.selection import source
     from akas.compilation.state import mapped_source
-    from akas.kernels.contracts import mapped_validation
+    from akas.validation import mapped_validation
 
     p = dict(slots=2, kv_heads=2, capacity=257, d=64)
     mapping = ((0, 1, 2, 3), 2, 3)

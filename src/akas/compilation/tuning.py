@@ -157,7 +157,7 @@ def tune(
         import hashlib
         import json
         from pathlib import Path
-        from akas.benchmarking.history import write
+        from akas.benchmarking.provenance import write
 
         checkpoint = Path(checkpoint)
         signature = hashlib.sha256(
@@ -355,15 +355,18 @@ def qualify(bundle, out, *, settings=None, device=None):
     from tensor.compiler.search import ScheduleProfile
     from tensor.compiler.tuning import measure as time_kernel
 
-    from akas.artifacts.fingerprint import _compiler_identity, _hashes, backbone_hashes
+    from akas.artifacts.fingerprint import backbone_hashes
+    from akas.benchmarking.provenance import source_hashes
+    from akas.compilation.source import compiler_identity
     from akas.artifacts.read import artifact_path
-    from akas.artifacts.schema import Kernel, identity
+    from akas.artifacts.schema import Kernel
+    from akas.graph import identity
     from akas.artifacts.write import publish
     from akas.compilation.emit import compile_kernel
     from akas.compilation.selection import selected_source
     from akas.graph import Graph
     from akas.memory.transfer import write
-    from akas.kernels.registry import validation
+    from akas.ops.planning import validation
 
     settings = SearchSettings() if settings is None else settings
     graph = Graph.from_metadata(bundle.manifest["forward"])
@@ -411,8 +414,8 @@ def qualify(bundle, out, *, settings=None, device=None):
             settings=asdict(settings),
             cache_working_set=cache_description,
             sources=backbone_hashes(),
-            compiler=_compiler_identity(bundle.provider),
-            qualification_sources=_hashes(
+            compiler=compiler_identity(bundle.provider),
+            qualification_sources=source_hashes(
                 (
                     "akas.compilation.tuning",
                     "akas.compilation.selection",
@@ -420,7 +423,7 @@ def qualify(bundle, out, *, settings=None, device=None):
                     "akas.compilation.validate",
                 )
             ),
-            tensor_search_sources=_hashes(
+            tensor_search_sources=source_hashes(
                 ("tensor.compiler.search", "tensor.compiler.tuning")
             ),
             baseline=[dict(key=k.key, schedule=k.schedule) for k in bundle.kernels],
@@ -588,7 +591,7 @@ def qualify(bundle, out, *, settings=None, device=None):
                                 loaded.manifest["arguments"],
                             )
                         else:
-                            from akas.kernels.contracts import mapped_validation
+                            from akas.validation import mapped_validation
 
                             case = mapped_validation(
                                 kind,

@@ -9,7 +9,8 @@ from pathlib import Path
 import resource
 import traceback
 
-from akas.benchmarking.history import Recorder, digest, write, utc
+from akas.benchmarking.history import Recorder
+from akas.benchmarking.provenance import digest, write, utc
 from akas.optimization.context import symbol
 
 
@@ -27,11 +28,8 @@ def candidate(job, output):
     from akas.compilation.tuning import SearchSettings
     from akas.optimization.deployment import describe, service
     from akas.optimization.evaluation import evaluate, http_benchmark
-    from akas.optimization.planning import (
-        estimate,
-        memory_bound,
-        geometries as plan_geometries,
-    )
+    from akas.memory.estimates import program_memory
+    from akas.optimization.planning import geometries as plan_geometries
 
     context, recipe = job["context"], job["recipe"]
     root = Path(output).parent
@@ -145,7 +143,7 @@ def candidate(job, output):
             metadata["weight_format"] = {"bfloat16": "bf16", "float16": "f16"}.get(
                 precision, "safetensors"
             )
-        bounds, graphs = [], []
+        graphs = []
         for b, t, *phase in geometries:
             composed = model.compose(
                 loaded,
@@ -166,10 +164,10 @@ def candidate(job, output):
                 provider=recipe["provider"],
                 target=recipe["target"],
             )
-            bounds.append(estimate(graph))
             graphs.append(
                 (phase[0] if phase else "decode" if t == 1 else "prefill", graph)
             )
+        bounds, resident = program_memory(graph for _, graph in graphs)
         needed = max(bound["largest_buffer_bytes"] for bound in bounds)
         memory = context.get("memory_bytes")
         # Raw graph sizes are upper estimates; actual allocations are measured below.
@@ -177,7 +175,7 @@ def candidate(job, output):
             os.environ.get("AKAS_SHAPE_TIMEOUT", "0")
         )
         metadata["memory_estimate"] = bounds
-        metadata["memory_bound"] = memory_bound([g for _, g in graphs])
+        metadata["memory_bound"] = resident
         available = (
             memory
             if memory is not None

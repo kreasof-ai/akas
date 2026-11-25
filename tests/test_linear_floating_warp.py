@@ -16,7 +16,7 @@ def test_floating_warp_projection(tmp_path, rows, depth, columns, matrix):
     from tensor.artifacts.format import read_artifact
     from akas.compilation.emit import build_artifact
     from akas.compilation.selection import source
-    from akas.kernels.registry import validation
+    from akas.ops.planning import validation
 
     p = dict(
         r=rows,

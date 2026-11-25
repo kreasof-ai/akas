@@ -175,7 +175,7 @@ def test_kernel_cache_tracks_codec_changes_without_unrelated_executor_changes(tm
     from pathlib import Path
     from tensor.compiler.frontend import source as serializer
     from akas.artifacts.schema import Source
-    from akas.compilation.emit import source_dependencies
+    from akas.compilation.source import source_dependencies
 
     name = "akas.ops.attention.cuda"
     dependencies = source_dependencies(name)

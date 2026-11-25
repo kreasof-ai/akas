@@ -44,7 +44,7 @@ class KernelPlan:
 
     def __init__(self, plan, kernels, *, identity=None, parameters=None, on_write=None):
         if identity is None:
-            from akas.artifacts.schema import identity
+            from akas.graph import identity
         self.plan = plan
         self.kernels = kernels
         self.identity = identity

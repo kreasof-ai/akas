@@ -1,7 +1,7 @@
 """Contracts and implementation choices for residual."""
 
-from akas.kernels.contracts import OutputABI
-from akas.kernels.contracts import Implementation
+from akas.kernels.spec import OutputABI
+from akas.kernels.spec import Implementation
 from akas.ops.residual.validation import validation
 from akas.ops.residual.validation import bank_validation
 from akas.ops.residual.validation import scaled_residual_validation

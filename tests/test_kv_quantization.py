@@ -9,8 +9,8 @@ from akas.memory.state import BufferSpec
 from akas.memory.layouts import hybrid_state_specs
 from akas.quantization.kv import get, pair_layout
 from akas.quantization.kv import is_quantized
-from akas.quantization.kv.codec import Format
-from akas.quantization.kv.codec import Storage
+from akas.quantization.formats import Format
+from akas.quantization.formats import Storage
 from akas.kernels.registry import select
 
 

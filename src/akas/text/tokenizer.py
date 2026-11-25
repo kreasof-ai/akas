@@ -12,26 +12,10 @@ import unicodedata
 import regex
 
 from akas.text import chat
-from akas.text.formats import Rules
+from akas.text.formats import DECODE_BYTE, ENCODE_BYTE, Rules
 from akas.text.formats import TokenizerError
 from akas.text.formats import from_file
 from akas.text.formats import from_gguf
-
-
-def _byte_alphabet():
-    values = list(range(33, 127)) + list(range(161, 173)) + list(range(174, 256))
-    characters = values.copy()
-    extra = 0
-    for byte in range(256):
-        if byte not in values:
-            values.append(byte)
-            characters.append(256 + extra)
-            extra += 1
-    encode = dict(zip(values, map(chr, characters)))
-    return encode, {char: byte for byte, char in encode.items()}
-
-
-ENCODE_BYTE, DECODE_BYTE = _byte_alphabet()
 
 
 class Tokenizer:

@@ -30,6 +30,17 @@ class _Worker:
         self.requests = {}
         self.stopped = Event()
 
+    def unavailable_reason(self):
+        return self.failure or ("server stopped" if self.stopped.is_set() else None)
+
+    def track(self, request):
+        request.channel = asyncio.Queue()
+        self.requests[id(request)] = request
+
+    def cancel(self, request):
+        request.cancelled.set()
+        self.requests.pop(id(request), None)
+
     async def start(self, app):
         loop = asyncio.get_running_loop()
         ready = loop.create_future()
@@ -102,8 +113,8 @@ def create_app(factory):
     app.on_shutdown.append(worker.close)
 
     def available():
-        if worker.failure or worker.stopped.is_set():
-            raise web.HTTPServiceUnavailable(text=worker.failure or "server stopped")
+        if reason := worker.unavailable_reason():
+            raise web.HTTPServiceUnavailable(text=reason)
         return worker.service
 
     async def payload(request):
@@ -116,7 +127,7 @@ def create_app(factory):
         return data
 
     async def health(request):
-        failed = bool(worker.failure or worker.stopped.is_set())
+        failed = bool(worker.unavailable_reason())
         return web.json_response(
             dict(status="failed" if failed else "ok"), status=503 if failed else 200
         )
@@ -169,8 +180,7 @@ def create_app(factory):
             raise web.HTTPBadRequest(text=str(error))
         except RuntimeError as error:
             raise web.HTTPServiceUnavailable(text=str(error))
-        item.channel = asyncio.Queue()
-        worker.requests[id(item)] = item
+        worker.track(item)
         response = web.StreamResponse(
             headers={"Content-Type": "text/event-stream", "Cache-Control": "no-cache"}
         )
@@ -191,8 +201,7 @@ def create_app(factory):
             await response.write_eof()
             return response
         finally:
-            item.cancelled.set()
-            worker.requests.pop(id(item), None)
+            worker.cancel(item)
 
     app.router.add_get("/health", health)
     app.router.add_get("/server_info", info)

@@ -10,9 +10,9 @@ import time
 
 import pytest
 
-from akas.benchmarking.history import digest, write
+from akas.benchmarking.provenance import digest, write
 from akas.compilation.tuning import tune, Workload, Measurement
-from akas.kernels.contracts import Implementation
+from akas.kernels.spec import Implementation
 from akas.optimization.context import Context, discover, duration, workload
 from akas.optimization.planning import recipes, refine, score
 from akas.optimization.supervisor import execute, lock, verify_result

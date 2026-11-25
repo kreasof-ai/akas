@@ -3,8 +3,8 @@
 
 def half_conversion_kernel(n, unpack=False):
     import tilelang.language as T
-    from akas.quantization._shared.rounding import half_bits
-    from akas.quantization._shared.rounding import round_half
+    from akas.quantization.storage.rounding import half_bits
+    from akas.quantization.storage.rounding import round_half
 
     convert = half_bits() if unpack else round_half()
 

@@ -110,7 +110,7 @@ def test_lifted_state_reader_keeps_output_abi_when_mapping_is_appended(monkeypat
     from types import SimpleNamespace
     from akas.artifacts.schema import Kernel, Source
     from akas.compilation import state
-    from akas.kernels.registry import graph_outputs
+    from akas.ops.planning import graph_outputs
 
     g = Graph(contract="reference", phase="prefill")
     for name, shape, dtype, role in [

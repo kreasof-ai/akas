@@ -8,7 +8,7 @@ from akas.compilation.selection import selected_source
 from akas.ops import Capabilities
 from akas.ops import KernelSpec
 from akas.ops import define
-from akas.kernels.contracts import Implementation
+from akas.kernels.spec import Implementation
 from akas.kernels.definition import definition
 from akas.kernels.registry import candidates
 
@@ -277,7 +277,7 @@ def test_existing_hardware_algorithm_uses_common_boundary_without_dispatch_wrapp
 
 def test_output_abi_is_operation_owned_and_unknown_kinds_are_conservative():
     from akas.graph import Call
-    from akas.kernels.registry import graph_outputs
+    from akas.ops.planning import graph_outputs
 
     assert graph_outputs(
         Call("rope", {}, ("x", "rotated", "positions")), contract="reference"
@@ -311,7 +311,7 @@ def test_schedule_cannot_introduce_undeclared_storage_or_algorithm_parameters():
 
 def test_named_native_outputs_include_residual_state_and_compound_pipeline_writes():
     from akas.graph import Call
-    from akas.kernels.registry import graph_outputs
+    from akas.ops.planning import graph_outputs
 
     assert graph_outputs(
         Call(

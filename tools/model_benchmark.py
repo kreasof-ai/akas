@@ -16,7 +16,8 @@ import traceback
 import urllib.request
 from contextlib import contextmanager
 
-from akas.benchmarking.history import Recorder, digest, utc, write
+from akas.benchmarking.history import Recorder
+from akas.benchmarking.provenance import digest, utc, write
 from akas.benchmarking.workload import prompt_digest
 
 PREFIXES = [32, 512, 2048, 8192, 16384, 32768, 65536, 130944]
@@ -240,14 +241,13 @@ def record_run(args, runtime, measure):
 def akas(args):
     def measure(meta, report, recorder):
         import numpy as np
-        import tensor
         from akas.benchmarking.cases import Case
         from akas.benchmarking.session import Session
         from akas.benchmarking.runner import run
 
         program = json.loads((args.program / "program.json").read_text())
         from akas.graph import Graph
-        from akas.kernels.registry import graph_outputs
+        from akas.ops.planning import graph_outputs
 
         for phase in program["phases"]:
             manifest = json.loads((args.program / phase["path"]).read_text())
@@ -409,7 +409,6 @@ def llama(args):
         baseline_device = "Vulkan0" if args.profile.provider == "webgpu" else "CUDA0"
         if baseline_device + ":" not in listing:
             raise ValueError(baseline_device + " absent from llama.cpp")
-        import tensor
 
         with device_for(args.profile) as device:
             meta["device"] = dict(device.info, device_listing=listing)

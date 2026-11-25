@@ -37,7 +37,7 @@ def test_convolution_verification_reference_retains_state_and_every_history_pref
 
 
 def test_convolution_commit_reference_covers_full_empty_and_partial_acceptance():
-    from akas.kernels.registry import validation
+    from akas.ops.planning import validation
 
     p, _ = signature(rows=3)
     fields = [

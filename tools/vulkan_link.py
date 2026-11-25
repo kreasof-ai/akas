@@ -13,7 +13,7 @@ import re
 import shutil
 
 from akas.artifacts.read import artifact_path, read_program, validate_program
-from akas.benchmarking.history import digest, write
+from akas.benchmarking.provenance import digest, write
 
 
 def link(prefill, decode, output):

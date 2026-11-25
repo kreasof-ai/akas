@@ -5,6 +5,22 @@ import json
 from pathlib import Path
 
 
+def _byte_alphabet():
+    values = list(range(33, 127)) + list(range(161, 173)) + list(range(174, 256))
+    characters = values.copy()
+    extra = 0
+    for byte in range(256):
+        if byte not in values:
+            values.append(byte)
+            characters.append(256 + extra)
+            extra += 1
+    encode = dict(zip(values, map(chr, characters)))
+    return encode, {char: byte for byte, char in encode.items()}
+
+
+ENCODE_BYTE, DECODE_BYTE = _byte_alphabet()
+
+
 class TokenizerError(ValueError):
     pass
 
@@ -141,7 +157,6 @@ def from_file(path):
     else:
         raise TokenizerError("unsupported byte-level pre-tokenizer")
     if model.get('unk_token') is not None:
-        from akas.text.tokenizer import ENCODE_BYTE
         utf8_bytes = {char for byte, char in ENCODE_BYTE.items()
                       if byte < 245 and byte not in (192, 193)}
         if not utf8_bytes <= model['vocab'].keys():

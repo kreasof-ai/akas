@@ -2,7 +2,7 @@
 
 import pytest
 
-from akas.benchmarking.history import digest, write
+from akas.benchmarking.provenance import digest, write
 from akas.benchmarking.workload import prompt_digest
 from tools.campaign_report import text_comparisons
 
