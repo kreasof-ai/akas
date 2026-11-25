@@ -30,6 +30,11 @@ otherwise see the padding. Long audio uses complete eight-second windows, a
 six-second advance, and the upstream two-second linear crossfade. The last
 window ends at the recording's end.
 
+For Python callers, `akas.models.voice_isolator.interface.service(checkpoint,
+bundle)` opens the compiled model as a context manager. Call
+`model.isolate(wav_bytes)` within that context to get voice and background
+samples. The enhancement benchmark uses the same factory.
+
 ## Shared GPU scratch
 
 With Tensor's WebGPU `capacity_prefix_views` capability, the two exact-length

@@ -1,6 +1,6 @@
 """Compose and execute the ZONOS3-Mini speech phases."""
 
-from contextlib import ExitStack, contextmanager
+from contextlib import ExitStack
 from dataclasses import dataclass
 from math import prod
 from pathlib import Path
@@ -9,11 +9,10 @@ from types import SimpleNamespace
 import numpy as np
 
 from akas.artifacts.read import read_forward, read_forward_set
-from akas.benchmarking.provenance import digest as checksum
 from akas.execution.forward import Forward
 from akas.graph import Graph
 from akas.memory.transfer import write_many
-from akas.models.zonos3.config import LANGUAGES, SILENCE, SILENCE_FRAMES
+from akas.models.zonos3.config import SILENCE, SILENCE_FRAMES
 from akas.models.zonos3.weights import (
     CODEBOOK_EMBEDDING,
     CODEBOOK_HEAD,
@@ -1182,30 +1181,3 @@ class Zonos3MiniSynthesis:
 
     def __exit__(self, *args):
         self.close()
-
-
-@contextmanager
-def service(checkpoint, projector, bundle, *, device=0):
-    """Open a compiled model on the speech server's device-owner thread."""
-    from akas.serving.speech import SpeechService
-    from akas.tensor.device import vulkan_device
-
-    loaded = Zonos3MiniSynthesis.checkpoint_type(checkpoint, projector)
-    with (
-        vulkan_device(device) as adapter,
-        Zonos3MiniSynthesis(loaded, bundle, adapter) as model,
-    ):
-        name = adapter.info["adapter"]["device"]
-        yield SpeechService(
-            model.synthesize,
-            dict(
-                device=dict(adapter.info, name=name),
-                program_sha256=checksum(Path(bundle) / model.forward_index[0]),
-                sample_rate_hz=loaded.config.sample_rate,
-                default_voices=loaded.default_voices,
-                fallback_voice=loaded.projector.metadata.get(
-                    "clip.gen.audio.default_voice"
-                ),
-            ),
-            languages=LANGUAGES,
-        )

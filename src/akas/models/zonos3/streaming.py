@@ -1,12 +1,12 @@
 """Multi-slot BF16 ZONOS3-Mini prefix-streaming composition, runtime, and scheduler."""
 
 from collections import deque
-from contextlib import ExitStack, contextmanager
+from contextlib import ExitStack
 from dataclasses import dataclass, field
 import json
 from math import isfinite, prod
 from pathlib import Path
-from threading import Condition, Event, Thread
+from threading import Condition, Event
 
 import numpy as np
 
@@ -19,7 +19,6 @@ from akas.graph import Graph
 from akas.memory.transfer import write_many
 from akas.models.zonos3.model import HEAD_DIM, STAGE_WINDOWS, compose_backbone
 from akas.models.zonos3.config import SILENCE, SILENCE_FRAMES
-from akas.models.zonos3.weights import Zonos3MiniCheckpoint
 
 STAGE_CAPACITIES = (256, 512, 768, 768, 768)
 SAMPLES_PER_FRAME = 2940
@@ -1219,48 +1218,3 @@ class Zonos3StreamingEngine:
             self._free_slot(job)
             if not job.cancelled.is_set():
                 job.on_error("server stopped")
-
-
-@dataclass(frozen=True)
-class StreamingSpeechService:
-    engine: Zonos3StreamingEngine
-    metadata: dict
-
-
-@contextmanager
-def streaming_service(
-    checkpoint_dir, codec_path, bundle_dir, *, device=0, max_requests=256
-):
-    """Open native BF16 ZONOS3-Mini + keep2_plain on CUDA for concurrent streaming."""
-    import tensor
-
-    loaded = Zonos3MiniCheckpoint(checkpoint_dir, codec_path)
-    with (
-        tensor.Device(device) as adapter,
-        Zonos3StreamingRuntime(
-            loaded, bundle_dir, adapter, max_requests=max_requests
-        ) as runtime,
-    ):
-        engine = Zonos3StreamingEngine(runtime)
-        worker = Thread(
-            target=engine.run_forever, daemon=True, name="akas-zonos3-stream"
-        )
-        worker.start()
-        try:
-            yield StreamingSpeechService(
-                engine=engine,
-                metadata={
-                    "engine": "tensor",
-                    "provider": adapter.info["provider"],
-                    "device": dict(adapter.info),
-                    "program_sha256": checksum(Path(bundle_dir) / STREAM_INDEX[0]),
-                    "sample_rate_hz": loaded.config.sample_rate,
-                    "max_requests": runtime.max_requests,
-                    "pool_capacity": runtime.pool_capacity,
-                    "context": runtime.context,
-                    "decoder": "keep2_plain",
-                },
-            )
-        finally:
-            engine.stop()
-            worker.join()

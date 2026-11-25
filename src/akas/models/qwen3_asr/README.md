@@ -52,6 +52,18 @@ workgroups per attention head to scan the KV cache in parallel. The decoder
 merges their partial softmax results on the GPU. Shorter prompts keep the
 single-partition decode path.
 
+Serve the compiled bundle with the transcription interface.
+
+```sh
+WGPU_BACKEND_TYPE=Vulkan uv run --no-sync akas serve --speech \
+  --factory akas.models.qwen3_asr.interface:service \
+  --config '{"checkpoint":"build/checkpoints/qwen3-asr/Rumble-2-Flash-Q8_0.gguf","projector":"build/checkpoints/qwen3-asr/mmproj-Rumble-2-Flash-Q8_0.gguf","bundle":"build/qwen3-asr/speech"}'
+```
+
+`POST /v1/chat/completions` accepts a single WAV audio input with
+`chat_template_kwargs.language`. `GET /props` lists the supported language
+codes, input sample rate and compiled context.
+
 See the [transcription benchmark](../../../../tools/baselines/README.md#speech-transcription-demo)
 for the matched request, frozen baseline and report commands. Set
 `AKAS_ASR_PROFILE=1` for an AKAS run to retain per-request phase timings in its

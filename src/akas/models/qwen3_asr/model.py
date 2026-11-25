@@ -1,8 +1,7 @@
 """Compile and run Qwen3 ASR using AKAS Forward bundles."""
 
-from contextlib import ExitStack, contextmanager
+from contextlib import ExitStack
 from dataclasses import dataclass
-from pathlib import Path
 from time import perf_counter
 
 import numpy as np
@@ -529,6 +528,19 @@ class Qwen3ASR:
             text, tuple(output), prompt_tokens, len(output) < limit, timings
         )
 
+    def runtime_metadata(self):
+        """Describe the audio input and the capacities of the loaded program."""
+        return dict(
+            sample_rate_hz=SAMPLE_RATE,
+            languages=[lang for lang in self.config.languages if lang in _LANGUAGES],
+            context=self.context,
+            prefill_rows=self.prefill_rows,
+            prefill_buckets=list(self.decoder_rows),
+            encoder_buckets=list(self.encoder_rows),
+            cached_prefix_tokens=len(self._prefix),
+            decode_block_steps=max(self._feedback_plans.get("decode", {}), default=1),
+        )
+
     def close(self):
         self._resources.close()
 
@@ -537,29 +549,3 @@ class Qwen3ASR:
 
     def __exit__(self, *error):
         self.close()
-
-
-@contextmanager
-def service(checkpoint, projector, bundle, *, device=0):
-    from akas.benchmarking.provenance import digest
-    from akas.serving.speech import TranscriptionService
-    from akas.tensor.device import vulkan_device
-
-    loaded = Qwen3ASRCheckpoint(checkpoint, projector)
-    with vulkan_device(device) as adapter, Qwen3ASR(loaded, bundle, adapter) as model:
-        yield TranscriptionService(
-            model.transcribe,
-            dict(
-                device=dict(adapter.info, name=adapter.info["adapter"]["device"]),
-                program_sha256=digest(Path(bundle) / model.forward_index[0]),
-                sample_rate_hz=SAMPLE_RATE,
-                context=model.context,
-                prefill_rows=model.prefill_rows,
-                prefill_buckets=model.decoder_rows,
-                encoder_buckets=model.encoder_rows,
-                cached_prefix_tokens=len(model._prefix),
-                decode_block_steps=max(
-                    model._feedback_plans.get("decode", {}), default=1
-                ),
-            ),
-        )

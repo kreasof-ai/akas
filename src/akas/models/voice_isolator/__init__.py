@@ -1,5 +1,6 @@
 """Inworld Voice Isolator offline audio enhancement."""
 
-from .model import VoiceIsolator, service
+from .interface import service
+from .model import VoiceIsolator
 
 __all__ = ["VoiceIsolator", "service"]

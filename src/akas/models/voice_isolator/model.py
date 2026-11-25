@@ -1,6 +1,6 @@
 """Compile and run the offline Inworld Voice Isolator Forward bundle."""
 
-from contextlib import ExitStack, contextmanager
+from contextlib import ExitStack
 from dataclasses import dataclass
 
 import numpy as np
@@ -228,26 +228,4 @@ class VoiceIsolator:
         self.close()
 
 
-@contextmanager
-def service(checkpoint, bundle, *, device=0, compact_scratch=True):
-    from akas.tensor.device import vulkan_device
-
-    import json
-    from pathlib import Path
-
-    index = json.loads((Path(bundle) / "speech.json").read_text(encoding="utf-8"))
-    loaded = VoiceIsolatorCheckpoint(
-        checkpoint,
-        weight_dtype=index["weight_dtype"],
-        fp32_projections=index.get("fp32_projections", ()),
-    )
-    with (
-        vulkan_device(device) as adapter,
-        VoiceIsolator(
-            loaded, bundle, adapter, compact_scratch=compact_scratch
-        ) as model,
-    ):
-        yield model
-
-
-__all__ = ["Enhancement", "VoiceIsolator", "compose", "float_wav", "service"]
+__all__ = ["Enhancement", "VoiceIsolator", "compose", "float_wav"]

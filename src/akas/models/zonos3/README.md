@@ -34,6 +34,13 @@ WGPU_BACKEND_TYPE=Vulkan uv run --no-sync akas compile \
 
 Set `$env:WGPU_BACKEND_TYPE = 'Vulkan'` before the command in PowerShell. For longer prompts, a larger prefill capacity reduces repeated backbone dispatches and active-expert reads. The validated 256-row configuration uses `prefill_rows: 256`; it retains the same decode, sampling, codec, and waveform path and is within the established backbone reference tolerance.
 
+For complete PCM16 responses at `POST /tts`, run `akas serve --speech` with
+`--factory akas.models.zonos3.interface:service` and a JSON `--config` containing
+`checkpoint`, `projector`, and `bundle`. For streaming float32 PCM at
+`POST /v1/audio/speech`, use `akas.models.zonos3.interface:streaming_service`
+with `checkpoint_dir`, `codec_path`, and `bundle_dir` for the CUDA streaming
+bundle.
+
 Use the [speech benchmark commands](../../../../tools/baselines/README.md#speech-synthesis-demo)
 to compare with llama.cpp Vulkan under the same request and audio protocol.
 On the RX 6700 XT, the [final 43-language fixed-voice benchmark](https://github.com/kreasof-ai/akas/blob/b45b707fb78c9333ed37a49f860a8d6d2103c625/benchmarks/reports/20261117T121145Z-48e3bd2d83ae/COMPARISON.md)

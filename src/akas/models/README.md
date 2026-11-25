@@ -59,13 +59,20 @@ remain future work; these Qwen declarations compose the text model.
 | --- | --- |
 | `config.py` | Architecture and valid geometry |
 | `weights.py` | Checkpoint reading, validation, storage mapping and upload |
-| `model.py` | Public `compose` and model declarations |
+| `model.py` | Public `compose`, model declarations and inference |
+| `interface.py` | Optional adapter that opens the compiled model and exposes a task to CLI and API callers |
 | `_composition.py` | Optional private layer builders for larger architectures |
 | `__init__.py` | Family-owned public exports |
 
 Use explicit family imports, such as `from akas.models.lfm2 import LFM2`. Adding a
 family needs no edit to `akas/__init__.py`. Historical root model imports are
 resolved from each family's exports and emit a deprecation warning.
+
+The [Qwen3 ASR interface](qwen3_asr/interface.py) supplies transcription, the
+[ZONOS3 interface](zonos3/interface.py) supplies complete and streaming speech
+synthesis, and the [Voice Isolator interface](voice_isolator/interface.py)
+supplies offline audio enhancement. Each factory opens its compiled model and
+device. The speech server owns HTTP request decoding and response formatting.
 
 Start with [the complete bigram example](../../../examples/models/bigram/), then
 read LFM and Qwen's `model.py` side by side. Both use the same entry and result.
