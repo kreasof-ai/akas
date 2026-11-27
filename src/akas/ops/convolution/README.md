@@ -43,6 +43,11 @@ compilation, execution and performance.
 
 Both reference/chunk and flat-history bodies are in `kernel.py`. The empty legacy CUDA package has been removed.
 
+For static residual short convolution, the CUDA prefill candidate stages a
+causal halo per time tile. The first tile reads prior history and publishes
+the updated state. Other tiles read their halo from the current input. The
+reference covers short active prefixes and inactive rows.
+
 ## How to extend
 
 Start with the shared body and state contract. A different tap count or gate layout

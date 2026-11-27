@@ -1,0 +1,24 @@
+{
+  "schema": "akas.benchmark-model.v1",
+  "id": "inkling-2-mini",
+  "model": "thinkingmachines/Inkling-2-Mini",
+  "aliases": [],
+  "modes": ["ar"],
+  "weights": {
+    "nvfp4-mxfp8": {
+      "path": "build/checkpoints/inkling-2-mini",
+      "source": {
+        "repo": "thinkingmachines/Inkling-2-Mini",
+        "revision": "c9d028302cd0f035fdf8e7e91f089a4ce94d2195"
+      }
+    }
+  },
+  "runtime_options": {
+    "vllm": {
+      "kv_cache_dtype": "auto",
+      "limit_mm_per_prompt": {"image": 0},
+      "skip_tokenizer_init": false
+    },
+    "sglang": {"kv_cache_dtype": "auto", "enable_multimodal": false}
+  }
+}

@@ -38,11 +38,15 @@ class StagedTile:
     The operation allocates ``storage`` in shared memory and schedules ``load``
     before ``decode``. Encoding details and local coefficient reconstruction
     remain in the codec. Full physical tiles require guarded consumer geometry.
+    A metadata buffer may accompany the payload when the codec stages scales
+    separately.
     """
 
     storage: BufferSpec
     load: Callable
     decode: Callable
+    metadata: BufferSpec | None = None
+    lookup: tuple[BufferSpec, Callable] | None = None
 
 
 @dataclass(frozen=True)

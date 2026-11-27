@@ -25,7 +25,10 @@ def run(config):
     )
     settings.update(config["runtime_options"])
     if config.get("optimized"):
-        settings["cuda_graph_bs_decode"] = sorted({b for b, _ in config["shapes"]})
+        capacity = settings["max_running_requests"]
+        settings["cuda_graph_bs_decode"] = sorted(
+            {min(batch, capacity) for batch, _ in config["shapes"]}
+        )
     if config.get("streaming"):
         settings.update(skip_tokenizer_init=True, stream_interval=1,
                         incremental_streaming_output=False)

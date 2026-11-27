@@ -351,3 +351,59 @@ def column_activation(spec, schedule):
         return out
 
     return compute
+
+
+def capped_expert_activation(spec, schedule):
+    """Apply capped SwiGLU and route weights before the down projection."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    rows, top, width = (p[name] for name in ("r", "top", "c"))
+    gate_cap, up_cap = p["gate_cap"], p["up_cap"]
+
+    @kernel
+    def compute(
+        x: Tensor((rows, top, 2 * width), "float32"),
+        weights: Tensor((rows, top), "float32"),
+    ) -> Tensor((rows, top, width), "bfloat16"):
+        out = output((rows, top, width), "bfloat16")
+        with T.Kernel(rows * top, T.ceildiv(width, 128), threads=128) as (route, tile):
+            for lane in T.Parallel(128):
+                col = tile * 128 + lane
+                if col < width:
+                    row, rank = route // top, route % top
+                    gate = T.cast(T.cast(x[row, rank, 2 * col], "bfloat16"), "float32")
+                    up = T.cast(
+                        T.cast(x[row, rank, 2 * col + 1], "bfloat16"), "float32"
+                    )
+                    capped_gate = gate_cap * T.tanh(gate / gate_cap)
+                    capped_up = up_cap * T.tanh(up / up_cap)
+                    out[row, rank, col] = (
+                        capped_gate
+                        / (1 + T.exp(-gate))
+                        * capped_up
+                        * weights[row, rank]
+                    )
+        return out
+
+    return compute
+
+
+def logit_softcap(spec, schedule):
+    """Apply a smooth symmetric cap while preserving the full F32 logits."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    size, cap = p["r"] * p["c"], p["cap"]
+
+    @kernel
+    def compute(x: Tensor((size,), "float32")) -> Tensor((size,), "float32"):
+        out = output((size,), "float32")
+        with T.Kernel(T.ceildiv(size, 256), threads=256) as block:
+            for lane in T.Parallel(256):
+                i = block * 256 + lane
+                if i < size:
+                    out[i] = cap * T.tanh(x[i] / cap)
+        return out
+
+    return compute

@@ -1360,6 +1360,254 @@ def bucketed(spec: KernelSpec, schedule: Mapping[str, object]):
     return _bucketed({**p, "rows": p["r"]})
 
 
+def _block_scaled_experts_lane_mma(p, stage_tile):
+    """Place GGUF-style decoded pairs directly in m16n8k16 operand registers."""
+    import tilelang.language as T
+
+    rows, top, experts, columns, depth = (
+        p[key] for key in ("r", "top", "experts", "o", "k")
+    )
+    routed = p["routed_input"]
+    wide = rows * top >= experts * 128
+    bm = p.get("block_m", 64 if wide else 8)
+    bn = p.get("columns", 64)
+    bk = p.get("block_k", 64)
+    col_warps = p.get("warp_columns", 4)
+    row_warps = 4 // col_warps
+    if bm % (8 * row_warps) or bn % (16 * col_warps) or columns % bn or depth % bk:
+        raise ValueError("register expert MMA needs complete warp and weight tiles")
+    row_atoms, col_atoms = bm // (8 * row_warps), bn // (16 * col_warps)
+    groups = min(rows * top, (rows * top + bm - 1) // bm + experts)
+    tile = stage_tile((bn, bk), "bfloat16")
+    lookup = tile.lookup
+    tile_layout = bm.bit_length() - 3
+    input_rows = rows * top if routed else rows
+    stages = p.get("stages", 2)
+    ldmatrix = p.get("ldmatrix", True)
+
+    @T.macro
+    def project(x, encoded, counts, routes, tile_experts, tile_offsets, out):
+        words = T.meta_var(T.Tensor((input_rows, depth // 2), "uint32", x.data))
+        with T.Kernel(columns // bn, groups, threads=128) as (bx, group):
+            expert = tile_experts[tile_layout, group]
+            start = tile_offsets[tile_layout, group] * bm
+            if expert >= 0 and start < counts[expert]:
+                thread = T.get_thread_binding()
+                warp, lane = thread // 32, thread % 32
+                warp_col, warp_row = warp % col_warps, warp // col_warps
+                lane_group, lane_pair = lane // 4, lane % 4
+                active = T.alloc_shared((bm,), "int32")
+                inputs = T.alloc_shared((bm, bk // 2 + 4), "uint32")
+                packed = T.alloc_shared(tile.storage.shape, tile.storage.dtype)
+                scales = T.alloc_shared(tile.metadata.shape, tile.metadata.dtype)
+                if lookup is not None:
+                    cache = T.alloc_shared(lookup[0].shape, lookup[0].dtype)
+                    lookup[1](encoded, expert, cache)
+                else:
+                    cache = T.meta_var(scales)
+                weight = T.alloc_local((4,), "uint32")
+                activation = T.alloc_local((2 * row_atoms,), "uint32")
+                acc = T.alloc_local((row_atoms * col_atoms * 4,), "float32")
+                for i in T.Parallel(bm):
+                    active[i] = T.if_then_else(
+                        start + i < counts[expert],
+                        routes[expert, T.min(start + i, rows - 1)],
+                        -1,
+                    )
+                for i in T.unroll(row_atoms * col_atoms * 4):
+                    acc[i] = 0
+                T.sync_threads()
+                for block in T.Pipelined(depth // bk, num_stages=stages):
+                    tile.load(
+                        encoded, packed, scales, expert * columns + bx * bn, block * bk
+                    )
+                    for i, j in T.Parallel(bm, bk // 2):
+                        route = active[i]
+                        index = route if routed else route // top
+                        inputs[i, j] = T.if_then_else(
+                            route >= 0,
+                            words[T.max(index, 0), block * (bk // 2) + j],
+                            T.uint32(0),
+                        )
+                    for step in T.unroll(bk // 16):
+                        channel = step * 16 + lane_pair * 2
+                        for r in T.unroll(row_atoms):
+                            first_slot = (warp_row * row_atoms + r) * 8
+                            if ldmatrix:
+                                pair = step * 8 + (lane // 8 % 2) * 4
+                                T.ptx_ldmatrix(
+                                    T.bool(False),
+                                    2,
+                                    T.access_ptr(
+                                        inputs[first_slot + lane % 8, pair],
+                                        "r",
+                                        extent=4,
+                                    ),
+                                    T.access_ptr(activation[2 * r], "w", extent=2),
+                                )
+                            else:
+                                pair = step * 8 + lane_pair
+                                activation[2 * r] = inputs[
+                                    first_slot + lane_group, pair
+                                ]
+                                activation[2 * r + 1] = inputs[
+                                    first_slot + lane_group, pair + 4
+                                ]
+                        for c in T.unroll(col_atoms):
+                            col = (warp_col * col_atoms + c) * 16 + lane_group
+                            weight[0] = tile.decode(packed, scales, cache, col, channel)
+                            weight[1] = tile.decode(
+                                packed, scales, cache, col + 8, channel
+                            )
+                            weight[2] = tile.decode(
+                                packed, scales, cache, col, channel + 8
+                            )
+                            weight[3] = tile.decode(
+                                packed, scales, cache, col + 8, channel + 8
+                            )
+                            for r in T.unroll(row_atoms):
+                                T.ptx_mma(
+                                    "float32",
+                                    "m16n8k16",
+                                    "row",
+                                    "col",
+                                    "bf16",
+                                    "bf16",
+                                    "fp32",
+                                    weight.data,
+                                    0,
+                                    activation.data,
+                                    2 * r,
+                                    acc.data,
+                                    (c * row_atoms + r) * 4,
+                                    T.bool(False),
+                                )
+                for c in T.unroll(col_atoms):
+                    for r in T.unroll(row_atoms):
+                        for i in T.unroll(4):
+                            slot = (
+                                (warp_row * row_atoms + r) * 8 + lane_pair * 2 + i % 2
+                            )
+                            route = active[slot]
+                            col = bx * bn + (warp_col * col_atoms + c) * 16 + lane_group
+                            if route >= 0:
+                                out[route // top, route % top, col + (i // 2) * 8] = (
+                                    acc[(c * row_atoms + r) * 4 + i]
+                                )
+
+    return project
+
+
+def block_scaled_experts(spec, schedule):
+    """Decode block-scaled weights in each routed BF16 expert matrix tile."""
+    import tilelang.language as T
+    from akas.kernels.kernel import Tensor, kernel, output
+    from akas.ops.moe.definition import tile_layouts
+    from akas.quantization import get
+
+    p = {**spec.parameters, **schedule}
+    rows, top, experts, columns, depth = (
+        p[key] for key in ("r", "top", "experts", "o", "k")
+    )
+    routed = p.get("routed_input", False)
+    layout = get("weights", p["encoding"]).bind(
+        (experts, columns, depth), provider="cuda"
+    )
+    values, scale = layout.storage.buffers[:2]
+    read = (
+        layout.require("stage_tile")
+        if p.get("lane_mma")
+        else layout.require("read_tile")
+    )
+    wide = rows * top >= experts * 128
+    bm = p.get("block_m", 64 if wide else 16)
+    bn = p.get("columns", 64)
+    bk = p.get("block_k", 64)
+    if bm > p.get("max_block_m", 64):
+        raise ValueError("block-scaled expert tile exceeds its shared map maximum")
+    source = (rows, top, depth) if routed else (rows, depth)
+    result = (rows, top, columns)
+    capacity = (rows * top + 3) // 4 + experts
+    tile_layout = bm.bit_length() - 3
+    groups = min(rows * top, (rows * top + bm - 1) // bm + experts)
+    route_shape = (experts, rows)
+    counts_shape = (experts,)
+    tile_shape = (tile_layouts(p), capacity)
+
+    @T.macro
+    def project(x, encoded, counts, routes, tile_experts, tile_offsets, out):
+        with T.Kernel(T.ceildiv(columns, bn), groups, threads=128) as (bx, group):
+            expert = tile_experts[tile_layout, group]
+            start = tile_offsets[tile_layout, group] * bm
+            if expert >= 0 and start < counts[expert]:
+                lhs = T.alloc_shared((bm, bk), "bfloat16")
+                rhs = T.alloc_shared((bn, bk), "bfloat16")
+                acc = T.alloc_fragment((bm, bn), "float32")
+                T.clear(acc)
+                for block in T.Pipelined(T.ceildiv(depth, bk), num_stages=2):
+                    for i, j in T.Parallel(bm, bk):
+                        route = routes[expert, T.min(start + i, rows - 1)]
+                        lhs[i, j] = 0
+                        if start + i < counts[expert] and block * bk + j < depth:
+                            if routed:
+                                lhs[i, j] = x[route // top, route % top, block * bk + j]
+                            else:
+                                lhs[i, j] = x[route // top, block * bk + j]
+                    read(encoded, rhs, expert * columns + bx * bn, block * bk)
+                    T.gemm(lhs, rhs, acc, transpose_B=True)
+                for i, j in T.Parallel(bm, bn):
+                    if start + i < counts[expert] and bx * bn + j < columns:
+                        route = routes[expert, start + i]
+                        out[route // top, route % top, bx * bn + j] = acc[i, j]
+
+    if p.get("lane_mma"):
+        project = _block_scaled_experts_lane_mma(p, read)
+
+    if p["encoding"] == "nvfp4":
+
+        @kernel
+        def compute(
+            x: Tensor(source, "bfloat16"),
+            w: Tensor(values.shape, values.dtype),
+            scale: Tensor(scale.shape, scale.dtype),
+            amax: Tensor((experts,), "float32"),
+            denominator: Tensor((1,), "float32"),
+            counts: Tensor(counts_shape, "int32"),
+            routes: Tensor(route_shape, "int32"),
+            tile_experts: Tensor(tile_shape, "int32"),
+            tile_offsets: Tensor(tile_shape, "int32"),
+        ) -> Tensor(result, "float32"):
+            out = output(result, "float32")
+            project(
+                x,
+                (w, scale, amax, denominator),
+                counts,
+                routes,
+                tile_experts,
+                tile_offsets,
+                out,
+            )
+            return out
+
+    else:
+
+        @kernel
+        def compute(
+            x: Tensor(source, "bfloat16"),
+            w: Tensor(values.shape, values.dtype),
+            scale: Tensor(scale.shape, scale.dtype),
+            counts: Tensor(counts_shape, "int32"),
+            routes: Tensor(route_shape, "int32"),
+            tile_experts: Tensor(tile_shape, "int32"),
+            tile_offsets: Tensor(tile_shape, "int32"),
+        ) -> Tensor(result, "float32"):
+            out = output(result, "float32")
+            project(x, (w, scale), counts, routes, tile_experts, tile_offsets, out)
+            return out
+
+    return compute
+
+
 def fp8_expert_swiglu(spec: KernelSpec, schedule: Mapping[str, object]):
     """Pair the shared bucketed products and retain their quantized epilogue."""
     p = {**spec.parameters, **schedule}

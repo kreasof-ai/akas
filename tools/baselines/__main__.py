@@ -15,6 +15,8 @@ from akas.benchmarking.provenance import digest, write
 from akas.benchmarking.workload import STANDARD
 from akas.checkpoints.identity import checkpoint_digest
 
+NATIVE_FORMATS = ("bf16", "fp8", "f16", "nvfp4-mxfp8")
+
 
 def model_definition(directory, name):
     matches = []
@@ -38,13 +40,13 @@ def select_weight_format(model, runtime, requested=None):
     elif "bf16" in model["weights"]:
         selected = "bf16"
     else:
-        native = [name for name in ("fp8", "f16") if name in model["weights"]]
+        native = [name for name in NATIVE_FORMATS if name in model["weights"]]
         if len(native) != 1:
             raise ValueError("select an explicit declared native weight format")
         selected = native[0]
     if selected not in model["weights"]:
         raise ValueError(f"model does not declare {selected} weights")
-    if runtime != "llama" and selected not in ("bf16", "fp8", "f16"):
+    if runtime != "llama" and selected not in NATIVE_FORMATS:
         raise ValueError("native baselines require safetensors weights")
     return selected
 
@@ -56,9 +58,12 @@ def main():
     parser.add_argument("--models", type=Path, default=Path("benchmarks/models"))
     parser.add_argument("--mtp", action="store_true")
     parser.add_argument("--provider", choices=("cpu", "cuda", "vulkan"), default="cuda")
-    parser.add_argument("--format", choices=("bf16", "fp8", "f16", "f32", "q4_0", "q4_k_m", "q8_0"))
+    parser.add_argument("--format", choices=(*NATIVE_FORMATS, "f32", "q4_0", "q4_k_m", "q8_0"))
     parser.add_argument("--binary", type=Path, help="override the speech runtime executable")
-    parser.add_argument("--bundle", type=Path, help="compiled AKAS speech bundle")
+    parser.add_argument("--bundle", type=Path, help="compiled AKAS program bundle")
+    parser.add_argument(
+        "--runtime-source", type=Path, help="local vLLM or SGLang Python package overlay"
+    )
     parser.add_argument("--reference-run", help="frozen llama.cpp Vulkan speech run")
     parser.add_argument("--history", type=Path, default=Path("benchmarks"))
     parser.add_argument("--seconds", type=int, default=600)
@@ -84,6 +89,19 @@ def main():
         parser.error("the llama.cpp probe currently measures AR")
     if args.streaming and args.runtime == "llama":
         parser.error("streamed native timing currently supports vLLM and SGLang")
+    worker_env = os.environ.copy()
+    runtime_sources = {}
+    if args.runtime_source is not None:
+        source = args.runtime_source.resolve()
+        if args.runtime not in ("vllm", "sglang") or not (
+            source / args.runtime / "__init__.py"
+        ).is_file():
+            parser.error("--runtime-source must contain the selected vLLM or SGLang package")
+        runtime_sources[args.runtime] = source
+        python_paths = [str(source)]
+        if worker_env.get("PYTHONPATH"):
+            python_paths.append(worker_env["PYTHONPATH"])
+        worker_env["PYTHONPATH"] = os.pathsep.join(python_paths)
     definition_path, model = model_definition(args.models, args.model)
     enhancement = model.get("runtime_options", {}).get("inworld", {}).get("enhancement")
     if enhancement and args.runtime in ("inworld", "akas"):
@@ -126,9 +144,15 @@ def main():
         if record["status"] != "passed":
             raise SystemExit(1)
         return
+    native_text = args.runtime == "akas"
+    if native_text and (
+        args.bundle is None or not args.streaming or not args.optimized
+        or args.provider != "cuda" or args.mtp
+    ):
+        parser.error("AKAS text requires CUDA, --bundle, --optimized and --streaming")
     if (
-        args.runtime == "akas" or args.provider == "cpu" or args.binary is not None
-        or args.bundle is not None or args.reference_run
+        args.provider == "cpu" or args.binary is not None or args.reference_run
+        or (args.bundle is not None and not native_text)
     ):
         parser.error("the selected backend or options require a speech model")
     mode = "mtp" if args.mtp else "ar"
@@ -150,7 +174,7 @@ def main():
     )
     python = (
         work / args.runtime / "bin/python"
-        if args.runtime != "llama"
+        if args.runtime not in ("llama", "akas")
         else Path(sys.executable)
     )
     command = [
@@ -216,7 +240,20 @@ def main():
         hf_config = json.loads(
             (checkpoint / "config.json").read_text()
         )
-        config["vocab"] = hf_config.get("text_config", hf_config)["vocab_size"]
+        text_config = hf_config.get("text_config", hf_config)
+        config["vocab"] = text_config.get("unpadded_vocab_size", text_config["vocab_size"])
+    if native_text:
+        from akas.artifacts.read import read_program
+        from tensor.runtime.cuda_target import matches_device
+
+        config["bundle"] = str(args.bundle.resolve())
+        program = read_program(config["bundle"])
+        if program["provider"] != "cuda" or not matches_device(
+            program["target"], "sm_" + capability.replace(".", "")
+        ):
+            parser.error("AKAS bundle must target this CUDA GPU")
+        if program["model_options"].get("kv_dtype") not in ("float16", "bfloat16"):
+            parser.error("AKAS text measurements require 16-bit KV")
     metadata = dict(
         runtime=args.runtime,
         model=model["model"],
@@ -228,9 +265,9 @@ def main():
         device=dict(
             name=gpu_name, uuid=gpu_uuid, driver=driver, memory_mib=int(memory_mib)
         ),
-        purpose="baseline" if args.optimized else "preflight",
+        purpose="comparison" if native_text else "baseline" if args.optimized else "preflight",
         command=command,
-        protocol="baseline-stream-burst-v1" if args.streaming else "baseline-burst-v3" if args.optimized else "baseline-preflight-v1",
+        protocol="client-stream-burst-v1" if native_text else "baseline-stream-burst-v1" if args.streaming else "baseline-burst-v3" if args.optimized else "baseline-preflight-v1",
         checkpoint=str(checkpoint),
         checkpoint_sha256=checkpoint_digest(checkpoint),
         checkpoint_source=weight["source"],
@@ -257,6 +294,13 @@ def main():
             temperature=0, ignore_eos=True, output_tokens=config["output_tokens"]
         ),
     )
+    if native_text:
+        metadata.update(
+            kv_dtype=program["model_options"]["kv_dtype"],
+            model_throughput_qualified=False,
+        )
+    if runtime_sources:
+        metadata["runtime_source"] = str(runtime_sources[args.runtime])
     if args.runtime != "llama":
         frozen = subprocess.check_output(
             [
@@ -266,6 +310,7 @@ def main():
                 args.runtime,
             ],
             text=True,
+            env=worker_env,
         )
         environment = json.loads(frozen)
         metadata["dependencies"] = environment.pop("versions")
@@ -273,8 +318,11 @@ def main():
     run = Recorder(
         args.history,
         metadata,
-        kind="baseline",
-        change="Measure optimized baseline execution"
+        kind="configuration" if native_text else "baseline",
+        dependency_sources=runtime_sources,
+        change="Measure compiled AKAS streamed text execution"
+        if native_text
+        else "Measure optimized baseline execution"
         if args.optimized
         else "Qualify baseline execution; these probes are not tuned performance measurements",
     )
@@ -285,10 +333,13 @@ def main():
     result = dict(schema="akas.benchmark.v1", metadata=metadata, results=[])
     process, status = None, "failed"
     try:
+        if native_text:
+            run.program(config["bundle"])
         with log.open("w") as output:
             process = subprocess.Popen(
                 command,
                 cwd=root,
+                env=worker_env,
                 stdout=output,
                 stderr=subprocess.STDOUT,
                 start_new_session=True,

@@ -3,6 +3,7 @@
 from akas.kernels.spec import OutputABI
 from akas.ops.activation.validation import validation, sigmoid_bias_validation
 from akas.ops.activation.validation import column_activation_validation
+from akas.ops.activation.validation import softcap_validation
 from akas.kernels.spec import Implementation
 
 ROW_INDEPENDENT = ("swiglu",)
@@ -208,3 +209,10 @@ IMPLEMENTATIONS += (
         name="activation.webgpu.head_gate",
     ),
 )
+
+for _kind in ("capped_expert_activation", "logit_softcap"):
+    OUTPUT_ARGUMENTS["reference"][_kind] = OutputABI((-1,), ("out",))
+    VALIDATIONS[_kind] = softcap_validation
+    IMPLEMENTATIONS += (
+        Implementation(_kind, "akas.ops.activation.kernel", "reference", factory=_kind),
+    )

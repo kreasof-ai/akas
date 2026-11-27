@@ -516,3 +516,33 @@ def biased_softmax_router(spec, schedule):
         return ids, weights
 
     return compute
+
+
+def routed_expert_sum(spec, schedule):
+    """Reduce expert contributions whose activation already included the route weight."""
+    import tilelang.language as T
+    from akas.kernels.kernel import Tensor, kernel, output
+
+    p = {**spec.parameters, **schedule}
+    rows, top, width = (p[name] for name in ("r", "top", "c"))
+
+    @kernel
+    def compute(
+        x: Tensor((rows, top, width), "float32"),
+        active: Tensor((rows,), "int32"),
+    ) -> Tensor((rows, width), "float32"):
+        out = output((rows, width), "float32")
+        with T.Kernel(rows, T.ceildiv(width, 128), threads=128) as (row, block):
+            for lane in T.Parallel(128):
+                col = block * 128 + lane
+                if col < width:
+                    total = T.alloc_var("float32")
+                    total = 0
+                    if active[row] != 0:
+                        for rank in T.unroll(top):
+                            value = T.cast(x[row, rank, col], "bfloat16")
+                            total += T.cast(value, "float32")
+                    out[row, col] = T.cast(T.cast(total, "bfloat16"), "float32")
+        return out
+
+    return compute

@@ -133,6 +133,8 @@ def candidate(job, output):
                     {info.encoding for info in gguf.tensors.values()}
                 ),
             )
+        elif getattr(loaded, "weight_format", None) is not None:
+            metadata["weight_format"] = loaded.weight_format
         else:
             config_path = Path(context["checkpoint"]) / "config.json"
             config = (

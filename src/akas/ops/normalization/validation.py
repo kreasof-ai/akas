@@ -95,3 +95,32 @@ def layer_norm_validation(kind, p, signature):
     )
     out = normalized * values["scale"] + values["bias"]
     return ValidationCase(values, {**values, "out": out.astype("float32")})
+
+
+def projected_head_validation(kind, p, signature):
+    import numpy as np
+    from tensor.runtime.dtypes import decode_bfloat16, encode_bfloat16
+    from akas.validation import ValidationCase, sample_arguments
+
+    values = sample_arguments(signature)
+    if p.get("log_alpha"):
+        values["positions"][:] = np.arange(p["r"]) + p["log_floor"]
+
+    def bf16(x):
+        return decode_bfloat16(encode_bfloat16(x.astype("float32")))
+
+    source = bf16(values["x"].reshape(p["r"], p["h"], p["d"])).astype("float64")
+    if p["scaled"]:
+        source *= values["scale"]
+    square = np.sum(source**2, axis=-1, keepdims=True)
+    if p["mode"] == "rms":
+        gain = 1 / np.sqrt(square / p["d"] + p["eps"])
+    else:
+        gain = np.minimum(p["clip"] / (np.sqrt(square) + p["eps"]), 1)
+    out = bf16(source * gain)
+    if p.get("log_alpha"):
+        tau = 1 + p["log_alpha"] * np.log(
+            np.maximum((values["positions"] + 1) / p["log_floor"], 1)
+        )
+        out = bf16(out * tau[:, None, None])
+    return ValidationCase(values, {**values, "out": out.reshape(values["x"].shape)})

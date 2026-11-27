@@ -133,3 +133,81 @@ def scaled_residual(spec, schedule):
         return out
 
     return compute
+
+
+def normalized_block_mix(spec, schedule):
+    """Learned-query softmax over a token's RMS-normalized residual blocks."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    rows, width, blocks = (p[name] for name in ("r", "c", "blocks"))
+    queries, index = p["queries"], p["index"]
+    eps = p["eps"]
+    tile = 1 << (width - 1).bit_length()
+
+    @kernel
+    def compute(
+        x: Tensor((rows, blocks, width), "float32"),
+        query: Tensor((queries, width), "float32"),
+    ) -> Tensor((rows, width), "float32"):
+        out = output((rows, width), "float32")
+        with T.Kernel(rows, threads=128) as row:
+            values = T.alloc_fragment((blocks, tile), "float32")
+            products = T.alloc_fragment((blocks, tile), "float32")
+            norms = T.alloc_fragment((blocks,), "float32")
+            scores = T.alloc_fragment((blocks,), "float32")
+            maximum = T.alloc_fragment((1,), "float32")
+            denominator = T.alloc_fragment((1,), "float32")
+            mixed = T.alloc_fragment((tile,), "float32")
+            for b, c in T.Parallel(blocks, tile):
+                values[b, c] = T.if_then_else(c < width, x[row, b, c], 0.0)
+                products[b, c] = values[b, c] * values[b, c]
+            T.reduce_sum(products, norms, dim=1)
+            for b, c in T.Parallel(blocks, tile):
+                values[b, c] *= T.rsqrt(norms[b] / width + eps)
+                products[b, c] = T.if_then_else(
+                    c < width, values[b, c] * query[index, c], 0.0
+                )
+            T.reduce_sum(products, scores, dim=1)
+            for b in T.Parallel(blocks):
+                scores[b] *= width**-0.5
+            T.reduce_max(scores, maximum, dim=0)
+            for b in T.Parallel(blocks):
+                scores[b] = T.exp(scores[b] - maximum[0])
+            T.reduce_sum(scores, denominator, dim=0)
+            for b, c in T.Parallel(blocks, tile):
+                products[b, c] = values[b, c] * scores[b]
+            T.reduce_sum(products, mixed, dim=0)
+            for c in T.Parallel(tile):
+                if c < width:
+                    out[row, c] = mixed[c] / denominator[0]
+        return out
+
+    return compute
+
+
+def message_blend(spec, schedule):
+    """Apply separate bounded forget and gain gates to two residual streams."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    shape = (p["r"], p["c"])
+
+    @kernel
+    def compute(
+        x: Tensor(shape, "float32"),
+        message: Tensor(shape, "float32"),
+        forget: Tensor(shape, "float32"),
+        gain: Tensor(shape, "float32"),
+    ) -> Tensor(shape, "float32"):
+        out = output(shape, "float32")
+        with T.Kernel(shape[0], T.ceildiv(shape[1], 128), threads=128) as (r, block):
+            for lane in T.Parallel(128):
+                c = block * 128 + lane
+                if c < shape[1]:
+                    out[r, c] = (1 - T.tanh(forget[r, c])) * x[r, c] + T.tanh(
+                        gain[r, c]
+                    ) * message[r, c]
+        return out
+
+    return compute

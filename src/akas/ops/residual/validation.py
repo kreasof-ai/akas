@@ -45,3 +45,26 @@ def scaled_residual_validation(kind, p, signature):
         + values["mixed"].astype("float64") * values["scale"]
     )
     return ValidationCase(values, {**values, "out": out.astype("float32")})
+
+
+def block_mix_validation(kind, p, signature):
+    import numpy as np
+    from akas.validation import ValidationCase, sample_arguments
+
+    values = sample_arguments(signature)
+    if kind == "message_blend":
+        out = (1 - np.tanh(values["forget"])) * values["x"] + np.tanh(
+            values["gain"]
+        ) * values["message"]
+    else:
+        blocks = values["x"].astype("float64")
+        normalized = blocks / np.sqrt(
+            np.mean(blocks**2, axis=-1, keepdims=True) + p["eps"]
+        )
+        scores = (
+            normalized @ values["query"][p["index"]].astype("float64") / np.sqrt(p["c"])
+        )
+        gates = np.exp(scores - scores.max(axis=-1, keepdims=True))
+        gates /= gates.sum(axis=-1, keepdims=True)
+        out = np.einsum("rb,rbc->rc", gates, normalized)
+    return ValidationCase(values, {**values, "out": out.astype("float32")})

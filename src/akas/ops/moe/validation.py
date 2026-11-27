@@ -746,3 +746,62 @@ VALIDATIONS["expert_merge"] = pipeline_validation
 VALIDATIONS["expert_pair_partial"] = paired_partial_validation
 VALIDATIONS["expert_pack"] = pack_validation
 VALIDATIONS["biased_softmax_router"] = biased_softmax_validation
+
+
+def block_scaled_expert_validation(kind, p, signature):
+    import numpy as np
+    from tensor.runtime.dtypes import decode_bfloat16, encode_bfloat16
+    from akas.validation import ValidationCase, sample_arguments
+
+    values = sample_arguments(signature)
+
+    def bf16(x):
+        return decode_bfloat16(encode_bfloat16(x))
+
+    if kind == "routed_expert_sum":
+        values["active"][:] = np.arange(p["r"]) % 2 == 0
+        out = bf16(bf16(values["x"]).sum(axis=1)) * values["active"][:, None]
+        return ValidationCase(values, {**values, "out": out})
+
+    rows, top, experts = (p[name] for name in ("r", "top", "experts"))
+    ids = (np.arange(rows)[:, None] + np.arange(top)[None, :]) % experts
+    values["counts"][:] = np.bincount(ids.reshape(-1), minlength=experts)
+    values["routes"][:] = -1
+    for expert in range(experts):
+        routes = np.flatnonzero(ids.reshape(-1) == expert)
+        values["routes"][expert, : routes.size] = routes
+    values["tile_experts"][:], values["tile_offsets"][:] = tile_tables(
+        values["counts"],
+        values["tile_experts"].shape[1],
+        values["tile_experts"].shape[0],
+    )
+    rng = np.random.default_rng(73)
+    values["w"][:] = rng.integers(0, 127, values["w"].shape, dtype="uint8")
+    nvfp4 = p["encoding"] == "nvfp4"
+    if nvfp4:
+        from akas.quantization.weights.nvfp4.validation import decode_rows
+
+        values["scale"][:] = rng.integers(0, 127, values["scale"].shape, dtype="uint8")
+        values["amax"][:] = 1
+        values["denominator"][:] = 2688
+    else:
+        from akas.quantization.weights.mxfp8.validation import decode_rows
+
+        values["scale"][:] = rng.integers(
+            113, 121, values["scale"].shape, dtype="uint8"
+        )
+
+    out = np.empty((rows, top, p["o"]), dtype="float32")
+    for expert in np.unique(ids):
+        rr, rank = np.where(ids == expert)
+        args = (values["w"][expert], values["scale"][expert])
+        if nvfp4:
+            args += (values["amax"][expert], values["denominator"])
+        weights = bf16(decode_rows(*args))
+        source = values["x"][rr, rank] if p["routed_input"] else values["x"][rr]
+        out[rr, rank] = source @ weights.T
+    return ValidationCase(values, {**values, "out": out}, atol=0.003, rtol=0.003)
+
+
+VALIDATIONS["block_scaled_experts"] = block_scaled_expert_validation
+VALIDATIONS["routed_expert_sum"] = block_scaled_expert_validation

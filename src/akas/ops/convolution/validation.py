@@ -282,3 +282,45 @@ def istft_stream_validation(kind, p, signature):
                 expected["rs_state"][s] = values["mid"][s, live_span - 322 : live_span]
         return ValidationCase(values, expected, rtol=0, atol=0)
     raise ValueError(f"Unknown streaming iSTFT operation: {kind}")
+
+
+def residual_short_conv_validation(kind, p, signature):
+    import numpy as np
+    from tensor.runtime.dtypes import decode_bfloat16, encode_bfloat16
+    from akas.validation import ValidationCase, sample_arguments
+
+    values = sample_arguments(signature)
+    slots, chunk, width, taps = (p[n] for n in ("r", "chunk", "c", "taps"))
+    dynamic = p["dynamic"]
+    values["lengths"][:] = chunk
+    if slots > 1:
+        values["lengths"][-1] = chunk - 1
+    history = values["history"].copy()
+    out = np.zeros_like(values["x"])
+
+    def round_bf16(x):
+        return decode_bfloat16(encode_bfloat16(x))
+
+    rounded = round_bf16(values["x"])
+    dynamic_w = round_bf16(values["dynamic_w"]) if dynamic else None
+    weights = values["w"].T[::-1].T if not dynamic else values["w"].T
+    for slot, length in enumerate(values["lengths"]):
+        for token in range(length):
+            row = slot * chunk + token
+            current = rounded[row]
+            window = np.concatenate((current[None], history[slot]), axis=0)
+            coef = weights
+            if dynamic:
+                per_head = dynamic_w[row].reshape(p["groups"], taps)
+                coef = coef + np.repeat(per_head, width // p["groups"], axis=0)
+            accumulated = current + np.einsum("tc,ct->c", window, coef, dtype="float64")
+            divisor = np.sqrt(1 + taps * (2 if dynamic else 1))
+            out[row] = round_bf16((accumulated / divisor).astype("float32"))
+            history[slot] = window[:-1]
+    return ValidationCase(values, {**values, "history": history, "out": out})
+
+
+SHORT_CONV_VALIDATIONS = {
+    kind: residual_short_conv_validation
+    for kind in ("residual_short_conv", "dynamic_residual_short_conv")
+}

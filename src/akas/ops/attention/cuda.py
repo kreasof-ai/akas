@@ -4026,3 +4026,237 @@ def window_grouped(spec, schedule):
         return out
 
     return compute
+
+
+def relative_prefill_attention(spec, schedule):
+    """Tile causal relative-bias attention over multiple queries per head."""
+    import tilelang.language as T
+
+    from akas.kernels.kernel import Tensor, kernel, output
+
+    p = {**spec.parameters, **schedule}
+    r, chunk, heads, kv_heads, depth, cap = (
+        p[name] for name in ("r", "chunk", "h", "kh", "d", "capacity")
+    )
+    rel_dim, extent = p["relative_dim"], p["extent"]
+    slots = r // chunk
+    query_rows, key_rows = p.get("query_rows", 16), p.get("key_rows", 64)
+    cache_shape = (slots, kv_heads, cap, depth)
+    q_shape = (r, heads * depth)
+    kv_shape = (r, kv_heads * depth)
+    scale = depth**-0.5
+
+    @kernel
+    def compute(
+        q: Tensor(q_shape, "float32"),
+        k: Tensor(kv_shape, "float32"),
+        v: Tensor(kv_shape, "float32"),
+        kc: Tensor(cache_shape, "bfloat16"),
+        vc: Tensor(cache_shape, "bfloat16"),
+        relative: Tensor((r, heads * rel_dim), "float32"),
+        weights: Tensor((rel_dim, extent), "bfloat16"),
+        sinks: Tensor((r, heads), "float32"),
+        positions: Tensor((r,), "int32"),
+        enabled: Tensor((r,), "int32"),
+    ) -> Tensor(q_shape, "float32"):
+        out = output(q_shape, "float32")
+        with T.Kernel(T.ceildiv(chunk, query_rows), heads, slots, threads=128) as (
+            block,
+            head,
+            slot,
+        ):
+            qstart = block * query_rows
+            kv_head = head // (heads // kv_heads)
+            past = positions[slot * chunk]
+            earliest = T.max(0, past + qstart + 1 - cap)
+            last = positions[slot * chunk + T.min(qstart + query_rows - 1, chunk - 1)]
+            query = T.alloc_shared((query_rows, depth), "bfloat16")
+            keys = T.alloc_shared((key_rows, depth), "bfloat16")
+            values = T.alloc_shared((key_rows, depth), "bfloat16")
+            probability = T.alloc_shared((query_rows, key_rows), "bfloat16")
+            scores = T.alloc_fragment((query_rows, key_rows), "float32")
+            result = T.alloc_fragment((query_rows, depth), "float32")
+            maximum = T.alloc_fragment((query_rows,), "float32")
+            previous = T.alloc_fragment((query_rows,), "float32")
+            rescale = T.alloc_fragment((query_rows,), "float32")
+            denominator = T.alloc_fragment((query_rows,), "float32")
+            total = T.alloc_fragment((query_rows,), "float32")
+
+            for i, d in T.Parallel(query_rows, depth):
+                row = slot * chunk + T.min(qstart + i, chunk - 1)
+                query[i, d] = T.if_then_else(
+                    qstart + i < chunk, q[row, head * depth + d], 0.0
+                )
+            for i in T.Parallel(query_rows):
+                row = slot * chunk + T.min(qstart + i, chunk - 1)
+                maximum[i] = T.cast(T.cast(sinks[row, head], "bfloat16"), "float32")
+                denominator[i] = 1
+            T.clear(result)
+
+            if enabled[slot * chunk + qstart] != 0:
+                for step in T.serial(T.ceildiv(last + 1 - earliest, key_rows)):
+                    start = earliest + step * key_rows
+                    for j, d in T.Parallel(key_rows, depth):
+                        position = start + j
+                        if position > last:
+                            keys[j, d] = 0
+                            values[j, d] = 0
+                        elif position < past:
+                            keys[j, d] = kc[slot, kv_head, position % cap, d]
+                            values[j, d] = vc[slot, kv_head, position % cap, d]
+                        else:
+                            source = slot * chunk + position - past
+                            keys[j, d] = k[source, kv_head * depth + d]
+                            values[j, d] = v[source, kv_head * depth + d]
+                    T.gemm(query, keys, scores, transpose_B=True, clear_accum=True)
+                    T.copy(maximum, previous)
+                    for i, j in T.Parallel(query_rows, key_rows):
+                        row = slot * chunk + T.min(qstart + i, chunk - 1)
+                        distance = positions[row] - start - j
+                        if (
+                            qstart + i < chunk
+                            and enabled[row] != 0
+                            and 0 <= distance
+                            and distance < cap
+                        ):
+                            bias = T.alloc_var("float32")
+                            bias = 0
+                            if distance < extent:
+                                for d in T.unroll(rel_dim):
+                                    bias += relative[row, head * rel_dim + d] * T.cast(
+                                        weights[d, distance], "float32"
+                                    )
+                            scores[i, j] = scores[i, j] * scale + bias
+                        else:
+                            scores[i, j] = -1e30
+                    T.reduce_max(scores, maximum, dim=1, clear=False)
+                    for i in T.Parallel(query_rows):
+                        rescale[i] = T.exp(previous[i] - maximum[i])
+                    for i, j in T.Parallel(query_rows, key_rows):
+                        scores[i, j] = T.exp(scores[i, j] - maximum[i])
+                    T.reduce_sum(scores, total, dim=1)
+                    for i in T.Parallel(query_rows):
+                        denominator[i] = denominator[i] * rescale[i] + total[i]
+                    for i, d in T.Parallel(query_rows, depth):
+                        result[i, d] *= rescale[i]
+                    T.copy(scores, probability)
+                    T.gemm(probability, values, result)
+
+            for i, d in T.Parallel(query_rows, depth):
+                if qstart + i < chunk:
+                    row = slot * chunk + qstart + i
+                    out[row, head * depth + d] = T.if_then_else(
+                        enabled[row] != 0, result[i, d] / denominator[i], 0.0
+                    )
+        return out
+
+    return compute
+
+
+def relative_decode_grouped(spec, schedule):
+    """Share one BF16 cache tile across a group of query heads in decode."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    rows, heads, kv_heads, depth, capacity = (
+        p[name] for name in ("r", "h", "kh", "d", "capacity")
+    )
+    relative_dim, extent, tile, splits = (
+        p[name] for name in ("relative_dim", "extent", "tile", "splits")
+    )
+    group = heads // kv_heads
+    queries = ((group + 15) // 16) * 16
+    cache = (rows, kv_heads, capacity, depth)
+    partials = (rows * heads * splits * (depth + 2),)
+
+    @kernel
+    def compute(
+        q: Tensor((rows, heads * depth), "float32"),
+        k: Tensor((rows, kv_heads * depth), "float32"),
+        v: Tensor((rows, kv_heads * depth), "float32"),
+        kc: Tensor(cache, "bfloat16"),
+        vc: Tensor(cache, "bfloat16"),
+        relative: Tensor((rows, heads * relative_dim), "float32"),
+        weights: Tensor((relative_dim, extent), "bfloat16"),
+        sinks: Tensor((rows, heads), "float32"),
+        positions: Tensor((rows,), "int32"),
+        enabled: Tensor((rows,), "int32"),
+    ) -> Tensor(partials, "float32"):
+        out = output(partials, "float32")
+        with T.Kernel(kv_heads, splits, rows, threads=128) as (kv_head, split, row):
+            current = positions[row]
+            start = T.max(current + 1 - capacity, 0) + split * tile
+            query = T.alloc_shared((queries, depth), "bfloat16")
+            keys = T.alloc_shared((tile, depth), "bfloat16")
+            values = T.alloc_shared((tile, depth), "bfloat16")
+            probabilities = T.alloc_shared((queries, tile), "bfloat16")
+            scores = T.alloc_fragment((queries, tile), "float32")
+            result = T.alloc_fragment((queries, depth), "float32")
+            maximum = T.alloc_fragment((queries,), "float32")
+            denominator = T.alloc_fragment((queries,), "float32")
+
+            for i, d in T.Parallel(queries, depth):
+                head = kv_head * group + T.min(i, group - 1)
+                query[i, d] = T.if_then_else(i < group, q[row, head * depth + d], 0.0)
+            for j, d in T.Parallel(tile, depth):
+                position = start + j
+                if enabled[row] == 0 or position > current:
+                    keys[j, d] = 0
+                    values[j, d] = 0
+                elif position == current:
+                    keys[j, d] = k[row, kv_head * depth + d]
+                    values[j, d] = v[row, kv_head * depth + d]
+                else:
+                    keys[j, d] = kc[row, kv_head, position % capacity, d]
+                    values[j, d] = vc[row, kv_head, position % capacity, d]
+            T.gemm(query, keys, scores, transpose_B=True, clear_accum=True)
+
+            for i, j in T.Parallel(queries, tile):
+                head = kv_head * group + T.min(i, group - 1)
+                distance = current - start - j
+                if enabled[row] != 0 and i < group and distance >= 0:
+                    bias = T.alloc_var("float32")
+                    bias = 0
+                    if distance < extent:
+                        for d in T.unroll(relative_dim):
+                            bias += relative[row, head * relative_dim + d] * T.cast(
+                                weights[d, distance], "float32"
+                            )
+                    scores[i, j] = scores[i, j] * depth**-0.5 + bias
+                else:
+                    scores[i, j] = -1e30
+            for i in T.Parallel(queries):
+                head = kv_head * group + T.min(i, group - 1)
+                sink = T.cast(T.cast(sinks[row, head], "bfloat16"), "float32")
+                maximum[i] = T.if_then_else(split == 0 and i < group, sink, -1e30)
+            T.reduce_max(scores, maximum, dim=1, clear=False)
+            for i, j in T.Parallel(queries, tile):
+                scores[i, j] = T.if_then_else(
+                    scores[i, j] > -1e29, T.exp(scores[i, j] - maximum[i]), 0.0
+                )
+            T.reduce_sum(scores, denominator, dim=1)
+            T.copy(scores, probabilities)
+            T.gemm(probabilities, values, result, clear_accum=True)
+            for i, j in T.Parallel(queries, tile):
+                # Preserve the low probability bits discarded by the first BF16 MMA.
+                high = T.cast(T.cast(scores[i, j], "bfloat16"), "float32")
+                probabilities[i, j] = scores[i, j] - high
+            T.gemm(probabilities, values, result)
+
+            for i, d in T.Parallel(queries, depth):
+                if i < group:
+                    head = kv_head * group + i
+                    base = ((row * heads + head) * splits + split) * (depth + 2)
+                    out[base + d] = result[i, d]
+            for i in T.Parallel(queries):
+                if i < group:
+                    head = kv_head * group + i
+                    base = ((row * heads + head) * splits + split) * (depth + 2)
+                    sink = T.cast(T.cast(sinks[row, head], "bfloat16"), "float32")
+                    out[base + depth] = maximum[i]
+                    out[base + depth + 1] = denominator[i] + T.if_then_else(
+                        split == 0, T.exp(sink - maximum[i]), 0.0
+                    )
+        return out
+
+    return compute

@@ -2003,3 +2003,31 @@ IMPLEMENTATIONS += tuple(
 
 
 _floating_matmuls = floating_matmuls
+
+IMPLEMENTATIONS += (
+    Implementation(
+        "bf16_linear",
+        "akas.ops.linear.cuda",
+        "reference",
+        factory="linear_bf16",
+        priority=15,
+        space=(("m", (16, 32, 64)), ("n", (64, 128)), ("bk", (64, 128))),
+    ),
+    Implementation(
+        "bf16_linear",
+        "akas.ops.linear.cuda",
+        "reference",
+        factory="gemv_linear_bf16",
+        priority=20,
+        accepts=lambda p: p["r"] < 8,
+        space=(("columns", (8, 16, 32)),),
+    ),
+    Implementation(
+        "bf16_linear",
+        "akas.ops.linear.cuda",
+        "reference",
+        factory="gemv_native_bf16",
+        priority=18,
+        accepts=lambda p: p["r"] < 8 and p["k"] % 32 == 0,
+    ),
+)

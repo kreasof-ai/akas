@@ -152,6 +152,16 @@ cursor per expert. It preserves token/rank order and initializes unused entries
 to -1, including fully inactive batches. The shared implementation retains the
 same route-table contract for other providers.
 
+`block_scaled_experts` projects NVFP4 and MXFP8 expert banks through one
+shared grouped tensor-core GEMM. The weight codec stages BF16 tiles and the
+operation accumulates in FP32, so both encodings stay lossless. It serves the
+compact `expert_tile_map` route layout shared with the other prefill experts;
+`routed_expert_sum` then reduces each token's routed contributions. The search
+varies the row tile, output-column tile and depth tile. A native FP8
+(e2m1→e4m3) candidate was evaluated and rejected: its activation-quantization
+error at the model's reduction depths exceeds the operation's 0.003
+qualification floor, so only the lossless BF16 path is registered.
+
 ## How to extend
 
 Define route indices, counts, padding, tie handling and output accumulation

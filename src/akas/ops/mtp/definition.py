@@ -50,3 +50,7 @@ IMPLEMENTATIONS = (
         name="mtp.cuda",
     ),
 )
+
+IMPLEMENTATIONS += (
+    Implementation("mtp_cast", "akas.ops.mtp.kernel", "reference", factory="mtp_cast"),
+)

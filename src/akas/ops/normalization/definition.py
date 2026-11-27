@@ -5,6 +5,7 @@ from dataclasses import replace
 from akas.kernels.spec import Implementation
 from akas.ops.normalization.validation import VALIDATIONS as VALIDATIONS
 from akas.ops.normalization.validation import layer_norm_validation
+from akas.ops.normalization.validation import projected_head_validation
 
 
 def rms_norm(
@@ -507,5 +508,16 @@ IMPLEMENTATIONS += (
         name="normalization.webgpu.post_add_rms",
         space=(("threads", (256, 128, 64, 32, 512, 1024)),),
         accepts=lambda p: p["c"] % min(256, p["c"]) == 0,
+    ),
+)
+
+OUTPUT_ARGUMENTS["reference"]["projected_head_norm"] = OutputABI((-1,), ("out",))
+VALIDATIONS["projected_head_norm"] = projected_head_validation
+IMPLEMENTATIONS += (
+    Implementation(
+        "projected_head_norm",
+        "akas.ops.normalization.kernel",
+        "reference",
+        factory="projected_head_norm",
     ),
 )

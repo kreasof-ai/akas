@@ -85,6 +85,8 @@ def measurement(row, kind, qualified, run_id, protocol=None):
     case = row["case"]
     streamed = kind == "akas" and protocol == "client-stream-burst-v1"
     qualified = qualified and row.get("model_throughput_qualified") is not False
+    if streamed and row.get("correctness", {}).get("full_model_reference") is False:
+        qualified = False
     result = dict(
         batch=case["batch"],
         prefix=case["prompt"],
@@ -108,7 +110,7 @@ def measurement(row, kind, qualified, run_id, protocol=None):
         else None,
         engine_output_tok_s=median(engine, "output_tokens_per_second"),
         burst_output_tok_s=median(
-            serving if kind == "akas" else samples, "output_tokens_per_second"
+            serving if kind == "akas" and not streamed else samples, "output_tokens_per_second"
         ),
         ttft_ms=median(samples, "ttft_seconds", 1000) if streamed else median(serving, "ttft_ms")
         if kind == "akas"

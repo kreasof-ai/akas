@@ -2527,3 +2527,50 @@ IMPLEMENTATIONS = tuple(
     else item
     for item in IMPLEMENTATIONS
 )
+
+for _kind in ("block_scaled_experts", "routed_expert_sum"):
+    OUTPUT_ARGUMENTS["reference"][_kind] = OutputABI((-1,), ("out",))
+
+IMPLEMENTATIONS += (
+    Implementation(
+        "routed_expert_sum",
+        "akas.ops.moe.kernel",
+        "reference",
+        factory="routed_expert_sum",
+    ),
+    Implementation(
+        "block_scaled_experts",
+        "akas.ops.moe.cuda",
+        "reference",
+        factory="block_scaled_experts",
+        accepts=lambda p: p.get("block_m", 16) <= p.get("max_block_m", 64),
+        space=(
+            ("block_m", (16, 32, 64)),
+            ("columns", (64, 32, 128)),
+            ("block_k", (64, 32, 128)),
+        ),
+    ),
+    Implementation(
+        "block_scaled_experts",
+        "akas.ops.moe.cuda",
+        "reference",
+        factory="block_scaled_experts",
+        name="moe.cuda.block-scaled-lane-mma",
+        priority=9,
+        targets=("sm_89",),
+        accepts=lambda p: (
+            p["o"] % 64 == 0
+            and p["k"] % 64 == 0
+            and p.get("block_m", 8) <= p.get("max_block_m", 64)
+        ),
+        defaults=(("lane_mma", True),),
+        space=(
+            ("block_m", (64, 32, 16, 8, 128)),
+            ("columns", (64, 32, 128)),
+            ("block_k", (64, 32, 128)),
+            ("warp_columns", (2, 4, 1)),
+            ("stages", (2, 1, 3, 0)),
+            ("ldmatrix", (True, False)),
+        ),
+    ),
+)

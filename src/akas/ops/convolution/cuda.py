@@ -106,3 +106,82 @@ def parallel_prefill(spec, schedule):
         return state, out
 
     return compute
+
+
+def tiled_residual_short_conv(spec, schedule):
+    """Parallelize static causal taps while the first tile owns the history."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    slots, chunk, width, taps = (p[n] for n in ("r", "chunk", "c", "taps"))
+    time_tile = p.get("time_tile", 8)
+    columns = 32
+    if p["dynamic"] or time_tile < taps - 1:
+        raise ValueError(
+            "a static convolution time tile must include the complete halo"
+        )
+    x_shape = (slots * chunk, width)
+    history_shape = (slots, taps - 1, width)
+    gain = (taps + 1) ** -0.5
+
+    @kernel
+    def compute(
+        x: Tensor(x_shape, "float32"),
+        w: Tensor((width, taps), "bfloat16"),
+        history: Tensor(history_shape, "float32"),
+        lengths: Tensor((slots,), "int32"),
+    ) -> tuple[Tensor(history_shape, "float32"), Tensor(x_shape, "float32")]:
+        out = output(x_shape, "float32")
+        with T.Kernel(
+            T.ceildiv(width, columns), T.ceildiv(chunk, time_tile), slots, threads=128
+        ) as (block, tile, slot):
+            start = tile * time_tile
+            count = T.min(T.max(lengths[slot], 0), chunk)
+            halo = T.alloc_shared((time_tile + taps - 1, columns), "float32")
+            coeff = T.alloc_shared((taps, columns), "float32")
+
+            for i, j in T.Parallel(time_tile + taps - 1, columns):
+                col = block * columns + j
+                index = start + i - (taps - 1)
+                if col < width and index < count:
+                    if index < 0:
+                        halo[i, j] = history[slot, -index - 1, col]
+                    else:
+                        halo[i, j] = T.cast(x[slot * chunk + index, col], "bfloat16")
+                else:
+                    halo[i, j] = 0
+            for i, j in T.Parallel(taps, columns):
+                if block * columns + j < width:
+                    coeff[i, j] = w[block * columns + j, taps - 1 - i]
+            T.sync_threads()
+
+            for i, j in T.Parallel(time_tile, columns):
+                col = block * columns + j
+                index = start + i
+                if col < width and index < chunk:
+                    if index < count:
+                        total = T.alloc_var("float32")
+                        total = halo[i + taps - 1, j]
+                        for lag in T.unroll(taps):
+                            total += halo[i + taps - 1 - lag, j] * coeff[lag, j]
+                        out[slot * chunk + index, col] = T.cast(
+                            total * gain, "bfloat16"
+                        )
+                    else:
+                        out[slot * chunk + index, col] = 0
+
+            # Other time tiles begin after the halo and never read this state.
+            if tile == 0 and count > 0:
+                for i, j in T.Parallel(taps - 1, columns):
+                    col = block * columns + j
+                    if col < width:
+                        index = count - 1 - i
+                        if index < 0:
+                            history[slot, i, col] = halo[index + taps - 1, j]
+                        else:
+                            history[slot, i, col] = T.cast(
+                                x[slot * chunk + index, col], "bfloat16"
+                            )
+        return history, out
+
+    return compute

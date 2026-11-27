@@ -1630,3 +1630,137 @@ VALIDATIONS["full_attention"] = full_attention_validation
 VALIDATIONS["qkv_rotary_cache"] = qkv_rotary_cache_validation
 VALIDATIONS["window_attention_current"] = window_current_validation
 VALIDATIONS["window_cache_tail"] = window_tail_validation
+
+
+def relative_cache_validation(kind, p, signature):
+    import numpy as np
+    from tensor.runtime.dtypes import decode_bfloat16, encode_bfloat16
+    from akas.validation import ValidationCase, sample_arguments
+
+    values = sample_arguments(signature)
+    rows, chunk, h, kh, depth, capacity = (
+        p.get(n) for n in ("r", "chunk", "h", "kh", "d", "capacity")
+    )
+    slots = rows // chunk
+    bases = np.arange(slots) * max(capacity // 2, 1)
+    values["positions"][:] = (bases[:, None] + np.arange(chunk)).reshape(-1)
+    values["enabled"][:] = 1
+    if slots > 1:
+        values["enabled"][-1] = 0
+    if kind == "commit_relative_cache":
+        expected = {**values, "kc": values["kc"].copy(), "vc": values["vc"].copy()}
+        for name, source in (("kc", "k"), ("vc", "v")):
+            current = decode_bfloat16(encode_bfloat16(values[source])).reshape(
+                rows, kh, depth
+            )
+            for row in np.flatnonzero(values["enabled"]):
+                expected[name][row // chunk, :, values["positions"][row] % capacity] = (
+                    current[row]
+                )
+        return ValidationCase(values, expected, atol=0, rtol=0)
+
+    if kind == "relative_decode_grouped":
+        for name in ("q", "k", "v"):
+            values[name][:] = decode_bfloat16(encode_bfloat16(values[name]))
+
+    tile, splits = p["tile"], p["splits"]
+    out = np.zeros((rows, h, splits, depth + 2), dtype="float32")
+    out[..., depth] = -1e30
+    q = values["q"].reshape(rows, h, depth).astype("float64")
+    relative = values["relative"].reshape(rows, h, p["relative_dim"]).astype("float64")
+    current_k = values["k"].reshape(rows, kh, depth)
+    current_v = values["v"].reshape(rows, kh, depth)
+    sinks = decode_bfloat16(encode_bfloat16(values["sinks"]))
+    for row in range(rows):
+        base = bases[row // chunk]
+        position = values["positions"][row]
+        live = np.arange(max(0, position + 1 - capacity), position + 1)
+        if values["enabled"][row] == 0:
+            live = live[:0]
+        for head in range(h):
+            kv_head = head // (h // kh)
+            for split in range(splits):
+                indices = live[split * tile : (split + 1) * tile]
+                past = indices[indices < base]
+                new = row // chunk * chunk + indices[indices >= base] - base
+                keys = np.concatenate(
+                    (
+                        values["kc"][row // chunk, kv_head, past % capacity],
+                        current_k[new, kv_head],
+                    )
+                )
+                vectors = np.concatenate(
+                    (
+                        values["vc"][row // chunk, kv_head, past % capacity],
+                        current_v[new, kv_head],
+                    )
+                )
+                logits = keys @ q[row, head] / np.sqrt(depth)
+                distances = position - indices
+                mask = distances < p["extent"]
+                logits[mask] += (
+                    relative[row, head] @ values["weights"][:, distances[mask]]
+                )
+                if not len(logits) and split:
+                    continue
+                sink = [sinks[row, head]] if split == 0 else []
+                all_logits = np.concatenate((logits, sink))
+                peak = all_logits.max()
+                probabilities = np.exp(logits - peak)
+                out[row, head, split, :depth] = probabilities @ vectors
+                out[row, head, split, depth] = peak
+                out[row, head, split, depth + 1] = np.exp(all_logits - peak).sum()
+    return ValidationCase(
+        values, {**values, "out": out.reshape(-1)}, atol=2e-5, rtol=2e-5
+    )
+
+
+def relative_prefill_validation(kind, p, signature):
+    import numpy as np
+    from tensor.runtime.dtypes import decode_bfloat16, encode_bfloat16
+    from akas.validation import ValidationCase, sample_arguments
+
+    values = sample_arguments(signature)
+    r, chunk, heads, kv_heads, depth, cap = (
+        p[name] for name in ("r", "chunk", "h", "kh", "d", "capacity")
+    )
+    slots = r // chunk
+    bases = np.arange(slots, dtype="int32") * (cap // 2 + 1) + cap // 3
+    values["positions"][:] = (bases[:, None] + np.arange(chunk)).reshape(-1)
+    values["enabled"][:] = 1
+    if slots > 1:
+        values["enabled"][-1] = 0
+
+    def bf16(array):
+        return decode_bfloat16(encode_bfloat16(array))
+
+    query = bf16(values["q"]).reshape(r, heads, depth).astype("float64")
+    current_k = bf16(values["k"]).reshape(r, kv_heads, depth)
+    current_v = bf16(values["v"]).reshape(r, kv_heads, depth)
+    relative = values["relative"].reshape(r, heads, p["relative_dim"]).astype("float64")
+    sinks = bf16(values["sinks"])
+    out = np.zeros((r, heads, depth), dtype="float32")
+    for row in np.flatnonzero(values["enabled"]):
+        slot = row // chunk
+        position = values["positions"][row]
+        live = np.arange(max(0, position + 1 - cap), position + 1)
+        cached = live[live < bases[slot]] % cap
+        fresh = live[live >= bases[slot]] - bases[slot] + slot * chunk
+        distances = position - live
+        relative_mask = distances < p["extent"]
+        for head in range(heads):
+            kh = head // (heads // kv_heads)
+            keys = np.concatenate(
+                (values["kc"][slot, kh, cached], current_k[fresh, kh])
+            )
+            vec = np.concatenate((values["vc"][slot, kh, cached], current_v[fresh, kh]))
+            logits = keys @ query[row, head] / np.sqrt(depth)
+            logits[relative_mask] += (
+                relative[row, head] @ values["weights"][:, distances[relative_mask]]
+            )
+            peak = max(logits.max(), sinks[row, head])
+            prob = np.exp(logits - peak)
+            out[row, head] = prob @ vec / (prob.sum() + np.exp(sinks[row, head] - peak))
+    return ValidationCase(
+        values, {**values, "out": out.reshape(values["q"].shape)}, atol=2e-4, rtol=0.008
+    )

@@ -2,6 +2,7 @@
 
 from akas.kernels.spec import Implementation
 from akas.ops.convolution.validation import validation
+from akas.ops.convolution.validation import SHORT_CONV_VALIDATIONS
 
 OUTPUT_ARGUMENTS = {"reference": {"conv": (2, 3)}}
 VALIDATIONS = {"conv": validation}
@@ -265,4 +266,28 @@ IMPLEMENTATIONS += tuple(
         "sinc_resample_limit",
         "sinc_resample_commit",
     )
+)
+
+VALIDATIONS.update(SHORT_CONV_VALIDATIONS)
+for _kind, _history in (("residual_short_conv", 2), ("dynamic_residual_short_conv", 3)):
+    OUTPUT_ARGUMENTS["reference"][_kind] = OutputABI((_history, -1), ("history", "out"))
+    IMPLEMENTATIONS += (
+        Implementation(
+            _kind,
+            "akas.ops.convolution.kernel",
+            "reference",
+            factory="residual_short_conv",
+        ),
+    )
+
+IMPLEMENTATIONS += (
+    Implementation(
+        "residual_short_conv",
+        "akas.ops.convolution.cuda",
+        "reference",
+        factory="tiled_residual_short_conv",
+        priority=9,
+        accepts=lambda p: not p["dynamic"] and p["chunk"] >= max(p["taps"] - 1, 8),
+        space=(("time_tile", (8, 16)),),
+    ),
 )

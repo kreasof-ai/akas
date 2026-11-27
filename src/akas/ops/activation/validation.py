@@ -121,3 +121,24 @@ def column_activation_validation(kind, p, signature):
             values, {**values, "out": x.astype("float16")}, rtol=0.001, atol=2e-7
         )
     return ValidationCase(values, {**values, "out": x.astype("float32")})
+
+
+def softcap_validation(kind, p, signature):
+    import numpy as np
+    from tensor.runtime.dtypes import decode_bfloat16, encode_bfloat16
+    from akas.validation import ValidationCase, sample_arguments
+
+    values = sample_arguments(signature)
+    values["x"] *= 30
+    if kind == "logit_softcap":
+        out = p["cap"] * np.tanh(values["x"] / p["cap"])
+    else:
+        source = decode_bfloat16(encode_bfloat16(values["x"]))
+        gate, up = source[..., ::2], source[..., 1::2]
+        capped_gate = p["gate_cap"] * np.tanh(gate / p["gate_cap"])
+        capped_up = p["up_cap"] * np.tanh(up / p["up_cap"])
+        out = (
+            capped_gate / (1 + np.exp(-gate)) * capped_up * values["weights"][..., None]
+        )
+        out = decode_bfloat16(encode_bfloat16(out))
+    return ValidationCase(values, {**values, "out": out})

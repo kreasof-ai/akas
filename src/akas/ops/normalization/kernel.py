@@ -501,3 +501,75 @@ def affine_layer_norm(spec, schedule):
         return out
 
     return compute
+
+
+def projected_head_norm(spec, schedule):
+    """Normalize or clip projected heads, with optional learned and position scales."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    r, heads, depth = (p[n] for n in ("r", "h", "d"))
+    shape = (r, heads * depth)
+    scaled, mode = p["scaled"], p["mode"]
+    scale_shape = (heads, depth) if scaled else shape
+    scale_dtype = "bfloat16" if scaled else "float32"
+    eps, clip = p["eps"], p.get("clip", 1.0)
+    log_floor, log_alpha = p.get("log_floor", 1), p.get("log_alpha", 0.0)
+
+    @T.macro
+    def normalize(x, scale, positions, out):
+        with T.Kernel(r, heads, threads=64) as (row, head):
+            source = T.alloc_fragment((depth,), "float32")
+            squared = T.alloc_fragment((depth,), "float32")
+            total = T.alloc_fragment((1,), "float32")
+            for j in T.Parallel(depth):
+                source[j] = T.cast(
+                    T.cast(x[row, head * depth + j], "bfloat16"), "float32"
+                )
+                if scaled:
+                    source[j] *= T.cast(scale[head, j], "float32")
+                squared[j] = source[j] * source[j]
+            T.reduce_sum(squared, total, dim=0)
+            for j in T.Parallel(depth):
+                if mode == "rms":
+                    gain = T.rsqrt(total[0] / depth + eps)
+                else:
+                    gain = T.min(clip / (T.sqrt(total[0]) + eps), 1.0)
+                value = T.cast(T.cast(source[j] * gain, "bfloat16"), "float32")
+                if log_alpha != 0:
+                    log_scale = 1 + log_alpha * T.log(
+                        T.max(T.cast(positions[row] + 1, "float32") / log_floor, 1.0)
+                    )
+                    value = T.cast(T.cast(value * log_scale, "bfloat16"), "float32")
+                out[row, head * depth + j] = value
+
+    if log_alpha:
+
+        @kernel
+        def compute(
+            x: Tensor(shape, "float32"),
+            scale: Tensor(scale_shape, scale_dtype),
+            positions: Tensor((r,), "int32"),
+        ) -> Tensor(shape, "float32"):
+            out = output(shape, "float32")
+            normalize(x, scale, positions, out)
+            return out
+    elif scaled:
+
+        @kernel
+        def compute(
+            x: Tensor(shape, "float32"),
+            scale: Tensor(scale_shape, scale_dtype),
+        ) -> Tensor(shape, "float32"):
+            out = output(shape, "float32")
+            normalize(x, scale, x, out)
+            return out
+    else:
+
+        @kernel
+        def compute(x: Tensor(shape, "float32")) -> Tensor(shape, "float32"):
+            out = output(shape, "float32")
+            normalize(x, x, x, out)
+            return out
+
+    return compute

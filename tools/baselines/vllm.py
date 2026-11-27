@@ -45,7 +45,7 @@ def run(config):
         from vllm.engine.arg_utils import AsyncEngineArgs
         from vllm.v1.engine.async_llm import AsyncLLM
 
-        settings["skip_tokenizer_init"] = True
+        settings.setdefault("skip_tokenizer_init", True)
         params.detokenize = False
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)

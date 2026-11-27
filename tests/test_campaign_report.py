@@ -109,12 +109,13 @@ def test_streamed_native_measurements_preserve_latency_and_failed_qualification(
     from tools.campaign_report import measurement
 
     row = dict(case=dict(batch=4, prompt=2048, generated=128), status="ok",
-               model_throughput_qualified=False,
-               samples=[dict(ttft_seconds=.3, tpot_seconds=.02)],
+               correctness=dict(full_model_reference=False),
+               samples=[dict(ttft_seconds=.3, tpot_seconds=.02, output_tokens_per_second=212)],
                serving=dict(samples=[dict(ttft_ms=999, tpot_ms=999)]))
     result = measurement(row, "akas", True, "diagnostic", "client-stream-burst-v1")
     assert result["ttft_ms"] == 300
     assert result["tpot_ms"] == 20
+    assert result["burst_output_tok_s"] == 212
     assert result["qualification"] == "unqualified"
 
 

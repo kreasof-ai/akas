@@ -4,6 +4,7 @@ from akas.kernels.spec import OutputABI
 from akas.kernels.spec import Implementation
 from akas.ops.residual.validation import validation
 from akas.ops.residual.validation import bank_validation
+from akas.ops.residual.validation import block_mix_validation
 from akas.ops.residual.validation import scaled_residual_validation
 
 
@@ -70,3 +71,10 @@ IMPLEMENTATIONS += tuple(
     for provider in ("cuda", "webgpu")
     for kind in ("attention_residual", "scaled_residual")
 )
+
+for _kind in ("normalized_block_mix", "message_blend"):
+    OUTPUT_ARGUMENTS["reference"][_kind] = OutputABI((-1,), ("out",))
+    VALIDATIONS[_kind] = block_mix_validation
+    IMPLEMENTATIONS += (
+        Implementation(_kind, "akas.ops.residual.kernel", "reference", factory=_kind),
+    )

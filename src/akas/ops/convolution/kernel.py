@@ -604,3 +604,88 @@ def sinc_resample_commit(spec, schedule):
         return rs_state
 
     return compute
+
+
+def residual_short_conv(spec, schedule):
+    """Static or input-dependent depthwise causal convolution with residual gain."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    slots, chunk, width, taps = (p[n] for n in ("r", "chunk", "c", "taps"))
+    groups, dynamic = p["groups"], p["dynamic"]
+    x_shape = (slots * chunk, width)
+    history_shape = (slots, taps - 1, width)
+    weight_shape = (taps, width) if dynamic else (width, taps)
+    dynamic_shape = (slots * chunk, groups * taps) if dynamic else x_shape
+    scale = ((2 if dynamic else 1) * taps + 1) ** -0.5
+
+    @T.macro
+    def convolve(x, w, dynamic_w, history, lengths, out):
+        with T.Kernel(slots, T.ceildiv(width, 128), threads=128) as (slot, tile):
+            for lane in T.Parallel(128):
+                col = tile * 128 + lane
+                if col < width:
+                    previous = T.alloc_local((taps - 1,), "float32")
+                    for j in T.unroll(taps - 1):
+                        previous[j] = history[slot, j, col]
+                    for i in T.serial(chunk):
+                        row = slot * chunk + i
+                        if i < lengths[slot]:
+                            current = T.cast(T.cast(x[row, col], "bfloat16"), "float32")
+                            total = T.alloc_var("float32")
+                            total = current
+                            for lag in T.unroll(taps):
+                                value = current if lag == 0 else previous[lag - 1]
+                                if dynamic:
+                                    group = col // (width // groups)
+                                    coefficient = T.cast(w[lag, col], "float32")
+                                    coefficient += T.cast(
+                                        T.cast(
+                                            dynamic_w[row, group * taps + lag],
+                                            "bfloat16",
+                                        ),
+                                        "float32",
+                                    )
+                                else:
+                                    coefficient = T.cast(
+                                        w[col, taps - 1 - lag], "float32"
+                                    )
+                                total += value * coefficient
+                            out[row, col] = T.cast(
+                                T.cast(total * scale, "bfloat16"), "float32"
+                            )
+                            for lag in T.unroll(taps - 2):
+                                previous[taps - 2 - lag] = previous[taps - 3 - lag]
+                            previous[0] = current
+                        else:
+                            out[row, col] = 0
+                    for j in T.unroll(taps - 1):
+                        history[slot, j, col] = previous[j]
+
+    if dynamic:
+
+        @kernel
+        def compute(
+            x: Tensor(x_shape, "float32"),
+            w: Tensor(weight_shape, "bfloat16"),
+            dynamic_w: Tensor(dynamic_shape, "float32"),
+            history: Tensor(history_shape, "float32"),
+            lengths: Tensor((slots,), "int32"),
+        ) -> tuple[Tensor(history_shape, "float32"), Tensor(x_shape, "float32")]:
+            out = output(x_shape, "float32")
+            convolve(x, w, dynamic_w, history, lengths, out)
+            return history, out
+    else:
+
+        @kernel
+        def compute(
+            x: Tensor(x_shape, "float32"),
+            w: Tensor(weight_shape, "bfloat16"),
+            history: Tensor(history_shape, "float32"),
+            lengths: Tensor((slots,), "int32"),
+        ) -> tuple[Tensor(history_shape, "float32"), Tensor(x_shape, "float32")]:
+            out = output(x_shape, "float32")
+            convolve(x, w, x, history, lengths, out)
+            return history, out
+
+    return compute

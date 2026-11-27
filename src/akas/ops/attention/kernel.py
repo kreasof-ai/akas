@@ -1783,3 +1783,136 @@ def causal_grouped(spec, schedule):
 
 
 _normalization = cache_normalization
+
+
+def relative_attention_partials(spec, schedule):
+    """Causal grouped-query attention with learned distance bias and a sink logit."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    r, chunk, h, kh, d, cap = (
+        p[name] for name in ("r", "chunk", "h", "kh", "d", "capacity")
+    )
+    relative_dim, extent, tile, splits = (
+        p[name] for name in ("relative_dim", "extent", "tile", "splits")
+    )
+    cache = (r // chunk, kh, cap, d)
+    partials = (r * h * splits * (d + 2),)
+
+    @kernel
+    def compute(
+        q: Tensor((r, h * d), "float32"),
+        k: Tensor((r, kh * d), "float32"),
+        v: Tensor((r, kh * d), "float32"),
+        kc: Tensor(cache, "bfloat16"),
+        vc: Tensor(cache, "bfloat16"),
+        relative: Tensor((r, h * relative_dim), "float32"),
+        weights: Tensor((relative_dim, extent), "bfloat16"),
+        sinks: Tensor((r, h), "float32"),
+        positions: Tensor((r,), "int32"),
+        enabled: Tensor((r,), "int32"),
+    ) -> Tensor(partials, "float32"):
+        out = output(partials, "float32")
+        with T.Kernel(r, h, splits, threads=128) as (row, head, split):
+            start = T.max(positions[row] + 1 - cap, 0) + split * tile
+            first = positions[row] - row % chunk
+            kv_head = head // (h // kh)
+            values = T.alloc_fragment((tile, d), "float32")
+            dot = T.alloc_fragment((tile,), "float32")
+            maximum = T.alloc_fragment((1,), "float32")
+            denominator = T.alloc_fragment((1,), "float32")
+            result = T.alloc_fragment((d,), "float32")
+            sink = T.cast(T.cast(sinks[row, head], "bfloat16"), "float32")
+            for i, c in T.Parallel(tile, d):
+                position = start + i
+                key = T.alloc_var("float32")
+                key = 0
+                if enabled[row] != 0 and position <= positions[row]:
+                    if position < first:
+                        key = T.cast(
+                            kc[row // chunk, kv_head, position % cap, c], "float32"
+                        )
+                    else:
+                        key = k[
+                            row // chunk * chunk + position - first, kv_head * d + c
+                        ]
+                values[i, c] = key * q[row, head * d + c]
+            T.reduce_sum(values, dot, dim=1)
+            for i in T.Parallel(tile):
+                position = start + i
+                distance = positions[row] - position
+                bias = T.alloc_var("float32")
+                bias = 0
+                if 0 <= distance and distance < extent:
+                    for j in T.unroll(relative_dim):
+                        bias += relative[row, head * relative_dim + j] * T.cast(
+                            weights[j, distance], "float32"
+                        )
+                dot[i] = T.if_then_else(
+                    enabled[row] != 0 and distance >= 0, dot[i] * d**-0.5 + bias, -1e30
+                )
+            T.reduce_max(dot, maximum, dim=0)
+            for i in T.Parallel(1):
+                if split == 0:
+                    maximum[0] = T.max(maximum[0], sink)
+            for i in T.Parallel(tile):
+                dot[i] = T.if_then_else(dot[i] > -1e29, T.exp(dot[i] - maximum[0]), 0.0)
+            T.reduce_sum(dot, denominator, dim=0)
+            for i, c in T.Parallel(tile, d):
+                position = start + i
+                value = T.alloc_var("float32")
+                value = 0
+                if enabled[row] != 0 and position <= positions[row]:
+                    if position < first:
+                        value = T.cast(
+                            vc[row // chunk, kv_head, position % cap, c], "float32"
+                        )
+                    else:
+                        value = v[
+                            row // chunk * chunk + position - first, kv_head * d + c
+                        ]
+                values[i, c] = value * dot[i]
+            T.reduce_sum(values, result, dim=0)
+            base = ((row * h + head) * splits + split) * (d + 2)
+            for c in T.Parallel(d):
+                out[base + c] = result[c]
+            for i in T.Parallel(1):
+                out[base + d] = maximum[0]
+                out[base + d + 1] = denominator[0] + T.if_then_else(
+                    split == 0, T.exp(sink - maximum[0]), 0.0
+                )
+        return out
+
+    return compute
+
+
+def commit_relative_cache(spec, schedule):
+    """Commit new keys and values after reads of the previous circular cache."""
+    import tilelang.language as T
+
+    p = {**spec.parameters, **schedule}
+    r, chunk, kh, d, cap = (p[name] for name in ("r", "chunk", "kh", "d", "capacity"))
+    cache = (r // chunk, kh, cap, d)
+
+    @kernel
+    def compute(
+        k: Tensor((r, kh * d), "float32"),
+        v: Tensor((r, kh * d), "float32"),
+        kc: Tensor(cache, "bfloat16"),
+        vc: Tensor(cache, "bfloat16"),
+        positions: Tensor((r,), "int32"),
+        enabled: Tensor((r,), "int32"),
+    ) -> tuple[Tensor(cache, "bfloat16"), Tensor(cache, "bfloat16")]:
+        with T.Kernel(r, kh, threads=d) as (row, head):
+            channel = T.get_thread_binding()
+            latest = T.alloc_var("bool")
+            latest = True
+            if row % chunk + cap < chunk:
+                latest = enabled[row + cap] == 0
+            if enabled[row] != 0 and latest:
+                position = positions[row] % cap
+                kc[row // chunk, head, position, channel] = k[row, head * d + channel]
+                vc[row // chunk, head, position, channel] = v[row, head * d + channel]
+        return kc, vc
+
+    return compute

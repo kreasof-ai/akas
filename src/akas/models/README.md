@@ -172,6 +172,13 @@ and block-scaled FP8 safetensors or packed GGUF. The [LFM3 guide](lfm3/README.md
 covers seven-tap convolution, sandwich norms, sliding attention, full-head
 partial RoPE, execution precision and the single-user Q4_0 llama.cpp comparison.
 
+## Inkling 2 Mini
+
+`from akas.models.inkling2 import Inkling2Mini` selects the fixed-pass text
+decoder with the official NVFP4/MXFP8 expert weights. The
+[Inkling 2 Mini guide](inkling2/README.md) covers CUDA compilation, per-pass
+request state, and the concurrent prefill/decode benchmark.
+
 ## Inworld Voice Isolator
 
 `from akas.models.voice_isolator import VoiceIsolator` selects the released

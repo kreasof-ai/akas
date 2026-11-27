@@ -6,7 +6,7 @@ from types import MappingProxyType
 import numpy as np
 from akas.checkpoints.safetensors import upload_bits
 
-DTYPES = {"BF16": "bfloat16", "F32": "float32", "F16": "float16", "F8_E4M3": "uint8"}
+DTYPES = {"BF16": "bfloat16", "F32": "float32", "F16": "float16", "F8_E4M3": "uint8", "U8": "uint8"}
 
 
 class UploadBatch:

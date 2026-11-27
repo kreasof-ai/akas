@@ -12,6 +12,7 @@ import numpy as np
 from akas.checkpoints.metadata import json_document
 
 STORAGE = {
+    "U8": ("uint8", 1),
     "F8_E4M3": ("uint8", 1),
     "BF16": ("uint16", 2),
     "F32": ("float32", 4),

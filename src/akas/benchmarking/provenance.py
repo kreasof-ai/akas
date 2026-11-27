@@ -70,7 +70,12 @@ def source_identity(root):
         dirty = bool(git("status", "--porcelain", "--untracked-files=normal"))
     except (OSError, subprocess.CalledProcessError):
         revision, dirty = None, None
-        names = [str(path.relative_to(root)) for path in root.rglob("*.py")]
+        source_suffixes = {".py", ".c", ".cc", ".cpp", ".cu", ".cuh", ".h", ".hpp", ".ptx"}
+        names = [
+            str(path.relative_to(root))
+            for path in root.rglob("*")
+            if path.suffix in source_suffixes
+        ]
     files = {}
     for name in sorted(set(names)):
         # Results must not recursively become part of the measured source.

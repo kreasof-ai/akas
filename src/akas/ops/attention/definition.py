@@ -2,6 +2,8 @@
 
 from akas.kernels.spec import OutputABI
 from akas.ops.attention.validation import VALIDATIONS as VALIDATIONS
+from akas.ops.attention.validation import relative_cache_validation
+from akas.ops.attention.validation import relative_prefill_validation
 from akas.kernels.spec import Implementation
 from akas.quantization.kv import is_quantized
 
@@ -1772,4 +1774,34 @@ IMPLEMENTATIONS = tuple(
     if item.provider == "cuda" and item.name == "attention.cuda.pipelined"
     else item
     for item in IMPLEMENTATIONS
+)
+
+for _kind, _abi in (
+    ("relative_attention_partials", OutputABI((-1,), ("out",))),
+    ("commit_relative_cache", OutputABI((2, 3), ("kc", "vc"))),
+):
+    OUTPUT_ARGUMENTS["reference"][_kind] = _abi
+    VALIDATIONS[_kind] = relative_cache_validation
+    IMPLEMENTATIONS += (
+        Implementation(_kind, "akas.ops.attention.kernel", "reference", factory=_kind),
+    )
+
+OUTPUT_ARGUMENTS["reference"]["relative_prefill_attention"] = OutputABI((-1,), ("out",))
+VALIDATIONS["relative_prefill_attention"] = relative_prefill_validation
+OUTPUT_ARGUMENTS["reference"]["relative_decode_grouped"] = OutputABI((-1,), ("out",))
+VALIDATIONS["relative_decode_grouped"] = relative_cache_validation
+IMPLEMENTATIONS += (
+    Implementation(
+        "relative_prefill_attention",
+        "akas.ops.attention.cuda",
+        "reference",
+        factory="relative_prefill_attention",
+        space=(("query_rows", (16, 32)), ("key_rows", (64, 32))),
+    ),
+    Implementation(
+        "relative_decode_grouped",
+        "akas.ops.attention.cuda",
+        "reference",
+        factory="relative_decode_grouped",
+    ),
 )
